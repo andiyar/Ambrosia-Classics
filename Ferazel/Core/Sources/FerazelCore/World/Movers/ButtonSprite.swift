@@ -96,7 +96,7 @@ public enum ButtonSprite {
 
     /// `.HitButtonSprite(self, other)` (M l. 61818–61843): neither `+0xe9` set →
     /// - other's Handle the player's (`PTR_PTR_100a052c`), a Platform's (`_DAT_100a0200`), a Box's (`PTR_PTR_100a0484`)
-    ///   or a Statue's (`PTR_PTR_100a01f8` // later: SW — no Statue Handle yet): level 0 → `.STPlay3DSound(4704, 10,
+    ///   or a Statue's (`PTR_PTR_100a01f8`, SW): level 0 → `.STPlay3DSound(4704, 10,
     ///   0x100, centre)`; level + 8;
     /// - an enemy shot's (`PTR_PTR_100a0488` // later: Phase 5) or a player shot's (`PTR_PTR_100a04e8`): 4704, level 11;
     /// - anything else (an idled record's Handle 0 included): nothing.
@@ -106,7 +106,7 @@ public enum ButtonSprite {
     public static func hit(_ w: SpriteWorld, id: Int, other oID: Int) {
         guard let s = w.active.record(id: id), let o = w.active.record(id: oID), !s.dead, !o.dead else { return }
         let runs = BackgroundSprite.runs
-        if runs(o, .player) || runs(o, .platform) || runs(o, .box) {
+        if runs(o, .player) || runs(o, .platform) || runs(o, .box) || runs(o, .statue) {
             if s.phase == 0 {
                 w.player.cue(PlayerCue(call: .threeD, snd: downSound, priority: 10, volume: 0x100, position: s.centre))
             }

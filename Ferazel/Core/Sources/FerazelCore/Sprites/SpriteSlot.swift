@@ -336,8 +336,12 @@ public struct SpriteSlot: Equatable, Sendable {
     /// `+0x19e` / `+0x1a0` (i16): buoyancy / float-line offset (`.HandleFlotation`).
     public var buoyancy: Int16 = 0
     public var floatOffset: Int16 = 0
-    /// `+0x130` (i32): cannon hold timer; negative = re-entry block, counted up by `.StandardSpriteHandles`.
+    /// `+0x130` (i32): cannon hold timer; negative = re-entry block, counted up by `.StandardSpriteHandles`. SW: the
+    /// same word is the Statue's countdown (`.TurnIntoStatue` stores 0x78, `.HandleStatueSprite` − 1 a frame).
     public var reentry: Int32 = 0
+    /// `+0x134` (u32): the draw-effect word `+0xb8` `.TurnIntoStatue` saves (M l. 38264), restored by
+    /// `.HandleStatueSprite` when its countdown runs out (M l. 56549; SW).
+    public var statueSavedMode: UInt32 = 0
     /// `+0x180` (u8): radial wall-bounce latch, cleared every frame by `.StandardSpriteHandles`.
     public var radialLatch = false
     /// `+0x184` (u8): no collision with sprites of the same handler (`.MTCollideSprites`).
@@ -382,7 +386,9 @@ public struct SpriteSlot: Equatable, Sendable {
     public var rope: RopeBlock?
     /// W2b (cannons, `.TurnIntoCannoned @ 10058594`, decompile l. 49930–49974): `+0x164` (i32) a cannon's launch speed S
     /// (9000 for p1 0, M l. 62114); `+0x1e4` the cannon holding a captive (an `ActiveList` id; nil = 0); `+0x1ec` /
-    /// `+0x1f0` / `+0x1f4` the captive's saved Handle, hit and tile callbacks (restored at the launch).
+    /// `+0x1f0` / `+0x1f4` the captive's saved Handle, hit and tile callbacks (restored at the launch). SW: the same
+    /// three words hold a Statue's saved Handle and callbacks (`.TurnIntoStatue` M l. 38257–38262, restored by
+    /// `.HandleStatueSprite` M l. 56546–56548).
     public var launchSpeed: Int32 = 0
     public var cannon: Int?
     public var savedHandler: SpriteHandler?
@@ -502,6 +508,10 @@ public enum SpriteHandler: Equatable, Hashable, Sendable {
     /// BT (added, Invariant 9): `.HandleButtonSprite @ 10070e60` (`PTR_PTR_100a0ac4`, M l. 61742–61815) with the hit
     /// `.HitButtonSprite @ 100710e4` (`PTR_PTR_100a0ac0`), installed by `.SetupButtonSprite` (`ButtonSprite`).
     case button
+    /// SW (added, Invariant 9): `.HandleStatueSprite @ 100664a8` (`PTR_PTR_100a01f8`, M l. 56521–56555), installed by
+    /// `.TurnIntoStatue @ 10043138` (M l. 38244–38272) with the Box class's hit `.HitBoxSprite` (`PTR_PTR_100a01f4`) and
+    /// tile callback `.HitBoxTileSprite` (`PTR_PTR_100a01f0`) — `StatueSprite`. The enemies' statue sites are Phase 5's.
+    case statue
 
     /// The Handle the class Setup `.GenerateSprite` selects for `type` installs (`SpriteClassTable`). The player
     /// (`.SetupPlayerSprite`), chain spokes (`.SetupChainSprite`, W1) and rope segments (W3) are set by their makers.

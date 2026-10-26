@@ -54,6 +54,16 @@ public enum HitPlayerSprite {
         case .effect:
             effect(w, player: pID, other: oID)                          // `PTR_PTR_100a0460` (EF)
             return
+        case .statue:
+            // `PTR_PTR_100a01f8` (M l. 49506–49513; SW): `.PlatformBounce(player, statue, the player's hot-rect centre
+            // offset, 0, his rect, 0)` and return — no latches, no ground effects.
+            guard let p = w.active.record(id: pID) else { return }
+            let r = p.hotRect
+            let h = { (v: Int) in Int(Int16(truncatingIfNeeded: v)) }
+            let centre = SpriteSlot.Point(x: h(r.left + h((r.right - r.left) >> 1)),
+                                          y: h(r.top + h((r.bottom - r.top) >> 1)))
+            w.platformBounce(mover: pID, solid: oID, centre: centre, factor: 0, rect: r, bounce: false)
+            return
         default: return                                                 // later: the other arms
         }
         guard let p = w.active.record(id: pID) else { return }

@@ -10,10 +10,11 @@ import Foundation
 /// BX2: the chest 0x51c and door 0xb5e / 0xb5f Handle arms (`chestArm`, `doorArm`) and the thought balloons
 /// (`createBalloon`, `destructBalloon`). BT: the gate 0xb7c (`gateArm`, with the 2941's move and clip), the switch
 /// blocks 0x4e2…0x4ff (`switchBlockArm`) and the spouts 0x5aa…0x5ad (`spoutArm`; their boulders ◇ Phase 5). Not built
-/// (named where they stand): the tree trunk 0x2c8 / 0x2c9 (SW), the geysers
+/// (named where they stand): the geysers
 /// 0x5a0…0x5a9 and the pipes 0x5d2…0x5d5 (Phase 5), the carpet 0x438 / 0x439, the spiked balls 0x5c3 / 0x5c4, the table
 /// 0xb71 and the snowball 0xbfe (Phase 6) — those types still return at once from the Handle (`handleBuilt`) and stand
-/// still; `.HitBoxSprite`'s Statue partner (SW) and its carpet arm (Phase 6).
+/// still; `.HitBoxSprite`'s carpet arm (Phase 6). SW: the tree trunk 0x2c8 / 0x2c9 (`newTrunk`, the Setup and Handle
+/// arms); `.HitBoxSprite` is also a Statue's hit (`StatueSprite`), and takes a Statue as a pair partner.
 public enum BoxSprite {
     /// The trampoline (PICT 1470, the 4-face set `_DAT_100a0a2c`).
     public static let trampoline: Int16 = 0x5be
@@ -29,6 +30,10 @@ public enum BoxSprite {
     /// The weakened ice wall 2941 (0xb7d) and the gate 2940 (0xb7c; BT) — one Setup arm, one Handle arm.
     public static let iceWall: Int16 = 0xb7d
     public static let gate: Int16 = 0xb7c
+    /// The Tree Trunk's bottom 712 (0x2c8) and segment 713 (0x2c9; SW) — the boot singles `PTR_DAT_100a0ab8` /
+    /// `_DAT_100a0ab4` (`.InitBoxSprite` M l. 58733–58736), made only by the Tree Trunk shot (`newTrunk`).
+    public static let trunkBottom: Int16 = 0x2c8
+    public static let trunkSegment: Int16 = 0x2c9
     /// The boulder spouts 1450…1453 (0x5aa…0x5ad; BT) — the Setup block reaches 0x5b3 (none placed past 0x5ad).
     public static let spouts: ClosedRange<Int16> = 0x5aa...0x5b3
     /// The gate's move sound `*_DAT_100a0360` = 460 'rock barrier move' (pickups-boxes-2 §1.2).
@@ -70,12 +75,26 @@ public enum BoxSprite {
     /// 0xc1b, the 3201 pieces and the dust 0x442 (faced from 0x4b0) and the 0x4b7 are the Effect sheets the renderer
     /// already loads; the drops are `dropSheets`.
     /// BT: the switch blocks' outline single 0x4e4 (boot, `.InitBoxSprite` M l. 58793) — a face their Handle switches
-    /// to that no Setup names.
+    /// to that no Setup names. SW: the trunk singles 0x2c8 / 0x2c9 (boot, M l. 58733–58736) — no placed type.
     public static let spawnSheets: Set<SetupFaces.Sheet> = [
         SetupFaces.Sheet(pict: cart, count: 0xe, cellWidth: 0x80, cellHeight: 0x60, columns: 7, clut: 200),
         SetupFaces.Sheet(pict: wheel, count: 0x15, cellWidth: 0x80, cellHeight: 0x3a, columns: 7, clut: 200),
         SetupFaces.Sheet.single(switchOffFace),
+        SetupFaces.Sheet.single(trunkBottom), SetupFaces.Sheet.single(trunkSegment),
     ]
+
+    /// `MTNewSprite(type, x, y, 2, −1, .SetupBoxSprite)` for a trunk 0x2c8 / 0x2c9 (SW; the Tree Trunk shot's sites,
+    /// M l. 51312–51316, 51354–51357, 51011–51013): the Setup reads the spawn copy `+8`/`+6` (`newRecord`'s pixel quirk
+    /// undone first) and the trunk arm faces it with the boot single of its type. Nil with no free record (Ruling 16).
+    static func newTrunk(_ w: SpriteWorld, type: Int16, x: Int, y: Int) -> Int? {
+        let none = Placement(index: -1, flag: 0, byte1: 0, type: type, p1: 0, p2: 0, p3: 0, p4: 0, y: 0, x: 0)
+        return w.newSprite(type: type, x: x, y: y, layer: 2, handler: .box) { s in
+            s.x = s.oldPosition.x
+            s.y = s.oldPosition.y
+            setup(&s, record: none, level: w.level)
+            s.face = FaceRef(pict: type, index: 0, set: .encoded)
+        }
+    }
 
     /// The Bonus faces the crates among `records` can drop (`.KillCrate`, p1 0 / 1, p2 > 0): `.InitBonusSprite` loads
     /// every Bonus face at boot, but `BonusSprite.sheets` names PICTs the data lacks (3109, 3200), so a renderer loads
@@ -118,8 +137,9 @@ public enum BoxSprite {
     /// 0xc12…0xc14, the stalactite 0xb74 (W4), and the post-chain blocks: switch blocks 0x4e2…0x4ff, the spouts
     /// 0x5aa…0x5b3 (BT), furniture 0xb68…0xb70, decorations
     /// 0xaf5…0xb21, outcrops 0xb22…0xb35, mushrooms 0xb36…0xb49, NPCs 0xb87…0xb99; BX1: the mine cart 0xb72 / wheel
-    /// 0xb73, the ice wall 0xb7d; BT: the gate 0xb7c. The other arms (several make sprites or draw `FastRand` at Setup)
-    /// leave the head's fields — // later: SW (tree trunk 0x2c8/0x2c9), Phase 5
+    /// 0xb73, the ice wall 0xb7d; BT: the gate 0xb7c; SW: the tree trunk 0x2c8 / 0x2c9 (no draw; made by the Tree Trunk
+    /// shot, `newTrunk`). The other arms (several make sprites or draw `FastRand` at Setup)
+    /// leave the head's fields — // later: Phase 5
     /// (geysers 0x5a0…0x5a9, pipes 0x5d2…0x5d5), Phase 6 (carpet 0x438/0x439, spiked balls 0x5c3/0x5c4, the table
     /// 0xb71, the snowball 0xbfe). Their write-back flags come with them: the geysers' `+0x189` and their two parts'
     /// `+0x188` (M l. 59127, 59174, 59181).
@@ -134,6 +154,14 @@ public enum BoxSprite {
         s.gravity = 0x151
         s.hp = 600
         switch t {
+        case trunkSegment:                                 // the trunk segment 713 (M l. 58967–58972; SW)
+            s.gravity = 0
+            s.hotRect = rect(3, 3, 0x1d, 0x15)
+            s.lightOverlay = false                         // `+0x88 = 0`
+        case trunkBottom:                                  // the trunk bottom 712 (M l. 58974–58980; SW)
+            s.gravity = 0x15e
+            s.hotRect = rect(3, 4, 0x1d, 0x18)
+            s.lightOverlay = false
         case 0x424...0x426:                                // teleporters (l. 58950–58962, 58983–58995, 59012–59024)
             s.gravity = 0
             s.oneWay = true
@@ -390,17 +418,18 @@ public enum BoxSprite {
     }
 
     /// Whether the type's `.HandleBoxSprite` runs (the arm and the common tail). The types whose arm is not built yet
-    /// return at once and stand still: the tree trunk 0x2c8 / 0x2c9 (// later:
-    /// SW), the geysers 0x5a0…0x5a9 and the pipes 0x5d2…0x5d5 (// later: Phase 5), the carpet 0x438 / 0x439, the spiked
+    /// return at once and stand still: the geysers 0x5a0…0x5a9 and the pipes 0x5d2…0x5d5 (// later: Phase 5), the carpet
+    /// 0x438 / 0x439, the spiked
     /// balls 0x5c3 / 0x5c4, the table 0xb71 and the snowball 0xbfe (// later: Phase 6). Every other Box runs: the built
     /// arms (W3 trampoline and bridges, S1 save point, C1 NPCs, BX1 boulders and rocks, stalactite, mine cart, crates,
     /// the 2907 timer's countdown, the 2941's death; BX2 the chest and the doors; BT the gate 0xb7c with the 2941's
-    /// move and clip, the switch blocks 0x4e2…0x4ff, the spouts 0x5aa…0x5ad) and the types with no arm
+    /// move and clip, the switch blocks 0x4e2…0x4ff, the spouts 0x5aa…0x5ad; SW the tree trunk 0x2c8 / 0x2c9's
+    /// lifetime) and the types with no arm
     /// (teleporters, signs, decorations, outcrops, mushrooms, furniture, the wheel, the crate range 0xc15…0xc1b), which
     /// go through the block chain's faces (M l. 61088–61151) to the tail.
     public static func handleBuilt(_ t: Int16) -> Bool {
         switch t {
-        case 0x2c8, 0x2c9, 0x5a0...0x5a9, 0x5d2...0x5d5, 0x438, 0x439, 0x5c3, 0x5c4, 0xb71, 0xbfe:
+        case 0x5a0...0x5a9, 0x5d2...0x5d5, 0x438, 0x439, 0x5c3, 0x5c4, 0xb71, 0xbfe:
             return false
         default:
             return true
@@ -420,6 +449,8 @@ public enum BoxSprite {
     ///   every frame (0 the empty pedestal, 1 the statue facing right, 2 facing left; save-continue §9.1);
     /// - 0x5b4…0x5bb (l. 60565–60591): face = the class cache (0x5b5 / 0x5b6 → 0x5b5, 0x5b8 / 0x5b9 → 0x5b8, the others
     ///   their own);
+    /// - the tree trunk 0x2c8 / 0x2c9 (M l. 60198–60216; SW): `+0xa6 − 1`; below 0x17 `+0xb8` = 0xb0001, below 0x15
+    ///   0xb0000, below 0xb 0xb0002 (the fade); below 1 `+0xe9 = 1` (directly, no `.KillBox`); then the tail;
     /// - the boulders and rocks (`LAB_1006dafc`, M l. 60222–60284; `boulder`); the stalactite with a record (M l.
     ///   60596–60620; `stalactiteArm`); the cart with a record (M l. 60871–60936; `cartArm`); the crates 0xc12…0xc14
     ///   (M l. 61078–61084): `.MTChangeSpriteLayer(−(2y + x))` (the list re-sort — a crate moved past the walk's place is
@@ -460,6 +491,14 @@ public enum BoxSprite {
             }
         case savePoint:
             w.active.update(id: id) { $0.face = FaceRef(pict: savePoint, index: Int(own?.p1 ?? 0), set: .encoded) }
+        case trunkBottom, trunkSegment:
+            w.active.update(id: id) { s in
+                s.counterA6 &-= 1
+                if s.counterA6 < 0x17 {
+                    s.mode = s.counterA6 < 0x15 ? (s.counterA6 < 0xb ? 0xb0002 : 0xb0000) : 0xb0001
+                }
+                if s.counterA6 < 1 { s.dead = true }
+            }
         case bridges:
             let cache: Int16 = t == 0x5b6 ? 0x5b5 : (t == 0x5b9 ? 0x5b8 : t)
             w.active.update(id: id) { $0.face = FaceRef(pict: cache, index: 0, set: .encoded) }
@@ -1242,8 +1281,7 @@ public enum BoxSprite {
     /// - an Effect (`PTR_PTR_100a0460`) of type 0x4b7 (M l. 61384–61391): the crates — HP − 10 on any frame, HP < 1 with
     ///   `+0xea` 0 → `.KillCrate`, `.KillPlayerShot(effect, 1, 0)` (an id ≥ 100: no 419 while its `+0xa6` is the Setup's
     ///   3, then `+0xa6 = −6`; pickups-boxes-2 §7);
-    /// - a Box (`PTR_PTR_100a0484`) or a Platform (`_DAT_100a0200`) — the Statue (`PTR_PTR_100a01f8`) // later: SW —
-    ///   unless (self 0x433 against a Platform whose `+0xb0 == 0x34`) or self's `+0x182` (M l. 61393–61467): the
+    /// - a Box (`PTR_PTR_100a0484`), a Platform (`_DAT_100a0200`) or a Statue (`PTR_PTR_100a01f8`, SW) — unless (self 0x433 against a Platform whose `+0xb0 == 0x34`) or self's `+0x182` (M l. 61393–61467): the
     ///   mutual `.PlatformBounce(mover, solid, self's rect centre, 0, self's `+0x34`, 0)` (self's centre and rect for
     ///   both calls, as written): a grounded (`+0xce`) self over an airborne other — or self a geyser part — makes self
     ///   the solid first (`PB(other, self)`, then `PB(self, other)` unless self is a geyser part); the mirror case;
@@ -1288,7 +1326,7 @@ public enum BoxSprite {
                 damage(10)
                 killShot(oID)
             }
-        } else if runs(o, .box) || runs(o, .platform) {
+        } else if runs(o, .statue) || runs(o, .box) || runs(o, .platform) {
             guard !(t == 0x433 && runs(o, .platform) && o.subtype == 0x34), !s.boxPairLatch else { return }
             let r = s.hotRect
             let centre = SpriteSlot.Point(x: h(r.left + h((r.right - r.left) >> 1)), y: h(r.top + h((r.bottom - r.top) >> 1)))

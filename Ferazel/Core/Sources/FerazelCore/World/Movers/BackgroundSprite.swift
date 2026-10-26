@@ -406,7 +406,8 @@ extension BackgroundSprite {
     ///   (`045c`), Button (`0ac4`), EnemyShot (`0488`), Effect (`0460`); its type none of 0x41f, 0x434, 0x771, 0x772,
     ///   0xb7c, 0x5c3, 0x5c4; `+0x130 ≥ 0` → (a player shot at a 105 / 106 cannon is steered — // later: SH, and
     ///   those cannons are refused at Setup) `.TurnIntoCannoned(other, bg)`, then bg `+0x154 = 6` (write-only).
-    ///   Statue and EnemyShot Handles do not exist yet (// later: SW, Phase 5); a Button runs `.button` (BT).
+    ///   The EnemyShot Handle does not exist yet (// later: Phase 5); a Button runs `.button` (BT), a Statue
+    ///   `.statue` (SW).
     ///
     /// Without a light table (the test-only form): `.TurnIntoCannoned`'s `.RemoveLight` goes to a scratch table.
     public static func hit(_ w: SpriteWorld, id: Int, other oID: Int) {
@@ -447,7 +448,7 @@ extension BackgroundSprite {
             // Handles: it is captured like any other, and its saved Handle (0) comes back at the launch.
             if !o.handleCleared {
                 switch o.handler {
-                case .background, .cannoned, .effect, .button: return
+                case .background, .statue, .cannoned, .effect, .button: return
                 default: break
                 }
             }

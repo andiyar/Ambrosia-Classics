@@ -154,8 +154,8 @@ public enum PlayerShotHits {
     /// 4. a Box (`PTR_PTR_100a0484`) of type 0x2c8 / 0x2c9 (a tree trunk): id 4 grows it (`trunkGrowth`), any other id
     ///    nothing;
     /// 5. the player or an Effect (`PTR_PTR_100a0460`) → nothing; a Bonus (`PTR_PTR_100a047c`) 0x517 / 0x51b with
-    ///    `+0xb0 ≠ 0` and id ≠ 0x50 → `.KillPlayerShot(s, 1, 1)`; a Statue (`PTR_PTR_100a01f8`, // later: SW — no
-    ///    sprite has the Statue's Handle yet) or a Box: no one-way top (`+0x185`) and no surface function (`+0x1e8`;
+    ///    `+0xb0 ≠ 0` and id ≠ 0x50 → `.KillPlayerShot(s, 1, 1)`; a Statue (`PTR_PTR_100a01f8`, SW — a platform the
+    ///    Statue spell froze keeps its one-way top) or a Box: no one-way top (`+0x185`) and no surface function (`+0x1e8`;
     ///    only the rope bridge, // later: Phase 6) → the 2941 test (type 0xb7d, `+0x116 < 1`, the shot's `+0xa4 ==
     ///    300`, `cmpwi r0,0x12c` raw `1005ab7c` → HP − 0x50, `+0xaa = 10`, `+0x116 = 10`,
     ///    `.STPlay3DSoundPitched(419, 1, 0x100, shot +0xa, 35000)`) then `.KillPlayerShot(s, 1, 1)`; with one →
@@ -200,11 +200,10 @@ public enum PlayerShotHits {
         // 5. (M l. 51031–51066) the player / Effect Handles → nothing; then by Handle:
         if runs(o, .bonus) {
             if (o.type == 0x517 || o.type == 0x51b) && s.type != PlayerShot.orb && o.pickupDelay != 0 { killShot(true, true) }
-        } else if runs(o, .box) {
-            // The Statue Handle `PTR_PTR_100a01f8` takes this arm too (M l. 51038) // later: SW (the Statue's Handle;
-            // no sprite runs it yet).
+        } else if runs(o, .statue) || runs(o, .box) {
+            // The Statue Handle `PTR_PTR_100a01f8` or the Box's (M l. 51038; SW the Statue half).
             if !o.oneWay {                                                  // `+0x1e8` 0 for every Box built
-                // The 2941 test, for a Box or a Statue // later: SW (its Statue half: the Statue's Handle).
+                // The 2941 test, for a Box or a Statue (M l. 51040–51047).
                 if o.type == 0xb7d && o.invulnerable < 1 && s.hp == 300 {
                     w.active.update(id: oID) { b in
                         b.hp &-= 0x50
@@ -232,16 +231,26 @@ public enum PlayerShotHits {
 
     /// The Tree Trunk's growth (`.HitPlayerShotSprite` M l. 51007–51030; raw `1005a984..1005aa58`; spells-detail §3.5):
     /// the trunk is walked up its `+0x1d4` links to the top segment; `MTNewSprite(0x2c9, top +0xc, top +0xa − 0x10, 2,
-    /// −1, .SetupBoxSprite)` linked as `top +0x1d4` with `+0xa6 = *_DAT_1009fd30 + 0x78` // later: SW (the segment;
-    /// `.SetupBoxSprite`'s 0x2c9 arm draws nothing, M l. 58967–58972); the old top's `+0xa6` raised to ≥ 0x23;
+    /// −1, .SetupBoxSprite)` (`BoxSprite.newTrunk`; the 0x2c9 arm draws nothing, M l. 58967–58972) linked as `top
+    /// +0x1d4` with `+0xa6 = *_DAT_1009fd30 + 0x78` (SW); the old top's `+0xa6` raised to ≥ 0x23;
     /// `MTNewSprite(2, segment +0xc − 6, segment +0xa − 9, 0xb, −1, .SetupEffectSprite)` (its package draws), `+0x46 =
     /// 8`, `.ChangeLightColor(+0x9a, 0x42)`; the shot `+0xe9 = 1` directly (the followers fly on); `.STPlay3DSound(302,
-    /// 1, 0x100, effect +0xe)` — the effect's centre word, still 0 (no Handle has run).
+    /// 1, 0x100, effect +0xe)` — the effect's centre word, still 0 (no Handle has run). With no free record for the
+    /// segment (Ruling 16) the link stores nil and the effect goes where the segment would have stood.
     static func trunkGrowth(_ w: SpriteWorld, shot id: Int, trunk: Int, effects: Int16, lights: inout LightTable) {
         var top = trunk
         while let next = w.active.record(id: top)?.siblings.first { top = next }
         guard let t = w.active.record(id: top) else { return }
-        let sx = PlayerShot.h16(t.x), sy = PlayerShot.h16(t.y - 0x10)          // the new segment's `+0xc` / `+0xa`
+        var sx = PlayerShot.h16(t.x), sy = PlayerShot.h16(t.y - 0x10)          // the new segment's `+0xc` / `+0xa`
+        let seg = BoxSprite.newTrunk(w, type: BoxSprite.trunkSegment, x: sx, y: sy)
+        w.active.update(id: top) { $0.siblings.first = seg }
+        if let seg {
+            w.active.update(id: seg) { $0.counterA6 = (w.parity ? 1 : 0) + 0x78 }
+            if let k = w.active.record(id: seg) {
+                sx = PlayerShot.h16(k.x)
+                sy = PlayerShot.h16(k.y)
+            }
+        }
         w.active.update(id: top) { if $0.counterA6 < 0x23 { $0.counterA6 = 0x23 } }
         let e = EffectSprite.spawn(w, type: 2, x: sx - 6, y: sy - 9, layer: 0xb, effects: effects, lights: &lights)
         if let e {

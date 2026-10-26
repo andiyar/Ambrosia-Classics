@@ -187,7 +187,7 @@ public enum PlayerShot {
     /// 8. the liquid rule (M l. 50789–50818): `+0x11c > 0`, id < 100, id ≠ 6 → `MTNewSprite(5, x − 8, y − 0xc, 0xb, −1,
     ///    .SetupEffectSprite)`, `.ChangeLightColor(effect +0x9a, 0)` (unguarded in the binary: dropped when no record is
     ///    free, Ruling 16), `+0xe9 = 1`; id 3 in water (`+0x128 == 0`) → `.CalcCenterPos` and the ice floe
-    ///    `MTNewSprite(0x57c, …)` // later: SW; power > 1 → the four followers flagged;
+    ///    `MTNewSprite(0x57c, …)` (`floe`); power > 1 → the four followers flagged;
     /// 9. the level-bottom rule: `hdr+0xb282 << 5 < +0xa` → `+0xe9 = 1`;
     /// 10. ids < 100: `+8 = +0xc = x256 >> 8`, `+6 = +0xa = y256 >> 8`; else `+6/+8 ← +0xa/+0xc`; the centre `+0x10`/`+0xe`
     ///     from the hot rect;
@@ -270,12 +270,13 @@ public enum PlayerShot {
             if s.type == 3 && s.waterKind == 0 {
                 // `.CalcCenterPos(s)` (its centre is recomputed at step 10 the same way), then the floe
                 // `MTNewSprite(0x57c, +0xc − 10, +0xe − 4, 2, −1, .SetupPlatformSprite)` with `+0xa6 = 0xb4`, `+0xb0 = 4`,
-                // `+0x13a = 4` (M l. 50797–50803). // later: SW (the ice floe)
+                // `+0x13a = 4` (M l. 50797–50803; SW).
                 w.active.update(id: id) { t in
                     let r = t.hotRect
                     t.centre.x = h16(t.x + r.left + h16((r.right - r.left) >> 1))
                     t.centre.y = h16(t.y + r.top + h16((r.bottom - r.top) >> 1))
                 }
+                if let t = w.active.record(id: id) { floe(w, x: h16(t.x) - 10, y: h16(t.centre.y) - 4) }
             }
             if 1 < s.power {
                 for f in followers(s).compactMap({ $0 }) { w.active.update(id: f) { $0.dead = true } }
@@ -541,6 +542,31 @@ public enum PlayerShot {
         return Int32(d.rounded(.towardZero))
     }
 
+    // MARK: - the Ice Wall's platforms (SW)
+
+    /// The water floe (M l. 50797–50803): `MTNewSprite(0x57c, x, y, 2, −1, .SetupPlatformSprite)` then `+0xa6 = 0xb4`,
+    /// `+0xb0 = 4`, `+0x13a = 4` (DoSetup's mode 4 picks the floe by `+0x16c = 0`, physics §8.9). Nothing stored with no
+    /// free record (Ruling 16).
+    static func floe(_ w: SpriteWorld, x: Int, y: Int) {
+        guard let f = PlatformSprite.newPlatform(w, type: 0x57c, x: x, y: y, layer: 2) else { return }
+        w.active.update(id: f) { p in
+            p.counterA6 = 0xb4
+            p.subtype = 4
+            p.sag = 4
+        }
+    }
+
+    /// The wall ledge (M l. 51279–51296): `MTNewSprite(0x57c, x, y, 2, −1, .SetupPlatformSprite)`, `+0x16c = variant`,
+    /// `+0xa6 = 0xb4`, `+0xb0 = 4` (no `+0x13a` store).
+    static func ledge(_ w: SpriteWorld, x: Int, y: Int, variant: Int32) {
+        guard let f = PlatformSprite.newPlatform(w, type: 0x57c, x: x, y: y, layer: 2) else { return }
+        w.active.update(id: f) { p in
+            p.classWord16c = variant
+            p.counterA6 = 0xb4
+            p.subtype = 4
+        }
+    }
+
     // MARK: - the tile callback
 
     /// `.HitPlayerShotTileSprite(s, pos, kind, layer) @ 1005b0bc` (M l. 51219–51392; raw `1005b0bc..1005b66c`;
@@ -548,13 +574,16 @@ public enum PlayerShot {
     /// take only the crunch layer (M l. 51257). The factor is 0xa0 for the seed 0x5a (bounce flag set), else 0 (M l.
     /// 51248–51251); vCentre is the hot rect's vertical centre offset (`sStack_50`). By layer:
     /// - FG (id ≠ 100, M l. 51259–51327): unless the orb, `.WallBounce(s, kind, &pos, vCentre, f, +0x34, 0, seed)`; on
-    ///   a contact: id 3 with the side test (M l. 51263–51297: kind 4…5 / 6…7 need vx 0) makes a wall ledge
-    ///   `MTNewSprite(0x57c, …)` // later: SW (`.SetupPlatformSprite` draws nothing, M l. 54497–54536); then, unless id
-    ///   4 grounded (`+0xce`), the contact rule (`contact`); id 4 grounded: the trunk (`trunkLanding`);
+    ///   a contact: id 3 with the side test (M l. 51263–51297: kind 2, or 6…7 with vx 0 → `MTNewSprite(0x57c, pos.h −
+    ///   0x17, +0xe, 2, −1, .SetupPlatformSprite)`, `+0x16c = 1`; else kind 0, or 4…5 with vx 0 → (pos.h + 0xf, +0xe),
+    ///   `+0x16c = 2`; both `+0xa6 = 0xb4`, `+0xb0 = 4` — `ledge`; pos.h is the point `.WallBounce` left, raw `1005b2b8`
+    ///   `lha r4,0xae(r1)`; the Setup draws nothing, M l. 54497–54536); then, unless id 4 grounded (`+0xce`), the
+    ///   contact rule (`contact`); id 4 grounded: the trunk (`trunkLanding`);
     /// - BG (id ≠ 100) kind < 100 (M l. 51330–51347): as FG without the ledge and trunk; 100…199 (M l. 51348–51372):
     ///   `.WallBounceBG(s, kind − 100, …)`, a contact with id 4 grounded makes a trunk bottom `MTNewSprite(0x2c8, +0x10
-    ///   − 8, +0xe − 6, 2, −1, .SetupBoxSprite)` with `+0xa6 = 0x78` // later: SW (no draws, no sound), then the contact
-    ///   rule; ≥ 200: a liquid (`.IsWaterTile`) with `+0x140` clear → `.HandleUnderWater(s, pos)` (M l. 51374–51378);
+    ///   − 8, +0xe − 6, 2, −1, .SetupBoxSprite)` with `+0xa6 = 0x78` (no parity, no effect, no sound; SW), then the
+    ///   contact rule; ≥ 200: a liquid (`.IsWaterTile`) with `+0x140` clear → `.HandleUnderWater(s, pos)` (M l.
+    ///   51374–51378);
     /// - crunch (M l. 51380–51386): `.CrunchTile(pos, (short)+0x158)` processed (≠ 0) and the id not 6 / 0x3c →
     ///   `.KillPlayerShot(s, 1, 1)`.
     /// The contact rule (M l. 51298–51311): the seed dies only when `|vy| < 0x200` after the bounce; every other id
@@ -590,7 +619,16 @@ public enum PlayerShot {
             guard t != 100, t != orb,
                   solver.wallBounce(id, kind: kind, tile: &pos, vCentre: vCentre, factor: factor, rect: r,
                                     bounce: seedShot) else { return }
-            // id 3: the wall ledge // later: SW.
+            // id 3: the wall ledge (M l. 51263–51297).
+            if let c = w.active.record(id: id), c.type == 3 {
+                let k = Int16(truncatingIfNeeded: kind)
+                let stopped = c.vx == 0
+                let right = k == 2 || ((6...7).contains(k) && stopped)            // `bVar3`
+                let left = k == 0 || ((4...5).contains(k) && stopped)             // `bVar1`
+                if right || left {
+                    ledge(w, x: right ? h16(pos.x - 0x17) : h16(pos.x + 0xf), y: h16(c.centre.y), variant: right ? 1 : 2)
+                }
+            }
             guard let c = w.active.record(id: id) else { return }
             if c.groundKind == 0 || c.type != 4 {
                 contact()
@@ -607,7 +645,12 @@ public enum PlayerShot {
             } else if k < 200 {
                 guard t != orb, solver.wallBounceBG(id, kind: kind - 100, tile: &pos, vCentre: vCentre, factor: factor,
                                                     rect: r, bounce: seedShot) else { return }
-                // id 4 grounded: the trunk bottom // later: SW.
+                // id 4 grounded: the trunk bottom, `+0xa6 = 0x78` (M l. 51352–51358).
+                if let c = w.active.record(id: id), c.groundKind != 0, c.type == 4,
+                   let t = BoxSprite.newTrunk(w, type: BoxSprite.trunkBottom, x: h16(c.centre.x - 8),
+                                              y: h16(c.centre.y - 6)) {
+                    w.active.update(id: t) { $0.counterA6 = 0x78 }
+                }
                 contact()
             } else if UnderWater.isWaterTile(kind) && !s.underwaterDone {
                 UnderWater.handle(world: w, id: id, pos: pos)
@@ -620,13 +663,21 @@ public enum PlayerShot {
     }
 
     /// The Tree Trunk landing on an FG floor (M l. 51312–51327; raw `1005b2c0..1005b3dc`; spells-detail §3.5): the trunk
-    /// bottom `MTNewSprite(0x2c8, +0x10 − 8, +0xe − 6, 2, −1, .SetupBoxSprite)` with `+0xa6 = *_DAT_1009fd30 + 0x78`
-    /// // later: SW (the trunk; its Setup draws nothing, M l. 58975–58980); `MTNewSprite(2, trunk +0xc − 6, trunk +0xa
+    /// bottom `MTNewSprite(0x2c8, +0x10 − 8, +0xe − 6, 2, −1, .SetupBoxSprite)` (`BoxSprite.newTrunk`; its Setup draws
+    /// nothing, M l. 58974–58980) with `+0xa6 = *_DAT_1009fd30 + 0x78`; `MTNewSprite(2, trunk +0xc − 6, trunk +0xa
     /// − 9, 0xb, −1, .SetupEffectSprite)` (its package draws), `+0x46 = 8`, `.ChangeLightColor(+0x9a, 0x42)`; the shot
     /// `+0xe9 = 1` directly (the followers fly on, spells-detail-2 §5); `.STPlay3DSound(302, 1, 0x100, shot +0xe)`.
+    /// With no free record for the trunk (Ruling 16) the effect still goes where its `+0xc`/`+0xa` would have been.
     static func trunkLanding(_ w: SpriteWorld, shot id: Int, effects: Int16, lights: inout LightTable) {
         guard let c = w.active.record(id: id) else { return }
-        let bx = h16(c.centre.x - 8), by = h16(c.centre.y - 6)                 // the trunk's `+0xc` / `+0xa`
+        var bx = h16(c.centre.x - 8), by = h16(c.centre.y - 6)                 // the trunk's `+0xc` / `+0xa`
+        if let t = BoxSprite.newTrunk(w, type: BoxSprite.trunkBottom, x: bx, y: by) {
+            w.active.update(id: t) { $0.counterA6 = (w.parity ? 1 : 0) + 0x78 }
+            if let k = w.active.record(id: t) {
+                bx = h16(k.x)
+                by = h16(k.y)
+            }
+        }
         if let e = EffectSprite.spawn(w, type: 2, x: bx - 6, y: by - 9, layer: 0xb, effects: effects, lights: &lights) {
             w.active.update(id: e) { $0.phase = 8 }
             if let light = w.active.record(id: e)?.light { lights.changeColor(light, 0x42) }

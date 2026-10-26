@@ -1001,11 +1001,19 @@ public enum PlatformSprite {
     // MARK: - Hit callbacks
 
     /// `.HitPlatformSprite(self, other) @ 10064d94` (decompile l. 55790–55838; platforms-ropes-radial §2.6): a player
-    /// shot of id 1 (Statue) // later: Phase 4 (spells; `.TurnIntoStatue`). Another Platform-handled sprite: unless both
+    /// shot (`+0x4c == PTR_PTR_100a04e8`) of id 1 (`+4 == 1` only — a power-0 follower too, no `+0xa6` or `+0xe9`
+    /// test; M l. 55798–55803; SW) → the shot `+0xe9 = 1`, self `+0x190 = 0` (no reader: not kept), `.TurnIntoStatue
+    /// (self)` (`StatueSprite`); any other shot nothing. Another Platform-handled sprite: unless both
     /// are rafts/floes (modes 3/4) or both catapult parts (0x582…0x585), `.PlatformBounce(self, other, own rect centre,
     /// 0, own rect, 0)` — the platform is the mover; a springboard bounces with `+0x154` as its vy (swapped in and out).
     public static func hit(_ w: SpriteWorld, id: Int, other: Int) {
         guard let s = w.active.record(id: id), let o = w.active.record(id: other) else { return }
+        if BackgroundSprite.runs(o, .playerShot) {
+            guard o.type == 1 else { return }
+            w.active.update(id: other) { $0.dead = true }
+            StatueSprite.turnIntoStatue(w, id: id)
+            return
+        }
         guard o.handler == .platform, !o.handleCleared else { return }
         let a = s.subtype, b = o.subtype
         let bothFloat = (a == 3 || a == 4) && (b == 3 || b == 4)

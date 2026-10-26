@@ -525,6 +525,9 @@ public final class FerazelSession {
         case .background:
             // `.HandleBackgroundSprite` (W2a: radial bars / balls, the re-face tail; W2b: cannons, springs, passages).
             BackgroundSprite.handle(world: world, id: id) { Self.frameRect($0, resources: res).right }
+        case .statue:
+            // `.HandleStatueSprite @ 100664a8` (SW, `StatueSprite.handle`): its `.AddLight` / `.RemoveLight` on `lightTable`.
+            StatueSprite.handle(world: world, id: id, lights: &self.lightTable)
         case .cannoned:
             // `.HandleCannonedSprite` (W2b).
             BackgroundSprite.handleCannoned(world: world, id: id, keys: actions, lights: &self.lightTable)
@@ -1000,7 +1003,8 @@ public final class FerazelSession {
     /// A sprite's hit callback `+0x5c` (`SpriteWorld` calls it only when `hasHit`): `.HitPlatformSprite` (W1); the
     /// Effect class's `.HitEffectSprite` is empty; `.HitBackgroundSprite` (W2b: cannons, springs, wall tunnels);
     /// `.HitBonusSprite` (BN; its container arm SH); `.HitPlayerShotSprite` (SH); the Box class's `.HitBoxSprite` (SH:
-    /// the stalactite's shot case; BX1 the rest); `.HitButtonSprite` (BT). // later: Phase 5 (enemies, enemy shots). The session's form:
+    /// the stalactite's shot case; BX1 the rest; SW: a Statue's hit is the Box class's, `.TurnIntoStatue`);
+    /// `.HitButtonSprite` (BT). // later: Phase 5 (enemies, enemy shots). The session's form:
     /// `hitCallback` on `lightTable`.
     private func hit(_ w: SpriteWorld, _ a: Int, _ b: Int) {
         let res = resources
@@ -1032,7 +1036,7 @@ public final class FerazelSession {
         case .playerShot:                                                               // `.HitPlayerShotSprite` (SH)
             PlayerShotHits.hit(w, shot: a, other: b, effects: effects, lights: &lights, faceWidth: faceWidth,
                                faceBounds: faceBounds)
-        case .box:                                                                      // `.HitBoxSprite` (SH, BX1)
+        case .box, .statue:                     // `.HitBoxSprite` (SH, BX1; SW: the Statue's hit `PTR_PTR_100a01f4`)
             BoxSprite.hit(w, id: a, other: b, lights: &lights, effects: effects, faceWidth: faceWidth,
                           faceBounds: faceBounds)
         case .button: ButtonSprite.hit(w, id: a, other: b)                              // `.HitButtonSprite` (BT)

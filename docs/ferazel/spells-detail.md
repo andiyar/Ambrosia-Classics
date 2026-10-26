@@ -559,3 +559,22 @@ stalactite case of `BoxSprite.hit` (SH) [HIGH but the two [LOW] heap/low-memory 
    built in P5.
 Transcribed in `FerazelCore.Player.selectGravity`, `PlayerStates.glider` / `dropGlider` and `HandleKeys.gliderSteering`
 (GL) [HIGH].
+
+## ⚑ Implementer note (SW, loop run 28), 2026-10-26; follow the binary
+§3.4–§3.5 re-read against the dump and the raw for SW (M l. 50789–50818, 51005–51030, 51259–51372, 54501–54537,
+55798–55803, 38244–38272, 56521–56555, 49506–49513, 60198–60216; raw `1005b1c0..1005b3a4`):
+1. **The ice platforms sort on layer −1, not 2.** The floe and the ledges are made with `MTNewSprite(0x57c, …, 2, …)`,
+   but `.SetupPlatformSprite` stores `+0x80 = −1` (M l. 54514) before the insert, so the 2 is never used.
+2. **The ledge's x is the cell point after `.WallBounce`.** The callback spills its point to `0xac(r1)`, passes that
+   word to `.WallBounce` by address (raw `1005b1d0`) and reads the ledge's h back from it (`lha r4,0xae(r1)`, raw
+   `1005b2b8` / `1005b2e8`): pos.h − 0x17 (kind 2, or 6/7 stopped) or pos.h + 0xf (kind 0, or 4/5 stopped), at the
+   shot's centre `+0xe` as it stands then. Ledges get no `+0x13a` store (only the floe's 4, which DoSetup overwrites).
+3. **The BG-kind trunk** (kinds 100…199, M l. 51352–51358): `+0xa6 = 0x78` with no parity, no effect, no sound.
+4. **The thaw.** `.HandleStatueSprite` has no `+0xe9` test and no `.StandardSpriteHandles`; while petrified the sprite's
+   hit is `.HitBoxSprite` (`PTR_PTR_100a01f4`) and its tile callback `.HitBoxTileSprite` (`PTR_PTR_100a01f0`, never
+   called: the Handle does not separate). `.HitPlayerSprite`'s Statue arm (M l. 49506–49513) is a bare
+   `.PlatformBounce(player, statue, …)` and return — no bump/land latches, no ground effects. Nothing clears a
+   Statue's own `+0x182` (only `.HandleBoxSprite` does), so after one pair bounce with itself as `.HitBoxSprite`'s
+   self it skips that arm until it thaws [as written].
+Transcribed in `FerazelCore.StatueSprite`, `PlayerShot.floe` / `ledge` / `trunkLanding`, `PlayerShotHits.trunkGrowth`,
+`BoxSprite.newTrunk` and the trunk arms of `BoxSprite.setup` / `handle` (SW).
