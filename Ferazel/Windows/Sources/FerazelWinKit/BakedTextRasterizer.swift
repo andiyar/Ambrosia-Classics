@@ -40,13 +40,26 @@ public final class BakedTextRasterizer: TextRasterizer {
         for f in fonts { faces[Key(font: f.font, size: f.size, face: f.face)] = f }
     }
 
-    /// Loads every `*.fzfont` in `fontsDirectory`; throws if the directory is missing or holds none.
+    /// Loads every `*.fzfont` in `fontsDirectory`; throws if the directory is missing or holds none. A file whose
+    /// stored face (font, size, face bits) is not the one its name says is not loaded: the face its name promises
+    /// stays unbaked, with one log line (at load; asking for it later logs nothing more).
     public convenience init(fontsDirectory: URL, log: @escaping (String) -> Void = { _ in }) throws {
         let names = try FileManager.default.contentsOfDirectory(atPath: fontsDirectory.path)
             .filter { $0.hasSuffix("." + Self.fileExtension) }.sorted()
         guard !names.isEmpty else { throw LoadError.noFonts(fontsDirectory.path) }
-        self.init(fonts: try names.map { try FZFont(data: Data(contentsOf: fontsDirectory.appendingPathComponent($0))) },
-                  log: log)
+        var fonts: [FZFont] = [], mismatched: [Key] = []
+        for name in names {
+            let f = try FZFont(data: Data(contentsOf: fontsDirectory.appendingPathComponent(name)))
+            if FZFont.fileName(font: f.font, size: f.size, face: f.face) == name {
+                fonts.append(f)
+                continue
+            }
+            log("BakedTextRasterizer: \(name) holds font \(f.font) size \(f.size) face \(f.face); not loaded")
+            let parts = name.dropLast(Self.fileExtension.count + 1).split(separator: "-").compactMap { Int16($0) }
+            if parts.count == 3 { mismatched.append(Key(font: parts[0], size: parts[1], face: parts[2])) }
+        }
+        self.init(fonts: fonts, log: log)
+        for key in mismatched where faces[key] == nil { reported.insert(key) }
     }
 
     /// The baked faces (font, size, face), sorted.

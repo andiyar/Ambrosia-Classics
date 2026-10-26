@@ -28,6 +28,18 @@ import XCTest
     /// only the conversation measures, Times 18 `CharWidth` / `GetFontInfo`); CoreText gives the same (test 10).
     static let bakedMainMenuFNV: UInt64 = 0xae2b_1ee0_8c08_9b2a
     static let bakedLevelOneFNV: UInt64 = 0xc99c_e8e8_5b4b_d8f7
+    /// The first text the driver draws (WF2 review fix, self-measured): N still held after level 1's first frame, the
+    /// level start's status bar (score, coins, "A Scent Of Peril") lands in the shared surface `firstTextTick` ticks
+    /// later — FNV of the surface's 640×480 indices (`FerazelDriver.surface.frame.pixels`); that tick presents, but
+    /// faded to black. The stub's indices there: `stubFirstTextSurfaceFNV`.
+    static let firstTextTick = 46
+    static let bakedFirstTextSurfaceFNV: UInt64 = 0xf1a8_b25e_2094_a097
+    static let stubFirstTextSurfaceFNV: UInt64 = 0xa3fd_ef5c_bc38_8e2b
+    /// The first PRESENTED frame with text (N held: the chapter card's key wait passes at once, `StageScreens.swift`
+    /// `ChapterScreenRun`): `firstTextPresentTick` ticks after level 1's first frame, FNV of the RGBA — WF3's
+    /// best reference. Without a key the card waits up to 1,200 ticks and presents nothing from +252 on.
+    static let firstTextPresentTick = 414
+    static let bakedFirstTextPresentFNV: UInt64 = 0x9084_83fb_6036_23e8
 
     static func baked() throws -> BakedTextRasterizer { try BakedTextRasterizer(fontsDirectory: fontsDirectory) }
 
@@ -181,19 +193,40 @@ import XCTest
         return ops
     }
 
+    /// The driver's frames for one rasterizer.
+    struct DriverFrames {
+        var bootTicks = 0, menu: UInt64 = 0, newGameTicks = 0, level: UInt64 = 0
+        /// The surface at `firstTextTick`, the presented RGBA at `firstTextPresentTick` (N held throughout).
+        var firstTextSurface: UInt64 = 0, firstTextPresent: UInt64 = 0
+    }
+
     /// Boot → main menu, then New Game (N held) → level 1's first presented frame, through the shared driver (WF1's
-    /// scenario): (boot ticks, main-menu FNV, New Game ticks, level-1 FNV).
-    static func driverFrames(_ text: any TextRasterizer) throws -> (Int, UInt64, Int, UInt64) {
+    /// scenario), then N still held to `firstTextPresentTick`.
+    static func driverFrames(_ text: any TextRasterizer) throws -> DriverFrames {
+        var out = DriverFrames()
         let rig = try Rig(mute: true, mixer: .headless, text: text)
         try rig.toMainMenu()
-        let boot = rig.ticks
-        let menu = fnv1a64(try XCTUnwrap(rig.lastRGBA))
-        try rig.drive(input: { _ in FrontInput(keys: KeyState(pressed: [MainMenu.newGameKey])) }) {
-            $0.flow.levelRun != nil && $0.lastOutput.present
+        out.bootTicks = rig.ticks
+        out.menu = fnv1a64(try XCTUnwrap(rig.lastRGBA))
+        let n = FrontInput(keys: KeyState(pressed: [MainMenu.newGameKey]))
+        try rig.drive(input: { _ in n }) { $0.flow.levelRun != nil && $0.lastOutput.present }
+        XCTAssertEqual(rig.flow.levelRun?.levelNumber, 1)
+        out.newGameTicks = rig.ticks - out.bootTicks
+        out.level = fnv1a64(try XCTUnwrap(rig.lastRGBA))
+        for k in 1...firstTextPresentTick {
+            try rig.step(n)
+            if k == firstTextTick {
+                out.firstTextSurface = fnv1a64(rig.driver.surface.frame.pixels)
+                XCTAssertTrue(rig.lastOutput.present)
+                XCTAssertEqual(rig.driver.presentRGBA().enumerated().filter { $0.offset % 4 != 3 && $0.element != 0 }
+                    .count, 0, "faded to black")
+            }
         }
+        XCTAssertTrue(rig.lastOutput.present)
+        out.firstTextPresent = fnv1a64(try XCTUnwrap(rig.lastRGBA))
         XCTAssertEqual(rig.flow.levelRun?.levelNumber, 1)
         XCTAssertTrue(rig.counters.logs.isEmpty, "\(rig.counters.logs)")
-        return (boot, menu, rig.ticks - boot, fnv1a64(try XCTUnwrap(rig.lastRGBA)))
+        return out
     }
 
     // MARK: - 1 … 6: against CoreText (Mac)
@@ -243,7 +276,9 @@ import XCTest
         XCTAssertEqual(misses, [])
     }
 
-    /// (3) Score / coin strings 0…99,999 in Times 12 bold: the edges and 1,000 seeded samples.
+    /// (3) Score / coin strings in Times 12 bold over the whole 32-bit range (G's score is an `Int32`, coins an
+    /// `Int16`): 0…99,999 (edges + 1,000 seeded), ±1 around every power of ten of either sign, `Int32.min` / `.max`,
+    /// and 1,000 seeded values across the full range.
     func testScoreAndCoinStringsMatchCoreText() throws {
         let ct = CoreTextRasterizer(), baked = try Self.baked()
         var values = [0, 1, 9, 10, 11, 19, 99, 100, 101, 111, 999, 1000, 1111, 9999, 10000, 11111, 99999]
@@ -252,7 +287,19 @@ import XCTest
             seed = seed &* 6364136223846793005 &+ 1442695040888963407
             values.append(Int((seed >> 33) % 100_000))
         }
-        XCTAssertEqual(values.count, 1017)
+        var p = 1
+        for _ in 0...9 {
+            for v in [p - 1, p, p + 1] { values += [v, -v] }
+            p *= 10
+        }
+        values += [Int(Int32.min), Int(Int32.min) + 1, Int(Int32.max), Int(Int32.max) - 1,
+                   Int(Int16.min), Int(Int16.max)]
+        for _ in 0..<1000 {
+            seed = seed &* 6364136223846793005 &+ 1442695040888963407
+            values.append(Int(Int32(truncatingIfNeeded: seed >> 32)))
+        }
+        XCTAssertEqual(values.count, 1017 + 60 + 6 + 1000)
+        XCTAssertTrue(values.contains { $0 < -1_000_000 })
         let misses = values.filter {
             !Self.same(ct.rasterize(String($0), font: 20, size: 12, face: 1),
                        baked.rasterize(String($0), font: 20, size: 12, face: 1))
@@ -383,6 +430,23 @@ import XCTest
         XCTAssertGreaterThan(baked.rasterize("1", font: 20, size: 12, face: 1).coverage.filter { $0 == 255 }.count, 0)
         XCTAssertTrue(Self.same(baked.rasterize("", font: 20, size: 12, face: 1), (0, 0, 0, 0, [])))
         XCTAssertEqual(logs.count, 2)
+        // A file whose stored face is not the one its name says: not loaded, that face unbaked, one log line in all.
+        let wrong = FileManager.default.temporaryDirectory.appendingPathComponent("fzfont-wrong-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: wrong, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: wrong) }
+        for name in ["20-12-1.fzfont", "3-9-0.fzfont"] {
+            try FileManager.default.copyItem(at: Self.fontsDirectory.appendingPathComponent(name),
+                                             to: wrong.appendingPathComponent(name == "3-9-0.fzfont" ? "3-8-1.fzfont" : name))
+        }
+        var wrongLogs: [String] = []
+        let mixed = try BakedTextRasterizer(fontsDirectory: wrong, log: { wrongLogs.append($0) })
+        XCTAssertEqual(mixed.bakedFaces, [[20, 12, 1]])
+        XCTAssertEqual(wrongLogs, ["BakedTextRasterizer: 3-8-1.fzfont holds font 3 size 9 face 0; not loaded"])
+        for (size, face): (Int16, Int16) in [(8, 1), (9, 0), (8, 1)] {
+            XCTAssertTrue(Self.same(mixed.rasterize("12", font: 3, size: size, face: face), (0, 0, 0, 0, [])))
+            XCTAssertEqual(mixed.charWidth(0x31, font: 3, size: size, face: face), 0)
+        }
+        XCTAssertEqual(wrongLogs.count, 2, "\(wrongLogs)")   // + Geneva 9 asked for once (not in this folder)
     }
 
     /// (9) The faces the game asks for, recorded through the shared driver (boot → main menu → New Game → level 1's
@@ -393,11 +457,13 @@ import XCTest
         var logs: [String] = []
         let baked = try BakedTextRasterizer(fontsDirectory: Self.fontsDirectory, log: { logs.append($0) })
         let recorder = RecordingRasterizer(baked)
-        let (boot, menu, newGame, level) = try Self.driverFrames(recorder)
-        XCTAssertEqual(boot, FerazelDriverTests.bootTicks)
-        XCTAssertEqual(newGame, FerazelDriverTests.newGameTicks)
-        XCTAssertEqual(hex(menu), hex(Self.bakedMainMenuFNV), "baked main menu FNV")
-        XCTAssertEqual(hex(level), hex(Self.bakedLevelOneFNV), "baked level 1 first frame FNV")
+        let d = try Self.driverFrames(recorder)
+        XCTAssertEqual(d.bootTicks, FerazelDriverTests.bootTicks)
+        XCTAssertEqual(d.newGameTicks, FerazelDriverTests.newGameTicks)
+        XCTAssertEqual(hex(d.menu), hex(Self.bakedMainMenuFNV), "baked main menu FNV")
+        XCTAssertEqual(hex(d.level), hex(Self.bakedLevelOneFNV), "baked level 1 first frame FNV")
+        XCTAssertEqual(hex(d.firstTextSurface), hex(Self.bakedFirstTextSurfaceFNV), "baked first-text surface FNV")
+        XCTAssertEqual(hex(d.firstTextPresent), hex(Self.bakedFirstTextPresentFNV), "baked first presented text FNV")
         // The status bar with item counts > 1 (the selected slot's Geneva 9, every slot's Geneva bold 8).
         let (frame, _) = try Self.levelOne(recorder)
         var inventory = StatusBarState.newGameInventory
@@ -424,9 +490,19 @@ import XCTest
         XCTAssertEqual(hex(b), hex(c), "level-1 golden route: baked ≠ CoreText")
         XCTAssertNotEqual(hex(b), hex(try Self.goldenRoute(StubGlyphRasterizer()).0), "the route draws text")
         XCTAssertEqual(hex(try Self.signRoute(baked)), hex(try Self.signRoute(ct)), "sign route: baked ≠ CoreText")
-        let (_, menu, _, level) = try Self.driverFrames(ct)
-        XCTAssertEqual(hex(menu), hex(Self.bakedMainMenuFNV), "main menu: CoreText ≠ baked pin")
-        XCTAssertEqual(hex(level), hex(Self.bakedLevelOneFNV), "level 1 first frame: CoreText ≠ baked pin")
+        let d = try Self.driverFrames(ct)
+        XCTAssertEqual(hex(d.menu), hex(Self.bakedMainMenuFNV), "main menu: CoreText ≠ baked pin")
+        XCTAssertEqual(hex(d.level), hex(Self.bakedLevelOneFNV), "level 1 first frame: CoreText ≠ baked pin")
+        XCTAssertEqual(hex(d.firstTextSurface), hex(Self.bakedFirstTextSurfaceFNV), "first text: CoreText ≠ baked pin")
+        XCTAssertEqual(hex(d.firstTextPresent), hex(Self.bakedFirstTextPresentFNV),
+                       "first presented text: CoreText ≠ baked pin")
+        // The stub draws other pixels there: these frames do carry text.
+        let stub = try Self.driverFrames(StubGlyphRasterizer())
+        XCTAssertEqual(hex(stub.firstTextSurface), hex(Self.stubFirstTextSurfaceFNV))
+        XCTAssertNotEqual(hex(stub.firstTextSurface), hex(Self.bakedFirstTextSurfaceFNV))
+        XCTAssertNotEqual(hex(stub.firstTextPresent), hex(Self.bakedFirstTextPresentFNV))
+        XCTAssertEqual([hex(stub.menu), hex(stub.level)],
+                       [hex(FerazelDriverTests.mainMenuFNV), hex(FerazelDriverTests.levelOneFNV)])
     }
     #endif
 }
