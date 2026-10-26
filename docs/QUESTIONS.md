@@ -48,6 +48,10 @@ mute switch the launch uses — e.g. a launch argument or environment variable t
 output (Mac); for the Windows build in CrossOver use a no-sound audio driver through the HECTOR_SDL_* passthrough
 (CrossOver strips SDL_*). No launch without that switch. Keep launches few and short. The attended monitoring session
 warns Ben in its hourly note before a phase-end run that will launch.
+Night rule — Ben, 2026-10-26 22:10, going to sleep: "don't want it to wake anyone up". NO launches of any kind, muted
+or not, between 21:00 and 09:00 Mac local time (check `date` right before any launch). A run that reaches a launch step
+in those hours skips it, stages only, and writes "boot check owed (night rule)" in its LOOP-LOG line and the gate card;
+the first daytime run does it, muted.
 
 ### Q11 — 2026-10-26 — Phase 4 gate: do the spells, items and levels 1–4 feel like Ferazel's?
 Context: Phase 4 "Spells + items" is finished on the machine side (loop run 30): all 490 core tests pass, the original

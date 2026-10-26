@@ -2,7 +2,8 @@ STATUS: CONTINUE
 
 > **⛔ Ben, 2026-10-26 (QUESTIONS Q12, amended): launching a build is allowed ONLY MUTED — no sound at all. Before any
 > boot check (G9) or CrossOver run, build and headlessly test a mute switch (launch argument / env var; HECTOR_SDL_* for
-> CrossOver) and use it on every launch. No muted switch → no launch. Keep launches few and short.**
+> CrossOver) and use it on every launch. No muted switch → no launch. Keep launches few and short. **NIGHT RULE: no launches at all, muted or not, between
+> 21:00 and 09:00 Mac local time (`date` first); skip the step, stage only, note "boot check owed (night rule)".**
 
 # NEXT — the chip for the next unattended loop run (rewritten by every run at CLOSE)
 
