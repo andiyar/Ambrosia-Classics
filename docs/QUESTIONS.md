@@ -42,6 +42,12 @@ Blocks: nothing. Gate cards say "not launched by the loop; Ben's first launch is
 Answer: (a) — Ben, 2026-10-26. Effective immediately for every run, including the Windows runs. Record in DECISIONS
 superseding the launch part of D34 (G9); remove app launches from NEXT.md and every plan's gates; staging (copying the
 build to ~/Desktop or out/) stays allowed. Headless tests that make no sound and open no window are fine.
+Amended — Ben, 2026-10-26, a few minutes later: "Muted launches is fine to test." So: launching a build IS allowed again
+for boot checks, but ONLY with the game's sound fully off. Before any launch, the loop adds (and tests headlessly) a
+mute switch the launch uses — e.g. a launch argument or environment variable that stops the app opening any audio
+output (Mac); for the Windows build in CrossOver use a no-sound audio driver through the HECTOR_SDL_* passthrough
+(CrossOver strips SDL_*). No launch without that switch. Keep launches few and short. The attended monitoring session
+warns Ben in its hourly note before a phase-end run that will launch.
 
 ### Q11 — 2026-10-26 — Phase 4 gate: do the spells, items and levels 1–4 feel like Ferazel's?
 Context: Phase 4 "Spells + items" is finished on the machine side (loop run 30): all 490 core tests pass, the original
