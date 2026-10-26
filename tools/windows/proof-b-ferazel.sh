@@ -27,7 +27,8 @@ mode=all class=""
 case "${1:-}" in
     "") ;;
     --check-guard) mode=guard ;;
-    --class) mode=class; class="${2:-}"; [[ -n "$class" ]] || { print -u2 "usage: $0 [--check-guard | --class NAME]"; exit 64; } ;;
+    --class) mode=class; class="${2:-}"
+        [[ "$class" =~ '^[A-Za-z0-9_]+\.[A-Za-z0-9_]+$' ]] || { print -u2 "proof-b-ferazel: --class wants Module.Class (e.g. FerazelCoreTests.FerazelDataTests)"; exit 64; } ;;
     *) print -u2 "usage: $0 [--check-guard | --class NAME]"; exit 64 ;;
 esac
 
@@ -68,7 +69,12 @@ exe="$work/build/Core/$WIN_TRIPLE/debug/FerazelCorePackageTests.exe"
 export FERAZEL_DATA="$(win_path "$data")"
 export WIN_RUN_TIMEOUT=3600
 logs="$work/logs"; rm -rf "$logs"; mkdir -p "$logs"
-"$here/run-in-crossover.sh" "$exe" --list-tests > "$logs/list.txt" 2>&1 || true
+set +e; "$here/run-in-crossover.sh" "$exe" --list-tests > "$logs/list.txt" 2>&1; code=$?; set -e
+if (( code == 124 )); then
+    print "proof-b: timed out after ${WIN_RUN_TIMEOUT} s (watchdog) listing the tests — no verdict"
+    print "logs: $logs"
+    exit 124
+fi
 tests=(${(f)"$(tr -d '\r' < "$logs/list.txt" | grep -E '^[A-Za-z0-9_]+\.[A-Za-z0-9_]+/[A-Za-z0-9_]+$' || true)"})
 if (( ${#tests} == 0 )); then
     print -u2 "proof-b-ferazel: --list-tests yielded 0 tests (build or CrossOver problem?) — see $logs/list.txt"

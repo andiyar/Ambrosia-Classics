@@ -616,7 +616,7 @@ public enum FerazelCensus {
 /// `replacingOccurrences(of:with:)` traps on non-ASCII strings past a few dozen UTF-8 bytes (D19.5). Matching is on
 /// Unicode scalars, left to right, non-overlapping — so "\r" is found inside a "\r\n" grapheme, as Foundation finds it.
 extension String {
-    fileprivate func replacingEvery(_ target: String, with replacement: String) -> String {
+    func replacingEvery(_ target: String, with replacement: String) -> String {
         let needle = Array(target.unicodeScalars)
         guard !needle.isEmpty else { return self }
         let hay = Array(unicodeScalars)

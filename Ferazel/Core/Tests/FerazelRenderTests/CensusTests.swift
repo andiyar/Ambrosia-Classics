@@ -114,6 +114,17 @@ final class CensusTests: XCTestCase {
         XCTAssertEqual(FerazelCensus.Arguments(parsing: ["a", "--render", "b"]),
                        FerazelCensus.Arguments(dataDirectory: "a", renderDirectory: "b"))
 
+        // The census's pure-Swift replace (Windows-safe, D19.5) matches Foundation's on the Mac, edge cases included.
+        #if canImport(Darwin)
+        let long = String(repeating: "Ferazel’s Wand — é|ü\r\n", count: 8)   // non-ASCII, > 64 UTF-8 bytes
+        for (text, target, replacement) in [("", "|", "\\|"), ("abc", "", "x"), ("aaa", "aa", "b"), ("a\r\nb", "\r", " "),
+                                            ("a\r\nb", "\n", " "), ("x|y||z", "|", "\\|"), ("plain", "|", "\\|"),
+                                            (long, "|", "\\|"), (long, "\r", " "), (long, "é", "…"), ("ab", "abc", "x")] {
+            XCTAssertEqual(text.replacingEvery(target, with: replacement),
+                           text.replacingOccurrences(of: target, with: replacement), "replace \(target) in \(text)")
+        }
+        #endif
+
         // The binary: bad arguments → 2.
         let binary = try censusBinary()
         XCTAssertEqual(try runCensus(binary, []).status, 2)

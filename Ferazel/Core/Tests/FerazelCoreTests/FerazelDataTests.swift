@@ -54,9 +54,12 @@ final class FerazelDataTests: XCTestCase {
         // Everything except Sounds, linked from the committed folder.
         for name in ["Ferazel's Wand.rsrc", "Ferazel's Wand World Data.rsrc", "Ferazel's Wand Backgrounds.rsrc",
                      "Ferazel's Wand Sprites.rsrc", "Ferazel's Wand Titles.rsrc", "Ferazel's Wand Music"] {
-            #if os(Windows)   // symbolic links need a privilege on Windows: hard link, else copy (a folder is copied)
+            #if os(Windows)   // symbolic links need a privilege on Windows: hard link, else copy; the music folder
+                              // is only an empty folder (open() names the missing Sounds file before it looks inside)
             do { try fm.linkItem(at: real.appendingPathComponent(name), to: temp.appendingPathComponent(name)) }
-            catch { try fm.copyItem(at: real.appendingPathComponent(name), to: temp.appendingPathComponent(name)) }
+            catch where name == FerazelData.musicFolder {
+                try fm.createDirectory(at: temp.appendingPathComponent(name), withIntermediateDirectories: true)
+            } catch { try fm.copyItem(at: real.appendingPathComponent(name), to: temp.appendingPathComponent(name)) }
             #else
             try fm.createSymbolicLink(at: temp.appendingPathComponent(name),
                                       withDestinationURL: real.appendingPathComponent(name))
