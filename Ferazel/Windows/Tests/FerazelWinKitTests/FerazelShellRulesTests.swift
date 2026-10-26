@@ -56,6 +56,11 @@ import XCTest
         frames.driver.beep()
         XCTAssertEqual(frames.counters.beeps, 0)
 
+        // Headless and unmuted: the frames mode still never calls the factory; its own silent mixer is installed.
+        let headlessLoud = try Rig(mixer: .headless)
+        XCTAssertEqual(headlessLoud.counters.mixerFactoryCalls, 0, "headless + unmuted: the factory is never called")
+        XCTAssertNotNil(headlessLoud.driver.silentMixer)
+
         let fake = FakeMixer()
         let loud = try Rig(mixer: .fake(fake))
         XCTAssertEqual(loud.counters.mixerFactoryCalls, 1, "unmuted: exactly one mixer, at boot")
