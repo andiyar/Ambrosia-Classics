@@ -478,6 +478,26 @@ behind the LAUNCH GUARD, few and short (D42); never `swift run`, never `open` ou
   two routes, FNV).
 - **Acceptance:** GW2 **27/0**; G2 490/0; G5 (the App lost a file to Shared); GW1; G7W; G6; G10.
 
+- **As executed (loop run 33, 2026-10-27; commits 7a05d1d + b992809, merged):** as planned, with: five faces baked —
+  Times 12 bold, Geneva 9, Geneva 8 bold, Times 18, **and WF4a's dialog face (font 0 face 1, 12 pt) baked now** (it fell
+  out of the same baker); files `Ferazel/Windows/Resources/Fonts/<font>-<size>-<face>.fzfont`, 70–214 KB; all 256 bytes
+  baked; `fontInfo` stores ascent/descent/leading (the `TextRasterizer` interface has no widMax); a pair is stored as a
+  ligature when CoreText's drawing differs from the two glyphs layered (game faces: "fi", "fl"; the UI font: digit +
+  "ƒ" forms, "__"); `ctFont` also made public (the baker draws at fractional positions itself); the staleness test
+  imports the baker executable (macOS only); a `.fzfont` whose stored face differs from its file name is not loaded.
+  Item counts 2…99 exact BTX's way — **no whole-string fallback (◇W8 not used)**. Score strings checked over the full
+  32-bit range incl. negatives (the plan's 0…99,999 was too narrow). **WF1's two pinned frames draw no text** (main
+  menu 360 ticks `0xae2b1ee08c089b2a`, level 1 first frame 107 ticks `0xc99ce8e85b4bd8f7` — baked = stub = CoreText);
+  the first text (score, coins, "A Scent Of Peril") reaches the surface 46 ticks after level 1's first frame (surface
+  indices baked = CoreText `0xf1a8b25e2094a097`, stub `0xa3fdef5cbc388e2b`; that tick presents faded to black); **the
+  first presented frame with text is +414 (N held), RGBA FNV `0x908483fb603623e8`** (baked = CoreText) — WF3's text
+  reference. With no key the level-1 chapter card waits up to 1,200 ticks and presents nothing from +252
+  (`StageScreens.swift:207–321`). Not modelled: ligatures longer than two characters (Times 18 "office", the dialog
+  font's "12:30") — no shipped game string reaches one (reviewer: 751 conversation chunks, 31 speakers, 61 STR#
+  strings); **WF4a's dialog strings need a closed-set test**. A do-nothing `fz-bake-font.exe` builds for Windows
+  (Package.swift is evaluated on the host). GW2 27/0 (suite ~5 min longer). One Opus leg PASS WITH FIXES (8/8
+  mutations caught) → tests-only round seat-read.
+
 ### WF3 ⚑ MAJOR — FerazelWin: the game on HectorSDL; the Windows mute switch
 
 - **Files:** `Ferazel/Windows/Package.swift` (+ `../../../HectorKit/SDL`, executable `FerazelWin`); new

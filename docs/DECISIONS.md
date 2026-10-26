@@ -1683,3 +1683,12 @@ not. Measured and recorded: UserDefaults' argument domain reads "2abc" as **0** 
 "y"/"t" false, a value starting with "-" is a new key; boot → main menu 360 ticks FNV `0xae2b1ee08c089b2a`, New Game →
 level 1 first frame 107 ticks FNV `0xc99ce8e85b4bd8f7` (stub text; WF2 re-measures with real glyphs). `Ferazel/Windows`
 package: FerazelWinKit 17/0.
+**As built — WF2 (loop run 33, 2026-10-27; main b992809):** Windows text = five baked faces (`Ferazel/Windows/Resources/Fonts/*.fzfont`:
+Times 12 bold, Geneva 9, Geneva 8 bold, Times 18, and the dialog face font 0 face 1 12 pt, baked early for WF4a), equal
+byte for byte to the Mac's `CoreTextRasterizer` on every character, the level names, score strings over the full 32-bit
+range, every item count, the level-1 route and the sign route; the 0/255 cut after composition. **No whole-string
+fallback was needed (◇W8 unused).** WF1's two pinned frames draw no text (their FNVs stand unchanged); **WF3's text
+reference = the first presented frame with text, 414 ticks after level 1's first frame (N held), RGBA FNV
+`0x908483fb603623e8`** (baked = CoreText; the surface first carries text at +46, indices `0xf1a8b25e2094a097`). Ligatures
+longer than two characters are not modelled (no shipped game string has one; WF4a tests its dialog strings as a closed
+set). FerazelWinKit 27/0.
