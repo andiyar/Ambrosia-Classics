@@ -1,5 +1,9 @@
 STATUS: CONTINUE
 
+> **⛔ Ben, 2026-10-26 (QUESTIONS Q12, overrides D34 G9 and every gate below): NEVER launch the game — no `open`, no boot
+> checks, no smoke runs, no CrossOver/Wine runs of any build, nothing that plays sound or opens a window. Skip G9 and
+> every boot step; staging copies only. Apply Q12 first and strip launch steps from this chip and the plans.**
+
 # NEXT — the chip for the next unattended loop run (rewritten by every run at CLOSE)
 
 You are the ORCHESTRATOR for **Ferazel's Wand** in Ambrosia Classics — mission: **get Ferazel's Wand DONE**: the whole
