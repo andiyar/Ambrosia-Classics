@@ -32,7 +32,7 @@ HECTORKIT_DIR=<HectorKit checkout with the W0 guards> tools/windows/proof-b.sh
 | MSVC CRT | 14.44.17.14 | xwin 0.10.0 (brew) — Microsoft licence accepted by Ben, D15 | per-file, xwin manifest |
 | Windows SDK | 10.0.26100 | xwin 0.10.0 | per-file, xwin manifest |
 | UCRT headers + libs | 10.0.26100 (the SDK's own UCRT msi + 11 cabs, 112 MB) | Microsoft, URLs + SHA-256 from xwin's cached VS manifest | verified against the manifest |
-| SDL3 | 3.4.16 (= brew `sdl3` on the Mac) | github.com/libsdl-org `SDL3-devel-3.4.16-VC.zip` (17 MB) | `1a784cb2a5c64d56fe7a62090fe9d242d9865f235e4ea9678f1a6ba4e693e7de` |
+| SDL3 | 3.4.16 (brew `sdl3` on the Mac was equal on 2026-10-06; it is **3.4.18** since — see the Ferazel section) | github.com/libsdl-org `SDL3-devel-3.4.16-VC.zip` (17 MB) | `1a784cb2a5c64d56fe7a62090fe9d242d9865f235e4ea9678f1a6ba4e693e7de` |
 | CrossOver | /Applications/CrossOver.app (installed) | — | — |
 
 Total download ≈ 4.2 GB, decimal units, measured from the cache 2026-10-06: swift.org 3.69 GB
@@ -270,6 +270,66 @@ exactly that skip set (any other skip, or that test not skipping, is a fail).
 - **Foundation `contains` trap (WF0b):** `String.contains` on the census's long non-ASCII stdout traps (`ud2` in
   Foundation.dll), the D19.5 trap's kin and a Windows (not Wine) difference: `CensusTests` searches by Unicode scalars
   in pure Swift on Windows.
+
+### Staging Ferazel for a tester (WF6)
+
+`tools/windows/stage-ferazel-win.sh [--no-desktop] [--no-icon] [--allow-dirty]` (zsh; run it directly) →
+`out/Windows/Ferazel's Wand/` + `out/Windows/Ferazel's Wand (Windows).zip` (git-ignored), and — unless `--no-desktop`
+— copies of both on the Desktop as `Ferazel's Wand (Windows)/` and `Ferazel's Wand (Windows).zip` (only those two
+Desktop items are replaced). `stage-btx.sh`'s recipe, for Ferazel:
+
+- **Committed content only** (exit 65 otherwise; `--allow-dirty` stamps `<sha>-dirty`); the stamp `<classics sha>,
+  HectorKit <sha>` goes into the version info and under the title of `WHAT-TO-EXPECT.txt`.
+- **Exe:** release cross-build of `FerazelWin` with `/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup`, checked to be
+  subsystem 2 (Windows GUI), renamed `Ferazel's Wand.exe`. windres (brew `mingw-w64`, required): the application
+  manifest (always) + the icon (`Ferazel/App/AppIcon.icon/Assets/ferazel.png`, 512 px, `sips` → 16/32/48/256 `.ico` —
+  there is no `.icns`) + version info 1.0.3 (both skipped with `--no-icon`).
+- **DLLs:** the import-table walk; 19 shipped (2026-10-27: the same 19 as BTX's list above).
+- **Data/:** the original six `.rsrc` files and `Ferazel's Wand Music` from `Resources/Ferazel`, unchanged, and
+  `Fonts/*.fzfont` from `Ferazel/Windows/Resources/Fonts`. The exe finds both with **no arguments** (`Data\` beside
+  the exe, the fonts in `Data\Fonts\`).
+- **`WHAT-TO-EXPECT.txt`** = `Ferazel/WINDOWS-WHAT-TO-EXPECT.md`, markup stripped, UTF-8 BOM + CRLF.
+  **`MANIFEST.txt`** = every file in the zip, one relative `/` path per line (LF), folders and itself left out; the
+  script checks it against `zipinfo -1` before it finishes (gate GW5 does the same diff).
+- **Files at the zip root** (`zip -X`), so Windows' "Extract All" gives one `Ferazel's Wand (Windows)\` level.
+- 2026-10-27: folder 160 MB, zip 92 MB (91,957,962 bytes), 60 files + `MANIFEST.txt`; ~65 s with a cold release build.
+
+### The smoke: `smoke-ferazel-win.sh` (gates GW4R and GW6)
+
+- `--mac-only` (GW4R): the Mac SDL development build (`swift build` of `Ferazel/Windows`, brew `sdl3`), headless, to
+  the main menu; exit 0, `video=dummy audio=none`, FNV `0xae2b1ee08c089b2a`.
+- **No argument** (GW6): unzips the **staged zip** (it never stages: no zip → exit 66 with the stage command) into a
+  scratch folder and runs its `Ferazel's Wand.exe` with no `--data` / `--fonts` in the clean bottle
+  (`run-in-crossover.sh --clean`: nothing on `WINEPATH`), then `cmp`s each dump with the Mac SDL build's dump of the
+  same run, whose FNV must also be the recorded one. Three headless runs (wakes of 1/240 s; the first wake at which
+  flow step T has run is 4 × (T − 1) + 1): **A** main menu, step 360 → 1,437 wakes; **B** New Game with N held from
+  wake 1,440 → level 1's first frame, step 467 → 1,865 wakes; **C** the same on to the first presented frame with text,
+  step 881 → 3,521 wakes (A and B draw no text). Expected, exit 0:
+
+```
+main menu: identical
+new game: identical
+level 1 text: identical
+```
+
+  2026-10-27: the three CrossOver runs 6–18 s, the whole script ~40–75 s with a built Mac side.
+- Both modes refuse like Proof B (exit 64, one line): outside 09..20 ("boot check owed (night rule)"), drivers not
+  `dummy`, or a run without `--mute`. `--check-guard` evaluates only that. The script sets the drivers itself.
+
+### Build roots (Ruling 19)
+
+`build.sh` names its scratch folder after the package folder, and BTX's packages are also called `Core` and
+`Windows`, so every Ferazel build has its own root: gates `WIN_BUILD_ROOT=$WIN_CROSS/build/ferazel`; Proof B
+`$WIN_CROSS/work/proof-b-ferazel/build`; the stage `$WIN_CROSS/build/stage-ferazel` (work files in
+`$WIN_CROSS/work/stage-ferazel`); reviewers a `mktemp` root. Never `build/stage` / `work/stage-btx` (BTX's stage) or the
+default root.
+
+### SDL versions: the Mac is 3.4.18, Windows 3.4.16
+
+The Windows build links the pinned SDL3 **3.4.16** VC zip (`env.sh`); brew's `sdl3` on this Mac — used only by the
+Mac SDL development build (GW4, GW4R and the smoke's reference dumps) — is **3.4.18** (2026-10-26). They were equal when
+BTX was built. SDL draws none of the game's picture (the game hands it finished 640×480 RGBA), so the smoke's `cmp`
+compares the game's own pictures: a mismatch there is a finding, never a version excuse.
 
 ## Results (W0, 2026-10-06)
 

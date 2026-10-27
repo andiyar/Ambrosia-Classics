@@ -2,6 +2,8 @@
 
 **Status: machine gates green; Ben's gate pending.**
 
+**Windows:** the same build for Windows 10/11 has its own card, `Ferazel/WINDOWS-WHAT-TO-EXPECT.md`.
+
 This build of our Ferazel's Wand 1.0.3 replica adds **the spells, the items and everything you can pick up, open, push
 or switch**, and opens **levels 3 and 4**. The wand fires, the dagger stabs, the item bar at the bottom shows what you
 really own and 7 / 9 choose from it. Xichrons, coins, crystals, potions, keys, power-up spheres and upgrades can be

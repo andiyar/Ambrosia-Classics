@@ -7,7 +7,7 @@ SWIFT_WIN_VERSION="6.4.0"                     # swift.org release: macOS toolcha
 SWIFT_WIN_TAG="swift-${SWIFT_WIN_VERSION}-RELEASE"
 MSVC_VERSION="14.44.17.14"                    # MSVC CRT, via xwin (Microsoft licence accepted by Ben, D15)
 WINSDK_VERSION="10.0.26100"                   # Windows SDK, via xwin; UCRT headers from the same SDK
-SDL3_VERSION="3.4.16"                        # SDL3 official Windows VC dev zip (libsdl-org); = brew sdl3 on the Mac
+SDL3_VERSION="3.4.16"                        # SDL3 official Windows VC dev zip (libsdl-org); brew sdl3 on the Mac is 3.4.18 (README)
 
 # ---- Locations ---------------------------------------------------------------------------------
 WIN_CROSS="${WIN_CROSS:-$HOME/Developer/Toolchains/windows-cross}"
