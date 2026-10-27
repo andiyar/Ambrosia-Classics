@@ -292,7 +292,7 @@ Desktop items are replaced). `stage-btx.sh`'s recipe, for Ferazel:
   **`MANIFEST.txt`** = every file in the zip, one relative `/` path per line (LF), folders and itself left out; the
   script checks it against `zipinfo -1` before it finishes (gate GW5 does the same diff).
 - **Files at the zip root** (`zip -X`), so Windows' "Extract All" gives one `Ferazel's Wand (Windows)\` level.
-- 2026-10-27: folder 160 MB, zip 92 MB (91,957,962 bytes), 60 files + `MANIFEST.txt`; ~65 s with a cold release build.
+- 2026-10-27: folder 160 MB, zip 92 MB (91,957,996 bytes at cd32864), 60 files + `MANIFEST.txt`; ~65 s with a cold release build. The exe's subsystem prints as `00000002` (llvm-objdump pads it).
 
 ### The smoke: `smoke-ferazel-win.sh` (gates GW4R and GW6)
 
@@ -312,7 +312,7 @@ new game: identical
 level 1 text: identical
 ```
 
-  2026-10-27: the three CrossOver runs 6–18 s, the whole script ~40–75 s with a built Mac side.
+  2026-10-27: the three CrossOver runs 5–18 s, the whole script ~40–75 s with a built Mac side.
 - Both modes refuse like Proof B (exit 64, one line): outside 09..20 ("boot check owed (night rule)"), drivers not
   `dummy`, or a run without `--mute`. `--check-guard` evaluates only that. The script sets the drivers itself.
 
