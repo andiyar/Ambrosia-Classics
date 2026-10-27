@@ -32,6 +32,21 @@ brother's Windows machine.
 
 ## Open
 
+### Q14 — 2026-10-27 — Windows gate: does Ferazel's Wand on Windows behave like the Mac build?
+Context: The Windows build of Ferazel's Wand (the same game as the Phase 4 Mac build: levels 1–4, spells, items, saves,
+map, controller) is finished on the machine side (loop run 35). The loop checked it muted, by day: in a clean CrossOver
+bottle it draws the main menu, level 1 and level 1's text exactly as the Mac does, and the game's 490 core tests run
+under CrossOver with 489 passed, 0 failed, 1 skipped (a test CrossOver cannot run). Nobody has heard it or run it on a real
+PC. The zip is `~/Desktop/Ferazel's Wand (Windows).zip` (also `out/Windows/` in the loop's tree; never published); the
+checklist is `WHAT-TO-EXPECT.txt` inside it (repo: `Ferazel/WINDOWS-WHAT-TO-EXPECT.md`) — for you or Andrew on a Windows
+10/11 PC. **Please try a real save at a save point and a restore**: the Windows Open/Save dialog code has never been run.
+Pass looks like: the Mac build's behaviour on Windows — sound by ear, dialogs by eye, keys, controller, Options kept
+after a relaunch, the close button asking before quitting a level.
+Options: (a) pass; (b) pass with notes (write them — each becomes a task); (c) fail (say what is wrong).
+Recommendation: a or b — every picture the machine can compare matches the Mac; only a person can judge sound and a real PC.
+Blocks: nothing (gates queue, D34). The loop plans Phase 5 (enemies) next, Mac and Windows together.
+Answer:
+
 ### Q13 — 2026-10-26 — Windows plan (Phase W): six small choices, for your later read
 Context: Loop run 31 wrote the plan for Ferazel's Windows build (`docs/plans/2026-10-26-ferazel-windows.md`, D43): seven
 tasks over about four runs, reusing Bubble Trouble X's Windows parts, the zip staged under `out/` (never published).
@@ -49,7 +64,7 @@ Answer:
 Context: Phase 4 "Spells + items" is finished on the machine side (loop run 30): all 490 core tests pass, the original
 data decodes cleanly, the app builds, the staged build starts and quits cleanly, and the Fable review over the whole
 phase found nothing wrong in the game code (only the checklist wording, now fixed). Play `~/Desktop/Ferazel's Wand.app`
-(build 4bca4bd), New Game or Resume a Phase 3 save, beside the Let's Play; the checklist is
+(build 4bca4bd; replaced on 2026-10-27 by loop run 35's build — the same game, plus a hidden mute switch), New Game or Resume a Phase 3 save, beside the Let's Play; the checklist is
 `~/Desktop/Ferazel's Wand — WHAT-TO-EXPECT.md` (repo: `Ferazel/WHAT-TO-EXPECT.md`). Jump straight to a level with
 `open -n ~/Desktop/Ferazel\'s\ Wand.app --args -FerazelLevel 3` (1 to 4). Pass looks like: the item bar and stepping
 through items, the Fireball and the dagger, torches and rock piles giving crystals, Xichrons and coins, level 1's chests,
