@@ -321,7 +321,7 @@ new game: identical
 level 1 text: identical
 ```
 
-  2026-10-27: the three CrossOver runs 5–18 s, the whole script ~40–75 s with a built Mac side.
+  2026-10-27: the three CrossOver runs 5–18 s (8 s with run C at step 959), the whole script ~40–75 s with a built Mac side.
 - Both modes refuse like Proof B (exit 64, one line): outside 09..20 ("boot check owed (night rule)"), drivers not
   `dummy`, or a run without `--mute`. `--check-guard` evaluates only that. The script sets the drivers itself.
 

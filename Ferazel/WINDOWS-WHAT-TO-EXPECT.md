@@ -9,7 +9,7 @@ levels 1 to 4, the spells and items, enemies that stand still — in lockstep wi
 
 The question for you: **does the Windows build behave like the Mac build — sound by ear, dialogs by eye?**
 
-**Boot results (loop run 35, 2026-10-27, by day, all muted):** the Mac staged app started and quit cleanly with no crash report; the staged Windows zip, in a clean CrossOver bottle, drew the main menu, level 1's first frame and the first frame with text exactly as the Mac development build does; the game's own test suite run under CrossOver: 489 passed, 0 failed, 1 skipped (the CrossOver-only skip), 0 crashed.
+**Boot results (loop run 35, 2026-10-27, by day, all muted):** the Mac staged app started and quit cleanly with no crash report; the staged Windows zip, in a clean CrossOver bottle, drew the main menu, level 1's first frame and level 1 at full brightness with its status-bar text exactly as the Mac development build does; the game's own test suite run under CrossOver: 489 passed, 0 failed, 1 skipped (the CrossOver-only skip), 0 crashed.
 
 Nobody has heard it yet: every run the loop made was muted, and in CrossOver on this Mac, never on a real PC.
 

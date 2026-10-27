@@ -82,7 +82,7 @@ shared by **per-file git symlinks** into `FerazelWinKit` (BTX D36's `BTXPadLayou
 
 **Proof B (GWB, a muted daytime loop gate from WF0's run on; also on the gate card for Ben/Andrew):** the Core suite
 cross-built and run in CrossOver with the no-sound driver — **489 passed / 0 failed / 1 skipped / 0 crashed (of 490)** (WF0b skip rule, run 34: `CensusTests.testExitCodes` skips under Wine only).
-No skip rule is planned: data tests get the data through `FERAZEL_DATA` (Windows path), `CensusTests` finds
+No other skip rule is planned (the plan first planned none): data tests get the data through `FERAZEL_DATA` (Windows path), `CensusTests` finds
 `docs/ferazel/data-census.md` through the copy's repo layout, WF0 removes the known Windows differences (environment,
 symbolic links, the census binary's location and name, CRLF, the five replaces). The suite runs **once, whole**; per
 class only after a crash, to find it. Any miss becomes a WF0-style parity task with a ruling, as BTX's 260-of-261 was
@@ -129,7 +129,7 @@ grep -rn 'NSSound\.beep()' "$WT/Ferazel/App" | wc -l                            
 # GW5 (WF6 and every phase end) stage: exit 0; PE subsystem 2 (Windows GUI); the zip's file list = the script's manifest
 "$WT/tools/windows/stage-ferazel-win.sh" --no-desktop; echo $?          # a zsh script: run directly, never `bash …`
 "$HOME/Developer/Toolchains/windows-cross/swift-6.4.0-RELEASE.xctoolchain/usr/bin/llvm-objdump" -p "$WT/out/Windows/Ferazel's Wand/Ferazel's Wand.exe" \
-  | awk '/^Subsystem/ {print $2}'                                       # 2 (stage-btx.sh:184's check; grep prints 3 lines)
+  | awk '/^Subsystem/ {print $2}'                                       # 00000002 (= 2, GUI; llvm-objdump pads it — WF6 as executed)
 diff <(zipinfo -1 "$WT/out/Windows/Ferazel's Wand (Windows).zip" | grep -v '/$' | grep -vx 'MANIFEST.txt' | sort) \
      <(sort "$WT/out/Windows/Ferazel's Wand/MANIFEST.txt")              # empty (folder entries and the manifest itself filtered)
 ```
@@ -710,8 +710,23 @@ behind the LAUNCH GUARD, few and short (D42); never `swift run`, never `open` ou
   finding, not a version excuse; the README records the difference.
 - **Acceptance:** GW5 (exit 0; subsystem `2`; manifest diff empty); GW1–GW4; G1, G2 490/0, G3, G5, G7/G7W, G-MUTE,
   G10; by day G9M (pid line, clean quit, no new crash log), GW6 (`main menu: identical`, `new game: identical`, exit 0),
-  GWB 490/0. LOOP-LOG: "Windows staged; booted muted (Mac + CrossOver), Proof B 490/0" — or "staged; boot check owed
+  GWB 489/0/1/0 (WF0b). LOOP-LOG: "Windows staged; booted muted (Mac + CrossOver), Proof B 489/0/1/0" — or "staged; boot check owed
   (night rule)".
+- **As executed (loop run 35, 2026-10-27; commits cd32864 + 08c30f3 + 5481d97 + 4387e2b):** as planned, with: the smoke's
+  frame counts are exact, not the plan's 4 × (ticks + 60): a `--frames N` run's flow step T first exists after
+  4 × (T − 1) + 1 wakes, so A = 1,437 (menu, step 360), B = 1,865 (level 1's first frame, step 467, N held from wake 1,440)
+  — each Mac dump's FNV is also checked against the recorded one; a **third run C** was added for the baked text: first
+  at step 881 (the first text frame, WF2), which the Fable phase leg found is the first fade-in step (every channel
+  0–5) — a wrong glyph could still compare equal — so the review round moved C to **step 959, 3,833 wakes, FNV
+  `0xfbb2dd7a1d289726`** (the fade-in's last, full-gamma step; 178 colours, max channel 255; blanking every glyph changes
+  281 status-bar pixels). Every Mac and Windows run log must carry `video=dummy audio=none` and no `BakedTextRasterizer:`
+  line; per-run `mktemp` folders; the smoke refuses (66) a zip whose stamp is not this checkout's and HectorKit's HEAD
+  (re-stage after every commit); the stage checks committed content before wiping its fixed folders. GW5's subsystem
+  prints `00000002`. Zip ≈ 92 MB, 60 files + MANIFEST, 19 DLLs. Launch gates by day, muted: G9M clean (quit event
+  answers "User cancelled" by design, D40), Proof B 489/0/1/0 (4 min 48 s), GW6 three "identical" lines. Reviews: one Opus
+  leg PASS WITH FIXES, the FABLE-GRADE phase leg PASS WITH FIXES (gates re-run: G2 490/0, GW2 77/0, GW6 identical; no
+  divergence in the Mac app — a move plus the gated mixer/beeper) → one round (4387e2b), seat-read; plan text corrected
+  (GW5's `00000002`, WF6's 489/0/1/0, the Ladder's skip-rule sentence, ◇W11's logoff wording).
 
 ## Stand-ins kept (◇, named) at the phase's end
 
@@ -727,7 +742,7 @@ behind the LAUNCH GUARD, few and short (D42); never `swift run`, never `open` ou
 | ◇W8 | Geneva item counts baked as whole strings — only if WF2 found BTX's composition not exact for them | Ruling 2 (recorded in D43 if used) |
 | ◇W9 | The Save dialog shows no message line (the Mac panel's `message`, DITL 1003 item 13's text) | `GetSaveFileNameW` has no message area (Ruling 3) |
 | ◇W10 | Dialogs drawn inside the game picture and scaled with it (1× glyphs enlarged); the Mac's are separate sharp 1× windows | BTX W6 precedent (Ruling 4, WQ7) |
-| ◇W11 | The window has a close button (the Mac's has none); a Windows logoff may meet the quit confirm if SDL reports it as a plain quit | SDL windows always have one; nothing is lost (Ruling 9) |
+| ◇W11 | The window has a close button (the Mac's has none); a Windows logoff reaches no SDL event at all (WF3 as executed): Windows ends the process, nothing is lost | SDL windows always have one; nothing is lost (Ruling 9) |
 | ◇W12 | No single-instance guard: a second launch is a second game (the Mac opens a save in the running app) | Ruling 11 |
 | ◇W13 | Dialog text in the baked bold UI font (font 0 face 1, via CoreText) — only if it differs from the Mac's `ClassicFont` pick (Charcoal / Chicago by name, else `.boldSystemFont(ofSize: 12)`) | Ruling 2, WF4a (recorded in D43 if kept) |
 | ◇W14 | Ctrl shortcut letters are matched by US key position; the Mac matches the typed character of the live layout | HectorSDL exposes no layout query (same cause as ◇W1; WQ5) |
