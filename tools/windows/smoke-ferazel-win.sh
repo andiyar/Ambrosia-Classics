@@ -9,13 +9,24 @@
 #                  nothing on WINEPATH, every DLL must come from the zip), muted, dummy drivers. Two headless runs —
 #                  the main menu (run A) and New Game with N held (run B) — each `cmp`-ed against the Mac SDL
 #                  development build's dump of the same run (whose FNV must also be the recorded reference) — and a
-#                  third, run C, on to the first presented frame with text (the baked fonts on Windows). Prints
+#                  third, run C, on to the first full-brightness frame with text (the baked fonts on Windows). Prints
 #                  "main menu: identical", "new game: identical" and "level 1 text: identical", exit 0.
+#                  STALE STAGE (exit 66, one line): the zip's build stamp (line 3 of its WHAT-TO-EXPECT.txt,
+#                  "Windows build <date> (<classics sha>, HectorKit <sha>)." — stage-ferazel-win.sh writes it) must name
+#                  this checkout's HEAD and the HectorKit checkout's HEAD, with no "-dirty": a stage from any other
+#                  commit, or from uncommitted files, is refused — re-stage after every commit (the simplest rule that is
+#                  never wrong; a docs-only commit also asks for a re-stage).
 #   --mac-only     GW4R: the Mac SDL development build (Ferazel/Windows `FerazelWin`, brew sdl3), headless: boots to the
 #                  main menu in --frames mode, muted, on the dummy SDL drivers, and checks: exit 0, the launch line ends
 #                  "video=dummy audio=none" (SDL's real drivers; a --frames run starts no audio subsystem — HectorSDL
 #                  starts it only with an output), the presented main menu's RGBA FNV = WF2's (0xae2b1ee08c089b2a).
 #   --check-guard  evaluate the launch guard (hour + drivers + mute) and exit: builds nothing, runs nothing
+#
+# Each run's logs and dumps go to a fresh `mktemp -d` folder (its path is printed). Every run's log, Mac and Windows,
+# must carry the launch line ending "video=dummy audio=none" (the exe's own report of the SDL drivers it started — the
+# real proof that a run was on the dummy drivers; the guard below only checks values this script sets itself) and no
+# "BakedTextRasterizer:" line (the baked text's report of a face file it could not use or a face it was asked for and
+# does not have — its text would draw nothing).
 #
 # LAUNCH RULE (D42, Ruling 15): refuses (exit 64, one line) unless `date +%H` is in 09..20 and every run it makes is
 # muted (`--mute`) on the dummy SDL drivers. The script sets the drivers and the arguments itself; the caller's
@@ -36,8 +47,12 @@ repo="${here:h:h}"
 #   boot → main menu presented at flow step 360                  → run A = 4 × (360 − 1) + 1 = 1,437 wakes
 #   N held from wake 1,440 (the first tick after the menu) → level 1's first frame 107 steps later, step 467
 #                                                                 → run B = 4 × (467 − 1) + 1 = 1,865 wakes
-#   the same keys on → the first presented frame with text (score, coins, "A Scent Of Peril") 414 steps after level 1's
-#   first frame, step 881 (WF2/WF3: BakedTextTests.firstTextPresentTick) → run C = 4 × (881 − 1) + 1 = 3,521 wakes
+#   the same keys on → level 1's status bar text (score, coins, "A Scent Of Peril") is first presented at step 881
+#   (BakedTextTests.firstTextPresentTick), but faded nearly to black (every channel 0–5, 76 colours), so a wrong glyph
+#   could still dump identical; the level's fade-in (`_GammaFadeInAsync(0x28)`, one step every other tick) presents
+#   its last, full-gamma step at step 959 (WF6 review fix, measured through WinGame's scripted host with N held as run
+#   B: max channel 255, 178 colours; the same run with every glyph's coverage blanked dumps a different frame —
+#   281 pixels differ, all in the status bar, x 27–155, y 403–437) → run C = 4 × (959 − 1) + 1 = 3,833 wakes
 #   (runs A and B draw no text at all; C is the one whose picture depends on the baked glyphs from Data\Fonts\)
 # The plan's "4 × (ticks + a 60-tick margin)" was not what WF3's Mac half used (1,437, exact): the exact count lands
 # the dump ON the reference frame, so the Mac dump's FNV can be checked against the recorded one as well.
@@ -45,8 +60,8 @@ menu_frames=1437
 menu_fnv=0xae2b1ee08c089b2a
 newgame_frames=1865
 newgame_fnv=0xc99ce8e85b4bd8f7
-text_frames=3521
-text_fnv=0x908483fb603623e8
+text_frames=3833
+text_fnv=0xfbb2dd7a1d289726
 newgame_keys="# N held from the first tick after the main menu (WinGameTests test 18)
 1440 down n"
 
@@ -58,10 +73,12 @@ case "${1:-}" in
     *) print -u2 "usage: $0 [--mac-only | --check-guard]"; exit 64 ;;
 esac
 
-out="${TMPDIR:-/tmp}/smoke-ferazel-win"
 common=(--mute)
 
 # ---- Launch guard (D42) -------------------------------------------------------------------------------
+# Defence only: the driver and mute checks below test values this script itself sets above. The real proof is each
+# run's own launch line, "video=dummy audio=none" (no window, no audio device started), checked by log_ok in mac_run
+# and win_run.
 h=$(date +%H)
 if (( 10#$h < 9 || 10#$h > 20 )); then
     print "smoke-ferazel-win: refused (night rule): hour $h, launches only 09..20; boot check owed (night rule)"
@@ -86,6 +103,20 @@ if [[ $mode == crossover && ! -f "$zipfile" ]]; then
     print "smoke-ferazel-win: no staged zip at $zipfile — run tools/windows/stage-ferazel-win.sh --no-desktop first"
     exit 66
 fi
+if [[ $mode == crossover ]]; then
+    stamp="$(unzip -p "$zipfile" WHAT-TO-EXPECT.txt 2>/dev/null | sed -n 3p | tr -d '\r' || true)"
+    hk="${repo:h}/HectorKit"; hk="${hk:A}"        # where Ferazel/Windows reaches it (../../../HectorKit)
+    fresh=0
+    if [[ "$stamp" =~ '^Windows build [0-9-]+ \(([0-9a-f]+), HectorKit ([0-9a-f]+)\)\.$' ]]; then
+        [[ "$(git -C "$repo" rev-parse -q --verify "${match[1]}^{commit}" 2>/dev/null)" == "$(git -C "$repo" rev-parse HEAD)" \
+           && "$(git -C "$hk" rev-parse -q --verify "${match[2]}^{commit}" 2>/dev/null)" == "$(git -C "$hk" rev-parse HEAD)" ]] \
+            && fresh=1
+    fi
+    if (( ! fresh )); then
+        print -r -- "smoke-ferazel-win: stale stage: the zip says '${stamp:-no stamp}', HEAD is $(git -C "$repo" rev-parse --short HEAD), HectorKit $(git -C "$hk" rev-parse --short HEAD 2>/dev/null) — re-run tools/windows/stage-ferazel-win.sh --no-desktop"
+        exit 66
+    fi
+fi
 
 # ---- Build the Mac SDL development build ------------------------------------------------------------
 pkg="$repo/Ferazel/Windows"
@@ -94,18 +125,31 @@ bin="$(swift build --package-path "$pkg" --product FerazelWin --show-bin-path)/F
 [[ -x "$bin" ]] || { print -u2 "smoke-ferazel-win: no FerazelWin built at $bin"; exit 70; }
 mac_data=(--data "$repo/Resources/Ferazel" --fonts "$repo/Ferazel/Windows/Resources/Fonts")
 
-rm -rf "$out"; mkdir -p "$out"
+out="$(mktemp -d "${TMPDIR:-/tmp}/smoke-ferazel-win.XXXXXX")"
+print "smoke-ferazel-win: logs and dumps in $out"
 print -r -- "$newgame_keys" > "$out/newgame-keys.txt"
 
-# mac_run <label> <frames> <want FNV> [extra args…] — the Mac SDL build, headless; checks exit 0, the launch line and
-# the presented frame's FNV; the dump goes to $out/mac-<label>.ppm.
+# log_ok <side> <label> <log> — the launch line ends "video=dummy audio=none" (\r dropped: Windows' lines end CRLF) and
+# no "BakedTextRasterizer:" line (a face file not used / a face asked for and not baked).
+log_ok() {
+    local side=$1 label=$2 log=$3 ok=1
+    tr -d '\r' < "$log" | grep -qE 'video=dummy audio=none$' \
+        || { print "smoke-ferazel-win: $side $label: no 'video=dummy audio=none' line"; ok=0; }
+    if tr -d '\r' < "$log" | grep -qF 'BakedTextRasterizer:'; then
+        print "smoke-ferazel-win: $side $label: the baked text reported a missing face (BakedTextRasterizer: line)"; ok=0
+    fi
+    (( ok ))
+}
+
+# mac_run <label> <frames> <want FNV> [extra args…] — the Mac SDL build, headless; checks exit 0, the launch line, no
+# baked-text report and the presented frame's FNV; the dump goes to $out/mac-<label>.ppm.
 mac_run() {
     local label=$1 frames=$2 fnv=$3; shift 3
     local log="$out/mac-$label.txt" code ok=1
     set +e; "$bin" $common --frames $frames --dump "$out/mac-$label.ppm" $mac_data "$@" > "$log" 2>&1; code=$?; set -e
     cat "$log"
     (( code == 0 )) || { print "smoke-ferazel-win: mac $label: exit $code (want 0)"; ok=0; }
-    grep -qE 'video=dummy audio=none$' "$log" || { print "smoke-ferazel-win: mac $label: no 'video=dummy audio=none' line"; ok=0; }
+    log_ok mac $label "$log" || ok=0
     grep -qF "presented RGBA FNV $fnv" "$log" || { print "smoke-ferazel-win: mac $label: FNV is not $fnv"; ok=0; }
     [[ -s "$out/mac-$label.ppm" ]] || { print "smoke-ferazel-win: mac $label: no dump"; ok=0; }
     (( ok ))
@@ -134,10 +178,10 @@ mkdir -p "$win"
 unzip -q "$zipfile" -d "$win"
 exe="$win/Ferazel's Wand.exe"
 [[ -f "$exe" ]] || { print "smoke-ferazel-win: the zip has no \"Ferazel's Wand.exe\" at its root"; exit 1; }
-stamp="$(sed -n 3p "$win/WHAT-TO-EXPECT.txt" | tr -d '\r')"
-print -r -- "smoke-ferazel-win: staged build: ${stamp:-unknown}; repo HEAD $(git -C "$repo" rev-parse --short HEAD)"
+print -r -- "smoke-ferazel-win: staged build: $stamp; repo HEAD $(git -C "$repo" rev-parse --short HEAD)"
 
-# win_run <label> <frames> [extra args…] — the staged exe in the clean bottle; no --data / --fonts.
+# win_run <label> <frames> [extra args…] — the staged exe in the clean bottle; no --data / --fonts; checks exit 0, the
+# launch line, no baked-text report and a dump.
 win_run() {
     local label=$1 frames=$2; shift 2
     local log="$out/win-$label.txt" code
@@ -150,6 +194,7 @@ win_run() {
     if (( code != 0 )); then
         print "smoke-ferazel-win: crossover $label: exit $code (want 0; log $log)"; return 1
     fi
+    log_ok crossover $label "$log" || return 1
     [[ -s "$out/win-$label.ppm" ]] || { print "smoke-ferazel-win: crossover $label: no dump"; return 1; }
 }
 

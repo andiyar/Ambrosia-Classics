@@ -278,8 +278,12 @@ exactly that skip set (any other skip, or that test not skipping, is a fail).
 — copies of both on the Desktop as `Ferazel's Wand (Windows)/` and `Ferazel's Wand (Windows).zip` (only those two
 Desktop items are replaced). `stage-btx.sh`'s recipe, for Ferazel:
 
-- **Committed content only** (exit 65 otherwise; `--allow-dirty` stamps `<sha>-dirty`); the stamp `<classics sha>,
-  HectorKit <sha>` goes into the version info and under the title of `WHAT-TO-EXPECT.txt`.
+- **Committed content only** (exit 65 otherwise; `--allow-dirty` stamps `<sha>-dirty`), checked before anything is
+  wiped or built; the stamp `<classics sha>, HectorKit <sha>` goes into the version info and under the title of
+  `WHAT-TO-EXPECT.txt`.
+- **Fixed folders (Ruling 19):** work files in `$WIN_CROSS/work/stage-ferazel`, the build in
+  `$WIN_CROSS/build/stage-ferazel`, no override; a second stage (another session's, a reviewer's) wipes and overwrites
+  them.
 - **Exe:** release cross-build of `FerazelWin` with `/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup`, checked to be
   subsystem 2 (Windows GUI), renamed `Ferazel's Wand.exe`. windres (brew `mingw-w64`, required): the application
   manifest (always) + the icon (`Ferazel/App/AppIcon.icon/Assets/ferazel.png`, 512 px, `sips` → 16/32/48/256 `.ico` —
@@ -303,8 +307,13 @@ Desktop items are replaced). `stage-btx.sh`'s recipe, for Ferazel:
   (`run-in-crossover.sh --clean`: nothing on `WINEPATH`), then `cmp`s each dump with the Mac SDL build's dump of the
   same run, whose FNV must also be the recorded one. Three headless runs (wakes of 1/240 s; the first wake at which
   flow step T has run is 4 × (T − 1) + 1): **A** main menu, step 360 → 1,437 wakes; **B** New Game with N held from
-  wake 1,440 → level 1's first frame, step 467 → 1,865 wakes; **C** the same on to the first presented frame with text,
-  step 881 → 3,521 wakes (A and B draw no text). Expected, exit 0:
+  wake 1,440 → level 1's first frame, step 467 → 1,865 wakes; **C** the same on to the end of level 1's fade-in, the
+  first full-brightness frame with the status bar text, step 959 → 3,833 wakes, FNV `0xfbb2dd7a1d289726` (A and B draw
+  no text; the text's first presented frame, step 881, is faded nearly to black, so it could not catch a wrong glyph —
+  at 959 blanking every glyph changes 281 pixels). Every run's log, Mac and Windows, must also carry the launch line
+  ending `video=dummy audio=none` and no `BakedTextRasterizer:` line (a font face missing or not loaded). Logs and dumps
+  go to a fresh `mktemp -d` folder, printed. **A stale stage is refused** (exit 66, one line): the zip's stamp must
+  name this checkout's `HEAD` and HectorKit's `HEAD`, not `-dirty` — re-stage after every commit. Expected, exit 0:
 
 ```
 main menu: identical

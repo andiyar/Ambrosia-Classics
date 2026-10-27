@@ -27,12 +27,16 @@
 #
 # Committed content only: the repo and the HectorKit checkout the package builds against must have no uncommitted or
 # untracked changes, so the stamp ("<classics sha>, HectorKit <sha>") names exactly what was built (exit 65 otherwise).
-# --allow-dirty stages anyway and stamps "<sha>-dirty".
+# --allow-dirty stages anyway and stamps "<sha>-dirty". The check runs before anything is wiped or built: a refused
+# stage leaves the previous work, build and out/ folders as they were. smoke-ferazel-win.sh refuses a zip whose stamp
+# is not this checkout's HEAD (and HectorKit's), so stage after the last commit.
 #   --no-icon   skip the icon + version info (the application manifest is always embedded)
 #
 # Build roots (Ruling 19): works in $WIN_CROSS/work/stage-ferazel and builds into $WIN_CROSS/build/stage-ferazel —
 # never build/stage or work/stage-btx (BTX's) and never build/ferazel (the gates'): build.sh names its scratch folder
-# after the package folder, and BTX's package is also called Windows.
+# after the package folder, and BTX's package is also called Windows. Both folders are FIXED (no override): a second
+# stage — another session's, a reviewer's — wipes and overwrites them (and out/Windows/ of its own checkout); stages
+# never run side by side.
 #
 # GUI subsystem: linked with /SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup (the CRT's console entry calls Swift's `main`;
 # only the PE header's subsystem changes), checked to be 2 after the build. Resources via mingw's windres (brew
@@ -78,10 +82,7 @@ objdump="$WIN_TOOLCHAIN/usr/bin/llvm-objdump"
 windres="$(command -v x86_64-w64-mingw32-windres || true)"
 [[ -n "$windres" ]] || { print -u2 "stage-ferazel-win: no x86_64-w64-mingw32-windres (brew mingw-w64; not installed by this script)"; exit 69; }
 
-work="$WIN_CROSS/work/stage-ferazel"         # no spaces: the .res path goes to lld-link verbatim
-rm -rf "$work"; mkdir -p "$work"
-
-# ---- Version stamp from committed content -----------------------------------------------------------------
+# ---- Version stamp from committed content (before anything is wiped) ----------------------------------------
 hk="$pkg/../../../HectorKit"; hk="${hk:A}"
 stamp_of() {    # <git dir> <label>
     local sha dirty=""
@@ -102,6 +103,9 @@ stamp="$(stamp_of "$repo" "the repo")"
 stamp="$stamp, HectorKit $(stamp_of "$hk" "HectorKit")"
 print "Version stamp: $stamp"
 date_built="$(date +%Y-%m-%d)"
+
+work="$WIN_CROSS/work/stage-ferazel"         # no spaces: the .res path goes to lld-link verbatim
+rm -rf "$work"; mkdir -p "$work"
 
 # ---- Resources: manifest (always), icon + version info (unless --no-icon) -----------------------------------
 link=(-Xlinker /SUBSYSTEM:WINDOWS -Xlinker /ENTRY:mainCRTStartup)

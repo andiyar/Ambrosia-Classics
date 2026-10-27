@@ -25,13 +25,15 @@ Your saved games and the settings file live in `%APPDATA%\Ambrosia Classics\Fera
 Explorer's address bar). A log of the last launch, "Ferazel's Wand.log", sits there too; if the game will not start, a
 message box says why and the log has the details.
 
-## On this Mac first (optional, daytime)
+## On this Mac first (optional, daytime) — for Ben on the Mac where it was built; skip this on a PC
 Both scripts force the no-sound driver and refuse to run between 21:00 and 09:00.
 1. `tools/windows/proof-b-ferazel.sh` → last line `proof-b: 489 passed / 0 failed / 1 skipped / 0 crashed (of 490)`
    (the one skip is a test that cannot run under CrossOver; about 5 minutes).
 2. `tools/windows/smoke-ferazel-win.sh` → `main menu: identical`, `new game: identical`, `level 1 text: identical`,
    exit 0 (the staged zip's game, in a clean CrossOver bottle, draws the same pictures as the Mac's development
-   build; it needs the stage first: `tools/windows/stage-ferazel-win.sh --no-desktop`).
+   build: the main menu, level 1's first frame, and level 1 at full brightness with its status bar text). It needs a
+   fresh stage first: `tools/windows/stage-ferazel-win.sh --no-desktop`, which refuses while the checkout has
+   uncommitted changes; the smoke refuses a stage made before the latest commit.
 
 ## The gate card: what to check (a Windows 10/11 PC, or CrossOver)
 3. **First launch** (SmartScreen: More info → Run anyway): logo, title music, main menu — no console window, no error
