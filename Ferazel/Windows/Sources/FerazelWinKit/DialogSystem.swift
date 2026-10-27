@@ -153,11 +153,11 @@ import Foundation
     }
 
     /// Every wake: the flash's clock, then — once per new tick — the front dialog's null event (the Mac's 1/60 s
-    /// timer: Options' modifier capture and caret, the credits' scroll); none while a popup menu is open
-    /// (`PopUpMenuSelect` tracks modally in the original).
+    /// timer: Options' modifier capture and caret, the credits' scroll); none while a popup menu is open or a button
+    /// / check box is held (`PopUpMenuSelect` and `TrackControl` track modally in the original).
     public func tick(now: UInt32) {
         stack.last?.tick(now: now)
-        guard now != lastNull, stack.last?.menu == nil else { return }
+        guard now != lastNull, stack.last?.menu == nil, stack.last?.tracking == nil else { return }
         lastNull = now
         stack.last?.nullEvent?()
     }

@@ -33,6 +33,7 @@ import XCTest
             model = PrefsDialogModel(record: record, live: live ?? PrefsToggles(live: record), paused: false,
                                      keyCharacter: { ShellKeyCharacters.characters(forKeyCode: UInt16(bitPattern: $0)) })
             let driver = rig.driver
+            placeholder = try XCTUnwrap(DialogWindow(dialog: 200, resources: driver.resources, picture: { _ in nil }))
             dialogs.attach(WinDialogServices(
                 resources: driver.resources, picture: { driver.dialogPicture($0) }, beep: { driver.beep() },
                 ticks: { [unowned self] in now },
@@ -57,7 +58,15 @@ import XCTest
             }
         }
 
-        var front: DialogWindow { dialogs.stack.last! }
+        /// Stands in for the front dialog when none is up (the test fails; the run goes on).
+        private let placeholder: DialogWindow
+        var front: DialogWindow {
+            guard let d = dialogs.stack.last else {
+                XCTFail("no dialog up")
+                return placeholder
+            }
+            return d
+        }
         func canvas(_ x: Int, _ y: Int) -> (x: Int, y: Int) { (front.contentX + x, front.contentY + y) }
 
         func click(_ p: (x: Int, y: Int)) {
@@ -67,7 +76,10 @@ import XCTest
 
         /// The centre of item `n` of the front dialog, in canvas pixels.
         func centre(_ n: Int) -> (x: Int, y: Int) {
-            let r = front.item(n)!.rect
+            guard let r = front.item(n)?.rect else {
+                XCTFail("no item \(n)")
+                return (-1000, -1000)
+            }
             return canvas(r.x + r.width / 2, r.y + r.height / 2)
         }
 
@@ -187,6 +199,18 @@ import XCTest
         b.key(0x35)                                                        // Esc: closes the menu, nothing else
         XCTAssertNil(d.menu)
         XCTAssertEqual(b.m.working.keys[2], 0x5b)
+        // Nor while a button is held (`TrackControl` is modal): no capture, the caret frozen; dragged off and released
+        // there it is no hit, and the null events resume.
+        let held = b.centre(4), away = b.canvas(200, 20)
+        let caret = d.caretVisible
+        b.dialogs.mouseDown(x: held.x, y: held.y)
+        XCTAssertTrue(d.isHighlighted(4))
+        b.ticks(40)
+        XCTAssertEqual(b.m.working.keys[2], 0x5b, "no modifier capture while Default Settings is held")
+        XCTAssertEqual(d.caretVisible, caret, "the caret frozen (40 ticks > its 32-tick phase)")
+        b.dialogs.mouseMoved(x: away.x, y: away.y)
+        b.dialogs.mouseUp(x: away.x, y: away.y)
+        XCTAssertEqual(b.m.working.keys[0], 0x0C, "released off the button: no Default Settings (Q kept)")
         b.ticks(3)
         XCTAssertEqual(b.m.working.keys[2], 0x3b)
         XCTAssertEqual(d.text(9), "Control")
@@ -397,7 +421,6 @@ import XCTest
         XCTAssertEqual(cd.template.id, 600)
         let scroll = try XCTUnwrap(game.flow.credits)
         let gstrip = try XCTUnwrap(game.driver.dialogPicture(CreditsScroll.stripPicture))
-        let gback = try XCTUnwrap(game.driver.dialogPicture(4804))
         var last = host.ticks
         for _ in 0..<(4 * 100 + 1) {
             last = host.ticks
@@ -409,7 +432,6 @@ import XCTest
         let gc = try XCTUnwrap(cd.canvas)
         let gtop = 270 - gk
         XCTAssertEqual(gc[100, gtop + 5], Self.rgb(gstrip, 66, 5), "step \(gk): the strip 5 rows down")
-        _ = gback
         // Exactly that many steps: at a pixel where strip rows r and r + 1 differ, the canvas holds row r (one step
         // more or fewer would show r + 1 or r − 1 there).
         func px(_ x: Int, _ r: Int) -> UInt32 { Self.rgb(gstrip, x - 34, r) }
