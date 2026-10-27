@@ -664,6 +664,25 @@ behind the LAUNCH GUARD, few and short (D42); never `swift run`, never `open` ou
   (scripted); Options and Credits ignore pad keys (D37).
 - **Acceptance:** GW2 **77/0**; GW3; GW4; GW1; G2; G6; G10.
 
+- **As executed (loop run 34, 2026-10-27; commits 689c551 + f8b36d0 + b62f1a8, merged):** as planned, with (dump-checked by leg A:
+  Options filter M 63985–64230, Options loop M 64233–64575, Credits M 65263–65435): extra files `DialogRenderer.swift`
+  (the new controls), `WinDialogs.swift` (the flow's Options model, credits scroll, held modifiers, the repeat flag) and
+  `WinGame.swift` (wiring; music changes played at once through the shared audio); **the Options filter is the
+  original's, not WF4a's:** on the Game Options and Sound panels Esc / Ctrl+. (also keypad .) → Cancel and Return /
+  Enter → OK at once, no flash; on the Controls panel those keys are captured as bindings; auto-keys swallowed; Cancel
+  puts back only the system volume (music changed in the dialog stays changed — the binary); Ctrl+P in a level is the
+  game's own held ⌘+P read (Ruling 5); Credits read the live button at each 3-tick check (a first-cut click latch was
+  dropped in review — a click between checks is missed, as the original); key fields take clicks in their exact rect
+  (the Mac app's view keeps a 4 px outset — carry); no null events while a popup is open or a button / checkbox is held
+  (the original's `PopUpMenuSelect` / `TrackControl` are modal — the Mac app does not pause them, carry [LOW]); the open popup menu is a drawn classic stand-in (the
+  Mac shows a system menu); the System Volume popup shows blank (value 10 > 9 items, as the Mac); **Alt+Return cannot be
+  captured as a binding** (Windows' full-screen key, Ruling 14 — ◇ note). Three self-derived goldens
+  (`Dialog-6900.ppm`, `-b` Sound panel + popup open, `-c` Controls panel + caret). Gates: GW2 **77/0**, GW3 0/1, GW4, GW1
+  0/2, G7W empty, G5 BUILD SUCCEEDED, GW4R identical (seat, temp copy). Two Opus legs PASS WITH FIXES (mutations 15/24
+  caught at first; the game-loop wiring was unpinned) → one behaviour-changing round (23/25 caught; two survivors
+  equivalent) → re-review PASS WITH FIXES (null events must also stop while a control is held) → a tiny round
+  (b62f1a8) seat-read.
+
 ### WF6 — Stage both builds; boot both muted by day; the Windows gate card (phase-end run)
 
 - **Files:** new `tools/windows/stage-ferazel-win.sh` (zsh, adapted from `stage-btx.sh`: committed-content check and

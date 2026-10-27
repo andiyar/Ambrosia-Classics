@@ -1729,3 +1729,11 @@ aborted the suite after 3 tests. File sizes now come from a `FileHandle` on Wind
 on Windows (`String.contains` traps on the long non-ASCII census text); **skip rule (exact): `CensusTests.testExitCodes`
 skips under Wine only** — Proof B's bar is now **489 passed / 0 failed / 1 skipped / 0 crashed (of 490)** (measured, ~4 min
 40 s), the script accepting only that named skip; on a real PC the test runs. GW4R measured the same morning: identical.
+**As built — WF4b (loop run 34, 2026-10-27; 689c551 + f8b36d0 + b62f1a8):** Options (6900) and Credits (600) drawn in-window over
+the flow's own models (`WinPrefsDialog`, `WinCreditsDialog`, popup / checkbox / key-capture items). Seat rulings ("follow
+the binary", dump-checked): the Options filter is the original's (Esc / Ctrl+. → Cancel, Return / Enter → OK at once on
+the Game Options and Sound panels; captured as bindings on Controls); Cancel restores only the system volume; Credits read
+the live button each 3-tick check (no click latch); key fields hit-test their exact rect; no null events while a popup is
+open or a control is held (b62f1a8). New ◇ notes: the open popup menu is a drawn classic stand-in; **Alt+Return cannot be bound** (it is Windows'
+full-screen key). Mac carries [LOW]: the Mac key field's 4 px click outset; the original's null-event pause while a
+button is held (Windows models it; the Mac app does not). FerazelWinKit **77/0** — the Phase W ladder's top.
