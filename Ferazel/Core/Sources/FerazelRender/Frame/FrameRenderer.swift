@@ -145,20 +145,12 @@ public final class FrameRenderer {
     /// The light faces loaded so far, by (pict, width, height).
     private var lightFaces: [[Int]: LightFace] = [:]
 
-    /// The level's renderer: tile sets, tables, parallax, sprite faces (every level-1 Setup sheet plus the player's
-    /// `.InitPlayerSprite` sets and the Platform class's `.InitPlatformSprite` sets — 0x578, 0x2c7, 0x582, 0x58c…0x58e,
-    /// 0x599…0x59c, `SetupFaces.platformSheets`, W1 — and the Background class's radial bars and balls 1480…1488,
-    /// `SetupFaces.backgroundSheets`, W2a; the mace chains 1434 / 1436 are the platform sets'; W2b: the springs and
-    /// passages, `SetupFaces.backgroundW2bSheets` — the cannon set 0x442 and the tunnels 3000…, plants 2700… come with
-    /// the placed types' sheets; W4: the level-2 types' sheets come with them, plus the stalactite child's set 0xb74,
-    /// `SetupFaces.boxChildSheets`; PK: the hurt coins' 0x516 and the Xichron burst's 0x421 / 0x422, `BonusSprite.dropSheets`;
-    /// BX1: the mine cart's child sets 0xb72 / 0xb73, `BoxSprite.spawnSheets`, and the faces the level's crates drop,
-    /// `BoxSprite.dropSheets`;
-    /// CS: the player shots' 1100…1105, 1113…1116, 1118, `PlayerShot.sheets`; IU: the held items' singles 750, 756,
-    /// 768, 771, `HeldItem.sheets` — the thrown seeds and the Smiting seeds are 1116, the stab faces 1021 / 1035 the
-    /// player's; LV4: the Bonus faces run-time spawns read that no placed type loads, `bonusSpawnSheets`; the rope segments'
-    /// sets 0x28a / 0x28c / 0x292, `RopeSprite.sheets` — the segments the first Handle makes carry them), empty light
-    /// slots (`addLights`), the status bar under the level CLUT.
+    /// The level's renderer: tile sets, tables, parallax, sprite faces, empty light slots (`addLights`), the status bar
+    /// under the level CLUT. The sprite faces (`spriteSheets`): every face the original loads at boot, `BootFaces.sheets`
+    /// in its order (a PICT the data lacks loads nothing, as `.Load1EncFaceFromPICT` returns nil), then the level's
+    /// `.Cache*` faces — each placed type's Setup sheet (`SetupFaces.setup`), the glider caches 1050…1053, the Background
+    /// class's radial bars and balls 1480…1488 and W2b springs and passages, the mine cart's child sets 0xb72 / 0xb73
+    /// (`BoxSprite.spawnSheets`) and the faces the level's crates drop (`BoxSprite.dropSheets`).
     /// - Parameter prefs: prefs+4 (parallax) and +6 (Effects) for the blitters; the Setup lights depend on Effects.
     /// - Parameter surface: the shared screen (FE0): its pixels, CLUT and gamma are left as they are until the ops
     ///   change them (the level's `setScreenClut` / `drawPicture`). Nil (today's tests): a fresh surface — a 0-filled
@@ -190,18 +182,7 @@ public final class FrameRenderer {
         let context = SetupFaces.Context(level: L, playerX: SetupFaces.Context.levelStartPlayerX(L.header),
                                          effects: prefs.effects)
         let entries = try L.activePlacements.map { try SetupFaces.setup($0, context: context) }
-        let faces = try SpriteBlitter.Faces(Set(entries.compactMap(\.sheet)).union(Self.playerSheets)
-                                                .union(Self.effectSheets).union(SetupFaces.platformSheets)
-                                                .union(SetupFaces.backgroundSheets)
-                                                .union(SetupFaces.backgroundW2bSheets)
-                                                .union(SetupFaces.boxChildSheets)
-                                                .union(BonusSprite.dropSheets)
-                                                .union(PlayerShot.sheets)
-                                                .union(HeldItem.sheets)
-                                                .union(BoxSprite.spawnSheets)
-                                                .union(BoxSprite.dropSheets(L.placements))
-                                                .union(Self.bonusSpawnSheets)
-                                                .union(RopeSprite.sheets),
+        let faces = try SpriteBlitter.Faces(Self.spriteSheets(level: L, entries: entries, resources: resources),
                                             resources: resources, search: search, dither: dither)
         let lights = LightRenderer(level: L, tables: tables)
         self.lights = lights
@@ -217,45 +198,33 @@ public final class FrameRenderer {
         ports = FramePorts()
     }
 
-    /// `.InitPlayerSprite @ 1004a284` (l. 42427–42484): the player's face sets — `FaceSheet.playerSheets`, the one
-    /// table (29 sets: every face the state machine selects, P3), at boot under clut 200 (`.InitSprites`, l. 118), and
-    /// the cached glider sets 1050–1053 (`FaceSheet.gliderSheets`, l. 42486–42489; GL). The held-item singles
-    /// 0x2ee…0x308 (`_DAT_100a5f68`, l. 42490) are `HeldItem.sheets` (the four the data holds; IU).
-    static let playerSheets: Set<SetupFaces.Sheet> = Set((FaceSheet.playerSheets + FaceSheet.gliderSheets).map {
-        loader -> SetupFaces.Sheet in
-        switch loader {
-        case .single(let pict): return .single(pict)
-        case .set(let a):
-            return SetupFaces.Sheet(pict: a.pict, count: a.count, cellWidth: a.cellWidth, cellHeight: a.cellHeight,
-                                    columns: a.columns, clut: 200)
+    /// The sprite faces a level's renderer loads, in load order (first definition of a PICT wins): `BootFaces.sheets`
+    /// whose PICT the data holds (on the chain the faces load from), then the level's caches — the Setup sheets of its
+    /// active placements, the glider caches (`FaceSheet.gliderSheets`, `.InitPlayerSprite` M l. 42486–42489),
+    /// `SetupFaces.backgroundSheets` / `backgroundW2bSheets`, `BoxSprite.spawnSheets`, `BoxSprite.dropSheets` — less any
+    /// PICT already loaded at boot.
+    static func spriteSheets(level L: LevelFile, entries: [SetupFaces.Entry], resources: FerazelResources)
+        -> [SetupFaces.Sheet] {
+        let boot = BootFaces.sheets.filter { resources.resource(type: "PICT", id: $0.pict, chain: .frontEnd) != nil }
+        let bootPicts = Set(BootFaces.sheets.map(\.pict))
+        let gliders = FaceSheet.gliderSheets.map { loader -> SetupFaces.Sheet in
+            switch loader {
+            case .single(let pict): return .single(pict)
+            case .set(let a):
+                return SetupFaces.Sheet(pict: a.pict, count: a.count, cellWidth: a.cellWidth, cellHeight: a.cellHeight,
+                                        columns: a.columns, clut: 200)
+            }
         }
-    })
-
-    /// LV4 (B5): the Bonus faces sprites made at run time are drawn from that no placed type on levels 1–4 is sure to
-    /// load (`.InitBonusSprite` loads every Bonus face at boot, M l. 52261–52337): the glider the stow drops, 0xbea
-    /// (`MTNewSprite(0xbea, …)`, M l. 45354–45356); the crystals a torch or candelabra container gives, 0x514 / 0x515
-    /// (6 × 0x12×0x14, M l. 53496–53505); the Multi Crystal's shards 0x4bf…0x4c2, faced from the set 0x4bf (4 × 0x10×0x11,
-    /// M l. 48010). The hurt coin 0x516 and the Xichron bursts 0x421 / 0x422 are `BonusSprite.dropSheets`.
-    static let bonusSpawnSheets: Set<SetupFaces.Sheet> = Set(BonusSprite.sheets.filter {
-        [0xbea, 0x514, 0x515, 0x4bf].contains($0.pict)
-    })
-
-    /// `.InitEffectSprite @ 10060378` (l. 53639–53686), at boot under clut 200 like the player's: the landing dust
-    /// 1201 (6 × 56×8, `.CheckGroundCeilingHitEffects`), the crumble overlay 1210 (3 × 32×32, `.MakeCrunchSprite`) and
-    /// the bubble 1040 (`LoadEncFaceSetFromPICT(0x410, 4, 8, 8, 4, …)`, l. 53656: 4 × 8×8, `.EmitBubble`, P4) — the
-    /// effects Phase 2 spawns — and W2b's cannon smoke 0x442 (`LoadEncFaceSetFromPICT(0x4b0, 13, 48, 48, 13, …)`,
-    /// l. 53646); EF: the run-time explosion sets — 1207 (`LoadEncFaceSetFromPICT(0x4b7, 13, 96, 96, 13, …)`, l. 53652),
-    /// the plume 1206 (`(0x4b6, 34, 64, 116, 34, …)`, l. 53658) and the debris 3099 (`(0xc1b, 16, 24, 24, 8, …)`, l. 53660).
-    /// // later: Phase 5–6 — 1202…1204, 1251, 1220 (their spawners).
-    static let effectSheets: Set<SetupFaces.Sheet> = [
-        SetupFaces.Sheet(pict: 0x4b7, count: 0xd, cellWidth: 0x60, cellHeight: 0x60, columns: 0xd, clut: 200),
-        SetupFaces.Sheet(pict: 0x4b6, count: 0x22, cellWidth: 0x40, cellHeight: 0x74, columns: 0x22, clut: 200),
-        SetupFaces.Sheet(pict: 0xc1b, count: 0x10, cellWidth: 0x18, cellHeight: 0x18, columns: 8, clut: 200),
-        SetupFaces.Sheet(pict: 0x4b0, count: 0xd, cellWidth: 0x30, cellHeight: 0x30, columns: 0xd, clut: 200),
-        SetupFaces.Sheet(pict: 0x4b1, count: 6, cellWidth: 0x38, cellHeight: 8, columns: 6, clut: 200),
-        SetupFaces.Sheet(pict: 0x4ba, count: 3, cellWidth: 0x20, cellHeight: 0x20, columns: 3, clut: 200),
-        SetupFaces.Sheet(pict: 0x410, count: 4, cellWidth: 8, cellHeight: 8, columns: 4, clut: 200),
-    ]
+        var caches: [SetupFaces.Sheet] = []
+        var seen = bootPicts
+        for s in entries.compactMap(\.sheet) + gliders + SetupFaces.backgroundSheets + SetupFaces.backgroundW2bSheets
+            + BoxSprite.spawnSheets.sorted(by: { $0.pict < $1.pict })
+            + BoxSprite.dropSheets(L.placements).sorted(by: { $0.pict < $1.pict }) where !seen.contains(s.pict) {
+            seen.insert(s.pict)
+            caches.append(s)
+        }
+        return boot + caches
+    }
 
     /// `.AddLight @ 1001bc08` for each light, in order (the session's `lights`, `.SetupLevelSprites` order) —
     /// `LightTable.add` on the renderer's copy: the first free slot gets `+0` active, `+1` new, `+2` 0, `+4` the face

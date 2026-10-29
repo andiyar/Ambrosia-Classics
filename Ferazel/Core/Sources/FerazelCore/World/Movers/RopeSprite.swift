@@ -54,15 +54,6 @@ public enum RopeSprite {
     /// The types with a `.SetupRopeSegArray` arm (3023…3039 have none — seg 0 divides by zero at 100845f8; none is
     /// placed; `SetupFaces` refuses them).
     public static let types: ClosedRange<Int16> = 0xbcc...0xbce
-    /// `.InitRopeSprite @ 10083980` (M l. 71002–71014; boot, the last of `.InitSprites`): the segment face sets
-    /// `RopeBlock.faces` names — `LoadEncFaceSetFromPICT(0x28a / 0x28c, 30, 20, 20, 15, …)` under the boot conversion
-    /// CLUT 200, then `*_DAT_1009ff94 = clut 199` (`_DAT_100a001c`) for `(0x292, 30, 24, 24, 15, …)` and back to 200
-    /// (`_DAT_100a0020`). (The single 0x289 it loads first, `PTR_DAT_100a0d18`, is never read in the decompile.)
-    public static let sheets: [SetupFaces.Sheet] = [
-        SetupFaces.Sheet(pict: 0x28a, count: 0x1e, cellWidth: 0x14, cellHeight: 0x14, columns: 0xf, clut: 200),
-        SetupFaces.Sheet(pict: 0x28c, count: 0x1e, cellWidth: 0x14, cellHeight: 0x14, columns: 0xf, clut: 200),
-        SetupFaces.Sheet(pict: 0x292, count: 0x1e, cellWidth: 0x18, cellHeight: 0x18, columns: 0xf, clut: 199),
-    ]
 
     @inline(__always) static func h(_ v: Int) -> Int { Int(Int16(truncatingIfNeeded: v)) }
     @inline(__always) static func h32(_ v: Int32) -> Int32 { Int32(Int16(truncatingIfNeeded: v)) }
