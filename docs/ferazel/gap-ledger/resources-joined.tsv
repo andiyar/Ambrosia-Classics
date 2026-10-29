@@ -1,0 +1,1216 @@
+file	type	id	name	bytes	trace	via	static_port	static_class	reached	note
+FW.rsrc	ALRT	500		14	-		no	n	never	
+FW.rsrc	ALRT	501		14	-		no	n	never	
+FW.rsrc	CNTL	128	Graphics popup old	23	-		no	n	never	
+FW.rsrc	CNTL	600	Prefs Panel Popup	23	test		yes FerazelCarbonDialog / DialogWindow (ControlTemplate)	used	front end (Options)	
+FW.rsrc	CNTL	601	Volume Popup	23	test		yes FerazelCarbonDialog / DialogWindow (ControlTemplate)	used	front end (Options)	
+FW.rsrc	CNTL	602	Graphics popup	23	test		yes FerazelCarbonDialog / DialogWindow (ControlTemplate)	used	front end (Options)	
+FW.rsrc	CNTL	603	Effects popup	23	test		yes FerazelCarbonDialog / DialogWindow (ControlTemplate)	used	front end (Options)	
+FW.rsrc	CNTL	604	Px popup	23	test		yes FerazelCarbonDialog / DialogWindow (ControlTemplate)	used	front end (Options)	
+FW.rsrc	CNTL	605	sysVolume Popup	23	test		no	n	never	
+FW.rsrc	DITL	-6043		2	-		no	n	never	
+FW.rsrc	DITL	128	Game Preferences old	328	-		no	n	never	
+FW.rsrc	DITL	150	030 Warning	560	-		no	n	never	
+FW.rsrc	DITL	160	Copying Machine	216	-		no	n	never	
+FW.rsrc	DITL	170	Level Limit	278	-		no	n	never	
+FW.rsrc	DITL	200	generic	66	-		yes DialogItemList	used	front end/L1-4	
+FW.rsrc	DITL	201		60	-		no	b	never (OOM)	
+FW.rsrc	DITL	202		70	test		yes DialogItemList	used	front end/L1-4	
+FW.rsrc	DITL	203		182	-		no	n	never	
+FW.rsrc	DITL	400	Warp DITL	66	-		no	d	never	
+FW.rsrc	DITL	500		40	-		no	n	never	
+FW.rsrc	DITL	501		64	-		no	n	never	
+FW.rsrc	DITL	600		18	-		yes DialogItemList	used	front end/L1-4	
+FW.rsrc	DITL	700		192	-		no	n	never	
+FW.rsrc	DITL	750		54	-		no	n	never	
+FW.rsrc	DITL	800	New Game	144	-		no	n	never	
+FW.rsrc	DITL	1001	Save Game	244	-		no	n	never	
+FW.rsrc	DITL	1002		190	-		no	n	never	
+FW.rsrc	DITL	1003		300	game	LevelRun.tick, GameFlow.tick	yes DialogItemList	used	front end/L1-4	
+FW.rsrc	DITL	1100		18	-		no	n	never	
+FW.rsrc	DITL	1200	sign 2	18	-		no	n	never	
+FW.rsrc	DITL	1300	res switch	242	-		no	d	never in replica	
+FW.rsrc	DITL	1500	Prompt GetFile	214	test		no (D35 native panel)	used	front end/L1-4	
+FW.rsrc	DITL	1600	generic	98	-		no	b	never with data present	
+FW.rsrc	DITL	6900	Preferences	138	test		yes DialogItemList	used	front end/L1-4	
+FW.rsrc	DITL	6901	Game Preferences	218	test		yes DialogItemList	used	front end/L1-4	
+FW.rsrc	DITL	6902	Keyboard Preferences	418	test		yes DialogItemList	used	front end/L1-4	
+FW.rsrc	DITL	6903	Sound Preferences	276	test		yes DialogItemList	used	front end/L1-4	
+FW.rsrc	DITL	16902	Keyboard Preferences ISP	418	-		no	n	never	
+FW.rsrc	DITL	16903	Sound Preferences orig	190	-		no	n	never	
+FW.rsrc	DLOG	150	030 warning	24	-		no	n	never	
+FW.rsrc	DLOG	170	Level Limit	24	-		no	n	never	
+FW.rsrc	DLOG	200	Generic Message	24	-		yes FerazelDialogs.report	used	front end/L1-4	
+FW.rsrc	DLOG	201	Debug Message	24	-		no	b	never (out-of-memory only)	
+FW.rsrc	DLOG	202	Abort Warning	24	test		yes FerazelDialogs.confirm	used	front end/map/L1-4	
+FW.rsrc	DLOG	203	Game Over	24	-		no	n	never	
+FW.rsrc	DLOG	400	Warp	34	-		no	d	never (debug build flag)	
+FW.rsrc	DLOG	600	scrolling credits	24	-		yes CreditsDialog / WinCreditsDialog	used	front end (Credits)	
+FW.rsrc	DLOG	700	Memo	24	-		no	n	never	
+FW.rsrc	DLOG	750	Dialogue	21	-		no	n	never	
+FW.rsrc	DLOG	800	New Game	24	-		no	n	never	
+FW.rsrc	DLOG	1001	Save Game	24	-		no	n	never	
+FW.rsrc	DLOG	1002		24	-		no	n	never	
+FW.rsrc	DLOG	1003		24	-		partial — native save panel, DITL 1003 item 13 text only (SaveGame.swift:135; D35 known deviation)	used	L1-4 (save point)	
+FW.rsrc	DLOG	1100	Sign	24	-		no	n	never	
+FW.rsrc	DLOG	1200	Sign II	24	-		no	n	never	
+FW.rsrc	DLOG	1300	Res switch	24	-		no	d	never in replica (design §7.1)	
+FW.rsrc	DLOG	1500	Prompt GetFile	34	-		no — native open panel (D35 known deviation)	used	front end	
+FW.rsrc	DLOG	1600	CD Request	24	-		no	b	never with shipped data present	
+FW.rsrc	DLOG	6900	Preferences	34	test		yes PrefsDialogView / WinPrefsDialog	used	front end/L1-4 (Options)	
+FW.rsrc	MBAR	128		8	game	static MenuBarTemplate.load	yes FerazelMenus	used	boot	
+FW.rsrc	MENU	128		49	test		yes FerazelMenus	used	boot	
+FW.rsrc	MENU	129		89	test		yes FerazelMenus	used	boot	
+FW.rsrc	MENU	130		71	test		yes FerazelMenus	used	boot	
+FW.rsrc	MENU	600	Prefs Panel Popup	65	test		yes via ControlTemplate.menuID	used	front end (Options)	
+FW.rsrc	MENU	601	Volume Popup	71	test		yes via ControlTemplate.menuID	used	front end (Options)	
+FW.rsrc	MENU	602	Graphics popup	68	-		yes via ControlTemplate.menuID	used	front end (Options)	
+FW.rsrc	MENU	603	Graphics popup	58	-		yes via ControlTemplate.menuID	used	front end (Options)	
+FW.rsrc	MENU	604	Graphics popup	65	-		yes via ControlTemplate.menuID	used	front end (Options)	
+FW.rsrc	MENU	605	sysVolume Popup	77	-		no	n	never	
+FW.rsrc	Msct	0	Owner resource	1	-		n/a	n	out of scope	
+FW.rsrc	PICT	145		2754	-		yes Dialog picItem (DialogViews / DialogWindow)	used	front end/L1-4 (DLOG 200/202)	static yes, not on a traced game path (App-only, later level, or untested)
+FW.rsrc	PICT	146		2998	-		yes Dialog picItem (DialogViews / DialogWindow)	used	front end (Options)	static yes, not on a traced game path (App-only, later level, or untested)
+FW.rsrc	PICT	150		3864	game	FerazelSession.__allocating_init, FrameRenderer.__allocating_init, LevelRun.tick	yes BootFaces.swift:30,BootFaces.swift:34,SetupFaces.swift:149	used	boot→L1-4	
+FW.rsrc	PICT	151		3974	game	FrameRenderer.__allocating_init	yes BackgroundSprite.swift:528,BootFaces.swift:30	used	boot→L1-4	
+FW.rsrc	PICT	7000		181550	game	WorldMapRun.__allocating_init, GameFlow.tick, MapRenderer.apply	yes WorldMapRun.mapPicture (.frontEnd chain → this app copy)	used	map	
+FW.rsrc	STR#	300	Warning Strings	347	-		no	n	never	
+FW.rsrc	STR#	400	Fatal Error Strings	725	-		no	n	never	
+FW.rsrc	Tune	6900	dummy	29580	-		no	n	never	
+FW.rsrc	WIND	128	Game Window	29	-		yes (game window; HIGH for id only)	used	boot	
+FW.rsrc	clut	198	cooling map clut	2056	test		weak-literal Pause.swift:163	a (flame levels 52/55)	boot; drawn only on flame levels 52/55	
+FW.rsrc	clut	199	base sprite clut grays	2056	game	FrameRenderer.__allocating_init, TileSets.Fixed.init, StatusBar.init	yes BootFaces.swift:85,StageScreens.swift:53,StatusBar.swift:56	used	boot	
+FW.rsrc	clut	200	base sprite clut	2056	game	FrameRenderer.__allocating_init, StatusBar.init, SpriteBlitter.Faces.init<A>	yes BonusSprite.swift:23,BootFaces.swift:20,BootFaces.swift:63	used	boot;front end (boot)	
+FW.rsrc	clut	700	world map clut	2056	game	MapRenderer.apply, MapRenderer.face	yes StatusBar.swift:67,WorldMapRun.swift:170	used	boot	
+FW.rsrc	clut	801	System CLUT	2056	game	FrameRenderer.__allocating_init, FrameRenderer.addLights, FrameRenderer.apply	yes BonusSprite.swift:49,FerazelDriver.swift:102,FrameRenderer.swift:195	used	boot	
+FW.rsrc	clut	4000	dialogue palette	2056	test		yes HandleKeys.swift:520,HandleKeys.swift:524	used	boot→L1-4	static yes, not on a traced game path (App-only, later level, or untested)
+FW.rsrc	dctb	150	030 warning	48	-		no	n	never	
+FW.rsrc	dctb	160	Copying Machine	48	-		no	n	never	
+FW.rsrc	dctb	170	Level Limit	48	-		no	n	never	
+FW.rsrc	dctb	200	Generic Message	48	-		yes contentColor(dctb:)	used	front end/L1-4	
+FW.rsrc	dctb	202	Abort Warning	48	-		yes contentColor(dctb:)	used	front end/L1-4	
+FW.rsrc	dctb	600	scrolling credits	48	-		yes contentColor(dctb:)	used	front end/L1-4	
+FW.rsrc	dctb	700	Memo	48	-		no	n	never	
+FW.rsrc	dctb	800	New Game	48	-		no	n	never	
+FW.rsrc	dctb	1001	Save Game	48	-		no	n	never	
+FW.rsrc	dctb	1100	Sign	48	-		no	n	never	
+FW.rsrc	dctb	1200	Sign II	48	-		no	n	never	
+FW.rsrc	dctb	1300	Res switch	48	-		no	n	never	
+FW.rsrc	dctb	1600	CD Request	48	-		no	b	front end/L1-4	
+FW.rsrc	dctb	6900	Preferences	48	-		yes contentColor(dctb:)	used	front end/L1-4	
+FW.rsrc	wctb	128		48	-		no (shell window)	n	boot	
+World	Mcnv	200	Rojinko Conv	36936	game	ConversationRun.tick	?	?	?	
+World	Mcnv	201	Geroditus conv 1	36936	game	ConversationRun.tick	?	?	?	
+World	Mcnv	202	Andrew	36936	test		?	?	?	
+World	Mcnv	203	Sernis magic crystal 1	36936	game	ConversationRun.tick	?	?	?	
+World	Mcnv	204	Unfriendly Fellow frsd Conv	36936	test		?	?	?	
+World	Mcnv	205	Wounded Habnabit Health Potion conv	36936	test		?	?	?	
+World	Mcnv	206	Nimbo conv	36936	test		?	?	?	
+World	Mcnv	207	Elber Ice Merchant Conv	36936	test		?	?	?	
+World	Mcnv	208	Korta conv	36936	test		?	?	?	
+World	Mcnv	209	Hooded Figure	36936	test		?	?	?	
+World	Mcnv	210	Babbling conv	36936	test		?	?	?	
+World	Mcnv	211	Cedric Ice Merchant Conv	36936	test		?	?	?	
+World	Mcnv	212	Jason conv	36936	test		?	?	?	
+World	Mcnv	213	Eric Conv	36936	test		?	?	?	
+World	Mcnv	214	AH conv	36936	test		?	?	?	
+World	Mcnv	220	Dimbo saved	36936	test		?	?	?	
+World	Mcnv	221	Dimbo	36936	test		?	?	?	
+World	Mcnv	250	Xichra 1	36936	test		?	?	?	
+World	Mcnv	251	Xichra 2	36936	test		?	?	?	
+World	Mcnv	252	Xichra 3	36936	test		?	?	?	
+World	Mcnv	260	Grave 1	36936	test		?	?	?	
+World	Mcnv	261	Grave 2	36936	test		?	?	?	
+World	Mcnv	280	Haze Plaque	36936	test		?	?	?	
+World	Mcnv	281	andrew plaque	36936	test		?	?	?	
+World	Mcnv	282	Eric plaque	36936	test		?	?	?	
+World	Mcnv	283	jason plaque	36936	test		?	?	?	
+World	Mcnv	300	Obfusc Character	36936	test		?	?	?	
+World	Mcnv	400	Statue spell warn guy	36936	test		?	?	?	
+World	Mcnv	401	Ben conv	36936	test		?	?	?	
+World	Mlvl	1	A Scent Of Peril	126748	game	FerazelSession.__allocating_init, GameFlow.tick, FrameRenderer.__allocating_init	?	?	?	
+World	Mlvl	2	Central Caverns	126748	game	GameFlow.tick, FerazelSession.__allocating_init, FrameRenderer.__allocating_init	?	?	?	
+World	Mlvl	3	Western Reaches	197724	game	FrameRenderer.__allocating_init, FerazelSession.__allocating_init, GameFlow.tick	?	?	?	
+World	Mlvl	4	Eastern Reaches	197724	game	GameFlow.tick, FrameRenderer.__allocating_init, FerazelSession.__allocating_init	?	?	?	
+World	Mlvl	5	Manditraki Warrior	53916	test		?	?	?	
+World	Mlvl	10	Unemployed In Greenland	231004	test		?	?	?	
+World	Mlvl	11	River of Fears	183292	test		?	?	?	
+World	Mlvl	15	Storm Valley	257724	test		?	?	?	
+World	Mlvl	18	Goblin Chief	66140	test		?	?	?	
+World	Mlvl	20	Hangnabit	201452	test		?	?	?	
+World	Mlvl	21	Obfuscation & Edification	234524	test		?	?	?	
+World	Mlvl	22	The Labyrinth	328348	test		?	?	?	
+World	Mlvl	25	Manditraki Wizard	66140	test		?	?	?	
+World	Mlvl	30	Flash Freeze	183772	test		?	?	?	
+World	Mlvl	31	Iceconoclasm	231004	test		?	?	?	
+World	Mlvl	40	Parched Earth	305884	test		?	?	?	
+World	Mlvl	45	The Dig	145052	test		?	?	?	
+World	Mlvl	50	Fire In The Hole	231004	test		?	?	?	
+World	Mlvl	51	If You Can’t Stand The Heat…	198972	test		?	?	?	
+World	Mlvl	52	Out of the Frying Pan	128284	test		?	?	?	
+World	Mlvl	55	Fire Guardians	53916	test		?	?	?	
+World	Mlvl	62	Ends of the Earth	231004	test		?	?	?	
+World	Mlvl	67	Xichra’s Lair	52140	test		?	?	?	
+World	Mlvl	70	Purple Haze	113308	test		?	?	?	
+World	Mmap	200	Map	38144	game	FerazelSession.__allocating_init, GameFlow.tick, WorldMapRun.__allocating_init	?	?	?	
+World	Mwld	0	Mascot World	70664	game	LevelRun.__allocating_init, GameFlow.tick	?	?	?	
+World	PICT	7000		181212	game	WorldMapRun.__allocating_init, GameFlow.tick, MapRenderer.apply	?	?	?	
+World	STR#	500	signs	1729	game	FerazelSession.__allocating_init, LevelRun.tick, GameFlow.tick	?	?	?	
+World	STR#	1000	level names	499	game	WorldMapRun.__allocating_init, GameFlow.tick	?	?	?	
+Backgrounds	PICT	200		66140	game	FrameRenderer.__allocating_init, TileSets.init	?	?	?	
+Backgrounds	PICT	201		16610	-		?	?	?	
+Backgrounds	PICT	203		61128	game	FrameRenderer.__allocating_init, TileSets.init	?	?	?	
+Backgrounds	PICT	206		67892	game	FrameRenderer.__allocating_init, TileSets.init	?	?	?	
+Backgrounds	PICT	207		394858	game	FrameRenderer.__allocating_init, TileSets.init	?	?	?	
+Backgrounds	PICT	208		158154	-		?	?	?	
+Backgrounds	PICT	210		169818	-		?	?	?	
+Backgrounds	PICT	211		16610	-		?	?	?	
+Backgrounds	PICT	213		61372	-		?	?	?	
+Backgrounds	PICT	214		61304	-		?	?	?	
+Backgrounds	PICT	216		196966	-		?	?	?	
+Backgrounds	PICT	217		322472	test		?	?	?	
+Backgrounds	PICT	220		175482	-		?	?	?	
+Backgrounds	PICT	222		198120	-		?	?	?	
+Backgrounds	PICT	237		238662	-		?	?	?	
+Backgrounds	PICT	240		215236	game	FrameRenderer.__allocating_init	?	?	?	
+Backgrounds	PICT	243		60882	game	FrameRenderer.__allocating_init	?	?	?	
+Backgrounds	PICT	244		60470	test		?	?	?	
+Backgrounds	PICT	246		33220	-		?	?	?	
+Backgrounds	PICT	247	EC2 back	428702	game	FrameRenderer.__allocating_init	?	?	?	
+Backgrounds	PICT	250		68212	test		?	?	?	
+Backgrounds	PICT	251		12946	-		?	?	?	
+Backgrounds	PICT	253		72168	test		?	?	?	
+Backgrounds	PICT	256		65948	test		?	?	?	
+Backgrounds	PICT	257		392264	test		?	?	?	
+Backgrounds	PICT	258		156072	test		?	?	?	
+Backgrounds	PICT	259		6398	test		?	?	?	
+Backgrounds	PICT	260		67684	test		?	?	?	
+Backgrounds	PICT	263		58278	test		?	?	?	
+Backgrounds	PICT	264		10250	-		?	?	?	
+Backgrounds	PICT	265		38066	-		?	?	?	
+Backgrounds	PICT	266		66838	test		?	?	?	
+Backgrounds	PICT	267		538740	test		?	?	?	
+Backgrounds	PICT	268		178408	test		?	?	?	
+Backgrounds	PICT	269		6488	test		?	?	?	
+Backgrounds	PICT	270		76992	test		?	?	?	
+Backgrounds	PICT	273		73524	test		?	?	?	
+Backgrounds	PICT	275		21478	-		?	?	?	
+Backgrounds	PICT	276		68220	test		?	?	?	
+Backgrounds	PICT	277		513314	test		?	?	?	
+Backgrounds	PICT	278		153974	test		?	?	?	
+Backgrounds	PICT	279		11526	test		?	?	?	
+Backgrounds	PICT	280		76144	test		?	?	?	
+Backgrounds	PICT	283		63708	test		?	?	?	
+Backgrounds	PICT	286		67630	test		?	?	?	
+Backgrounds	PICT	287		539168	test		?	?	?	
+Backgrounds	PICT	288		175748	test		?	?	?	
+Backgrounds	PICT	289		6274	test		?	?	?	
+Backgrounds	PICT	290		64418	test		?	?	?	
+Backgrounds	PICT	291		9780	-		?	?	?	
+Backgrounds	PICT	293		61268	test		?	?	?	
+Backgrounds	PICT	296		68394	test		?	?	?	
+Backgrounds	PICT	297		488238	test		?	?	?	
+Backgrounds	PICT	298		135866	test		?	?	?	
+Backgrounds	PICT	299		7712	test		?	?	?	
+Backgrounds	PICT	305		15120	-		?	?	?	
+Backgrounds	PICT	307		502296	-		?	?	?	
+Backgrounds	PICT	310		69428	test		?	?	?	
+Backgrounds	PICT	313		62240	test		?	?	?	
+Backgrounds	PICT	314		59042	test		?	?	?	
+Backgrounds	PICT	315		29810	-		?	?	?	
+Backgrounds	PICT	316		66258	test		?	?	?	
+Backgrounds	PICT	317		375044	test		?	?	?	
+Backgrounds	PICT	318		143644	test		?	?	?	
+Backgrounds	PICT	319		3611	test		?	?	?	
+Backgrounds	PICT	325		11620	-		?	?	?	
+Backgrounds	PICT	326		38380	-		?	?	?	
+Backgrounds	PICT	327		456770	-		?	?	?	
+Backgrounds	PICT	328		130200	-		?	?	?	
+Backgrounds	PICT	329		5198	-		?	?	?	
+Backgrounds	PICT	330		186572	-		?	?	?	
+Backgrounds	PICT	336		56394	-		?	?	?	
+Backgrounds	PICT	337		438228	-		?	?	?	
+Backgrounds	PICT	338		127986	-		?	?	?	
+Backgrounds	PICT	339		2014	-		?	?	?	
+Backgrounds	PICT	340		71630	test		?	?	?	
+Backgrounds	PICT	345		19454	-		?	?	?	
+Backgrounds	PICT	346		66006	test		?	?	?	
+Backgrounds	PICT	347		512822	test		?	?	?	
+Backgrounds	PICT	348		126918	test		?	?	?	
+Backgrounds	PICT	349		8084	test		?	?	?	
+Backgrounds	PICT	350		10037	-		?	?	?	
+Backgrounds	PICT	357		491422	test		?	?	?	
+Backgrounds	PICT	360		71492	-		?	?	?	
+Backgrounds	PICT	366		63208	-		?	?	?	
+Backgrounds	PICT	367		445466	-		?	?	?	
+Backgrounds	PICT	370		69916	test		?	?	?	
+Backgrounds	PICT	376		67320	test		?	?	?	
+Backgrounds	PICT	377		427556	test		?	?	?	
+Backgrounds	PICT	378		167146	test		?	?	?	
+Backgrounds	PICT	379		11162	test		?	?	?	
+Backgrounds	PICT	380		73984	test		?	?	?	
+Backgrounds	PICT	385		8866	-		?	?	?	
+Backgrounds	PICT	387		352538	test		?	?	?	
+Backgrounds	PICT	391		15016	-		?	?	?	
+Backgrounds	PICT	400		167624	-		?	?	?	
+Backgrounds	PICT	456		68318	-		?	?	?	
+Backgrounds	PICT	458		169450	test		?	?	?	
+Backgrounds	PICT	459		11162	test		?	?	?	
+Backgrounds	PICT	500		68336	-		?	?	?	
+Backgrounds	PICT	501		198120	-		?	?	?	
+Backgrounds	PICT	502		68408	-		?	?	?	
+Backgrounds	PICT	504		197610	-		?	?	?	
+Backgrounds	PICT	505		197822	-		?	?	?	
+Backgrounds	PICT	506		197728	game	FrameRenderer.__allocating_init	?	?	?	
+Backgrounds	PICT	507		195656	test		?	?	?	
+Backgrounds	PICT	509		114162	game	FrameRenderer.__allocating_init	?	?	?	
+Backgrounds	PICT	510		38044	-		?	?	?	
+Backgrounds	PICT	511		198136	game	FrameRenderer.__allocating_init	?	?	?	
+Backgrounds	PICT	600		154600	test		?	?	?	
+Backgrounds	PICT	601		152156	test		?	?	?	
+Backgrounds	PICT	1263		124870	-		?	?	?	
+Backgrounds	PICT	24069		73872	-		?	?	?	
+Backgrounds	TEXT	128		11	-		?	?	?	
+Backgrounds	cicn	200		946	-		?	?	?	
+Backgrounds	cicn	290		490	-		?	?	?	
+Backgrounds	cicn	299		1642	-		?	?	?	
+Backgrounds	cicn	498	Map Marker	546	-		?	?	?	
+Backgrounds	cicn	499	Map Marker Flash	338	-		?	?	?	
+Backgrounds	cicn	560		490	-		?	?	?	
+Backgrounds	cicn	571		874	-		?	?	?	
+Backgrounds	cicn	572		874	-		?	?	?	
+Backgrounds	cicn	573		874	-		?	?	?	
+Backgrounds	cicn	574		874	-		?	?	?	
+Backgrounds	cicn	596	barrel/cooler mask	1642	-		?	?	?	
+Backgrounds	cicn	597	barrel/cooler mask	626	-		?	?	?	
+Backgrounds	cicn	598	barrel/cooler mask	490	-		?	?	?	
+Backgrounds	cicn	599	plant mask	1066	-		?	?	?	
+Backgrounds	cicn	1000		322	-		?	?	?	
+Backgrounds	cicn	1299		130	-		?	?	?	
+Backgrounds	cicn	10135		262	-		?	?	?	
+Backgrounds	cicn	10136		262	-		?	?	?	
+Backgrounds	cicn	10137		262	-		?	?	?	
+Backgrounds	clut	198	cooling map clut	2056	test		?	?	?	
+Backgrounds	clut	199	base sprite clut grays	2056	game	FrameRenderer.__allocating_init, TileSets.Fixed.init, StatusBar.init	?	?	?	
+Backgrounds	clut	200	base sprite clut	2056	game	FrameRenderer.__allocating_init, StatusBar.init, SpriteBlitter.Faces.init<A>	?	?	?	
+Backgrounds	clut	201	earthcav	2056	game	FrameRenderer.__allocating_init, TileSets.init	?	?	?	
+Backgrounds	clut	202	base + earthcav	2056	game	FrameRenderer.__allocating_init, FrameRenderer.apply, GameFlow.tick	?	?	?	
+Backgrounds	clut	203	lake	2056	-		?	?	?	
+Backgrounds	clut	204	base + lake	2056	-		?	?	?	
+Backgrounds	clut	205	night rock lake	2056	-		?	?	?	
+Backgrounds	clut	206	night rock lake + base	2056	-		?	?	?	
+Backgrounds	clut	207	forest	2056	-		?	?	?	
+Backgrounds	clut	208	forest + base	2056	-		?	?	?	
+Backgrounds	clut	209	EC2	2056	game	FrameRenderer.__allocating_init	?	?	?	
+Backgrounds	clut	210	EC2 + base	2056	game	FrameRenderer.__allocating_init, FrameRenderer.apply, GameFlow.tick	?	?	?	
+Backgrounds	clut	211	forest 2	2056	-		?	?	?	
+Backgrounds	clut	212	forest 2 + base	2056	test		?	?	?	
+Backgrounds	clut	213	forest 1 new	2056	-		?	?	?	
+Backgrounds	clut	214	forest 1 new + base	2056	test		?	?	?	
+Backgrounds	clut	215	Upper Ice Caverns	2056	-		?	?	?	
+Backgrounds	clut	216	Upper Ice Caverns + base	2056	test		?	?	?	
+Backgrounds	clut	217	Lower Ice Caverns	2056	-		?	?	?	
+Backgrounds	clut	218	Lower Ice Caverns + base	2056	test		?	?	?	
+Backgrounds	clut	219	Upper Fire Caverns	2056	-		?	?	?	
+Backgrounds	clut	220	Upper Fire Caverns + base	2056	test		?	?	?	
+Backgrounds	clut	221	Upper Fire Caverns flame	2056	-		?	?	?	
+Backgrounds	clut	222	Upper Fire Caverns flame + base	2056	test		?	?	?	
+Backgrounds	clut	223	newlake	2056	-		?	?	?	
+Backgrounds	clut	224	newlake + base	2056	test		?	?	?	
+Backgrounds	clut	225	Hunter forest	2056	-		?	?	?	
+Backgrounds	clut	226	Hunter forest + base	2056	-		?	?	?	
+Backgrounds	clut	227	Desert	2056	-		?	?	?	
+Backgrounds	clut	228	Desert + base	2056	test		?	?	?	
+Backgrounds	clut	229	Plains	2056	-		?	?	?	
+Backgrounds	clut	230	Plains + base	2056	-		?	?	?	
+Backgrounds	clut	231	Mountains1	2056	-		?	?	?	
+Backgrounds	clut	232	Mountains1 + base	2056	-		?	?	?	
+Backgrounds	clut	235	Boss1abstract	2056	-		?	?	?	
+Backgrounds	clut	236	Boss1abstract + base	2056	test		?	?	?	
+Backgrounds	clut	237	RuinsBoss	2056	-		?	?	?	
+Backgrounds	clut	238	RuinsBoss + base	2056	test		?	?	?	
+Backgrounds	clut	239	Mountains2	2056	-		?	?	?	
+Backgrounds	clut	240	Mountains2 + base	2056	test		?	?	?	
+Backgrounds	clut	241	Purple abstract	2056	-		?	?	?	
+Backgrounds	clut	242	Purple abstract + base	2056	test		?	?	?	
+Backgrounds	clut	243	Breathing	2056	-		?	?	?	
+Backgrounds	clut	244	Breathing + base	2056	-		?	?	?	
+Backgrounds	clut	245	Ruins1	2056	-		?	?	?	
+Backgrounds	clut	246	Ruins1 + base	2056	test		?	?	?	
+Backgrounds	clut	247	Throne Room	2056	-		?	?	?	
+Backgrounds	clut	248	Throne Room + base	2056	test		?	?	?	
+Backgrounds	clut	300	Blue tinge altClut orig	2056	-		?	?	?	
+Backgrounds	clut	301	Gold tinge altClut	2056	-		?	?	?	
+Backgrounds	clut	302	Purply tinge altClut	2056	-		?	?	?	
+Backgrounds	clut	322	Upper Fire Caverns flame + base o	2056	-		?	?	?	
+Backgrounds	clut	401	bluepurp ting	2056	-		?	?	?	
+Backgrounds	clut	700	world map clut	2056	game	MapRenderer.apply, MapRenderer.face	?	?	?	
+Backgrounds	clut	801	System CLUT	2056	game	FrameRenderer.__allocating_init, FrameRenderer.addLights, FrameRenderer.apply	?	?	?	
+Backgrounds	clut	4000	dialogue palette	2056	test		?	?	?	
+Sprites	PICT	160		132338	-		?	?	?	
+Sprites	PICT	170		2580	-		?	?	?	
+Sprites	PICT	180		38560	-		?	?	?	
+Sprites	PICT	181		134640	-		?	?	?	
+Sprites	PICT	182		16610	-		?	?	?	
+Sprites	PICT	183		5238	game	FrameRenderer.__allocating_init, TileSets.Fixed.init	?	?	?	
+Sprites	PICT	185		23058	game	FrameRenderer.__allocating_init, TileSets.Fixed.init	?	?	?	
+Sprites	PICT	198		61054	-		?	?	?	
+Sprites	PICT	206		196966	game	FrameRenderer.__allocating_init, TileSets.init	?	?	?	
+Sprites	PICT	207		212772	game	FrameRenderer.__allocating_init, TileSets.init	?	?	?	
+Sprites	PICT	265		38066	-		?	?	?	
+Sprites	PICT	328	fireball right	2464	-		?	?	?	
+Sprites	PICT	428		24418	-		?	?	?	
+Sprites	PICT	528		18654	-		?	?	?	
+Sprites	PICT	600		1044	test		?	?	?	
+Sprites	PICT	601		416	test		?	?	?	
+Sprites	PICT	649		1290	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	650	classic rope bend frames	5196	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	651		982	-		?	?	?	
+Sprites	PICT	652		5328	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	653		908	-		?	?	?	
+Sprites	PICT	658		3084	game	FrameRenderer.__allocating_init, FerazelSession.step, LevelRun.tick	?	?	?	
+Sprites	PICT	700		83038	game	FrameRenderer.__allocating_init, StatusBar.init, MapRenderer.apply	?	?	?	
+Sprites	PICT	701		35868	game	FrameRenderer.__allocating_init, StatusBar.init, MapRenderer.apply	?	?	?	
+Sprites	PICT	702		86564	game	FrameRenderer.__allocating_init, StatusBar.init, MapRenderer.apply	?	?	?	
+Sprites	PICT	703		50594	game	FrameRenderer.__allocating_init, StatusBar.init, MapRenderer.apply	?	?	?	
+Sprites	PICT	711	frozen water platform	2832	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	712	trunk bottom	2522	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	713	trunk segment	2284	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	750		416	game	FrameRenderer.__allocating_init, FerazelSession.step	?	?	?	
+Sprites	PICT	756		394	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	768		680	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	771		1384	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	801		25064	game	FrameRenderer.addLights	?	?	?	
+Sprites	PICT	802		27688	game	FrameRenderer.apply	?	?	?	
+Sprites	PICT	803		17236	-		?	?	?	
+Sprites	PICT	806		13376	game	FrameRenderer.apply	?	?	?	
+Sprites	PICT	807		5324	-		?	?	?	
+Sprites	PICT	810		4820	game	FrameRenderer.addLights	?	?	?	
+Sprites	PICT	811		4932	game	FrameRenderer.apply	?	?	?	
+Sprites	PICT	812		4390	game	FrameRenderer.apply	?	?	?	
+Sprites	PICT	813		3838	game	FrameRenderer.apply	?	?	?	
+Sprites	PICT	820		8312	test		?	?	?	
+Sprites	PICT	821		8550	test		?	?	?	
+Sprites	PICT	822		4108	game	FrameRenderer.addLights	?	?	?	
+Sprites	PICT	830		2882	test		?	?	?	
+Sprites	PICT	950		357262	-		?	?	?	
+Sprites	PICT	951		39966	-		?	?	?	
+Sprites	PICT	952		28932	-		?	?	?	
+Sprites	PICT	1001		2684	-		?	?	?	
+Sprites	PICT	1002		220	game	FrameRenderer.__allocating_init, static TileGridRenderer.loadClearFace	?	?	?	
+Sprites	PICT	1003		8180	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1004		2412	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1008		6244	-		?	?	?	
+Sprites	PICT	1009		2580	-		?	?	?	
+Sprites	PICT	1010		17578	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1011		17376	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1012		10310	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1013		8324	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1014		13308	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1015		16706	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1016		18364	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1017		22960	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1020		28044	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1021		20134	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1022		19200	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1023		20032	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1024		25148	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1025		21646	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1026		38682	-		?	?	?	
+Sprites	PICT	1027		12098	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1028		29326	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1029		14038	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1030		8268	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1031		16258	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1032		18108	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1033		13524	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1034		13564	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1035		10942	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1036		16170	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1037		11952	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1038		11376	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1039		23330	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1040	bubble	696	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1050		34548	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1051		17944	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1052		26464	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1053		19066	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1054		19388	-		?	?	?	
+Sprites	PICT	1055	Bonus crystal	4918	-		?	?	?	
+Sprites	PICT	1057		5892	game	FrameRenderer.__allocating_init, SpriteBlitter.Faces.init<A>	?	?	?	
+Sprites	PICT	1058		5492	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1059		5988	-		?	?	?	
+Sprites	PICT	1060	teleporter	2842	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1061	Teleporter 2	3000	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1062	Teleporter 3	3224	game	FerazelSession.__allocating_init, FrameRenderer.__allocating_init, FerazelSession.step	?	?	?	
+Sprites	PICT	1065	save point	8580	game	FrameRenderer.__allocating_init, SpriteBlitter.Faces.init<A>	?	?	?	
+Sprites	PICT	1070		2168	game	FrameRenderer.__allocating_init, FerazelSession.__allocating_init, GameFlow.tick	?	?	?	
+Sprites	PICT	1071	Boulder 2	2178	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1072	Boulder 3	2200	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1080		8000	-		?	?	?	
+Sprites	PICT	1090		40714	game	FrameRenderer.__allocating_init, SpriteBlitter.Faces.init<A>	?	?	?	
+Sprites	PICT	1100	fireball right	2332	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1101	fireball left	2332	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1102		3274	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1103		3274	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1104		3076	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1105		3076	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1106		4348	-		?	?	?	
+Sprites	PICT	1107		4348	-		?	?	?	
+Sprites	PICT	1108		1924	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1109		1924	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1110		2658	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1111		2642	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1112	boomerang right	2464	-		?	?	?	
+Sprites	PICT	1113		4774	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1114		32240	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1115		5522	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1116		2000	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1117		10068	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1118		1126	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1130		10490	-		?	?	?	
+Sprites	PICT	1131		33412	-		?	?	?	
+Sprites	PICT	1132		48792	-		?	?	?	
+Sprites	PICT	1133		48908	-		?	?	?	
+Sprites	PICT	1135		4056	-		?	?	?	
+Sprites	PICT	1139		27352	-		?	?	?	
+Sprites	PICT	1150		7116	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1151		7116	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1152		7466	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1154		7494	-		?	?	?	
+Sprites	PICT	1200	explosion	24152	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1201	dust cloud	1110	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1202		496	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1203		372	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1204		284	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1205		168082	-		?	?	?	
+Sprites	PICT	1206		49668	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1207	big explosion	34222	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1208		66888	-		?	?	?	
+Sprites	PICT	1209		66026	-		?	?	?	
+Sprites	PICT	1210	crumble overlay	3952	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1211		65182	-		?	?	?	
+Sprites	PICT	1212		66888	-		?	?	?	
+Sprites	PICT	1215		1340	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1220		3994	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1250		62080	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1251		14336	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1252		2116	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1290	$Big magic crystal	1670	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1291	$Big health crystal	1670	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1292	$Moneybag, small	574	game	FrameRenderer.__allocating_init, SpriteBlitter.Faces.init<A>	?	?	?	
+Sprites	PICT	1293	$Moneybag, big	852	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1300	magic bonus	2212	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1301		2212	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1302		2022	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1303		1440	game	FerazelSession.step, FrameRenderer.__allocating_init, LevelRun.tick	?	?	?	
+Sprites	PICT	1304		834	-		?	?	?	
+Sprites	PICT	1307		2604	game	FrameRenderer.__allocating_init, SpriteBlitter.Faces.init<A>	?	?	?	
+Sprites	PICT	1308		6480	game	FrameRenderer.__allocating_init, SpriteBlitter.Faces.init<A>	?	?	?	
+Sprites	PICT	1309	gold coins	1628	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1310	Platinum coins	1630	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1311		442	-		?	?	?	
+Sprites	PICT	1320		1986	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1321		2000	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1322		7178	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1330	Sphere, Shadow Double	2748	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1331	Sphere, Solid Water	2724	game	FrameRenderer.__allocating_init, FerazelSession.step, LevelRun.tick	?	?	?	
+Sprites	PICT	1332	Sphere, Solid Acid	2518	game	FrameRenderer.__allocating_init, FerazelSession.step, LevelRun.tick	?	?	?	
+Sprites	PICT	1333	Sphere, Solid Lava	2520	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1334	Sphere, High Jump	2742	game	FrameRenderer.__allocating_init, FerazelSession.step, LevelRun.tick	?	?	?	
+Sprites	PICT	1335	Sphere, Invincibility	2726	game	FerazelSession.step, FrameRenderer.__allocating_init, SpriteBlitter.Faces.init<A>	?	?	?	
+Sprites	PICT	1336	Sphere, Featherfall	2780	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1337		2664	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1338	$Sphere, Pentashield	2768	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1339	$Sphere, Death	2782	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1340		20136	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1341		19348	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1350	Air Bubble	2690	game	FrameRenderer.__allocating_init, FerazelSession.step, LevelRun.tick	?	?	?	
+Sprites	PICT	1400		13622	game	FrameRenderer.__allocating_init, SpriteBlitter.Faces.init<A>	?	?	?	
+Sprites	PICT	1410	Catapult	77534	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1420		1718	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1421		2040	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1422		3376	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1430		778	-		?	?	?	
+Sprites	PICT	1431		654	-		?	?	?	
+Sprites	PICT	1432		566	-		?	?	?	
+Sprites	PICT	1433		29370	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1434		1776	game	FerazelSession.step, FrameRenderer.__allocating_init, LevelRun.tick	?	?	?	
+Sprites	PICT	1435		29540	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1436		1588	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1440		9870	-		?	?	?	
+Sprites	PICT	1441		4982	-		?	?	?	
+Sprites	PICT	1442		4358	-		?	?	?	
+Sprites	PICT	1450		9380	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1460	Bridge - Wooden - Full	16558	-		?	?	?	
+Sprites	PICT	1461	Bridge - Wooden - Left half	11416	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1463	Bridge - Stone	13362	-		?	?	?	
+Sprites	PICT	1464	Bridge - Stone - Left half	17622	game	FrameRenderer.__allocating_init, SpriteBlitter.Faces.init<A>, FerazelSession.step	?	?	?	
+Sprites	PICT	1466	Bridge - Rope	20772	-		?	?	?	
+Sprites	PICT	1467		11032	-		?	?	?	
+Sprites	PICT	1470		18388	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1480		10546	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1481		10582	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1482		4754	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1483		7788	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1484		9672	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1485		3768	game	FerazelSession.step, FrameRenderer.__allocating_init, SpriteBlitter.Faces.init<A>	?	?	?	
+Sprites	PICT	1486		4750	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1487		5008	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1488		8094	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1490	!Enemy pipe facing up	6410	-		?	?	?	
+Sprites	PICT	1491	!Enemy pipe facing down	6410	-		?	?	?	
+Sprites	PICT	1492	!Enemy pipe facing right	7200	-		?	?	?	
+Sprites	PICT	1493	!Enemy pipe facing left	7158	-		?	?	?	
+Sprites	PICT	1600	glow	5438	-		?	?	?	
+Sprites	PICT	1700		6780	game	FrameRenderer.__allocating_init, FerazelSession.step, LevelRun.tick	?	?	?	
+Sprites	PICT	1701		45208	-		?	?	?	
+Sprites	PICT	1702		37622	-		?	?	?	
+Sprites	PICT	1703		3438	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1704		46290	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1705		11486	game	FrameRenderer.__allocating_init, SpriteBlitter.Faces.init<A>	?	?	?	
+Sprites	PICT	1706		13562	-		?	?	?	
+Sprites	PICT	1707		64698	-		?	?	?	
+Sprites	PICT	1710		7112	-		?	?	?	
+Sprites	PICT	1711		6856	-		?	?	?	
+Sprites	PICT	1712		3094	game	FrameRenderer.__allocating_init, FerazelSession.step, LevelRun.tick	?	?	?	
+Sprites	PICT	1713		6618	-		?	?	?	
+Sprites	PICT	1720		15090	game	FrameRenderer.__allocating_init, SpriteBlitter.Faces.init<A>	?	?	?	
+Sprites	PICT	1721		15204	-		?	?	?	
+Sprites	PICT	1730		16980	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1740	bat	6650	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1750		4184	-		?	?	?	
+Sprites	PICT	1751		23188	-		?	?	?	
+Sprites	PICT	1752		19662	-		?	?	?	
+Sprites	PICT	1753		11070	-		?	?	?	
+Sprites	PICT	1754		17944	-		?	?	?	
+Sprites	PICT	1760		21130	game	FrameRenderer.__allocating_init, SpriteBlitter.Faces.init<A>	?	?	?	
+Sprites	PICT	1761	goblin boulders	4512	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1762	bomb boulder	10246	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1766		3090	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1770		27690	-		?	?	?	
+Sprites	PICT	1771		9442	-		?	?	?	
+Sprites	PICT	1772		3036	-		?	?	?	
+Sprites	PICT	1780	Wraith	16530	-		?	?	?	
+Sprites	PICT	1800		23174	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1810	Salamander	23312	-		?	?	?	
+Sprites	PICT	1820		53422	-		?	?	?	
+Sprites	PICT	1821		50456	-		?	?	?	
+Sprites	PICT	1822		32562	-		?	?	?	
+Sprites	PICT	1823		20322	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1830		9480	-		?	?	?	
+Sprites	PICT	1831		51054	-		?	?	?	
+Sprites	PICT	1832		52504	-		?	?	?	
+Sprites	PICT	1840		7474	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1842	!Retracting spikes floor	7622	game	FrameRenderer.__allocating_init, FerazelSession.step, LevelRun.tick	?	?	?	
+Sprites	PICT	1843	!Retracting spikes ceiling	7622	-		?	?	?	
+Sprites	PICT	1850		37458	-		?	?	?	
+Sprites	PICT	1851		14190	-		?	?	?	
+Sprites	PICT	1855	!Water Urchin	1726	-		?	?	?	
+Sprites	PICT	1856	!Water Urchin 2	2102	-		?	?	?	
+Sprites	PICT	1860		7282	-		?	?	?	
+Sprites	PICT	1869		3614	-		?	?	?	
+Sprites	PICT	1870		14692	-		?	?	?	
+Sprites	PICT	1871		13636	-		?	?	?	
+Sprites	PICT	1872		14148	-		?	?	?	
+Sprites	PICT	1873		7080	-		?	?	?	
+Sprites	PICT	1875		1250	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1876	18x18	3034	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1880		6546	-		?	?	?	
+Sprites	PICT	1881		6392	-		?	?	?	
+Sprites	PICT	1890		24396	-		?	?	?	
+Sprites	PICT	1892		24692	-		?	?	?	
+Sprites	PICT	1895		2438	-		?	?	?	
+Sprites	PICT	1900		9690	-		?	?	?	
+Sprites	PICT	1902		10200	-		?	?	?	
+Sprites	PICT	1903		10200	-		?	?	?	
+Sprites	PICT	1905		464	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1906		458	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1907		1256	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1908		1256	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	1910	!Goblin Chief	14604	-		?	?	?	
+Sprites	PICT	1911		52394	-		?	?	?	
+Sprites	PICT	1912		51682	-		?	?	?	
+Sprites	PICT	1913		55590	-		?	?	?	
+Sprites	PICT	1914		54242	-		?	?	?	
+Sprites	PICT	1915		34060	-		?	?	?	
+Sprites	PICT	1920		39108	-		?	?	?	
+Sprites	PICT	1921		33542	-		?	?	?	
+Sprites	PICT	1922		19980	-		?	?	?	
+Sprites	PICT	1923		27248	-		?	?	?	
+Sprites	PICT	1924		8128	-		?	?	?	
+Sprites	PICT	1928		8570	-		?	?	?	
+Sprites	PICT	1929		8578	-		?	?	?	
+Sprites	PICT	1970		18950	-		?	?	?	
+Sprites	PICT	1971		13650	-		?	?	?	
+Sprites	PICT	1972		5658	-		?	?	?	
+Sprites	PICT	1973		15458	-		?	?	?	
+Sprites	PICT	1974		9402	-		?	?	?	
+Sprites	PICT	1975		15742	-		?	?	?	
+Sprites	PICT	1976		19292	-		?	?	?	
+Sprites	PICT	1977		11914	-		?	?	?	
+Sprites	PICT	1980		26808	-		?	?	?	
+Sprites	PICT	1981		25560	-		?	?	?	
+Sprites	PICT	1982		14614	-		?	?	?	
+Sprites	PICT	1983		26434	-		?	?	?	
+Sprites	PICT	1984		14034	-		?	?	?	
+Sprites	PICT	1985		22320	-		?	?	?	
+Sprites	PICT	1986		21286	-		?	?	?	
+Sprites	PICT	1987		16360	-		?	?	?	
+Sprites	PICT	1990		61344	-		?	?	?	
+Sprites	PICT	1991		37930	-		?	?	?	
+Sprites	PICT	1992		53464	-		?	?	?	
+Sprites	PICT	1995		35100	-		?	?	?	
+Sprites	PICT	1996		23178	-		?	?	?	
+Sprites	PICT	1997		41988	-		?	?	?	
+Sprites	PICT	2000		1856	game	FrameRenderer.__allocating_init, FerazelSession.step, FerazelSession.__allocating_init	?	?	?	
+Sprites	PICT	2700	Leafy Small Plant 1	4536	-		?	?	?	
+Sprites	PICT	2701	Leafy Small Plant 2	2592	-		?	?	?	
+Sprites	PICT	2702	Leafy Small Plant 3	2844	-		?	?	?	
+Sprites	PICT	2703	Wavy Small Plant 1	4298	-		?	?	?	
+Sprites	PICT	2704	Wavy Small Plant 2	3094	-		?	?	?	
+Sprites	PICT	2705	Wavy-Leafy Combo Small Plant	3964	-		?	?	?	
+Sprites	PICT	2706	Tentacly Small Plant 1	2212	-		?	?	?	
+Sprites	PICT	2707	Tentacly Small Plant 2	2616	-		?	?	?	
+Sprites	PICT	2708	Bluish Undersea Plant	6384	-		?	?	?	
+Sprites	PICT	2709	Purply Undersea Plant	3630	-		?	?	?	
+Sprites	PICT	2710	Mini Hanging Vine 1	1568	game	FrameRenderer.__allocating_init, FerazelSession.step, SpriteBlitter.Faces.init<A>	?	?	?	
+Sprites	PICT	2711	Mini Hanging Vines 2	2390	-		?	?	?	
+Sprites	PICT	2712		1658	-		?	?	?	
+Sprites	PICT	2713	Mossy Patch brownish	6620	game	FrameRenderer.__allocating_init, FerazelSession.step, LevelRun.tick	?	?	?	
+Sprites	PICT	2714	Mossy Patch greenish	4008	game	FrameRenderer.__allocating_init, FerazelSession.step, SpriteBlitter.Faces.init<A>	?	?	?	
+Sprites	PICT	2715	Mossy Patch orangish	5320	-		?	?	?	
+Sprites	PICT	2716	Mossy Patch reddish	4570	-		?	?	?	
+Sprites	PICT	2717	Mossy Patch beigeish	4960	-		?	?	?	
+Sprites	PICT	2800	!Rathole	1002	-		?	?	?	
+Sprites	PICT	2801		4184	-		?	?	?	
+Sprites	PICT	2808		8900	-		?	?	?	
+Sprites	PICT	2809	*Ziridium Mine Stuff	39042	-		?	?	?	
+Sprites	PICT	2810	*Wavy Grass	29590	-		?	?	?	
+Sprites	PICT	2811	*Metal Blocks	43136	-		?	?	?	
+Sprites	PICT	2812	*Red Ruins 1	25230	game	FrameRenderer.__allocating_init, GameFlow.advance	?	?	?	
+Sprites	PICT	2813	*Red Ruins 2	21116	game	FrameRenderer.__allocating_init, GameFlow.advance	?	?	?	
+Sprites	PICT	2814	*Grassy Rocks & Stumps	49310	-		?	?	?	
+Sprites	PICT	2815	*Thorny Tangles Big	45648	-		?	?	?	
+Sprites	PICT	2816	*Cattails	20478	-		?	?	?	
+Sprites	PICT	2817	*Cattails 2	16446	-		?	?	?	
+Sprites	PICT	2818	*Icicles & Stuff	15462	-		?	?	?	
+Sprites	PICT	2819	*Spiked Habnabit Heads	35448	-		?	?	?	
+Sprites	PICT	2820	*Skeleton1	3300	game	FrameRenderer.__allocating_init, GameFlow.advance	?	?	?	
+Sprites	PICT	2821	*Skeleton 2	2486	game	FrameRenderer.__allocating_init, GameFlow.advance	?	?	?	
+Sprites	PICT	2822	*Skeleton 3	2856	-		?	?	?	
+Sprites	PICT	2823	*Skeleton 4	4532	-		?	?	?	
+Sprites	PICT	2824	*Robed Body 1	5408	-		?	?	?	
+Sprites	PICT	2825	*Robed Body 2	4144	-		?	?	?	
+Sprites	PICT	2826	*Armored Body 1	7280	-		?	?	?	
+Sprites	PICT	2827	*Armored Body 2	5914	-		?	?	?	
+Sprites	PICT	2828	*Armor Rubbish 1	3078	-		?	?	?	
+Sprites	PICT	2829	*Armor Rubbish 2	2300	-		?	?	?	
+Sprites	PICT	2830	*Armor Rubbish 3	3110	-		?	?	?	
+Sprites	PICT	2831	*Armor Rubbish 3	2484	-		?	?	?	
+Sprites	PICT	2832	*Pedestal	6090	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	2833	*Grave 1	6756	-		?	?	?	
+Sprites	PICT	2834	*Grave 2	3022	-		?	?	?	
+Sprites	PICT	2835	*Grave 3	2740	-		?	?	?	
+Sprites	PICT	2836	*Grave 4	2890	-		?	?	?	
+Sprites	PICT	2837	*Straw Rug	4300	-		?	?	?	
+Sprites	PICT	2838	*Purply Rug	4024	-		?	?	?	
+Sprites	PICT	2839	*Skull Rug	2840	-		?	?	?	
+Sprites	PICT	2840	*Manditraki Pillar	9686	-		?	?	?	
+Sprites	PICT	2841	*Gray Pedestal	3008	-		?	?	?	
+Sprites	PICT	2842	*Book pile	4782	game	FrameRenderer.__allocating_init, FerazelSession.step, SpriteBlitter.Faces.init<A>	?	?	?	
+Sprites	PICT	2843	*Cobweb Chair	7286	game	FrameRenderer.__allocating_init, GameFlow.advance	?	?	?	
+Sprites	PICT	2844	*Cobweb Chair 2	5574	-		?	?	?	
+Sprites	PICT	2845	*Cobweb Table	6502	-		?	?	?	
+Sprites	PICT	2846	*Grassy lightboulder	28834	-		?	?	?	
+Sprites	PICT	2847	*Grassy Lightboulder 2	20894	-		?	?	?	
+Sprites	PICT	2848	*Scraggly Vines	21236	game	FrameRenderer.__allocating_init, GameFlow.advance	?	?	?	
+Sprites	PICT	2849	*Scraggly Vines 2	17040	game	FrameRenderer.__allocating_init, LevelRun.tick	?	?	?	
+Sprites	PICT	2850		6792	-		?	?	?	
+Sprites	PICT	2851		8032	-		?	?	?	
+Sprites	PICT	2852		7214	-		?	?	?	
+Sprites	PICT	2853		7650	game	FrameRenderer.__allocating_init, FerazelSession.step, SpriteBlitter.Faces.init<A>	?	?	?	
+Sprites	PICT	2854		7084	-		?	?	?	
+Sprites	PICT	2855		8174	-		?	?	?	
+Sprites	PICT	2856		8164	-		?	?	?	
+Sprites	PICT	2857		7686	-		?	?	?	
+Sprites	PICT	2858		7482	-		?	?	?	
+Sprites	PICT	2859		6936	-		?	?	?	
+Sprites	PICT	2860		7382	-		?	?	?	
+Sprites	PICT	2861		7426	-		?	?	?	
+Sprites	PICT	2862		7618	-		?	?	?	
+Sprites	PICT	2863		6980	-		?	?	?	
+Sprites	PICT	2864		7536	-		?	?	?	
+Sprites	PICT	2865		7364	-		?	?	?	
+Sprites	PICT	2866		7500	-		?	?	?	
+Sprites	PICT	2867		7642	-		?	?	?	
+Sprites	PICT	2868		6950	game	FrameRenderer.__allocating_init, GameFlow.advance	?	?	?	
+Sprites	PICT	2869		7544	game	FrameRenderer.__allocating_init, GameFlow.advance	?	?	?	
+Sprites	PICT	2870		2858	game	FrameRenderer.__allocating_init, FerazelSession.step, LevelRun.tick	?	?	?	
+Sprites	PICT	2871		2858	game	FrameRenderer.__allocating_init, FerazelSession.step, SpriteBlitter.Faces.init<A>	?	?	?	
+Sprites	PICT	2872		2104	-		?	?	?	
+Sprites	PICT	2873		2192	-		?	?	?	
+Sprites	PICT	2874		3116	game	FrameRenderer.__allocating_init, SpriteBlitter.Faces.init<A>, FerazelSession.step	?	?	?	
+Sprites	PICT	2875		3116	-		?	?	?	
+Sprites	PICT	2876		2234	-		?	?	?	
+Sprites	PICT	2877		3152	-		?	?	?	
+Sprites	PICT	2878		3714	-		?	?	?	
+Sprites	PICT	2879		3714	-		?	?	?	
+Sprites	PICT	2880		3986	-		?	?	?	
+Sprites	PICT	2881		3986	-		?	?	?	
+Sprites	PICT	2882		3344	-		?	?	?	
+Sprites	PICT	2883		1758	game	FrameRenderer.__allocating_init, SpriteBlitter.Faces.init<A>, GameFlow.advance	?	?	?	
+Sprites	PICT	2884		2720	game	FrameRenderer.__allocating_init, GameFlow.advance	?	?	?	
+Sprites	PICT	2885		2646	-		?	?	?	
+Sprites	PICT	2890		7208	-		?	?	?	
+Sprites	PICT	2891	*Cloud 2	29122	-		?	?	?	
+Sprites	PICT	2892	*Cloud 3	44848	-		?	?	?	
+Sprites	PICT	2893	*Cloud 4	44022	-		?	?	?	
+Sprites	PICT	2899	*Cloud 1	9308	-		?	?	?	
+Sprites	PICT	2900	Passage	15232	game	FrameRenderer.__allocating_init, FerazelSession.step, LevelRun.tick	?	?	?	
+Sprites	PICT	2901	Passage (Ornate)	24050	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	2902	Sign	2682	game	FerazelSession.__allocating_init, FrameRenderer.__allocating_init, FerazelSession.step	?	?	?	
+Sprites	PICT	2903	Book	1738	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	2904		1038	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	2905	Wall Map	9650	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	2906	Steel Plaque	3944	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	2907		2326	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	2910		34988	game	FrameRenderer.__allocating_init, SpriteBlitter.Faces.init<A>	?	?	?	
+Sprites	PICT	2915	Door right	33490	-		?	?	?	
+Sprites	PICT	2920	Bale of hay	6840	-		?	?	?	
+Sprites	PICT	2921	Crate	6124	-		?	?	?	
+Sprites	PICT	2922	Barrel	5118	game	FrameRenderer.__allocating_init, SpriteBlitter.Faces.init<A>, FerazelSession.step	?	?	?	
+Sprites	PICT	2923	Barstool	1838	-		?	?	?	
+Sprites	PICT	2924	Wooden chair	4416	game	FrameRenderer.__allocating_init, FerazelSession.step, SpriteBlitter.Faces.init<A>	?	?	?	
+Sprites	PICT	2925	Steel chair	5110	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	2926	Steel Table	4590	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	2927	Wooden table	8096	game	FrameRenderer.__allocating_init, FerazelSession.step, SpriteBlitter.Faces.init<A>	?	?	?	
+Sprites	PICT	2928	Fancy table	6008	game	FrameRenderer.__allocating_init, LevelRun.tick, FerazelSession.step	?	?	?	
+Sprites	PICT	2929		9848	-		?	?	?	
+Sprites	PICT	2930	Mine cart	51650	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	2931	minecar wheel	16354	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	2932		9492	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	2933		32032	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	2940		5468	game	FrameRenderer.__allocating_init, FerazelSession.__allocating_init, LevelRun.tick	?	?	?	
+Sprites	PICT	2941		4566	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	2951	Geroditus	3364	game	FerazelSession.step, FrameRenderer.__allocating_init, SpriteBlitter.Faces.init<A>	?	?	?	
+Sprites	PICT	2952	merchant	8012	game	FrameRenderer.__allocating_init, FerazelSession.step, SpriteBlitter.Faces.init<A>	?	?	?	
+Sprites	PICT	2953	Limping Habnabit	6304	-		?	?	?	
+Sprites	PICT	2954	Sitting Habnabit	5204	game	FerazelSession.step, FrameRenderer.__allocating_init, LevelRun.tick	?	?	?	
+Sprites	PICT	2955	Nimbo	7966	-		?	?	?	
+Sprites	PICT	2956	Dimbo	11116	-		?	?	?	
+Sprites	PICT	2957	Hooded Figure	5376	-		?	?	?	
+Sprites	PICT	2958	Taryn	8344	-		?	?	?	
+Sprites	PICT	2959	Sara	8398	-		?	?	?	
+Sprites	PICT	2960	Forest Nymph Matriarch	9344	-		?	?	?	
+Sprites	PICT	2961	Blue Short Hooded	5740	-		?	?	?	
+Sprites	PICT	2962	Gray-Robed Sitting Habnabit	6606	-		?	?	?	
+Sprites	PICT	2963	Gray-Robed Short Hooded	7360	-		?	?	?	
+Sprites	PICT	2964	Hooded Bluegray Merchant	8042	-		?	?	?	
+Sprites	PICT	2965	Left Bluebrown merchant	7036	-		?	?	?	
+Sprites	PICT	3000	HPassage, 1 tile	24440	-		?	?	?	
+Sprites	PICT	3001	HPassage, 2 tiles	24614	-		?	?	?	
+Sprites	PICT	3002	HPassage, 3 tiles	24942	game	FrameRenderer.__allocating_init, FerazelSession.step, SpriteBlitter.Faces.init<A>	?	?	?	
+Sprites	PICT	3003	HPassage, 4 tiles	25090	-		?	?	?	
+Sprites	PICT	3004	HPassage, 5 tiles	25226	-		?	?	?	
+Sprites	PICT	3005	HPassage, 6 tiles	25382	-		?	?	?	
+Sprites	PICT	3006	HPassage, 7 tiles	25710	-		?	?	?	
+Sprites	PICT	3007	HPassage, 8 tiles	25858	-		?	?	?	
+Sprites	PICT	3008	HPassage, 9 tiles	25994	-		?	?	?	
+Sprites	PICT	3009	HPassage, 10 tiles	26150	-		?	?	?	
+Sprites	PICT	3050	$Hang Glider	6416	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	3060	!Rotating sword	3728	-		?	?	?	
+Sprites	PICT	3070		4766	-		?	?	?	
+Sprites	PICT	3071		8024	-		?	?	?	
+Sprites	PICT	3072		12610	-		?	?	?	
+Sprites	PICT	3080	*Tree, slight tilt	22752	-		?	?	?	
+Sprites	PICT	3081	*Tree, normal	20712	-		?	?	?	
+Sprites	PICT	3082	*Tree, squat	24502	-		?	?	?	
+Sprites	PICT	3083	*Tree, aspen	23860	-		?	?	?	
+Sprites	PICT	3084	*Tree, bare, fullspiky	15016	-		?	?	?	
+Sprites	PICT	3085	*Tree, bare, semibroken	19472	-		?	?	?	
+Sprites	PICT	3086	*Tree, bare, jagged trunk	13186	-		?	?	?	
+Sprites	PICT	3087	*Tree, horizontal trunk	29580	-		?	?	?	
+Sprites	PICT	3090	$Crate - bonus	1006	game	FerazelSession.__allocating_init, FrameRenderer.__allocating_init, SpriteBlitter.Faces.init<A>	?	?	?	
+Sprites	PICT	3091	$Crate - question mark	2108	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	3092	$Crate - exclamation point	1960	game	FerazelSession.__allocating_init, FrameRenderer.__allocating_init, SpriteBlitter.Faces.init<A>	?	?	?	
+Sprites	PICT	3099		2140	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	3100	Standing Candelabra, Regular	1552	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	3101	Standing Candelabra, Spiky	1678	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	3102	Standing Candelabra, Wooden	1932	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	3103	Magic Tentacle Light	3914	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	3104	Wall Candelabra, Gold	724	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	3105	Wall Candelabra, Silver	708	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	3106		888	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	3107	Glowing Bug Light	1252	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	3108	Horned Skull Light	1504	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	3201		598	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	3202	Gold Key	764	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	3203	Platinum Key	886	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	3204	magic ptn	1082	game	FerazelSession.step, FerazelSession.__allocating_init, FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	3205		1146	game	FrameRenderer.__allocating_init, FerazelSession.__allocating_init, LevelRun.tick	?	?	?	
+Sprites	PICT	3206	Fire seeds	1088	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	3207	$Locket	1834	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	3208	$Hammer	1608	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	3209	$Poppyseed Muffin	2164	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	3210	$Algernon Piece	1464	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	3211	$Algernon Frame	1672	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	3212	$Algernon	2038	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	3213	$Gwendolyn	1870	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	3214	$Wooden Shield	2154	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	3215	$Magic Shield	2136	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	3216	$Gold Ring	852	game	FrameRenderer.__allocating_init, LevelRun.tick, FerazelSession.__allocating_init	?	?	?	
+Sprites	PICT	3217	$Green Ring	1378	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	3218	$Ice Pick	1376	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	3219	$Multiplier Crystal	1988	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	3220	$Light Orb	2234	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	3221	$Vorpal Dirk	1688	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	3222	$Xichron	1392	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	3223	$Rez Necklace	1838	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	3224	$Fire Charm	1854	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	3225	$Mist Potion	1354	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	3226		1040	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	3250		2530	game	FrameRenderer.__allocating_init	?	?	?	
+Sprites	PICT	3999		20750	-		?	?	?	
+Sprites	PICT	4000		257490	game	ConversationRun.tick, LevelRun.tick, ConversationRenderer.apply	?	?	?	
+Sprites	PICT	4001		24026	game	ConversationRun.tick, ConversationRenderer.apply, LevelRun.tick	?	?	?	
+Sprites	PICT	4002		20560	game	ConversationRun.tick, ConversationRenderer.apply	?	?	?	
+Sprites	PICT	4003		20106	-		?	?	?	
+Sprites	PICT	4004		25010	-		?	?	?	
+Sprites	PICT	4005		25558	-		?	?	?	
+Sprites	PICT	4006		19462	game	ConversationRun.tick	?	?	?	
+Sprites	PICT	4007		25264	game	ConversationRun.tick	?	?	?	
+Sprites	PICT	4008		24636	-		?	?	?	
+Sprites	PICT	4009		20632	-		?	?	?	
+Sprites	PICT	4010	Taryn	23024	-		?	?	?	
+Sprites	PICT	4011	Sara	20760	-		?	?	?	
+Sprites	PICT	4012	Matriarch	22380	-		?	?	?	
+Sprites	PICT	4013	Nimbo	19262	-		?	?	?	
+Sprites	PICT	4014	Dimbo	19148	-		?	?	?	
+Sprites	PICT	4015	Andrew Hunter	22852	-		?	?	?	
+Sprites	PICT	4016		24382	-		?	?	?	
+Sprites	PICT	4017		15592	-		?	?	?	
+Sprites	PICT	4018		22420	-		?	?	?	
+Sprites	PICT	4019		23168	-		?	?	?	
+Sprites	PICT	4020		20916	game	ConversationRun.tick, LevelRun.tick, ConversationRenderer.apply	?	?	?	
+Sprites	PICT	4021		20502	-		?	?	?	
+Sprites	PICT	4022		23170	-		?	?	?	
+Sprites	PICT	4023		27566	-		?	?	?	
+Sprites	PICT	4024		22442	-		?	?	?	
+Sprites	PICT	4025		21734	-		?	?	?	
+Sprites	PICT	4030		27404	-		?	?	?	
+Sprites	PICT	4031		27364	-		?	?	?	
+Sprites	PICT	4032		27484	-		?	?	?	
+Sprites	PICT	4033		27536	-		?	?	?	
+Sprites	PICT	5000		238416	-		?	?	?	
+Sprites	PICT	5001		436884	-		?	?	?	
+Sprites	PICT	5002		19800	-		?	?	?	
+Sprites	PICT	5069		246032	-		?	?	?	
+Sprites	PICT	5999		12494	-		?	?	?	
+Sprites	PICT	6000		9670	-		?	?	?	
+Sprites	PICT	6001		4342	-		?	?	?	
+Sprites	PICT	6002		15878	-		?	?	?	
+Sprites	PICT	6003		18914	-		?	?	?	
+Sprites	PICT	6004		17466	-		?	?	?	
+Sprites	PICT	6011		21472	-		?	?	?	
+Sprites	PICT	6012		4658	-		?	?	?	
+Sprites	PICT	6031		33234	-		?	?	?	
+Sprites	PICT	6100		14230	-		?	?	?	
+Sprites	PICT	6200		11772	-		?	?	?	
+Sprites	PICT	6201		21048	-		?	?	?	
+Sprites	PICT	6209		24536	-		?	?	?	
+Sprites	PICT	6210		34130	-		?	?	?	
+Sprites	PICT	6300		11772	-		?	?	?	
+Sprites	PICT	6301		9238	-		?	?	?	
+Sprites	PICT	8000		2568	game	WorldMapRun.__allocating_init, GameFlow.tick, MapRenderer.apply	?	?	?	
+Sprites	PICT	8001		3230	game	MapRenderer.apply	?	?	?	
+Sprites	PICT	8002		8190	-		?	?	?	
+Sprites	PICT	8003		1226	-		?	?	?	
+Sprites	PICT	8004		29120	game	MapRenderer.face	?	?	?	
+Sprites	PICT	10200	orig headsmooth walk	25334	-		?	?	?	
+Sprites	PICT	13070		2768	-		?	?	?	
+Sprites	PICT	14340		2632	-		?	?	?	
+Sprites	PICT	14850		5056	-		?	?	?	
+Sounds	snd 	128	soft impact	8938	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	129	whoosh	15786	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	130	froghitold	7850	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	131	frogdieold	9066	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	132	frogjumpold	4744	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	198	pause	1442	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	215	oil	11818	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	231	charge1	19850	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	238	magic1	8746	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	239	metallic click	5802	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	240	unlock	6346	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	300	Fireball	10010	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	301	fireball hit new	10010	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	302	statue hit	15018	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	303	metal hit	6154	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	304	swoosh big	7754	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	401	Ouch 1	7306	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	402	Ouch 2	6858	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	403	Ouch 3	5994	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	404	head bonk	3034	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	405	splash1new3	26666	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	406	splash2new	9130	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	407	groan	26218	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	408	breathe1	14506	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	409	breathe2	19814	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	410	Footstep1	4554	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	411	Footstep2	4170	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	412	Footstep3	4122	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	413	Footstep4	4634	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	414	jump	7306	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	415	bubble	3266	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	416	corner climb	12842	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	417	death	79146	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	418	dagger thrust	5482	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	419	dagger hit	9258	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	420	teleport in	21470	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	421	teleport out	25130	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	422	really big anvil-like crash8-22	17834	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	423	rock crack	7338	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	424	rock crush	16874	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	425	rock selfcrack	7338	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	426	rock selfcrush	16874	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	427	player magic spin	33133	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	428	Tick 1	882	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	429	Tick 2	610	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	430	geyser start	22186	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	431	geyser loop	55082	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	432	monster snarl	29994	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	433	monster snarl 2	25898	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	434	monster snarl 3	28714	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	435	explosion	26347	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	436	Object Hit	6664	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	437	Door unlock open	21181	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	438	Door open	16309	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	439	chest unlock	5362	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	440	catapult_step.snd	7871	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	441	catapult_launch.snd	7220	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	442	drown warning	2154	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	443	drown choke	13738	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	444	bonus 1	13151	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	445	bonus 2	22871	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	446	bonus 3	12018	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	447	bonus 4	20652	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	448	bonus 5	8354	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	449	bonus 6	15815	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	450	Big ouch	11626	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	451	majorbonus new	21290	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	452	rainloop.snd	61426	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	453	thunder.snd	45192	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	454	water step	9227	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	455	wall grab	4482	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	456	bubblebreathe	8586	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	457	spike emerge	7074	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	458	spike retract	6307	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	459	enemygenerate	13109	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	460	rock barrier move	18209	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	461	platformdisappear 11kHz	4010	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	462	enemyconsumed	10442	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	463	dillo shoot	13642	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	464	toad	3689	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	465	goblingrowl1	24490	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	466	goblingrowl2	17546	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	467	goblintaunt	18474	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	468	goblinhurt	10186	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	469	goblindie	23274	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	470	bat	7464	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	471	snarl	11923	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	472	metalhitsoft	2580	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	473	metalhithard	4340	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	474	sparkleloop	29418	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	475	endlevelsound	31496	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	476	electricitySound	11018	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	477	monster1Sound	31082	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	478	monster2Sound	33494	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	479	monster3Sound	15676	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	480	swarmMemberDieSound	7594	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	481	swarmSound	7594	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	482	wind loop	42712	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	483	cannon shoot	20394	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	484	cannon load	4250	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	485	cannon shift	2490	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	486	ropecreak1	14095	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	487	ropecreak2	9875	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	488	ropecreak3	9520	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	489	chaincreak1	8650	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	490	chaincreak2	8842	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	491	chaincreak3	6530	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	492	cratesmash	13610	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	493	superspring	14058	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	494	flap	8874	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	495	firehiss	12842	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	496	firehiss2	14816	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	497	swim	17194	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	498	Egg Drop	4538	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	499	ArrowShootSound	14346	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	500	magic bonus	24234	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	501	coin bonus	10506	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	502	health bonus	18218	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	503	newspell	46762	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	504	elecshot	13994	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	505	puzzleunlock	28714	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	506	itemfind	35242	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	507	crystalbreak	15434	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	508	hurtthud	6666	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	509	corpsethud	11338	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	510	whoosh	7914	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	511	fireloop	38826	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	600	hit ground	14506	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	601	hit ground soft	4362	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	602	hit ground	7258	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	603	spring down	9312	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	604	spring up	19542	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	605	sandsplash	7914	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	606	deathcontinue	13738	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	607	slimemove	5322	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	608	batdisturb	12700	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	609	bathit	6042	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	610	axgoblinjumproar	11690	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	611	axgoblinhit1	22698	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	612	axgoblinhit2	7656	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	613	frogjump	6122	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	614	froghit	18346	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	615	frogdie	16234	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	700	Crawler jump	6266	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	701	Crawler Ouch	13610	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	702	Crawler uh oh	20394	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	703	crawler death	20874	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	704	throw	4202	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	705	throw old	4298	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	800	zeropercent	7130	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	801	middlepercent	7626	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	802	hundredpercent	9674	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	803	fillerup	12234	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	804	donefilling	2346	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	805	popup	4348	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	1301	fireball hit 8/22 old	10010	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	1980	pause.snd old	17834	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	4050	splash1old	13960	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	4051	splash1newold	27690	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	4052	splash1new2	32537	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	4060	splash2 old	10106	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	4510	majorbonus old	56234	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	4701	generic splat	6646	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	4703	bottle break	11114	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	4704	buttondown1	2534	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	4705	buttonup1	1618	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	4706	buttondown2	770	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	4707	buttonup2	1241	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	4801	switch item	2434	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	4803	Interface/Mouse Down	610	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	4804	Interface/Mouse Up	557	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Sounds	snd 	8030	fillerup old	22954	all	SoundBank (every snd; Shared/FerazelDriver.swift)	?	?	?	
+Titles	PICT	128	Loading Screen	219604	-		?	?	?	
+Titles	PICT	129	Game Screen	18338	game	FrameRenderer.apply, MapRenderer.apply	?	?	?	
+Titles	PICT	130		270072	game	ScreenRenderer.apply	?	?	?	
+Titles	PICT	131	Publisher Logo	44982	-		?	?	?	
+Titles	PICT	132		27590	game	FrameRenderer.__allocating_init, StatusBar.init, MapRenderer.apply	?	?	?	
+Titles	PICT	133		19718	game	FrameRenderer.__allocating_init, StatusBar.init, MapRenderer.apply	?	?	?	
+Titles	PICT	134		269648	-		?	?	?	
+Titles	PICT	136		226752	-		?	?	?	
+Titles	PICT	137		213114	-		?	?	?	
+Titles	PICT	138		195374	-		?	?	?	
+Titles	PICT	140		13198	game	ScreenRenderer.apply	?	?	?	
+Titles	PICT	141		25574	-		?	?	?	
+Titles	PICT	142		6364	-		?	?	?	
+Titles	PICT	159		173582	-		?	?	?	
+Titles	PICT	161		123804	-		?	?	?	
+Titles	PICT	162		49882	-		?	?	?	
+Titles	PICT	172		8834	game	DeathScreen.init, GameFlow.tick	?	?	?	
+Titles	PICT	173		8298	game	DeathScreen.init, GameFlow.tick	?	?	?	
+Titles	PICT	174		8280	game	DeathScreen.init, GameFlow.tick	?	?	?	
+Titles	PICT	175		8254	game	DeathScreen.init, GameFlow.tick	?	?	?	
+Titles	PICT	176		8222	game	DeathScreen.init, GameFlow.tick	?	?	?	
+Titles	PICT	177		8246	game	DeathScreen.init, GameFlow.tick	?	?	?	
+Titles	PICT	4600		43594	-		?	?	?	
+Titles	PICT	4601		39564	-		?	?	?	
+Titles	PICT	4602		7970	-		?	?	?	
+Titles	PICT	4603		5512	-		?	?	?	
+Titles	PICT	4604		8054	-		?	?	?	
+Titles	PICT	4605		8228	-		?	?	?	
+Titles	PICT	4606		8130	-		?	?	?	
+Titles	PICT	4607		15648	-		?	?	?	
+Titles	PICT	4610		252950	game	LevelRun.tick, GameFlow.tick, ChapterScreenRun.init	?	?	?	
+Titles	PICT	4620		254580	-		?	?	?	
+Titles	PICT	4630		148844	-		?	?	?	
+Titles	PICT	4640		242866	-		?	?	?	
+Titles	PICT	4650		153424	-		?	?	?	
+Titles	PICT	4660		229874	-		?	?	?	
+Titles	PICT	4670		248848	-		?	?	?	
+Titles	PICT	4803		10644	game	GameFlow.tick, PauseRun.tick	?	?	?	
+Titles	PICT	4804		17320	-		?	?	?	
+Titles	PICT	4901		17060	game	GameFlow.tick	?	?	?	
+Titles	PICT	4902		18652	game	GameFlow.tick	?	?	?	
+Titles	PICT	4903		17610	game	GameFlow.tick	?	?	?	
+Titles	PICT	4904		11046	game	GameFlow.tick	?	?	?	
+Titles	PICT	4905		8706	game	GameFlow.tick	?	?	?	
+Titles	PICT	4911		17676	game	GameFlow.tick	?	?	?	
+Titles	PICT	4912		19248	game	GameFlow.tick	?	?	?	
+Titles	PICT	4913		18258	game	GameFlow.tick	?	?	?	
+Titles	PICT	4914		11884	game	GameFlow.tick	?	?	?	
+Titles	PICT	4915		9198	game	GameFlow.tick	?	?	?	
+Titles	PICT	4921		17374	game	GameFlow.tick, LevelRun.tick, PauseRun.painted	?	?	?	
+Titles	PICT	4925		9000	-		?	?	?	
+Titles	PICT	4935		9436	-		?	?	?	
+Titles	PICT	4951		12264	-		?	?	?	
+Titles	PICT	4952		14674	-		?	?	?	
+Titles	PICT	4953		13300	-		?	?	?	
+Titles	PICT	4954		9964	-		?	?	?	
+Titles	PICT	4955		7898	-		?	?	?	
+Titles	PICT	4961		11916	-		?	?	?	
+Titles	PICT	4962		14306	-		?	?	?	
+Titles	PICT	4963		12864	-		?	?	?	
+Titles	PICT	4964		9456	-		?	?	?	
+Titles	PICT	4965		7636	-		?	?	?	
+Titles	PICT	4970		3668	game	DeathScreen.init, GameFlow.tick	?	?	?	
+Titles	PICT	4971		6532	game	DeathScreen.init, GameFlow.tick	?	?	?	
+Titles	PICT	4980		3722	game	DeathScreen.init, GameFlow.tick	?	?	?	
+Titles	PICT	4981		6506	game	DeathScreen.init, GameFlow.tick	?	?	?	
+Titles	PICT	4985		2520	-		?	?	?	
+Titles	clut	128	splash screen clut	2056	test		?	?	?	
+Titles	clut	130	main menu clut	2056	game	ScreenRenderer.apply	?	?	?	
+Titles	clut	131	preview clut	2056	-		?	?	?	
+Titles	clut	132	death clut	2056	game	DeathScreen.init, GameFlow.tick	?	?	?	
+Titles	clut	260	Victory	2056	-		?	?	?	
+Titles	clut	281	1 intro chapter	2056	game	LevelRun.tick, GameFlow.tick, ChapterScreenRun.init	?	?	?	
+Titles	clut	282	2 forest chapter	2056	-		?	?	?	
+Titles	clut	283	3 desert chapter	2056	-		?	?	?	
+Titles	clut	284	4 fire chapter	2056	-		?	?	?	
+Titles	clut	285	5 ruins chapter	2056	-		?	?	?	
+Titles	clut	286	6 ice chapter	2056	-		?	?	?	
+Titles	clut	287	7 mountain chapter	2056	-		?	?	?	
+Titles	clut	288	interstitial 1	2056	-		?	?	?	
+Titles	clut	289	interstitial 2	2056	-		?	?	?	
+Titles	clut	290	interstitial 3	2056	-		?	?	?	
+Titles	clut	729	splash screen clut orig	2056	-		?	?	?	
+Music	music	1		1935726	-		?	?	?	music is streamed by the app (not traced)
+Music	music	2		1831606	-		?	?	?	music is streamed by the app (not traced)
+Music	music	3		1650862	-		?	?	?	music is streamed by the app (not traced)
+Music	music	4		1401574	-		?	?	?	music is streamed by the app (not traced)
+Music	music	5		2059814	-		?	?	?	music is streamed by the app (not traced)
+Music	music	6		1685474	-		?	?	?	music is streamed by the app (not traced)
+Music	music	7		1684318	-		?	?	?	music is streamed by the app (not traced)
+Music	music	8		1544918	-		?	?	?	music is streamed by the app (not traced)
+Music	music	9		3299070	-		?	?	?	music is streamed by the app (not traced)
+Music	music	10		1607206	-		?	?	?	music is streamed by the app (not traced)
+Music	music	11		1503166	-		?	?	?	music is streamed by the app (not traced)
+Music	music	12		1431358	-		?	?	?	music is streamed by the app (not traced)
+Music	music	13		2089326	-		?	?	?	music is streamed by the app (not traced)
+Music	music	14		1499902	-		?	?	?	music is streamed by the app (not traced)
+Music	music	15		1206142	-		?	?	?	music is streamed by the app (not traced)
+Music	music	16		1556886	-		?	?	?	music is streamed by the app (not traced)
+Music	music	17		1469438	-		?	?	?	music is streamed by the app (not traced)
+Music	music	18		2152702	-		?	?	?	music is streamed by the app (not traced)
+Music	music	19		1535410	-		?	?	?	music is streamed by the app (not traced)
+Music	music	20		1687242	-		?	?	?	music is streamed by the app (not traced)
+Music	music	22		1800882	-		?	?	?	music is streamed by the app (not traced)
+Music	music	23		1526694	-		?	?	?	music is streamed by the app (not traced)
+Music	music	24		2202342	-		?	?	?	music is streamed by the app (not traced)
+Music	music	25		1306238	-		?	?	?	music is streamed by the app (not traced)
+Music	music	26		1575654	-		?	?	?	music is streamed by the app (not traced)
+Music	music	28		1426054	-		?	?	?	music is streamed by the app (not traced)
+Music	music	29		1310726	-		?	?	?	music is streamed by the app (not traced)
+Music	music	30		1221238	-		?	?	?	music is streamed by the app (not traced)
