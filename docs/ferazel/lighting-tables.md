@@ -633,7 +633,12 @@ unless marked.
    darkness over a 0 byte (§7.1). Light faces: `.Load1LightFaceFromPICT @ 1002ff1c` swaps `*_DAT_1009ff94` to clut 801
    around `.Load1PlainFaceFromPICT @ 1002fe68` (`.NewBlitPort` w × h, `DrawPicture` into (0,0,h,w)); of its 12 call
    sites (l. 50257–56147) 11 match their PICT's frame and `(806, 84, 84)` (`.InitBonusSprite`, l. 52306) has
-   `DrawPicture` shrink the 192×192 PICT — QuickDraw's stretch is ROM code, refused in the replica [LOW].
+   `DrawPicture` shrink the 192×192 PICT. **Corrected 2026-10-29:** it is reached — the upgrade's light cycle on
+   level 2 (a Windows tester's game quit on the refusal). PICT 806 is one 8-bit indexed PackBitsRect, srcCopy, with
+   srcRect = dstRect = picFrame, so the scale is `DrawPicture`'s picFrame → (0,0,84,84) mapping and `CopyBits`'s
+   srcCopy shrink: nearest row / column, dest row y ← source row `y·192/84` (the replica's one stretch rule,
+   `ScreenRenderer.sampleRows`); indexed colour mapping is per entry, so it commutes with the sampling [MED: the
+   stretch DDA's phase is ROM code, unmeasured]. Built in `LightFace.load`.
 
 ## ⚑ Phase-1 note (R4, 2026-10-09; follow the binary)
 Level-1 Setups **add lights** (contradicts R2's "no level-1 Setup adds a light"): `.AddLight @1001bc08` is ungated

@@ -172,19 +172,16 @@ final class LightingTests: XCTestCase {
         let f = try fixture()
         // The light faces: `.Load1LightFaceFromPICT @ 1002ff1c` = `.Load1PlainFaceFromPICT` under clut 801, at the
         // twelve call sites' (pict, w, h). Eleven draw their PICT unscaled; pixels are 0 (no light) or 0xf5..0xff.
-        // The twelfth, `.InitBonusSprite`'s (806, 84, 84), has DrawPicture shrink the 192×192 picture — QuickDraw's
-        // stretch is ROM code, not built: refused by name.
+        // The twelfth, `.InitBonusSprite`'s (806, 84, 84), has DrawPicture shrink the 192×192 indexed picture into
+        // the 84×84 port: CopyBits srcCopy, nearest row / column (`ScreenRenderer.sampleRows`) — the upgrade's light
+        // on level 2 (it was refused, and the game quit).
         XCTAssertEqual(LightFace.callSites.count, 12)
         let search = ColorSearch(model: .ruled)
+        let full806 = try LightFace.load(pict: 806, width: 192, height: 192, from: f.resources, search: search)
+        let shrunk = try LightFace.load(pict: 806, width: 84, height: 84, from: f.resources, search: search)
+        let rows = ScreenRenderer.sampleRows(source: 192, dest: 84)
+        XCTAssertEqual(shrunk.pixels, rows.flatMap { y in rows.map { x in full806.pixel(row: y, col: x) } })
         for site in LightFace.callSites {
-            if site.pict == 806 {
-                XCTAssertThrowsError(try LightFace.load(pict: 806, width: site.width, height: site.height,
-                                                        from: f.resources, search: search)) {
-                    XCTAssertEqual($0 as? LightFaceError,
-                                   .scaled(pict: 806, frameWidth: 192, frameHeight: 192, width: 84, height: 84))
-                }
-                continue
-            }
             let face = try LightFace.load(pict: site.pict, width: site.width, height: site.height, from: f.resources,
                                           search: search)
             XCTAssertEqual([face.width, face.height], [site.width, site.height])

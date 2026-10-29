@@ -156,7 +156,8 @@ public final class FrameRenderer {
     /// `BoxSprite.dropSheets`;
     /// CS: the player shots' 1100…1105, 1113…1116, 1118, `PlayerShot.sheets`; IU: the held items' singles 750, 756,
     /// 768, 771, `HeldItem.sheets` — the thrown seeds and the Smiting seeds are 1116, the stab faces 1021 / 1035 the
-    /// player's; LV4: the Bonus faces run-time spawns read that no placed type loads, `bonusSpawnSheets`), empty light
+    /// player's; LV4: the Bonus faces run-time spawns read that no placed type loads, `bonusSpawnSheets`; the rope segments'
+    /// sets 0x28a / 0x28c / 0x292, `RopeSprite.sheets` — the segments the first Handle makes carry them), empty light
     /// slots (`addLights`), the status bar under the level CLUT.
     /// - Parameter prefs: prefs+4 (parallax) and +6 (Effects) for the blitters; the Setup lights depend on Effects.
     /// - Parameter surface: the shared screen (FE0): its pixels, CLUT and gamma are left as they are until the ops
@@ -199,7 +200,8 @@ public final class FrameRenderer {
                                                 .union(HeldItem.sheets)
                                                 .union(BoxSprite.spawnSheets)
                                                 .union(BoxSprite.dropSheets(L.placements))
-                                                .union(Self.bonusSpawnSheets),
+                                                .union(Self.bonusSpawnSheets)
+                                                .union(RopeSprite.sheets),
                                             resources: resources, search: search, dither: dither)
         let lights = LightRenderer(level: L, tables: tables)
         self.lights = lights
