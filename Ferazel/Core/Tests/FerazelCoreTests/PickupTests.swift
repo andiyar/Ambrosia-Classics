@@ -378,17 +378,20 @@ final class PickupTests: XCTestCase {
         let grid = DrawOp.redrawEntireScrollGrid(h: ps.camera.scrollH, v: ps.camera.scrollV)
         let tail = ops.draws[bar...].filter { op in
             switch op {
-            case .statusBar, .redrawEntireScrollGrid, .wrapDrawSprites: true
+            case .statusBar, .setDrawnScroll, .redrawEntireScrollGrid, .wrapDrawSprites: true
             default: false
             }
         }.map { op -> String in
             switch op {
             case .statusBar: "bar"
             case .wrapDrawSprites: "sprites"
+            case .setDrawnScroll(let h, let v): [h, v] == [ps.camera.scrollH, ps.camera.scrollV] ? "drawn" : "\(op)"
             default: op == grid ? "grid" : "\(op)"
             }
         }
-        XCTAssertEqual(Array(tail.prefix(4)), ["bar", "grid", "sprites", "grid"], "snap, then redraw")
+        // The snap copies the scroll point into the grid's drawn location (`*_DAT_1009fe74/fe70`, l. 49669–49671)
+        // before its redraw.
+        XCTAssertEqual(Array(tail.prefix(5)), ["bar", "drawn", "grid", "sprites", "grid"], "snap, then redraw")
     }
 
     func testItemsStack() throws {

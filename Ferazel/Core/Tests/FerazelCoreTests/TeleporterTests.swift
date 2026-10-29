@@ -89,17 +89,21 @@ final class TeleporterTests: XCTestCase {
         // Exactly 120 passes (the shake 200 → 80), and where they leave the scroll point.
         XCTAssertEqual(s.camera.shake, Int16(max(200 - 120 * matches, 0)), file: file, line: line)
         XCTAssertEqual([s.camera.scrollH, s.camera.scrollV], [scroll.h, scroll.v], file: file, line: line)
-        // The re-seat's `.RedrawEntireScrollGrid` at the scroll point the 120 passes left, then the sprites.
+        // The re-seat's copy of the scroll point into the grid's drawn location (`*_DAT_1009fe74/fe70`, M l. 49453–
+        // 49456) and its `.RedrawEntireScrollGrid` there, then the sprites.
         let kinds = second.draws.map { op -> String in
             switch op {
+            case .setDrawnScroll(let h, let v): return "drawn \(h) \(v)"
             case .redrawEntireScrollGrid(let h, let v): return "entire \(h) \(v)"
             case .wrapDrawSprites: return "sprites"
             default: return "other"
             }
         }
-        XCTAssertEqual(Array(kinds.suffix(2)), ["entire \(s.camera.scrollH) \(s.camera.scrollV)", "sprites"],
+        XCTAssertEqual(Array(kinds.suffix(3)), ["drawn \(s.camera.scrollH) \(s.camera.scrollV)",
+                                                "entire \(s.camera.scrollH) \(s.camera.scrollV)", "sprites"],
                        file: file, line: line)
         XCTAssertEqual(kinds.filter { $0.hasPrefix("entire") }.count, matches, file: file, line: line)
+        XCTAssertEqual(kinds.filter { $0.hasPrefix("drawn") }.count, matches, file: file, line: line)
         XCTAssertEqual(s.player.teleporterCharge, 80, file: file, line: line)  // unchanged until the tail
         XCTAssertTrue(s.player.teleporterFire, file: file, line: line)
         // Stage 2 answered: `.RedrawEntireScrollGrid`, `0708 = 0`, the charge −59, the rest of the frame.
@@ -243,6 +247,7 @@ final class TeleporterTests: XCTestCase {
             case .copyToScreen(_, _, let g, _): return "copy \(g)"
             case .wrapDrawSprites: return "sprites"
             case .drawBlackLines: return "black"
+            case .setDrawnScroll: return "drawn"
             case .redrawEntireScrollGrid: return "entire"
             case .wrapEraseSprites: return "erase"
             default: return "other"
@@ -252,10 +257,10 @@ final class TeleporterTests: XCTestCase {
         let first = try XCTUnwrap(ticks[t0])
         XCTAssertEqual(Array(first.draws.map(kind).suffix(3)), ["sprites", "copy 2", "mosaic 1"])
         XCTAssertEqual(first.sounds.map(\.snd).last, 421)
-        // Tick t0 + 57: the last out-blit, mode 3 back, the move (its grid, the sprites, snd 420), the in-mosaic's
-        // prelude and first blit.
+        // Tick t0 + 57: the last out-blit, mode 3 back, the move (its drawn-location copy and grid, the sprites, snd
+        // 420), the in-mosaic's prelude and first blit.
         let mid = try XCTUnwrap(ticks[t0 + 57])
-        XCTAssertEqual(mid.draws.map(kind), ["mosaic 20", "black", "entire", "sprites", "sprites", "copy 2", "mosaic 20"])
+        XCTAssertEqual(mid.draws.map(kind), ["mosaic 20", "black", "drawn", "entire", "sprites", "sprites", "copy 2", "mosaic 20"])
         XCTAssertEqual(mid.sounds.map(\.snd), [420])
         // Tick t0 + 114: the last in-blit, mode 3 back, then the same frame's rest — its grid redraw first, the erase.
         let last = try XCTUnwrap(ticks[t0 + 114])

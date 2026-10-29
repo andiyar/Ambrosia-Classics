@@ -275,6 +275,37 @@ final class TileGridTests: XCTestCase {
         }
     }
 
+    /// The passage jump's and the teleport's re-seat (`.HitPlayerSprite` M l. 49453–49457, 49669–49672): the scroll
+    /// point copied into the drawn location `*_DAT_1009fe74/fe70` (`DrawOp.setDrawnScroll`), then
+    /// `.RedrawEntireScrollGrid` — which redraws the window at the drawn location. After a jump across the level the
+    /// ports hold exactly what a renderer drawn there from the start holds; without the copy the whole-window redraw
+    /// lands on the old view (the Q15 teleport's stale rectangle).
+    func testJumpCopiesTheScrollPointBeforeTheWholeRedraw() throws {
+        let f = try fixture()
+        var ports = FramePorts()
+        var grid = f.renderer(drawnH: 0, drawnV: 10)
+        grid.apply(.redrawEntireScrollGrid(h: 0, v: 10), ports: &ports)
+        let to = (h: 2185, v: 1216)
+        let drawnBefore = ports
+        grid.apply(.setDrawnScroll(h: to.h, v: to.v), ports: &ports)
+        XCTAssertEqual([grid.drawnH, grid.drawnV], [to.h, to.v])
+        XCTAssertEqual(ports, drawnBefore, "the copy draws nothing")
+        grid.apply(.redrawEntireScrollGrid(h: to.h, v: to.v), ports: &ports)
+        var fresh = FramePorts()
+        f.renderer(drawnH: to.h, drawnV: to.v).redrawEntireScrollGrid(h: to.h, v: to.v, ports: &fresh)
+        // Every pixel the view reads (cells outside it are culled, so the rest of the ring keeps the old view).
+        var stale = 0
+        for y in to.v..<(to.v + 384) {
+            for x in to.h..<(to.h + 608) {
+                let o = FramePorts.ringOffset(x: x, y: y)
+                if ports.frame[o] != fresh.frame[o] || ports.mask[o] != fresh.mask[o] || ports.tiles[o] != fresh.tiles[o] {
+                    stale += 1
+                }
+            }
+        }
+        XCTAssertEqual(stale, 0, "view pixels left from the old view")
+    }
+
     func testFGWaterCellRule() throws {
         let f = try fixture()
         let L = f.level

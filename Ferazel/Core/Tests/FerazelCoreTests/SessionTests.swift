@@ -293,6 +293,7 @@ final class SessionTests: XCTestCase {
                 case .drawPicture: return "picture"
                 case .redrawScrollGrid: return "grid"
                 case .redrawEntireScrollGrid: return "entire"
+                case .setDrawnScroll: return "drawn"
                 case .drawLightsOntoTiles: return "lights"
                 case .wrapDrawSprites: return "sprites"
                 case .copyToScreen: return "copy"

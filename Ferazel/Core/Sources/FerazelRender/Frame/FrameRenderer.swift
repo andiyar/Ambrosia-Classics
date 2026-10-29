@@ -12,7 +12,9 @@ import FerazelCore
 ///   `.SetScreenClut` set to the same colours (l. 7999–8000), then `.MTRedraw`'s `CopyBits` to the window — differing
 ///   seeds, so each index goes through `Color2Index` of its own colour [MED].
 /// - `redrawScrollGrid` / `redrawEntireScrollGrid` (`TileGridRenderer`): the scroll point `PTR_DAT_1009fe78` becomes
-///   (h, v) as passed; `drawLightsOntoTiles` at that point.
+///   (h, v) as passed; `drawLightsOntoTiles` at that point. `.RedrawEntireScrollGrid` redraws the window at the
+///   grid's drawn location (`_DAT_1009fe74/fe70`), which `setDrawnScroll(h, v)` sets without drawing (the passage
+///   jump's and the teleport's re-seat).
 /// - `lightTable(t)` (LT): Core's light table before this frame's `.HandleLights` becomes the renderer's copy
 ///   (`lightTable`) and its `LightRenderer` slots (faces from the cache). The first one must equal the table
 ///   `addLights` built (Debug precondition).
@@ -384,6 +386,10 @@ public final class FrameRenderer {
                 grid.redrawEntireScrollGrid(h: h, v: v, ports: &ports)
                 scroll = (h, v)
                 executed.append(.entireGrid(h: h, v: v))
+            case .setDrawnScroll(let h, let v):
+                // The re-seat's scroll copies (`*_DAT_1009fe74/fe70`): a state hand-off, not a draw call — not in
+                // `executed`. The scroll point is set by the `.redrawEntireScrollGrid` that follows it.
+                grid.setDrawnScroll(h: h, v: v)
             case .drawLightsOntoTiles:
                 grid.lights = lights
                 grid.drawLightsOntoTiles(h: scroll.h, v: scroll.v, ports: &ports)

@@ -107,6 +107,7 @@ public final class ScreenRenderer {
                 break   // C2 draws it (`.WrapCopyToScreen` of the last drawn level frame): `ConversationRenderer`
             case .redrawScrollGrid: throw Refusal.levelOp("redrawScrollGrid")
             case .redrawEntireScrollGrid: throw Refusal.levelOp("redrawEntireScrollGrid")
+            case .setDrawnScroll: throw Refusal.levelOp("setDrawnScroll")
             case .drawLightsOntoTiles: throw Refusal.levelOp("drawLightsOntoTiles")
             case .wrapDrawSprites: throw Refusal.levelOp("wrapDrawSprites")
             case .copyToScreen: throw Refusal.levelOp("copyToScreen")

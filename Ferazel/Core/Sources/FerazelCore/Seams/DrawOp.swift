@@ -12,6 +12,11 @@ public enum DrawOp: Equatable, Sendable {
     /// `.RedrawEntireScrollGrid @ 10013fd0`: the whole cell window (level start, `.GameLoop` l. 5211; full redraws,
     /// e.g. decompile l. 3265, 3914, 6259).
     case redrawEntireScrollGrid(h: Int, v: Int)
+    /// The scroll point (h, v) copied into the grid's drawn location `*_DAT_1009fe74` / `*_DAT_1009fe70` — the h, v
+    /// `.SetScrollLocation` last drew at and `.RedrawEntireScrollGrid` redraws the window at — with no draw: the passage
+    /// jump's and the teleport's re-seat, right before their `.RedrawEntireScrollGrid` (`.HitPlayerSprite` M l.
+    /// 49669–49671 and 49453–49456: `*piVar17 = scroll h; *piVar47 = scroll v`).
+    case setDrawnScroll(h: Int, v: Int)
     /// `.DrawLightsOntoTiles`; the caller skips it when prefs+6 (Effects) == 3.
     case drawLightsOntoTiles
     /// `.WrapDrawSprites`, active-list order (draw-effects §1.1).

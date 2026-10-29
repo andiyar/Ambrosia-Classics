@@ -82,12 +82,14 @@ public struct TileGridRenderer: Sendable {
         return col % n + 8 * (row % n)
     }
 
-    /// The tile-grid draw ops of the seam: `.redrawScrollGrid` → `setScrollLocation` (strip-incremental),
-    /// `.redrawEntireScrollGrid` → `redrawEntireScrollGrid` (the whole window). Every other op is not the grid's.
+    /// The tile-grid ops of the seam: `.redrawScrollGrid` → `setScrollLocation` (strip-incremental),
+    /// `.redrawEntireScrollGrid` → `redrawEntireScrollGrid` (the whole window), `.setDrawnScroll` → `setDrawnScroll`.
+    /// Every other op is not the grid's.
     mutating func apply(_ op: DrawOp, ports: inout FramePorts) {
         switch op {
         case .redrawScrollGrid(let h, let v): setScrollLocation(h: h, v: v, ports: &ports)
         case .redrawEntireScrollGrid(let h, let v): redrawEntireScrollGrid(h: h, v: v, ports: &ports)
+        case .setDrawnScroll(let h, let v): setDrawnScroll(h: h, v: v)
         default: break
         }
     }
@@ -137,6 +139,13 @@ public struct TileGridRenderer: Sendable {
             redraw(top: colStrip.top, left: colStrip.left, right: colStrip.right, bottom: colStrip.bottom, scroll: scroll,
                    ports: &ports)
         }
+    }
+
+    /// `DrawOp.setDrawnScroll`: `*_DAT_1009fe74 = h`, `*_DAT_1009fe70 = v` — no clamp, nothing drawn (the passage
+    /// jump's and the teleport's re-seat, `.HitPlayerSprite` M l. 49669–49671, 49453–49456).
+    public mutating func setDrawnScroll(h: Int, v: Int) {
+        drawnH = h
+        drawnV = v
     }
 
     /// `.RedrawEntireScrollGrid @ 10013fd0` (`DrawOp.redrawEntireScrollGrid`): rows drawnV/32 ... +13, cols

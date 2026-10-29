@@ -961,8 +961,8 @@ public final class FerazelSession {
     /// `PassageView.snap` (`.HitPlayerSprite` l. 49659–49672, W2b): the camera snapped to (player x − 0x142, y − 0xc0),
     /// then 90 `.FindUpperLeftCorner` passes with the focus the arm just set (`*_DAT_1009fec4`, the auto-scroll mode, is
     /// saved, zeroed and restored around them — auto-scroll is refused by `Camera.init`, so it is 0 throughout); the
-    /// scroll location `_DAT_1009fe74/fe70` takes the scroll point (Core's draws read `camera.scrollH/V`);
-    /// `.RedrawEntireScrollGrid`.
+    /// scroll location `_DAT_1009fe74/fe70` takes the scroll point (`DrawOp.setDrawnScroll`: the renderer's grid
+    /// redraws the window there); `.RedrawEntireScrollGrid`.
     /// TP: the teleport's re-seat is the same code with 120 passes (`sVar36 < 0x78`, M l. 49451), `+0xdc = 0` set by
     /// the arm before it (`HitPlayerSprite.teleportMove`).
     private func passageSnap(passes: Int = FerazelSession.passagePasses) {
@@ -971,6 +971,9 @@ public final class FerazelSession {
         world.player.scrollH = camera.scrollH
         world.player.scrollV = camera.scrollV
         for _ in 0..<passes { findUpperLeftCorner(graphics: prefs.graphics) }
+        // `*piVar17 = scroll h; *piVar47 = scroll v` (`_DAT_1009fe74/fe70`, the grid's drawn location): the
+        // `.RedrawEntireScrollGrid` after it redraws the window at the new view, not at the last strip redraw's.
+        world.player.passDraws.append(.setDrawnScroll(h: camera.scrollH, v: camera.scrollV))
         world.player.passDraws.append(.redrawEntireScrollGrid(h: camera.scrollH, v: camera.scrollV))
     }
 

@@ -103,8 +103,8 @@ public struct LevelRunOutput: Equatable, Sendable {
         case .setScreenClut(let id): return id == levelClut ? .level : .screen
         case .drawPicture, .gammaStep: return owner
         case .fillRect, .copyPicture, .drawFace, .drawLine, .drawText, .restoreView, .screenGamma: return .screen
-        case .redrawScrollGrid, .redrawEntireScrollGrid, .drawLightsOntoTiles, .wrapDrawSprites, .copyToScreen,
-             .copyMaskToScreen, .changeLightFace, .wrapEraseSprites, .statusBar, .setTile, .wrapDrawWaterEffects, .drawParticles,
+        case .redrawScrollGrid, .redrawEntireScrollGrid, .setDrawnScroll, .drawLightsOntoTiles, .wrapDrawSprites,
+             .copyToScreen, .copyMaskToScreen, .changeLightFace, .wrapEraseSprites, .statusBar, .setTile, .wrapDrawWaterEffects, .drawParticles,
              .eraseParticles, .drawBlackLines, .lightTable, .mosaic:
             return .level
         }
