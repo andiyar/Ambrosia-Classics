@@ -316,6 +316,9 @@ extension VisitSweep {
                 lastSuspension = s
                 if case .completed? = run.end { seen.levelCompleted = true }
             }
+            // The flow can leave the level for the stage screens within one tick: the map (only a completed level
+            // leads there from a Continue) also counts as the exit taken.
+            if flow.worldMap != nil { seen.levelCompleted = true }
             if seen.levelCompleted, let m = flow.worldMap, m.iterations >= 2, m.result == nil { seen.exitReachedMap = true }
             if flow.state == .quit {
                 rows.append(failure(v, frame: frame(), "the flow quit"))
