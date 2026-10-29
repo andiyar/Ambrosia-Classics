@@ -30,11 +30,16 @@ public struct SpriteDraw: Equatable, Sendable {
     public var waterKind: Int16
     /// `+0x18c`: one draw with no water split, and the light pass without the water row (`10014800`, `10014960`).
     public var noWaterSplit: Bool
+    /// Mode 5 (`.BlitEncFaceDiffuse @ 10029988`): the `FastRand` seed `_DAT_100a17e8` as this sprite's draw begins.
+    /// The binary draws the sparkle's randoms from the game's one stream inside `.WrapDrawSprites`; Core takes them
+    /// there (`FerazelSession`, `DiffuseRandoms`) and the renderer replays the same stretch from this seed. Nil for
+    /// every other mode (a mode-5 draw without it is refused, never drawn from another stream).
+    public var randomSeed: Int32?
 
     public init(face: FaceRef, x: Int, y: Int, mode: UInt32 = 0, mirrored: Bool = false, clip: SpriteClip = SpriteClip(),
                 lightOverlay: Bool = false, waterRow: Int = 0, rotation: Int16 = 0, scale: Int16 = 0x100,
                 flash: Int16 = 0, flashTable: UInt8 = 0, occluder: SpriteSlot.Occluder? = nil, waterKind: Int16 = 0,
-                noWaterSplit: Bool = false) {
+                noWaterSplit: Bool = false, randomSeed: Int32? = nil) {
         self.face = face
         self.x = x
         self.y = y
@@ -50,6 +55,7 @@ public struct SpriteDraw: Equatable, Sendable {
         self.occluder = occluder
         self.waterKind = waterKind
         self.noWaterSplit = noWaterSplit
+        self.randomSeed = randomSeed
     }
 }
 

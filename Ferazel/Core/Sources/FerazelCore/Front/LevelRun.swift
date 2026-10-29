@@ -593,7 +593,8 @@ public final class LevelRun {
         carry.crunchLog = g.crunchLog
         let faces = try services.prepare(level: L)
         let s = try FerazelSession(resources: resources, prefs: prefs, level: L, seed: seed, carry: carry,
-                                   faceBounds: faces.faceBounds, particleFaces: faces.particleFaces, start: start,
+                                   faceBounds: faces.faceBounds, particleFaces: faces.particleFaces,
+                                   diffuseRandoms: faces.diffuseRandoms, start: start,
                                    refreshFacing: refreshFacing,
                                    records: revisit ? save.restoreSnapshot(level: Int16(L)) : nil,
                                    hostedByLevelRun: true)

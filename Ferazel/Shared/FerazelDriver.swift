@@ -434,7 +434,7 @@ extension FerazelDriver: @MainActor LevelServices {
         levelRenderer = r
         conversationRenderer = ConversationRenderer(frame: r, text: rasterizer, prefs: flow.toggles.live)
         conversationRun = flow.levelRun
-        return LevelFaces(faceBounds: r.faceBounds, particleFaces: r.particleFaces)
+        return LevelFaces(faceBounds: r.faceBounds, particleFaces: r.particleFaces, diffuseRandoms: r.diffuseRandoms)
     }
 
     func attach(lights: [SetupFaces.Light], tintTableDraws: [Int16]) throws {

@@ -337,6 +337,14 @@ public final class FrameRenderer {
         return IdleSprites.Rect(top: Int(b.top), left: Int(b.left), bottom: Int(b.bottom), right: Int(b.right))
     }
 
+    /// Mode 5's draw walk for Core (`FerazelSession(…diffuseRandoms:)`): `SpriteBlitter.diffuseRandoms` over this
+    /// level's faces — the same pixels `apply`'s sprite draw walks, so the stream Core advances is the one the draw
+    /// replays from `SpriteDraw.randomSeed`.
+    public var diffuseRandoms: DiffuseRandoms {
+        let s = sprites
+        return { d, h, v, rng in s.diffuseRandoms(d, h: h, v: v, rng: &rng) }
+    }
+
     /// The face pixels for Core's face emitters (`FerazelSession(…particleFaces:)`, E1a): a loaded sprite face, and
     /// FG tile t of the level's FG set (`*_DAT_1009ff88`, `TileSets.fg`).
     public var particleFaces: ParticleFaces {

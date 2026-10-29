@@ -119,6 +119,8 @@ public final class FerazelSession {
     public let setupLevelTileOps: [DrawOp]
 
     private let faceBounds: (FaceRef) -> IdleSprites.Rect
+    /// The renderer's mode-5 walk (`DiffuseRandoms`); nil takes no draw-time randoms.
+    private let diffuseRandoms: DiffuseRandoms?
     /// The tile solver over `world` (one per level).
     private let solver: TileSolver
     /// - Parameter seed: the `FastRand` seed (tests fix it; the app seeds from the clock like `.InitAppGlobals`).
@@ -128,6 +130,8 @@ public final class FerazelSession {
     ///   frame for a single face) is used — a superset of the opaque bounds [MED].
     /// - Parameter particleFaces: the face pixels the face emitters walk (E1a: `.ExplodeFaceIntoParticles`,
     ///   `.ParticleGlow`) — FerazelRender's (`FrameRenderer.particleFaces`); none by default (no particles, no draws).
+    /// - Parameter diffuseRandoms: the mode-5 draw walk (`FrameRenderer.diffuseRandoms`): each mode-5 draw of
+    ///   `.WrapDrawSprites` takes its randoms from `rng` at its list place (`diffuseSeeds`); nil → none (Core tests).
     /// - Parameter start: `.GameLoop`'s (x, y) (`param_1`, `param_2`); nil → hdr+0x2848 − 0x20, hdr+0x2846 − 0x20, as
     ///   `.NewGame` passes (M l. 5823). Continue passes save +0xc / +0x10 (M l. 7044–7064; F1b).
     /// - Parameter refreshFacing: on a carried G, `+0x16 ← hdr+0x26c8` (`.NewGame`'s next-level loop, M l. 5821; W4);
@@ -139,7 +143,8 @@ public final class FerazelSession {
     ///   `unlocked[L] = 1` before the player spawn). False (every caller before L1) = Phase 2's behaviour exactly.
     public init(resources: FerazelResources, prefs: FerazelPrefs, level: Int, seed: Int32 = 1,
                 carry: LevelCarry = LevelCarry(), faceBounds: ((FaceRef) -> IdleSprites.Rect)? = nil,
-                particleFaces: ParticleFaces = ParticleFaces(), start: (x: Int, y: Int)? = nil,
+                particleFaces: ParticleFaces = ParticleFaces(), diffuseRandoms: DiffuseRandoms? = nil,
+                start: (x: Int, y: Int)? = nil,
                 refreshFacing: Bool = true, records: [Placement]? = nil, hostedByLevelRun: Bool = false) throws {
         self.resources = resources
         self.prefs = prefs
@@ -171,6 +176,7 @@ public final class FerazelSession {
         self.world = world
         let bounds = faceBounds ?? { Self.frameRect($0, resources: resources) }
         self.faceBounds = bounds
+        self.diffuseRandoms = diffuseRandoms
         // `.GameLoop(hdr+0x2848 − 0x20, hdr+0x2846 − 0x20, 0, 1)` (`.NewGame` l. 5823), or the caller's `start` (L1).
         let px = start?.x ?? Int(L.header.startX) - 0x20, py = start?.y ?? Int(L.header.startY) - 0x20
         startX = px
@@ -428,9 +434,9 @@ public final class FerazelSession {
         // `.WrapDrawWaterEffects(odd)` (l. 9206): every iteration, drawn or not, with the parity before this
         // iteration's flip — its bubbles, motes and wind dust into the pool, its Enhanced water faces into the op (E1b).
         ops.draws.append(.wrapDrawWaterEffects(waterEffects.run(world: world, h: h, v: v, effects: prefs.effects)))
-        ops.draws.append(.wrapDrawSprites(world.active.wrapDrawSprites { s in
+        ops.draws.append(.wrapDrawSprites(diffuseSeeds(world.active.wrapDrawSprites { s in
             Self.dynamicLight(s, level: lvl, lights: table, bounds: bounds0) { Self.frameRect($0, resources: res) }
-        }))
+        }, h: h, v: v)))
         // `*_DAT_1009fd2c += 1` (M l. 9250): every pass, before the draw block (EF; the shake reads it).
         world.paintCounter &+= 1
         if draw {
@@ -996,9 +1002,24 @@ public final class FerazelSession {
     /// own, `LevelRun`), each sprite's dynamic light from the light table.
     func wrapDrawSpritesOp() -> DrawOp {
         let table = lightTable, bounds0 = faceBounds, res = resources, lvl = level
-        return .wrapDrawSprites(world.active.wrapDrawSprites { s in
+        return .wrapDrawSprites(diffuseSeeds(world.active.wrapDrawSprites { s in
             Self.dynamicLight(s, level: lvl, lights: table, bounds: bounds0) { Self.frameRect($0, resources: res) }
-        })
+        }, h: camera.scrollH, v: camera.scrollV))
+    }
+
+    /// Mode 5's draw-time randoms (draw-effects §2.3): `.BlitEncFaceDiffuse` calls `.FastRand` per drawn pixel inside
+    /// `.WrapDrawSprites`, between the frame's logic before it and the Handles after it, in list order. Each mode-5
+    /// draw takes the stream's seed at its place (`SpriteDraw.randomSeed`, which the renderer replays) and the stream
+    /// moves on by the renderer's walk of that draw at the scroll point (h, v) (`diffuseRandoms`). Nothing else in
+    /// `.WrapDrawSprites` draws a random, so seeding after the Core pass keeps the binary's order.
+    private func diffuseSeeds(_ draws: [SpriteDraw], h: Int, v: Int) -> [SpriteDraw] {
+        draws.map { d in
+            guard d.mode >> 16 == 5 else { return d }
+            var d = d
+            d.randomSeed = world.rng.seed
+            diffuseRandoms?(d, h, v, &world.rng)
+            return d
+        }
     }
 
     /// A sprite's hit callback `+0x5c` (`SpriteWorld` calls it only when `hasHit`): `.HitPlatformSprite` (W1); the

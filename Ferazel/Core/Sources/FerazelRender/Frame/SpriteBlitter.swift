@@ -35,9 +35,15 @@ import FerazelCore
 /// TB (Phase 4) adds translucency, mode 0xb (`.BlitEncFaceTransClip` / `.BlitEncFaceTransFlipClip`, draw-effects §2.7;
 /// `transClip`), with the parallax row of `.CalcPxRowContents` under an empty mask byte.
 ///
-/// Still refused by name (`Refusal`): diffuse (5), behind-tiles (8), squash (0xa), translucent ripple (0xd), silhouette
-/// (0xe), tile blends (≥ 0x14), the undefined Special tables (2, 7, 0xf..0x13), the same modes and 0xb under scale /
-/// rotation (no table: the register keeps garbage), and a mode-0xb arg whose table read leaves its table.
+/// The draw-modes fix adds the teleporter sparkle, mode 5 (`.BlitEncFaceDiffuse` / `.BlitEncFaceFlipDiffuse`,
+/// draw-effects §2.3; `diffuseWalk`), its randoms replayed from the game stream's seed Core took at the draw
+/// (`SpriteDraw.randomSeed`, `diffuseRandoms`), and the springboard gauge's squash, mode 0xa (`.BlitEncFaceSpecialClipX`'s
+/// mode-10 arms and the squashed `.BlitEncBoolFaceClip` mask, §2.6; `squashWalk`).
+///
+/// Still refused by name (`Refusal`): behind-tiles (8), translucent ripple (0xd), silhouette (0xe), tile blends
+/// (≥ 0x14), the undefined Special tables (2, 7, 0xf..0x13, and a flipped 0xa: the flip twins have no mode-10 arm), the
+/// same modes and 5, 0xa, 0xb under scale / rotation (no table: the register keeps garbage), a mode-0xb arg whose
+/// table read leaves its table, and a mode-5 draw with no seed.
 /// The light pass over a sprite with a water row uses `.DrawLightOverFace`'s underwater variants (P4).
 public struct SpriteBlitter: Sendable {
 
@@ -66,6 +72,8 @@ public struct SpriteBlitter: Sendable {
         /// flipped copy run straight after another copy run (the flip twin's pixel counter `iVar22` carries over and
         /// its column counter goes wrong — `FaceEncoder` never emits one).
         case translucency(x: Int, y: Int)
+        /// A mode-5 draw with no `SpriteDraw.randomSeed`: its randoms belong to the game's stream, which Core hands over.
+        case diffuseSeed
     }
 
     /// The face sets the sprites draw from (`SetupFaces.Sheet`s), loaded once.
@@ -136,6 +144,23 @@ public struct SpriteBlitter: Sendable {
 
     // MARK: - `.WrapDrawSprites`
 
+    /// `DiffuseRandoms` (Core's question at `.WrapDrawSprites` time): advances `rng` by exactly the randoms
+    /// `wrapDrawSprites([d], h:, v:)` draws for `d` — the same cull, `faceCalls`, `.Wrap*Face` ring copies, entry test
+    /// and `diffuseWalk`, for every untransformed mode-5 call; nothing for any other draw (a transformed mode-5 draw is
+    /// refused at the draw). The cull's grid pair cancels out (see `wrapDrawSprites`), so (h, v) serves for both.
+    public func diffuseRandoms(_ d: SpriteDraw, h: Int, v: Int, rng: inout FastRand) {
+        guard d.rotation == 0 && d.scale == 0x100, let face = faces.face(d.face) else { return }
+        let view = Rect(top: v, left: h, bottom: v + 0x180, right: h + 0x260)
+        guard Rect(face.bounds).offset(dh: h, dv: v).intersects(view) else { return }
+        for c in Self.faceCalls(d, face: face).calls where Int32(bitPattern: c.word) >> 16 == 5 {
+            let n = Int16(truncatingIfNeeded: c.word & 0xffff)
+            Self.wrap(src: (c.srcV, c.srcH), dst: (c.dstV, c.dstH), w: c.w, h: c.h, h0: h, v0: v) { s, t, w, hh in
+                Self.diffuseWalk(face, src: s, dst: t, w: w, h: hh, flip: d.mirrored, n: n,
+                                 random: { rng.next($0) }) { _, _ in }
+            }
+        }
+    }
+
     /// The ripple phase `*_DAT_1009fd74` (0x200 at level start, `.GameLoop` l. 5217; += 0x100 after every
     /// `.WrapEraseSprites`, raw `100127ec..100127f4` — `FrameRenderer` advances it).
     public var ripplePhase: Int32 = 0x200
@@ -150,11 +175,15 @@ public struct SpriteBlitter: Sendable {
             guard let face = faces.face(d.face) else { throw Refusal.faceNotLoaded(d.face) }
             guard Rect(face.bounds).offset(dh: off.h, dv: off.v).intersects(view) else { continue }
             let plan = Self.faceCalls(d, face: face)
+            // Mode 5: the game stream replayed from the seed Core took at this draw (one generator per draw, shared by
+            // its calls and ring copies in the binary's order).
+            var rng = d.randomSeed.map { FastRand(seed: $0) }
+            let random: ((Int16) -> Int16)? = rng == nil ? nil : { rng!.next($0) }
             for c in plan.calls {
                 try Self.wrap(src: (c.srcV, c.srcH), dst: (c.dstV, c.dstH), w: c.w, h: c.h, h0: h, v0: v) { s, t, w, hh in
                     try blitEncFaceX(face, src: s, dst: t, w: w, h: hh, word: c.word, flip: d.mirrored,
                                      rotation: d.rotation, scale: d.scale, origin: (d.x, d.y), scroll: (h, v),
-                                     ports: &ports)
+                                     random: random, ports: &ports)
                 }
             }
             if let l = plan.light, effects != 3 {
@@ -233,14 +262,19 @@ public struct SpriteBlitter: Sendable {
     /// - mode 0, no transform: the copy (`NoClipX`/`ClipX`, flip twins);
     /// - mode ∈ {5, 6, 8, 0xb, 0xd, 0xe}, mode > 0x13, or a transform: untransformed mode 6 → `.BlitEncFaceWaterRipple`
     ///   (flipped `.BlitEncFaceFlipWaterRipple`), untransformed 0xb → `.BlitEncFaceTrans(Flip)Clip` (`transClip`, at
-    ///   the sprite's `origin` (+0xc, +0xa) and the `scroll`), the others refused; a transform with rotation 0, not
-    ///   flipped → `.BlitEncFaceScale`; any other transform → `.BlitEncFaceRot`;
+    ///   the sprite's `origin` (+0xc, +0xa) and the `scroll`), untransformed 5 → `.BlitEncFaceDiffuse` (flipped
+    ///   `.BlitEncFaceFlipDiffuse`; `diffuseWalk` with `random`, the replayed game stream — nil is refused), the others
+    ///   refused; a transform with rotation 0, not flipped → `.BlitEncFaceScale`; any other transform → `.BlitEncFaceRot`;
+    /// - mode 0xa, not flipped: `.BlitEncFaceSpecialClipX`'s squash (`squashWalk`, q = sub); flipped →
+    ///   `.BlitEncFaceFlipClipSpecial` with no mode-10 table (refused);
     /// - else the Special table modes (`special`);
     /// then, for mode < 0x14, ≠ 0xd, untransformed, the mask pass: 0 under the silhouette (mode 6 through the ripple
-    /// twins `.BlitEncBoolFace(Flip)WaterRipple`). Scale and Rot write the mask inline.
+    /// twins `.BlitEncBoolFace(Flip)WaterRipple`; mode 0xa through `.BlitEncBoolFaceClip` carrying q in r10, `1002d268..1002d270`,
+    /// which squashes when q ≠ 0). Scale and Rot write the mask inline.
     func blitEncFaceX(_ face: EncodedFace, src: (Int, Int), dst: (Int, Int), w: Int, h: Int, word: UInt32, flip: Bool,
                       rotation rot: Int16, scale: Int16, origin: (x: Int, y: Int) = (0, 0),
-                      scroll: (h: Int, v: Int) = (0, 0), ports: inout FramePorts) throws {
+                      scroll: (h: Int, v: Int) = (0, 0), random: ((Int16) -> Int16)? = nil,
+                      ports: inout FramePorts) throws {
         let W = FramePorts.width, H = FramePorts.height
         let (dv, dh) = dst
         guard dh + face.width >= 0, dv + face.height >= 0, dh <= W, dv <= H else { return }
@@ -252,6 +286,10 @@ public struct SpriteBlitter: Sendable {
             if !transformed && mode == 0xb {
                 try transClip(face, src: src, dst: dst, w: w, h: h, word: word, flip: flip, origin: origin,
                               scroll: scroll, ports: &ports)
+            } else if !transformed && mode == 5 {
+                guard let random else { throw Refusal.diffuseSeed }
+                Self.diffuseWalk(face, src: src, dst: dst, w: w, h: h, flip: flip, n: Int16(truncatingIfNeeded: sub),
+                                 random: random) { o, v in ports.frame[o] = v }
             } else if !transformed {
                 guard mode == 6 else { throw Refusal.mode(word) }
                 let t = try table(mode: 6, sub: sub, word: word)
@@ -274,6 +312,11 @@ public struct SpriteBlitter: Sendable {
                     if two { ports.frame[o + 1] = v; ports.mask[o + 1] = 0 }
                 }
             }
+        } else if mode == 0xa {
+            guard !flip else { throw Refusal.mode(word) }
+            Self.squashWalk(face, src: src, dst: dst, w: w, h: h, q: Int16(truncatingIfNeeded: sub), mask: false) { o, s in
+                ports.frame[o] = s
+            }
         } else {
             let op = try special(word)
             Self.blit(face, into: &ports.frame, src: src, dst: dst, w: w, h: h, flip: flip, reject: true, op)
@@ -282,8 +325,89 @@ public struct SpriteBlitter: Sendable {
             if mode == 6 {
                 try Self.rippleWalk(face, src: src, dst: dst, w: w, h: h, flip: flip, phase: ripplePhase,
                                 signedModulo: false) { o, _ in ports.mask[o] = 0 }
+            } else if mode == 0xa && sub != 0 {
+                Self.squashWalk(face, src: src, dst: dst, w: w, h: h, q: Int16(truncatingIfNeeded: sub), mask: true) { o, _ in
+                    ports.mask[o] = 0
+                }
             } else {
                 Self.blit(face, into: &ports.mask, src: src, dst: dst, w: w, h: h, flip: flip, reject: true) { _, _ in 0 }
+            }
+        }
+    }
+
+    /// `.BlitEncFaceDiffuse @ 10029988` / `.BlitEncFaceFlipDiffuse @ 10029c6c` (decompile l. 24659–24990; draw-effects
+    /// §2.3), mode 5, n = (short) sub: clipped as `.BlitEncFaceClipX` (the same window walk, `forEachRun`, entry test
+    /// included; there is no NoClip twin); per literal pixel of the window, in token order (rows down, source columns
+    /// left to right — the flip twin walks the source the same way and writes leftwards), `random(30) < n` (signed,
+    /// `10029b60..10029b7c`) → `0x99 + random(6)` (`addi r0,r3,0x99`, indices 0x99..0x9e), else the source pixel;
+    /// `put(portIndex, value)`. Skips and pixels outside the window draw no random. The mask is `blitEncFaceX`'s pass.
+    static func diffuseWalk(_ face: EncodedFace, src: (Int, Int), dst: (Int, Int), w: Int, h: Int, flip: Bool, n: Int16,
+                            random: (Int16) -> Int16, _ put: (Int, UInt8) -> Void) {
+        let data = face.data
+        forEachRun(face, src: src, dst: dst, w: w, h: h, flip: flip, reject: true) { _, c0, count, at in
+            for c in c0..<(c0 + count) {
+                let v = random(30) < n ? UInt8(truncatingIfNeeded: Int(random(6)) + 0x99) : data[at.dataOffset + c - c0]
+                put(at(c), v)
+            }
+        }
+    }
+
+    /// `.BlitEncFaceSpecialClipX @ 100271d4`'s mode-10 arms (decompile l. 22700–22965; draw-effects §2.6) — `mask`
+    /// false — and `.BlitEncBoolFaceClip @ 10023574` with its squash argument q ≠ 0 (l. 19267–19470) — `mask` true. The
+    /// port clip as `ClipX` (left/top edges move the source, right/bottom edges shorten the window), then the row
+    /// pointer starts at dv − sv and, per row token: while the row counter is below sv the row's data is skipped, the
+    /// counter +1 and the pointer down a row; after that `acc += q` (acc 0x100 at entry, a short) and only when
+    /// acc > 0xff the pointer moves down, the counter +1 and acc −= 0x100; the row's pixels go to the pointer as it was
+    /// before the move; the walk ends when the counter passes (sv + h) & 0xffff. Literal pixels in the column window
+    /// `[sh, sh + w)` are copied raw (no table) — the colour pass only while the counter is below that end
+    /// (`10027508 cmplw r30,r4; bge`), the mask pass always (no such test). `put(portIndex, sourcePixel)`; a row outside the port lands
+    /// in its slop (`.NewBlitPortSlop`) and is not kept.
+    static func squashWalk(_ face: EncodedFace, src: (Int, Int), dst: (Int, Int), w: Int, h: Int, q: Int16, mask: Bool,
+                           _ put: (Int, UInt8) -> Void) {
+        let W = FramePorts.width, H = FramePorts.height
+        var (sv, sh) = src, (dv, dh) = dst, w = w, h = h
+        if dh < 0 { sh -= dh; w += dh; dh = 0 }
+        if dv < 0 { h += dv; sv -= dv; dv = 0 }
+        if W <= dh + w { w = W - dh }
+        if H <= dv + h { h = H - dv }
+        if sh > 0 { dh -= sh }
+        if sv > 0 { dv -= sv }
+        let colStart = sh & 0xffff, colEnd = (sh + w) & 0xffff, rowEnd = (sv + h) & 0xffff, top = sv & 0xffff
+        let data = face.data
+        var p = 0, rows = 0, acc: Int16 = 0x100, next = dv, row = dv, col = 0
+        while p + 4 <= data.count {
+            let tok = data[p], n = Int(data[p + 1]) << 16 | Int(data[p + 2]) << 8 | Int(data[p + 3])
+            p += 4
+            switch tok {
+            case 0:
+                return
+            case 1:
+                row = next
+                if rows < top {
+                    p += n
+                    rows += 1
+                    next += 1
+                } else {
+                    acc = acc &+ q
+                    if acc > 0xff {
+                        next += 1
+                        rows += 1
+                        acc = acc &- 0x100
+                    }
+                }
+                col = 0
+                if rowEnd < rows { return }
+            case 3:
+                col += n
+            case 2:
+                let a = max(col, colStart), b = min(col + n, colEnd)
+                if a < b && (mask || rows < rowEnd) && (0..<H).contains(row) {
+                    for c in a..<b { put(row * W + dh + c, data[p + c - col]) }
+                }
+                col += n
+                p += (n + 3) & ~3
+            default:
+                return
             }
         }
     }

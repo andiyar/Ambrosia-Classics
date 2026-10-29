@@ -1,15 +1,26 @@
 import Foundation
 
+/// Mode 5's draw-time randoms (`.BlitEncFaceDiffuse @ 10029988` / `.BlitEncFaceFlipDiffuse @ 10029c6c`, draw-effects
+/// §2.3): advance `rng` — the game's one stream — by exactly the `FastRand(30)` / `FastRand(6)` calls the renderer's
+/// draw of `draw` at scroll (h, v) makes (one `FastRand(30)` per drawn literal pixel, in token order, and a
+/// `FastRand(6)` after each one below n). FerazelRender's `SpriteBlitter.diffuseRandoms` walks the same pixels its
+/// draw walks.
+public typealias DiffuseRandoms = @Sendable (_ draw: SpriteDraw, _ h: Int, _ v: Int, _ rng: inout FastRand) -> Void
+
 /// What a session takes from the renderer side when a level opens (plan S2, L1): a face's opaque bounds (`face +8`,
-/// `.ActiveToIdleSprite`) and the face pixels the particle emitters walk. Nil bounds / empty faces = the session's
-/// defaults (each face's frame rect; no particles) — what Core tests use.
+/// `.ActiveToIdleSprite`), the face pixels the particle emitters walk, and the mode-5 draw walk (`DiffuseRandoms`).
+/// Nil bounds / empty faces / no walk = the session's defaults (each face's frame rect; no particles; mode-5 draws
+/// take no randoms) — what Core tests use.
 public struct LevelFaces {
     public var faceBounds: ((FaceRef) -> IdleSprites.Rect)?
     public var particleFaces: ParticleFaces
+    public var diffuseRandoms: DiffuseRandoms?
 
-    public init(faceBounds: ((FaceRef) -> IdleSprites.Rect)? = nil, particleFaces: ParticleFaces = ParticleFaces()) {
+    public init(faceBounds: ((FaceRef) -> IdleSprites.Rect)? = nil, particleFaces: ParticleFaces = ParticleFaces(),
+                diffuseRandoms: DiffuseRandoms? = nil) {
         self.faceBounds = faceBounds
         self.particleFaces = particleFaces
+        self.diffuseRandoms = diffuseRandoms
     }
 }
 
