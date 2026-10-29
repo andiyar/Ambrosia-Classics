@@ -1,0 +1,1227 @@
+file	type	id	name	original-user	reached-in-scope	port-asks	class	confidence	note
+FW.rsrc	ALRT	500		no GetNewDialog/Alert/AppendDITL site	never	no	n	HIGH	unused dialog-family resource (no code site)
+FW.rsrc	ALRT	501		no GetNewDialog/Alert/AppendDITL site	never	no	n	HIGH	unused dialog-family resource (no code site)
+FW.rsrc	CNTL	128	Graphics popup old	none (old graphics popup)	never	no	n	HIGH	
+FW.rsrc	CNTL	600	Prefs Panel Popup	DITL 6900-6903 control items (Options popups)	front end (Options)	yes FerazelCarbonDialog / DialogWindow (ControlTemplate)	used	HIGH	
+FW.rsrc	CNTL	601	Volume Popup	DITL 6900-6903 control items (Options popups)	front end (Options)	yes FerazelCarbonDialog / DialogWindow (ControlTemplate)	used	HIGH	
+FW.rsrc	CNTL	602	Graphics popup	DITL 6900-6903 control items (Options popups)	front end (Options)	yes FerazelCarbonDialog / DialogWindow (ControlTemplate)	used	HIGH	
+FW.rsrc	CNTL	603	Effects popup	DITL 6900-6903 control items (Options popups)	front end (Options)	yes FerazelCarbonDialog / DialogWindow (ControlTemplate)	used	HIGH	
+FW.rsrc	CNTL	604	Px popup	DITL 6900-6903 control items (Options popups)	front end (Options)	yes FerazelCarbonDialog / DialogWindow (ControlTemplate)	used	HIGH	604 Px popup always 2
+FW.rsrc	CNTL	605	sysVolume Popup	none (CNTL 605 referenced by no DITL)	never	no	n	HIGH	
+FW.rsrc	DITL	-6043		no GetNewDialog/Alert/AppendDITL site	never	no	n	HIGH	unused dialog-family resource (no code site)
+FW.rsrc	DITL	128	Game Preferences old	no GetNewDialog/Alert/AppendDITL site	never	no	n	HIGH	unused dialog-family resource (no code site)
+FW.rsrc	DITL	150	030 Warning	no GetNewDialog/Alert/AppendDITL site	never	no	n	HIGH	unused dialog-family resource (no code site)
+FW.rsrc	DITL	160	Copying Machine	no GetNewDialog/Alert/AppendDITL site	never	no	n	HIGH	unused dialog-family resource (no code site)
+FW.rsrc	DITL	170	Level Limit	no GetNewDialog/Alert/AppendDITL site	never	no	n	MED	unused dialog-family resource (no code site)
+FW.rsrc	DITL	200	generic	DLOG 200	front end/L1-4	yes DialogItemList	used	HIGH	
+FW.rsrc	DITL	201		DLOG 201 debug	never (OOM)	no	b	HIGH	
+FW.rsrc	DITL	202		DLOG 202	front end/L1-4	yes DialogItemList	used	HIGH	
+FW.rsrc	DITL	203		no GetNewDialog/Alert/AppendDITL site	never	no	n	MED	unused dialog-family resource (no code site)
+FW.rsrc	DITL	400	Warp DITL	DLOG 400 warp (debug)	never	no	d	HIGH	
+FW.rsrc	DITL	500		no GetNewDialog/Alert/AppendDITL site	never	no	n	HIGH	unused dialog-family resource (no code site)
+FW.rsrc	DITL	501		no GetNewDialog/Alert/AppendDITL site	never	no	n	HIGH	unused dialog-family resource (no code site)
+FW.rsrc	DITL	600		DLOG 600	front end/L1-4	yes DialogItemList	used	HIGH	
+FW.rsrc	DITL	700		no GetNewDialog/Alert/AppendDITL site	never	no	n	HIGH	unused dialog-family resource (no code site)
+FW.rsrc	DITL	750		no GetNewDialog/Alert/AppendDITL site	never	no	n	HIGH	unused dialog-family resource (no code site)
+FW.rsrc	DITL	800	New Game	no GetNewDialog/Alert/AppendDITL site	never	no	n	MED	unused dialog-family resource (no code site)
+FW.rsrc	DITL	1001	Save Game	no GetNewDialog/Alert/AppendDITL site	never	no	n	HIGH	unused dialog-family resource (no code site)
+FW.rsrc	DITL	1002		no GetNewDialog/Alert/AppendDITL site	never	no	n	HIGH	unused dialog-family resource (no code site)
+FW.rsrc	DITL	1003		CustomPutFile	front end/L1-4	yes DialogItemList	used	HIGH	
+FW.rsrc	DITL	1100		no GetNewDialog/Alert/AppendDITL site	never	no	n	HIGH	unused dialog-family resource (no code site)
+FW.rsrc	DITL	1200	sign 2	no GetNewDialog/Alert/AppendDITL site	never	no	n	HIGH	unused dialog-family resource (no code site)
+FW.rsrc	DITL	1300	res switch	DLOG 1300	never in replica	no	d	HIGH	
+FW.rsrc	DITL	1500	Prompt GetFile	CustomGetFile	front end/L1-4	no (D35 native panel)	used	HIGH	
+FW.rsrc	DITL	1600	generic	DLOG 1600 CD request	never with data present	no	b	HIGH	
+FW.rsrc	DITL	6900	Preferences	DLOG 6900	front end/L1-4	yes DialogItemList	used	HIGH	
+FW.rsrc	DITL	6901	Game Preferences	prefs panel 1	front end/L1-4	yes DialogItemList	used	HIGH	
+FW.rsrc	DITL	6902	Keyboard Preferences	prefs panel 2 (Controls)	front end/L1-4	yes DialogItemList	used	HIGH	
+FW.rsrc	DITL	6903	Sound Preferences	prefs panel 3 (Sound)	front end/L1-4	yes DialogItemList	used	HIGH	
+FW.rsrc	DITL	16902	Keyboard Preferences ISP	no GetNewDialog/Alert/AppendDITL site	never	no	n	HIGH	unused dialog-family resource (no code site)
+FW.rsrc	DITL	16903	Sound Preferences orig	no GetNewDialog/Alert/AppendDITL site	never	no	n	HIGH	unused dialog-family resource (no code site)
+FW.rsrc	DLOG	150	030 warning	no GetNewDialog/Alert/AppendDITL site	never	no	n	HIGH	unused dialog-family resource (no code site)
+FW.rsrc	DLOG	170	Level Limit	no GetNewDialog/Alert/AppendDITL site	never	no	n	MED	unused dialog-family resource (no code site)
+FW.rsrc	DLOG	200	Generic Message	.GenericMessage @1003cf04 (.ReportDialog)	front end/L1-4	yes FerazelDialogs.report	used	HIGH	
+FW.rsrc	DLOG	201	Debug Message	.DebugMessage @1003d0f0 (alloc-failure debug path)	never (out-of-memory only)	no	b	HIGH	memory-failure report only
+FW.rsrc	DLOG	202	Abort Warning	.ConfirmAbortGameDialog @10006784	front end/map/L1-4	yes FerazelDialogs.confirm	used	HIGH	
+FW.rsrc	DLOG	203	Game Over	no GetNewDialog/Alert/AppendDITL site	never	no	n	MED	unused dialog-family resource (no code site)
+FW.rsrc	DLOG	400	Warp	.WarpDialog @1000a4c8 (NewGame, debug flag _DAT_100a0064 only)	never (debug build flag)	no	d	HIGH	world-data-format §: debug-only warp
+FW.rsrc	DLOG	600	scrolling credits	.Credits → .DoAboutDialog(600,4803)	front end (Credits)	yes CreditsDialog / WinCreditsDialog	used	HIGH	
+FW.rsrc	DLOG	700	Memo	no GetNewDialog/Alert/AppendDITL site	never	no	n	HIGH	unused dialog-family resource (no code site)
+FW.rsrc	DLOG	750	Dialogue	no GetNewDialog/Alert/AppendDITL site	never	no	n	HIGH	unused dialog-family resource (no code site)
+FW.rsrc	DLOG	800	New Game	no GetNewDialog/Alert/AppendDITL site	never	no	n	MED	unused dialog-family resource (no code site)
+FW.rsrc	DLOG	1001	Save Game	no GetNewDialog/Alert/AppendDITL site	never	no	n	HIGH	unused dialog-family resource (no code site)
+FW.rsrc	DLOG	1002		no GetNewDialog/Alert/AppendDITL site	never	no	n	HIGH	unused dialog-family resource (no code site)
+FW.rsrc	DLOG	1003		.PromptPutFile → CustomPutFile (save game)	L1-4 (save point)	partial — native save panel, DITL 1003 item 13 text only (SaveGame.swift:135; D35 known deviation)	used	HIGH	D35 deviation
+FW.rsrc	DLOG	1100	Sign	no GetNewDialog/Alert/AppendDITL site	never	no	n	HIGH	unused dialog-family resource (no code site)
+FW.rsrc	DLOG	1200	Sign II	no GetNewDialog/Alert/AppendDITL site	never	no	n	HIGH	unused dialog-family resource (no code site)
+FW.rsrc	DLOG	1300	Res switch	.ResSwitchDialog @1000f7b0	never in replica (design §7.1)	no	d	HIGH	resolution switch; replica fixed 640×480
+FW.rsrc	DLOG	1500	Prompt GetFile	.PromptGetFile → CustomGetFile(dlg 0x5dc) (Restore Game)	front end	no — native open panel (D35 known deviation)	used	HIGH	D35 deviation
+FW.rsrc	DLOG	1600	CD Request	.main @1000ffc0 GetNewDialog(0x640) "CD Request"	never with shipped data present	no	b	HIGH	shown only when the CD check fails
+FW.rsrc	DLOG	6900	Preferences	.PreferencesDialog @100760dc (+DITL 6901-6903 via .SwitchPrefsPanel AppendDITL)	front end/L1-4 (Options)	yes PrefsDialogView / WinPrefsDialog	used	HIGH	
+FW.rsrc	MBAR	128		.LoadMenuBar @10030194	boot	yes FerazelMenus	used	HIGH	
+FW.rsrc	MENU	128		.LoadMenuBar	boot	yes FerazelMenus	used	HIGH	
+FW.rsrc	MENU	129		.LoadMenuBar	boot	yes FerazelMenus	used	HIGH	
+FW.rsrc	MENU	130		.LoadMenuBar	boot	yes FerazelMenus	used	HIGH	
+FW.rsrc	MENU	600	Prefs Panel Popup	CNTL 600 menu	front end (Options)	yes via ControlTemplate.menuID	used	HIGH	
+FW.rsrc	MENU	601	Volume Popup	CNTL 601 menu	front end (Options)	yes via ControlTemplate.menuID	used	HIGH	
+FW.rsrc	MENU	602	Graphics popup	CNTL 602 menu	front end (Options)	yes via ControlTemplate.menuID	used	HIGH	
+FW.rsrc	MENU	603	Graphics popup	CNTL 603 menu	front end (Options)	yes via ControlTemplate.menuID	used	HIGH	
+FW.rsrc	MENU	604	Graphics popup	CNTL 604 menu	front end (Options)	yes via ControlTemplate.menuID	used	HIGH	
+FW.rsrc	MENU	605	sysVolume Popup	none (CNTL 605 points at MENU 601)	never	no	n	HIGH	
+FW World Data.rsrc	Mcnv	200	Rojinko Conv	.OpenDefaultWorldConv @100487d4 (talker placement p1 / code consts 250-252)	L1 (talker placed)	yes Conversation.swift (by id)	used	HIGH	
+FW World Data.rsrc	Mcnv	201	Geroditus conv 1	.OpenDefaultWorldConv @100487d4 (talker placement p1 / code consts 250-252)	L1 (talker placed)	yes Conversation.swift (by id)	used	HIGH	
+FW World Data.rsrc	Mcnv	202	Andrew	.OpenDefaultWorldConv @100487d4 (talker placement p1 / code consts 250-252)	later levels	yes Conversation.swift (by id)	a (later levels)	HIGH	
+FW World Data.rsrc	Mcnv	203	Sernis magic crystal 1	.OpenDefaultWorldConv @100487d4 (talker placement p1 / code consts 250-252)	L2 (talker placed)	yes Conversation.swift (by id)	used	HIGH	
+FW World Data.rsrc	Mcnv	204	Unfriendly Fellow frsd Conv	.OpenDefaultWorldConv @100487d4 (talker placement p1 / code consts 250-252)	never (no placement)	yes Conversation.swift (by id)	d	HIGH	
+FW World Data.rsrc	Mcnv	205	Wounded Habnabit Health Potion conv	.OpenDefaultWorldConv @100487d4 (talker placement p1 / code consts 250-252)	L3 (talker placed)	yes Conversation.swift (by id)	used	HIGH	
+FW World Data.rsrc	Mcnv	206	Nimbo conv	.OpenDefaultWorldConv @100487d4 (talker placement p1 / code consts 250-252)	later levels	yes Conversation.swift (by id)	a (later levels)	HIGH	
+FW World Data.rsrc	Mcnv	207	Elber Ice Merchant Conv	.OpenDefaultWorldConv @100487d4 (talker placement p1 / code consts 250-252)	later levels	yes Conversation.swift (by id)	a (later levels)	HIGH	
+FW World Data.rsrc	Mcnv	208	Korta conv	.OpenDefaultWorldConv @100487d4 (talker placement p1 / code consts 250-252)	later levels	yes Conversation.swift (by id)	a (later levels)	HIGH	
+FW World Data.rsrc	Mcnv	209	Hooded Figure	.OpenDefaultWorldConv @100487d4 (talker placement p1 / code consts 250-252)	later levels	yes Conversation.swift (by id)	a (later levels)	HIGH	
+FW World Data.rsrc	Mcnv	210	Babbling conv	.OpenDefaultWorldConv @100487d4 (talker placement p1 / code consts 250-252)	later levels	yes Conversation.swift (by id)	a (later levels)	HIGH	
+FW World Data.rsrc	Mcnv	211	Cedric Ice Merchant Conv	.OpenDefaultWorldConv @100487d4 (talker placement p1 / code consts 250-252)	later levels	yes Conversation.swift (by id)	a (later levels)	HIGH	
+FW World Data.rsrc	Mcnv	212	Jason conv	.OpenDefaultWorldConv @100487d4 (talker placement p1 / code consts 250-252)	later levels	yes Conversation.swift (by id)	a (later levels)	HIGH	
+FW World Data.rsrc	Mcnv	213	Eric Conv	.OpenDefaultWorldConv @100487d4 (talker placement p1 / code consts 250-252)	later levels	yes Conversation.swift (by id)	a (later levels)	HIGH	
+FW World Data.rsrc	Mcnv	214	AH conv	.OpenDefaultWorldConv @100487d4 (talker placement p1 / code consts 250-252)	later levels	yes Conversation.swift (by id)	a (later levels)	HIGH	
+FW World Data.rsrc	Mcnv	220	Dimbo saved	.OpenDefaultWorldConv @100487d4 (talker placement p1 / code consts 250-252)	later levels	yes Conversation.swift (by id)	a (later levels)	HIGH	
+FW World Data.rsrc	Mcnv	221	Dimbo	.OpenDefaultWorldConv @100487d4 (talker placement p1 / code consts 250-252)	later levels	yes Conversation.swift (by id)	a (later levels)	HIGH	
+FW World Data.rsrc	Mcnv	250	Xichra 1	.OpenDefaultWorldConv @100487d4 (talker placement p1 / code consts 250-252)	Xichra boss (level 67)	yes Conversation.swift (by id)	a6	HIGH	
+FW World Data.rsrc	Mcnv	251	Xichra 2	.OpenDefaultWorldConv @100487d4 (talker placement p1 / code consts 250-252)	Xichra boss (level 67)	yes Conversation.swift (by id)	a6	HIGH	
+FW World Data.rsrc	Mcnv	252	Xichra 3	.OpenDefaultWorldConv @100487d4 (talker placement p1 / code consts 250-252)	Xichra boss (level 67)	yes Conversation.swift (by id)	a6	HIGH	
+FW World Data.rsrc	Mcnv	260	Grave 1	.OpenDefaultWorldConv @100487d4 (talker placement p1 / code consts 250-252)	later levels	yes Conversation.swift (by id)	a (later levels)	HIGH	
+FW World Data.rsrc	Mcnv	261	Grave 2	.OpenDefaultWorldConv @100487d4 (talker placement p1 / code consts 250-252)	later levels	yes Conversation.swift (by id)	a (later levels)	HIGH	
+FW World Data.rsrc	Mcnv	280	Haze Plaque	.OpenDefaultWorldConv @100487d4 (talker placement p1 / code consts 250-252)	later levels	yes Conversation.swift (by id)	a (later levels)	HIGH	
+FW World Data.rsrc	Mcnv	281	andrew plaque	.OpenDefaultWorldConv @100487d4 (talker placement p1 / code consts 250-252)	later levels	yes Conversation.swift (by id)	a (later levels)	HIGH	
+FW World Data.rsrc	Mcnv	282	Eric plaque	.OpenDefaultWorldConv @100487d4 (talker placement p1 / code consts 250-252)	later levels	yes Conversation.swift (by id)	a (later levels)	HIGH	
+FW World Data.rsrc	Mcnv	283	jason plaque	.OpenDefaultWorldConv @100487d4 (talker placement p1 / code consts 250-252)	later levels	yes Conversation.swift (by id)	a (later levels)	HIGH	
+FW World Data.rsrc	Mcnv	300	Obfusc Character	.OpenDefaultWorldConv @100487d4 (talker placement p1 / code consts 250-252)	later levels	yes Conversation.swift (by id)	a (later levels)	HIGH	
+FW World Data.rsrc	Mcnv	400	Statue spell warn guy	.OpenDefaultWorldConv @100487d4 (talker placement p1 / code consts 250-252)	L4 (talker placed)	yes Conversation.swift (by id)	used	HIGH	
+FW World Data.rsrc	Mcnv	401	Ben conv	.OpenDefaultWorldConv @100487d4 (talker placement p1 / code consts 250-252)	later levels	yes Conversation.swift (by id)	a (later levels)	HIGH	
+FW World Data.rsrc	Mlvl	1	A Scent Of Peril	.OpenDefaultWorldLevel @10048ac0 (GetResource Mlvl id)	L1	yes LevelFile.load (BuiltLevels 1...4)	used	HIGH	
+FW World Data.rsrc	Mlvl	2	Central Caverns	.OpenDefaultWorldLevel @10048ac0 (GetResource Mlvl id)	L2	yes LevelFile.load (BuiltLevels 1...4)	used	HIGH	
+FW World Data.rsrc	Mlvl	3	Western Reaches	.OpenDefaultWorldLevel @10048ac0 (GetResource Mlvl id)	L3	yes LevelFile.load (BuiltLevels 1...4)	used	HIGH	
+FW World Data.rsrc	Mlvl	4	Eastern Reaches	.OpenDefaultWorldLevel @10048ac0 (GetResource Mlvl id)	L4	yes LevelFile.load (BuiltLevels 1...4)	used	HIGH	
+FW World Data.rsrc	Mlvl	5	Manditraki Warrior	.OpenDefaultWorldLevel @10048ac0 (GetResource Mlvl id)	later level	refused by BuiltLevels (dialog)	a (later levels; Phase 5/6+)	HIGH	
+FW World Data.rsrc	Mlvl	10	Unemployed In Greenland	.OpenDefaultWorldLevel @10048ac0 (GetResource Mlvl id)	later level	refused by BuiltLevels (dialog)	a (later levels; Phase 5/6+)	HIGH	
+FW World Data.rsrc	Mlvl	11	River of Fears	.OpenDefaultWorldLevel @10048ac0 (GetResource Mlvl id)	later level	refused by BuiltLevels (dialog)	a (later levels; Phase 5/6+)	HIGH	
+FW World Data.rsrc	Mlvl	15	Storm Valley	.OpenDefaultWorldLevel @10048ac0 (GetResource Mlvl id)	later level	refused by BuiltLevels (dialog)	a (later levels; Phase 5/6+)	HIGH	
+FW World Data.rsrc	Mlvl	18	Goblin Chief	.OpenDefaultWorldLevel @10048ac0 (GetResource Mlvl id)	later level	refused by BuiltLevels (dialog)	a (later levels; Phase 5/6+)	HIGH	
+FW World Data.rsrc	Mlvl	20	Hangnabit	.OpenDefaultWorldLevel @10048ac0 (GetResource Mlvl id)	later level	refused by BuiltLevels (dialog)	a (later levels; Phase 5/6+)	HIGH	
+FW World Data.rsrc	Mlvl	21	Obfuscation & Edification	.OpenDefaultWorldLevel @10048ac0 (GetResource Mlvl id)	later level	refused by BuiltLevels (dialog)	a (later levels; Phase 5/6+)	HIGH	
+FW World Data.rsrc	Mlvl	22	The Labyrinth	.OpenDefaultWorldLevel @10048ac0 (GetResource Mlvl id)	later level	refused by BuiltLevels (dialog)	a (later levels; Phase 5/6+)	HIGH	
+FW World Data.rsrc	Mlvl	25	Manditraki Wizard	.OpenDefaultWorldLevel @10048ac0 (GetResource Mlvl id)	later level	refused by BuiltLevels (dialog)	a (later levels; Phase 5/6+)	HIGH	
+FW World Data.rsrc	Mlvl	30	Flash Freeze	.OpenDefaultWorldLevel @10048ac0 (GetResource Mlvl id)	later level	refused by BuiltLevels (dialog)	a (later levels; Phase 5/6+)	HIGH	
+FW World Data.rsrc	Mlvl	31	Iceconoclasm	.OpenDefaultWorldLevel @10048ac0 (GetResource Mlvl id)	later level	refused by BuiltLevels (dialog)	a (later levels; Phase 5/6+)	HIGH	
+FW World Data.rsrc	Mlvl	40	Parched Earth	.OpenDefaultWorldLevel @10048ac0 (GetResource Mlvl id)	later level	refused by BuiltLevels (dialog)	a (later levels; Phase 5/6+)	HIGH	
+FW World Data.rsrc	Mlvl	45	The Dig	.OpenDefaultWorldLevel @10048ac0 (GetResource Mlvl id)	later level	refused by BuiltLevels (dialog)	a (later levels; Phase 5/6+)	HIGH	
+FW World Data.rsrc	Mlvl	50	Fire In The Hole	.OpenDefaultWorldLevel @10048ac0 (GetResource Mlvl id)	later level	refused by BuiltLevels (dialog)	a (later levels; Phase 5/6+)	HIGH	
+FW World Data.rsrc	Mlvl	51	If You Can’t Stand The Heat…	.OpenDefaultWorldLevel @10048ac0 (GetResource Mlvl id)	later level	refused by BuiltLevels (dialog)	a (later levels; Phase 5/6+)	HIGH	
+FW World Data.rsrc	Mlvl	52	Out of the Frying Pan	.OpenDefaultWorldLevel @10048ac0 (GetResource Mlvl id)	later level	refused by BuiltLevels (dialog)	a (later levels; Phase 5/6+)	HIGH	
+FW World Data.rsrc	Mlvl	55	Fire Guardians	.OpenDefaultWorldLevel @10048ac0 (GetResource Mlvl id)	later level	refused by BuiltLevels (dialog)	a (later levels; Phase 5/6+)	HIGH	
+FW World Data.rsrc	Mlvl	62	Ends of the Earth	.OpenDefaultWorldLevel @10048ac0 (GetResource Mlvl id)	later level	refused by BuiltLevels (dialog)	a (later levels; Phase 5/6+)	HIGH	
+FW World Data.rsrc	Mlvl	67	Xichra’s Lair	.OpenDefaultWorldLevel @10048ac0 (GetResource Mlvl id)	later level	refused by BuiltLevels (dialog)	a (later levels; Phase 5/6+)	HIGH	
+FW World Data.rsrc	Mlvl	70	Purple Haze	.OpenDefaultWorldLevel @10048ac0 (GetResource Mlvl id)	later level	refused by BuiltLevels (dialog)	a (later levels; Phase 5/6+)	HIGH	
+FW World Data.rsrc	Mmap	200	Map	.OpenDefaultWorldMap @10048940	map	yes WorldMap.swift / WorldMapRun	used	HIGH	
+FW.rsrc	Msct	0	Owner resource	Finder signature	out of scope	n/a	n	HIGH	
+FW World Data.rsrc	Mwld	0	Mascot World	.OpenDefaultWorld @10048fb8	boot	yes WorldFile.swift	used	HIGH	
+FW Titles.rsrc	PICT	128	Loading Screen	.main @1000ffc0	front end (boot)	yes BootSequence.swift:11,BoxSprite.swift:174,BoxSprite.swift:80	used	HIGH	
+FW Titles.rsrc	PICT	129	Game Screen	.ChapterScreen @10009b9c | .ContinueGame @1000d004 | .SetupLevel @1000430c | .ShowWorldMap @1007c494	L1-4;L1-4 (chapter card);map	yes StageScreens chapter formula (n*10+0x11f8, clut n+0x118)	used	HIGH	
+FW Titles.rsrc	PICT	130		.DrawMainMenu @10002f24	front end	yes FerazelMenuRules.swift:53,FerazelMenus.swift:45,MainMenu.swift:10	used	HIGH	
+FW Titles.rsrc	PICT	131	Publisher Logo	.main @1000ffc0	front end (boot)	yes BootSequence.swift:8	used	HIGH	
+FW Titles.rsrc	PICT	132		.InitAppGlobals @100009c8	boot	yes DeathScreen.swift:29,StatusBar.swift:62,StatusBar.swift:63	used	HIGH	
+FW Titles.rsrc	PICT	133		.InitAppGlobals @100009c8	boot	yes StatusBar.swift:64	used	HIGH	
+FW Titles.rsrc	PICT	134		.DrawMainMenu @10002f24	front end	no — replica menu is always 640×480 (MainMenu.swift:8)	d	HIGH	original shows these only when the screen is not 640×480
+FW Titles.rsrc	PICT	136		.main @1000ffc0	front end (boot)	yes BootSequence.swift:12	used	HIGH	
+FW Titles.rsrc	PICT	137		no reference in either dump	never	weak-literal TableRequests.swift:165,ParticleRenderer.swift:141	n	MED	
+FW Titles.rsrc	PICT	138		.AskToContinue @10007190	L1-4 (death screen)	yes DeathScreen.swift:30	used	HIGH	
+FW Titles.rsrc	PICT	140		+DITL 160 picItem | .InitAppGlobals @100009c8	boot	yes StageScreens.swift:46	used	HIGH	
+FW Titles.rsrc	PICT	141		.InitAppGlobals @100009c8	boot	yes StageScreens.swift:48	used	HIGH	
+FW Titles.rsrc	PICT	142		.InitAppGlobals @100009c8	boot	yes StageScreens.swift:50	used	HIGH	
+FW.rsrc	PICT	145		DITL 150/170/200-203/1300/1600 picItem (Dialog Manager)	front end/L1-4 (DLOG 200/202)	yes Dialog picItem (DialogViews / DialogWindow)	used	HIGH	
+FW.rsrc	PICT	146		DITL 6902/16902 picItem (Options > Controls panel)	front end (Options)	yes Dialog picItem (DialogViews / DialogWindow)	used	HIGH	
+FW.rsrc	PICT	150		.InitSprites @100002ac	boot→L1-4	yes BootFaces.swift:30,BootFaces.swift:34,SetupFaces.swift:149	used	HIGH	
+FW.rsrc	PICT	151		.InitSprites @100002ac	boot→L1-4	yes BackgroundSprite.swift:528,BootFaces.swift:30	used	HIGH	
+FW Titles.rsrc	PICT	159		.Victory @1000ac3c	later (end of game)	weak-literal Breathing.swift:43,TableRequests.swift:199	a (end of game)	MED	
+FW Sprites.rsrc	PICT	160		DITL 700 picItem (DLOG 700 Memo, never shown)	?	yes FaceSheet.swift:163,FaceSheet.swift:164,FaceSheet.swift:165	used	HIGH	
+FW Titles.rsrc	PICT	161		.Victory @1000ac3c	later (end of game)	weak-literal FrameRenderer.swift:437~	a (end of game)	MED	
+FW Titles.rsrc	PICT	162		.Victory @1000ac3c	later (end of game)	weak-literal FrameRenderer.swift:437~	a (end of game)	MED	
+FW Sprites.rsrc	PICT	170		no reference in either dump	never	weak-literal SetupFaces.swift:527,FrameRenderer.swift:437~	n	MED	
+FW Titles.rsrc	PICT	172		.WandGlow @ 10006b6c	L1-4 (death screen)	yes DeathScreen (0x1369/0x1373+n, 0xac…0xb1)	used	HIGH	
+FW Titles.rsrc	PICT	173		.WandGlow @ 10006b6c	L1-4 (death screen)	yes DeathScreen (0x1369/0x1373+n, 0xac…0xb1)	used	HIGH	
+FW Titles.rsrc	PICT	174		.WandGlow @ 10006b6c	L1-4 (death screen)	yes DeathScreen (0x1369/0x1373+n, 0xac…0xb1)	used	HIGH	
+FW Titles.rsrc	PICT	175		.WandGlow @ 10006b6c	L1-4 (death screen)	yes DeathScreen (0x1369/0x1373+n, 0xac…0xb1)	used	HIGH	
+FW Titles.rsrc	PICT	176		.WandGlow @ 10006b6c	L1-4 (death screen)	yes DeathScreen (0x1369/0x1373+n, 0xac…0xb1)	used	HIGH	
+FW Titles.rsrc	PICT	177		.WandGlow @ 10006b6c	L1-4 (death screen)	yes DeathScreen (0x1369/0x1373+n, 0xac…0xb1)	used	HIGH	
+FW Sprites.rsrc	PICT	180		no reference in either dump	never	yes PlatformSprite.swift:153	n	HIGH	
+FW Sprites.rsrc	PICT	181		no reference in either dump	never	weak-literal TileSets.swift:78,FrameRenderer.swift:437~	n	MED	
+FW Sprites.rsrc	PICT	182		no reference in either dump	never	yes DeathScreen.swift:184	n	HIGH	
+FW Sprites.rsrc	PICT	183		.InitGameGlobals @10001498	boot→L1-4	yes TileSets.swift:114	used	HIGH	
+FW Sprites.rsrc	PICT	185		.InitGameGlobals @10001498	boot→L1-4	yes TileSets.swift:116	used	HIGH	
+FW Sprites.rsrc	PICT	198		.LoadCoolingMap @10000924	boot; drawn only on flame levels 52/55	weak-literal Pause.swift:163	a (flame levels 52/55)	MED	
+FW Backgrounds.rsrc	PICT	200		FG+FGwater .LoadFGTileset/.LoadFGWaterTileset	L1,2,4	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	201		no reference in either dump	never	yes TileSets.swift:180	n	HIGH	
+FW Backgrounds.rsrc	PICT	203		BG .LoadBGTileset	L1,2,4	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	206		FG pattern .LoadFGPatternTileset	L1	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Sprites.rsrc	PICT	206		FG pattern .LoadFGPatternTileset	L1	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	207		PxBack .LoadPxBackTileset	L1,2	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Sprites.rsrc	PICT	207		PxBack .LoadPxBackTileset	L1,2	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	208		no reference in either dump	never	weak-literal Camera.swift:59,BackgroundSprite.swift:474	n	MED	
+FW Backgrounds.rsrc	PICT	210		no reference in either dump	never	weak-literal ParticleRenderer.swift:132,UnderWater.swift:18	n	MED	
+FW Backgrounds.rsrc	PICT	211		no reference in either dump	never	weak-literal ParticleRenderer.swift:133,ParticleLife.swift:42	n	MED	
+FW Backgrounds.rsrc	PICT	213		no reference in either dump	never	weak-literal ParticleRenderer.swift:141,StageScreens.swift:91	n	MED	
+FW Backgrounds.rsrc	PICT	214		no reference in either dump	never	weak-literal ConversationRun.swift:543,StatusBar.swift:120	n	MED	
+FW Backgrounds.rsrc	PICT	216		no reference in either dump	never	yes BootFaces.swift:63,SetupFaces.swift:167	n	HIGH	
+FW Backgrounds.rsrc	PICT	217		PxBack .LoadPxBackTileset	later levels [11, 18]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	220		no reference in either dump	never	weak-literal DeathScreen.swift:27,ParticleRenderer.swift:157	n	MED	
+FW Backgrounds.rsrc	PICT	222		no reference in either dump	never	weak-literal ParticleRenderer.swift:161,ParticleLife.swift:45	n	MED	
+FW Backgrounds.rsrc	PICT	237		no reference in either dump	never	no	n	HIGH	
+FW Backgrounds.rsrc	PICT	240		FG+FGwater .LoadFGTileset/.LoadFGWaterTileset	L3	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	243		BG .LoadBGTileset	L3	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	244		BG .LoadBGTileset	later levels [11, 18]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	246		no reference in either dump	never	weak-literal ParticleRenderer.swift:91	n	MED	
+FW Backgrounds.rsrc	PICT	247	EC2 back	PxBack .LoadPxBackTileset	L3,4	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	250		FG+FGwater .LoadFGTileset/.LoadFGWaterTileset	later levels [20, 25]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	251		no reference in either dump	never	yes StatusBar.swift:197	n	HIGH	
+FW Backgrounds.rsrc	PICT	253		BG .LoadBGTileset	later levels [20, 22, 25]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	256		FG pattern .LoadFGPatternTileset	later levels [20, 25]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	257		PxBack .LoadPxBackTileset	later levels [20, 21]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	258		PxMid .LoadPxMidTileset	later levels [21]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	259		PxMid mask .LoadPxMidTileset	later levels [21]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	260		FG+FGwater .LoadFGTileset/.LoadFGWaterTileset	later levels [10, 11, 15, 18]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	263		BG .LoadBGTileset	later levels [15, 62, 70]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	264		no reference in either dump	never	yes WorldMap.swift:45	n	HIGH	
+FW Backgrounds.rsrc	PICT	265		parallax sprite .SetupLevel→.MTAddPxSprite	later levels [10]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Sprites.rsrc	PICT	265		parallax sprite .SetupLevel→.MTAddPxSprite	later levels [10]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	266		FG pattern .LoadFGPatternTileset	later levels [10, 15]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	267		PxBack .LoadPxBackTileset	later levels [10, 15]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	268		PxMid .LoadPxMidTileset	later levels [10]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	269		PxMid mask .LoadPxMidTileset	later levels [10]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	270		FG+FGwater .LoadFGTileset/.LoadFGWaterTileset	later levels [30]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	273		BG .LoadBGTileset	later levels [30]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	275		parallax sprite .SetupLevel→.MTAddPxSprite	later levels [30]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	276		FG pattern .LoadFGPatternTileset	later levels [30]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	277		PxBack .LoadPxBackTileset	later levels [30]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	278		PxMid .LoadPxMidTileset	later levels [30]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	279		PxMid mask .LoadPxMidTileset	later levels [30]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	280		FG+FGwater .LoadFGTileset/.LoadFGWaterTileset	later levels [31]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	283		BG .LoadBGTileset	later levels [31]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	286		FG pattern .LoadFGPatternTileset	later levels [31]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	287		PxBack .LoadPxBackTileset	later levels [31]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	288		PxMid .LoadPxMidTileset	later levels [31]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	289		PxMid mask .LoadPxMidTileset	later levels [31]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	290		FG+FGwater .LoadFGTileset/.LoadFGWaterTileset	later levels [50, 51, 52, 55]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	291		no reference in either dump	never	no	n	HIGH	
+FW Backgrounds.rsrc	PICT	293		BG .LoadBGTileset	later levels [50, 51, 52, 55]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	296		FG pattern .LoadFGPatternTileset	later levels [50, 51, 52, 55]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	297		PxBack .LoadPxBackTileset	later levels [50, 51, 52, 55]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	298		PxMid .LoadPxMidTileset	later levels [50, 51, 52, 55]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	299		PxMid mask .LoadPxMidTileset	later levels [50, 51, 52, 55]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	305		no reference in either dump	never	weak-literal MainMenu.swift:15,MainMenu.swift:16	n	MED	
+FW Backgrounds.rsrc	PICT	307		no reference in either dump	never	no	n	HIGH	
+FW Backgrounds.rsrc	PICT	310		FG+FGwater .LoadFGTileset/.LoadFGWaterTileset	later levels [40, 45]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	313		BG .LoadBGTileset	later levels [40]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	314		BG .LoadBGTileset	later levels [45]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	315		parallax sprite .SetupLevel→.MTAddPxSprite	later levels [40, 45]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	316		FG pattern .LoadFGPatternTileset	later levels [40, 45]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	317		PxBack .LoadPxBackTileset	later levels [40, 45]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	318		PxMid .LoadPxMidTileset	later levels [40, 45]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	319		PxMid mask .LoadPxMidTileset	later levels [40, 45]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	325		no reference in either dump	never	no	n	HIGH	
+FW Backgrounds.rsrc	PICT	326		no reference in either dump	never	no	n	HIGH	
+FW Backgrounds.rsrc	PICT	327		no reference in either dump	never	no	n	HIGH	
+FW Backgrounds.rsrc	PICT	328		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	328	fireball right	no reference in either dump	never	no	n	HIGH	
+FW Backgrounds.rsrc	PICT	329		no reference in either dump	never	no	n	HIGH	
+FW Backgrounds.rsrc	PICT	330		no reference in either dump	never	weak-literal HandleKeys.swift:369,HandleKeys.swift:401	n	MED	
+FW Backgrounds.rsrc	PICT	336		no reference in either dump	never	no	n	HIGH	
+FW Backgrounds.rsrc	PICT	337		no reference in either dump	never	yes BoxSprite.swift:1122	n	HIGH	
+FW Backgrounds.rsrc	PICT	338		no reference in either dump	never	no	n	HIGH	
+FW Backgrounds.rsrc	PICT	339		no reference in either dump	never	no	n	HIGH	
+FW Backgrounds.rsrc	PICT	340		FG+FGwater .LoadFGTileset/.LoadFGWaterTileset	later levels [62, 70]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	345		parallax sprite .SetupLevel→.MTAddPxSprite	later levels [62]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	346		FG pattern .LoadFGPatternTileset	later levels [62, 70]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	347		PxBack .LoadPxBackTileset	later levels [62]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	348		PxMid .LoadPxMidTileset	later levels [62, 70]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	349		PxMid mask .LoadPxMidTileset	later levels [62, 70]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	350		no reference in either dump	never	weak-literal BoxSprite.swift:1133,PlatformSprite.swift:207	n	MED	
+FW Backgrounds.rsrc	PICT	357		PxBack .LoadPxBackTileset	later levels [70]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	360		no reference in either dump	never	weak-literal SpriteBlitter.swift:1211,SpriteBlitter.swift:1273	n	MED	
+FW Backgrounds.rsrc	PICT	366		no reference in either dump	never	no	n	HIGH	
+FW Backgrounds.rsrc	PICT	367		no reference in either dump	never	no	n	HIGH	
+FW Backgrounds.rsrc	PICT	370		FG+FGwater .LoadFGTileset/.LoadFGWaterTileset	later levels [22]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	376		FG pattern .LoadFGPatternTileset	later levels [22]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	377		PxBack .LoadPxBackTileset	later levels [22]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	378		PxMid .LoadPxMidTileset	later levels [22]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	379		PxMid mask .LoadPxMidTileset	later levels [22]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	380		BG .LoadBGTileset | FG+FGwater .LoadFGTileset/.LoadFGWaterTileset	later levels [67]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	385		parallax sprite .SetupLevel→.MTAddPxSprite	later levels [67]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	387		PxBack .LoadPxBackTileset	later levels [67]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	391		no reference in either dump	never	no	n	HIGH	
+FW Backgrounds.rsrc	PICT	400		no reference in either dump	never	yes BoxSprite.swift:1105,BoxSprite.swift:1127	n	HIGH	
+FW Sprites.rsrc	PICT	428		no reference in either dump	never	weak-literal SoundSlots.swift:16,PowerUps.swift:13	n	MED	
+FW Backgrounds.rsrc	PICT	456		no reference in either dump	never	weak-literal HitPlayerSprite.swift:746,SoundSlots.swift:22	n	MED	
+FW Backgrounds.rsrc	PICT	458		PxMid .LoadPxMidTileset	later levels [15]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	459		PxMid mask .LoadPxMidTileset	later levels [15]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	500		no reference in either dump	never	yes FerazelSession.swift:175,PlayerShot.swift:441	n	HIGH	
+FW Backgrounds.rsrc	PICT	501		no reference in either dump	never	yes ConvActions.swift:65	n	HIGH	
+FW Backgrounds.rsrc	PICT	502		no reference in either dump	never	weak-literal SoundSlots.swift:31,Player.swift:586	n	MED	
+FW Backgrounds.rsrc	PICT	504		no reference in either dump	never	weak-literal SoundSlots.swift:31	n	MED	
+FW Backgrounds.rsrc	PICT	505		no reference in either dump	never	weak-literal SoundSlots.swift:32,HitPlayerSprite.swift:561	n	MED	
+FW Backgrounds.rsrc	PICT	506		FG pattern .LoadFGPatternTileset	L3	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	507		FG pattern .LoadFGPatternTileset	later levels [11, 18]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	509		FG pattern .LoadFGPatternTileset	L2	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	510		no reference in either dump	never	weak-literal SoundSlots.swift:33	n	MED	
+FW Backgrounds.rsrc	PICT	511		FG pattern .LoadFGPatternTileset	L4	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Sprites.rsrc	PICT	528		no reference in either dump	never	no	n	HIGH	
+FW Backgrounds.rsrc	PICT	600		.ReInitWorldMapGraphics @1007b560 | PxBack .LoadPxBackTileset	later levels [5];map	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Sprites.rsrc	PICT	600		.ReInitWorldMapGraphics @1007b560 | PxBack .LoadPxBackTileset	later levels [5];map	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	PICT	601		.ReInitWorldMapGraphics @1007b560 | PxBack .LoadPxBackTileset	later levels [25];map	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Sprites.rsrc	PICT	601		.ReInitWorldMapGraphics @1007b560 | PxBack .LoadPxBackTileset	later levels [25];map	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Sprites.rsrc	PICT	649		.InitRopeSprite @10083980	boot (class placed L1-4)	yes BootFaces.swift:84	used	HIGH	
+FW Sprites.rsrc	PICT	650	classic rope bend frames	.InitRopeSprite @10083980	boot (class placed L1-4)	yes BootFaces.swift:84,RopeSprite.swift:107	used	HIGH	
+FW Sprites.rsrc	PICT	651		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	652		.InitRopeSprite @10083980	boot (class placed L1-4)	yes BootFaces.swift:84,RopeSprite.swift:106	used	HIGH	
+FW Sprites.rsrc	PICT	653		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	658		.InitRopeSprite @10083980	boot (class placed L1-4)	yes BootFaces.swift:85,RopeSprite.swift:108	used	HIGH	
+FW Sprites.rsrc	PICT	700		.InitAppGlobals @100009c8	boot	yes StatusBar.swift:67,WorldMapRun.swift:170	used	HIGH	
+FW Sprites.rsrc	PICT	701		.InitAppGlobals @100009c8	boot	yes StatusBar.swift:68	used	HIGH	
+FW Sprites.rsrc	PICT	702		.InitAppGlobals @100009c8	boot	yes StatusBar.swift:65	used	HIGH	
+FW Sprites.rsrc	PICT	703		.InitAppGlobals @100009c8	boot	yes StatusBar.swift:66	used	HIGH	
+FW Sprites.rsrc	PICT	711	frozen water platform	.InitPlatformSprite @10061cc0	boot (class placed L1-4)	yes BootFaces.swift:61,SetupFaces.swift:165,SetupFaces.swift:252	used	HIGH	
+FW Sprites.rsrc	PICT	712	trunk bottom	.InitBoxSprite @1006aa5c	boot (class placed L1-4)	yes BootFaces.swift:69	used	HIGH	
+FW Sprites.rsrc	PICT	713	trunk segment	.InitBoxSprite @1006aa5c	boot (class placed L1-4)	yes BootFaces.swift:69	used	HIGH	
+FW Sprites.rsrc	PICT	750		.InitPlayerSprite @ 1004a284	boot (class placed L1-4)	yes BootFaces.swift:42,BootFaces.swift:42~,HeldItem.swift:18	used	HIGH	
+FW Sprites.rsrc	PICT	756		.InitPlayerSprite @ 1004a284	boot (class placed L1-4)	yes BootFaces.swift:42~,HeldItem.swift:18	used	HIGH	
+FW Sprites.rsrc	PICT	768		.InitPlayerSprite @ 1004a284	boot (class placed L1-4)	yes BootFaces.swift:42~,HeldItem.swift:18	used	HIGH	
+FW Sprites.rsrc	PICT	771		.InitPlayerSprite @ 1004a284	boot (class placed L1-4)	yes BootFaces.swift:42~,HeldItem.swift:18	used	HIGH	
+FW Sprites.rsrc	PICT	801		.InitBonusSprite @1005d4f0	boot (class placed L1-4)	yes LightFaces.callSites	used	HIGH	
+FW Sprites.rsrc	PICT	802		.InitBonusSprite @1005d4f0	boot (class placed L1-4)	yes LightFaces.callSites	used	HIGH	
+FW Sprites.rsrc	PICT	803		no reference in either dump	never	yes PlayerLiquids.swift:46,PlayerLiquids.swift:48	n	HIGH	
+FW Sprites.rsrc	PICT	806		.InitBonusSprite @1005d4f0	boot (class placed L1-4)	yes LightFaces.callSites	used	HIGH	
+FW Sprites.rsrc	PICT	807		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	810		.InitEffectSprite @10060378 | .InitPlayerShotSprite @10058fac	boot (class placed L1-4)	yes LightFaces.callSites	used	HIGH	
+FW Sprites.rsrc	PICT	811		.InitEffectSprite @10060378	boot (class placed L1-4)	yes LightFaces.callSites	used	HIGH	
+FW Sprites.rsrc	PICT	812		.InitEffectSprite @10060378	boot (class placed L1-4)	yes LightFaces.callSites	used	HIGH	
+FW Sprites.rsrc	PICT	813		.InitEffectSprite @10060378	boot (class placed L1-4)	yes LightFaces.callSites	used	HIGH	
+FW Sprites.rsrc	PICT	820		.InitCrawlerSprite @10065828	boot (class placed L1-4)	yes StatueSprite.swift:13	used	HIGH	
+FW Sprites.rsrc	PICT	821		.InitCrawlerSprite @10065828	boot (class placed L1-4)	yes LightFaces.callSites	used	HIGH	
+FW Sprites.rsrc	PICT	822		.InitPlayerShotSprite @10058fac	boot (class placed L1-4)	yes LightFaces.callSites	used	HIGH	
+FW Sprites.rsrc	PICT	830		.InitEffectSprite @10060378	boot (class placed L1-4)	yes LightFaces.callSites	used	HIGH	
+FW Sprites.rsrc	PICT	950		no reference in either dump	never	weak-literal ParticleRenderer.swift:113,Player.swift:406	n	MED	
+FW Sprites.rsrc	PICT	951		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	952		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	1001		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	1002		.PreparePaintFrame @10010868	L1-4 (first level start)	yes TileGridRenderer.swift:72	used	HIGH	
+FW Sprites.rsrc	PICT	1003		.InitPlayerSprite @1004a284	boot (class placed L1-4)	yes BootFaces.swift:32,FaceSheet.swift:151,SaveGame.swift:135	used	HIGH	
+FW Sprites.rsrc	PICT	1004		.InitPlayerSprite @1004a284	boot (class placed L1-4)	yes BootFaces.swift:32,FaceSheet.swift:151	used	HIGH	
+FW Sprites.rsrc	PICT	1008		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	1009		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	1010		.InitPlayerSprite @1004a284	boot (class placed L1-4)	yes BootFaces.swift:32,FaceSheet.swift:151,HandleKeys.swift:169	used	HIGH	
+FW Sprites.rsrc	PICT	1011		.InitPlayerSprite @1004a284	boot (class placed L1-4)	yes BootFaces.swift:32,FaceSheet.swift:151	used	HIGH	
+FW Sprites.rsrc	PICT	1012		.InitPlayerSprite @1004a284	boot (class placed L1-4)	yes BootFaces.swift:33,FaceSheet.swift:151	used	HIGH	
+FW Sprites.rsrc	PICT	1013		.InitPlayerSprite @1004a284	boot (class placed L1-4)	yes BootFaces.swift:33	used	HIGH	
+FW Sprites.rsrc	PICT	1014		.InitPlayerSprite @1004a284	boot (class placed L1-4)	yes BootFaces.swift:33	used	HIGH	
+FW Sprites.rsrc	PICT	1015		.InitPlayerSprite @1004a284	boot (class placed L1-4)	yes BootFaces.swift:38	used	HIGH	
+FW Sprites.rsrc	PICT	1016		.InitPlayerSprite @1004a284	boot (class placed L1-4)	yes BootFaces.swift:38	used	HIGH	
+FW Sprites.rsrc	PICT	1017		.InitPlayerSprite @1004a284	boot (class placed L1-4)	yes BootFaces.swift:39	used	HIGH	
+FW Sprites.rsrc	PICT	1020		.InitPlayerSprite @1004a284	boot (class placed L1-4)	yes BootFaces.swift:34	used	HIGH	
+FW Sprites.rsrc	PICT	1021		.InitPlayerSprite @1004a284	boot (class placed L1-4)	yes BootFaces.swift:34	used	HIGH	
+FW Sprites.rsrc	PICT	1022		.InitPlayerSprite @1004a284	boot (class placed L1-4)	yes BootFaces.swift:34	used	HIGH	
+FW Sprites.rsrc	PICT	1023		.InitPlayerSprite @1004a284	boot (class placed L1-4)	yes BootFaces.swift:35	used	HIGH	
+FW Sprites.rsrc	PICT	1024		.InitPlayerSprite @1004a284	boot (class placed L1-4)	yes BootFaces.swift:35	used	HIGH	
+FW Sprites.rsrc	PICT	1025		.InitPlayerSprite @1004a284	boot (class placed L1-4)	yes BootFaces.swift:35	used	HIGH	
+FW Sprites.rsrc	PICT	1026		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	1027		.InitPlayerSprite @1004a284	boot (class placed L1-4)	yes BootFaces.swift:36,HandleKeys.swift:483	used	HIGH	
+FW Sprites.rsrc	PICT	1028		.InitPlayerSprite @1004a284	boot (class placed L1-4)	yes BootFaces.swift:36	used	HIGH	
+FW Sprites.rsrc	PICT	1029		.InitPlayerSprite @1004a284	boot (class placed L1-4)	yes BootFaces.swift:36	used	HIGH	
+FW Sprites.rsrc	PICT	1030		.InitPlayerSprite @1004a284	boot (class placed L1-4)	yes BootFaces.swift:37	used	HIGH	
+FW Sprites.rsrc	PICT	1031		.InitPlayerSprite @1004a284	boot (class placed L1-4)	yes BootFaces.swift:37	used	HIGH	
+FW Sprites.rsrc	PICT	1032		.InitPlayerSprite @1004a284	boot (class placed L1-4)	yes BootFaces.swift:37	used	HIGH	
+FW Sprites.rsrc	PICT	1033		.InitPlayerSprite @1004a284	boot (class placed L1-4)	yes BootFaces.swift:38	used	HIGH	
+FW Sprites.rsrc	PICT	1034		.InitPlayerSprite @1004a284	boot (class placed L1-4)	yes BootFaces.swift:39	used	HIGH	
+FW Sprites.rsrc	PICT	1035		.InitPlayerSprite @1004a284	boot (class placed L1-4)	yes BootFaces.swift:39	used	HIGH	
+FW Sprites.rsrc	PICT	1036		.InitPlayerSprite @1004a284	boot (class placed L1-4)	yes BootFaces.swift:40	used	HIGH	
+FW Sprites.rsrc	PICT	1037		.InitPlayerSprite @1004a284	boot (class placed L1-4)	yes BootFaces.swift:40	used	HIGH	
+FW Sprites.rsrc	PICT	1038		.InitPlayerSprite @1004a284	boot (class placed L1-4)	yes BootFaces.swift:40	used	HIGH	
+FW Sprites.rsrc	PICT	1039		.InitPlayerSprite @1004a284	boot (class placed L1-4)	yes BootFaces.swift:41	used	HIGH	
+FW Sprites.rsrc	PICT	1040	bubble	.InitEffectSprite @10060378	boot (class placed L1-4)	yes BootFaces.swift:50	used	HIGH	
+FW Sprites.rsrc	PICT	1050		.InitPlayerSprite @1004a284	L1-4? (cached; class Player placed, need-flag per type not resolved)	yes FaceSheet.swift:163,HitPlayerSprite.swift:779	used	MED	
+FW Sprites.rsrc	PICT	1051		.InitPlayerSprite @1004a284	L1-4? (cached; class Player placed, need-flag per type not resolved)	yes FaceSheet.swift:164	used	MED	
+FW Sprites.rsrc	PICT	1052		.InitPlayerSprite @1004a284	L1-4? (cached; class Player placed, need-flag per type not resolved)	yes FaceSheet.swift:165	used	MED	
+FW Sprites.rsrc	PICT	1053		.InitPlayerSprite @1004a284	L1-4? (cached; class Player placed, need-flag per type not resolved)	yes FaceSheet.swift:166	used	MED	
+FW Sprites.rsrc	PICT	1054		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	1055	Bonus crystal	no reference in either dump	never	yes BonusSprite.swift:464	n	HIGH	
+FW Sprites.rsrc	PICT	1057		.InitBonusSprite @1005d4f0	boot (class placed L1-4)	yes BonusSprite.swift:148,BonusSprite.swift:26,BonusSprite.swift:402	used	HIGH	
+FW Sprites.rsrc	PICT	1058		.InitBonusSprite @1005d4f0	boot (class placed L1-4)	yes BonusSprite.swift:26,BonusSprite.swift:44,BootFaces.swift:54	used	HIGH	
+FW Sprites.rsrc	PICT	1059		no reference in either dump	never	weak-literal BonusSprite.swift:127,BonusSprite.swift:121	n	MED	
+FW Sprites.rsrc	PICT	1060	teleporter	.InitBoxSprite @1006aa5c	boot (class placed L1-4)	yes BootFaces.swift:69	used	HIGH	
+FW Sprites.rsrc	PICT	1061	Teleporter 2	.InitBoxSprite @1006aa5c	boot (class placed L1-4)	yes BootFaces.swift:69	used	HIGH	
+FW Sprites.rsrc	PICT	1062	Teleporter 3	.InitBoxSprite @1006aa5c	boot (class placed L1-4)	yes BootFaces.swift:69,SetupFaces.swift:156,SetupFaces.swift:398	used	HIGH	
+FW Sprites.rsrc	PICT	1065	save point	.InitBoxSprite @1006aa5c	boot (class placed L1-4)	yes BootFaces.swift:74,SetupFaces.swift:156,SetupFaces.swift:401	used	HIGH	
+FW Sprites.rsrc	PICT	1070		.InitBoxSprite @1006aa5c	boot (class placed L1-4)	yes BootFaces.swift:69,SetupFaces.swift:161,SetupFaces.swift:403	used	HIGH	
+FW Sprites.rsrc	PICT	1071	Boulder 2	.InitBoxSprite @1006aa5c	boot (class placed L1-4)	yes BootFaces.swift:69,SetupFaces.swift:189	used	HIGH	
+FW Sprites.rsrc	PICT	1072	Boulder 3	.InitBoxSprite @1006aa5c	boot (class placed L1-4)	yes BootFaces.swift:69,SetupFaces.swift:189	used	HIGH	
+FW Sprites.rsrc	PICT	1080		.InitBoxSprite @1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	yes BoxSprite.swift:1241,BoxSprite.swift:1264,BoxSprite.swift:573	used	MED	
+FW Sprites.rsrc	PICT	1090		.InitBackgroundSprite @100711f0	L1-4 (cached; type placed)	yes BackgroundSprite.swift:352,BackgroundSprite.swift:357,LevelRun.swift:1061	used	HIGH	
+FW Sprites.rsrc	PICT	1100	fireball right	.InitPlayerShotSprite @10058fac	boot (class placed L1-4)	yes BootFaces.swift:44,PlayerShot.swift:17,PlayerShot.swift:391	used	HIGH	
+FW Sprites.rsrc	PICT	1101	fireball left	.InitPlayerShotSprite @10058fac	boot (class placed L1-4)	yes BootFaces.swift:44,PlayerShot.swift:18,PlayerShot.swift:391	used	HIGH	
+FW Sprites.rsrc	PICT	1102		.InitPlayerShotSprite @10058fac	boot (class placed L1-4)	yes BootFaces.swift:44,PlayerShot.swift:19,PlayerShot.swift:391	used	HIGH	
+FW Sprites.rsrc	PICT	1103		.InitPlayerShotSprite @10058fac	boot (class placed L1-4)	yes BootFaces.swift:45,PlayerShot.swift:20,PlayerShot.swift:391	used	HIGH	
+FW Sprites.rsrc	PICT	1104		.InitPlayerShotSprite @10058fac	boot (class placed L1-4)	yes BootFaces.swift:45,PlayerShot.swift:21	used	HIGH	
+FW Sprites.rsrc	PICT	1105		.InitPlayerShotSprite @10058fac	boot (class placed L1-4)	yes BootFaces.swift:45,PlayerShot.swift:22	used	HIGH	
+FW Sprites.rsrc	PICT	1106		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	1107		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	1108		.InitEnemyShotSprite @1005b670	boot (class EnemyShot not placed L1-4)	yes BootFaces.swift:77	used	HIGH	
+FW Sprites.rsrc	PICT	1109		.InitEnemyShotSprite @1005b670	boot (class EnemyShot not placed L1-4)	yes BootFaces.swift:77	used	HIGH	
+FW Sprites.rsrc	PICT	1110		.InitEnemyShotSprite @1005b670	boot (class EnemyShot not placed L1-4)	yes BootFaces.swift:78	used	HIGH	
+FW Sprites.rsrc	PICT	1111		.InitEnemyShotSprite @1005b670	boot (class EnemyShot not placed L1-4)	yes BootFaces.swift:78	used	HIGH	
+FW Sprites.rsrc	PICT	1112	boomerang right	no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	1113		.InitPlayerShotSprite @10058fac	boot (class placed L1-4)	yes BootFaces.swift:46,PlayerShot.swift:23,PlayerShot.swift:428	used	HIGH	
+FW Sprites.rsrc	PICT	1114		.InitPlayerShotSprite @10058fac	boot (class placed L1-4)	yes BootFaces.swift:46,PlayerShot.swift:24,PlayerShot.swift:439	used	HIGH	
+FW Sprites.rsrc	PICT	1115		.InitPlayerShotSprite @10058fac	boot (class placed L1-4)	yes BootFaces.swift:46,PlayerShot.swift:25,PlayerShot.swift:405	used	HIGH	
+FW Sprites.rsrc	PICT	1116		.InitPlayerShotSprite @10058fac	boot (class placed L1-4)	yes BootFaces.swift:47,PlayerShot.swift:26,PlayerShot.swift:467	used	HIGH	
+FW Sprites.rsrc	PICT	1117		.InitEnemyShotSprite @1005b670	boot (class EnemyShot not placed L1-4)	yes BootFaces.swift:78	used	HIGH	
+FW Sprites.rsrc	PICT	1118		.InitPlayerShotSprite @10058fac	boot (class placed L1-4)	yes BootFaces.swift:47,PlayerShot.swift:27,PlayerShot.swift:444	used	HIGH	
+FW Sprites.rsrc	PICT	1130		.InitEnemyShotSprite @1005b670	later levels (cached; class EnemyShot not placed in L1-4)	no	a5	HIGH	
+FW Sprites.rsrc	PICT	1131		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	1132		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	1133		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	1135		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	1139		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	1150		.InitBackgroundSprite @100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	yes SetupFaces.swift:224	used	MED	
+FW Sprites.rsrc	PICT	1151		.InitBackgroundSprite @100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	yes SetupFaces.swift:225	used	MED	
+FW Sprites.rsrc	PICT	1152		.InitBackgroundSprite @100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	yes SetupFaces.swift:226,SetupFaces.swift:333	used	MED	
+FW Sprites.rsrc	PICT	1154		no reference in either dump	never	weak-literal BackgroundSprite.swift:435~,BackgroundSprite.swift:443~	n	MED	
+FW Sprites.rsrc	PICT	1200	explosion	.InitEffectSprite @10060378	boot (class placed L1-4)	yes BackgroundSprite.swift:220,BootFaces.swift:49,BoxSprite.swift:1233	used	HIGH	
+FW Sprites.rsrc	PICT	1201	dust cloud	.InitEffectSprite @10060378	boot (class placed L1-4)	yes BootFaces.swift:49	used	HIGH	
+FW Sprites.rsrc	PICT	1202		.InitEffectSprite @10060378	boot (class placed L1-4)	yes BootFaces.swift:51	used	HIGH	
+FW Sprites.rsrc	PICT	1203		.InitEffectSprite @10060378	boot (class placed L1-4)	yes BootFaces.swift:51	used	HIGH	
+FW Sprites.rsrc	PICT	1204		.InitEffectSprite @10060378	boot (class placed L1-4)	yes BootFaces.swift:51	used	HIGH	
+FW Sprites.rsrc	PICT	1205		no reference in either dump	never	weak-literal GroundCeilingEffects.swift:118~,GroundCeilingEffects.swift:364~	n	MED	
+FW Sprites.rsrc	PICT	1206		.InitEffectSprite @10060378	boot (class placed L1-4)	yes BootFaces.swift:50	used	HIGH	
+FW Sprites.rsrc	PICT	1207	big explosion	.InitEffectSprite @10060378	boot (class placed L1-4)	yes BootFaces.swift:49	used	HIGH	
+FW Sprites.rsrc	PICT	1208		.InitBackgroundSprite @100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	weak-literal HitPlayerSprite.swift:123,SpriteClassTable.swift:28	a (later levels [40, 50, 51, 62, 67])	MED	
+FW Sprites.rsrc	PICT	1209		.InitBackgroundSprite @100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	no	d?	MED	cached sheet; no placement of this type id on any level; need-flag owner not resolved
+FW Sprites.rsrc	PICT	1210	crumble overlay	.InitEffectSprite @10060378	boot (class placed L1-4)	yes BootFaces.swift:51	used	HIGH	
+FW Sprites.rsrc	PICT	1211		.InitBackgroundSprite @100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	weak-literal BackgroundSprite.swift:115~,HitPlayerSprite.swift:123~	d?	MED	cached sheet; no placement of this type id on any level; need-flag owner not resolved
+FW Sprites.rsrc	PICT	1212		.InitBackgroundSprite @100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	weak-literal BackgroundSprite.swift:115~,HitPlayerSprite.swift:123~	d?	MED	cached sheet; no placement of this type id on any level; need-flag owner not resolved
+FW Sprites.rsrc	PICT	1215		.InitBonusSprite @1005d4f0	boot (class placed L1-4)	yes BonusSprite.swift:171,BonusSprite.swift:172,BonusSprite.swift:27	used	HIGH	
+FW Sprites.rsrc	PICT	1220		.InitEffectSprite @10060378	boot (class placed L1-4)	yes BootFaces.swift:52	used	HIGH	
+FW Sprites.rsrc	PICT	1250		.InitBoxSprite @1006aa5c	boot (class placed L1-4)	yes BootFaces.swift:73,BoxSprite.swift:807,SetupFaces.swift:194	used	HIGH	
+FW Sprites.rsrc	PICT	1251		.InitEffectSprite @10060378	boot (class placed L1-4)	yes BootFaces.swift:51	used	HIGH	
+FW Sprites.rsrc	PICT	1252		.InitBoxSprite @1006aa5c	boot (class placed L1-4)	yes BootFaces.swift:74,BoxSprite.swift:61	used	HIGH	
+FW Backgrounds.rsrc	PICT	1263		no reference in either dump	never	weak-literal SetupFaces.swift:412~,BoxSprite.swift:60~	n	MED	
+FW Sprites.rsrc	PICT	1290	$Big magic crystal	.InitBonusSprite @1005d4f0	boot (class placed L1-4)	yes BonusSprite.swift:27,BootFaces.swift:55	used	HIGH	
+FW Sprites.rsrc	PICT	1291	$Big health crystal	.InitBonusSprite @1005d4f0	boot (class placed L1-4)	yes BonusSprite.swift:27,BootFaces.swift:55	used	HIGH	
+FW Sprites.rsrc	PICT	1292	$Moneybag, small	.InitBonusSprite @1005d4f0	boot (class placed L1-4)	yes BonusSprite.swift:27,BootFaces.swift:55,SetupFaces.swift:151	used	HIGH	
+FW Sprites.rsrc	PICT	1293	$Moneybag, big	.InitBonusSprite @1005d4f0	boot (class placed L1-4)	yes BonusSprite.swift:27,BootFaces.swift:55	used	HIGH	
+FW Sprites.rsrc	PICT	1300	magic bonus	.InitBonusSprite @1005d4f0	boot (class placed L1-4)	yes BonusSprite.swift:28,BootFaces.swift:56	used	HIGH	
+FW Sprites.rsrc	PICT	1301		.InitBonusSprite @1005d4f0	boot (class placed L1-4)	yes BonusSprite.swift:28,BootFaces.swift:56	used	HIGH	
+FW Sprites.rsrc	PICT	1302		.InitBonusSprite @1005d4f0	boot (class placed L1-4)	yes BonusSprite.swift:194,BonusSprite.swift:28,BonusSprite.swift:44	used	HIGH	
+FW Sprites.rsrc	PICT	1303		.InitBonusSprite @1005d4f0	boot (class placed L1-4)	yes BonusSprite.swift:188,BonusSprite.swift:26,BonusSprite.swift:434	used	HIGH	
+FW Sprites.rsrc	PICT	1304		no reference in either dump	never	weak-literal BonusSprite.swift:435	n	MED	
+FW Sprites.rsrc	PICT	1307		.InitBonusSprite @1005d4f0	boot (class placed L1-4)	yes BonusSprite.swift:185,BonusSprite.swift:29,BonusSprite.swift:553	used	HIGH	
+FW Sprites.rsrc	PICT	1308		.InitBoxSprite @1006aa5c	boot (class placed L1-4)	yes BootFaces.swift:70,SetupFaces.swift:156,SetupFaces.swift:418	used	HIGH	
+FW Sprites.rsrc	PICT	1309	gold coins	.InitBonusSprite @1005d4f0	boot (class placed L1-4)	yes BonusSprite.swift:194,BonusSprite.swift:28,BonusSprite.swift:441	used	HIGH	
+FW Sprites.rsrc	PICT	1310	Platinum coins	.InitBonusSprite @1005d4f0	boot (class placed L1-4)	yes BonusSprite.swift:194,BonusSprite.swift:29,BonusSprite.swift:442	used	HIGH	
+FW Sprites.rsrc	PICT	1311		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	1320		.InitButtonSprite @10070c48	boot (class placed L1-4)	yes BootFaces.swift:82,ButtonSprite.swift:16,SetupFaces.swift:452~	used	HIGH	
+FW Sprites.rsrc	PICT	1321		.InitButtonSprite @10070c48	boot (class placed L1-4)	yes BootFaces.swift:82,ButtonSprite.swift:17,SetupFaces.swift:452~	used	HIGH	
+FW Sprites.rsrc	PICT	1322		.InitButtonSprite @10070c48	boot (class placed L1-4)	yes BootFaces.swift:82,ButtonSprite.swift:18,SetupFaces.swift:452~	used	HIGH	
+FW Sprites.rsrc	PICT	1330	Sphere, Shadow Double	.InitBonusSprite @ 1005d4f0	boot (class placed L1-4)	yes BonusSprite.swift:34,BonusSprite.swift:34~,BootFaces.swift:59	used	HIGH	
+FW Sprites.rsrc	PICT	1331	Sphere, Solid Water	.InitBonusSprite @ 1005d4f0	boot (class placed L1-4)	yes BonusSprite.swift:34~,BootFaces.swift:59~	used	HIGH	
+FW Sprites.rsrc	PICT	1332	Sphere, Solid Acid	.InitBonusSprite @ 1005d4f0	boot (class placed L1-4)	yes BonusSprite.swift:34~,BootFaces.swift:59~,SetupFaces.swift:183	used	HIGH	
+FW Sprites.rsrc	PICT	1333	Sphere, Solid Lava	.InitBonusSprite @ 1005d4f0	boot (class placed L1-4)	yes BonusSprite.swift:34~,BootFaces.swift:59~	used	HIGH	
+FW Sprites.rsrc	PICT	1334	Sphere, High Jump	.InitBonusSprite @ 1005d4f0	boot (class placed L1-4)	yes BonusSprite.swift:34~,BootFaces.swift:59~	used	HIGH	
+FW Sprites.rsrc	PICT	1335	Sphere, Invincibility	.InitBonusSprite @ 1005d4f0	boot (class placed L1-4)	yes BonusSprite.swift:34~,BootFaces.swift:59~,SetupFaces.swift:151	used	HIGH	
+FW Sprites.rsrc	PICT	1336	Sphere, Featherfall	.InitBonusSprite @ 1005d4f0	boot (class placed L1-4)	yes BonusSprite.swift:34~,BootFaces.swift:59~	used	HIGH	
+FW Sprites.rsrc	PICT	1337		.InitBonusSprite @ 1005d4f0	boot (class placed L1-4)	yes BonusSprite.swift:34~,BootFaces.swift:59~	used	HIGH	
+FW Sprites.rsrc	PICT	1338	$Sphere, Pentashield	.InitBonusSprite @ 1005d4f0	boot (class placed L1-4)	yes BonusSprite.swift:34~,BootFaces.swift:59~	used	HIGH	
+FW Sprites.rsrc	PICT	1339	$Sphere, Death	.InitBonusSprite @ 1005d4f0	boot (class placed L1-4)	yes BonusSprite.swift:34~,BootFaces.swift:59~	used	HIGH	
+FW Sprites.rsrc	PICT	1340		.InitBonusSprite @1005d4f0	boot (class placed L1-4)	yes BonusSprite.swift:29,BootFaces.swift:58,SetupFaces.swift:184	used	HIGH	
+FW Sprites.rsrc	PICT	1341		.InitBonusSprite @1005d4f0	boot (class placed L1-4)	yes BonusSprite.swift:29,BootFaces.swift:58,SetupFaces.swift:184	used	HIGH	
+FW Sprites.rsrc	PICT	1350	Air Bubble	.InitBonusSprite @1005d4f0	boot (class placed L1-4)	yes BonusSprite.swift:218,BonusSprite.swift:219,BonusSprite.swift:30	used	HIGH	
+FW Sprites.rsrc	PICT	1400		.InitPlatformSprite @10061cc0	boot (class placed L1-4)	yes BootFaces.swift:61,BoxSprite.swift:1048,PlatformSprite.swift:9	used	HIGH	
+FW Sprites.rsrc	PICT	1410	Catapult	.InitPlatformSprite @10061cc0	boot (class placed L1-4)	yes BootFaces.swift:63,PlatformSprite.swift:455,SetupFaces.swift:167	used	HIGH	
+FW Sprites.rsrc	PICT	1420		.InitPlatformSprite @10061cc0	boot (class placed L1-4)	yes BootFaces.swift:61,GroundCeilingEffects.swift:39,SetupFaces.swift:165	used	HIGH	
+FW Sprites.rsrc	PICT	1421		.InitPlatformSprite @10061cc0	boot (class placed L1-4)	yes BootFaces.swift:61,SetupFaces.swift:165,SetupFaces.swift:252	used	HIGH	
+FW Sprites.rsrc	PICT	1422		.InitPlatformSprite @10061cc0	boot (class placed L1-4)	yes BootFaces.swift:61,SetupFaces.swift:165,SetupFaces.swift:252	used	HIGH	
+FW Sprites.rsrc	PICT	1430		no reference in either dump	never	weak-literal GroundCeilingEffects.swift:118,GroundCeilingEffects.swift:375	n	MED	
+FW Sprites.rsrc	PICT	1431		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	1432		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	1433		.InitPlatformSprite @10061cc0	boot (class placed L1-4)	yes BootFaces.swift:62,ChainSprite.swift:44,SetupFaces.swift:166	used	HIGH	
+FW Sprites.rsrc	PICT	1434		.InitPlatformSprite @10061cc0	boot (class placed L1-4)	yes BootFaces.swift:62,SetupFaces.swift:166,SetupFaces.swift:252	used	HIGH	
+FW Sprites.rsrc	PICT	1435		.InitPlatformSprite @10061cc0	boot (class placed L1-4)	yes BootFaces.swift:62,SetupFaces.swift:166,SetupFaces.swift:252	used	HIGH	
+FW Sprites.rsrc	PICT	1436		.InitPlatformSprite @10061cc0	boot (class placed L1-4)	yes BootFaces.swift:62,SetupFaces.swift:166,SetupFaces.swift:252	used	HIGH	
+FW Sprites.rsrc	PICT	1440		.InitBoxSprite @1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:1297,BoxSprite.swift:1337	a (later levels [10])	MED	
+FW Sprites.rsrc	PICT	1441		.InitBoxSprite @1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:432~	d?	MED	cached sheet; no placement of this type id on any level; need-flag owner not resolved
+FW Sprites.rsrc	PICT	1442		.InitBoxSprite @1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:432~	a (later levels [50, 51])	MED	
+FW Sprites.rsrc	PICT	1450		.InitBoxSprite @1006aa5c	boot (class placed L1-4)	yes BootFaces.swift:74,SetupFaces.swift:194,SetupFaces.swift:415	used	HIGH	
+FW Sprites.rsrc	PICT	1460	Bridge - Wooden - Full	.InitBoxSprite @1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	yes SetupFaces.swift:246~	used	MED	
+FW Sprites.rsrc	PICT	1461	Bridge - Wooden - Left half	.InitBoxSprite @1006aa5c	L1-4 (cached; type placed)	yes LevelRun.swift:1081,SetupFaces.swift:161,SetupFaces.swift:246~	used	HIGH	
+FW Sprites.rsrc	PICT	1463	Bridge - Stone	.InitBoxSprite @1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	yes SetupFaces.swift:246~	used	MED	
+FW Sprites.rsrc	PICT	1464	Bridge - Stone - Left half	.InitBoxSprite @1006aa5c	L1-4 (cached; type placed)	yes LevelRun.swift:1081,SetupFaces.swift:156,SetupFaces.swift:246~	used	HIGH	
+FW Sprites.rsrc	PICT	1466	Bridge - Rope	.InitBoxSprite @1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	yes SetupFaces.swift:246~	used	MED	
+FW Sprites.rsrc	PICT	1467		.InitBoxSprite @1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	yes SetupFaces.swift:246~	used	MED	
+FW Sprites.rsrc	PICT	1470		.InitBoxSprite @1006aa5c	L1-4 (cached; type placed)	yes LevelRun.swift:1060,SetupFaces.swift:161	used	HIGH	
+FW Sprites.rsrc	PICT	1480		.InitBackgroundSprite @ 100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	yes SetupFaces.swift:218,SetupFaces.swift:218~	used	MED	
+FW Sprites.rsrc	PICT	1481		.InitBackgroundSprite @ 100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	yes SetupFaces.swift:218~	used	MED	
+FW Sprites.rsrc	PICT	1482		.InitBackgroundSprite @ 100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	yes SetupFaces.swift:218~	used	MED	
+FW Sprites.rsrc	PICT	1483		.InitBackgroundSprite @ 100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	yes SetupFaces.swift:218~	used	MED	
+FW Sprites.rsrc	PICT	1484		.InitBackgroundSprite @ 100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	yes SetupFaces.swift:218~	used	MED	
+FW Sprites.rsrc	PICT	1485		.InitBackgroundSprite @ 100711f0	L1-4 (cached; type placed)	yes LevelRun.swift:1093,SetupFaces.swift:218~	used	HIGH	
+FW Sprites.rsrc	PICT	1486		.InitBackgroundSprite @ 100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	yes SetupFaces.swift:218~	used	MED	
+FW Sprites.rsrc	PICT	1487		.InitBackgroundSprite @ 100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	yes SetupFaces.swift:218~	used	MED	
+FW Sprites.rsrc	PICT	1488		.InitBackgroundSprite @ 100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	yes SetupFaces.swift:218~	used	MED	
+FW Sprites.rsrc	PICT	1490	!Enemy pipe facing up	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal SpriteClassTable.swift:39,BoxSprite.swift:432~	a (later levels [21])	MED	
+FW Sprites.rsrc	PICT	1491	!Enemy pipe facing down	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:432~	a (later levels [21])	MED	
+FW Sprites.rsrc	PICT	1492	!Enemy pipe facing right	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:432~	a (later levels [21])	MED	
+FW Sprites.rsrc	PICT	1493	!Enemy pipe facing left	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:432~	a (later levels [21])	MED	
+FW Sprites.rsrc	PICT	1600	glow	.PreparePaintFrame @10010868	L1-4 (first level start)	no	n	HIGH	.PreparePaintFrame loads into _DAT_100a0104, no reader (written only)
+FW Sprites.rsrc	PICT	1700		.InitWalkerSprite @10066c5c	L1-4 (cached; type placed)	yes LevelRun.swift:1073,SetupFaces.swift:169,SetupFaces.swift:479	used	HIGH	
+FW Sprites.rsrc	PICT	1701		.InitWalkerSprite @10066c5c	L1-4? (cached; class Walker placed, need-flag per type not resolved)	yes LevelRun.swift:1056	used	MED	
+FW Sprites.rsrc	PICT	1702		.InitWalkerSprite @10066c5c	L1-4? (cached; class Walker placed, need-flag per type not resolved)	yes LevelRun.swift:1056	used	MED	
+FW Sprites.rsrc	PICT	1703		.InitEnemyShotSprite @1005b670	boot (class EnemyShot not placed L1-4)	yes BootFaces.swift:76	used	HIGH	
+FW Sprites.rsrc	PICT	1704		.InitWalkerSprite @10066c5c	boot (class placed L1-4)	yes BootFaces.swift:67	used	HIGH	
+FW Sprites.rsrc	PICT	1705		.InitWalkerSprite @10066c5c	L1-4 (cached; type placed)	yes LevelRun.swift:1057,SetupFaces.swift:169,SetupFaces.swift:480	used	HIGH	
+FW Sprites.rsrc	PICT	1706		.InitWalkerSprite @10066c5c	L1-4? (cached; class Walker placed, need-flag per type not resolved)	yes LevelRun.swift:1057	used	MED	
+FW Sprites.rsrc	PICT	1707		.InitWalkerSprite @10066c5c	L1-4? (cached; class Walker placed, need-flag per type not resolved)	yes LevelRun.swift:1058	used	MED	
+FW Sprites.rsrc	PICT	1710		.InitCrawlerSprite @10065828	L1-4? (cached; class Crawler placed, need-flag per type not resolved)	yes LevelRun.swift:1053	used	MED	
+FW Sprites.rsrc	PICT	1711		.InitCrawlerSprite @10065828	L1-4? (cached; class Crawler placed, need-flag per type not resolved)	yes LevelRun.swift:1053	used	MED	
+FW Sprites.rsrc	PICT	1712		.InitCrawlerSprite @10065828	boot (class placed L1-4)	yes BootFaces.swift:65,SetupFaces.swift:171,SetupFaces.swift:512	used	HIGH	
+FW Sprites.rsrc	PICT	1713		.InitCrawlerSprite @10065828	L1-4? (cached; class Crawler placed, need-flag per type not resolved)	yes LevelRun.swift:1054	used	MED	
+FW Sprites.rsrc	PICT	1720		.InitRoachSprite @10077868	L1-4 (cached; type placed)	yes LevelRun.swift:1055,SetupFaces.swift:171,SetupFaces.swift:523	used	HIGH	
+FW Sprites.rsrc	PICT	1721		.InitRoachSprite @10077868	L1-4? (cached; class Roach placed, need-flag per type not resolved)	yes LevelRun.swift:1055	used	MED	
+FW Sprites.rsrc	PICT	1730		.InitBlobSprite @1007cd3c	L1-4 (cached; type placed)	yes LevelRun.swift:1062,SetupFaces.swift:204,SetupFaces.swift:581	used	HIGH	
+FW Sprites.rsrc	PICT	1740	bat	.InitBatSprite @1007daf8	L1-4 (cached; type placed)	yes LevelRun.swift:1062,SetupFaces.swift:185,SetupFaces.swift:563	used	HIGH	
+FW Sprites.rsrc	PICT	1750		.InitWalkerSprite @10066c5c	L1-4? (cached; class Walker placed, need-flag per type not resolved)	weak-literal SpriteClassTable.swift:52	a5	MED	
+FW Sprites.rsrc	PICT	1751		.InitWalkerSprite @10066c5c	L1-4? (cached; class Walker placed, need-flag per type not resolved)	no	a5	MED	
+FW Sprites.rsrc	PICT	1752		.InitWalkerSprite @10066c5c	L1-4? (cached; class Walker placed, need-flag per type not resolved)	no	a5	MED	
+FW Sprites.rsrc	PICT	1753		.InitWalkerSprite @10066c5c	L1-4? (cached; class Walker placed, need-flag per type not resolved)	no	a5	MED	
+FW Sprites.rsrc	PICT	1754		.InitWalkerSprite @10066c5c	L1-4? (cached; class Walker placed, need-flag per type not resolved)	no	a5	MED	
+FW Sprites.rsrc	PICT	1760		.InitWalkerSprite @10066c5c	L1-4 (cached; type placed)	yes LevelRun.swift:1058,SetupFaces.swift:169,SetupFaces.swift:481	used	HIGH	
+FW Sprites.rsrc	PICT	1761	goblin boulders	.InitEnemyShotSprite @1005b670	boot (class EnemyShot not placed L1-4)	yes BootFaces.swift:76,SetupFaces.swift:481~	used	HIGH	
+FW Sprites.rsrc	PICT	1762	bomb boulder	.InitEnemyShotSprite @1005b670	boot (class EnemyShot not placed L1-4)	yes BootFaces.swift:76,SetupFaces.swift:481~	used	HIGH	
+FW Sprites.rsrc	PICT	1766		.InitEnemyShotSprite @1005b670	boot (class EnemyShot not placed L1-4)	yes BootFaces.swift:77,SetupFaces.swift:481~	used	HIGH	
+FW Sprites.rsrc	PICT	1770		.InitGremlinSprite @1007faac	later levels (cached; class Gremlin not placed in L1-4)	weak-literal SpriteWorld.swift:225,SpriteClassTable.swift:54	a5	MED	
+FW Sprites.rsrc	PICT	1771		.InitGremlinSprite @1007faac	later levels (cached; class Gremlin not placed in L1-4)	weak-literal SpriteWorld.swift:227	a5	MED	
+FW Sprites.rsrc	PICT	1772		.InitGremlinSprite @1007faac	later levels (cached; class Gremlin not placed in L1-4)	no	a5	HIGH	
+FW Sprites.rsrc	PICT	1780	Wraith	.InitFloaterSprite @100813dc	later levels (cached; class Floater not placed in L1-4)	weak-literal SpriteClassTable.swift:55	a5	MED	
+FW Sprites.rsrc	PICT	1800		.InitFrogSprite @10081df4	L1-4 (cached; type placed)	yes LevelRun.swift:1063,SetupFaces.swift:185,SetupFaces.swift:606	used	HIGH	
+FW Sprites.rsrc	PICT	1810	Salamander	.InitSalamanderSprite @10082ea8	later levels (cached; class Salamander not placed in L1-4)	weak-literal SpriteClassTable.swift:58,Conversation.swift:71	a5	MED	
+FW Sprites.rsrc	PICT	1820		.InitWarriorSprite @100877d0	later levels (cached; class Warrior not placed in L1-4)	weak-literal Conversation.swift:72,SpriteClassTable.swift:59	a6	MED	
+FW Sprites.rsrc	PICT	1821		.InitWarriorSprite @100877d0	later levels (cached; class Warrior not placed in L1-4)	no	a6	HIGH	
+FW Sprites.rsrc	PICT	1822		.InitWarriorSprite @100877d0	later levels (cached; class Warrior not placed in L1-4)	weak-literal Conversation.swift:72	a6	MED	
+FW Sprites.rsrc	PICT	1823		.InitEnemyShotSprite @1005b670	boot (class EnemyShot not placed L1-4)	yes BootFaces.swift:79	used	HIGH	
+FW Sprites.rsrc	PICT	1830		.InitWizardSprite @1008c5c8	later levels (cached; class Wizard not placed in L1-4)	weak-literal SpriteClassTable.swift:63,Conversation.swift:73	a6	MED	
+FW Sprites.rsrc	PICT	1831		.InitWizardSprite @1008c5c8	later levels (cached; class Wizard not placed in L1-4)	no	a6	HIGH	
+FW Sprites.rsrc	PICT	1832		.InitWizardSprite @1008c5c8	later levels (cached; class Wizard not placed in L1-4)	weak-literal Conversation.swift:74	a6	MED	
+FW Sprites.rsrc	PICT	1840		.InitBackgroundSprite @100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	yes BackgroundSprite.swift:767,LevelRun.swift:1061	used	MED	
+FW Sprites.rsrc	PICT	1842	!Retracting spikes floor	.InitBackgroundSprite @100711f0	L1-4 (cached; type placed)	yes BackgroundSprite.swift:829,LevelRun.swift:1091,SetupFaces.swift:203	used	HIGH	
+FW Sprites.rsrc	PICT	1843	!Retracting spikes ceiling	.InitBackgroundSprite @100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	yes BackgroundSprite.swift:833,LevelRun.swift:1091,SetupFaces.swift:203	used	MED	
+FW Sprites.rsrc	PICT	1850		.InitBatSprite @1007daf8	L1-4? (cached; class Bat placed, need-flag per type not resolved)	weak-literal SpriteClassTable.swift:65	a5	MED	
+FW Sprites.rsrc	PICT	1851		.InitBatSprite @1007daf8	L1-4? (cached; class Bat placed, need-flag per type not resolved)	no	a5	MED	
+FW Sprites.rsrc	PICT	1855	!Water Urchin	.InitBackgroundSprite @100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	weak-literal SpriteClassTable.swift:66,BackgroundSprite.swift:115~	d?	MED	cached sheet; no placement of this type id on any level; need-flag owner not resolved
+FW Sprites.rsrc	PICT	1856	!Water Urchin 2	.InitBackgroundSprite @100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	weak-literal BackgroundSprite.swift:115~	d?	MED	cached sheet; no placement of this type id on any level; need-flag owner not resolved
+FW Sprites.rsrc	PICT	1860		.InitBatSprite @1007daf8	L1-4? (cached; class Bat placed, need-flag per type not resolved)	weak-literal SpriteClassTable.swift:67	a5	MED	
+FW Sprites.rsrc	PICT	1869		.InitBatSprite @1007daf8	L1-4? (cached; class Bat placed, need-flag per type not resolved)	weak-literal SpriteClassTable.swift:67	a5	MED	
+FW Sprites.rsrc	PICT	1870		.InitDilloSprite @10086120	later levels (cached; class Dillo not placed in L1-4)	weak-literal SpriteClassTable.swift:68	a5	MED	
+FW Sprites.rsrc	PICT	1871		.InitDilloSprite @10086120	later levels (cached; class Dillo not placed in L1-4)	no	a5	HIGH	
+FW Sprites.rsrc	PICT	1872		.InitDilloSprite @10086120	later levels (cached; class Dillo not placed in L1-4)	no	a5	HIGH	
+FW Sprites.rsrc	PICT	1873		.InitDilloSprite @10086120	later levels (cached; class Dillo not placed in L1-4)	no	a5	HIGH	
+FW Sprites.rsrc	PICT	1875		.InitEnemyShotSprite @1005b670	boot (class EnemyShot not placed L1-4)	yes BootFaces.swift:79	used	HIGH	
+FW Sprites.rsrc	PICT	1876	18x18	.InitEnemyShotSprite @1005b670	boot (class EnemyShot not placed L1-4)	yes BootFaces.swift:79	used	HIGH	
+FW Sprites.rsrc	PICT	1880		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	1881		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	1890		.InitCrabSprite @10089454	later levels (cached; class Crab not placed in L1-4)	weak-literal SpriteClassTable.swift:69	a5	MED	
+FW Sprites.rsrc	PICT	1892		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	1895		.InitCrabSprite @10089454	later levels (cached; class Crab not placed in L1-4)	no	a5	HIGH	
+FW Sprites.rsrc	PICT	1900		.InitBackgroundSprite @100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	weak-literal BackgroundSprite.swift:116~,Player.swift:415	a (later levels [22, 31, 45, 62])	MED	
+FW Sprites.rsrc	PICT	1902		.InitBackgroundSprite @100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	weak-literal BackgroundSprite.swift:116~	a (later levels [22, 30, 45])	MED	
+FW Sprites.rsrc	PICT	1903		.InitBackgroundSprite @100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	weak-literal BackgroundSprite.swift:116~	a (later levels [22, 30, 31, 45, 62])	MED	
+FW Sprites.rsrc	PICT	1905		.InitEnemyShotSprite @1005b670	boot (class EnemyShot not placed L1-4)	yes BootFaces.swift:79	used	HIGH	
+FW Sprites.rsrc	PICT	1906		.InitEnemyShotSprite @1005b670	boot (class EnemyShot not placed L1-4)	yes BootFaces.swift:79	used	HIGH	
+FW Sprites.rsrc	PICT	1907		.InitEnemyShotSprite @1005b670	boot (class EnemyShot not placed L1-4)	yes BootFaces.swift:80	used	HIGH	
+FW Sprites.rsrc	PICT	1908		.InitEnemyShotSprite @1005b670	boot (class EnemyShot not placed L1-4)	yes BootFaces.swift:80	used	HIGH	
+FW Sprites.rsrc	PICT	1910	!Goblin Chief	.InitChiefSprite @1008b3f8	later levels (cached; class Chief not placed in L1-4)	weak-literal SpriteClassTable.swift:71	a6	MED	
+FW Sprites.rsrc	PICT	1911		.InitChiefSprite @1008b3f8	later levels (cached; class Chief not placed in L1-4)	no	a6	HIGH	
+FW Sprites.rsrc	PICT	1912		.InitChiefSprite @1008b3f8	later levels (cached; class Chief not placed in L1-4)	no	a6	HIGH	
+FW Sprites.rsrc	PICT	1913		.InitChiefSprite @1008b3f8	later levels (cached; class Chief not placed in L1-4)	no	a6	HIGH	
+FW Sprites.rsrc	PICT	1914		.InitChiefSprite @1008b3f8	later levels (cached; class Chief not placed in L1-4)	no	a6	HIGH	
+FW Sprites.rsrc	PICT	1915		.InitEnemyShotSprite @1005b670	later levels (cached; class EnemyShot not placed in L1-4)	no	a5	HIGH	
+FW Sprites.rsrc	PICT	1920		.InitDemonSprite @10089ec4	later levels (cached; class Demon not placed in L1-4)	weak-literal SpriteClassTable.swift:72	a6	MED	
+FW Sprites.rsrc	PICT	1921		.InitDemonSprite @10089ec4	later levels (cached; class Demon not placed in L1-4)	no	a6	HIGH	
+FW Sprites.rsrc	PICT	1922		.InitDemonSprite @10089ec4	later levels (cached; class Demon not placed in L1-4)	no	a6	HIGH	
+FW Sprites.rsrc	PICT	1923		.InitDemonSprite @10089ec4	later levels (cached; class Demon not placed in L1-4)	no	a6	HIGH	
+FW Sprites.rsrc	PICT	1924		.InitDemonSprite @10089ec4	later levels (cached; class Demon not placed in L1-4)	no	a6	HIGH	
+FW Sprites.rsrc	PICT	1928		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	1929		no reference in either dump	never	weak-literal SpriteClassTable.swift:72	n	MED	
+FW Sprites.rsrc	PICT	1970		.InitXichraSprite @1008d918	later levels (cached; class Xichra not placed in L1-4)	no	a6	HIGH	
+FW Sprites.rsrc	PICT	1971		.InitXichraSprite @1008d918	later levels (cached; class Xichra not placed in L1-4)	no	a6	HIGH	
+FW Sprites.rsrc	PICT	1972		.InitXichraSprite @1008d918	later levels (cached; class Xichra not placed in L1-4)	no	a6	HIGH	
+FW Sprites.rsrc	PICT	1973		.InitXichraSprite @1008d918	later levels (cached; class Xichra not placed in L1-4)	no	a6	HIGH	
+FW Sprites.rsrc	PICT	1974		.InitXichraSprite @1008d918	later levels (cached; class Xichra not placed in L1-4)	no	a6	HIGH	
+FW Sprites.rsrc	PICT	1975		.InitXichraSprite @1008d918	later levels (cached; class Xichra not placed in L1-4)	no	a6	HIGH	
+FW Sprites.rsrc	PICT	1976		.InitXichraSprite @1008d918	later levels (cached; class Xichra not placed in L1-4)	no	a6	HIGH	
+FW Sprites.rsrc	PICT	1977		.InitXichraSprite @1008d918	later levels (cached; class Xichra not placed in L1-4)	no	a6	HIGH	
+FW Sprites.rsrc	PICT	1980		.InitXichraSprite @1008d918	later levels (cached; class Xichra not placed in L1-4)	no	a6	HIGH	
+FW Sprites.rsrc	PICT	1981		.InitXichraSprite @1008d918	later levels (cached; class Xichra not placed in L1-4)	no	a6	HIGH	
+FW Sprites.rsrc	PICT	1982		.InitXichraSprite @1008d918	later levels (cached; class Xichra not placed in L1-4)	no	a6	HIGH	
+FW Sprites.rsrc	PICT	1983		.InitXichraSprite @1008d918	later levels (cached; class Xichra not placed in L1-4)	no	a6	HIGH	
+FW Sprites.rsrc	PICT	1984		.InitXichraSprite @1008d918	later levels (cached; class Xichra not placed in L1-4)	no	a6	HIGH	
+FW Sprites.rsrc	PICT	1985		.InitXichraSprite @1008d918	later levels (cached; class Xichra not placed in L1-4)	no	a6	HIGH	
+FW Sprites.rsrc	PICT	1986		.InitXichraSprite @1008d918	later levels (cached; class Xichra not placed in L1-4)	no	a6	HIGH	
+FW Sprites.rsrc	PICT	1987		.InitXichraSprite @1008d918	later levels (cached; class Xichra not placed in L1-4)	no	a6	HIGH	
+FW Sprites.rsrc	PICT	1990		no reference in either dump	never	weak-literal SpriteClassTable.swift:73	n	MED	
+FW Sprites.rsrc	PICT	1991		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	1992		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	1995		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	1996		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	1997		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	2000		.InitBonusSprite @1005d4f0	boot (class placed L1-4)	yes BonusSprite.swift:256,BonusSprite.swift:26,BonusSprite.swift:261	used	HIGH	
+FW Sprites.rsrc	PICT	2700	Leafy Small Plant 1	.InitBackgroundSprite @ 100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	yes SetupFaces.swift:247~	used	MED	
+FW Sprites.rsrc	PICT	2701	Leafy Small Plant 2	.InitBackgroundSprite @ 100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	yes SetupFaces.swift:247~	used	MED	
+FW Sprites.rsrc	PICT	2702	Leafy Small Plant 3	.InitBackgroundSprite @ 100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	yes SetupFaces.swift:247~	used	MED	
+FW Sprites.rsrc	PICT	2703	Wavy Small Plant 1	.InitBackgroundSprite @ 100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	yes SetupFaces.swift:247~	used	MED	
+FW Sprites.rsrc	PICT	2704	Wavy Small Plant 2	.InitBackgroundSprite @ 100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	yes SetupFaces.swift:247~	used	MED	
+FW Sprites.rsrc	PICT	2705	Wavy-Leafy Combo Small Plant	.InitBackgroundSprite @ 100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	yes SetupFaces.swift:247~	used	MED	
+FW Sprites.rsrc	PICT	2706	Tentacly Small Plant 1	.InitBackgroundSprite @ 100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	yes SetupFaces.swift:247~	used	MED	
+FW Sprites.rsrc	PICT	2707	Tentacly Small Plant 2	.InitBackgroundSprite @ 100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	yes SetupFaces.swift:247~	used	MED	
+FW Sprites.rsrc	PICT	2708	Bluish Undersea Plant	.InitBackgroundSprite @ 100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	yes SetupFaces.swift:247~	used	MED	
+FW Sprites.rsrc	PICT	2709	Purply Undersea Plant	.InitBackgroundSprite @ 100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	yes SetupFaces.swift:247~	used	MED	
+FW Sprites.rsrc	PICT	2710	Mini Hanging Vine 1	.InitBackgroundSprite @ 100711f0	L1-4 (cached; type placed)	yes LevelRun.swift:1094,SetupFaces.swift:173,SetupFaces.swift:247~	used	HIGH	
+FW Sprites.rsrc	PICT	2711	Mini Hanging Vines 2	.InitBackgroundSprite @ 100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	yes SetupFaces.swift:247~	used	MED	
+FW Sprites.rsrc	PICT	2712		.InitBackgroundSprite @ 100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	yes SetupFaces.swift:247~	used	MED	
+FW Sprites.rsrc	PICT	2713	Mossy Patch brownish	.InitBackgroundSprite @ 100711f0	L1-4 (cached; type placed)	yes LevelRun.swift:1094,SetupFaces.swift:173,SetupFaces.swift:247~	used	HIGH	
+FW Sprites.rsrc	PICT	2714	Mossy Patch greenish	.InitBackgroundSprite @ 100711f0	L1-4 (cached; type placed)	yes LevelRun.swift:1095,SetupFaces.swift:173,SetupFaces.swift:247~	used	HIGH	
+FW Sprites.rsrc	PICT	2715	Mossy Patch orangish	.InitBackgroundSprite @ 100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	yes SetupFaces.swift:247~	used	MED	
+FW Sprites.rsrc	PICT	2716	Mossy Patch reddish	.InitBackgroundSprite @ 100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	yes SetupFaces.swift:247~	used	MED	
+FW Sprites.rsrc	PICT	2717	Mossy Patch beigeish	.InitBackgroundSprite @ 100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	yes SetupFaces.swift:247~	used	MED	
+FW Sprites.rsrc	PICT	2800	!Rathole	no reference in either dump	never	weak-literal ParticleRenderer.swift:120	n	MED	
+FW Sprites.rsrc	PICT	2801		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	2808		.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:360~,BoxSprite.swift:530~	a (later levels [15, 50])	MED	
+FW Sprites.rsrc	PICT	2809	*Ziridium Mine Stuff	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:360~,BoxSprite.swift:530~	a (later levels [62])	MED	
+FW Sprites.rsrc	PICT	2810	*Wavy Grass	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:360~,BoxSprite.swift:530~	d?	MED	cached sheet; no placement of this type id on any level; need-flag owner not resolved
+FW Sprites.rsrc	PICT	2811	*Metal Blocks	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:360~,BoxSprite.swift:530~	a (later levels [62])	MED	
+FW Sprites.rsrc	PICT	2812	*Red Ruins 1	.InitBoxSprite @ 1006aa5c	L1-4 (cached; type placed)	yes LevelRun.swift:1074,SetupFaces.swift:203	used	HIGH	
+FW Sprites.rsrc	PICT	2813	*Red Ruins 2	.InitBoxSprite @ 1006aa5c	L1-4 (cached; type placed)	yes LevelRun.swift:1074,SetupFaces.swift:203	used	HIGH	
+FW Sprites.rsrc	PICT	2814	*Grassy Rocks & Stumps	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:360~,BoxSprite.swift:530~	d?	MED	cached sheet; no placement of this type id on any level; need-flag owner not resolved
+FW Sprites.rsrc	PICT	2815	*Thorny Tangles Big	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:360~,BoxSprite.swift:530~	d?	MED	cached sheet; no placement of this type id on any level; need-flag owner not resolved
+FW Sprites.rsrc	PICT	2816	*Cattails	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:360~,BoxSprite.swift:530~	a (later levels [10, 11])	MED	
+FW Sprites.rsrc	PICT	2817	*Cattails 2	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:360~,BoxSprite.swift:530~	a (later levels [10, 11])	MED	
+FW Sprites.rsrc	PICT	2818	*Icicles & Stuff	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:360~,BoxSprite.swift:530~	a (later levels [30])	MED	
+FW Sprites.rsrc	PICT	2819	*Spiked Habnabit Heads	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:360~,BoxSprite.swift:530~	d?	MED	cached sheet; no placement of this type id on any level; need-flag owner not resolved
+FW Sprites.rsrc	PICT	2820	*Skeleton1	.InitBoxSprite @ 1006aa5c	L1-4 (cached; type placed)	yes LevelRun.swift:1075,SetupFaces.swift:203	used	HIGH	
+FW Sprites.rsrc	PICT	2821	*Skeleton 2	.InitBoxSprite @ 1006aa5c	L1-4 (cached; type placed)	yes LevelRun.swift:1075,SetupFaces.swift:203	used	HIGH	
+FW Sprites.rsrc	PICT	2822	*Skeleton 3	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:360~,BoxSprite.swift:530~	a (later levels [5, 11, 18, 21, 25, 55])	MED	
+FW Sprites.rsrc	PICT	2823	*Skeleton 4	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:360~,BoxSprite.swift:530~	d?	MED	cached sheet; no placement of this type id on any level; need-flag owner not resolved
+FW Sprites.rsrc	PICT	2824	*Robed Body 1	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:360~,BoxSprite.swift:530~	d?	MED	cached sheet; no placement of this type id on any level; need-flag owner not resolved
+FW Sprites.rsrc	PICT	2825	*Robed Body 2	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:360~,BoxSprite.swift:530~	d?	MED	cached sheet; no placement of this type id on any level; need-flag owner not resolved
+FW Sprites.rsrc	PICT	2826	*Armored Body 1	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:360~,BoxSprite.swift:530~	a (later levels [5, 55])	MED	
+FW Sprites.rsrc	PICT	2827	*Armored Body 2	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:360~,BoxSprite.swift:530~	a (later levels [21])	MED	
+FW Sprites.rsrc	PICT	2828	*Armor Rubbish 1	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:360~,BoxSprite.swift:530~	a (later levels [70])	MED	
+FW Sprites.rsrc	PICT	2829	*Armor Rubbish 2	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:360~,BoxSprite.swift:530~	a (later levels [5, 11, 55, 70])	MED	
+FW Sprites.rsrc	PICT	2830	*Armor Rubbish 3	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:360~,BoxSprite.swift:530~	a (later levels [70])	MED	
+FW Sprites.rsrc	PICT	2831	*Armor Rubbish 3	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:360~,BoxSprite.swift:530~	a (later levels [11, 21, 70])	MED	
+FW Sprites.rsrc	PICT	2832	*Pedestal	.InitBoxSprite @ 1006aa5c	L1-4 (cached; type placed)	yes LevelRun.swift:1076,SetupFaces.swift:203	used	HIGH	
+FW Sprites.rsrc	PICT	2833	*Grave 1	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:360~,BoxSprite.swift:370	a (later levels [21])	MED	
+FW Sprites.rsrc	PICT	2834	*Grave 2	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:360~,HitPlayerSprite.swift:319~	a (later levels [21])	MED	
+FW Sprites.rsrc	PICT	2835	*Grave 3	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:360~,BoxSprite.swift:530~	d?	MED	cached sheet; no placement of this type id on any level; need-flag owner not resolved
+FW Sprites.rsrc	PICT	2836	*Grave 4	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:360~,BoxSprite.swift:373	a (later levels [21])	MED	
+FW Sprites.rsrc	PICT	2837	*Straw Rug	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:360~,BoxSprite.swift:530~	a (later levels [10, 11])	MED	
+FW Sprites.rsrc	PICT	2838	*Purply Rug	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:360~,BoxSprite.swift:530~	a (later levels [62])	MED	
+FW Sprites.rsrc	PICT	2839	*Skull Rug	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:360~,BoxSprite.swift:530~	a (later levels [51, 62])	MED	
+FW Sprites.rsrc	PICT	2840	*Manditraki Pillar	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:360~,BoxSprite.swift:530~	a (later levels [5, 62])	MED	
+FW Sprites.rsrc	PICT	2841	*Gray Pedestal	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:360~,BoxSprite.swift:530~	a (later levels [5, 10, 15, 18, 22, 25])	MED	
+FW Sprites.rsrc	PICT	2842	*Book pile	.InitBoxSprite @ 1006aa5c	L1-4 (cached; type placed)	yes LevelRun.swift:1077,SetupFaces.swift:157	used	HIGH	
+FW Sprites.rsrc	PICT	2843	*Cobweb Chair	.InitBoxSprite @ 1006aa5c	L1-4 (cached; type placed)	yes LevelRun.swift:1077,SetupFaces.swift:203	used	HIGH	
+FW Sprites.rsrc	PICT	2844	*Cobweb Chair 2	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:360~,BoxSprite.swift:530~	d?	MED	cached sheet; no placement of this type id on any level; need-flag owner not resolved
+FW Sprites.rsrc	PICT	2845	*Cobweb Table	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:360~,BoxSprite.swift:530~	d?	MED	cached sheet; no placement of this type id on any level; need-flag owner not resolved
+FW Sprites.rsrc	PICT	2846	*Grassy lightboulder	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:360~,BoxSprite.swift:530~	a (later levels [10])	MED	
+FW Sprites.rsrc	PICT	2847	*Grassy Lightboulder 2	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:360~,BoxSprite.swift:530~	a (later levels [10])	MED	
+FW Sprites.rsrc	PICT	2848	*Scraggly Vines	.InitBoxSprite @ 1006aa5c	L1-4 (cached; type placed)	yes LevelRun.swift:1078,SetupFaces.swift:183	used	HIGH	
+FW Sprites.rsrc	PICT	2849	*Scraggly Vines 2	.InitBoxSprite @ 1006aa5c	L1-4 (cached; type placed)	yes LevelRun.swift:1078,SetupFaces.swift:183	used	HIGH	
+FW Sprites.rsrc	PICT	2850		.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	yes SetupFaces.swift:246~	used	MED	
+FW Sprites.rsrc	PICT	2851		.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	yes SetupFaces.swift:246~	used	MED	
+FW Sprites.rsrc	PICT	2852		.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	yes SetupFaces.swift:246~	used	MED	
+FW Sprites.rsrc	PICT	2853		.InitBoxSprite @ 1006aa5c	L1-4 (cached; type placed)	yes LevelRun.swift:1082,SetupFaces.swift:157,SetupFaces.swift:246~	used	HIGH	
+FW Sprites.rsrc	PICT	2854		.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	yes SetupFaces.swift:246~	used	MED	
+FW Sprites.rsrc	PICT	2855		.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	yes SetupFaces.swift:246~	used	MED	
+FW Sprites.rsrc	PICT	2856		.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	yes SetupFaces.swift:246~	used	MED	
+FW Sprites.rsrc	PICT	2857		.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	yes SetupFaces.swift:246~	used	MED	
+FW Sprites.rsrc	PICT	2858		.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	yes SetupFaces.swift:246~	used	MED	
+FW Sprites.rsrc	PICT	2859		.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	yes SetupFaces.swift:246~	used	MED	
+FW Sprites.rsrc	PICT	2860		.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	yes SetupFaces.swift:246~	used	MED	
+FW Sprites.rsrc	PICT	2861		.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	yes SetupFaces.swift:246~	used	MED	
+FW Sprites.rsrc	PICT	2862		.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	yes SetupFaces.swift:246~	used	MED	
+FW Sprites.rsrc	PICT	2863		.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	yes SetupFaces.swift:246~	used	MED	
+FW Sprites.rsrc	PICT	2864		.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	yes SetupFaces.swift:246~	used	MED	
+FW Sprites.rsrc	PICT	2865		.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	yes SetupFaces.swift:246~	used	MED	
+FW Sprites.rsrc	PICT	2866		.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	yes SetupFaces.swift:246~	used	MED	
+FW Sprites.rsrc	PICT	2867		.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	yes SetupFaces.swift:246~	used	MED	
+FW Sprites.rsrc	PICT	2868		.InitBoxSprite @ 1006aa5c	L1-4 (cached; type placed)	yes LevelRun.swift:1082,SetupFaces.swift:204,SetupFaces.swift:246~	used	HIGH	
+FW Sprites.rsrc	PICT	2869		.InitBoxSprite @ 1006aa5c	L1-4 (cached; type placed)	yes LevelRun.swift:1083,SetupFaces.swift:204,SetupFaces.swift:246~	used	HIGH	
+FW Sprites.rsrc	PICT	2870		.InitBoxSprite @ 1006aa5c	L1-4 (cached; type placed)	yes LevelRun.swift:1084,SetupFaces.swift:176	used	HIGH	
+FW Sprites.rsrc	PICT	2871		.InitBoxSprite @ 1006aa5c	L1-4 (cached; type placed)	yes LevelRun.swift:1084,SetupFaces.swift:176	used	HIGH	
+FW Sprites.rsrc	PICT	2872		.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:397~,BoxSprite.swift:530~	a (later levels [11])	MED	
+FW Sprites.rsrc	PICT	2873		.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:397~,BoxSprite.swift:530~	a (later levels [11])	MED	
+FW Sprites.rsrc	PICT	2874		.InitBoxSprite @ 1006aa5c	L1-4 (cached; type placed)	yes LevelRun.swift:1085,SetupFaces.swift:176	used	HIGH	
+FW Sprites.rsrc	PICT	2875		.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:397~,BoxSprite.swift:530~	a (later levels [11])	MED	
+FW Sprites.rsrc	PICT	2876		.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:397~,BoxSprite.swift:530~	a (later levels [11])	MED	
+FW Sprites.rsrc	PICT	2877		.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:397~,BoxSprite.swift:530~	d?	MED	cached sheet; no placement of this type id on any level; need-flag owner not resolved
+FW Sprites.rsrc	PICT	2878		.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:397~,BoxSprite.swift:530~	d?	MED	cached sheet; no placement of this type id on any level; need-flag owner not resolved
+FW Sprites.rsrc	PICT	2879		.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:397~,BoxSprite.swift:530~	d?	MED	cached sheet; no placement of this type id on any level; need-flag owner not resolved
+FW Sprites.rsrc	PICT	2880		.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:397~,BoxSprite.swift:530~	d?	MED	cached sheet; no placement of this type id on any level; need-flag owner not resolved
+FW Sprites.rsrc	PICT	2881		.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:397~,BoxSprite.swift:530~	d?	MED	cached sheet; no placement of this type id on any level; need-flag owner not resolved
+FW Sprites.rsrc	PICT	2882		.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:397~,BoxSprite.swift:530~	d?	MED	cached sheet; no placement of this type id on any level; need-flag owner not resolved
+FW Sprites.rsrc	PICT	2883		.InitBoxSprite @ 1006aa5c	L1-4 (cached; type placed)	yes LevelRun.swift:1085,SetupFaces.swift:176	used	HIGH	
+FW Sprites.rsrc	PICT	2884		.InitBoxSprite @ 1006aa5c	L1-4 (cached; type placed)	yes LevelRun.swift:1086,SetupFaces.swift:203	used	HIGH	
+FW Sprites.rsrc	PICT	2885		.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:397~,BoxSprite.swift:530~	d?	MED	cached sheet; no placement of this type id on any level; need-flag owner not resolved
+FW Sprites.rsrc	PICT	2890		.InitBackgroundSprite @100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	weak-literal SetupFaces.swift:429,SpriteClassTable.swift:77	a (later levels [20])	MED	
+FW Sprites.rsrc	PICT	2891	*Cloud 2	.InitBackgroundSprite @100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	weak-literal BackgroundSprite.swift:116~	a (later levels [20])	MED	
+FW Sprites.rsrc	PICT	2892	*Cloud 3	.InitBackgroundSprite @100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	weak-literal BackgroundSprite.swift:116~	a (later levels [20])	MED	
+FW Sprites.rsrc	PICT	2893	*Cloud 4	.InitBackgroundSprite @100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	weak-literal BackgroundSprite.swift:116~	a (later levels [20])	MED	
+FW Sprites.rsrc	PICT	2899	*Cloud 1	no reference in either dump	never	weak-literal SpriteClassTable.swift:77	n	MED	
+FW Sprites.rsrc	PICT	2900	Passage	.InitBackgroundSprite @100711f0	L1-4 (cached; type placed)	yes BackgroundSprite.swift:386,LevelRun.swift:1090,SetupFaces.swift:227	used	HIGH	
+FW Sprites.rsrc	PICT	2901	Passage (Ornate)	.InitBackgroundSprite @100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	yes BackgroundSprite.swift:388,SetupFaces.swift:227	used	MED	
+FW Sprites.rsrc	PICT	2902	Sign	.InitBoxSprite @ 1006aa5c	boot (class placed L1-4)	yes BootFaces.swift:72,BootFaces.swift:72~,SetupFaces.swift:157	used	HIGH	
+FW Sprites.rsrc	PICT	2903	Book	.InitBoxSprite @ 1006aa5c	boot (class placed L1-4)	yes BootFaces.swift:72~	used	HIGH	
+FW Sprites.rsrc	PICT	2904		.InitBoxSprite @ 1006aa5c	boot (class placed L1-4)	yes BootFaces.swift:72~	used	HIGH	
+FW Sprites.rsrc	PICT	2905	Wall Map	.InitBoxSprite @ 1006aa5c	boot (class placed L1-4)	yes BootFaces.swift:72~	used	HIGH	
+FW Sprites.rsrc	PICT	2906	Steel Plaque	.InitBoxSprite @ 1006aa5c	boot (class placed L1-4)	yes BootFaces.swift:72~	used	HIGH	
+FW Sprites.rsrc	PICT	2907		.InitBoxSprite @ 1006aa5c	boot (class placed L1-4)	yes BootFaces.swift:72~,HitPlayerSprite.swift:282	used	HIGH	
+FW Sprites.rsrc	PICT	2910		.InitBoxSprite @1006aa5c	boot (class placed L1-4)	yes BootFaces.swift:70,BoxSprite.swift:976,SetupFaces.swift:157	used	HIGH	
+FW Sprites.rsrc	PICT	2915	Door right	no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	2920	Bale of hay	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal SpriteClassTable.swift:83,BoxSprite.swift:530~	d?	MED	cached sheet; no placement of this type id on any level; need-flag owner not resolved
+FW Sprites.rsrc	PICT	2921	Crate	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:530~,BoxSprite.swift:351	a (later levels [21, 30])	MED	
+FW Sprites.rsrc	PICT	2922	Barrel	.InitBoxSprite @ 1006aa5c	L1-4 (cached; type placed)	yes LevelRun.swift:1087,SetupFaces.swift:158	used	HIGH	
+FW Sprites.rsrc	PICT	2923	Barstool	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:353,BoxSprite.swift:530~	a (later levels [31])	MED	
+FW Sprites.rsrc	PICT	2924	Wooden chair	.InitBoxSprite @ 1006aa5c	L1-4 (cached; type placed)	yes LevelRun.swift:1087,SetupFaces.swift:158	used	HIGH	
+FW Sprites.rsrc	PICT	2925	Steel chair	.InitBoxSprite @ 1006aa5c	L1-4 (cached; type placed)	yes LevelRun.swift:1088,SetupFaces.swift:183	used	HIGH	
+FW Sprites.rsrc	PICT	2926	Steel Table	.InitBoxSprite @ 1006aa5c	L1-4 (cached; type placed)	yes LevelRun.swift:1088,SetupFaces.swift:183	used	HIGH	
+FW Sprites.rsrc	PICT	2927	Wooden table	.InitBoxSprite @ 1006aa5c	L1-4 (cached; type placed)	yes LevelRun.swift:1089,SetupFaces.swift:158	used	HIGH	
+FW Sprites.rsrc	PICT	2928	Fancy table	.InitBoxSprite @ 1006aa5c	L1-4 (cached; type placed)	yes LevelRun.swift:1089,SetupFaces.swift:183	used	HIGH	
+FW Sprites.rsrc	PICT	2929		.InitBoxSprite @1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal SetupFaces.swift:437,BoxSprite.swift:432	d?	MED	cached sheet; no placement of this type id on any level; need-flag owner not resolved
+FW Sprites.rsrc	PICT	2930	Mine cart	.InitBoxSprite @1006aa5c	L1-4 (cached; type placed)	yes LevelRun.swift:1059	used	HIGH	
+FW Sprites.rsrc	PICT	2931	minecar wheel	.InitBoxSprite @1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	yes LevelRun.swift:1059	used	MED	
+FW Sprites.rsrc	PICT	2932		.InitBoxSprite @1006aa5c	boot (class placed L1-4)	yes BootFaces.swift:73,SetupFaces.swift:233	used	HIGH	
+FW Sprites.rsrc	PICT	2933		.InitBoxSprite @1006aa5c	boot (class placed L1-4)	yes BootFaces.swift:73,SetupFaces.swift:184,SetupFaces.swift:436	used	HIGH	
+FW Sprites.rsrc	PICT	2940		.InitBoxSprite @1006aa5c	boot (class placed L1-4)	yes BootFaces.swift:74,SetupFaces.swift:411	used	HIGH	
+FW Sprites.rsrc	PICT	2941		.InitBoxSprite @1006aa5c	boot (class placed L1-4)	yes BootFaces.swift:74,SetupFaces.swift:189,SetupFaces.swift:409	used	HIGH	
+FW Sprites.rsrc	PICT	2951	Geroditus	.InitBoxSprite @ 1006aa5c	L1-4 (cached; type placed)	yes LevelRun.swift:1079,SetupFaces.swift:158	used	HIGH	
+FW Sprites.rsrc	PICT	2952	merchant	.InitBoxSprite @ 1006aa5c	L1-4 (cached; type placed)	yes LevelRun.swift:1079,SetupFaces.swift:158	used	HIGH	
+FW Sprites.rsrc	PICT	2953	Limping Habnabit	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:404~,HitPlayerSprite.swift:292~	a (later levels [40])	MED	
+FW Sprites.rsrc	PICT	2954	Sitting Habnabit	.InitBoxSprite @ 1006aa5c	L1-4 (cached; type placed)	yes LevelRun.swift:1080,SetupFaces.swift:183	used	HIGH	
+FW Sprites.rsrc	PICT	2955	Nimbo	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:404~,HitPlayerSprite.swift:292~	a (later levels [11])	MED	
+FW Sprites.rsrc	PICT	2956	Dimbo	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:404~,HitPlayerSprite.swift:292~	a (later levels [22, 70])	MED	
+FW Sprites.rsrc	PICT	2957	Hooded Figure	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:535,BoxSprite.swift:404~	a (later levels [62, 70])	MED	
+FW Sprites.rsrc	PICT	2958	Taryn	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:404~,HitPlayerSprite.swift:292~	d?	MED	cached sheet; no placement of this type id on any level; need-flag owner not resolved
+FW Sprites.rsrc	PICT	2959	Sara	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:404~,HitPlayerSprite.swift:292~	d?	MED	cached sheet; no placement of this type id on any level; need-flag owner not resolved
+FW Sprites.rsrc	PICT	2960	Forest Nymph Matriarch	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:404~,HitPlayerSprite.swift:292~	d?	MED	cached sheet; no placement of this type id on any level; need-flag owner not resolved
+FW Sprites.rsrc	PICT	2961	Blue Short Hooded	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:404~,HitPlayerSprite.swift:292~	d?	MED	cached sheet; no placement of this type id on any level; need-flag owner not resolved
+FW Sprites.rsrc	PICT	2962	Gray-Robed Sitting Habnabit	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:404~,HitPlayerSprite.swift:292~	a (later levels [21])	MED	
+FW Sprites.rsrc	PICT	2963	Gray-Robed Short Hooded	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:404~,HitPlayerSprite.swift:292~	a (later levels [70])	MED	
+FW Sprites.rsrc	PICT	2964	Hooded Bluegray Merchant	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:404~,HitPlayerSprite.swift:292~	a (later levels [70])	MED	
+FW Sprites.rsrc	PICT	2965	Left Bluebrown merchant	.InitBoxSprite @ 1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:404~,HitPlayerSprite.swift:292~	a (later levels [31])	MED	
+FW Sprites.rsrc	PICT	3000	HPassage, 1 tile	.InitBackgroundSprite @ 100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	yes SetupFaces.swift:247~	used	MED	
+FW Sprites.rsrc	PICT	3001	HPassage, 2 tiles	.InitBackgroundSprite @ 100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	yes SetupFaces.swift:247~	used	MED	
+FW Sprites.rsrc	PICT	3002	HPassage, 3 tiles	.InitBackgroundSprite @ 100711f0	L1-4 (cached; type placed)	yes LevelRun.swift:1092,SetupFaces.swift:173,SetupFaces.swift:247~	used	HIGH	
+FW Sprites.rsrc	PICT	3003	HPassage, 4 tiles	.InitBackgroundSprite @ 100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	yes SetupFaces.swift:247~	used	MED	
+FW Sprites.rsrc	PICT	3004	HPassage, 5 tiles	.InitBackgroundSprite @ 100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	yes SetupFaces.swift:247~	used	MED	
+FW Sprites.rsrc	PICT	3005	HPassage, 6 tiles	.InitBackgroundSprite @ 100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	yes SetupFaces.swift:247~	used	MED	
+FW Sprites.rsrc	PICT	3006	HPassage, 7 tiles	no reference in either dump	never	weak-literal BackgroundSprite.swift:158~,BackgroundSprite.swift:216~	n	MED	
+FW Sprites.rsrc	PICT	3007	HPassage, 8 tiles	no reference in either dump	never	weak-literal BackgroundSprite.swift:158~,BackgroundSprite.swift:216~	n	MED	
+FW Sprites.rsrc	PICT	3008	HPassage, 9 tiles	no reference in either dump	never	weak-literal BackgroundSprite.swift:158~,BackgroundSprite.swift:216~	n	MED	
+FW Sprites.rsrc	PICT	3009	HPassage, 10 tiles	no reference in either dump	never	weak-literal BackgroundSprite.swift:158~,BackgroundSprite.swift:216~	n	MED	
+FW Sprites.rsrc	PICT	3050	$Hang Glider	.InitBonusSprite @1005d4f0	boot (class placed L1-4)	yes BonusSprite.swift:208,BonusSprite.swift:209,BonusSprite.swift:30	used	HIGH	
+FW Sprites.rsrc	PICT	3060	!Rotating sword	.InitBackgroundSprite @100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	weak-literal BackgroundSprite.swift:116,SpriteClassTable.swift:88	a (later levels [20, 22, 30, 62])	MED	
+FW Sprites.rsrc	PICT	3070		.InitBoxSprite @1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	weak-literal BoxSprite.swift:432,SpriteClassTable.swift:44	a (later levels [31])	MED	
+FW Sprites.rsrc	PICT	3071		.InitBoxSprite @1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	no	d?	MED	cached sheet; no placement of this type id on any level; need-flag owner not resolved
+FW Sprites.rsrc	PICT	3072		.InitBoxSprite @1006aa5c	L1-4? (cached; class Box placed, need-flag per type not resolved)	yes RopeSprite.swift:108,TableRequests.swift:381	used	MED	
+FW Sprites.rsrc	PICT	3080	*Tree, slight tilt	.InitBackgroundSprite @ 100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	yes SetupFaces.swift:246~	used	MED	
+FW Sprites.rsrc	PICT	3081	*Tree, normal	.InitBackgroundSprite @ 100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	yes SetupFaces.swift:246~	used	MED	
+FW Sprites.rsrc	PICT	3082	*Tree, squat	.InitBackgroundSprite @ 100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	yes SetupFaces.swift:246~	used	MED	
+FW Sprites.rsrc	PICT	3083	*Tree, aspen	.InitBackgroundSprite @ 100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	yes SetupFaces.swift:246~	used	MED	
+FW Sprites.rsrc	PICT	3084	*Tree, bare, fullspiky	.InitBackgroundSprite @ 100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	yes SetupFaces.swift:246~	used	MED	
+FW Sprites.rsrc	PICT	3085	*Tree, bare, semibroken	.InitBackgroundSprite @ 100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	yes SetupFaces.swift:246~	used	MED	
+FW Sprites.rsrc	PICT	3086	*Tree, bare, jagged trunk	.InitBackgroundSprite @ 100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	yes SetupFaces.swift:246~	used	MED	
+FW Sprites.rsrc	PICT	3087	*Tree, horizontal trunk	.InitBackgroundSprite @ 100711f0	L1-4? (cached; class Background placed, need-flag per type not resolved)	yes SetupFaces.swift:246~	used	MED	
+FW Sprites.rsrc	PICT	3090	$Crate - bonus	.InitBoxSprite @1006aa5c	boot (class placed L1-4)	yes BootFaces.swift:70,SetupFaces.swift:157	used	HIGH	
+FW Sprites.rsrc	PICT	3091	$Crate - question mark	.InitBoxSprite @1006aa5c	boot (class placed L1-4)	yes BootFaces.swift:70,SetupFaces.swift:189	used	HIGH	
+FW Sprites.rsrc	PICT	3092	$Crate - exclamation point	.InitBoxSprite @1006aa5c	boot (class placed L1-4)	yes BootFaces.swift:71,SetupFaces.swift:157	used	HIGH	
+FW Sprites.rsrc	PICT	3099		.InitEffectSprite @10060378	boot (class placed L1-4)	yes BootFaces.swift:50	used	HIGH	
+FW Sprites.rsrc	PICT	3100	Standing Candelabra, Regular	.InitBonusSprite @ 1005d4f0	boot (class placed L1-4)	yes BonusSprite.swift:32,BonusSprite.swift:32~,BootFaces.swift:59	used	HIGH	
+FW Sprites.rsrc	PICT	3101	Standing Candelabra, Spiky	.InitBonusSprite @ 1005d4f0	boot (class placed L1-4)	yes BonusSprite.swift:32~,BootFaces.swift:59~	used	HIGH	
+FW Sprites.rsrc	PICT	3102	Standing Candelabra, Wooden	.InitBonusSprite @ 1005d4f0	boot (class placed L1-4)	yes BonusSprite.swift:32~,BootFaces.swift:59~	used	HIGH	
+FW Sprites.rsrc	PICT	3103	Magic Tentacle Light	.InitBonusSprite @ 1005d4f0	boot (class placed L1-4)	yes BonusSprite.swift:32~,BootFaces.swift:59~	used	HIGH	
+FW Sprites.rsrc	PICT	3104	Wall Candelabra, Gold	.InitBonusSprite @ 1005d4f0	boot (class placed L1-4)	yes BonusSprite.swift:32~,BootFaces.swift:59~	used	HIGH	
+FW Sprites.rsrc	PICT	3105	Wall Candelabra, Silver	.InitBonusSprite @ 1005d4f0	boot (class placed L1-4)	yes BonusSprite.swift:32~,BootFaces.swift:59~	used	HIGH	
+FW Sprites.rsrc	PICT	3106		.InitBonusSprite @ 1005d4f0	boot (class placed L1-4)	yes BonusSprite.swift:32~,BootFaces.swift:59~	used	HIGH	
+FW Sprites.rsrc	PICT	3107	Glowing Bug Light	.InitBonusSprite @ 1005d4f0	boot (class placed L1-4)	yes BonusSprite.swift:32~,BootFaces.swift:59~	used	HIGH	
+FW Sprites.rsrc	PICT	3108	Horned Skull Light	.InitBonusSprite @ 1005d4f0	boot (class placed L1-4)	yes BonusSprite.swift:32~,BootFaces.swift:59~	used	HIGH	
+FW Sprites.rsrc	PICT	3201		.InitBonusSprite @ 1005d4f0	boot (class placed L1-4)	yes BootFaces.swift:59~	used	HIGH	
+FW Sprites.rsrc	PICT	3202	Gold Key	.InitBonusSprite @ 1005d4f0	boot (class placed L1-4)	yes BootFaces.swift:59~	used	HIGH	
+FW Sprites.rsrc	PICT	3203	Platinum Key	.InitBonusSprite @ 1005d4f0	boot (class placed L1-4)	yes BootFaces.swift:59~	used	HIGH	
+FW Sprites.rsrc	PICT	3204	magic ptn	.InitBonusSprite @ 1005d4f0	boot (class placed L1-4)	yes BootFaces.swift:59~,SetupFaces.swift:152	used	HIGH	
+FW Sprites.rsrc	PICT	3205		.InitBonusSprite @ 1005d4f0	boot (class placed L1-4)	yes BootFaces.swift:59~,SetupFaces.swift:183	used	HIGH	
+FW Sprites.rsrc	PICT	3206	Fire seeds	.InitBonusSprite @ 1005d4f0	boot (class placed L1-4)	yes BootFaces.swift:59~	used	HIGH	
+FW Sprites.rsrc	PICT	3207	$Locket	.InitBonusSprite @ 1005d4f0	boot (class placed L1-4)	yes BootFaces.swift:59~	used	HIGH	
+FW Sprites.rsrc	PICT	3208	$Hammer	.InitBonusSprite @ 1005d4f0	boot (class placed L1-4)	yes BootFaces.swift:59~	used	HIGH	
+FW Sprites.rsrc	PICT	3209	$Poppyseed Muffin	.InitBonusSprite @ 1005d4f0	boot (class placed L1-4)	yes BootFaces.swift:59~	used	HIGH	
+FW Sprites.rsrc	PICT	3210	$Algernon Piece	.InitBonusSprite @ 1005d4f0	boot (class placed L1-4)	yes BootFaces.swift:59~	used	HIGH	
+FW Sprites.rsrc	PICT	3211	$Algernon Frame	.InitBonusSprite @ 1005d4f0	boot (class placed L1-4)	yes BootFaces.swift:59~	used	HIGH	
+FW Sprites.rsrc	PICT	3212	$Algernon	.InitBonusSprite @ 1005d4f0	boot (class placed L1-4)	yes BootFaces.swift:59~	used	HIGH	
+FW Sprites.rsrc	PICT	3213	$Gwendolyn	.InitBonusSprite @ 1005d4f0	boot (class placed L1-4)	yes BootFaces.swift:59~	used	HIGH	
+FW Sprites.rsrc	PICT	3214	$Wooden Shield	.InitBonusSprite @ 1005d4f0	boot (class placed L1-4)	yes BootFaces.swift:59~	used	HIGH	
+FW Sprites.rsrc	PICT	3215	$Magic Shield	.InitBonusSprite @ 1005d4f0	boot (class placed L1-4)	yes BootFaces.swift:59~	used	HIGH	
+FW Sprites.rsrc	PICT	3216	$Gold Ring	.InitBonusSprite @ 1005d4f0	boot (class placed L1-4)	yes BootFaces.swift:59~	used	HIGH	
+FW Sprites.rsrc	PICT	3217	$Green Ring	.InitBonusSprite @ 1005d4f0	boot (class placed L1-4)	yes BootFaces.swift:59~	used	HIGH	
+FW Sprites.rsrc	PICT	3218	$Ice Pick	.InitBonusSprite @ 1005d4f0	boot (class placed L1-4)	yes BootFaces.swift:59~	used	HIGH	
+FW Sprites.rsrc	PICT	3219	$Multiplier Crystal	.InitBonusSprite @ 1005d4f0	boot (class placed L1-4)	yes BootFaces.swift:59~	used	HIGH	
+FW Sprites.rsrc	PICT	3220	$Light Orb	.InitBonusSprite @ 1005d4f0	boot (class placed L1-4)	yes BootFaces.swift:59~	used	HIGH	
+FW Sprites.rsrc	PICT	3221	$Vorpal Dirk	.InitBonusSprite @ 1005d4f0	boot (class placed L1-4)	yes BootFaces.swift:59~	used	HIGH	
+FW Sprites.rsrc	PICT	3222	$Xichron	.InitBonusSprite @ 1005d4f0	boot (class placed L1-4)	yes BootFaces.swift:59~	used	HIGH	
+FW Sprites.rsrc	PICT	3223	$Rez Necklace	.InitBonusSprite @ 1005d4f0	boot (class placed L1-4)	yes BootFaces.swift:59~	used	HIGH	
+FW Sprites.rsrc	PICT	3224	$Fire Charm	.InitBonusSprite @ 1005d4f0	boot (class placed L1-4)	yes BootFaces.swift:59~	used	HIGH	
+FW Sprites.rsrc	PICT	3225	$Mist Potion	.InitBonusSprite @ 1005d4f0	boot (class placed L1-4)	yes BootFaces.swift:59~	used	HIGH	
+FW Sprites.rsrc	PICT	3226		.InitBonusSprite @ 1005d4f0	boot (class placed L1-4)	yes BootFaces.swift:59~	used	HIGH	
+FW Sprites.rsrc	PICT	3250		.InitBoxSprite @1006aa5c	boot (class placed L1-4)	yes BootFaces.swift:70,GroundCeilingEffects.swift:369	used	HIGH	
+FW Sprites.rsrc	PICT	3999		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	4000		.InitConversation @10078bd0	boot→L1-4	yes HandleKeys.swift:520,HandleKeys.swift:524	used	HIGH	
+FW Sprites.rsrc	PICT	4001		Mcnv 201 portrait (.DrawConvPic) | Mcnv 202 portrait (.DrawConvPic) | Mcnv 203 portrait (.DrawConvPic) | Mcnv 205 portrait (.DrawConvPic) | Mcnv 206 portrait (.DrawConvPic) | Mcnv 208 portrait (.DrawC	L1-4 (conv);later levels (conv 202);later levels (conv 206);later levels (conv 208);later levels (conv 209);later levels (conv 212);later levels (conv 213);later levels (conv 214);later levels (conv 221);later levels (conv 252);later levels (conv 281);later levels (conv 282);later levels (conv 283);later levels (conv 300);later levels (conv 401)	yes ConversationRun (portrait id read from Mcnv)	used	HIGH	
+FW Sprites.rsrc	PICT	4002		Mcnv 200 portrait (.DrawConvPic) | Mcnv 204 portrait (.DrawConvPic)	L1-4 (conv);later levels (conv 204)	yes ConversationRun (portrait id read from Mcnv)	used	HIGH	
+FW Sprites.rsrc	PICT	4003		Mcnv 205 portrait (.DrawConvPic) | Mcnv 207 portrait (.DrawConvPic) | Mcnv 211 portrait (.DrawConvPic) | Mcnv 400 portrait (.DrawConvPic)	L1-4 (conv);later levels (conv 207);later levels (conv 211)	yes ConversationRun (portrait id read from Mcnv)	used	HIGH	
+FW Sprites.rsrc	PICT	4004		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	4005		Mcnv 208 portrait (.DrawConvPic)	later levels (conv 208)	yes ConversationRun (portrait id read from Mcnv)	used	HIGH	
+FW Sprites.rsrc	PICT	4006		Mcnv 203 portrait (.DrawConvPic) | Mcnv 210 portrait (.DrawConvPic)	L1-4 (conv);later levels (conv 210)	yes ConversationRun (portrait id read from Mcnv)	used	HIGH	
+FW Sprites.rsrc	PICT	4007		Mcnv 201 portrait (.DrawConvPic)	L1-4 (conv)	yes ConversationRun (portrait id read from Mcnv)	used	HIGH	
+FW Sprites.rsrc	PICT	4008		Mcnv 202 portrait (.DrawConvPic)	later levels (conv 202)	yes ConversationRun (portrait id read from Mcnv)	used	HIGH	
+FW Sprites.rsrc	PICT	4009		Mcnv 401 portrait (.DrawConvPic)	later levels (conv 401)	yes ConversationRun (portrait id read from Mcnv)	used	HIGH	
+FW Sprites.rsrc	PICT	4010	Taryn	no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	4011	Sara	no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	4012	Matriarch	no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	4013	Nimbo	Mcnv 206 portrait (.DrawConvPic)	later levels (conv 206)	yes ConversationRun (portrait id read from Mcnv)	used	HIGH	
+FW Sprites.rsrc	PICT	4014	Dimbo	Mcnv 220 portrait (.DrawConvPic) | Mcnv 221 portrait (.DrawConvPic)	later levels (conv 220);later levels (conv 221)	yes ConversationRun (portrait id read from Mcnv)	used	HIGH	
+FW Sprites.rsrc	PICT	4015	Andrew Hunter	Mcnv 214 portrait (.DrawConvPic)	later levels (conv 214)	yes ConversationRun (portrait id read from Mcnv)	used	HIGH	
+FW Sprites.rsrc	PICT	4016		Mcnv 250 portrait (.DrawConvPic) | Mcnv 251 portrait (.DrawConvPic)	later levels (conv 250);later levels (conv 251)	yes ConversationRun (portrait id read from Mcnv)	used	HIGH	
+FW Sprites.rsrc	PICT	4017		Mcnv 209 portrait (.DrawConvPic)	later levels (conv 209)	yes ConversationRun (portrait id read from Mcnv)	used	HIGH	
+FW Sprites.rsrc	PICT	4018		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	4019		Mcnv 252 portrait (.DrawConvPic)	later levels (conv 252)	yes ConversationRun (portrait id read from Mcnv)	used	HIGH	
+FW Sprites.rsrc	PICT	4020		.SimpleConv sign portrait (.HitPlayerSprite 2902 sign)	L1-4 (sign L1,L2)	yes HitPlayerSprite.swift:297	used	HIGH	
+FW Sprites.rsrc	PICT	4021		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	4022		Mcnv 300 portrait (.DrawConvPic)	later levels (conv 300)	yes ConversationRun (portrait id read from Mcnv)	used	HIGH	
+FW Sprites.rsrc	PICT	4023		Mcnv 212 portrait (.DrawConvPic)	later levels (conv 212)	yes ConversationRun (portrait id read from Mcnv)	used	HIGH	
+FW Sprites.rsrc	PICT	4024		Mcnv 260 portrait (.DrawConvPic) | Mcnv 261 portrait (.DrawConvPic)	later levels (conv 260);later levels (conv 261)	yes ConversationRun (portrait id read from Mcnv)	used	HIGH	
+FW Sprites.rsrc	PICT	4025		Mcnv 280 portrait (.DrawConvPic) | Mcnv 281 portrait (.DrawConvPic) | Mcnv 282 portrait (.DrawConvPic) | Mcnv 283 portrait (.DrawConvPic)	later levels (conv 280);later levels (conv 281);later levels (conv 282);later levels (conv 283)	yes ConversationRun (portrait id read from Mcnv)	used	HIGH	
+FW Sprites.rsrc	PICT	4030		Mcnv 213 portrait (.DrawConvPic)	later levels (conv 213)	yes ConversationRun (portrait id read from Mcnv)	used	HIGH	
+FW Sprites.rsrc	PICT	4031		Mcnv 213 portrait (.DrawConvPic)	later levels (conv 213)	yes ConversationRun (portrait id read from Mcnv)	used	HIGH	
+FW Sprites.rsrc	PICT	4032		Mcnv 213 portrait (.DrawConvPic)	later levels (conv 213)	yes ConversationRun (portrait id read from Mcnv)	used	HIGH	
+FW Sprites.rsrc	PICT	4033		Mcnv 213 portrait (.DrawConvPic)	later levels (conv 213)	yes ConversationRun (portrait id read from Mcnv)	used	HIGH	
+FW Titles.rsrc	PICT	4600		.CreditScreen via .Victory/.Credits | .Victory @1000ac3c	later (end of game)	yes StageScreens.swift:238,StageScreens.swift:248	used	HIGH	
+FW Titles.rsrc	PICT	4601		.CreditScreen via .Victory/.Credits | .Victory @1000ac3c	later (end of game)	no	a (end of game)	HIGH	
+FW Titles.rsrc	PICT	4602		.CreditScreen via .Victory/.Credits | .Victory @1000ac3c	later (end of game)	no	a (end of game)	HIGH	
+FW Titles.rsrc	PICT	4603		.CreditScreen via .Victory/.Credits | .Victory @1000ac3c	later (end of game)	no	a (end of game)	HIGH	
+FW Titles.rsrc	PICT	4604		.CreditScreen via .Victory/.Credits | .Victory @1000ac3c	later (end of game)	no	a (end of game)	HIGH	
+FW Titles.rsrc	PICT	4605		.CreditScreen via .Victory/.Credits | .Victory @1000ac3c	later (end of game)	no	a (end of game)	HIGH	
+FW Titles.rsrc	PICT	4606		.CreditScreen via .Victory/.Credits | .Victory @1000ac3c	later (end of game)	no	a (end of game)	HIGH	
+FW Titles.rsrc	PICT	4607		.CreditScreen via .Victory/.Credits | .Victory @1000ac3c	later (end of game)	no	a (end of game)	HIGH	
+FW Titles.rsrc	PICT	4610		.ChapterScreen @ 10009b9c (n*10+0x11f8) | chapter screen .ChapterScreen	L1;L1-4 (chapter card)	yes StageScreens chapter formula (n*10+0x11f8, clut n+0x118)	used	HIGH	
+FW Titles.rsrc	PICT	4620		.ChapterScreen @ 10009b9c (n*10+0x11f8) | chapter screen .ChapterScreen	L1-4 (chapter card);later levels [10]	yes StageScreens chapter formula (n*10+0x11f8, clut n+0x118)	used	HIGH	
+FW Titles.rsrc	PICT	4630		.ChapterScreen @ 10009b9c (n*10+0x11f8) | chapter screen .ChapterScreen	L1-4 (chapter card);later levels [40]	yes StageScreens chapter formula (n*10+0x11f8, clut n+0x118)	used	HIGH	
+FW Titles.rsrc	PICT	4640		.ChapterScreen @ 10009b9c (n*10+0x11f8) | chapter screen .ChapterScreen	L1-4 (chapter card);later levels [50]	yes StageScreens chapter formula (n*10+0x11f8, clut n+0x118)	used	HIGH	
+FW Titles.rsrc	PICT	4650		.ChapterScreen @ 10009b9c (n*10+0x11f8) | chapter screen .ChapterScreen	L1-4 (chapter card);later levels [22]	yes StageScreens chapter formula (n*10+0x11f8, clut n+0x118)	used	HIGH	
+FW Titles.rsrc	PICT	4660		.ChapterScreen @ 10009b9c (n*10+0x11f8) | chapter screen .ChapterScreen	L1-4 (chapter card);later levels [30]	yes StageScreens chapter formula (n*10+0x11f8, clut n+0x118)	used	HIGH	
+FW Titles.rsrc	PICT	4670		.ChapterScreen @ 10009b9c (n*10+0x11f8) | chapter screen .ChapterScreen	L1-4 (chapter card);later levels [62]	yes StageScreens chapter formula (n*10+0x11f8, clut n+0x118)	used	HIGH	
+FW Titles.rsrc	PICT	4803		.Credits @1000e5b4 | .DoAboutDialog (600,4803) via .HandleAppleMenuSelection?	front end	yes CreditsScroll.swift:13	used	HIGH	
+FW Titles.rsrc	PICT	4804		DITL 600 picItem (Credits dialog)	front end (Credits)	yes Dialog picItem (DialogViews / DialogWindow)	used	HIGH	
+FW Titles.rsrc	PICT	4901		.TrackClickOnCommandButton @ 10002c5c	front end	yes MainMenu.highlightPicture/normalPicture (0x1324+n)	used	HIGH	
+FW Titles.rsrc	PICT	4902		.TrackClickOnCommandButton @ 10002c5c	front end	yes MainMenu.highlightPicture/normalPicture (0x1324+n)	used	HIGH	
+FW Titles.rsrc	PICT	4903		.TrackClickOnCommandButton @ 10002c5c	front end	yes MainMenu.highlightPicture/normalPicture (0x1324+n)	used	HIGH	
+FW Titles.rsrc	PICT	4904		.TrackClickOnCommandButton @ 10002c5c	front end	yes MainMenu.highlightPicture/normalPicture (0x1324+n)	used	HIGH	
+FW Titles.rsrc	PICT	4905		.TrackClickOnCommandButton @ 10002c5c	front end	yes MainMenu.highlightPicture/normalPicture (0x1324+n)	used	HIGH	
+FW Titles.rsrc	PICT	4911		.TrackClickOnCommandButton @ 10002c5c	front end	yes MainMenu.highlightPicture/normalPicture (0x1324+n)	used	HIGH	
+FW Titles.rsrc	PICT	4912		.TrackClickOnCommandButton @ 10002c5c	front end	yes MainMenu.highlightPicture/normalPicture (0x1324+n)	used	HIGH	
+FW Titles.rsrc	PICT	4913		.TrackClickOnCommandButton @ 10002c5c	front end	yes MainMenu.highlightPicture/normalPicture (0x1324+n)	used	HIGH	
+FW Titles.rsrc	PICT	4914		.TrackClickOnCommandButton @ 10002c5c	front end	yes MainMenu.highlightPicture/normalPicture (0x1324+n)	used	HIGH	
+FW Titles.rsrc	PICT	4915		.TrackClickOnCommandButton @ 10002c5c	front end	yes MainMenu.highlightPicture/normalPicture (0x1324+n)	used	HIGH	
+FW Titles.rsrc	PICT	4921		.Pause @10006078	L1-4 (pause)	yes Pause.banner	used	HIGH	
+FW Titles.rsrc	PICT	4925		.TrackClickOnCommandButton @ 10002c5c	front end	no — replica menu is always 640×480 (MainMenu.swift:8)	d	HIGH	original shows these only when the screen is not 640×480
+FW Titles.rsrc	PICT	4935			never	no — replica menu is always 640×480 (MainMenu.swift:8)	d	HIGH	original shows these only when the screen is not 640×480
+FW Titles.rsrc	PICT	4951		no reference in either dump	never	no	n	HIGH	
+FW Titles.rsrc	PICT	4952		no reference in either dump	never	no	n	HIGH	
+FW Titles.rsrc	PICT	4953		no reference in either dump	never	no	n	HIGH	
+FW Titles.rsrc	PICT	4954		no reference in either dump	never	no	n	HIGH	
+FW Titles.rsrc	PICT	4955		no reference in either dump	never	no	n	HIGH	
+FW Titles.rsrc	PICT	4961		no reference in either dump	never	no	n	HIGH	
+FW Titles.rsrc	PICT	4962		no reference in either dump	never	no	n	HIGH	
+FW Titles.rsrc	PICT	4963		no reference in either dump	never	no	n	HIGH	
+FW Titles.rsrc	PICT	4964		no reference in either dump	never	no	n	HIGH	
+FW Titles.rsrc	PICT	4965		no reference in either dump	never	no	n	HIGH	
+FW Titles.rsrc	PICT	4970		.TrackClickOnCommandButtonDeath @ 10006970	L1-4 (death screen)	yes DeathScreen (0x1369/0x1373+n, 0xac…0xb1)	used	HIGH	
+FW Titles.rsrc	PICT	4971		.TrackClickOnCommandButtonDeath @ 10006970	L1-4 (death screen)	yes DeathScreen (0x1369/0x1373+n, 0xac…0xb1)	used	HIGH	
+FW Titles.rsrc	PICT	4980		.TrackClickOnCommandButtonDeath @ 10006970	L1-4 (death screen)	yes DeathScreen (0x1369/0x1373+n, 0xac…0xb1)	used	HIGH	
+FW Titles.rsrc	PICT	4981		.TrackClickOnCommandButtonDeath @ 10006970	L1-4 (death screen)	yes DeathScreen (0x1369/0x1373+n, 0xac…0xb1)	used	HIGH	
+FW Titles.rsrc	PICT	4985		.AskToContinue @10007190	L1-4 (death screen)	no — InputSprocket forced off (DeathScreen.swift:17)	d	HIGH	ISp keyboard cursor; original also off without ISp
+FW Sprites.rsrc	PICT	5000		no reference in either dump	never	weak-literal TileSets.swift:77,FerazelSession.swift:258	n	MED	
+FW Sprites.rsrc	PICT	5001		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	5002		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	5069		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	5999		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	6000		.SetupOmniPx @10019d78	later levels (OmniPx modes 1/2/5/6: L15,5,25,70)	weak-literal PlatformSprite.swift:745	a (later levels)	MED	
+FW Sprites.rsrc	PICT	6001		.SetupOmniPx @10019d78	later levels (OmniPx modes 1/2/5/6: L15,5,25,70)	no	a (later levels)	HIGH	
+FW Sprites.rsrc	PICT	6002		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	6003		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	6004		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	6011		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	6012		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	6031		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	6100		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	6200		.SetupOmniPx @10019d78	later levels (OmniPx modes 1/2/5/6: L15,5,25,70)	weak-literal BoxSprite.swift:569	a (later levels)	MED	
+FW Sprites.rsrc	PICT	6201		.SetupOmniPx @10019d78	later levels (OmniPx modes 1/2/5/6: L15,5,25,70)	no	a (later levels)	HIGH	
+FW Sprites.rsrc	PICT	6209		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	6210		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	6300		.SetupOmniPx @10019d78	later levels (OmniPx modes 1/2/5/6: L15,5,25,70)	no	a (later levels)	HIGH	
+FW Sprites.rsrc	PICT	6301		.SetupOmniPx @10019d78	later levels (OmniPx modes 1/2/5/6: L15,5,25,70)	no	a (later levels)	HIGH	
+FW World Data.rsrc	PICT	7000		.ShowWorldMap @1007c494 | .ShowWorldMap world-map art (World Data + app both hold 7000)	never (shadowed)	no (port draws the app-fork 7000 via .frontEnd)	n	HIGH	bank world-data-format (deepening corr.): the app-fork 7000 is the one drawn; this World Data copy differs and is never served
+FW.rsrc	PICT	7000		.ShowWorldMap @1007c494 | .ShowWorldMap world-map art (World Data + app both hold 7000)	map	yes WorldMapRun.mapPicture (.frontEnd chain → this app copy)	used	HIGH	
+FW Sprites.rsrc	PICT	8000		.InitMapFaces @1007ac38	boot→map	yes FrontFaceSet / MapRenderer	used	HIGH	
+FW Sprites.rsrc	PICT	8001		.InitMapFaces @1007ac38	boot→map	yes FrontFaceSet / MapRenderer	used	HIGH	
+FW Sprites.rsrc	PICT	8002		.InitMapFaces @1007ac38	boot→map	yes FrontFaceSet / MapRenderer	used	HIGH	
+FW Sprites.rsrc	PICT	8003		.InitMapFaces @1007ac38	boot→map	no — loaded, never read (MapRenderer.swift:19)	n	HIGH	original loads into _DAT_100a0c40, no reader
+FW Sprites.rsrc	PICT	8004		.InitMapFaces @1007ac38	boot→map	yes FrontFaceSet / MapRenderer	used	HIGH	
+FW Sprites.rsrc	PICT	10200	orig headsmooth walk	no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	13070		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	14340		no reference in either dump	never	no	n	HIGH	
+FW Sprites.rsrc	PICT	14850		no reference in either dump	never	no	n	HIGH	
+FW Backgrounds.rsrc	PICT	24069		no reference in either dump	never	no	n	HIGH	
+FW.rsrc	STR#	300	Warning Strings	no GetIndString site	never	no	n	MED	QuickTime warning strings; no reader in dump
+FW.rsrc	STR#	400	Fatal Error Strings	no GetIndString site	never	no	n	MED	fatal error strings; no reader in dump
+FW World Data.rsrc	STR#	500	signs	.HitPlayerSprite sign text (.SimpleConv)	L1-4 (signs L1/L2)	yes StringList	used	HIGH	
+FW World Data.rsrc	STR#	1000	level names	.InitMapLevelNames @1007ad84	map	yes StringList / WorldMapRun	used	HIGH	
+FW Backgrounds.rsrc	TEXT	128		none	never	no	n	HIGH	"Palette EC2" editor note
+FW.rsrc	Tune	6900	dummy	none (no GetResource Tune)	never	no	n	HIGH	rendering-omnipx-titles §6.5
+FW.rsrc	WIND	128	Game Window	.MTInit @10032160 GetNewCWindow	boot	yes (game window; HIGH for id only)	used	MED	
+FW Backgrounds.rsrc	cicn	200		no reference in either dump	never	yes BonusSprite.swift:23,BootFaces.swift:20,BootFaces.swift:63	n	HIGH	
+FW Backgrounds.rsrc	cicn	290		no reference in either dump	never	no	n	HIGH	
+FW Backgrounds.rsrc	cicn	299		no reference in either dump	never	no	n	HIGH	
+FW Backgrounds.rsrc	cicn	498	Map Marker	no reference in either dump	never	weak-literal SoundSlots.swift:30	n	MED	
+FW Backgrounds.rsrc	cicn	499	Map Marker Flash	no reference in either dump	never	weak-literal SoundSlots.swift:30	n	MED	
+FW Backgrounds.rsrc	cicn	560		no reference in either dump	never	weak-literal GameGlobals.swift:166,HitPlayerSprite.swift:747	n	MED	
+FW Backgrounds.rsrc	cicn	571		no reference in either dump	never	no	n	HIGH	
+FW Backgrounds.rsrc	cicn	572		no reference in either dump	never	no	n	HIGH	
+FW Backgrounds.rsrc	cicn	573		no reference in either dump	never	no	n	HIGH	
+FW Backgrounds.rsrc	cicn	574		no reference in either dump	never	yes GameGlobals.swift:209	n	HIGH	
+FW Backgrounds.rsrc	cicn	596	barrel/cooler mask	no reference in either dump	never	no	n	HIGH	
+FW Backgrounds.rsrc	cicn	597	barrel/cooler mask	no reference in either dump	never	no	n	HIGH	
+FW Backgrounds.rsrc	cicn	598	barrel/cooler mask	no reference in either dump	never	no	n	HIGH	
+FW Backgrounds.rsrc	cicn	599	plant mask	no reference in either dump	never	no	n	HIGH	
+FW Backgrounds.rsrc	cicn	1000		no reference in either dump	never	yes HitPlayerSprite.swift:1033,RectBounce.swift:39,SpriteSlot.swift:282	n	HIGH	
+FW Backgrounds.rsrc	cicn	1299		no reference in either dump	never	weak-literal SpriteClassTable.swift:26	n	MED	
+FW Backgrounds.rsrc	cicn	10135		no reference in either dump	never	no	n	HIGH	
+FW Backgrounds.rsrc	cicn	10136		no reference in either dump	never	no	n	HIGH	
+FW Backgrounds.rsrc	cicn	10137		no reference in either dump	never	no	n	HIGH	
+FW Titles.rsrc	clut	128	splash screen clut	.InitAppGlobals @100009c8	boot	yes BootSequence.swift:11,BoxSprite.swift:174,BoxSprite.swift:80	used	HIGH	
+FW Titles.rsrc	clut	130	main menu clut	.InitAppGlobals @100009c8	boot	yes FerazelMenuRules.swift:53,FerazelMenus.swift:45,MainMenu.swift:10	used	HIGH	
+FW Titles.rsrc	clut	131	preview clut	.InitAppGlobals @100009c8	boot	no	n	HIGH	loaded twice at boot, never read (rendering-omnipx-titles §4.2)
+FW Titles.rsrc	clut	132	death clut	.InitAppGlobals @100009c8	boot	yes DeathScreen.swift:29,StatusBar.swift:62,StatusBar.swift:63	used	HIGH	
+FW Backgrounds.rsrc	clut	198	cooling map clut	.InitAppGlobals @100009c8	boot; drawn only on flame levels 52/55	weak-literal Pause.swift:163	a (flame levels 52/55)	MED	
+FW.rsrc	clut	198	cooling map clut	.InitAppGlobals @100009c8	boot; drawn only on flame levels 52/55	weak-literal Pause.swift:163	a (flame levels 52/55)	MED	
+FW Backgrounds.rsrc	clut	199	base sprite clut grays	.InitAppGlobals @100009c8	boot	yes BootFaces.swift:85,StageScreens.swift:53,StatusBar.swift:56	used	HIGH	
+FW.rsrc	clut	199	base sprite clut grays	.InitAppGlobals @100009c8	boot	yes BootFaces.swift:85,StageScreens.swift:53,StatusBar.swift:56	used	HIGH	
+FW Backgrounds.rsrc	clut	200	base sprite clut	.InitAppGlobals @100009c8 | .main @1000ffc0	boot;front end (boot)	yes BonusSprite.swift:23,BootFaces.swift:20,BootFaces.swift:63	used	HIGH	
+FW.rsrc	clut	200	base sprite clut	.InitAppGlobals @100009c8 | .main @1000ffc0	boot;front end (boot)	yes BonusSprite.swift:23,BootFaces.swift:20,BootFaces.swift:63	used	HIGH	
+FW Backgrounds.rsrc	clut	201	earthcav	.SetupLevel @1000430c | level CLUT .SetupLevel	L1,2;L1-4	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	clut	202	base + earthcav	.SetupLevel @1000430c | level+base CLUT .SetupLevel	L1,2;L1-4	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	clut	203	lake	no reference in either dump	never	weak-literal ParticleRenderer.swift:122,WaterEffects.swift:239	n	MED	
+FW Backgrounds.rsrc	clut	204	base + lake	no reference in either dump	never	yes SetupFaces.swift:169	n	HIGH	
+FW Backgrounds.rsrc	clut	205	night rock lake	no reference in either dump	never	weak-literal ParticleRenderer.swift:129,WaterEffects.swift:297	n	MED	
+FW Backgrounds.rsrc	clut	206	night rock lake + base	no reference in either dump	never	weak-literal TileSets.swift:79	n	MED	
+FW Backgrounds.rsrc	clut	207	forest	no reference in either dump	never	weak-literal Pause.swift:166	n	MED	
+FW Backgrounds.rsrc	clut	208	forest + base	no reference in either dump	never	weak-literal Camera.swift:59,BackgroundSprite.swift:474	n	MED	
+FW Backgrounds.rsrc	clut	209	EC2	level CLUT .SetupLevel	L3,4	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	clut	210	EC2 + base	level+base CLUT .SetupLevel	L3,4	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	clut	211	forest 2	level CLUT .SetupLevel	later levels [20, 21]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	clut	212	forest 2 + base	level+base CLUT .SetupLevel	later levels [20, 21]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	clut	213	forest 1 new	level CLUT .SetupLevel	later levels [10, 15]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	clut	214	forest 1 new + base	level+base CLUT .SetupLevel	later levels [10, 15]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	clut	215	Upper Ice Caverns	level CLUT .SetupLevel	later levels [30]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	clut	216	Upper Ice Caverns + base	level+base CLUT .SetupLevel	later levels [30]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	clut	217	Lower Ice Caverns	level CLUT .SetupLevel	later levels [31]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	clut	218	Lower Ice Caverns + base	level+base CLUT .SetupLevel	later levels [31]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	clut	219	Upper Fire Caverns	level CLUT .SetupLevel	later levels [50, 51]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	clut	220	Upper Fire Caverns + base	level+base CLUT .SetupLevel	later levels [50, 51]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	clut	221	Upper Fire Caverns flame	level CLUT .SetupLevel	later levels [52, 55]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	clut	222	Upper Fire Caverns flame + base	level+base CLUT .SetupLevel	later levels [52, 55]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	clut	223	newlake	level CLUT .SetupLevel	later levels [11, 18]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	clut	224	newlake + base	level+base CLUT .SetupLevel	later levels [11, 18]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	clut	225	Hunter forest	no reference in either dump	never	weak-literal PlatformSprite.swift:139	n	MED	
+FW Backgrounds.rsrc	clut	226	Hunter forest + base	no reference in either dump	never	no	n	HIGH	
+FW Backgrounds.rsrc	clut	227	Desert	level CLUT .SetupLevel	later levels [40, 45]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	clut	228	Desert + base	level+base CLUT .SetupLevel	later levels [40, 45]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	clut	229	Plains	no reference in either dump	never	no	n	HIGH	
+FW Backgrounds.rsrc	clut	230	Plains + base	no reference in either dump	never	no	n	HIGH	
+FW Backgrounds.rsrc	clut	231	Mountains1	no reference in either dump	never	no	n	HIGH	
+FW Backgrounds.rsrc	clut	232	Mountains1 + base	no reference in either dump	never	weak-literal PxSprites.swift:30	n	MED	
+FW Backgrounds.rsrc	clut	235	Boss1abstract	level CLUT .SetupLevel	later levels [5]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	clut	236	Boss1abstract + base	level+base CLUT .SetupLevel	later levels [5]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	clut	237	RuinsBoss	level CLUT .SetupLevel	later levels [25]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	clut	238	RuinsBoss + base	level+base CLUT .SetupLevel	later levels [25]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	clut	239	Mountains2	level CLUT .SetupLevel	later levels [62]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	clut	240	Mountains2 + base	level+base CLUT .SetupLevel	later levels [62]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	clut	241	Purple abstract	level CLUT .SetupLevel	later levels [70]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	clut	242	Purple abstract + base	level+base CLUT .SetupLevel	later levels [70]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	clut	243	Breathing	no reference in either dump	never	no	n	HIGH	
+FW Backgrounds.rsrc	clut	244	Breathing + base	no reference in either dump	never	no	n	HIGH	
+FW Backgrounds.rsrc	clut	245	Ruins1	level CLUT .SetupLevel	later levels [22]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	clut	246	Ruins1 + base	level+base CLUT .SetupLevel	later levels [22]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	clut	247	Throne Room	level CLUT .SetupLevel	later levels [67]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Backgrounds.rsrc	clut	248	Throne Room + base	level+base CLUT .SetupLevel	later levels [67]	yes LevelHeader fields → TileSets / ColorLUT (header-driven)	used	HIGH	
+FW Titles.rsrc	clut	260	Victory	.InitAppGlobals @100009c8	later (victory)	weak-literal ConversationRun.swift:97,WorldMap.swift:44	a (end of game: .Victory)	MED	
+FW Titles.rsrc	clut	281	1 intro chapter	chapter clut .ChapterScreen	L1	yes StageScreens chapter formula (n*10+0x11f8, clut n+0x118)	used	HIGH	
+FW Titles.rsrc	clut	282	2 forest chapter	chapter clut .ChapterScreen	later levels [10]	yes StageScreens chapter formula (n*10+0x11f8, clut n+0x118)	used	HIGH	
+FW Titles.rsrc	clut	283	3 desert chapter	chapter clut .ChapterScreen	later levels [40]	yes StageScreens chapter formula (n*10+0x11f8, clut n+0x118)	used	HIGH	
+FW Titles.rsrc	clut	284	4 fire chapter	chapter clut .ChapterScreen	later levels [50]	yes StageScreens chapter formula (n*10+0x11f8, clut n+0x118)	used	HIGH	
+FW Titles.rsrc	clut	285	5 ruins chapter	chapter clut .ChapterScreen	later levels [22]	yes StageScreens chapter formula (n*10+0x11f8, clut n+0x118)	used	HIGH	
+FW Titles.rsrc	clut	286	6 ice chapter	chapter clut .ChapterScreen	later levels [30]	yes StageScreens chapter formula (n*10+0x11f8, clut n+0x118)	used	HIGH	
+FW Titles.rsrc	clut	287	7 mountain chapter	chapter clut .ChapterScreen	later levels [62]	yes StageScreens chapter formula (n*10+0x11f8, clut n+0x118)	used	HIGH	
+FW Titles.rsrc	clut	288	interstitial 1	no reference in either dump	never	no	n	HIGH	
+FW Titles.rsrc	clut	289	interstitial 2	no reference in either dump	never	no	n	HIGH	
+FW Titles.rsrc	clut	290	interstitial 3	no reference in either dump	never	no	n	HIGH	
+FW Backgrounds.rsrc	clut	300	Blue tinge altClut orig	no reference in either dump	never	weak-literal ParallaxBlitter.swift:535,HandleKeys.swift:396	n	MED	
+FW Backgrounds.rsrc	clut	301	Gold tinge altClut	no reference in either dump	never	weak-literal SoundSlots.swift:11,PlayerShotHits.swift:10	n	MED	
+FW Backgrounds.rsrc	clut	302	Purply tinge altClut	no reference in either dump	never	weak-literal PlayerShotHits.swift:14,SoundSlots.swift:11	n	MED	
+FW Backgrounds.rsrc	clut	322	Upper Fire Caverns flame + base o	no reference in either dump	never	weak-literal FerazelPrefs.swift:78,Camera.swift:126	n	MED	
+FW Backgrounds.rsrc	clut	401	bluepurp ting	no reference in either dump	never	weak-literal HitPlayerSprite.swift:1057,SoundSlots.swift:12	n	MED	
+FW Backgrounds.rsrc	clut	700	world map clut	.InitAppGlobals @100009c8	boot	yes StatusBar.swift:67,WorldMapRun.swift:170	used	HIGH	
+FW.rsrc	clut	700	world map clut	.InitAppGlobals @100009c8	boot	yes StatusBar.swift:67,WorldMapRun.swift:170	used	HIGH	
+FW Titles.rsrc	clut	729	splash screen clut orig	no reference in either dump	never	no	n	HIGH	
+FW Backgrounds.rsrc	clut	801	System CLUT	.InitAppGlobals @100009c8	boot	yes BonusSprite.swift:49,FerazelDriver.swift:102,FrameRenderer.swift:195	used	HIGH	
+FW.rsrc	clut	801	System CLUT	.InitAppGlobals @100009c8	boot	yes BonusSprite.swift:49,FerazelDriver.swift:102,FrameRenderer.swift:195	used	HIGH	
+FW Backgrounds.rsrc	clut	4000	dialogue palette	.InitConversation @10078bd0	boot→L1-4	yes HandleKeys.swift:520,HandleKeys.swift:524	used	HIGH	loaded by .InitConversation, never read (conversations-mcnv §6.1)
+FW.rsrc	clut	4000	dialogue palette	.InitConversation @10078bd0	boot→L1-4	yes HandleKeys.swift:520,HandleKeys.swift:524	used	HIGH	loaded by .InitConversation, never read (conversations-mcnv §6.1)
+FW.rsrc	dctb	150	030 warning	no GetNewDialog/Alert/AppendDITL site	never	no	n	HIGH	unused dialog-family resource (no code site)
+FW.rsrc	dctb	160	Copying Machine	no GetNewDialog/Alert/AppendDITL site	never	no	n	HIGH	unused dialog-family resource (no code site)
+FW.rsrc	dctb	170	Level Limit	no GetNewDialog/Alert/AppendDITL site	never	no	n	MED	unused dialog-family resource (no code site)
+FW.rsrc	dctb	200	Generic Message	DLOG 200 colour table	front end/L1-4	yes contentColor(dctb:)	used	HIGH	
+FW.rsrc	dctb	202	Abort Warning	DLOG 202 colour table	front end/L1-4	yes contentColor(dctb:)	used	HIGH	
+FW.rsrc	dctb	600	scrolling credits	DLOG 600 colour table	front end/L1-4	yes contentColor(dctb:)	used	HIGH	
+FW.rsrc	dctb	700	Memo	no GetNewDialog/Alert/AppendDITL site	never	no	n	HIGH	unused dialog-family resource (no code site)
+FW.rsrc	dctb	800	New Game	no GetNewDialog/Alert/AppendDITL site	never	no	n	MED	unused dialog-family resource (no code site)
+FW.rsrc	dctb	1001	Save Game	no GetNewDialog/Alert/AppendDITL site	never	no	n	HIGH	unused dialog-family resource (no code site)
+FW.rsrc	dctb	1100	Sign	no GetNewDialog/Alert/AppendDITL site	never	no	n	HIGH	unused dialog-family resource (no code site)
+FW.rsrc	dctb	1200	Sign II	no GetNewDialog/Alert/AppendDITL site	never	no	n	HIGH	unused dialog-family resource (no code site)
+FW.rsrc	dctb	1300	Res switch	no GetNewDialog/Alert/AppendDITL site	never	no	n	HIGH	unused dialog-family resource (no code site)
+FW.rsrc	dctb	1600	CD Request	DLOG 1600 colour table	front end/L1-4	no	b	HIGH	
+FW.rsrc	dctb	6900	Preferences	DLOG 6900 colour table	front end/L1-4	yes contentColor(dctb:)	used	HIGH	
+FW Sounds.rsrc	snd 	128	soft impact	no reference in either dump	never	yes BootSequence.swift:11,BoxSprite.swift:174,BoxSprite.swift:80	n	HIGH	
+FW Sounds.rsrc	snd 	129	whoosh	no reference in either dump	never	yes FerazelMenuRules.swift:18,FerazelMenuRules.swift:53,FerazelMenus.swift:45	n	HIGH	
+FW Sounds.rsrc	snd 	130	froghitold	no reference in either dump	never	yes FerazelMenuRules.swift:53,FerazelMenus.swift:45,MainMenu.swift:10	n	HIGH	
+FW Sounds.rsrc	snd 	131	frogdieold	no reference in either dump	never	yes BootSequence.swift:8	n	HIGH	
+FW Sounds.rsrc	snd 	132	frogjumpold	no reference in either dump	never	yes DeathScreen.swift:29,StatusBar.swift:62,StatusBar.swift:63	n	HIGH	
+FW Sounds.rsrc	snd 	198	pause	.InitAppGlobals @100009c8	boot	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	215	oil	no reference in either dump	never	weak-literal ParticleRenderer.swift:153,ParticleRenderer.swift:85	n	MED	
+FW Sounds.rsrc	snd 	231	charge1	no reference in either dump	never	no	n	HIGH	
+FW Sounds.rsrc	snd 	238	magic1	no reference in either dump	never	weak-literal ConversationRenderer.swift:52	n	MED	
+FW Sounds.rsrc	snd 	239	metallic click	no reference in either dump	never	no	n	HIGH	
+FW Sounds.rsrc	snd 	240	unlock	no reference in either dump	never	weak-literal main.swift:353,Player.swift:559	n	MED	
+FW Sounds.rsrc	snd 	300	Fireball	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	301	fireball hit new	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	302	statue hit	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	303	metal hit	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	304	swoosh big	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	401	Ouch 1	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	402	Ouch 2	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	403	Ouch 3	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	404	head bonk	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	405	splash1new3	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	406	splash2new	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	407	groan	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	408	breathe1	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	409	breathe2	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	410	Footstep1	.InitSounds @ 10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	411	Footstep2	.InitSounds @ 10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	412	Footstep3	.InitSounds @ 10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	413	Footstep4	.InitSounds @ 10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	414	jump	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	415	bubble	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	416	corner climb	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	417	death	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	418	dagger thrust	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	419	dagger hit	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	420	teleport in	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	421	teleport out	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	422	really big anvil-like crash8-22	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	423	rock crack	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	424	rock crush	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	425	rock selfcrack	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	426	rock selfcrush	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	427	player magic spin	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	428	Tick 1	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	429	Tick 2	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	430	geyser start	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	431	geyser loop	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	432	monster snarl	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	433	monster snarl 2	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	434	monster snarl 3	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	435	explosion	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	436	Object Hit	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	437	Door unlock open	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	438	Door open	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	439	chest unlock	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	440	catapult_step.snd	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	441	catapult_launch.snd	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	442	drown warning	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	443	drown choke	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	444	bonus 1	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	445	bonus 2	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	446	bonus 3	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	447	bonus 4	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	448	bonus 5	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	449	bonus 6	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	450	Big ouch	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	451	majorbonus new	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	452	rainloop.snd	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	453	thunder.snd	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	454	water step	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	455	wall grab	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	456	bubblebreathe	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	457	spike emerge	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	458	spike retract	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	459	enemygenerate	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	460	rock barrier move	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	461	platformdisappear 11kHz	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	462	enemyconsumed	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	463	dillo shoot	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	464	toad	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	465	goblingrowl1	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	466	goblingrowl2	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	467	goblintaunt	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	468	goblinhurt	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	469	goblindie	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	470	bat	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	471	snarl	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	472	metalhitsoft	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	473	metalhithard	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	474	sparkleloop	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	475	endlevelsound	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	476	electricitySound	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	477	monster1Sound	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	478	monster2Sound	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	479	monster3Sound	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	480	swarmMemberDieSound	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	481	swarmSound	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	482	wind loop	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	483	cannon shoot	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	484	cannon load	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	485	cannon shift	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	486	ropecreak1	.InitSounds @ 10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	487	ropecreak2	.InitSounds @ 10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	488	ropecreak3	.InitSounds @ 10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	489	chaincreak1	.InitSounds @ 10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	490	chaincreak2	.InitSounds @ 10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	491	chaincreak3	.InitSounds @ 10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	492	cratesmash	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	493	superspring	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	494	flap	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	495	firehiss	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	496	firehiss2	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	497	swim	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	498	Egg Drop	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	499	ArrowShootSound	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	500	magic bonus	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	501	coin bonus	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	502	health bonus	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	503	newspell	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	504	elecshot	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	505	puzzleunlock	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	506	itemfind	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	507	crystalbreak	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	508	hurtthud	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	509	corpsethud	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	510	whoosh	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	511	fireloop	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	600	hit ground	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	601	hit ground soft	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	602	hit ground	no reference in either dump	never	no	n	HIGH	
+FW Sounds.rsrc	snd 	603	spring down	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	604	spring up	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	605	sandsplash	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	606	deathcontinue	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	607	slimemove	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	608	batdisturb	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	609	bathit	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	610	axgoblinjumproar	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	611	axgoblinhit1	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	612	axgoblinhit2	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	613	frogjump	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	614	froghit	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	615	frogdie	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	700	Crawler jump	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	701	Crawler Ouch	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	702	Crawler uh oh	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	703	crawler death	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	704	throw	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	705	throw old	no reference in either dump	never	no	n	HIGH	
+FW Sounds.rsrc	snd 	800	zeropercent	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	801	middlepercent	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	802	hundredpercent	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	803	fillerup	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	804	donefilling	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	805	popup	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	1301	fireball hit 8/22 old	no reference in either dump	never	yes BonusSprite.swift:28,BootFaces.swift:56	n	HIGH	
+FW Sounds.rsrc	snd 	1980	pause.snd old	no reference in either dump	never	no	n	HIGH	
+FW Sounds.rsrc	snd 	4050	splash1old	no reference in either dump	never	no	n	HIGH	
+FW Sounds.rsrc	snd 	4051	splash1newold	no reference in either dump	never	no	n	HIGH	
+FW Sounds.rsrc	snd 	4052	splash1new2	no reference in either dump	never	no	n	HIGH	
+FW Sounds.rsrc	snd 	4060	splash2 old	no reference in either dump	never	no	n	HIGH	
+FW Sounds.rsrc	snd 	4510	majorbonus old	no reference in either dump	never	no	n	HIGH	
+FW Sounds.rsrc	snd 	4701	generic splat	no reference in either dump	never	no	n	HIGH	
+FW Sounds.rsrc	snd 	4703	bottle break	no reference in either dump	never	no	n	HIGH	
+FW Sounds.rsrc	snd 	4704	buttondown1	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	4705	buttonup1	.InitSounds @10045838	boot→L1-4	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	4706	buttondown2	no reference in either dump	never	no	n	HIGH	
+FW Sounds.rsrc	snd 	4707	buttonup2	no reference in either dump	never	no	n	HIGH	
+FW Sounds.rsrc	snd 	4801	switch item	.InitAppGlobals @100009c8	boot	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	4803	Interface/Mouse Down	.InitAppGlobals @100009c8	boot	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	4804	Interface/Mouse Up	.InitAppGlobals @100009c8	boot	yes SoundSlots.table / FerazelDriver.loadSounds (SoundBank decodes every snd)	used	HIGH	
+FW Sounds.rsrc	snd 	8030	fillerup old	no reference in either dump	never	no	n	HIGH	
+FW.rsrc	wctb	128		Window Manager (WIND 128 colour table, implicit)	boot	no (shell window)	n	MED	implicit; no visible effect
+Music	AIFC	01		Mlvl+0x284a of levels [1, 4] → .GameLoop .SetAIFFMusic	L1,4	yes LevelRun (h.music) / MusicTrack	used	HIGH	
+Music	AIFC	02		Mlvl+0x284a of levels [3] → .GameLoop .SetAIFFMusic	L3	yes LevelRun (h.music) / MusicTrack	used	HIGH	
+Music	AIFC	03		Mlvl+0x284a of levels [2] → .GameLoop .SetAIFFMusic	L2	yes LevelRun (h.music) / MusicTrack	used	HIGH	
+Music	AIFC	04		Mlvl+0x284a of levels [10] → .GameLoop .SetAIFFMusic	later levels [10]	yes LevelRun (h.music) / MusicTrack	used	HIGH	
+Music	AIFC	05		Mlvl+0x284a of levels [15] → .GameLoop .SetAIFFMusic	later levels [15]	yes LevelRun (h.music) / MusicTrack	used	HIGH	
+Music	AIFC	06		Mlvl+0x284a of levels [11] → .GameLoop .SetAIFFMusic	later levels [11]	yes LevelRun (h.music) / MusicTrack	used	HIGH	
+Music	AIFC	07		none (never requested; n−1 fallback only for 21/27 which are absent)	never	no	n	HIGH	
+Music	AIFC	08		Mlvl+0x284a of levels [22] → .GameLoop .SetAIFFMusic	later levels [22]	yes LevelRun (h.music) / MusicTrack	used	HIGH	
+Music	AIFC	09		Mlvl+0x284a of levels [21] → .GameLoop .SetAIFFMusic	later levels [21]	yes LevelRun (h.music) / MusicTrack	used	HIGH	
+Music	AIFC	10		Mlvl+0x284a of levels [30] → .GameLoop .SetAIFFMusic	later levels [30]	yes LevelRun (h.music) / MusicTrack	used	HIGH	
+Music	AIFC	11		none (never requested; n−1 fallback only for 21/27 which are absent)	never	no	n	HIGH	
+Music	AIFC	12		Mlvl+0x284a of levels [31] → .GameLoop .SetAIFFMusic	later levels [31]	yes LevelRun (h.music) / MusicTrack	used	HIGH	
+Music	AIFC	13		Mlvl+0x284a of levels [45] → .GameLoop .SetAIFFMusic	later levels [45]	yes LevelRun (h.music) / MusicTrack	used	HIGH	
+Music	AIFC	14		none (never requested; n−1 fallback only for 21/27 which are absent)	never	no	n	HIGH	
+Music	AIFC	15		Mlvl+0x284a of levels [20, 40] → .GameLoop .SetAIFFMusic	later levels [20, 40]	yes LevelRun (h.music) / MusicTrack	used	HIGH	
+Music	AIFC	16		Mlvl+0x284a of levels [51] → .GameLoop .SetAIFFMusic	later levels [51]	yes LevelRun (h.music) / MusicTrack	used	HIGH	
+Music	AIFC	17		Mlvl+0x284a of levels [52] → .GameLoop .SetAIFFMusic	later levels [52]	yes LevelRun (h.music) / MusicTrack	used	HIGH	
+Music	AIFC	18		Mlvl+0x284a of levels [50] → .GameLoop .SetAIFFMusic	later levels [50]	yes LevelRun (h.music) / MusicTrack	used	HIGH	
+Music	AIFC	19		none (never requested; n−1 fallback only for 21/27 which are absent)	never	no	n	HIGH	
+Music	AIFC	20		none (never requested; n−1 fallback only for 21/27 which are absent)	never	no	n	HIGH	
+Music	AIFC	22		Mlvl+0x284a of levels [62] → .GameLoop .SetAIFFMusic	later levels [62]	yes LevelRun (h.music) / MusicTrack	used	HIGH	
+Music	AIFC	23		Mlvl+0x284a of levels [5, 18, 25, 55] → .GameLoop .SetAIFFMusic	later levels [5, 18, 25, 55]	yes LevelRun (h.music) / MusicTrack	used	HIGH	
+Music	AIFC	24		.main/.NewGame/.ContinueGame SetAIFFMusic(24)	front end	yes BootSequence.bootTrack / NewGame.menuTrack	used	HIGH	
+Music	AIFC	25		.ShowWorldMap SetAIFFMusic(25)	map	yes WorldMapRun.mapTrack	used	HIGH	
+Music	AIFC	26		Mlvl+0x284a of levels [70] → .GameLoop .SetAIFFMusic	later levels [70]	yes LevelRun (h.music) / MusicTrack	used	HIGH	
+Music	AIFC	28		Mlvl+0x284a of levels [67] → .GameLoop .SetAIFFMusic	later levels [67]	yes LevelRun (h.music) / MusicTrack	used	HIGH	
+Music	AIFC	29		.Victory SetAIFFMusic(29)	later (victory)	no constant 29 found (static)	a (end of game)	HIGH	
+Music	AIFC	30		.GameLoop boss-arena override (hdr 0x2724)	later (boss levels 5,18,25,55)	yes LevelRun:511 (0x1e)	used	HIGH	
+(absent)	PICT	751-755,757-767,769,770,772-776		.InitPlayerSprite held-item singles 0x2ee+i	boot; held items 1-5,7-17,19,20,22-26 would draw nil	yes BootFaces (as asked; loads none)	b	HIGH	REQUESTED BUT NOT IN ANY FILE; Load1EncFaceFromPICT returns nil; any draw of these faces = nil face in the original too
+(absent)	PICT	1500-1503		.InitCrawlerSprite 0x5dc+i	boot	yes BootFaces (loads none)	b	HIGH	REQUESTED BUT NOT IN ANY FILE; absent in every file
+(absent)	PICT	1489		.InitBackgroundSprite cache 0x5c8+9	placed on no level	yes SetupFaces.backgroundSheets (placeholder)	d	HIGH	REQUESTED BUT NOT IN ANY FILE; 
+(absent)	PICT	1790-1791		.InitFloaterSprite	later (Floater, Phase 5)	—	a5	HIGH	REQUESTED BUT NOT IN ANY FILE; absent
+(absent)	PICT	2718-2729		.InitBackgroundSprite cache 0xa8c+i (plants)	placed: none	—	d	MED	REQUESTED BUT NOT IN ANY FILE; check placements-all for types 2718..2729
+(absent)	PICT	2805-2807		.InitBoxSprite cache 0xaf5+i	placed: none	—	d	MED	REQUESTED BUT NOT IN ANY FILE; 
+(absent)	PICT	2908-2909		.InitBoxSprite 0xb56+i signs	boot	yes BootFaces (loads none)	b	HIGH	REQUESTED BUT NOT IN ANY FILE; 
+(absent)	PICT	2950,2966-2969		.InitBoxSprite cache 0xb86+i NPCs	placed: none	—	d	MED	REQUESTED BUT NOT IN ANY FILE; 
+(absent)	PICT	3109		.InitBonusSprite 0xc1c+9	boot	yes BootFaces	b	HIGH	REQUESTED BUT NOT IN ANY FILE; 
+(absent)	PICT	3200		.InitBonusSprite 0xc80+0 (item 0 face)	boot	yes BootFaces	b	HIGH	REQUESTED BUT NOT IN ANY FILE; item 0 picture
+(absent)	snd 	199		.TrackClickOnCommandButton SndPlay(GetResource(snd 199)) after >9 slide-outs	front end	yes (silent, F1a BC19)	b	HIGH	REQUESTED BUT NOT IN ANY FILE; no fork holds snd 199

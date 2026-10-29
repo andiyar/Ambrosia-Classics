@@ -1,0 +1,249 @@
+M0013	Ferazel/Core/Sources/FerazelCore/Data/FerazelData.swift:30	n	HIGH	missing data folder at boot (file-system error)	guard isDirectory(url, fm) else { throw FerazelDataError.missing("\(environmentVariable)=\(env)") }
+M0014	Ferazel/Core/Sources/FerazelCore/Data/FerazelData.swift:39	n	HIGH	missing data folder at boot	throw FerazelDataError.missing("Resources/Ferazel above \(#filePath); set \(environmentVariable)")
+M0015	Ferazel/Core/Sources/FerazelCore/Data/FerazelData.swift:49	n	HIGH	missing data file	throw FerazelDataError.missing(name)
+M0016	Ferazel/Core/Sources/FerazelCore/Data/FerazelData.swift:52	n	HIGH	missing music folder	guard isDirectory(music, fm) else { throw FerazelDataError.missing(musicFolder) }
+M0017	Ferazel/Core/Sources/FerazelCore/Data/FerazelData.swift:57	n	HIGH	corrupt resource file	guard ClassicResourceMap.sniff(bytes) else { throw FerazelDataError.missing("\(name) (not a resource map)") }
+M0018	Ferazel/Core/Sources/FerazelCore/Data/FerazelResources.swift:5	n	HIGH	history note; music decoded by the audio layer	/// `NN` in `musicDirectory` (AIFC; decoded by a later task, not here).
+M0019	Ferazel/Core/Sources/FerazelCore/Flow/LevelFlow.swift:7	n	HIGH	history note (Phase 3 runs it)	/// level of `node[cur].links[exit]` (world-data §4.2). Phase 3 runs all of it (`LevelRun`, `WorldMapRun`, `GameFlow`);
+M0020	Ferazel/Core/Sources/FerazelCore/Flow/LevelFlow.swift:31	n	HIGH	history note (revisit built)	/// revisit flag (built in Phase 3 as `LevelRun.revisit`).
+M0021	Ferazel/Core/Sources/FerazelCore/Flow/LevelFlow.swift:35	n	HIGH	stale comment: LevelRun.swift:585 writes G+0x20/+0x22 and the F4 snapshot clear	/// header, l. 5821) and `.SetupLevel` `+0x20`/`+0x22`/`+0x176` (not modelled; l. 2376–2381), so score, health,
+M0022	Ferazel/Core/Sources/FerazelCore/Flow/LevelFlow.swift:67	a	HIGH	boss flash stores (_KillWarrior etc.) = Phase 6 (comment says so)	/// 76159, `_KillXichra` 77475; // later: Phase 6): data-section globals no level load,
+M0023	Ferazel/Core/Sources/FerazelCore/Front/BootSequence.swift:33	n	HIGH	faithful progress-bar skip rule	/// p ≥ 58000; a skipped call leaves the stored width alone.
+M0024	Ferazel/Core/Sources/FerazelCore/Front/BuiltLevels.swift:3	a	HIGH	BuiltLevels 1...4; Phases 5-6 widen (D35, D38) — see X001 for the Continue path that bypasses it	/// ◇ The levels the replica can run (plan S2, F1b; D35 seat stub) — // later: Phases 5–6 widen it as each level's
+M0025	Ferazel/Core/Sources/FerazelCore/Front/BuiltLevels.swift:11	a	HIGH	not-built report text (D35)	/// "Level n is not built yet (Phases 5-6)." — plain Mac Roman, no symbols (D35; D38 Ruling 2 from LV4).
+M0026	Ferazel/Core/Sources/FerazelCore/Front/BuiltLevels.swift:13	a	HIGH	not-built report (map node 5 refused; only node 4 links to 5, INDEX map table)	Level \(n) is not built yet (Phases 5-6).
+M0027	Ferazel/Core/Sources/FerazelCore/Front/ContinueGame.swift:14	b	HIGH	preview/demo/level>0x4f refusals are the original's own (.ContinueGame M l.6712-6744)	/// refusals, each its own `ReportDialog` (+4 == 1 → the preview text 0x100a2ec9; +5 == 1 → the demo text 0x100a2f33;
+M0028	Ferazel/Core/Sources/FerazelCore/Front/ContinueGame.swift:96	b	HIGH	same refusals	/// M l. 6712–6744: the block taken in, the refusals, the default branch.
+M0029	Ferazel/Core/Sources/FerazelCore/Front/DialogResources.swift:4	n	HIGH	parser history note	// R1 (docs/plans/2026-10-14-ferazel-phase3.md S2): Foundation-only parsers for the app fork's Dialog/Menu Manager
+M0030	Ferazel/Core/Sources/FerazelCore/Front/DialogResources.swift:36	n	HIGH	missing resource = corrupt data	throw WorldDataError.missing(type: type, id: id)
+M0031	Ferazel/Core/Sources/FerazelCore/Front/DialogResources.swift:97	n	HIGH	DITL placeholder field	/// A `DITL`: a count−1 word, then per item placeholder(4) rect(8) type(1) length(1) payload, padded to even.
+M0032	Ferazel/Core/Sources/FerazelCore/Front/FrontIO.swift:110	n	HIGH	timeline doc	/// Every event due by `now` not yet emitted, merged in order; `present` when a draw was made.
+M0033	Ferazel/Core/Sources/FerazelCore/Front/GameFlow.swift:100	n	HIGH	doc	/// `.ContinueGame(reply)` running (the file dialog, the refusals, its loop, the death screen, the menu return).
+M0034	Ferazel/Core/Sources/FerazelCore/Front/GameFlow.swift:196	n	HIGH	faithful skip of StageCompleteEffect (Escape Ring)	/// `*_DAT_1009fd64`: skip the next `.StageCompleteEffect` (`LevelRun` clears it at a completion).
+M0035	Ferazel/Core/Sources/FerazelCore/Front/GameFlow.swift:237	n	HIGH	ExitToShell wait state	case later
+M0036	Ferazel/Core/Sources/FerazelCore/Front/GameFlow.swift:258	n	HIGH	doc	/// `.Quit` has started (by any path): it never returns, so no later event is ever dispatched.
+M0037	Ferazel/Core/Sources/FerazelCore/Front/GameFlow.swift:412	n	HIGH	doc	/// A level's game loop runs (its iterations, not yet ended): the prefs keys.
+M0038	Ferazel/Core/Sources/FerazelCore/Front/GameFlow.swift:465	n	HIGH	doc	/// dead, and a Continue that comes back without a game (cancelled, refused, a level-load error) live again. Inside a
+M0039	Ferazel/Core/Sources/FerazelCore/Front/GameFlow.swift:574	n	HIGH	ExitToShell wait	case .later:
+M0040	Ferazel/Core/Sources/FerazelCore/Front/GameFlow.swift:935	n	HIGH	ExitToShell wait	f.wait = .later
+M0041	Ferazel/Core/Sources/FerazelCore/Front/LevelRun.swift:46	d	HIGH	ScreenRenderer level-op refusal: FerazelDriver routes level ops to levelRenderer; screen segments carry none	/// `ScreenRenderer` refuses the level ops, `Refusal.levelOp`); `setScreenClut(id)` goes to `.level` when `id` is the le
+M0042	Ferazel/Core/Sources/FerazelCore/Front/LevelRun.swift:173	n	HIGH	faithful skip flag	/// `*_DAT_1009fd64`: skip the next `.StageCompleteEffect` (cleared at every completion, M l. 5313).
+M0043	Ferazel/Core/Sources/FerazelCore/Front/LevelRun.swift:321	n	HIGH	faithful: pause menu pick taken at next poll	/// A menu item chosen while paused (A1b): taken at the pause loop's next poll; ignored when not paused.
+M0044	Ferazel/Core/Sources/FerazelCore/Front/LevelRun.swift:508	a	HIGH	boss-music rule (fed0) Phase 5/6; unreachable on 1-4 anyway: Camera.init throws on hdr+0x2724≠0 and 1-4 load	// boss Setup, set by its Kill — engine §4) → `hdr+0x284a = 0x1e`. // later: Phase 5 — the boss Setups and
+M0045	Ferazel/Core/Sources/FerazelCore/Front/LevelRun.swift:518	b	HIGH	chapter screen skipped when clut 280+n absent, as original	// 0, O1): no op. Then `.ChapterScreen(hdr+0x273c)` (L2; nil = no clut 280 + n → skipped).
+M0046	Ferazel/Core/Sources/FerazelCore/Front/LevelRun.swift:559	d	HIGH	OmniPx not built: levels 1-4 OmniPx mode 0 (data-census #5: only 5,15,25,70 use it)	// `_ShutDownAIFFMusic`, `_TurnOffOmniPx`, `_KillOmniPx` (no OmniPx in Phase 3), `_InputActivate(0, 0)`
+M0047	Ferazel/Core/Sources/FerazelCore/Front/LevelRun.swift:627	n	HIGH	doc	/// The loop's part of a tick (Invariant 4): returns false when the run waits for a later tick.
+M0048	Ferazel/Core/Sources/FerazelCore/Front/LevelRun.swift:684	n	HIGH	faithful skipped iteration	// A skipped iteration leaves the screen as it was, but its `.HandleAsyncGammaFade` still moves the gamma.
+M0049	Ferazel/Core/Sources/FerazelCore/Front/LevelRun.swift:687	a	HIGH	in-loop boss-music block (Phase 5/6); 1-4 have arenaBound 0	// not in a suspended part: nothing armed outside the boss rule's in-loop block (M l. 5257–5266, // later:
+M0050	Ferazel/Core/Sources/FerazelCore/Front/LevelRun.swift:728	n	HIGH	doc	// returns; the later contacts and `.CheckGameLoopKeys` read the input of this tick (live in the original).
+M0051	Ferazel/Core/Sources/FerazelCore/Front/LevelRun.swift:907	d	HIGH	internal routing invariant (gameLoopKeys never reaches beginModal)	preconditionFailure("beginModal routes the keys")
+M0052	Ferazel/Core/Sources/FerazelCore/Front/LevelRun.swift:1051	a	HIGH	face-set marks for other levels' types = Phase 5-6	/// 70116). // later: Phase 5–6 — the other sets, as their Setups are transcribed.
+M0053	Ferazel/Core/Sources/FerazelCore/Front/LevelRun.swift:1117	a	HIGH	same (marks for non-1-4 types)	/// // later: Phase 5–6 — the other types'.
+M0054	Ferazel/Core/Sources/FerazelCore/Front/LevelServices.swift:30	n	HIGH	test stub doc	/// draws (`attach`, right after the session init). Core tests pass a stub; the App (A1a) builds the per-level
+M0055	Ferazel/Core/Sources/FerazelCore/Front/MusicFade.swift:5	n	HIGH	faithful no-op	/// set just before (a no-op on the movie, e.g. the blocking fade's first `SetMovieVolume` and its step 0).
+M0056	Ferazel/Core/Sources/FerazelCore/Front/NewGame.swift:22	a	HIGH	.Victory = Phase 6	/// `fd48 = 0`; `.Victory` (// later: Phase 6); the menu return: `GammaFadeOut(6)`, `.DrawMainMenu`, then New Game
+M0057	Ferazel/Core/Sources/FerazelCore/Front/NewGame.swift:176	a	HIGH	.Victory = Phase 6	// `*0088` set; `*_DAT_1009ffc4` (victory) 0 — `.Victory` is Phase 6's.
+M0058	Ferazel/Core/Sources/FerazelCore/Front/NewGame.swift:267	n	HIGH	wait state	wait = .later
+M0059	Ferazel/Core/Sources/FerazelCore/Front/NewGame.swift:276	a	HIGH	map level outside 1...4 refused (D35)	// ◇ D35: the level is not built yet — the report, then the map again at the node the player chose, nothing
+M0060	Ferazel/Core/Sources/FerazelCore/Front/Pause.swift:54	c	HIGH	⌘⇧⌥;0 debug chord (plays a sound, turns on debug keys) not built — ruled out of scope (INDEX Out of scope; Pause Rulings 1)	/// W (0x0d) → the abort confirm; P (0x23) → `.Options`; else the ⌘⇧⌥;0 debug chord (out of scope, Rulings 1). Else Esc
+M0061	Ferazel/Core/Sources/FerazelCore/Front/Pause.swift:85	c	HIGH	same chord (Pause.swift:85)	return nil                                  // the debug chord (M l. 3938–3947): out of scope
+M0062	Ferazel/Core/Sources/FerazelCore/Front/Pause.swift:88	d	HIGH	debug keys need the debug flag only the unbuilt chord sets	return nil                                      // the debug keys (debug flag only): out of scope
+M0063	Ferazel/Core/Sources/FerazelCore/Front/Pause.swift:92	n	HIGH	doc	/// line skip)`; else `WrapCopyToScreen(…, 0)` — the mode folded as `SavePointSave.redraw` does.
+M0064	Ferazel/Core/Sources/FerazelCore/Front/Pause.swift:186	b	HIGH	open event ignored while paused, as original	/// with no menu event takes one — the quit (`.DoQuitAppAE` → `.Quit`) or an open (ignored: `DAT_100a5106` is clear
+M0065	Ferazel/Core/Sources/FerazelCore/Front/Pause.swift:194	n	HIGH	doc	/// the dialog is up it cannot be cleared from outside (a nil written then is ignored — the close needs the model).
+M0066	Ferazel/Core/Sources/FerazelCore/Front/Pause.swift:273	n	HIGH	menus disabled while paused, as original	/// are disabled while paused (`.UpdateMenus`): ignored.
+M0067	Ferazel/Core/Sources/FerazelCore/Front/PrefsDialogModel.swift:29	b	HIGH	key-in-use refusal is the original's DLOG 200	case refused(String)
+M0068	Ferazel/Core/Sources/FerazelCore/Front/PrefsDialogModel.swift:89	n	HIGH	disabled items	/// never come back from ModalDialog and are ignored. Returns the music cues the hit made at once.
+M0069	Ferazel/Core/Sources/FerazelCore/Front/PrefsDialogModel.swift:114	c	HIGH	Options' system-volume slider / Cancel restore never applied (D35 Known deviation 8 — ruled, no fix wanted)	/// (`STSetVolume(local_6c)`, a no-op here). `694c = −1` (the next opening rebuilds panel 1).
+M0070	Ferazel/Core/Sources/FerazelCore/Front/PrefsDialogModel.swift:121	n	HIGH	no-op when panel already up (faithful)	/// `.UpdatePrefsPanel(n)`. A no-op when `n` is already up.
+M0071	Ferazel/Core/Sources/FerazelCore/Front/PrefsDialogModel.swift:207	n	HIGH	dead branch in original (item 12 disabled)	/// (item 12 is the disabled "Graphics:" text) and is not built.
+M0072	Ferazel/Core/Sources/FerazelCore/Front/PrefsDialogModel.swift:250	b	HIGH	Music checkbox never restarts music, as original	// `SetMusicAIFFVolume(V)` only — a no-op after the shutdown (`1992` clear, M l. 41959–41971): the dialog never
+M0073	Ferazel/Core/Sources/FerazelCore/Front/PrefsDialogModel.swift:315	b	HIGH	key-in-use refusal (original)	return .refused(Self.keyInUseMessage)
+M0074	Ferazel/Core/Sources/FerazelCore/Front/PrefsDialogModel.swift:323	n	HIGH	faithful	/// (`lastModifier`), unless already in use — then ignored silently. No modifier bits (0xff00) → `lastModifier = 0`.
+M0075	Ferazel/Core/Sources/FerazelCore/Front/SaveGame.swift:7	n	HIGH	doc	/// `*_DAT_1009fd54`: the saved-game file is known — with prefs+1 ("Reuse saved game files") the next save skips
+M0076	Ferazel/Core/Sources/FerazelCore/Front/SaveGame.swift:25	n	HIGH	^0 text never shown in original DITL 1003	///   not built here — `.IncrementLastSGString` on prefs+0x42 (so the shown default is already incremented), then
+M0077	Ferazel/Core/Sources/FerazelCore/Front/SaveGame.swift:74	d	HIGH	LevelRun always built with files by GameFlow (NewGame.swift openLevel)	guard let files else { preconditionFailure("a save point needs the file seam (LevelRun(files:))") }
+M0078	Ferazel/Core/Sources/FerazelCore/Front/SaveGame.swift:91	d	HIGH	same	guard let files else { preconditionFailure("a save point needs the file seam (LevelRun(files:))") }
+M0079	Ferazel/Core/Sources/FerazelCore/Front/StageScreens.swift:208	b	HIGH	original skips when clut missing	/// `GetCTable(280 + n)` finds nothing — the original then skips everything. Otherwise, on the first `tick`:
+M0080	Ferazel/Core/Sources/FerazelCore/Front/StageScreens.swift:273	n	HIGH	doc	/// gate on and change it). Ticks the caller skipped are polled with this input.
+M0081	Ferazel/Core/Sources/FerazelCore/Front/StageScreens.swift:332	d	HIGH	builder invariant	precondition(events.last.map { $0.at <= t } ?? true)
+M0082	Ferazel/Core/Sources/FerazelCore/Front/WorldMapRun.swift:62	b	HIGH	faithful nil face skip	/// `+8`: the face drawn (nil = none; `.DrawNodeSprites` skips it).
+M0083	Ferazel/Core/Sources/FerazelCore/Front/WorldMapRun.swift:342	n	HIGH	faithful pause menu	/// A menu item chosen while paused (A1b): taken at the pause loop's next poll; ignored when not paused.
+M0084	Ferazel/Core/Sources/FerazelCore/Front/WorldMapRun.swift:521	n	HIGH	doc	/// The loop's part of a tick: false when it waits for a later tick.
+M0085	Ferazel/Core/Sources/FerazelCore/Input/FerazelPadLayout.swift:8	n	HIGH	doc	/// same keys. Foundation + HectorInput only: the Mac shell and Phase 7's Windows shell compile this same file.
+M0086	Ferazel/Core/Sources/FerazelCore/Input/FerazelPrefs.swift:9	n	HIGH	doc	/// `Gestalt('cput')` of a modern Mac: every PowerPC G3 or later answers ≥ 0x108, so Effects defaults to 1
+M0087	Ferazel/Core/Sources/FerazelCore/Input/FerazelPrefs.swift:19	n	HIGH	prefs doc	/// +0x02 Graphics: 1 High Detail, 2 Low Detail, 3 Line-skipped.
+M0088	Ferazel/Core/Sources/FerazelCore/Input/FerazelPrefs.swift:23	n	HIGH	Effects 3 skip faithful	/// +0x06 Effects: 1 Enhanced, 2 Normal, 3 Reduced (3 skips `.DrawLightsOntoTiles`).
+M0089	Ferazel/Core/Sources/FerazelCore/Input/FerazelPrefs.swift:29	b	HIGH	InputSprocket absent = original on a Mac without ISp (item 26 disabled as UpdateDisabledItems does)	/// +0x0a "Use InputSprocket" (not built; design §3.3).
+M0090	Ferazel/Core/Sources/FerazelCore/Input/FerazelPrefs.swift:53	n	HIGH	CD check out of scope (no CD)	/// +0x3a machine hash for the CD check (out of scope).
+M0091	Ferazel/Core/Sources/FerazelCore/Input/FerazelPrefs.swift:70	d	HIGH	internal invariant	precondition(newValue.count == FerazelPrefs.recentNameCount, "eight recent names")
+M0092	Ferazel/Core/Sources/FerazelCore/Input/FerazelPrefs.swift:84	n	HIGH	doc	/// junk in the original [MED]; Phase 3 Invariant 7).
+M0093	Ferazel/Core/Sources/FerazelCore/Input/FerazelPrefs.swift:170	d	HIGH	internal invariant	precondition(keys.count == FerazelPrefs.actionCount, "nine key codes")
+M0094	Ferazel/Core/Sources/FerazelCore/Input/InputActions.swift:4	b	HIGH	no ISp — GetKeys path, as original without ISp	/// pressed. InputSprocket (prefs+0xa) is not built (design §3.3), so an action is its prefs key code in the `GetKeys`
+M0095	Ferazel/Core/Sources/FerazelCore/Input/InputActions.swift:29	d	HIGH	internal invariant	precondition((0..<FerazelPrefs.actionCount).contains(i), "action \(i)")
+M0182	Ferazel/Core/Sources/FerazelCore/Saves/SaveBlock.swift:5	n	HIGH	unused save bytes written 0	/// routine accesses are gaps — not stored, written 0 (Phase 3 Invariant 7): `+0x07`, `+0x0a..+0x0b`, `+0x14..+0x17`,
+M0183	Ferazel/Core/Sources/FerazelCore/Saves/SaveBlock.swift:21	b	HIGH	original refuses preview saves	/// `+0x04` u8 "preview version" flag (resume refuses 1).
+M0184	Ferazel/Core/Sources/FerazelCore/Saves/SaveBlock.swift:23	b	HIGH	original refuses demo saves	/// `+0x05` u8 "demo version" flag (resume refuses 1).
+M0185	Ferazel/Core/Sources/FerazelCore/Saves/SaveBlock.swift:79	d	HIGH	internal invariant	precondition(snapshots.count == SaveBlock.snapshotLevels
+M0186	Ferazel/Core/Sources/FerazelCore/Saves/SaveBlock.swift:81	d	HIGH	internal invariant	precondition(worldName.count <= 255, "world name over 255 bytes")
+M0187	Ferazel/Core/Sources/FerazelCore/Saves/SaveBlock.swift:129	d	HIGH	level numbers ≤70 < 100	precondition((0..<SaveBlock.snapshotLevels).contains(Int(level)), "level outside the 100 snapshot slots")
+M0188	Ferazel/Core/Sources/FerazelCore/Saves/SaveBlock.swift:136	d	HIGH	same	precondition((0..<SaveBlock.snapshotLevels).contains(Int(L)), "level outside the 100 snapshot slots")
+M0189	Ferazel/Core/Sources/FerazelCore/Saves/SaveBlock.swift:137	d	HIGH	511 records always	precondition(records.count == LevelFile.placementCount, "the 511 live records")
+M0190	Ferazel/Core/Sources/FerazelCore/Saves/SavedGameFile.swift:26	n	HIGH	Known deviation 9: no resource fork on non-Mac	/// a real Mac resumes (Known deviation 9: elsewhere the data fork is the only fork and type/creator are skipped).
+M0191	Ferazel/Core/Sources/FerazelCore/Saves/SavedGameFile.swift:60	b	HIGH	not-a-saved-game report is the original's text	throw .notASavedGame
+M0192	Ferazel/Core/Sources/FerazelCore/Saves/SavedGameFile.swift:63	b	HIGH	same	guard let block = try? SaveBlock(image: body) else { throw .notASavedGame }
+M0193	Ferazel/Core/Sources/FerazelCore/Seams/DrawOp.swift:20	n	HIGH	faithful Effects 3	/// `.DrawLightsOntoTiles`; the caller skips it when prefs+6 (Effects) == 3.
+M0194	Ferazel/Core/Sources/FerazelCore/Seams/DrawOp.swift:31	n	HIGH	doc	/// height)` and radius width / 2. Phase 1: the item twinkle (`BonusHandle`).
+M0195	Ferazel/Core/Sources/FerazelCore/Seams/DrawOp.swift:60	n	HIGH	faithful mode 3	/// into the screen's pixels (the cursor hidden and shown around it). Graphics mode 3's copy skips those rows, so the
+M0196	Ferazel/Core/Sources/FerazelCore/Seams/DrawOp.swift:64	n	HIGH	doc	/// LT (Phase 4): Core's light table (`_DAT_100a0128`, `LightTable`) as `.DrawLightsOntoTiles` reads it — the table
+M0197	Ferazel/Core/Sources/FerazelCore/Seams/DrawOp.swift:80	n	HIGH	doc	// MARK: Front end (Phase 3, FE0 — every case added up front; FerazelRender.ScreenRenderer executes them)
+M0198	Ferazel/Core/Sources/FerazelCore/Seams/DrawOp.swift:87	n	HIGH	faithful transfer mode	/// CLUT); `transparent` = transfer mode 0x24 (white source pixels skipped, raw `10079870`).
+M0199	Ferazel/Core/Sources/FerazelCore/Seams/FrameOps.swift:4	n	HIGH	doc	/// LOCKED once Phase 1 lands — cases and fields may be added, never renamed). Core records the original's draw calls
+M0200	Ferazel/Core/Sources/FerazelCore/Seams/FrameOps.swift:12	n	HIGH	faithful reduce-frame-rate skip	/// False on a skipped draw (prefs[0] "Reduce frame rate": the odd iteration of the pair, engine §4).
+M0201	Ferazel/Core/Sources/FerazelCore/Seams/FrameOps.swift:23	n	HIGH	doc	/// S1 (Phase 3): set when the iteration stopped part-way at a modal moment (`FrameSuspension`) — these ops are the
+M0202	Ferazel/Core/Sources/FerazelCore/Seams/FrameOps.swift:33	n	HIGH	doc	/// The empty iteration: nothing drawn, played or requested, and not a skipped draw.
+M0203	Ferazel/Core/Sources/FerazelCore/Seams/FrameSuspension.swift:60	n	HIGH	doc	/// reads it live (`.IsInputKeyPressed` → `_IsPressed` → `GetKeys`, M l. 42336ff / 32391ff; the later contacts'
+M0204	Ferazel/Core/Sources/FerazelCore/Seams/FrameSuspension.swift:70	n	HIGH	doc	/// (the DOWN / climb blocks, the JUMP arm), the player's rows, the later Handles and the frame read it (live in
+M0205	Ferazel/Core/Sources/FerazelCore/Seams/FrameSuspension.swift:74	n	HIGH	doc	/// later contacts and `.CheckGameLoopKeys` read it — live in the original).
+M0206	Ferazel/Core/Sources/FerazelCore/Seams/ScreenGammaOp.swift:15	n	HIGH	doc	/// `MT_FadeToColor`]. Added in the Phase 3 run-2 review fixes: neither `.tint` (per-channel `.TintFadeProc` factors
+M0207	Ferazel/Core/Sources/FerazelCore/Seams/ShellRequest.swift:11	n	HIGH	request routed to LevelRun	/// `LevelRun` (A1a), whose level end goes to `GameFlow`; the app ignores this request.
+M0208	Ferazel/Core/Sources/FerazelCore/Seams/ShellRequest.swift:14	n	HIGH	request routed to LevelRun	/// leave it to `LevelRun` (its `.DeathEffect` steps through `LevelServices.deathEffectStep`); the app ignores it.
+M0209	Ferazel/Core/Sources/FerazelCore/Seams/ShellRequest.swift:17	n	HIGH	doc	// MARK: Phase 3 (FE0 adds every case; F1b, S1, P1, A1b use them)
+M0210	Ferazel/Core/Sources/FerazelCore/Seams/SpriteDraw.swift:36	d	HIGH	every wrapDrawSprites goes through FerazelSession.diffuseSeeds (l.437, 1008) — fixed in Q15; refusal now unreachable	/// every other mode (a mode-5 draw without it is refused, never drawn from another stream).
+M0211	Ferazel/Core/Sources/FerazelCore/Seams/StatusBarState.swift:72	n	HIGH	faithful cached path	/// `.UpdateStatusBar`'s param_1 ≠ 0: no whole-port copy, and `.UpdateHealthMagic` / `.UpdateTextStats` skip what
+M0212	Ferazel/Core/Sources/FerazelCore/Seams/StatusBarState.swift:78	n	HIGH	faithful	/// the cached (skip-if-unchanged) path whatever param_1 is (the plan's name; the dump's effect is that one) — Core
+M0213	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift:15	n	HIGH	doc	///   `.MainMenu @ 1000e618` (l. 7349); on a resume by `.ContinueGame` (l. 6877). Phase 1 has no front end, so the
+M0214	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift:63	n	HIGH	doc	/// the Setup lights added through it in `.SetupLevelSprites` order, every later light call made on it at its call
+M0215	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift:143	n	HIGH	doc	///   `unlocked[L] = 1` before the player spawn). False (every caller before L1) = Phase 2's behaviour exactly.
+M0216	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift:216	b	HIGH	placeholder PICT 150 face on first load is the original's own (SetupFaces header)	// Handle-faced type, the placeholder for a class-cache face (`SetupFaces` header).
+M0217	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift:220	b	HIGH	same	return bounds(FaceRef(pict: SetupFaces.placeholderPict, index: 0, set: .encoded))
+M0218	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift:236	d	HIGH	caught by GameFlow (levelFailed → load-error report); every shipped level has a player	guard let pid = Player.spawn(world: world, x: px, y: py) else { throw SessionError.noPlayerRecord }
+M0219	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift:334	n	HIGH	faithful	/// (`EffectSprite.setup`; 0x4c4 is in the list that skips the `FastRand(8)` package, l. 53748), then its own arm
+M0220	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift:349	d	HIGH	countdown digits (.UpdateDigits) only shown by timer 2907 — placed only on level 40	// `.inert`: the digit Handle `.anon_10060c78` (SSH + SSC of a faceless sprite) // later: `.UpdateDigits`
+M0221	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift:363	n	HIGH	doc	/// hosted session's `.CheckGameLoopKeys` (a session not hosted by `LevelRun` runs no `.CheckGameLoopKeys`: Phase 2's
+M0222	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift:367	d	HIGH	internal invariant	precondition(world.suspension == nil, "FerazelSession.step while the frame is suspended — resume(_:) first")
+M0223	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift:427	n	HIGH	faithful Effects 3	// `.HandleLights`, M l. 9200–9205), handed over right before the strip; also when Effects == 3 skips the latter.
+M0224	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift:447	d	HIGH	.UpdateOmniPx: levels 1-4 OmniPx mode 0	// later: `.UpdateOmniPx` (l. 9434). Then the parity flip (raw `10012710..1001272c`).
+M0225	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift:512	a	HIGH	enemy Handles = Phase 5 (inert class)	break                                       // later: Phase 5 — the enemies' Handles
+M0226	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift:589	n	HIGH	doc	/// sounds). Returns those ops — suspended again when a later contact is modal too.
+M0227	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift:598	d	HIGH	internal invariant	guard let pending = world.suspension else { preconditionFailure("FerazelSession.resume without a suspension") }
+M0228	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift:611	n	HIGH	doc	// `.PlatformBounce` (`talkDone`; the NPC arm has returned already). The rest of the frame — the later
+M0229	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift:654	d	HIGH	internal invariant	preconditionFailure("FerazelSession.resume: the outcome does not answer \(pending)")
+M0230	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift:670	n	HIGH	counter with no reader	/// (`*_DAT_1009fddc`, the other counter, has no reader: not modelled.)
+M0231	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift:778	d	HIGH	internal invariant	preconditionFailure("FerazelSession.resume: \(answer.reply) does not answer \(event)")
+M0232	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift:956	n	HIGH	doc	c.shake = world.shakeStore ?? camera.shake                     // CS: a store the camera has not yet taken
+M0233	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift:963	d	HIGH	auto-scroll refused by Camera.init (throw → load-error report); levels 1-4 load so hdr+0x272a = 0	/// saved, zeroed and restored around them — auto-scroll is refused by `Camera.init`, so it is 0 throughout); the
+M0234	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift:1032	a	HIGH	enemy hit callbacks = Phase 5	/// `.HitButtonSprite` (BT). // later: Phase 5 (enemies, enemy shots). The session's form:
+M0235	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift:1114	n	HIGH	faithful	/// the bounding pre-test (it is skipped only when |x + w/2 − lx| ≥ lx + r + w/2 **and** |y + h/2 − ly| ≥ ly + r + h/2
+M0236	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift:1200	n	HIGH	stale: LevelRun issues GammaFadeInAsync(0x28) on entry (LevelRun.swift:524)	/// `DAT_100a53c2` (gamma available) is taken as set. The level-start fades of `.GameLoop` are not built (session
+M0237	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift:1205	n	HIGH	doc	/// directly built session (Phase 2); `LevelRun` hands `ScreenFade`'s value over (L1).
+M0238	Ferazel/Core/Sources/FerazelCore/Session/GameGlobals.swift:19	n	HIGH	unused globals written 0	/// 0 (Phase 3 Invariant 7): `+0x18..+0x1f`, `+0x21`, byte `+9` of each inventory slot (see `InventorySlot`), `+0x132..+
+M0239	Ferazel/Core/Sources/FerazelCore/Session/GameGlobals.swift:93	n	HIGH	doc	/// Phase 3 level re-entry reads it). A view of the first `crunchCount` slots of the three arrays: setting it writes
+M0240	Ferazel/Core/Sources/FerazelCore/Session/GameGlobals.swift:102	d	HIGH	append guarded at capacity (GameGlobals.swift:117)	precondition(newValue.count <= GameGlobals.crunchCapacity, "crunch log over 20000")
+M0241	Ferazel/Core/Sources/FerazelCore/Session/GameGlobals.swift:235	d	HIGH	internal invariant	precondition(inventory.count == GameGlobals.inventorySlots && hasSnapshot.count == GameGlobals.levelSlots
+M0242	Ferazel/Core/Sources/FerazelCore/Session/SpriteWorld.swift:33	n	HIGH	doc	/// solver, P2's `.CrunchTile` (which writes it and emits `DrawOp.setTile`), and every later reader (F3 review: one
+M0243	Ferazel/Core/Sources/FerazelCore/Session/SpriteWorld.swift:58	n	HIGH	faithful	/// `*_DAT_1009ffa8`: the player is dying / dead — `.HandleSprites` then skips the player pass.
+M0244	Ferazel/Core/Sources/FerazelCore/Session/SpriteWorld.swift:71	n	HIGH	doc	/// `.FindUpperLeftCorner` passes, `.HandleIdleSprites` and the draws. nil (a world without a session) skips them.
+M0245	Ferazel/Core/Sources/FerazelCore/Session/SpriteWorld.swift:101	a	HIGH	boss Setups/Kills = Phase 6	/// opens on 1 (M l. 61022). // later: Phase 6 — the boss Setups that clear it and the Kills that set it again.
+M0246	Ferazel/Core/Sources/FerazelCore/Session/SpriteWorld.swift:122	n	HIGH	faithful	/// IU: `*_DAT_1009fd64 = 1` — the Escape Ring's store (M l. 47603): skip the next `.StageCompleteEffect`. The global
+M0247	Ferazel/Core/Sources/FerazelCore/Session/SpriteWorld.swift:168	n	HIGH	doc	/// include records unlinked by `.MTRemoveSprite` and not yet killed, and idled records until `.UpdateSprites`
+M0248	Ferazel/Core/Sources/FerazelCore/Session/SpriteWorld.swift:195	b	HIGH	original no-op	/// `.MTChangeSpriteLayer @ 10033288` (raw `100332a0..100332bc`): `lwz 0x80; cmpw; beq` — **no-op when the layer
+M0249	Ferazel/Core/Sources/FerazelCore/Session/SpriteWorld.swift:288	n	HIGH	faithful	/// during the pass is handled this frame only if inserted after the saved `next`; one moved to a later place is
+M0250	Ferazel/Core/Sources/FerazelCore/Session/SpriteWorld.swift:314	d	HIGH	internal invariant	guard let saved = handlePassNext else { preconditionFailure("continueHandleSprites without a suspended pass") }
+M0251	Ferazel/Core/Sources/FerazelCore/Session/SpriteWorld.swift:323	n	HIGH	faithful	// `+0x4c` read from the record, linked or not; 0 (an idled record, `SpriteSlot.handleCleared`) is skipped.
+M0252	Ferazel/Core/Sources/FerazelCore/Session/SpriteWorld.swift:350	n	HIGH	faithful contact order	/// 7th and later dispatched at once (`A.hit(A, B)` then `B.hit(B, A)` if B has one). One contact: A.hit, B.hit.
+M0253	Ferazel/Core/Sources/FerazelCore/Session/SpriteWorld.swift:428	n	HIGH	faithful 16-contact cap	/// `+0x34` rect plus position meets the player's (`.SectRectFast`); up to 16 collected, later ones get
+M0254	Ferazel/Core/Sources/FerazelCore/Session/SpriteWorld.swift:452	n	HIGH	faithful	/// Collecting: the next sprite to test (nil = the list's end); `resumeAfter` = the 17th-or-later contact whose
+M0260	Ferazel/Core/Sources/FerazelCore/Sound/SoundVoices.swift:12	c	MED	Known deviation 2: a play evicting another when all 16 voices busy not modelled — 'already playing' checks can be off for a tick (rare, minor)	/// tick; a play evicting another entry (all 16 busy) is not modelled. A play the Sound Tool turns away (all 16 entries
+M0303	Ferazel/Core/Sources/FerazelCore/Tables/TableRequests.swift:68	d	HIGH	LevelTables iterates fixed ranges	precondition((0..<tintCount).contains(k), "tint table \(k)")
+M0304	Ferazel/Core/Sources/FerazelCore/Tables/TableRequests.swift:136	d	HIGH	same	preconditionFailure("tint table \(k) is not a computed table")
+M0305	Ferazel/Core/Sources/FerazelCore/Tables/TableRequests.swift:193	d	HIGH	same	preconditionFailure("tint table \(k) is not a fixed-index table")
+M0306	Ferazel/Core/Sources/FerazelCore/Tables/TableRequests.swift:220	d	HIGH	same	precondition((0..<waterCount).contains(w), "water table \(w)")
+M0307	Ferazel/Core/Sources/FerazelCore/Tables/TableRequests.swift:249	d	HIGH	same	preconditionFailure("water table \(w) is not written")
+M0308	Ferazel/Core/Sources/FerazelCore/Tables/TableRequests.swift:258	d	HIGH	same	precondition((0..<8).contains(n), "redden A table \(n)")
+M0309	Ferazel/Core/Sources/FerazelCore/Tables/TableRequests.swift:272	d	HIGH	same	precondition((0..<16).contains(n), "redden B table \(n)")
+M0310	Ferazel/Core/Sources/FerazelCore/Tables/TableRequests.swift:334	d	HIGH	same	case .glow: preconditionFailure("handled above")
+M0311	Ferazel/Core/Sources/FerazelCore/Tables/TableRequests.swift:345	d	HIGH	same	precondition((0..<16).contains(a) && (0..<16).contains(b), "grey-pull a \(a) b \(b)")
+M0312	Ferazel/Core/Sources/FerazelCore/Tables/TableRequests.swift:406	d	HIGH	same	precondition((0..<darknessLevels).contains(D), "darkness \(D)")
+M0313	Ferazel/Core/Sources/FerazelCore/Tables/TableRequests.swift:415	d	HIGH	same	precondition((0..<lightGroups).contains(g) && (0..<lightIntensities).contains(k), "light group \(g) k \(k)")
+M0314	Ferazel/Core/Sources/FerazelCore/Tables/TableRequests.swift:416	d	HIGH	same	precondition((0..<darknessLevels).contains(D), "darkness \(D)")
+M0315	Ferazel/Core/Sources/FerazelCore/Tables/TableRequests.swift:462	d	HIGH	same	precondition((0..<darknessLevels).contains(D), "darkness \(D)")
+M0601	Ferazel/Shared/FerazelAudio.swift:18	n	HIGH	doc	/// Shared by both shells (Phase W, WF1 — moved from the Mac app unchanged in logic): the mixer is a `FerazelMixer` (the
+M0602	Ferazel/Shared/FerazelDriver.swift:40	n	HIGH	doc	/// `BuiltLevels.range` (1…4 since Phase 4 LV4).
+M0603	Ferazel/Shared/FerazelDriver.swift:84	n	HIGH	doc	/// The platform-neutral half of the shell (Phase W, WF1, Ruling 1; moved from the Mac's `FerazelController` with the
+M0604	Ferazel/Shared/FerazelDriver.swift:173	n	HIGH	boot data errors end the launch (file-system)	/// the prefs, the seed and the flow. A throw is the shell's to report (the Mac terminates).
+M0605	Ferazel/Shared/FerazelDriver.swift:303	d	HIGH	.level segment only exists after prepare() built levelRenderer; a failed prepare throws inside LevelRun (caught)	guard let r = levelRenderer else { throw FrameRenderer.Refusal.tintTableNotBuilt }
+M0606	Ferazel/Shared/FerazelDriver.swift:441	d	HIGH	attach after prepare; throw is caught by GameFlow → load-error report, not a quit	guard let r = levelRenderer else { throw FrameRenderer.Refusal.tintTableNotBuilt }
+M0607	Ferazel/Shared/FerazelDriver.swift:448	d	HIGH	deathEffectStep after prepare; caught by GameFlow	guard let r = levelRenderer else { throw FrameRenderer.Refusal.tintTableNotBuilt }
+M0608	Ferazel/Shared/FerazelDriver.swift:449	d	HIGH	LevelRun steps 0..<50 only	guard (0..<DeathEffect.steps).contains(k) else { throw FrameRenderer.Refusal.deathEffectStep(k) }
+M0609	Ferazel/Shared/FerazelMenuRules.swift:4	n	HIGH	doc	/// MBAR 128's rules, shared by both shells (Phase W, WF3, Ruling 5; moved from the Mac's `FerazelMenus` unchanged in
+M0610	Ferazel/App/FerazelController.swift:17	n	HIGH	doc	/// Phase W (WF1, Ruling 1): the platform-neutral half — the boot's game part, the tick's flow / draw / audio, the
+M0611	Ferazel/App/FerazelController.swift:391	n	HIGH	any file; Core reports non-saves (original's text)	/// `.OpenSG`'s `CustomGetFile` (DITL 1500, type 'FWSg'): the macOS open panel, any file (Core refuses a file that
+M0612	Ferazel/App/FerazelController.swift:479	b	HIGH	open ignored in a game, as original	/// first file (`DAT_100a5106` set); inside a game the pause loop's ignores it (`5106` clear) and `.GameLoop`'s
+M0613	Ferazel/App/FerazelController.swift:505	n	HIGH	no-op	/// Assigning an equal mapping is a no-op in HectorShell.
+M0614	Ferazel/App/FerazelFiles.swift:50	n	HIGH	file write error reported	throw SaveWriteError(error)
+M0615	Ferazel/App/FerazelMenus.swift:20	n	HIGH	desk accessories don't exist on macOS	/// the desk accessories `AppendResMenu` added are not built; the system Quit is File ▸ Quit — a Dock / logout quit
+M0616	Ferazel/App/FerazelMenus.swift:106	n	HIGH	doc	/// `.UpdateMenus`' enables (the shared `FerazelMenuRules`, Phase W WF3).
+M0617	Ferazel/App/Dialogs/CreditsDialog.swift:125	n	HIGH	AppKit boilerplate	required init?(coder: NSCoder) { fatalError("not used") }
+M0618	Ferazel/App/Dialogs/DialogViews.swift:74	n	HIGH	AppKit boilerplate	required init?(coder: NSCoder) { fatalError("not used") }
+M0619	Ferazel/App/Dialogs/DialogViews.swift:104	n	HIGH	AppKit boilerplate	required init?(coder: NSCoder) { fatalError("not used") }
+M0620	Ferazel/App/Dialogs/DialogViews.swift:147	n	HIGH	AppKit boilerplate	required init?(coder: NSCoder) { fatalError("not used") }
+M0621	Ferazel/App/Dialogs/DialogViews.swift:248	n	HIGH	AppKit boilerplate	required init?(coder: NSCoder) { fatalError("not used") }
+M0622	Ferazel/App/Dialogs/PrefsDialogView.swift:13	b	HIGH	key-in-use DLOG 200 as original	/// modifiers (its modifier capture) — and redraws from it. A refused key shows `.ReportDialog` (DLOG 200) over it.
+M0623	Ferazel/App/Dialogs/PrefsDialogView.swift:95	b	HIGH	same	case .refused(let text):
+M0624	Ferazel/Windows/Sources/FerazelWin/WinFileDialogs.swift:84	n	HIGH	headless test stub	/// The panels this launch uses: none shown headless (`--frames`: the stub cancels); else Windows' native dialogs,
+M0625	Ferazel/Windows/Sources/FerazelWin/main.swift:18	n	HIGH	headless test mode	//          (--seed N) and GetDateTime scripted; real input is ignored except the close box. --dump writes the last
+M0626	Ferazel/Windows/Sources/FerazelWinKit/BakedTextRasterizer.swift:13	n	HIGH	every face the game draws (Times 12b, Geneva 9/8b, Times 18, UI 12b) is baked — fz-bake-font faces list matches all TextRun sites	/// Measured against `CoreTextRasterizer` byte for byte (FerazelWinKitTests.BakedTextTests). Not modelled (no game
+M0627	Ferazel/Windows/Sources/FerazelWinKit/BakedTextRasterizer.swift:32	n	HIGH	missing fonts folder = broken install	/// The fonts directory holds no `*.fzfont` — every string would draw invisibly, so it is refused.
+M0628	Ferazel/Windows/Sources/FerazelWinKit/BakedTextRasterizer.swift:45	n	HIGH	doc	/// stays unbaked, with one log line (at load; asking for it later logs nothing more).
+M0629	Ferazel/Windows/Sources/FerazelWinKit/BakedTextRasterizer.swift:49	n	HIGH	missing fonts	guard !names.isEmpty else { throw LoadError.noFonts(fontsDirectory.path) }
+M0630	Ferazel/Windows/Sources/FerazelWinKit/FZFont.swift:45	n	HIGH	bake-format invariant	precondition(coverage.count == Int(width) * Int(height), "coverage size ≠ width·height")
+M0631	Ferazel/Windows/Sources/FerazelWinKit/FZFont.swift:55	n	HIGH	bake-format invariant	precondition(phases.first?.start == 0, "a glyph's phases start at 0")
+M0632	Ferazel/Windows/Sources/FerazelWinKit/FZFont.swift:106	n	HIGH	corrupt font file	case badMagic, unsupportedVersion(UInt16), truncated, badName
+M0633	Ferazel/Windows/Sources/FerazelWinKit/FZFont.swift:160	n	HIGH	corrupt font file	guard try r.bytes(4) == Self.magic else { throw FormatError.badMagic }
+M0634	Ferazel/Windows/Sources/FerazelWinKit/FZFont.swift:162	n	HIGH	corrupt font file	guard version == Self.version else { throw FormatError.unsupportedVersion(version) }
+M0635	Ferazel/Windows/Sources/FerazelWinKit/FZFont.swift:165	n	HIGH	corrupt font file	throw FormatError.badName
+M0636	Ferazel/Windows/Sources/FerazelWinKit/FZFont.swift:185	n	HIGH	corrupt font file	guard i == Self.blank || Int(i) < bitmapCount else { throw FormatError.badBitmapIndex(i) }
+M0637	Ferazel/Windows/Sources/FerazelWinKit/FZFont.swift:187	n	HIGH	corrupt font file	throw FormatError.badPhases
+M0638	Ferazel/Windows/Sources/FerazelWinKit/FZFont.swift:191	n	HIGH	corrupt font file	guard !phases.isEmpty else { throw FormatError.badPhases }
+M0639	Ferazel/Windows/Sources/FerazelWinKit/FZFont.swift:212	n	HIGH	corrupt font file	guard r.atEnd else { throw FormatError.trailingBytes }
+M0640	Ferazel/Windows/Sources/FerazelWinKit/FZFont.swift:234	n	HIGH	corrupt font file	guard n >= 0, i + n <= b.count else { throw FZFont.FormatError.truncated }
+M0641	Ferazel/Windows/Sources/FerazelWinKit/WinArgs.swift:14	n	HIGH	command-line parsing	/// only "yes" / "true" / "1" are true). A later pair for the same key wins. Any other argument is a saved game to open
+M0642	Ferazel/Windows/Sources/FerazelWinKit/WinArgs.swift:26	n	HIGH	headless test answers	/// (`WinAnswerFilePanels`, plan WF5); Windows shows its native dialogs and ignores them, `--frames` runs cancel.
+M0643	Ferazel/Windows/Sources/FerazelWinKit/WinArgs.swift:67	n	HIGH	CLI usage error	guard let v = rest.popFirst() else { throw UsageError(message: "\(flag) needs a value") }
+M0644	Ferazel/Windows/Sources/FerazelWinKit/WinArgs.swift:80	n	HIGH	CLI usage error	guard let n = Int(try value(arg)), n > 0 else { throw UsageError(message: "--frames needs a count > 0") }
+M0645	Ferazel/Windows/Sources/FerazelWinKit/WinArgs.swift:86	n	HIGH	CLI usage error	throw UsageError(message: "--seed needs a 32-bit integer")
+M0646	Ferazel/Windows/Sources/FerazelWinKit/WinArgs.swift:90	n	HIGH	CLI usage error	if arg.hasPrefix("--") { throw UsageError(message: "unknown option \(arg)\n\(usage)") }
+M0647	Ferazel/Windows/Sources/FerazelWinKit/WinArgs.swift:104	n	HIGH	CLI usage error	throw UsageError(message: "--dump, --keys and --seed need --frames")
+M0648	Ferazel/Windows/Sources/FerazelWinKit/WinDialogs.swift:100	n	HIGH	headless stub	/// The stub's answer: Cancel for a confirm and Options, OK for the rest.
+M0649	Ferazel/Windows/Sources/FerazelWinKit/WinFileRequests.swift:22	n	HIGH	file filter	/// The type filter: "All files (*.*)" only (the Mac panel takes any file; Core refuses a non-save itself).
+M0650	Ferazel/Windows/Sources/FerazelWinKit/WinFiles.swift:44	n	HIGH	no APPDATA = broken environment	guard let appData = environment["APPDATA"], !appData.isEmpty else { throw .noAppData }
+M0651	Ferazel/Windows/Sources/FerazelWinKit/WinFiles.swift:126	n	HIGH	write error reported	throw SaveWriteError(error)
+M0652	Ferazel/Windows/Sources/FerazelWinKit/WinGame.swift:47	c	HIGH	Windows: no menu bar (D21) — Ctrl shortcuts only, so Apple ▸ About (→ .Credits, incl. from the pause) has no way in on Windows; ruled	/// input and the pad, the present, the requests (cursor; menu-bar requests ignored, D21; the menu state → the
+M0653	Ferazel/Windows/Sources/FerazelWinKit/WinGame.swift:161	n	HIGH	doc	/// the command line named (the Mac's Finder open). A throw is the executable's to report.
+M0654	Ferazel/Windows/Sources/FerazelWinKit/WinGame.swift:326	n	HIGH	input routing	case .held, .ignored: break
+M0655	Ferazel/Windows/Sources/FerazelWinKit/WinGame.swift:516	n	HIGH	headless skip	public func skip(iterations n: Int) { scripted.skip(n) }
+M0656	Ferazel/Windows/Sources/FerazelWinKit/WinInput.swift:71	n	HIGH	input routing	case ignored
+M0657	Ferazel/Windows/Sources/FerazelWinKit/WinInput.swift:77	n	HIGH	key repeat rule	/// a shortcut again on a repeat, as AppKit does, and ignores a repeat's full-screen toggle).
+M0658	Ferazel/Windows/Sources/FerazelWinKit/WinInput.swift:80	n	HIGH	Caps Lock routed separately	if code == Self.capsLockCode { return .ignored }
+M0659	Ferazel/Windows/Sources/FerazelWinKit/WinInput.swift:109	n	HIGH	focus rule	/// the focus returns is ignored until released — BTX `WinGameDriver`'s rule, HectorShell's inactive app).
+M0660	Ferazel/Windows/Sources/FerazelWinKit/WinInput.swift:119	n	HIGH	focus rule	/// taken by the dialog, so every key and the button are up, and a pad button still held is ignored until
+M0661	Ferazel/Windows/Sources/FerazelWinKit/WinInput.swift:136	n	HIGH	focus rule	/// buttons held on return are ignored until released (`ShellView.pollKeyState`). Returns the translation, whose
+M0662	Ferazel/Windows/Sources/FerazelWinKit/WinKeyScript.swift:44	n	HIGH	key-script test tool	/// skipped. `<frame>` is the loop wake (0-based; 240 a second under `--frames`, a game tick every 4) at whose start the
+M0663	Ferazel/Windows/Sources/FerazelWinKit/WinKeyScript.swift:85	n	HIGH	key-script parse error (test tool)	throw ParseError(line: lineNo, message: "expected `<frame> <command> …`")
+M0664	Ferazel/Windows/Sources/FerazelWinKit/WinKeyScript.swift:88	n	HIGH	test tool	guard words.count > i else { throw ParseError(line: lineNo, message: "missing key") }
+M0665	Ferazel/Windows/Sources/FerazelWinKit/WinKeyScript.swift:96	n	HIGH	test tool	throw ParseError(line: lineNo, message: "unknown key \(words[i])")
+M0666	Ferazel/Windows/Sources/FerazelWinKit/WinKeyScript.swift:105	n	HIGH	test tool	default: throw ParseError(line: lineNo, message: "unknown modifier \(m)")
+M0667	Ferazel/Windows/Sources/FerazelWinKit/WinKeyScript.swift:112	n	HIGH	test tool	throw ParseError(line: lineNo, message: "expected `\(words[1]) <x> <y>`")
+M0668	Ferazel/Windows/Sources/FerazelWinKit/WinKeyScript.swift:137	n	HIGH	test tool	throw ParseError(line: lineNo, message: "expected `caps on|off`")
+M0669	Ferazel/Windows/Sources/FerazelWinKit/WinKeyScript.swift:143	n	HIGH	test tool	throw ParseError(line: lineNo, message: "unknown command \(words[1])")
+M0670	Ferazel/Windows/Sources/FerazelWinKit/WinKeyScript.swift:206	n	HIGH	test tool	public mutating func skip(_ n: Int) { frame += n }
+M0671	Ferazel/Windows/Sources/FerazelWinKit/WinPrefsDialog.swift:14	b	HIGH	key-in-use DLOG 200 (Windows twin)	/// flagged) and each tick's null event with the modifiers held — and redraws from it. A refused key shows DLOG 200 over
+M0672	Ferazel/Windows/Sources/FerazelWinKit/WinPrefsDialog.swift:82	b	HIGH	same	case .refused(let text):
+M0673	Ferazel/Windows/Sources/FerazelWinKit/WinShortcuts.swift:34	n	HIGH	Caps Lock ignored for shortcuts	/// The command a key-down picks: Ctrl alone (Caps Lock ignored) + an entry's key, when the shared rules say the
+M0674	Ferazel/Windows/Sources/FerazelWinKit/WinStartup.swift:71	n	HIGH	log write failure	/// (rewritten at each launch, the last launch's kept as "… (previous).log"; BTX `WinLog`). Thread-safe; a log that cann
+M0675	Ferazel/Windows/Sources/fz-bake-font/main.swift:47	n	HIGH	bake tool (dev only)	bitmapInfo: CGImageAlphaInfo.alphaOnly.rawValue) else { fatalError("no context") }
+M0676	Ferazel/Windows/Sources/fz-bake-font/main.swift:59	n	HIGH	bake tool	precondition(minR > 0 && minC > 0 && maxR < h - 1 && maxC < w - 1, "ink reaches the bake margin")
+M0677	Ferazel/Windows/Sources/fz-bake-font/main.swift:75	n	HIGH	bake tool	precondition(s.unicodeScalars.count == 1, "MacRoman 0x\(String(byte, radix: 16)) is not one scalar")
+M0678	Ferazel/Windows/Sources/fz-bake-font/main.swift:94	n	HIGH	bake tool	precondition(i != FZFont.blank, "too many bitmaps")
+X001	Ferazel/Core/Sources/FerazelCore/Front/ContinueGame.swift:121	c	MED	Continue/Restore (menu, ⌘O, Finder or Windows command-line open) of a save at level 5..79 skips the BuiltLevels check: defaultBranch → loopIteration → LevelRun; SetupFaces throws notTranscribed (or Camera arenaBound on 5) → caught → "level could not be loaded" report → menu, not the D35 not-built report; any level whose types all set up would run with unloaded face sets (faceNotLoaded → quit)	NewGame.swift:66 and :275 check BuiltLevels; ContinueGame.defaultBranch does not; SetupFaces.swift:372/444/482 notTranscribed

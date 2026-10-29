@@ -1,0 +1,1237 @@
+address	name	status	phase/why	reachable-L1-4/front-end	confidence	note
+10000000	FUN_10000000	out of scope	startup / Apple-event plumbing	n/a	HIGH	
+1000001c	.CopyBitsCT	built	cited 2 (StatusBar.swift:2)	—	MED	classified by citation
+100000a8	.CopyBitsCTForce	built	cited 4 (StageScreens.swift:2,ScreenRenderer.swift:1,DrawOp.swift:1)	—	MED	classified by citation
+10000128	.SLDisable	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10000148	.SLEnable	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10000168	.InitEngine	out of scope	system plumbing (sleep proc, memory report, empty CheckFlags, 8-bit switch, screen ptrs) — cited for ordering only	n/a	HIGH	
+100001ec	.InitToolbox	out of scope	startup / Apple-event plumbing	n/a	HIGH	
+100002ac	.InitSprites	built	cited 8 (BootFaces.swift:2,LevelRun.swift:2,SetupFaces.swift:1,HeldItem.swift:1)	—	MED	classified by citation
+10000408	.InitPlayerKickRects	dead	kick rects written, read by nothing (RE bank tocrefs 100a0078)	—	HIGH	
+10000924	.LoadCoolingMap	not built	fire parallax (hdr 0x2722) + flame buffer	no (0x2722 only on levels 52, 55)	HIGH	ParallaxBlitter refuses a flame level; FlameAddSpark also from HandleEnemyShotSprite (phase 5/6)
+100009c8	.InitAppGlobals	built	cited 19 (GameFlow.swift:4,FerazelDriver.swift:4,FerazelAudio.swift:2,StatusBar.)	—	MED	classified by citation
+10001400	.ProcessFGBlendTileFaces	built	cited 5 (BlendFaces.swift:2,TileSets.swift:2,TileGridRenderer.swift:1)	—	MED	classified by citation
+10001498	.InitGameGlobals	built	cited 33 (GameGlobals.swift:11,TileSets.swift:3,InventorySlot.swift:3,NewGame.sw)	—	MED	classified by citation
+10001cac	.InitTiles	built	cited 2 (ConversationRenderer.swift:1,GameFlow.swift:1)	—	MED	classified by citation
+10001e50	.LoadBGTileset	built	cited 3 (TileSets.swift:3)	—	MED	classified by citation
+10001f2c	.LoadFGTileset	built	cited 2 (TileSets.swift:2)	—	MED	classified by citation
+10002008	.LoadFGWaterTileset	built	cited 4 (TileSets.swift:3,WaterFaceBlitter.swift:1)	—	MED	classified by citation
+100020ec	.LoadFGPatternTileset	built	cited 2 (TileSets.swift:2)	—	MED	classified by citation
+1000224c	.LoadPxBackTileset	built	cited 3 (TileSets.swift:2,LevelHeader.swift:1)	—	MED	classified by citation
+10002344	.LoadPxMidTileset	built	cited 3 (TileSets.swift:2,LevelHeader.swift:1)	—	MED	classified by citation
+1000246c	.DisposeBGTileset	out of scope	memory / port disposal (Swift ARC)	n/a	HIGH	
+10002534	.DisposeFGTileset	out of scope	memory / port disposal (Swift ARC)	n/a	HIGH	
+100025fc	.DisposeFGWaterTileset	out of scope	memory / port disposal (Swift ARC)	n/a	HIGH	
+100026c8	.DisposeFGPatternTileset	out of scope	memory / port disposal (Swift ARC)	n/a	HIGH	
+100027cc	.DisposePxBackTileset	out of scope	memory / port disposal (Swift ARC)	n/a	HIGH	
+100027f8	.DisposePxMidTileset	out of scope	memory / port disposal (Swift ARC)	n/a	HIGH	
+10002824	.InitTileHotRects	built	cited 2 (SeparateFromTiles.swift:1,TileHotRects.swift:1)	—	MED	classified by citation
+10002c5c	.TrackClickOnCommandButton	built	cited 5 (GameFlow.swift:3,MainMenu.swift:2)	—	MED	classified by citation
+10002f24	.DrawMainMenu	built	deferred-word hits are noise (history / "later in the frame")	front end / L1-4	HIGH	
+10003024	.DisposeLevelTilesets	out of scope	memory / port disposal (Swift ARC)	n/a	HIGH	
+10003098	.LoadLevelTilesets	built	cited 8 (TileSets.swift:5,LevelRun.swift:3)	—	MED	classified by citation
+1000332c	.LoadLevelPhysics	absorbed	header 0x2860 physics override -> globals never read	—	HIGH	LevelHeader reads 0x2860..0x286a; 0 on every level; no reader in original
+100033d4	.LoadLevelSounds	absorbed	re-init sounds; level own snd set (hdr 0x26d0) is 0 on all levels	L1-4	MED	port: sounds loaded once (InitSounds)
+10003478	.GenerateSprite	built	all classes; rope-bridge +0x1e8 arm phase 6	L1-4	HIGH	rope bridge 1466 not placed L1-4
+10003cd0	.SetupLevelSprites	partial	missing: auto-scroll marker sprites (hdr 0x272a)	no (0x272a set only on levels 51, 52)	HIGH	SetupFaces throws autoScrollSprites; (d)
+10004114	.ReportMem	out of scope	system plumbing (sleep proc, memory report, empty CheckFlags, 8-bit switch, screen ptrs) — cited for ordering only	n/a	HIGH	
+10004134	.AltClutMod	dead	alt CLUT (hdr 0x271c) is 0 on all 24 levels	—	HIGH	lighting-tables §1.6
+100042e8	.CheckFlags	out of scope	system plumbing (sleep proc, memory report, empty CheckFlags, 8-bit switch, screen ptrs) — cited for ordering only	n/a	HIGH	
+1000430c	.SetupLevel	built	cited 59 (LevelRun.swift:13,FerazelSession.swift:13,SetupFaces.swift:8,FrameRend)	—	MED	classified by citation
+10005070	.InitTrackMap	dead	128x128 visited-cell track map: written, never read (save-continue.md: vestigial)	—	HIGH	
+10005130	.SetTrackMap	dead	128x128 visited-cell track map: written, never read (save-continue.md: vestigial)	—	HIGH	
+1000518c	.UpdateTrackMap	dead	128x128 visited-cell track map: written, never read (save-continue.md: vestigial)	—	HIGH	
+10005270	.DeathEffect	built	deferred-word hits are noise (history / "later in the frame")	front end / L1-4	HIGH	
+10005510	.FillPercent	built	cited 5 (StageScreens.swift:5)	—	MED	classified by citation
+10005894	.CalcPercent	built	cited 4 (StageScreens.swift:4)	—	MED	classified by citation
+10005950	.StageCompleteEffect	built	cited 9 (StageScreens.swift:3,LevelRun.swift:3,GameFlow.swift:1,SpriteWorld.swi)	—	MED	classified by citation
+10005ba0	.PopupStageLoad	built	cited 6 (StageScreens.swift:3,LevelRun.swift:2,LevelServices.swift:1)	—	MED	classified by citation
+10005ce4	.UpdateStageLoad	built	cited 6 (StageScreens.swift:4,LevelRun.swift:2)	—	MED	classified by citation
+10005e2c	.UpLevel	absorbed	level-change watch (UpLevel is empty) + abort flag -> loop end	L1-4	MED	abort flag DAT_100a5106 = GameFlow.loopEnded
+10005e4c	.RestoreWindowBackground	built	cited 3 (DrawOp.swift:1,Pause.swift:1,FerazelSession.swift:1)	—	MED	classified by citation
+10005ec8	.RestorePreExistingWindowBackground	built	cited 1 (NewGame.swift:1)	—	MED	classified by citation
+10005f04	.CapsLockDown	built	cited 8 (Pause.swift:3,FerazelSession.swift:3,FrameSuspension.swift:2)	—	MED	classified by citation
+10005f5c	.MySleepProc	out of scope	system plumbing (sleep proc, memory report, empty CheckFlags, 8-bit switch, screen ptrs) — cited for ordering only	n/a	HIGH	
+10006008	.MyInstallSleepProc	out of scope	system plumbing (sleep proc, memory report, empty CheckFlags, 8-bit switch, screen ptrs) — cited for ordering only	n/a	HIGH	
+10006078	.Pause	built	cited 28 (FerazelSession.swift:9,Pause.swift:7,WorldMapRun.swift:5,LevelRun.swif)	—	MED	classified by citation
+100064b0	.FindFPS	out of scope	FPS display (debug)	n/a	HIGH	
+1000650c	.DisplayFPS	out of scope	FPS display (debug)	n/a	HIGH	
+100066f4	.CheckGameEvents	absorbed	level-change watch (UpLevel is empty) + abort flag -> loop end	L1-4	MED	abort flag DAT_100a5106 = GameFlow.loopEnded
+10006784	.ConfirmAbortGameDialog	built	cited 7 (Pause.swift:2,FerazelDialogs.swift:2,LevelRun.swift:1,FerazelCarbonDia)	—	MED	classified by citation
+10006970	.TrackClickOnCommandButtonDeath	built	cited 3 (DeathScreen.swift:3)	—	MED	classified by citation
+10006b6c	.WandGlow	built	cited 5 (DeathScreen.swift:5)	—	MED	classified by citation
+10006ca4	.TurnGray	built	cited 10 (DeathScreen.swift:7,ScreenRenderer.swift:1,ScreenGammaOp.swift:1,NewGa)	—	MED	classified by citation
+10007190	.AskToContinue	built	cited 12 (DeathScreen.swift:4,NewGame.swift:4,GameFlow.swift:3,SaveGame.swift:1)	—	MED	classified by citation
+10007684	.CheckGameLoopKeys	built	deferred-word hits are noise (history / "later in the frame")	front end / L1-4	HIGH	
+10007c24	.HandleSprites	built	cited 14 (FerazelSession.swift:6,SpriteWorld.swift:4,BoxSprite.swift:1,ParticleP)	—	MED	classified by citation
+10007c9c	FUN_10007c9c	absorbed	clears the 512-entry idle-sprite table at SetupLevel	L1-4	MED	IdleSprites/SpriteWorld fresh per level
+10007d8c	.AddIdleSprite	built	deferred-word hits are noise or name other routines' later arms	L1-4	HIGH	
+10007ed4	.ActiveToIdleSprite	built	cited 16 (IdleSprites.swift:5,SpriteSlot.swift:2,SetupFaces.swift:2,FerazelSessi)	—	MED	classified by citation
+1000803c	.IdleToActiveSprite	built	cited 8 (SpriteSlot.swift:3,IdleSprites.swift:2,SpriteWorld.swift:2,RopeSprite.)	—	MED	classified by citation
+100081ac	.HandleIdleSprites	built	deferred-word hits are noise or name other routines' later arms	L1-4	HIGH	
+10008430	.UpdateHealthMagic	built	cited 18 (StatusBar.swift:5,StatusBarCalls.swift:5,StatusBarState.swift:3,WorldM)	—	MED	classified by citation
+10008c14	.DrawNumAsString	absorbed	NumToString+DrawString for UpdateTextStats	L1-4 HUD	HIGH	StatusBar.swift draws the score/coins text
+10008c6c	.UpdateTextStats	built	cited 19 (StatusBar.swift:7,StatusBarState.swift:3,StatusBarCalls.swift:3,FrameR)	—	MED	classified by citation
+10008f90	.UpdateItemStat	built	cited 34 (StatusBar.swift:9,StatusBarState.swift:4,StatusBarCalls.swift:4,ConvAc)	—	MED	classified by citation
+100095dc	.UpdateStatusBar	built	cited 57 (FerazelSession.swift:11,StatusBarCalls.swift:6,StatusBarState.swift:5,)	—	MED	classified by citation
+100097e0	.DeadTime	built	cited 6 (DeathScreen.swift:3,StageScreens.swift:2,WorldMapRun.swift:1)	—	MED	classified by citation
+1000982c	.UpdateSprites	built	deferred-word hits are noise or name other routines' later arms	L1-4	HIGH	
+10009b9c	.ChapterScreen	built	deferred-word hits are noise (history / "later in the frame")	front end / L1-4	HIGH	
+10009d48	.GameLoop	built	deferred-word hits are noise (history / "later in the frame")	front end / L1-4	HIGH	
+1000a4c8	.WarpDialog	out of scope	debug level-warp dialog (NewGame, debug flag _DAT_100a0064 off in shipped game)	n/a	HIGH	RE bank: out of scope (debug)
+1000a6ac	.CopyVictoryStitch	not built	phase 6 (victory sequence)	no (after Xichra)	HIGH	NewGame.swift: .Victory // later: Phase 6
+1000aa68	.CreditScreen	not built	phase 6 (victory sequence)	no (after Xichra)	HIGH	NewGame.swift: .Victory // later: Phase 6
+1000ac3c	.Victory	not built	phase 6 (victory sequence)	no (after Xichra)	HIGH	NewGame.swift: .Victory // later: Phase 6
+1000b11c	.NewGame	built	cited 25 (GameFlow.swift:7,FerazelSession.swift:4,NewGame.swift:3,ContinueGame.s)	—	MED	classified by citation
+1000b5ec	.FindUpperLeftCorner	built	deferred-word hits are noise (history / "later in the frame")	front end / L1-4	HIGH	
+1000bec0	.AbortGame	built	cited 5 (Pause.swift:3,FerazelSession.swift:1,FerazelMenus.swift:1)	—	MED	classified by citation
+1000bfb0	.DoSaveGame	dead	unreachable in 1.0.3 (DITL 202 has 4 items; SaveBlock.swift BC26)	—	HIGH	
+1000c104	.SavePointSave	built	cited 19 (LevelRun.swift:6,SaveGame.swift:4,FrameSuspension.swift:3,HitPlayerSpr)	—	MED	classified by citation
+1000c8d8	.EndLevelSGUpdate	built	cited 9 (LevelRun.swift:4,FerazelSession.swift:2,SaveBlock.swift:1,GameFlow.swi)	—	MED	classified by citation
+1000d004	.ContinueGame	built	deferred-word hits are noise (history / "later in the frame")	front end / L1-4	HIGH	
+1000df94	.ToggleMusic	built	cited 7 (Pause.swift:3,PrefsToggles.swift:2,GameFlow.swift:1,FerazelMenus.swift)	—	MED	classified by citation
+1000e118	.UpdateSGString	built	cited 9 (SaveGame.swift:4,LevelRun.swift:4,NewGame.swift:1)	—	MED	classified by citation
+1000e22c	.ToggleSound	built	cited 7 (Pause.swift:3,PrefsToggles.swift:2,GameFlow.swift:1,FerazelMenus.swift)	—	MED	classified by citation
+1000e340	.MakeCurrPrefs	built	cited 24 (SaveGame.swift:5,PrefsToggles.swift:4,LevelRun.swift:4,GameFlow.swift:)	—	MED	classified by citation
+1000e470	.Options	built	deferred-word hits are noise (history / "later in the frame")	front end / L1-4	HIGH	
+1000e5b4	.Credits	built	cited 29 (GameFlow.swift:6,Pause.swift:6,DialogSystem.swift:4,WinDialogs.swift:3)	—	MED	classified by citation
+1000e618	.MainMenu	built	cited 37 (GameFlow.swift:22,MainMenu.swift:4,FerazelMenuRules.swift:4,FerazelPad)	—	MED	classified by citation
+1000e9d4	.Quit	built	deferred-word hits are noise (history / "later in the frame")	front end / L1-4	HIGH	
+1000eb34	.CheckEvent	built	cited 19 (GameFlow.swift:11,Pause.swift:3,FerazelController.swift:2,NewGame.swif)	—	MED	classified by citation
+1000eb98	.HandleEvent	built	cited 1 (GameFlow.swift:1)	—	MED	classified by citation
+1000ec88	.HandleMouseEvent	out of scope	event loop / resolution-switch plumbing (window + 640x480 switch done by the shell)	n/a	HIGH	
+1000ecf8	.HandleResSwitch	out of scope	event loop / resolution-switch plumbing (window + 640x480 switch done by the shell)	n/a	HIGH	
+1000eec0	.HandleUpdateEvent	out of scope	event loop / resolution-switch plumbing (window + 640x480 switch done by the shell)	n/a	HIGH	
+1000efc4	.HandleOSEvent	out of scope	suspend/resume event plumbing (MTHideWindow); shell handles app deactivate	front end	MED	pause-on-deactivate behaviour is the shell's; not a frame path
+1000f180	.InitPrefs	built	cited 19 (FerazelPrefs.swift:6,PrefsFile.swift:2,PrefsToggles.swift:2,SaveGame.s)	—	MED	classified by citation
+1000f4c4	.CheckSysVersion	out of scope	startup / Apple-event plumbing	n/a	HIGH	
+1000f548	.GetProcessorInfo	out of scope	startup / Apple-event plumbing	n/a	HIGH	
+1000f5e8	.OpenResourceFiles	absorbed	resource-file / world-file opening	front end	MED	port: FerazelResources chains + LevelFile/WorldMap/Conversation loaders; music path in the shell
+1000f71c	.CloseResourceFiles	absorbed	resource-file / world-file opening	front end	MED	port: FerazelResources chains + LevelFile/WorldMap/Conversation loaders; music path in the shell
+1000f790	.InitFaces	built	cited 1 (GameFlow.swift:1)	—	MED	classified by citation
+1000f7b0	.ResSwitchDialog	out of scope	event loop / resolution-switch plumbing (window + 640x480 switch done by the shell)	n/a	HIGH	
+1000fa10	.CopyScreenClut	out of scope	event loop / resolution-switch plumbing (window + 640x480 switch done by the shell)	n/a	HIGH	
+1000faa8	.SetScreenClut	built	cited 23 (FrameRenderer.swift:4,LevelTables.swift:3,ScreenRenderer.swift:2,Color)	—	MED	classified by citation
+1000fc14	.ResSwitch	absorbed	640x480 monitor switch (prefs +0x32)	front end	MED	shell fullscreen/scaling
+1000fdf0	.DateChecks	out of scope	beta expiry / date check	n/a	HIGH	
+1000ffc0	.main	built	cited 16 (GameFlow.swift:4,PrefsToggles.swift:2,BootSequence.swift:2,FerazelCont)	—	MED	classified by citation
+10010834	.SetLongRect	built	cited 1 (TileGridRenderer.swift:1)	—	MED	classified by citation
+10010868	.PreparePaintFrame	built	cited 2 (TileGridRenderer.swift:2)	—	MED	classified by citation
+100109c0	.GenerateRain	not built	OmniPx (hdr 0x26c7: rain level 15; modes 2/5/6 levels 5, 25, 70)	no (0 on L1-4)	HIGH	GenerateRain = mode 1 only
+10010d04	.HandleMovieCapture	out of scope	debug movie capture (PaintFrameWrap)	n/a	HIGH	
+10010d30	.FillCachedTileArray	built	cited 5 (WaterEffects.swift:2,PlayerState.swift:1,Player.swift:1,LevelFlow.swif)	—	MED	classified by citation
+10010fac	.WrapDrawWaterEffects	built	cited 18 (WaterEffects.swift:6,FerazelSession.swift:4,FrameRenderer.swift:2,Draw)	—	MED	classified by citation
+1001171c	.RipplePxBackOffsets	not built	parallax ripple (hdr 0x26ca)	no (levels 11, 18 only)	HIGH	
+1001180c	.AnimateCLUT	built	cited 6 (LevelTables.swift:3,FerazelSession.swift:3)	—	MED	classified by citation
+10011cf8	.PaintFrameWrap	built	cited 64 (Pause.swift:13,FerazelSession.swift:13,FrameRenderer.swift:5,DrawOp.sw)	—	MED	classified by citation
+10012848	.SetScrollLocation	built	cited 15 (FerazelSession.swift:7,TileGridRenderer.swift:3,WaterEffects.swift:2,D)	—	MED	classified by citation
+10012a50	.ChangedTile	built	cited 6 (FrameRenderer.swift:2,FerazelSession.swift:2,DrawOp.swift:1,PlayerTile)	—	MED	classified by citation
+10012ab4	.PlainWrapFGTile	built	cited 2 (LightRenderer.swift:2)	—	MED	classified by citation
+10012ea8	.PlainWrapBGTile	built	cited 2 (LightRenderer.swift:2)	—	MED	classified by citation
+10012f84	.PlainWrapFGOverlayTile	built	cited 3 (LightRenderer.swift:3)	—	MED	classified by citation
+100131e8	.DrawLightOpBGTile	built	cited 1 (LightRenderer.swift:1)	—	MED	classified by citation
+100132a0	.DrawLightOpFGTile	built	cited 1 (LightRenderer.swift:1)	—	MED	classified by citation
+10013358	.DrawLightOpFGOverlayTile	built	cited 2 (LightRenderer.swift:2)	—	MED	classified by citation
+10013498	.RedrawScrollGrid	built	mask-only mode built in SpriteBlitter (the TileGridRenderer note is stale)	L1-4	MED	
+10013fd0	.RedrawEntireScrollGrid	built	cited 29 (FerazelSession.swift:11,Pause.swift:4,HitPlayerSprite.swift:4,DrawOp.s)	—	MED	classified by citation
+10014054	.LightAnyFGTile	built	cited 3 (TileGridRenderer.swift:2,LightRenderer.swift:1)	—	MED	classified by citation
+1001413c	.LightAnyBGTile	built	cited 4 (TileGridRenderer.swift:3,LightRenderer.swift:1)	—	MED	classified by citation
+100141cc	.LightAnyFGOverlayFGTile	built	cited 2 (TileGridRenderer.swift:2)	—	MED	classified by citation
+10014264	.LightAnyFGOverlayBGTile	built	cited 1 (TileGridRenderer.swift:1)	—	MED	classified by citation
+100142fc	.WrapRectBlitX	built	cited 4 (TileGridRenderer.swift:1,TileBlitters.swift:1,LightRenderer.swift:1,Fr)	—	MED	classified by citation
+100144c8	.WrapDrawSprites	built	cited 39 (SpriteSlot.swift:10,FerazelSession.swift:10,SpriteBlitter.swift:4,Draw)	—	MED	classified by citation
+10014a58	.WrapEraseSprites	built	cited 16 (SpriteBlitter.swift:5,FerazelSession.swift:4,DrawOp.swift:2,SpriteSlot)	—	MED	classified by citation
+100151c4	.WrapDrawFace	built	cited 8 (SpriteBlitter.swift:4,WaterFaceBlitter.swift:2,WaterEffects.swift:1,Fe)	—	MED	classified by citation
+10015454	.WrapBackScratchFace	built	cited 3 (SpriteBlitter.swift:3)	—	MED	classified by citation
+100156c8	.WrapLightFace	built	cited 7 (SpriteBlitter.swift:5,WaterFaceBlitter.swift:1,WaterEffects.swift:1)	—	MED	classified by citation
+10015948	.WrapDrawParticle	built	cited 9 (ParticleRenderer.swift:5,ParticlePool.swift:2,ParticleDraw.swift:2)	—	MED	classified by citation
+10015fb8	FUN_10015fb8	built	cited 2 (ParticleRenderer.swift:2)	—	MED	classified by citation
+10016440	FUN_10016440	built	cited 2 (ParticleRenderer.swift:2)	—	MED	classified by citation
+10016784	.WrapEraseBoolFace	built	cited 3 (SpriteBlitter.swift:3)	—	MED	classified by citation
+100169f4	.WrapDrawTile	built	cited 3 (TileBlitters.swift:1,LightRenderer.swift:1,FramePorts.swift:1)	—	MED	classified by citation
+10016c8c	.WrapLightTile	built	cited 3 (LightRenderer.swift:2,TileGridRenderer.swift:1)	—	MED	classified by citation
+10016d80	.WrapLightOpTile	built	cited 1 (LightRenderer.swift:1)	—	MED	classified by citation
+10016f84	.WrapDrawBoolTile	built	cited 1 (TileBlitters.swift:1)	—	MED	classified by citation
+10017220	.WrapEraseBoolTile	built	cited 1 (TileBlitters.swift:1)	—	MED	classified by citation
+100174bc	.WrapCopyToScreen	built	cited 26 (ParallaxBlitter.swift:6,DrawOp.swift:6,FerazelSession.swift:4,FrameRen)	—	MED	classified by citation
+10017924	.DoubleBlitPPCParallaxOneLayer	built	cited 4 (ParallaxBlitter.swift:4)	—	MED	classified by citation
+10018dd4	.DoubleBlitPPCParallaxOneLayerFire	not built	fire parallax (hdr 0x2722) + flame buffer	no (0x2722 only on levels 52, 55)	HIGH	ParallaxBlitter refuses a flame level; FlameAddSpark also from HandleEnemyShotSprite (phase 5/6)
+100196e8	.MosaicScreenBlit	built	cited 5 (FrameRenderer.swift:2,Mosaic.swift:1,DrawOp.swift:1,LevelRun.swift:1)	—	MED	classified by citation
+100198bc	.MosaicTransition	built	cited 18 (LevelRun.swift:7,FrameRenderer.swift:3,FrameSuspension.swift:3,DrawOp.)	—	MED	classified by citation
+10019ac4	.TurnOnOmniPx	not built	OmniPx (hdr 0x26c7: rain level 15; modes 2/5/6 levels 5, 25, 70)	no (0 on L1-4)	HIGH	GenerateRain = mode 1 only
+10019bac	.TurnOffOmniPx	not built	OmniPx (hdr 0x26c7: rain level 15; modes 2/5/6 levels 5, 25, 70)	no (0 on L1-4)	HIGH	GenerateRain = mode 1 only
+10019d78	.SetupOmniPx	not built	OmniPx (hdr 0x26c7: rain level 15; modes 2/5/6 levels 5, 25, 70)	no (0 on L1-4)	HIGH	GenerateRain = mode 1 only
+1001a184	.InterlaceBlit128	not built	OmniPx (hdr 0x26c7: rain level 15; modes 2/5/6 levels 5, 25, 70)	no (0 on L1-4)	HIGH	GenerateRain = mode 1 only
+1001a434	.UpdateOmniPx	not built	OmniPx (hdr 0x26c7: rain level 15; modes 2/5/6 levels 5, 25, 70)	no (0 on L1-4)	HIGH	GenerateRain = mode 1 only
+1001a86c	.KillOmniPx	not built	OmniPx (hdr 0x26c7: rain level 15; modes 2/5/6 levels 5, 25, 70)	no (0 on L1-4)	HIGH	GenerateRain = mode 1 only
+1001a928	.InitScanline	absorbed	zeroes the 480-row scanline buffer at PreparePaintFrame (OmniPx/interlace scratch)	n/a	MED	buffer only read by OmniPx paths (not built)
+1001a9f8	.InitLighting	built	cited 2 (SetupFaces.swift:1,LightTable.swift:1)	—	MED	classified by citation
+1001aaf8	.GetAmbDarkVal	built	cited 5 (SpriteBlitter.swift:2,LightRenderer.swift:2,BoxSprite.swift:1)	—	MED	classified by citation
+1001ab74	.CalcAmbientDarken	built	cited 2 (TableRequests.swift:2)	—	MED	classified by citation
+1001acc4	.CalcLightingTable	built	cited 3 (TableRequests.swift:2,LevelTables.swift:1)	—	MED	classified by citation
+1001bc08	.AddLight	built	cited 28 (SetupFaces.swift:10,FrameRenderer.swift:4,LightTable.swift:3,FerazelSe)	—	MED	classified by citation
+1001bd34	.RemoveLight	built	cited 17 (LightTable.swift:3,GroundCeilingEffects.swift:3,BackgroundSprite.swift)	—	MED	classified by citation
+1001bdbc	.ChangeLightFace	built	cited 21 (BonusSprite.swift:6,BonusHandle.swift:4,GroundCeilingEffects.swift:3,F)	—	MED	classified by citation
+1001be18	.SetLightPos	built	cited 3 (LightTable.swift:2,BonusSprite.swift:1)	—	MED	classified by citation
+1001be7c	.ChangeLightSpeed	built	cited 2 (LightTable.swift:1,PlayerShot.swift:1)	—	MED	classified by citation
+1001becc	.ChangeLightColor	built	cited 8 (PlayerShotHits.swift:3,BackgroundSprite.swift:2,PlayerShot.swift:2,Lig)	—	MED	classified by citation
+1001bf18	.RemoveAllLights	built	cited 5 (LightTable.swift:3,SetupFaces.swift:1,FerazelSession.swift:1)	—	MED	classified by citation
+1001bff0	.HandleLights	built	cited 16 (LightTable.swift:6,FrameRenderer.swift:4,DrawOp.swift:2,FerazelSession)	—	MED	classified by citation
+1001c1cc	FUN_1001c1cc	built	cited 3 (LightRenderer.swift:3)	—	MED	classified by citation
+1001c2c0	.AddLightOp	built	cited 3 (LightRenderer.swift:3)	—	MED	classified by citation
+1001c390	.HasLightChanged	built	cited 4 (LightRenderer.swift:3,LightTable.swift:1)	—	MED	classified by citation
+1001c45c	.CalcLightOps	built	cited 4 (LightRenderer.swift:4)	—	MED	classified by citation
+1001c6f4	.DrawLightOps	built	cited 5 (LightRenderer.swift:5)	—	MED	classified by citation
+1001c8e4	.DrawLightsOntoTiles	built	cited 12 (LightRenderer.swift:3,FerazelSession.swift:3,FrameRenderer.swift:2,Dra)	—	MED	classified by citation
+1001c934	.DrawLightOverTile	built	cited 5 (LightRenderer.swift:4,TileGridRenderer.swift:1)	—	MED	classified by citation
+1001cc70	.DrawLightOpOverTile	built	cited 2 (LightRenderer.swift:2)	—	MED	classified by citation
+1001cf38	.DrawLightOverFace	built	cited 5 (SpriteBlitter.swift:5)	—	MED	classified by citation
+1001d708	.GetFakeLight	built	cited 4 (FerazelSession.swift:2,SpriteSlot.swift:1,ActiveList.swift:1)	—	MED	classified by citation
+1001d8e8	.BlitLightOverFaceClip	built	cited 4 (LightRenderer.swift:2,SpriteBlitter.swift:1,LightFaces.swift:1)	—	MED	classified by citation
+1001dd8c	.BlitAfterLightOverFaceClip	built	deferred hits = refusals of inputs the original would misread too (b)	L1-4	HIGH	
+1001e1ac	.BlitAmbDarkenOverFaceClip	built	cited 3 (LightRenderer.swift:2,SpriteBlitter.swift:1)	—	MED	classified by citation
+1001e6a0	.BlitAmbDarkenOverFaceNoClip	built	cited 2 (LightRenderer.swift:2)	—	MED	classified by citation
+1001ea20	.BlitLightOverFaceFlipClip	built	cited 1 (SpriteBlitter.swift:1)	—	MED	classified by citation
+1001eee0	.BlitAfterLightOverFaceFlipClip	built	cited 1 (SpriteBlitter.swift:1)	—	MED	classified by citation
+1001f314	.BlitAmbDarkenOverFaceFlipClip	absorbed	ambient darken over a flipped face	L1-4	MED	SpriteBlitter.swift:592 "BlitAmbDarkenOverFace(Flip)Clip"
+1001f828	.BlitRectMeat32s	absorbed	inner loop of .BlitRect32s	L1-4	MED	TileBlitters.swift
+1001f904	.BlitRect32s	built	cited 1 (TileBlitters.swift:1)	—	MED	classified by citation
+1001fa58	.DrawBlackLines	built	cited 19 (Pause.swift:7,FerazelSession.swift:4,ConversationRun.swift:3,FrameRend)	—	MED	classified by citation
+1001fcac	.BuildPosterizationTable	dead	posterization table: no reader (lighting-tables, HIGH for no reader)	—	HIGH	
+1001fd98	.BuildTranslucTable	absorbed	16 translucency tables for mode 0xb	L1-4	MED	LevelTables / transClip (TB) — check the table source if 0xb draws look wrong
+1001ff1c	.BuildReddenTable	built	cited 4 (FerazelSession.swift:2,LevelTables.swift:1,TableRequests.swift:1)	—	MED	classified by citation
+100201a0	.BuildSineTable	built	cited 1 (SpriteBlitter.swift:1)	—	MED	classified by citation
+100203dc	.BuildWaterTintTable	built	cited 2 (LevelTables.swift:1,TableRequests.swift:1)	—	MED	classified by citation
+10020a5c	.BuildTintTable	built	cited 11 (LevelTables.swift:3,FrameRenderer.swift:3,FerazelSession.swift:3,Sprit)	—	MED	classified by citation
+10022b74	.BlitEncFaceToPixMap	absorbed	face loading helpers (mask region, flipped copies)	L1-4	MED	FaceSheet/EncodedFace loaders; flip done at draw time
+10022e34	.DoubleBlitUniversal	partial	missing: fire variant (hdr 0x2722>0)	no (levels 52, 55)	HIGH	
+100230bc	.BlitEncBoolTile	built	cited 3 (WaterFaceSheet.swift:2,TileBlitters.swift:1)	—	MED	classified by citation
+10023260	.BlitEncBoolTileUnmasked	built	cited 1 (TileBlitters.swift:1)	—	MED	classified by citation
+100233c0	.BlitEncEraseBoolTile	built	cited 1 (TileBlitters.swift:1)	—	MED	classified by citation
+10023574	.BlitEncBoolFaceClip	built	cited 3 (SpriteBlitter.swift:3)	—	MED	classified by citation
+100238f4	.BlitEncBoolFaceNoClip	absorbed	mask/erase silhouettes (NoClip/Flip twins) — one walker in SpriteBlitter; silhouette mode 0xe is never written (dead)	L1-4	MED	
+10023ab8	.BlitEncBoolFaceFlipNoClip	absorbed	mask/erase silhouettes (NoClip/Flip twins) — one walker in SpriteBlitter; silhouette mode 0xe is never written (dead)	L1-4	MED	
+10023cc8	.BlitEncBoolFaceFlipClip	absorbed	mask/erase silhouettes (NoClip/Flip twins) — one walker in SpriteBlitter; silhouette mode 0xe is never written (dead)	L1-4	MED	
+10023fd0	.BlitEncBoolFaceWaterRipple	built	cited 1 (SpriteBlitter.swift:1)	—	MED	classified by citation
+10024358	.BlitEncBoolFaceFlipWaterRipple	built	cited 1 (SpriteBlitter.swift:1)	—	MED	classified by citation
+100246b4	.BlitEncEraseBoolTileUnmasked	built	cited 1 (TileBlitters.swift:1)	—	MED	classified by citation
+10024818	.BlitEncTileUnmasked	built	cited 1 (TileBlitters.swift:1)	—	MED	classified by citation
+10024998	.BlitEncFaceClipX	built	cited 7 (SpriteBlitter.swift:3,MapRenderer.swift:3,WorldMapRun.swift:1)	—	MED	classified by citation
+10024da8	.BlitEncFaceNoClipX	built	cited 1 (TileBlitters.swift:1)	—	MED	classified by citation
+10025044	.BlitEncFaceBackScratchClip	absorbed	back-scratch erase twins	L1-4	MED	SpriteBlitter .BackScratchBlitEncFace / WrapBackScratchFace (clip flag folded)
+10025518	.BlitEncFaceBackScratchNoClip	absorbed	back-scratch erase twins	L1-4	MED	SpriteBlitter .BackScratchBlitEncFace / WrapBackScratchFace (clip flag folded)
+10025814	.BlitEncFaceBackScratchFlipClip	absorbed	back-scratch erase twins	L1-4	MED	SpriteBlitter .BackScratchBlitEncFace / WrapBackScratchFace (clip flag folded)
+10025d14	.BlitEncFaceBackScratchFlipNoClip	absorbed	back-scratch erase twins	L1-4	MED	SpriteBlitter .BackScratchBlitEncFace / WrapBackScratchFace (clip flag folded)
+10026010	.BlitEncFaceBackScratchWaterRippleClip	built	cited 1 (SpriteBlitter.swift:1)	—	MED	classified by citation
+100264d0	.BlitEncFaceBackScratchWaterRippleFlipClip	built	cited 1 (SpriteBlitter.swift:1)	—	MED	classified by citation
+100269c4	.BlitEncFaceBehindTilesClip	not built	mode 8: only writer = parallax strip sprites (hdr 0x2716)	no (strip first on level 10)	HIGH	PxSprites modelled in Core but never instanced; SpriteBlitter refuses 8
+10026d38	.BlitEncFaceBehindTilesNoClip	not built	mode 8: only writer = parallax strip sprites (hdr 0x2716)	no (strip first on level 10)	HIGH	PxSprites modelled in Core but never instanced; SpriteBlitter refuses 8
+10026f34	.BlitEncTileFaceNoClipX	built	cited 1 (TileBlitters.swift:1)	—	MED	classified by citation
+100271d4	.BlitEncFaceSpecialClipX	built	cited 3 (SpriteBlitter.swift:3)	—	MED	classified by citation
+100276ac	.BlitEncFaceSpecialNoClipX	built	cited 1 (TileBlitters.swift:1)	—	MED	classified by citation
+10027aac	.CalcPxRowContents	built	deferred hits = refusals of inputs the original would misread too (b)	L1-4	HIGH	
+10027d04	.BlitEncFaceTransClip	built	cited 2 (SpriteBlitter.swift:2)	—	MED	classified by citation
+10028220	.BlitEncFaceTransRippleClip	dead	mode 0xd: never written to +0xb8 (draw-effects §2.8)	—	HIGH	
+100287cc	.BlitEncFaceTransFlipClip	built	cited 2 (SpriteBlitter.swift:2)	—	MED	classified by citation
+10028d00	.BlitEncFaceFlipNoClip	absorbed	NoClip flip twins of BlitEncFaceX	L1-4	MED	SpriteBlitter: clip/noclip one walker
+10028f48	.BlitEncFaceFlipClip	built	cited 1 (SpriteBlitter.swift:1)	—	MED	classified by citation
+10029310	.BlitEncFaceFlipNoClipSpecial	absorbed	NoClip flip twins of BlitEncFaceX	L1-4	MED	SpriteBlitter: clip/noclip one walker
+10029588	.BlitEncFaceFlipClipSpecial	built	flipped mode 0xa refused: the original flip twin has no mode-10 arm (b)	L1-4	MED	squash gauge drawn unflipped only?: check springboard mirror (render agent)
+10029988	.BlitEncFaceDiffuse	built	cited 7 (SpriteBlitter.swift:3,FerazelSession.swift:2,SpriteDraw.swift:1,LevelS)	—	MED	classified by citation
+10029c6c	.BlitEncFaceFlipDiffuse	built	deferred hits = refusals of inputs the original would misread too (b)	L1-4	HIGH	
+10029f70	.BlitEncFaceWaterRipple	built	cited 4 (SpriteBlitter.swift:3,WaterFaceBlitter.swift:1)	—	MED	classified by citation
+1002a300	.BlitEncFaceFlipWaterRipple	built	cited 2 (SpriteBlitter.swift:2)	—	MED	classified by citation
+1002a6b0	.ProcessFGBlendTileFace	built	cited 1 (BlendFaces.swift:1)	—	MED	classified by citation
+1002a810	.BlitEncFaceTileBlend	built	cited 1 (TileBlitters.swift:1)	—	MED	classified by citation
+1002aa00	.BlitEncFaceTileBlendSpecial	built	cited 1 (TileBlitters.swift:1)	—	MED	classified by citation
+1002ac00	.BlitEncFaceRot	built	deferred hits = refusals of inputs the original would misread too (b)	L1-4	HIGH	
+1002b0e0	.BlitEncFaceBoolRot	built	cited 3 (SpriteBlitter.swift:3)	—	MED	classified by citation
+1002b724	.BlitEncFaceBackScratchRot	built	deferred hits = refusals of inputs the original would misread too (b)	L1-4	HIGH	
+1002bdc0	.BlitEncFaceScale	built	deferred hits = refusals of inputs the original would misread too (b)	L1-4	HIGH	
+1002c220	.BlitEncFaceScaleBool	built	cited 2 (SpriteBlitter.swift:2)	—	MED	classified by citation
+1002c528	.BlitEncFaceScaleBackScratch	built	cited 2 (SpriteBlitter.swift:2)	—	MED	classified by citation
+1002c878	.RectInRect	built	cited 2 (SpriteBlitter.swift:2)	—	MED	classified by citation
+1002c908	.BlitEncFaceX	built	cited 10 (SpriteBlitter.swift:7,TileGridRenderer.swift:1,WaterFaceBlitter.swift:)	—	MED	classified by citation
+1002d2f8	.BackScratchBlitEncFace	built	cited 2 (SpriteBlitter.swift:2)	—	MED	classified by citation
+1002d844	.EraseBoolEncFaceX	built	cited 2 (SpriteBlitter.swift:2)	—	MED	classified by citation
+1002dd70	.EncodeRect	built	cited 3 (EncodedFace.swift:1,FaceEncoder.swift:1,FaceSheet.swift:1)	—	MED	classified by citation
+1002e0e4	.Threshold255Blit	absorbed	face loading helpers (mask region, flipped copies)	L1-4	MED	FaceSheet/EncodedFace loaders; flip done at draw time
+1002e248	.BuildMaskRegion	absorbed	face loading helpers (mask region, flipped copies)	L1-4	MED	FaceSheet/EncodedFace loaders; flip done at draw time
+1002e4e0	.Load1FlipFaceFromPICT	absorbed	face loading helpers (mask region, flipped copies)	L1-4	MED	FaceSheet/EncodedFace loaders; flip done at draw time
+1002e74c	.LoadFlipFaceSetFromPICT	absorbed	face loading helpers (mask region, flipped copies)	L1-4	MED	FaceSheet/EncodedFace loaders; flip done at draw time
+1002eafc	.Load1EncFaceFromPICT	built	cited 17 (FaceSheet.swift:5,MapRenderer.swift:2,BootFaces.swift:2,SetupFaces.swi)	—	MED	classified by citation
+1002ef2c	.LoadEncFaceSetFromPICT	built	cited 11 (FaceSheet.swift:2,MapRenderer.swift:1,WaterFaceSheet.swift:1,TileSets.)	—	MED	classified by citation
+1002f528	.LoadEncWaterFaceSetFromPICT	built	cited 3 (WaterFaceSheet.swift:2,FaceRef.swift:1)	—	MED	classified by citation
+1002fab8	.LoadPlainFaceSetFromPICT	built	cited 2 (PlainFaceSheet.swift:1,FaceRef.swift:1)	—	MED	classified by citation
+1002fe68	.Load1PlainFaceFromPICT	built	cited 2 (LightFaces.swift:2)	—	MED	classified by citation
+1002ff1c	.Load1LightFaceFromPICT	built	cited 9 (LightFaces.swift:3,FrameRenderer.swift:1,StatueSprite.swift:1,DrawOp.s)	—	MED	classified by citation
+1002ffb8	.DisposeEncFace	out of scope	memory / port disposal (Swift ARC)	n/a	HIGH	
+10030088	.DisposeEncFaceContents	out of scope	memory / port disposal (Swift ARC)	n/a	HIGH	
+10030130	.DisposePlainFace	out of scope	memory / port disposal (Swift ARC)	n/a	HIGH	
+10030194	.LoadMenuBar	absorbed	menu bar	front end	MED	App/FerazelMenus.swift (Mac); Windows has none by ruling
+1003027c	.UpdateMenus	built	cited 23 (Pause.swift:7,GameFlow.swift:5,FerazelMenus.swift:4,FerazelMenuRules.s)	—	MED	classified by citation
+10030398	.HandleMenuSelection	built	cited 5 (GameFlow.swift:2,Pause.swift:2,FerazelMenus.swift:1)	—	MED	classified by citation
+10030438	.HandleAppleMenuSelection	built	cited 1 (Pause.swift:1)	—	MED	classified by citation
+100304e0	.HandleFileMenuSelection	built	cited 1 (Pause.swift:1)	—	MED	classified by citation
+10030598	.HandleGameMenuSelection	built	cited 1 (Pause.swift:1)	—	MED	classified by citation
+1003062c	.InitParticles	built	cited 7 (ParticlePool.swift:3,FrameRenderer.swift:1,ParticleRenderer.swift:1,Fe)	—	MED	classified by citation
+100306b4	.InitParticleColors	built	cited 5 (ParticleRenderer.swift:3,FrameRenderer.swift:1,ParticleLife.swift:1)	—	MED	classified by citation
+10031828	.HandleParticles	built	cited 6 (ParticlePool.swift:4,SpriteWorld.swift:1,FerazelSession.swift:1)	—	MED	classified by citation
+10031aa4	.DrawParticles	built	cited 15 (ParticleLife.swift:3,ParticlePool.swift:3,ParticleRenderer.swift:2,Spr)	—	MED	classified by citation
+10031d6c	.EraseParticles	built	cited 5 (ParticleRenderer.swift:2,ParticlePool.swift:1,DrawOp.swift:1,FerazelSe)	—	MED	classified by citation
+10031e68	.NewParticle	built	cited 18 (BonusSprite.swift:3,ParticlePool.swift:3,WaterEffects.swift:3,PlayerSh)	—	MED	classified by citation
+10031f68	.MTUpdateScreenPtrs	out of scope	memory / port disposal (Swift ARC)	n/a	HIGH	
+10032074	.MTSetScreenPtrsToBackScreen	out of scope	system plumbing (sleep proc, memory report, empty CheckFlags, 8-bit switch, screen ptrs) — cited for ordering only	n/a	HIGH	
+10032160	.MTInit	out of scope	system plumbing (sleep proc, memory report, empty CheckFlags, 8-bit switch, screen ptrs) — cited for ordering only	n/a	HIGH	
+1003259c	.MTHandleSprites	built	cited 12 (FerazelSession.swift:4,SpriteSlot.swift:2,SpriteWorld.swift:2,BoxSprit)	—	MED	classified by citation
+10032614	.CalcHotRect	built	cited 4 (SpriteSlot.swift:2,SpriteWorld.swift:2)	—	MED	classified by citation
+10032688	.TheSectRect	built	cited 2 (ActiveList.swift:1,SpriteWorld.swift:1)	—	MED	classified by citation
+100326cc	.MTCollideSprites	built	cited 14 (SpriteSlot.swift:4,SpriteWorld.swift:3,FerazelSession.swift:3,ActiveLi)	—	MED	classified by citation
+10032ac8	.MTCollideSpecialSprite	built	cited 7 (SpriteWorld.swift:3,FerazelSession.swift:2,ButtonSprite.swift:1,HitPla)	—	MED	classified by citation
+10032f1c	.MTInsertSprite	built	cited 11 (ActiveList.swift:4,SpriteWorld.swift:3,SetupFaces.swift:1,PlayerTiles.)	—	MED	classified by citation
+10032ff8	.MTRemoveSprite	built	deferred-word hits are noise or name other routines' later arms	L1-4	HIGH	
+10033060	.MTNewSprite	built	cited 107 (BoxSprite.swift:13,PlayerShot.swift:12,FerazelSession.swift:10,SetupFa)	—	MED	classified by citation
+10033288	.MTChangeSpriteLayer	built	cited 8 (BoxSprite.swift:2,BackgroundSprite.swift:2,SpriteWorld.swift:2,ChainSp)	—	MED	classified by citation
+100332fc	.MTKillSprite	built	cited 9 (SpriteWorld.swift:4,ActiveList.swift:3,IdleSprites.swift:1,SetupFaces.)	—	MED	classified by citation
+10033378	.HandlePxSprite	built	cited 4 (PxSprites.swift:4)	—	MED	classified by citation
+10033418	.SetupPxSprite	built	cited 3 (PxSprites.swift:3)	—	MED	classified by citation
+100334b8	.MTKillPxSprites	built	cited 2 (PxSprites.swift:2)	—	MED	classified by citation
+1003359c	.MTAddPxSprite	built	cited 4 (PxSprites.swift:4)	—	MED	classified by citation
+10033798	.MTHandlePxSprites	built	cited 1 (Camera.swift:1)	—	MED	classified by citation
+10033828	.KillAllSprites	built	cited 5 (ContinueGame.swift:2,NewGame.swift:2,GameFlow.swift:1)	—	MED	classified by citation
+10033894	.MTSetPortScreen	built	cited 6 (DeathEffect.swift:1,GameFlow.swift:1,Pause.swift:1,StageScreens.swift:)	—	MED	classified by citation
+10033910	.MTRedraw	built	cited 29 (Pause.swift:7,ContinueGame.swift:5,GameFlow.swift:5,NewGame.swift:4,Fr)	—	MED	classified by citation
+100339b8	.MTGetandDrawPICTResInRect	built	cited 5 (MapRenderer.swift:1,WorldMapRun.swift:1,GameFlow.swift:1,StageScreens.)	—	MED	classified by citation
+10033a74	.MTBackChanged	out of scope	memory / port disposal (Swift ARC)	n/a	HIGH	
+10033a98	.MTSetPortBackScreen	out of scope	memory / port disposal (Swift ARC)	n/a	HIGH	
+10033af4	.MTHideWindow	out of scope	memory / port disposal (Swift ARC)	n/a	HIGH	
+10033b40	.MTShowWindow	built	cited 3 (ContinueGame.swift:2,GameFlow.swift:1)	—	MED	classified by citation
+10033ba0	.AllocateGameMem	out of scope	system plumbing (sleep proc, memory report, empty CheckFlags, 8-bit switch, screen ptrs) — cited for ordering only	n/a	HIGH	
+10033c70	.DisposeGameMem	out of scope	memory / port disposal (Swift ARC)	n/a	HIGH	
+10033d10	.MyGotRequiredParams	out of scope	startup / Apple-event plumbing	n/a	HIGH	
+10033d94	.DoOpenAppAE	out of scope	startup / Apple-event plumbing	n/a	HIGH	
+10033dbc	.DoOpenDocAE	built	cited 3 (GameFlow.swift:2,FerazelController.swift:1)	—	MED	classified by citation
+10033efc	.DoPrintDocAE	out of scope	startup / Apple-event plumbing	n/a	HIGH	
+10033f24	.DoQuitAppAE	built	cited 8 (GameFlow.swift:2,Pause.swift:2,NewGame.swift:2,LevelRun.swift:1,Feraze)	—	MED	classified by citation
+10033f7c	.InstallAppleEvents	out of scope	startup / Apple-event plumbing	n/a	HIGH	
+100340e0	.FastRand	built	cited 164 (SetupFaces.swift:14,BonusSprite.swift:13,BoxSprite.swift:12,HitPlayerS)	—	MED	classified by citation
+100341d8	.DrawPicInGWorld	built	cited 1 (LightFaces.swift:1)	—	MED	classified by citation
+100342cc	.DrawPicInRect	built	cited 1 (ConversationRun.swift:1)	—	MED	classified by citation
+1003437c	.NewBlitPort	built	cited 2 (ParallaxBlitter.swift:1,LightFaces.swift:1)	—	MED	classified by citation
+10034650	.NewBlitPortSlop	built	cited 8 (MapRenderer.swift:3,SpriteBlitter.swift:2,FramePorts.swift:2,WorldMapR)	—	MED	classified by citation
+100349c4	.ChangeBlitPortClut	built	cited 6 (ConvertedPicture.swift:2,StatusBar.swift:1,MapRenderer.swift:1,WorldMa)	—	MED	classified by citation
+10034ab4	.DisposeBlitPort	out of scope	memory / port disposal (Swift ARC)	n/a	HIGH	
+10034b1c	.IsAnyKeyDown	built	cited 2 (StageScreens.swift:1,ConversationRun.swift:1)	—	MED	classified by citation
+10034ba8	.CopyPString	built	cited 7 (FerazelPrefs.swift:6,SaveGame.swift:1)	—	MED	classified by citation
+10034bf4	.ConcatPString	built	cited 1 (SaveName.swift:1)	—	MED	classified by citation
+10034c74	.StringsEqual	absorbed	resource-file / world-file opening	front end	MED	port: FerazelResources chains + LevelFile/WorldMap/Conversation loaders; music path in the shell
+10034ce8	.CalcWrappedStringInBoxHeight	built	cited 4 (ConversationRun.swift:2,TextRasterizer.swift:1,ConversationRenderer.sw)	—	MED	classified by citation
+10034db4	.SectRectFast	built	deferred-word hits are noise or name other routines' later arms	L1-4	HIGH	
+10034df8	.DrawPICTToBackScreen	built	cited 5 (FrameRenderer.swift:2,ScreenRenderer.swift:1,BootSequence.swift:1,Fera)	—	MED	classified by citation
+10034e88	.TintScreen	not built	phase 5 named item: underwater screen tint	yes: any underwater swim in L1-4	HIGH	(a) PlayerLiquids.swift // later
+10034f40	.TintFadeProc	built	cited 7 (ScreenGammaOp.swift:3,ScreenGamma.swift:2,ScreenRenderer.swift:1,Scree)	—	MED	classified by citation
+10035310	.GammaFadeOut	built	deferred-word hits are noise (history / "later in the frame")	front end / L1-4	HIGH	
+10035444	.GammaFadeIn	built	cited 14 (GameFlow.swift:3,ScreenFade.swift:2,ContinueGame.swift:2,DeathScreen.s)	—	MED	classified by citation
+10035584	.GammaFadeInSlow	built	cited 4 (ScreenFade.swift:2,ScreenGammaOp.swift:1,StageScreens.swift:1)	—	MED	classified by citation
+1003565c	.GammaFadeInAsync	built	cited 9 (LevelRun.swift:2,HitPlayerSprite.swift:2,FerazelSession.swift:2,Screen)	—	MED	classified by citation
+100356c0	.GammaFadeOutAsync	built	cited 23 (HitPlayerSprite.swift:7,DeathEffect.swift:4,LevelRun.swift:4,FerazelSe)	—	MED	classified by citation
+10035788	.HandleAsyncGammaFade	built	cited 20 (LevelRun.swift:7,FerazelSession.swift:3,FrameRenderer.swift:2,ScreenGa)	—	MED	classified by citation
+10035918	.FinalGammaFadeIn	absorbed	error-report path (restore gamma, alert, exit)	error only	MED	port reports data errors via ReportError/dialog seams; errors on missing data = noise
+100359c8	.SafeReportStr	absorbed	error-report path (restore gamma, alert, exit)	error only	MED	port reports data errors via ReportError/dialog seams; errors on missing data = noise
+10035a28	.PointInRect	built	cited 3 (DeathScreen.swift:2,MainMenu.swift:1)	—	MED	classified by citation
+10035a84	.SetColorPerc	built	cited 1 (BootSequence.swift:1)	—	MED	classified by citation
+10035b0c	.PlotColoredPoint	built	cited 1 (BootSequence.swift:1)	—	MED	classified by citation
+10035b8c	.PlotColoredHLine	built	cited 1 (BootSequence.swift:1)	—	MED	classified by citation
+10035c18	.Init3DProgBar	built	cited 4 (BootSequence.swift:3,GameFlow.swift:1)	—	MED	classified by citation
+10035d40	.Update3DProgBar	built	cited 5 (BootSequence.swift:3,GameFlow.swift:1,FerazelDriver.swift:1)	—	MED	classified by citation
+1003626c	.FatalError	absorbed	error-report path (restore gamma, alert, exit)	error only	MED	port reports data errors via ReportError/dialog seams; errors on missing data = noise
+100362e8	.SwitchTo8BitColorMT	out of scope	system plumbing (sleep proc, memory report, empty CheckFlags, 8-bit switch, screen ptrs) — cited for ordering only	n/a	HIGH	
+100363c4	.InitCursorUtils	out of scope	cursor	n/a	HIGH	
+10036454	.ShowCursorSafe	built	cited 21 (Pause.swift:4,LevelRun.swift:3,NewGame.swift:3,FerazelSession.swift:3,)	—	MED	classified by citation
+100364bc	.HideCursorSafe	built	cited 15 (HitPlayerSprite.swift:6,LevelRun.swift:2,FerazelSession.swift:2,ShellR)	—	MED	classified by citation
+1003652c	.ResetCursor	built	cited 11 (NewGame.swift:3,GameFlow.swift:2,Pause.swift:2,DeathScreen.swift:2,Con)	—	MED	classified by citation
+100365a4	.SetWatchCursor	built	cited 3 (GameFlow.swift:2,Pause.swift:1)	—	MED	classified by citation
+10036618	.CleanUpCursors	out of scope	cursor	n/a	HIGH	
+10036640	.ShowTheMenuBar	built	cited 6 (GameFlow.swift:3,Pause.swift:2,FerazelController.swift:1)	—	MED	classified by citation
+100366b8	.HideTheMenuBar	built	cited 6 (GameFlow.swift:3,Pause.swift:2,ContinueGame.swift:1)	—	MED	classified by citation
+10036738	.IsOptionPressed	built	cited 1 (NewGame.swift:1)	—	MED	classified by citation
+1003679c	.IsPressed	built	cited 5 (KeyState.swift:2,BootSequence.swift:2,InputActions.swift:1)	—	MED	classified by citation
+10036804	.LimitValueToRange	built	cited 1 (WallBounce.swift:1)	—	MED	classified by citation
+10036854	.StandardSpriteHandles	built	deferred-word hits are noise or name other routines' later arms	L1-4	HIGH	
+10036da0	.CalcCenterPos	built	used by bonus/shots; Smite enemy-centre read is phase 5	L1-4	HIGH	
+10036e0c	.StandardSpriteCleanup	built	cited 34 (SpriteSlot.swift:7,Player.swift:4,FerazelSession.swift:3,RopeSprite.sw)	—	MED	classified by citation
+10037034	.HurtSprite	built	cited 7 (HitPlayerSprite.swift:7)	—	MED	classified by citation
+100370c4	.ApplyFriction	built	cited 5 (PlatformSprite.swift:2,BoxSprite.swift:1,Integrate.swift:1,StandardSpr)	—	MED	classified by citation
+1003713c	.AccelerateSprite	built	cited 5 (Integrate.swift:3,HandleKeys.swift:2)	—	MED	classified by citation
+100372b0	.SetSpriteSpeed	not built	phase 5 (callers: Crawler/Roach/Walker Handles)	placed L1-4, inert	HIGH	(a)
+10037350	.AccelerateBasedOnSlope	built	cited 7 (Integrate.swift:4,HandleKeys.swift:3)	—	MED	classified by citation
+100375b0	.ApplyGravityAndSeparateFromTiles	built	deferred-word hits are noise or name other routines' later arms	L1-4	HIGH	
+100377c4	.PlatformBounce	built	deferred-word hits are noise or name other routines' later arms	L1-4	HIGH	
+10037a54	.WallBounce	built	cited 27 (SpriteSlot.swift:4,PlayerTiles.swift:4,WallBounceBG.swift:3,SeparateFr)	—	MED	classified by citation
+1003a2e8	.WallBounceBG	built	cited 13 (SpriteSlot.swift:2,SeparateFromTiles.swift:2,PlatformSprite.swift:1,Bo)	—	MED	classified by citation
+1003be0c	.ConstrainXY	built	cited 11 (ParallaxBlitter.swift:2,FrameRenderer.swift:1,LightRenderer.swift:1,Ti)	—	MED	classified by citation
+1003be90	.GetFGTile	built	cited 4 (SeparateFromTiles.swift:2,LevelFile.swift:1,WaterEffects.swift:1)	—	MED	classified by citation
+1003bf40	.GetFGCrunchDirTile	built	cited 5 (SeparateFromTiles.swift:2,LevelFile.swift:1,PlayerTiles.swift:1,Feraze)	—	MED	classified by citation
+1003bffc	.GetFGCrunchKindTile	built	cited 4 (PlayerTiles.swift:3,LevelFile.swift:1)	—	MED	classified by citation
+1003c0b8	.GetFGPatternTile	built	cited 1 (TileGridRenderer.swift:1)	—	MED	classified by citation
+1003c204	.GetBGTile	built	cited 7 (SeparateFromTiles.swift:2,LevelFile.swift:1,BonusSprite.swift:1,WaterE)	—	MED	classified by citation
+1003c2b4	.GetLightTile	built	cited 6 (LightRenderer.swift:2,LevelFile.swift:1,SpriteSlot.swift:1,ActiveList.)	—	MED	classified by citation
+1003c368	.GetFGOverlay1Tile	built	deferred-word hits are noise or name other routines' later arms	L1-4	HIGH	
+1003c420	.GetFGOverlay2Tile	built	cited 4 (WaterEffects.swift:3,LevelFile.swift:1)	—	MED	classified by citation
+1003c4d8	.GetPxBackTile	built	deferred hits = refusals of inputs the original would misread too (b)	L1-4	HIGH	
+1003c59c	.GetPxMidTile	built	cited 2 (ParallaxBlitter.swift:1,LevelFile.swift:1)	—	MED	classified by citation
+1003c648	.SetFGTile	built	cited 6 (PlayerTiles.swift:2,FrameRenderer.swift:1,DrawOp.swift:1,PlayerState.s)	—	MED	classified by citation
+1003c710	.SetFGCrunchDirTile	built	cited 6 (PlayerTiles.swift:2,FrameRenderer.swift:1,DrawOp.swift:1,PlayerState.s)	—	MED	classified by citation
+1003c804	.SeparateFromTiles2	built	cited 25 (SpriteSlot.swift:5,SeparateFromTiles.swift:3,PlatformSprite.swift:2,In)	—	MED	classified by citation
+1003cf04	.GenericMessage	built	cited 5 (FerazelDialogs.swift:2,FerazelCarbonDialog.swift:1,DialogWindow.swift:)	—	MED	classified by citation
+1003d0f0	.DebugMessage	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+1003d2a0	.ReportError	built	cited 17 (SavedGameFile.swift:2,GroundCeilingEffects.swift:2,FerazelDialogs.swif)	—	MED	classified by citation
+1003d33c	.ReportDialog	built	deferred-word hits are noise (history / "later in the frame")	front end / L1-4	HIGH	
+1003d3bc	.InitSprite	built	cited 39 (SpriteSlot.swift:16,BackgroundSprite.swift:4,ChainSprite.swift:3,RopeS)	—	MED	classified by citation
+1003d5c4	.MakeRadialTables	built	cited 1 (Radial.swift:1)	—	MED	classified by citation
+1003d718	.MakeRadial	built	cited 7 (Radial.swift:3,SetupFaces.swift:2,BackgroundSprite.swift:1,SpriteSlot.)	—	MED	classified by citation
+1003d854	.MakeRadiusSprites	built	cited 6 (Radial.swift:3,BackgroundSprite.swift:1,SetupFaces.swift:1,SpriteWorld)	—	MED	classified by citation
+1003d980	.SetRadiusSpritesEffect	built	cited 1 (Radial.swift:1)	—	MED	classified by citation
+1003da00	.UpdateRadiusSprites	built	cited 4 (Radial.swift:2,PlatformSprite.swift:1,BackgroundSprite.swift:1)	—	MED	classified by citation
+1003dde4	.FindUpdatedRadialSpeed	built	cited 1 (Radial.swift:1)	—	MED	classified by citation
+1003debc	.UpdateRadialPos	built	cited 7 (Radial.swift:4,PlatformSprite.swift:2,BackgroundSprite.swift:1)	—	MED	classified by citation
+1003e32c	.FindRadWheelStepSpeedMod	built	cited 2 (Radial.swift:2)	—	MED	classified by citation
+1003e3e8	.RadialWheelStep	built	cited 4 (PlatformSprite.swift:2,Radial.swift:2)	—	MED	classified by citation
+1003e490	.RectBounce	built	cited 6 (SpriteSlot.swift:3,RectBounce.swift:3)	—	MED	classified by citation
+1003ecc0	.RectBounceFake2	built	cited 3 (PlayerTiles.swift:3)	—	MED	classified by citation
+1003f0f0	.EnforceMaxSpeed	built	cited 4 (BoxSprite.swift:1,Integrate.swift:1,StandardSprite.swift:1,PlayerShot.)	—	MED	classified by citation
+1003f218	FUN_1003f218	built	cited 4 (PlayerShot.swift:2,BoxSprite.swift:1,PlayerShotHits.swift:1)	—	MED	classified by citation
+100404a4	.LookupModedImpulse	not built	wind cells (overlay wind)	no (first wind cell on level 10)	HIGH	StandardSprite.swift
+100417bc	FUN_100417bc	built	cited 2 (BloodSpray.swift:2)	—	MED	classified by citation
+10041dcc	.LoadTileDefinitions	built	cited 4 (TileGridRenderer.swift:1,LevelHeader.swift:1,LevelFile.swift:1,Separat)	—	MED	classified by citation
+10041f98	.LookupBGTileKind	built	cited 8 (SeparateFromTiles.swift:2,LevelFile.swift:1,BonusSprite.swift:1,Partic)	—	MED	classified by citation
+10041fe8	.LookupFGTileKind	built	cited 10 (SeparateFromTiles.swift:3,WaterFaceSheet.swift:2,TileGridRenderer.swif)	—	MED	classified by citation
+10042038	.FindDesiredDirectionGeneric	built	cited 6 (BloodSpray.swift:2,PlayerShot.swift:2,BoxSprite.swift:1,PlayerShotHits)	—	MED	classified by citation
+10042404	.RedrawGameArea	built	cited 4 (Pause.swift:2,DrawOp.swift:1,SaveGame.swift:1)	—	MED	classified by citation
+100424e4	.PromptGetFile	built	cited 1 (ContinueGame.swift:1)	—	MED	classified by citation
+1004258c	.PromptPutFile	built	cited 1 (SaveGame.swift:1)	—	MED	classified by citation
+100425f8	.BloodSpray	built	cited 15 (BloodSpray.swift:4,HitPlayerSprite.swift:4,BoxSprite.swift:3,PlayerSho)	—	MED	classified by citation
+10042874	.Splash	built	cited 19 (UnderWater.swift:5,StandardSprite.swift:3,BoxSprite.swift:2,Splash.swi)	—	MED	classified by citation
+10042d04	.HandleFlotation	built	cited 5 (SpriteSlot.swift:2,PlatformSprite.swift:1,UnderWater.swift:1,Flotation)	—	MED	classified by citation
+10042e30	.HandleUnderWater	built	cited 13 (UnderWater.swift:2,PlayerTiles.swift:2,PlatformSprite.swift:1,BoxSprit)	—	MED	classified by citation
+100430c8	.IsWaterTile	built	cited 17 (UnderWater.swift:4,BoxSprite.swift:2,WaterEffects.swift:2,TileGridRend)	—	MED	classified by citation
+1004310c	.GetWaterTileKind	built	cited 5 (UnderWater.swift:3,LightRenderer.swift:1,WaterEffects.swift:1)	—	MED	classified by citation
+10043138	.TurnIntoStatue	built	cited 8 (SpriteSlot.swift:4,StatueSprite.swift:2,PlatformSprite.swift:1,Ferazel)	—	MED	classified by citation
+100431ec	.FootPressure	built	cited 6 (HandleKeys.swift:5,BoxSprite.swift:1)	—	MED	classified by citation
+100433e0	.ChangeFGTile	built	cited 3 (PlayerTiles.swift:2,DrawOp.swift:1)	—	MED	classified by citation
+10043448	.ExplodeFaceIntoParticles	built	cited 12 (PlatformSprite.swift:2,BoxSprite.swift:2,FaceParticles.swift:2,PlayerT)	—	MED	classified by citation
+100437d8	.BurnFaceRow	not built	phase 5 (burn-away; writers of +0x1a2 are enemy Handles/Hits + ShieldBlock only)	with enemies (phase 5)	HIGH	StandardSprite.swift // later
+10043ad0	.ParticleGlow	built	cited 8 (StandardSprite.swift:3,FaceParticles.swift:2,SpriteSlot.swift:1,Sprite)	—	MED	classified by citation
+10043cd8	.HandleBurn	not built	phase 5 (burn-away; writers of +0x1a2 are enemy Handles/Hits + ShieldBlock only)	with enemies (phase 5)	HIGH	StandardSprite.swift // later
+10043f14	.ReshapeCrunchedTile	built	cited 3 (PlayerTiles.swift:3)	—	MED	classified by citation
+100444f0	.ExplodeCrunchedTile	built	cited 4 (PlayerTiles.swift:3,FerazelSession.swift:1)	—	MED	classified by citation
+100445b0	.DestroyCrunchTile	built	cited 10 (PlayerTiles.swift:3,PlayerState.swift:2,WaterEffects.swift:1,GroundCei)	—	MED	classified by citation
+10044718	.ClearCrunchSprites	built	cited 4 (LevelRun.swift:1,PlayerState.swift:1,Player.swift:1,FerazelSession.swi)	—	MED	classified by citation
+10044788	.FindCrunchSprite	built	cited 3 (PlayerTiles.swift:2,PlayerState.swift:1)	—	MED	classified by citation
+1004481c	.MakeCrunchSprite	built	cited 6 (PlayerTiles.swift:2,PlayerState.swift:2,SpriteSlot.swift:1,GroundCeili)	—	MED	classified by citation
+10044928	.CrunchTile	built	deferred-word hits are noise or name other routines' later arms	L1-4	HIGH	
+10044c58	.SetupProgrammedPath	not built	cannon p1≠0 / mace modes 1-2 paths	no (L1-4 cannons p1 0, mace 0x5cd mode 12)	HIGH	refused at Setup (d)
+10044fe8	.HandleProgrammedPath	not built	cannon p1≠0 / mace modes 1-2 paths	no (L1-4 cannons p1 0, mace 0x5cd mode 12)	HIGH	refused at Setup (d)
+10045230	.FlipHCoord	built	cited 2 (PlatformSprite.swift:2)	—	MED	classified by citation
+10045258	.FlipHRect	partial	decoration p1≠0 mirrors face but hot rect not flipped	L1/L3 decorations 0xb1a/0xafd/0xb04 p1 1 — all have the empty rect, so no effect	HIGH	(d) — would matter only for 0xb0b/0xb10..0xb14 with p1≠0 (none in L1-4)
+100452dc	.Deviation	built	cited 1 (SaveGame.swift:1)	—	MED	classified by citation
+10045340	.SectLineSegs	not built	only caller: HitPlayerSprite arm for rotating blade 0xbf4	no (0xbf4 not placed L1-4)	HIGH	
+10045468	.SectRectLineSeg	not built	only caller: HitPlayerSprite arm for rotating blade 0xbf4	no (0xbf4 not placed L1-4)	HIGH	
+10045594	.RemoveItem	built	cited 19 (HitPlayerSprite.swift:4,HandleKeys.swift:3,Player.swift:3,ConvActions.)	—	MED	classified by citation
+100456e8	.MoveSelectedItemToFront	built	deferred-word hits are noise or name other routines' later arms	L1-4	HIGH	
+100457d0	.HaveItem	built	cited 3 (HitPlayerSprite.swift:2,Inventory.swift:1)	—	MED	classified by citation
+10045838	.InitSounds	built	cited 13 (GameFlow.swift:4,SoundSlots.swift:3,FerazelAudio.swift:3,WorldMapRun.s)	—	MED	classified by citation
+10046394	.DisposeSounds	out of scope	memory / port disposal (Swift ARC)	n/a	HIGH	
+10047580	.STPlayRegSound	built	cited 35 (HitPlayerSprite.swift:11,StageScreens.swift:4,WorldMapRun.swift:2,Soun)	—	MED	classified by citation
+10047648	.PEDistance	built	cited 6 (StereoVolume.swift:3,FerazelSession.swift:2,BoxSprite.swift:1)	—	MED	classified by citation
+10047738	.CalcStereoVolume	built	cited 6 (SoundCues.swift:2,StereoVolume.swift:2,PlayerState.swift:2)	—	MED	classified by citation
+10047938	.InitDynamicSounds	dead	dynamic-sound table: nothing in the binary arms an entry (RE bank S1 2026-10-14)	—	HIGH	per-frame update is a no-op as shipped
+100479a4	.UpdateDynamicSounds	dead	dynamic-sound table: nothing in the binary arms an entry (RE bank S1 2026-10-14)	—	HIGH	per-frame update is a no-op as shipped
+10047ac0	.STPlay3DSound	built	cited 13 (PlayerShotHits.swift:4,ButtonSprite.swift:2,SoundCues.swift:2,StatueSp)	—	MED	classified by citation
+10047b8c	.STPlay3DSoundPitched	built	cited 14 (BoxSprite.swift:2,SoundCues.swift:2,PlayerShotHits.swift:2,HitPlayerSp)	—	MED	classified by citation
+10047c98	.STPlayRegSoundPitched	built	cited 5 (SoundCues.swift:2,HitPlayerSprite.swift:2,PlayerState.swift:1)	—	MED	classified by citation
+10047d44	.STPlay3DSoundRand	built	cited 30 (BoxSprite.swift:4,BackgroundSprite.swift:4,SoundCues.swift:3,PlatformS)	—	MED	classified by citation
+10047dd8	.STLoopCallBack	absorbed	Sound Tool loop re-queue callback	L1-4	MED	Render/Sound/SoundTool.swift re-plays looped entries (STPlayLoopedSound)
+10047e34	.STPlayLoopedSound	built	cited 2 (SoundTool.swift:1,Player.swift:1)	—	MED	classified by citation
+10047ee8	.STSetVolume	built	cited 4 (PrefsDialogModel.swift:3,GameFlow.swift:1)	—	MED	classified by citation
+10047f40	.STGetVolume	built	cited 2 (PrefsDialogModel.swift:2)	—	MED	classified by citation
+10047f6c	.IsDigit	absorbed	helpers of .IncrementLastSGString	front end (save name)	HIGH	Saves/SaveName.swift transcribes IncrementLastSGString
+10048088	FUN_10048088	absorbed	helpers of .IncrementLastSGString	front end (save name)	HIGH	Saves/SaveName.swift transcribes IncrementLastSGString
+1004811c	.IncrementLastSGString	built	deferred-word hits are noise (history / "later in the frame")	front end / L1-4	HIGH	
+10048294	.SaveSG	built	cited 35 (LevelRun.swift:11,SaveGame.swift:7,SavedGameFile.swift:4,SaveBlock.swi)	—	MED	classified by citation
+10048608	.OpenSG	built	deferred-word hits are noise (history / "later in the frame")	front end / L1-4	HIGH	
+100487d4	.OpenDefaultWorldConv	built	cited 2 (Conversation.swift:1,ConversationRun.swift:1)	—	MED	classified by citation
+10048940	.OpenDefaultWorldMap	built	cited 1 (WorldMap.swift:1)	—	MED	classified by citation
+10048ac0	.OpenDefaultWorldLevel	built	cited 8 (NewGame.swift:4,ContinueGame.swift:2,LevelFile.swift:1,GameFlow.swift:)	—	MED	classified by citation
+10048c98	.SetResWorldFile	absorbed	resource-file / world-file opening	front end	MED	port: FerazelResources chains + LevelFile/WorldMap/Conversation loaders; music path in the shell
+10048d7c	.RestoreResWorldFile	built	cited 1 (ConversationRun.swift:1)	—	MED	classified by citation
+10048de0	.OpenWorld	absorbed	resource-file / world-file opening	front end	MED	port: FerazelResources chains + LevelFile/WorldMap/Conversation loaders; music path in the shell
+10048fb8	.OpenDefaultWorld	built	cited 3 (NewGame.swift:2,WorldFile.swift:1)	—	MED	classified by citation
+1004913c	.SetupLevelTilemapPtrs	built	cited 1 (LevelFile.swift:1)	—	MED	classified by citation
+1004923c	.GetApplicationFSSpec	absorbed	resource-file / world-file opening	front end	MED	port: FerazelResources chains + LevelFile/WorldMap/Conversation loaders; music path in the shell
+100492b8	.CopyPasString	absorbed	resource-file / world-file opening	front end	MED	port: FerazelResources chains + LevelFile/WorldMap/Conversation loaders; music path in the shell
+10049304	.ConcatPasString	absorbed	resource-file / world-file opening	front end	MED	port: FerazelResources chains + LevelFile/WorldMap/Conversation loaders; music path in the shell
+10049388	.SetAIFFMusic	built	cited 17 (MusicFade.swift:3,NewGame.swift:3,WorldMapRun.swift:2,FerazelSession.s)	—	MED	classified by citation
+100495d8	.MusicAIFFTickle	built	cited 2 (GameFlow.swift:1,StageScreens.swift:1)	—	MED	classified by citation
+10049644	.ShutDownAIFFMusic	built	cited 10 (MusicFade.swift:3,NewGame.swift:3,LevelRun.swift:2,ContinueGame.swift:)	—	MED	classified by citation
+100496c0	.SetMusicAIFFVolume	built	cited 5 (PrefsToggles.swift:3,Pause.swift:1,PrefsDialogModel.swift:1)	—	MED	classified by citation
+1004974c	.FadeAIFFMusic	built	deferred-word hits are noise (history / "later in the frame")	front end / L1-4	HIGH	
+100499c4	.HandleAsyncAIFFMusicFade	built	cited 1 (MusicFade.swift:1)	—	MED	classified by citation
+10049bac	.FadeAIFFMusicAsync	built	cited 1 (MusicFade.swift:1)	—	MED	classified by citation
+10049ca8	.InitInputSprocket	out of scope	InputSprocket (not built by design §3.3; keyboard GetKeys path + gamepad layer instead)	n/a	HIGH	InputActions.swift notes it
+10049e24	.InputExit	out of scope	InputSprocket (not built by design §3.3; keyboard GetKeys path + gamepad layer instead)	n/a	HIGH	InputActions.swift notes it
+10049e74	.InputActivate	built	cited 14 (Pause.swift:4,LevelRun.swift:4,SaveBlock.swift:1,WorldMapRun.swift:1,S)	—	MED	classified by citation
+10049f50	.InputGetKeyState	out of scope	InputSprocket (not built by design §3.3; keyboard GetKeys path + gamepad layer instead)	n/a	HIGH	InputActions.swift notes it
+1004a134	.IsInputKeyPressed	built	deferred-word hits are noise or name other routines' later arms	L1-4	HIGH	
+1004a1d4	.IsAnyInputKeyDown	built	cited 3 (StageScreens.swift:2,ConversationRun.swift:1)	—	MED	classified by citation
+1004a284	.InitPlayerSprite	built	cited 9 (HeldItem.swift:2,PlayerStates.swift:2,HitPlayerSprite.swift:2,FrameRen)	—	MED	classified by citation
+1004aa48	.ClearPlayerVars	built	deferred-word hits are noise or name other routines' later arms	L1-4	HIGH	
+1004aefc	.SetupPlayerSprite	built	cited 23 (PlayerState.swift:9,Player.swift:5,SpriteWorld.swift:2,FerazelSession.)	—	MED	classified by citation
+1004b354	.HandleTrailSprite	built	cited 4 (SpriteSlot.swift:1,PlayerState.swift:1,Player.swift:1,FerazelSession.s)	—	MED	classified by citation
+1004b3b4	.SetupTrailSprite	built	cited 4 (Player.swift:2,SpriteSlot.swift:1,PlayerState.swift:1)	—	MED	classified by citation
+1004b410	.ShadowBob	built	deferred-word hits are noise or name other routines' later arms	L1-4	HIGH	
+1004b4f0	.HandleShadowSprite	built	cited 8 (ShadowDouble.swift:3,PlayerState.swift:2,SpriteSlot.swift:1,PowerUps.s)	—	MED	classified by citation
+1004b7d4	.SetupShadowSprite	built	cited 4 (ShadowDouble.swift:3,SpriteSlot.swift:1)	—	MED	classified by citation
+1004b83c	.ApplySpeedAndSeparateFromTiles	built	cited 5 (Integrate.swift:2,SpriteSlot.swift:1,PlayerState.swift:1,Player.swift:)	—	MED	classified by citation
+1004ba14	.ShouldEmitBubbles	built	cited 5 (Breathing.swift:2,PlayerLiquids.swift:2,Player.swift:1)	—	MED	classified by citation
+1004ba74	.EmitBubble	built	cited 9 (PlayerLiquids.swift:4,Breathing.swift:2,PlayerState.swift:1,GroundCeil)	—	MED	classified by citation
+1004bb44	.HandleBreathing	built	cited 8 (PlayerState.swift:3,Breathing.swift:2,Player.swift:2,PlayerLiquids.swi)	—	MED	classified by citation
+1004bdd0	.SetupHeldItemSprite	built	cited 6 (Player.swift:3,HeldItem.swift:2,SpriteSlot.swift:1)	—	MED	classified by citation
+1004be74	.HandleHeldItemSprite	built	cited 6 (HeldItem.swift:3,SpriteSlot.swift:1,Player.swift:1,FerazelSession.swif)	—	MED	classified by citation
+1004bf2c	.SetHeldItemPos	built	cited 4 (HeldItem.swift:3,PlayerState.swift:1)	—	MED	classified by citation
+1004c0e0	.HasItem	built	cited 5 (InventorySlot.swift:1,Inventory.swift:1,HandleKeys.swift:1,PlayerState)	—	MED	classified by citation
+1004c148	.HasItemWhichSlot	built	deferred-word hits are noise or name other routines' later arms	L1-4	HIGH	
+1004c1bc	.TickTock	built	cited 9 (PowerUps.swift:3,Player.swift:3,PlayerState.swift:2,ShadowDouble.swift)	—	MED	classified by citation
+1004c364	.TickTockLong	built	cited 4 (Player.swift:3,PlayerState.swift:1)	—	MED	classified by citation
+1004c528	.PlayerScroll	built	cited 20 (PlayerScroll.swift:4,BackgroundSprite.swift:4,Player.swift:4,FerazelSe)	—	MED	classified by citation
+1004c82c	.RopeCollide	built	cited 10 (PlayerState.swift:3,RopeSprite.swift:2,Player.swift:2,SpriteSlot.swift)	—	MED	classified by citation
+1004cb4c	.PlayerConstraints	partial	missing: boss-arena lock (hdr 0x2724)	no (arena levels 5, 18, 25, 55)	HIGH	
+1004ce64	.UpdatePentSprites	built	cited 6 (Player.swift:2,Pentashield.swift:2,PlayerState.swift:1,HitPlayerSprite)	—	MED	classified by citation
+1004d054	.HandleItemUse	built	deferred-word hits are noise or name other routines' later arms	L1-4	HIGH	
+1004d370	.DoubleSpeedTrail	built	cited 6 (PowerUps.swift:2,Player.swift:2,BackgroundSprite.swift:1,PlayerState.s)	—	MED	classified by citation
+1004d5fc	.HandlePlayerSprite	built	deferred-word hits are noise or name other routines' later arms	L1-4	HIGH	
+10051d1c	.CastSpell	built	cited 13 (PlayerState.swift:6,Player.swift:3,CastSpell.swift:2,ShadowDouble.swif)	—	MED	classified by citation
+10052964	.SmiteEnemies	built	cited 4 (Smite.swift:2,CastSpell.swift:1,HandleKeys.swift:1)	—	MED	classified by citation
+10052ac0	.HandleKeys	built	cited 38 (Player.swift:10,HandleKeys.swift:5,PlayerState.swift:4,FrameSuspension)	—	MED	classified by citation
+100544d8	.CheckGroundCeilingHitEffects	built	cited 5 (GroundCeilingEffects.swift:2,SpriteSlot.swift:1,PlayerTiles.swift:1,Hi)	—	MED	classified by citation
+1005473c	.HurtPlayer	built	falling-rock arms 0x433/0x434 phase 6 sit in HitPlayerSprite, not here	L1-4	HIGH	
+10054ca8	.HitPlayerTileSprite	built	cited 13 (PlayerTiles.swift:4,Integrate.swift:2,SeparateFromTiles.swift:2,UnderW)	—	MED	classified by citation
+10055434	.ShieldBlock	not built	phase 5 (shield blocks enemy shots)	yes once enemies shoot (phase 5)	HIGH	PlayerStates.swift:556 // later: Phase 5
+100556f4	.HitPlayerSprite	partial	missing: enemy / enemy-shot contacts (phase 5), geyser head 0x5a9 (phase 5), falling rocks 0x433/0x434 + rotating blade 0xbf4 (phase 6 / later levels)	enemy contacts reachable once enemies move (phase 5); others not placed L1-4	HIGH	(a)
+10058594	.TurnIntoCannoned	built	cannon capture; cannons with p1≠0 refused at Setup	L1 (cannon 0x442 p1 0)	HIGH	
+10058710	.HandleCannonedSprite	built	cited 6 (BackgroundSprite.swift:3,SpriteSlot.swift:1,PowerUps.swift:1,FerazelSe)	—	MED	classified by citation
+10058fac	.InitPlayerShotSprite	built	cited 7 (PlayerShot.swift:3,SetupFaces.swift:2,LightFaces.swift:1,BootFaces.swi)	—	MED	classified by citation
+1005925c	.SetupPlayerShotSprite	built	cited 13 (SpriteSlot.swift:4,PlayerShot.swift:3,HeldItem.swift:2,CastSpell.swift)	—	MED	classified by citation
+10059704	.HandlePlayerShotSprite	built	cited 7 (SpriteSlot.swift:4,PlayerShot.swift:2,FerazelSession.swift:1)	—	MED	classified by citation
+1005a7fc	.HitPlayerShotSprite	partial	missing: shot vs enemies / enemy shots arms (phase 5)	yes once enemies live (phase 5)	HIGH	(a)
+1005ac34	.KillPlayerShot	partial	missing: hits on enemy shots / Crawler / enemies (phase 5)	yes once enemies are live (phase 5)	HIGH	(a)
+1005b0bc	.HitPlayerShotTileSprite	built	cited 6 (PlayerShot.swift:4,PlayerShotHits.swift:2)	—	MED	classified by citation
+1005b670	.InitEnemyShotSprite	built	boot faces only (BootFaces.swift)	—	HIGH	
+1005ba5c	.SetupEnemyShotSprite	not built	phase 5 (enemy shots; also boulder-spout boulders)	L4 boulder spouts 0x5aa/0x5ad emit nothing (named phase 5 item)	HIGH	(a)
+1005bffc	.HandleEnemyShotSprite	not built	phase 5 (enemy shots; also boulder-spout boulders)	L4 boulder spouts 0x5aa/0x5ad emit nothing (named phase 5 item)	HIGH	(a)
+1005c9a8	.HitEnemyShotSprite	not built	phase 5 (enemy shots; also boulder-spout boulders)	L4 boulder spouts 0x5aa/0x5ad emit nothing (named phase 5 item)	HIGH	(a)
+1005cc08	.KillEnemyShot	not built	phase 5 (enemy shots; also boulder-spout boulders)	L4 boulder spouts 0x5aa/0x5ad emit nothing (named phase 5 item)	HIGH	(a)
+1005d034	.HitEnemyShotTileSprite	not built	phase 5 (enemy shots; also boulder-spout boulders)	L4 boulder spouts 0x5aa/0x5ad emit nothing (named phase 5 item)	HIGH	(a)
+1005d4f0	.InitBonusSprite	built	cited 13 (SetupFaces.swift:5,BonusSprite.swift:4,LightFaces.swift:2,BoxSprite.sw)	—	MED	classified by citation
+1005d988	.SetupBonusSprite	built	cited 19 (BonusSprite.swift:4,SetupFaces.swift:4,BoxSprite.swift:3,SpriteSlot.sw)	—	MED	classified by citation
+1005e934	.HandleBonusSprite	built	cited 8 (SpriteSlot.swift:3,BonusSprite.swift:2,FerazelSession.swift:2,BonusHan)	—	MED	classified by citation
+1005fd38	.HitBonusSprite	built	cited 8 (BonusSprite.swift:4,PlayerShotHits.swift:2,FerazelSession.swift:2)	—	MED	classified by citation
+10060024	.KillBonus	built	cited 15 (HitPlayerSprite.swift:7,BonusSprite.swift:6,SpriteWorld.swift:2)	—	MED	classified by citation
+1006010c	.HitBonusTileSprite	built	cited 2 (BonusSprite.swift:2)	—	MED	classified by citation
+10060378	.InitEffectSprite	built	cited 7 (LightFaces.swift:1,BackgroundSprite.swift:1,BootFaces.swift:1,BonusHan)	—	MED	classified by citation
+10060680	.SetupEffectSprite	partial	missing effect ids 1202..1205, 1251, 1830, -1 and the countdown digits (no spawner on built levels; phase 5-6)	no	HIGH	GroundCeilingEffects.swift header
+10060c0c	.SetupDigitSprite	built	cited 2 (FerazelSession.swift:2)	—	MED	classified by citation
+10060c78	.anon_10060c78	built	digit sprite Handle = SSH+SSC on a faceless sprite (inert here: same visible result)	—	MED	
+10060cd8	.HandleGeyserSegSprite	not built	phase 5 (geysers 1440..1449, NR 2–4)	no (no geyser placed L1-4)	HIGH	
+10060d04	.UpdateDigits	not built	countdown digits faces (2907 timer)	no (2907 timer only on level 40)	HIGH	phase 6 per FerazelSession.swift
+10061160	.HandleEffectSprite	partial	missing effect ids 1202..1205, 1251, 1830, -1 and the countdown digits (no spawner on built levels; phase 5-6)	no	HIGH	GroundCeilingEffects.swift header
+10061978	.HitEffectSprite	built	cited 2 (GroundCeilingEffects.swift:1,FerazelSession.swift:1)	—	MED	classified by citation
+100619a0	.HitEffectTileSprite	built	cited 4 (GroundCeilingEffects.swift:3,UnderWater.swift:1)	—	MED	classified by citation
+10061ac8	.BounceRadial	built	cited 2 (PlatformSprite.swift:1,Radial.swift:1)	—	MED	classified by citation
+10061cc0	.InitPlatformSprite	built	cited 6 (SetupFaces.swift:3,PlatformSprite.swift:2,BootFaces.swift:1)	—	MED	classified by citation
+10061f94	.SetupPlatformSprite	built	cited 10 (PlayerShot.swift:4,PlatformSprite.swift:3,SetupFaces.swift:2,SpriteSlo)	—	MED	classified by citation
+10062098	.DoSetupPlatformSprite	built	cited 6 (PlatformSprite.swift:4,SpriteSlot.swift:1,SetupFaces.swift:1)	—	MED	classified by citation
+100635b4	.HandlePlatformSprite	built	cited 5 (PlatformSprite.swift:2,Splash.swift:1,HitPlayerSprite.swift:1,FerazelS)	—	MED	classified by citation
+10064d94	.HitPlatformSprite	built	deferred-word hits are noise or name other routines' later arms	L1-4	HIGH	
+10064f04	.HitPlatformTileSprite	built	cited 4 (PlatformSprite.swift:3,SpriteSlot.swift:1)	—	MED	classified by citation
+100652c0	.SetupChainSprite	built	cited 4 (ChainSprite.swift:2,BackgroundSprite.swift:1,SpriteSlot.swift:1)	—	MED	classified by citation
+10065374	.HandleChainSprite	built	cited 3 (ChainSprite.swift:2,FerazelSession.swift:1)	—	MED	classified by citation
+10065508	.SetupSeeSawSegSprite	built	cited 4 (ChainSprite.swift:2,SpriteSlot.swift:1,SpriteWorld.swift:1)	—	MED	classified by citation
+100655c8	.HandleSeeSawSegSprite	built	cited 4 (ChainSprite.swift:2,SpriteSlot.swift:1,SpriteWorld.swift:1)	—	MED	classified by citation
+10065798	.HitChainTileSprite	built	cited 3 (ChainSprite.swift:3)	—	MED	classified by citation
+10065828	.InitCrawlerSprite	built	boot face load / cache registration	L1-4	HIGH	BootFaces / SetupFaces
+100659a0	.SetupCrawlerSprite	partial	Setup face + fields built; class Handle/Hit/Kill are phase 5 (inert)	L1-4 (placed)	HIGH	(a) any Setup arm that only matters to the Handle is not exercised
+10065c00	.HandleCrawlerSprite	not built	phase 5 (enemy Handle/Hit/Kill; class inert)	placed L1-4 (stands in Setup face)	HIGH	deliberate (a); callers: 
+100664a8	.HandleStatueSprite	built	cited 7 (SpriteSlot.swift:4,StatueSprite.swift:2,FerazelSession.swift:1)	—	MED	classified by citation
+100665bc	.HitCrawlerSprite	not built	phase 5 (enemy Handle/Hit/Kill; class inert)	placed L1-4 (stands in Setup face)	HIGH	deliberate (a); callers: 
+10066a2c	.KillCrawler	not built	phase 5 (enemy Handle/Hit/Kill; class inert)	placed L1-4 (stands in Setup face)	HIGH	deliberate (a); callers: .HandleCrawlerSprite
+10066aa4	.HitCrawlerTileSprite	not built	phase 5 (enemy Handle/Hit/Kill; class inert)	placed L1-4 (stands in Setup face)	HIGH	deliberate (a); callers: 
+10066c5c	.InitWalkerSprite	built	boot face load / cache registration	L1-4	HIGH	BootFaces / SetupFaces
+10066ef4	.STPlay3DSoundPitchedGob	not built	phase 5 (goblin = Walker cries)	placed L1-4, inert	HIGH	(a)
+10066f6c	.STPlay3DSoundRandGob	not built	phase 5 (goblin = Walker cries)	placed L1-4, inert	HIGH	(a)
+10067018	.GoblinHurtCry	not built	phase 5 (enemy Handle/Hit/Kill; class inert)	placed L1-4 (stands in Setup face)	HIGH	deliberate (a); callers: .HitWalkerSprite,.HurtGoblin
+100671b0	.GoblinRandomCry	not built	phase 5 (enemy Handle/Hit/Kill; class inert)	placed L1-4 (stands in Setup face)	HIGH	deliberate (a); callers: .HandleWalkerSprite
+10067318	.SetupWalkerSprite	partial	Setup face + fields built; class Handle/Hit/Kill are phase 5 (inert)	L1-4 (placed)	HIGH	(a) any Setup arm that only matters to the Handle is not exercised
+10067840	.AxGoblinCoreLogic	not built	phase 5 (enemy Handle/Hit/Kill; class inert)	placed L1-4 (stands in Setup face)	HIGH	deliberate (a); callers: .HandleWalkerSprite
+10067edc	.PopupGoblinCoins	not built	phase 5 (enemy Handle/Hit/Kill; class inert)	placed L1-4 (stands in Setup face)	HIGH	deliberate (a); callers: .HandleWalkerSprite
+100683b8	.HandleWalkerSprite	not built	phase 5 (enemy Handle/Hit/Kill; class inert)	placed L1-4 (stands in Setup face)	HIGH	deliberate (a); callers: 
+1006a128	.HurtGoblin	not built	phase 5 (enemy Handle/Hit/Kill; class inert)	placed L1-4 (stands in Setup face)	HIGH	deliberate (a); callers: .HitWalkerSprite
+1006a260	.HitWalkerSprite	not built	phase 5 (enemy Handle/Hit/Kill; class inert)	placed L1-4 (stands in Setup face)	HIGH	deliberate (a); callers: 
+1006a6cc	.KillWalker	not built	phase 5 (enemy Handle/Hit/Kill; class inert)	placed L1-4 (stands in Setup face)	HIGH	deliberate (a); callers: .HandleWalkerSprite
+1006a740	.HitWalkerTileSprite	not built	phase 5 (enemy Handle/Hit/Kill; class inert)	placed L1-4 (stands in Setup face)	HIGH	deliberate (a); callers: 
+1006aa5c	.InitBoxSprite	built	cited 16 (SetupFaces.swift:9,BoxSprite.swift:6,BootFaces.swift:1)	—	MED	classified by citation
+1006b3d8	.GetRopeBridgeHeight	not built	phase 6 (rope bridge 1466)	no	HIGH	
+1006b43c	.SetupBoxSprite	built	cited 15 (SetupFaces.swift:7,BoxSprite.swift:5,PlayerShot.swift:2,PlayerShotHits)	—	MED	classified by citation
+1006cf7c	.HandleGeyserColumn	not built	phase 5 (geysers 1440..1449, NR 2–4)	no (no geyser placed L1-4)	HIGH	
+1006d590	.CreateBalloonSprite	built	cited 4 (BoxSprite.swift:3,GroundCeilingEffects.swift:1)	—	MED	classified by citation
+1006d6f4	.DestructBalloonSprite	built	cited 4 (BoxSprite.swift:4)	—	MED	classified by citation
+1006d758	.BoxUW	built	cited 2 (BoxSprite.swift:1,Splash.swift:1)	—	MED	classified by citation
+1006d7b0	.BoxClean	built	cited 2 (BoxSprite.swift:2)	—	MED	classified by citation
+1006d824	.BoxCleanUp	built	cited 1 (BoxSprite.swift:1)	—	MED	classified by citation
+1006d878	.HandleBoxSprite	partial	missing arms: geysers 0x5a0..0x5a9 + pipes 0x5d2..0x5d5 (phase 5); carpet 0x438/0x439, spiked balls 0x5c3/0x5c4, table 0xb71, snowball 0xbfe (phase 6)	no (none placed L1-4)	HIGH	BoxSprite.handleBuilt
+1006fa98	.KillCrate	built	other classes' run-time drops (Blob 1731 on level 31) phase 5	L1-4 drops = item 3219, built	HIGH	
+10070024	.HitBoxSprite	partial	missing: carpet arm 0x438 (phase 6); enemy-shot sites (phase 5)	no	HIGH	
+100705f0	.KillBox	built	cited 10 (BoxSprite.swift:7,HitPlayerSprite.swift:3)	—	MED	classified by citation
+10070718	.HitBoxTileSprite	built	deferred-word hits are noise or name other routines' later arms	L1-4	HIGH	
+10070c48	.InitButtonSprite	built	cited 5 (ButtonSprite.swift:3,BootFaces.swift:1,SetupFaces.swift:1)	—	MED	classified by citation
+10070d30	.SetupButtonSprite	built	cited 5 (ButtonSprite.swift:2,SpriteSlot.swift:2,SetupFaces.swift:1)	—	MED	classified by citation
+10070e60	.HandleButtonSprite	built	cited 5 (ButtonSprite.swift:2,SpriteSlot.swift:2,FerazelSession.swift:1)	—	MED	classified by citation
+100710e4	.HitButtonSprite	partial	missing: enemy / enemy-shot presses (phase 5)	L3/L4 buttons: player presses built	HIGH	(a)
+100711f0	.InitBackgroundSprite	built	cited 7 (SetupFaces.swift:6,BackgroundSprite.swift:1)	—	MED	classified by citation
+10071710	.SetupBackgroundSprite	partial	missing: cannon p1≠0 arms (programmed path, rotation), trees, fire, clouds, 0x73f/0x740, 0x76c..0x76f, 0xb4a..0xb4d, 0xbf4	no: L1-4 Background types 0x442 (p1 0), 0x5cd, 0xa96/99/9a, 0xb54, 0xbba, 0xcb1, 0x731/0x732 are all built	HIGH	(d)
+10072f50	.SetupTree	not built	trees 0xc08..0xc0f (HandleBackgroundSprite)	no (none placed L1-4)	HIGH	
+10073afc	.HandleBackgroundSprite	partial	missing arms: fire 0x4b8/0x4bb..0x4bd, 0x73f/0x740, 0x76c..0x76f, clouds 0xb4a..0xb4d, blade 0xbf4, trees 0xc08..0xc0f; mace modes 1/2; cannon p1≠0	no (none placed L1-4)	HIGH	BackgroundSprite.isUnbuiltArm
+10074e60	.SuperSpring	built	cited 3 (BackgroundSprite.swift:3)	—	MED	classified by citation
+10075044	.HitBackgroundSprite	partial	missing: fire 0x4b8 etc. and enemy-shot kill (phase 5)	enemy-shot arm phase 5; others not placed L1-4	HIGH	
+10075398	.InitScenery	absorbed	clears one global (_DAT_100a0b40) at InitSprites	—	LOW	reader not traced; looks like scenery count for trees (not built)
+100753c8	.SetTextDItem	out of scope	debug level-warp dialog (NewGame, debug flag _DAT_100a0064 off in shipped game)	n/a	HIGH	RE bank: out of scope (debug)
+10075484	.GetTextDItem	out of scope	debug level-warp dialog (NewGame, debug flag _DAT_100a0064 off in shipped game)	n/a	HIGH	RE bank: out of scope (debug)
+10075548	.InitMusic	built	cited 1 (GameFlow.swift:1)	—	MED	classified by citation
+100756b0	.IsQuickTimeInstalled	absorbed	QuickTime check (always present) / seed RNG at boot	front end	MED	GameFlow notes QuickTime always present; FastRand seeded by Core
+10075770	.Randomize	absorbed	QuickTime check (always present) / seed RNG at boot	front end	MED	GameFlow notes QuickTime always present; FastRand seeded by Core
+100757b8	.DrawGreyOutline	built	cited 7 (PrefsDialogView.swift:2,DialogRenderer.swift:2,DialogWindow.swift:2,Wi)	—	MED	classified by citation
+100758f8	.AlreadyUsingKey	built	cited 5 (PrefsDialogModel.swift:3,PrefsDialogView.swift:1,WinPrefsDialog.swift:)	—	MED	classified by citation
+10075990	.PrefDialogFilter	built	cited 8 (PrefsDialogModel.swift:3,PrefsDialogView.swift:3,WinPrefsDialog.swift:)	—	MED	classified by citation
+10075f68	.UpdateDisabledItems	built	cited 4 (PrefsDialogModel.swift:2,FerazelCarbonDialog.swift:1,DialogWindow.swif)	—	MED	classified by citation
+100760dc	.PreferencesDialog	built	cited 8 (FerazelDialogs.swift:2,PrefsDialogModel.swift:1,LevelRun.swift:1,Feraz)	—	MED	classified by citation
+10076d38	.SwitchPrefsPanel	built	cited 6 (PrefsDialogModel.swift:2,PrefsDialogView.swift:2,WinPrefsDialog.swift:)	—	MED	classified by citation
+10076e30	.UpdatePrefsPanel	built	cited 3 (PrefsDialogModel.swift:3)	—	MED	classified by citation
+10077250	.ConvertKeyName	built	cited 6 (PrefsDialogModel.swift:3,FerazelController.swift:1,PrefsDialogView.swi)	—	MED	classified by citation
+1007771c	.SetPrefFile	built	cited 6 (PrefsFile.swift:1,PrefsToggles.swift:1,SaveGame.swift:1,FrontFiles.swi)	—	MED	classified by citation
+10077868	.InitRoachSprite	built	boot face load / cache registration	L1-4	HIGH	BootFaces / SetupFaces
+10077914	.SetupRoachSprite	partial	Setup face + fields built; class Handle/Hit/Kill are phase 5 (inert)	L1-4 (placed)	HIGH	(a) any Setup arm that only matters to the Handle is not exercised
+10077a88	.HandleRoachSprite	not built	phase 5 (enemy Handle/Hit/Kill; class inert)	placed L1-4 (stands in Setup face)	HIGH	deliberate (a); callers: 
+1007801c	.HitRoachSprite	not built	phase 5 (enemy Handle/Hit/Kill; class inert)	placed L1-4 (stands in Setup face)	HIGH	deliberate (a); callers: 
+100782f8	.KillRoach	not built	phase 5 (enemy Handle/Hit/Kill; class inert)	placed L1-4 (stands in Setup face)	HIGH	deliberate (a); callers: .HandleRoachSprite
+10078384	.HitRoachTileSprite	not built	phase 5 (enemy Handle/Hit/Kill; class inert)	placed L1-4 (stands in Setup face)	HIGH	deliberate (a); callers: 
+1007853c	.DoAboutDialog	built	cited 10 (GameFlow.swift:2,FerazelDialogs.swift:2,WinCreditsDialog.swift:2,Pause)	—	MED	classified by citation
+10078b14	.ConvPressAnyKeyDeadTime	built	cited 2 (ConversationRun.swift:2)	—	MED	classified by citation
+10078bd0	.InitConversation	built	cited 3 (ConversationRun.swift:2,ConversationRenderer.swift:1)	—	MED	classified by citation
+10078ee4	.DrawConvPic	built	cited 5 (ConversationRun.swift:3,ConversationRenderer.swift:2)	—	MED	classified by citation
+10078f34	.DrawConvPicToScreen	built	cited 3 (ConversationRun.swift:2,ConversationRenderer.swift:1)	—	MED	classified by citation
+10078fc8	.DrawConvNameString	built	cited 2 (ConversationRenderer.swift:1,ConversationRun.swift:1)	—	MED	classified by citation
+10079094	.CharByCharDelay	built	cited 4 (ConversationRun.swift:4)	—	MED	classified by citation
+1007912c	.DrawStringCharByCharOrig	built	cited 2 (ConversationRenderer.swift:1,ConversationRun.swift:1)	—	MED	classified by citation
+10079210	.DrawStringCharByChar	built	cited 6 (ConversationRun.swift:5,TextRasterizer.swift:1)	—	MED	classified by citation
+1007940c	.DrawConvTextString	built	cited 11 (ConversationRun.swift:8,ConversationRenderer.swift:2,TextRasterizer.sw)	—	MED	classified by citation
+100797e4	.CopyConvToScreen	built	cited 4 (ConversationRun.swift:3,ConversationRenderer.swift:1)	—	MED	classified by citation
+100798cc	.EraseConvNameAndText	built	cited 5 (ConversationRun.swift:3,ConversationRenderer.swift:2)	—	MED	classified by citation
+10079a30	.SimpleConv	built	cited 23 (HandleKeys.swift:5,FrameSuspension.swift:4,LevelRun.swift:4,HitPlayerS)	—	MED	classified by citation
+10079c60	.HandleLineResponses	built	cited 3 (ConversationRun.swift:3)	—	MED	classified by citation
+1007a0fc	.HandleLineActions	built	cited 7 (StatusBarState.swift:2,StatusBarCalls.swift:2,ConversationRun.swift:2,)	—	MED	classified by citation
+1007a624	.HandleConvLine	built	cited 4 (ConversationRun.swift:4)	—	MED	classified by citation
+1007a7e8	.Conversation	built	cited 30 (ConversationRun.swift:13,HitPlayerSprite.swift:4,Conversation.swift:3,)	—	MED	classified by citation
+1007aa88	.InitPlayerMapData	built	cited 2 (GameFlow.swift:1,NewGame.swift:1)	—	MED	classified by citation
+1007ac38	.InitMapFaces	built	cited 6 (MapRenderer.swift:2,FerazelDriver.swift:2,BootFaces.swift:1,WorldMapRu)	—	MED	classified by citation
+1007ad84	.InitMapLevelNames	built	cited 6 (ContinueGame.swift:2,NewGame.swift:2,StringList.swift:1,WorldMapRun.sw)	—	MED	classified by citation
+1007ae3c	.AddNodeSprite	built	cited 5 (WorldMapRun.swift:5)	—	MED	classified by citation
+1007aea4	.MakeNodeSprites	built	cited 5 (WorldMapRun.swift:4,MapRenderer.swift:1)	—	MED	classified by citation
+1007afd8	.RedrawLinks	built	cited 6 (WorldMapRun.swift:5,MapRenderer.swift:1)	—	MED	classified by citation
+1007b0dc	.UpdateNodeSprites	built	cited 4 (WorldMapRun.swift:4)	—	MED	classified by citation
+1007b268	.DrawNodeSprites	built	cited 5 (WorldMapRun.swift:4,MapRenderer.swift:1)	—	MED	classified by citation
+1007b344	.EraseNodeSprites	built	cited 5 (WorldMapRun.swift:5)	—	MED	classified by citation
+1007b438	.CopyNodeSpritesToScreen	built	cited 1 (WorldMapRun.swift:1)	—	MED	classified by citation
+1007b560	.ReInitWorldMapGraphics	built	cited 3 (WorldMapRun.swift:2,MapRenderer.swift:1)	—	MED	classified by citation
+1007b674	.FindPlayerNodeLoc	built	cited 2 (WorldMapRun.swift:2)	—	MED	classified by citation
+1007b7c8	.DrawLink	built	cited 8 (WorldMapRun.swift:6,MapRenderer.swift:2)	—	MED	classified by citation
+1007b998	.DrawLinkScratch	built	cited 4 (MapRenderer.swift:2,WorldMapRun.swift:2)	—	MED	classified by citation
+1007bb80	.FindCurrNode	built	cited 7 (WorldMapRun.swift:4,WorldMap.swift:1,NewGame.swift:1,LevelFlow.swift:1)	—	MED	classified by citation
+1007bc28	.DrawNewLink	built	cited 9 (WorldMapRun.swift:8,MapRenderer.swift:1)	—	MED	classified by citation
+1007bfdc	.CheckPlayerNodeMovement	built	cited 2 (WorldMapRun.swift:2)	—	MED	classified by citation
+1007c494	.ShowWorldMap	built	cited 18 (WorldMapRun.swift:7,NewGame.swift:4,LevelFlow.swift:2,WorldMap.swift:1)	—	MED	classified by citation
+1007cd3c	.InitBlobSprite	built	boot face load / cache registration	L1-4	HIGH	BootFaces / SetupFaces
+1007cdb0	.SetupBlobSprite	partial	Setup face + fields built; class Handle/Hit/Kill are phase 5 (inert)	L1-4 (placed)	HIGH	(a) any Setup arm that only matters to the Handle is not exercised
+1007cf64	.HandleDeadBlobSprite	not built	phase 5 (enemy Handle/Hit/Kill; class inert)	placed L1-4 (stands in Setup face)	HIGH	deliberate (a); callers: 
+1007d044	.HandleBlobSprite	not built	phase 5 (enemy Handle/Hit/Kill; class inert)	placed L1-4 (stands in Setup face)	HIGH	deliberate (a); callers: 
+1007d6e0	.HitBlobSprite	not built	phase 5 (enemy Handle/Hit/Kill; class inert)	placed L1-4 (stands in Setup face)	HIGH	deliberate (a); callers: 
+1007d8dc	.KillBlob	not built	phase 5 (enemy Handle/Hit/Kill; class inert)	placed L1-4 (stands in Setup face)	HIGH	deliberate (a); callers: .HandleDeadBlobSprite
+1007d968	.HitBlobTileSprite	not built	phase 5 (enemy Handle/Hit/Kill; class inert)	placed L1-4 (stands in Setup face)	HIGH	deliberate (a); callers: 
+1007daf8	.InitBatSprite	built	boot face load / cache registration	L1-4	HIGH	BootFaces / SetupFaces
+1007dc30	.SetupBatSprite	partial	Setup face + fields built; class Handle/Hit/Kill are phase 5 (inert)	L1-4 (placed)	HIGH	(a) any Setup arm that only matters to the Handle is not exercised
+1007e220	.SetupSwarmMemberSprite	not built	phase 5 (Bat-family helpers: swarm members / insect body)	only via bats (placed L2-4, inert)	MED	spawner not traced; inert bats spawn nothing now
+1007e2c8	.HandleSwarmMemberSprite	not built	phase 5 (Bat-family helpers: swarm members / insect body)	only via bats (placed L2-4, inert)	MED	spawner not traced; inert bats spawn nothing now
+1007e6b0	.HandleBatSprite	not built	phase 5 (enemy Handle/Hit/Kill; class inert)	placed L1-4 (stands in Setup face)	HIGH	deliberate (a); callers: 
+1007f440	.SetupInsectBodySprite	not built	phase 5 (Bat-family helpers: swarm members / insect body)	only via bats (placed L2-4, inert)	MED	spawner not traced; inert bats spawn nothing now
+1007f4a0	.HandleInsectBodySprite	not built	phase 5 (Bat-family helpers: swarm members / insect body)	only via bats (placed L2-4, inert)	MED	spawner not traced; inert bats spawn nothing now
+1007f508	.HitBatSprite	not built	phase 5 (enemy Handle/Hit/Kill; class inert)	placed L1-4 (stands in Setup face)	HIGH	deliberate (a); callers: 
+1007f734	.HitSwarmMemberSprite	not built	phase 5 (Bat-family helpers: swarm members / insect body)	only via bats (placed L2-4, inert)	MED	spawner not traced; inert bats spawn nothing now
+1007f874	.KillBat	not built	phase 5 (enemy Handle/Hit/Kill; class inert)	placed L1-4 (stands in Setup face)	HIGH	deliberate (a); callers: .HandleBatSprite,.KillBat
+1007f91c	.HitBatTileSprite	not built	phase 5 (enemy Handle/Hit/Kill; class inert)	placed L1-4 (stands in Setup face)	HIGH	deliberate (a); callers: 
+1007faac	.InitGremlinSprite	not built	phase 5: per-level cache registration of faces; class not placed L1-4	no	MED	port LevelRun cache table carries only built classes
+1007fc88	.SetupGremlinSprite	not built	phase 5 (enemy class not placed in L1-4)	no	HIGH	callers: 
+1007feec	.HandleGremlinSprite	not built	phase 5 (enemy class not placed in L1-4)	no	HIGH	callers: 
+10080d34	.HitGremlinSprite	not built	phase 5 (enemy class not placed in L1-4)	no	HIGH	callers: 
+100810d4	.KillGremlinSprite	not built	phase 5 (enemy class not placed in L1-4)	no	HIGH	callers: 
+100811a4	.HitGremlinTileSprite	not built	phase 5 (enemy class not placed in L1-4)	no	HIGH	callers: 
+100813dc	.InitFloaterSprite	not built	phase 5: per-level cache registration of faces; class not placed L1-4	no	MED	port LevelRun cache table carries only built classes
+100814b8	.SetupFloaterSprite	not built	phase 5 (enemy class not placed in L1-4)	no	HIGH	callers: 
+100816d8	.HandleFloaterSprite	not built	phase 5 (enemy class not placed in L1-4)	no	HIGH	callers: 
+10081aa4	.HitFloaterSprite	not built	phase 5 (enemy class not placed in L1-4)	no	HIGH	callers: 
+10081c60	.HitFloaterTileSprite	not built	phase 5 (enemy class not placed in L1-4)	no	HIGH	callers: 
+10081df4	.InitFrogSprite	built	boot face load / cache registration	L1-4	HIGH	BootFaces / SetupFaces
+10081e68	.STPlay3DSoundRandFrog	not built	phase 5 (enemy Handle/Hit/Kill; class inert)	placed L1-4 (stands in Setup face)	HIGH	deliberate (a); callers: .HandleFrogSprite,.HitFrogSprite
+10081f14	.SetupFrogSprite	partial	Setup face + fields built; class Handle/Hit/Kill are phase 5 (inert)	L1-4 (placed)	HIGH	(a) any Setup arm that only matters to the Handle is not exercised
+1008214c	.HandleFrogSprite	not built	phase 5 (enemy Handle/Hit/Kill; class inert)	placed L1-4 (stands in Setup face)	HIGH	deliberate (a); callers: 
+100828cc	.HitFrogSprite	not built	phase 5 (enemy Handle/Hit/Kill; class inert)	placed L1-4 (stands in Setup face)	HIGH	deliberate (a); callers: 
+10082c14	.KillFrog	not built	phase 5 (enemy Handle/Hit/Kill; class inert)	placed L1-4 (stands in Setup face)	HIGH	deliberate (a); callers: 
+10082d04	.HitFrogTileSprite	not built	phase 5 (enemy Handle/Hit/Kill; class inert)	placed L1-4 (stands in Setup face)	HIGH	deliberate (a); callers: 
+10082ea8	.InitSalamanderSprite	not built	phase 5: per-level cache registration of faces; class not placed L1-4	no	MED	port LevelRun cache table carries only built classes
+10082f20	.SetupSalamanderSprite	not built	phase 5 (enemy class not placed in L1-4)	no	HIGH	callers: 
+10083074	.HandleSalamanderSprite	not built	phase 5 (enemy class not placed in L1-4)	no	HIGH	callers: 
+1008350c	.HitSalamanderSprite	not built	phase 5 (enemy class not placed in L1-4)	no	HIGH	callers: 
+10083724	.KillSalamander	not built	phase 5 (enemy class not placed in L1-4)	no	HIGH	callers: 
+100837b8	.HitSalamanderTileSprite	not built	phase 5 (enemy class not placed in L1-4)	no	HIGH	callers: 
+10083980	.InitRopeSprite	built	cited 3 (BootFaces.swift:2,RopeSprite.swift:1)	—	MED	classified by citation
+10083f20	.SetupRopeSprite	built	cited 4 (RopeSprite.swift:2,IdleSprites.swift:1,SetupFaces.swift:1)	—	MED	classified by citation
+10084044	.SetupRopeSegSprite	built	cited 3 (RopeSprite.swift:3)	—	MED	classified by citation
+100840b4	.HandleRopeSegSprite	built	cited 2 (RopeSprite.swift:2)	—	MED	classified by citation
+10084118	.MakeRopeSegSprites	built	cited 6 (RopeSprite.swift:6)	—	MED	classified by citation
+10084264	.GetRopeHeight	built	deferred-word hits are noise or name other routines' later arms	L1-4	HIGH	
+100843ac	.SetupRopeSegArray	built	cited 6 (RopeSprite.swift:4,SpriteSlot.swift:1,SetupFaces.swift:1)	—	MED	classified by citation
+10084b00	.RopeIdleize	built	cited 4 (RopeSprite.swift:3,IdleSprites.swift:1)	—	MED	classified by citation
+10084ba8	.RopeDeIdleize	built	cited 5 (RopeSprite.swift:3,IdleSprites.swift:1,SpriteWorld.swift:1)	—	MED	classified by citation
+10084c1c	.HandleRopeSprite	built	cited 3 (RopeSprite.swift:2,FerazelSession.swift:1)	—	MED	classified by citation
+10085300	.FlameCreate	not built	fire parallax (hdr 0x2722) + flame buffer	no (0x2722 only on levels 52, 55)	HIGH	ParallaxBlitter refuses a flame level; FlameAddSpark also from HandleEnemyShotSprite (phase 5/6)
+100854e4	.FlameAddSpark	not built	fire parallax (hdr 0x2722) + flame buffer	no (0x2722 only on levels 52, 55)	HIGH	ParallaxBlitter refuses a flame level; FlameAddSpark also from HandleEnemyShotSprite (phase 5/6)
+10085560	.FlameAddLine	not built	fire parallax (hdr 0x2722) + flame buffer	no (0x2722 only on levels 52, 55)	HIGH	ParallaxBlitter refuses a flame level; FlameAddSpark also from HandleEnemyShotSprite (phase 5/6)
+10085698	.FlameUpdate	not built	fire parallax (hdr 0x2722) + flame buffer	no (0x2722 only on levels 52, 55)	HIGH	ParallaxBlitter refuses a flame level; FlameAddSpark also from HandleEnemyShotSprite (phase 5/6)
+1008574c	.FlameDispose	built	cited 1 (GameFlow.swift:1)	—	MED	classified by citation
+100857e0	.FlameUp	not built	fire parallax (hdr 0x2722) + flame buffer	no (0x2722 only on levels 52, 55)	HIGH	ParallaxBlitter refuses a flame level; FlameAddSpark also from HandleEnemyShotSprite (phase 5/6)
+10085df4	.MyNewPixMap	not built	fire parallax (hdr 0x2722) + flame buffer	no (0x2722 only on levels 52, 55)	HIGH	ParallaxBlitter refuses a flame level; FlameAddSpark also from HandleEnemyShotSprite (phase 5/6)
+10085f44	.MyRandomizePixmap	not built	fire parallax (hdr 0x2722) + flame buffer	no (0x2722 only on levels 52, 55)	HIGH	ParallaxBlitter refuses a flame level; FlameAddSpark also from HandleEnemyShotSprite (phase 5/6)
+10086048	.MyDisposePixMap	out of scope	memory / port disposal (Swift ARC)	n/a	HIGH	
+100860e0	.MyRandom	not built	fire parallax (hdr 0x2722) + flame buffer	no (0x2722 only on levels 52, 55)	HIGH	ParallaxBlitter refuses a flame level; FlameAddSpark also from HandleEnemyShotSprite (phase 5/6)
+10086120	.InitDilloSprite	not built	phase 6: boss face cache registration	no	MED	
+1008622c	.SetupDilloSprite	not built	phase 6 (boss)	no (not placed L1-4)	HIGH	callers: 
+1008648c	.ShootSpines	not built	phase 6 (Dillo boss)	no	HIGH	
+1008678c	.DilloLayEgg	not built	phase 6 (boss)	no (not placed L1-4)	HIGH	callers: .HandleDilloSprite,.RandomDilloAttack
+100867fc	.RandomDilloAttack	not built	phase 6 (boss)	no (not placed L1-4)	HIGH	callers: .HandleDilloSprite,.HitDilloSprite
+1008697c	.HandleDilloSprite	not built	phase 6 (boss)	no (not placed L1-4)	HIGH	callers: 
+10087334	.HitDilloSprite	not built	phase 6 (boss)	no (not placed L1-4)	HIGH	callers: 
+100875bc	.KillDillo	not built	phase 6 (boss)	no (not placed L1-4)	HIGH	callers: 
+1008763c	.HitDilloTileSprite	not built	phase 6 (boss)	no (not placed L1-4)	HIGH	callers: 
+100877d0	.InitWarriorSprite	not built	phase 6: boss face cache registration	no	MED	
+100878ac	.SetupWarriorSprite	not built	phase 6 (boss)	no (not placed L1-4)	HIGH	callers: 
+10087afc	.WarriorLayEgg	not built	phase 6 (boss)	no (not placed L1-4)	HIGH	callers: .HandleWarriorSprite
+10087b6c	.RandomWarriorAttack	not built	phase 6 (boss)	no (not placed L1-4)	HIGH	callers: .HandleWarriorSprite
+10087c04	.HandleWarriorSprite	not built	phase 6 (boss)	no (not placed L1-4)	HIGH	callers: 
+1008854c	.HitWarriorSprite	not built	phase 6 (boss)	no (not placed L1-4)	HIGH	callers: 
+1008874c	.KillWarrior	not built	phase 6 (boss)	no (not placed L1-4)	HIGH	callers: 
+10088834	.HitWarriorTileSprite	not built	phase 6 (boss)	no (not placed L1-4)	HIGH	callers: 
+100889c8	.InitSpriteCache	absorbed	zeroes the per-level face-cache table at boot	—	MED	port LevelRun cache (.LoadCachedSpriteFaces) starts empty
+10088ae0	FUN_10088ae0	built	cited 1 (LevelRun.swift:1)	—	MED	classified by citation
+10088c9c	.NeedToReloadForThisClut	built	cited 2 (LevelRun.swift:2)	—	MED	classified by citation
+10088d04	.DisposeUnneededCachedSpriteFaces	built	cited 1 (LevelRun.swift:1)	—	MED	classified by citation
+10088ee4	.CountNeededCachedSpriteFaces	built	cited 1 (LevelRun.swift:1)	—	MED	classified by citation
+10088fa8	.LoadCachedSpriteFaces	built	per-level face cache	L1-4	HIGH	fixed 2026-10-30 (b535527: boot faces + level caches)
+10089250	.CacheEncFaceSetFromPICT	built	cited 4 (SetupFaces.swift:2,SpriteBlitter.swift:1,LevelRun.swift:1)	—	MED	classified by citation
+100893d4	.Cache1EncFaceFromPICT	built	cited 5 (SetupFaces.swift:3,SpriteBlitter.swift:1,LevelRun.swift:1)	—	MED	classified by citation
+10089454	.InitCrabSprite	not built	phase 5: per-level cache registration of faces; class not placed L1-4	no	MED	port LevelRun cache table carries only built classes
+100894e4	.SetupCrabSprite	not built	phase 5 (enemy class not placed in L1-4)	no	HIGH	callers: 
+10089828	.HandleCrabSprite	not built	phase 5 (enemy class not placed in L1-4)	no	HIGH	callers: 
+10089dec	.HandleCrabSegSprite	not built	phase 5 (enemy class not placed in L1-4)	no	HIGH	callers: 
+10089e24	.HitCrabSprite	not built	phase 5 (enemy class not placed in L1-4)	no	HIGH	callers: 
+10089ec4	.InitDemonSprite	not built	phase 6: boss face cache registration	no	MED	
+1008a0ac	.SetupDemonSprite	not built	phase 6 (boss)	no (not placed L1-4)	HIGH	callers: 
+1008a400	.HandleDemonSegs	not built	phase 6 (boss)	no (not placed L1-4)	HIGH	callers: .HandleDemonSprite
+1008a594	.HandleDemonSegSprite	not built	phase 6 (boss)	no (not placed L1-4)	HIGH	callers: 
+1008a630	.HandleDemonSprite	not built	phase 6 (boss)	no (not placed L1-4)	HIGH	callers: 
+1008b0b4	.HitDemonSprite	not built	phase 6 (boss)	no (not placed L1-4)	HIGH	callers: 
+1008b2d0	.KillDemon	not built	phase 6 (boss)	no (not placed L1-4)	HIGH	callers: 
+1008b3f8	.InitChiefSprite	not built	phase 6: boss face cache registration	no	MED	
+1008b538	.SetupChiefSprite	not built	phase 6 (boss)	no (not placed L1-4)	HIGH	callers: 
+1008b724	.GoblinChiefRandomCry	not built	phase 6 (boss)	no (not placed L1-4)	HIGH	callers: .HandleChiefSprite,.HitChiefSprite
+1008b878	.HandleChiefSprite	not built	phase 6 (boss)	no (not placed L1-4)	HIGH	callers: 
+1008c0e0	.HitChiefSprite	not built	phase 6 (boss)	no (not placed L1-4)	HIGH	callers: 
+1008c350	.KillChief	not built	phase 6 (boss)	no (not placed L1-4)	HIGH	callers: 
+1008c434	.HitChiefTileSprite	not built	phase 6 (boss)	no (not placed L1-4)	HIGH	callers: 
+1008c5c8	.InitWizardSprite	not built	phase 6: boss face cache registration	no	MED	
+1008c6a8	.SetupWizardSprite	not built	phase 6 (boss)	no (not placed L1-4)	HIGH	callers: 
+1008c8e8	.HandleWizardSprite	not built	phase 6 (boss)	no (not placed L1-4)	HIGH	callers: 
+1008d470	.HitWizardSprite	not built	phase 6 (boss)	no (not placed L1-4)	HIGH	callers: 
+1008d69c	.KillWizard	not built	phase 6 (boss)	no (not placed L1-4)	HIGH	callers: 
+1008d784	.HitWizardTileSprite	not built	phase 6 (boss)	no (not placed L1-4)	HIGH	callers: 
+1008d918	.InitXichraSprite	not built	phase 6: boss face cache registration	no	MED	
+1008dc7c	.HandleXichraWingSprite	not built	phase 6 (boss)	no (not placed L1-4)	HIGH	callers: 
+1008dce4	.sinDegrees	not built	phase 6 (Xichra)	no	HIGH	
+1008dd44	.SetupXichraSprite	not built	phase 6 (boss)	no (not placed L1-4)	HIGH	callers: 
+1008e180	.StandardXichraFloat	not built	phase 6 (boss)	no (not placed L1-4)	HIGH	callers: .HandleXichraSprite
+1008e24c	.UpdateXichraCannons	not built	phase 6 (boss)	no (not placed L1-4)	HIGH	callers: .HandleXichraSprite
+1008e388	.DoXichraShot	not built	phase 6 (boss)	no (not placed L1-4)	HIGH	callers: .HandleXichraSprite
+1008e4ec	.HandleXichraSprite	not built	phase 6 (boss)	no (not placed L1-4)	HIGH	callers: 
+1008fdf4	.HitXichraSprite	not built	phase 6 (boss)	no (not placed L1-4)	HIGH	callers: 
+100902a4	.KillXichra	not built	phase 6 (boss)	no (not placed L1-4)	HIGH	callers: 
+10090384	.HitXichraTileSprite	not built	phase 6 (boss)	no (not placed L1-4)	HIGH	callers: 
+10090478	.pcstrcat	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10090498	FUN_10090498	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: 
+100904c4	.pnumcat	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+100906a0	.MetroNubActive	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10090770	.Debug	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+100908d8	.SLEnterInterrupt	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10090900	.SLLeaveInterrupt	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10090928	FUN_10090928	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: entry
+1009097c	FUN_1009097c	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: FUN_10090d08
+100909d0	FUN_100909d0	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: entry
+100909e0	FUN_100909e0	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: entry
+100909ec	entry	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 1
+10090a64	FUN_10090a64	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: .GammaFadeOut,.TintFadeProc
+10090ab8	FUN_10090ab8	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: .MT_FadeCustom,.MT_FadeToColor
+10090ba8	FUN_10090ba8	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: .PlatformOpen,._MacOSGetMicroseconds
+10090c40	FUN_10090c40	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: .PlatformOpen,._MacOSGetMicroseconds
+10090d08	FUN_10090d08	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: entry
+10090db4	FUN_10090db4	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: FUN_10090d08
+10090e38	FUN_10090e38	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: .main
+10091090	FUN_10091090	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: .Quit
+10091124	FUN_10091124	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: .STSetVolume,FUN_10090e38
+1009118c	FUN_1009118c	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: .InitPrefs,.main,FUN_10090e38
+10091208	FUN_10091208	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: .STLoopCallBack,.STPlay3DSound,.STPlay3DSoundPitched
+10091504	FUN_10091504	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: .CheckGroundCeilingHitEffects,.FillPercent,.GameLoop
+100916dc	FUN_100916dc	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: .CheckGroundCeilingHitEffects,.CrunchTile,.FillPercent
+10091748	FUN_10091748	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: .InitAppGlobals,.InitSounds
+10091890	FUN_10091890	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: .HandlePlayerSprite,.UpdateDynamicSounds
+10091a60	FUN_10091a60	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: .HandlePlayerSprite
+10091b44	FUN_10091b44	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: FUN_10091c94
+10091c94	FUN_10091c94	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: 
+10091ddc	FUN_10091ddc	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: FUN_10091c94
+10091f00	FUN_10091f00	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: FUN_10091c94
+10091fe4	FUN_10091fe4	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: FUN_10090e38
+1009213c	FUN_1009213c	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: FUN_10090e38
+100921d0	FUN_100921d0	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: FUN_10090e38
+10092208	FUN_10092208	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: FUN_10092400,FUN_1009245c
+100922d8	FUN_100922d8	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: FUN_10091748
+10092378	FUN_10092378	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: FUN_10090e38
+10092400	FUN_10092400	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: FUN_10091fe4
+1009245c	FUN_1009245c	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: FUN_10090e38
+100924c4	FUN_100924c4	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: FUN_10091208,FUN_10091504
+1009250c	FUN_1009250c	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: FUN_10091208,FUN_10091504
+10092550	.MT_Open	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+1009279c	.MT_Close	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10092894	.MT_FindMonitor	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10092c10	.MT_GetMode	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10092dc4	.MT_SetMode	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+100931a4	.MT_FadeTo	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10093304	.MT_FadeToColor	absorbed	runtime library (monitor/gamma/memory toolkit)	n/a	MED	cited 13 (ScreenGamma.swift:4,ScreenGammaOp.swift:4,ScreenFade.swift:2)
+10093734	.MT_FadeCustom	absorbed	runtime library (monitor/gamma/memory toolkit)	n/a	MED	cited 6 (ScreenFade.swift:3,ScreenGamma.swift:2,ScreenGammaOp.swift:1)
+10093c74	.MT_Prepare	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10093e04	.MT_Suspend	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+100940a4	.MT_Resume	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+100943a8	.MT_Restore	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10094500	.MT_ShowMenubar	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+100945f4	.MT_HideMenubar	absorbed	runtime library (monitor/gamma/memory toolkit)	n/a	MED	cited 1 (GameFlow.swift:1)
+100946e8	._MT_CountMonitors	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+100947b0	._MT_PreflightMonitor	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10094bbc	._MT_PostflightMonitor	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10094dd0	._MT_SetStateWrapper	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10095100	._MT_EvalResolution	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+100953c8	._MT_EvalRefresh	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+1009558c	._MT_EvalDepth	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10095808	._MT_HasGammaFade	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10095860	._MT_HasColorTable	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+100958d4	._MT_Lookup	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10095a2c	._MT_Next	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10095ab4	.GetD3	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10095b04	.SetD3	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10095b5c	.SBIsControlStripVisible	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10095bc8	.SBShowHideControlStrip	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10095c38	._MT_ShowMenubar	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10096044	._MT_HideMenubar	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+100963c4	._MT_ForceUpdate	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10096540	._MT_LockGDevices	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10096650	._MT_GetColorTable	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+100967f0	._MT_SetColorTable	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10096a38	._MT_GetGamma	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10096c38	._MT_SetGamma	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10096df0	._MT_CloneGamma	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10096f34	._MT_DisposeGamma	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10096ff4	._MT_BlendGamma	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+100974cc	._MT_ColorGamma	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10097724	._MT_Gamma2ColorList	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+100979d0	._MT_ColorList2Gamma	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10097c64	._MT_GetAllModes	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10098110	._MT_GetState	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10098330	._MT_SetState	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+100986a0	.DisplayManagerAvailable	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+1009873c	.DisplayManagerVersion	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+100987ac	.MyDMIterator	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+100989a4	.AtomicEnterCritical	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10098ac0	.AtomicLeaveCritical	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10098bc4	.AtomicValueSwapSafe	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10098ccc	.AtomicIncrement	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10098dd0	.AtomicMaskApply	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10098f40	.AtomicMaskClear	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+100990b4	.AtomicMaskTest	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+100991c8	FUN_100991c8	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: .AtomicValueSwapSafe
+10099218	FUN_10099218	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: .AtomicIncrement
+10099264	FUN_10099264	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: .AtomicMaskApply
+100992c0	FUN_100992c0	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: .AtomicMaskClear
+1009931c	.MemoryAllocate	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10099424	.MemoryDeallocate	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10099520	.MemoryClear	absorbed	runtime library (monitor/gamma/memory toolkit)	n/a	MED	cited 7 (SpriteWorld.swift:3,SpriteSlot.swift:2,ActiveList.swift:1,St)
+100995fc	.MemoryCopy	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+100996dc	.QueueCreate	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10099830	.QueueDispose	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10099938	.QueueInsert	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10099a54	.QueueRemove	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10099b30	.QueueExtract	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10099c54	.QueueTransfer	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10099d18	.QueueGetCount	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10099db0	.QueueIsEmpty	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+10099e4c	FUN_10099e4c	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: .QueueRemove
+10099ec4	FUN_10099ec4	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: .QueueExtract
+10099f40	FUN_10099f40	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: .QueueInsert
+10099fa4	FUN_10099fa4	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: .QueueTransfer
+1009a044	FUN_1009a044	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: .QueueGetCount
+1009a0a4	.StringGetLength	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+1009a148	.StringCopySafe	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+1009a274	.StringAppend	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+1009a360	.StringFromNumber	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+1009a460	.P2CStringCopy	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+1009a550	.StringFormatSafe	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+1009a5e4	._StringFormatPrivate	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+1009ac68	._StringFormatNumber	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+1009addc	._StringFormatString	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+1009af34	.PlatformOpen	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+1009b54c	.SystemSetQuitProc	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+1009b694	._MacOSE2SInstall	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+1009b77c	._MacOSE2SRemove	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+1009b7c4	._MacOSE2SHook	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+1009b8a0	._MacOSFindSymbol	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+1009ba98	.TimerGetMicroseconds	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+1009bb40	._MacOSGetMicroseconds	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+1009bd10	FUN_1009bd10	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: .PlatformOpen,._MacOSGetMicroseconds
+1009bd5c	FUN_1009bd5c	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: .PlatformOpen,._MacOSGetMicroseconds
+1009bda8	.ThreadsPreflight	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+1009c1ac	.ThreadsPostflight	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+1009c388	.ThreadDispose	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+1009c724	.ThreadYield	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+1009c938	.MutexDispose	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+1009cb14	.MutexRequest	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+1009cc5c	.MutexRelease	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+1009cdec	._MutexMove	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+1009cf1c	._ThreadCreate	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+1009d14c	._ThreadDispose	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+1009d20c	._ThreadRef2Ptr	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+1009d2e4	._ThreadPtr2Ref	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+1009d394	._ThreadCurrent	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+1009d43c	._ThreadEnterCritical	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+1009d490	._ThreadLeaveCritical	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+1009d4e4	._ThreadSuggest	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+1009d730	._ThreadReady	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+1009d830	._ThreadTimer	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+1009d880	._ThreadDefer	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+1009da30	._ThreadImpersonate	out of scope	runtime library: display/thread/queue/string/timer plumbing	n/a	HIGH	no game logic
+1009dad8	FUN_1009dad8	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: .ThreadYield
+1009dc94	GetMainDevice	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009dcac	MaxApplZone	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009dcc4	MoreMasters	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009dcdc	InitGraf	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009dcf4	InitFonts	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009dd0c	FlushEvents	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 29
+1009dd24	InitWindows	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009dd3c	InitMenus	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 1
+1009dd54	TEInit	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009dd6c	InitDialogs	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009dd84	InitCursor	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 1
+1009dd9c	GetDateTime	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 16
+1009ddb4	GetTime	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009ddcc	SetCursor	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009dde4	HideCursor	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009ddfc	ISpResume	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009de14	ISpSuspend	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009de2c	ShowCursor	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009de44	SetGWorld	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009de5c	ForeColor	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 9
+1009de74	BackColor	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009de8c	NumToString	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 5
+1009dea4	ParamText	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 19
+1009debc	Gestalt	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 3
+1009ded4	BlockMoveData	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 1
+1009deec	CallUniversalProc	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009df04	DebugStr	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 3
+1009df1c	ExitToShell	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 11
+1009df34	GetDeviceList	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009df4c	TestDeviceAttribute	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009df64	HGetState	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009df7c	HLock	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009df94	GetNextDevice	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009dfac	NewPtr	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 2
+1009dfc4	Microseconds	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009dfdc	PBControlSync	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009dff4	GetGDevice	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e00c	SetGDevice	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e024	SetEntries	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 8
+1009e03c	HSetState	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e054	DisposePtr	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e06c	Button	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 27
+1009e084	MoviesTask	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e09c	GetNewDialog	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 9
+1009e0b4	GetGWorld	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e0cc	SetPort	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 1
+1009e0e4	BeginUpdate	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e0fc	GetDialogItem	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 1
+1009e114	InsetRect	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 5
+1009e12c	PenSize	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e144	FrameRoundRect	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 6
+1009e15c	EndUpdate	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e174	DrawDialog	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 4
+1009e18c	ShowWindow	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 2
+1009e1a4	SelectWindow	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 1
+1009e1bc	ModalDialog	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 23
+1009e1d4	DisposeDialog	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 5
+1009e1ec	SetRect	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 60
+1009e204	CopyBits	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 36
+1009e21c	CurResFile	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 1
+1009e234	FindFolder	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e24c	FSMakeFSSpec	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e264	FSpOpenResFile	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 1
+1009e27c	ResError	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 2
+1009e294	FSpCreate	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 2
+1009e2ac	FSpCreateResFile	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 1
+1009e2c4	UseResFile	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e2dc	Get1Resource	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 2
+1009e2f4	NewHandle	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 2
+1009e30c	SetMovieVolume	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 9
+1009e324	TickCount	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 19
+1009e33c	FUN_1009e33c	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: .ShutDownAIFFMusic
+1009e354	DisposeMovie	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e36c	RecoverHandle	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e384	DisposeHandle	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e39c	DisposePixMap	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e3b4	GetMBarHeight	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e3cc	NewRgn	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e3e4	GetGrayRgn	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e3fc	GetPort	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e414	CopyRgn	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e42c	DiffRgn	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e444	LMSetMBarHeight	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e45c	RectRgn	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e474	UnionRgn	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e48c	FrontWindow	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e4a4	PaintBehind	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e4bc	CalcVisBehind	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e4d4	EventAvail	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e4ec	DisposeRgn	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e504	CTabChanged	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e51c	MakeITable	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 3
+1009e534	BlockMove	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e54c	GetGWorldPixMap	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e564	GetWMgrPort	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e57c	GetClip	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e594	SetClip	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e5ac	GetForeColor	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e5c4	RGBForeColor	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 11
+1009e5dc	PaintRgn	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e5f4	DrawMenuBar	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 4
+1009e60c	HideWindow	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 2
+1009e624	DMBeginConfigureDisplays	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e63c	DMSetDisplayMode	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e654	SetDepth	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e66c	DMEndConfigureDisplays	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e684	DMGetDisplayMode	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e69c	RestoreDeviceClut	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e6b4	GetCTSeed	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e6cc	DisposeCTable	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 1
+1009e6e4	ISpStop	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e6fc	SetDefaultOutputVolume	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e714	SndDisposeChannel	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e72c	CloseResFile	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 1
+1009e744	SetOrigin	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e75c	AddResource	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 4
+1009e774	ChangedResource	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 4
+1009e78c	WriteResource	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 6
+1009e7a4	GetHandleSize	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e7bc	SetHandleSize	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 2
+1009e7d4	GetFrontProcess	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e7ec	GetProcessInformation	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e804	OpenMovieFile	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e81c	NewMovieFromFile	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e834	CloseMovieFile	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e84c	GetMovieTime	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e864	GetMovieTimeBase	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e87c	SetTimeBaseFlags	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e894	SetMoviePlayHints	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e8ac	GetMovieDuration	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e8c4	LoadMovieIntoRam	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e8dc	PrerollMovie	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e8f4	StartMovie	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e90c	OpenResFile	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 1
+1009e924	GetVRefNum	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e93c	NewPtrClear	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 1
+1009e954	PBHGetVInfoSync	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e96c	GetSharedLibrary	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e984	ISpElement_NewVirtualFromNeeds	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e99c	ISpInit	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e9b4	ISpDevices_ActivateClass	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e9cc	FindSymbol	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009e9e4	LMGetTicks	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 4
+1009e9fc	DTInstall	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009ea14	PrimeTime	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009ea2c	InsTime	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009ea44	RmvTime	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009ea5c	UnholdMemory	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009ea74	SetCurrentA5	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009ea8c	SetA5	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009eaa4	NewRoutineDescriptor	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009eabc	NGetTrapAddress	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009ead4	NSetTrapAddress	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009eaec	HoldMemory	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009eb04	ProtectEntry	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009eb1c	ReserveEntry	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009eb34	DMGetDisplayIDByGDevice	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009eb4c	DMNewDisplayModeList	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009eb64	Fix2Long	absorbed	Toolbox math/bit glue	n/a	HIGH	Foundation/Swift arithmetic
+1009eb7c	DMGetIndexedDisplayModeFromList	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009eb94	HasDepth	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009ebac	PBStatusSync	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009ebc4	DMDisposeList	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009ebdc	DisableItem	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009ebf4	EnableItem	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009ec0c	CheckItem	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009ec24	GetCTable	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 9
+1009ec3c	AEInstallEventHandler	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009ec54	AEGetParamDesc	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009ec6c	AECountItems	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009ec84	AEGetNthPtr	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009ec9c	GetPicture	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 7
+1009ecb4	OffsetRect	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 3
+1009eccc	NewGWorld	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 3
+1009ece4	FreeMem	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009ecfc	LockPixels	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009ed14	DrawPicture	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 13
+1009ed2c	GetPixBaseAddr	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009ed44	MoveTo	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 4
+1009ed5c	LineTo	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 1
+1009ed74	PaintRect	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 7
+1009ed8c	UnlockPixels	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009eda4	DisposeGWorld	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009edbc	HUnlock	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009edd4	HPurge	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009edec	ReleaseResource	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009ee04	HNoPurge	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009ee1c	HLockHi	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009ee34	EraseRect	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009ee4c	BitMapToRegion	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009ee64	GetResource	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 5
+1009ee7c	DetachResource	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009ee94	CustomGetFile	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 3
+1009eeac	GetIndString	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 6
+1009eec4	MaxMem	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009eedc	HandToHand	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 1
+1009eef4	MemError	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009ef0c	QDError	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009ef24	NoPurgePixels	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009ef3c	GetPixelsState	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009ef54	GetKeys	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 19
+1009ef6c	LMGetTime	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 5
+1009ef84	SectRect	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 4
+1009ef9c	UnionRect	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 2
+1009efb4	FixDiv	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 2
+1009efcc	FixMul	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 1
+1009efe4	pow	absorbed	Toolbox math/bit glue	n/a	HIGH	Foundation/Swift arithmetic
+1009effc	ISpElement_GetSimpleState	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009f014	TextFont	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 6
+1009f02c	TextFace	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 5
+1009f044	TextSize	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 5
+1009f05c	DrawString	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 11
+1009f074	cos	absorbed	Toolbox math/bit glue	n/a	HIGH	Foundation/Swift arithmetic
+1009f08c	sin	absorbed	Toolbox math/bit glue	n/a	HIGH	Foundation/Swift arithmetic
+1009f0a4	PtInRect	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 3
+1009f0bc	SysBeep	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 12
+1009f0d4	StringWidth	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009f0ec	CharWidth	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 9
+1009f104	DrawChar	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 5
+1009f11c	TENew	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009f134	TESetText	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009f14c	TECalText	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 1
+1009f164	TEDispose	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009f17c	Random	absorbed	Toolbox math/bit glue	n/a	HIGH	Foundation/Swift arithmetic
+1009f194	PenPat	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 2
+1009f1ac	Color2Index	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 46
+1009f1c4	LocalToGlobal	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009f1dc	CustomPutFile	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 6
+1009f1f4	FSpDelete	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 5
+1009f20c	HiliteControl	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 10
+1009f224	SetDialogItemText	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 2
+1009f23c	GetScriptManagerVariable	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009f254	BitSet	absorbed	Toolbox math/bit glue	n/a	HIGH	Foundation/Swift arithmetic
+1009f26c	KeyTranslate	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 10
+1009f284	SelectDialogItemText	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 8
+1009f29c	TEKey	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009f2b4	GetDialogItemText	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009f2cc	UpperString	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 1
+1009f2e4	GlobalToLocal	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009f2fc	CountDITL	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009f314	TrackControl	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 6
+1009f32c	HiliteColor	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 10
+1009f344	FrameRect	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 3
+1009f35c	Draw1Control	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 2
+1009f374	SetDialogItem	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 1
+1009f38c	ShortenDITL	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 6
+1009f3a4	AppendDITL	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 6
+1009f3bc	SetControlValue	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 5
+1009f3d4	HideDialogItem	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 2
+1009f3ec	GetControlValue	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 1
+1009f404	ISpConfigure	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 1
+1009f41c	BitTst	absorbed	Toolbox math/bit glue	n/a	HIGH	Foundation/Swift arithmetic
+1009f434	SleepQInstall	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009f44c	WaitNextEvent	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 10
+1009f464	MenuSelect	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 2
+1009f47c	ClipRect	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 1
+1009f494	GetBackColor	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009f4ac	RGBBackColor	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009f4c4	Delay	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009f4dc	GetMouse	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 5
+1009f4f4	GetMenuItemText	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009f50c	OpenDeskAcc	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009f524	SetControlTitle	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009f53c	GetControlTitle	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009f554	StringToNum	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009f56c	HiliteMenu	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009f584	MenuKey	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 1
+1009f59c	EqualRect	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009f5b4	InvalMenuBar	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009f5cc	AEProcessAppleEvent	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 3
+1009f5e4	SleepQRemove	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 1
+1009f5fc	PenMode	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 1
+1009f614	AEGetAttributePtr	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009f62c	GetCursor	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009f644	GetNewMBar	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 1
+1009f65c	SetMenuBar	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009f674	GetMenuHandle	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009f68c	AppendResMenu	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 2
+1009f6a4	GetNewCWindow	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009f6bc	SizeWindow	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009f6d4	GetToolboxTrapAddress	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009f6ec	SndSoundManagerVersion	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009f704	SndNewChannel	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009f71c	SndGetInfo	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009f734	SndPlayDoubleBuffer	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009f74c	GetDefaultOutputVolume	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009f764	TuneStop	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009f77c	CloseComponent	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009f794	EnterMovies	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009f7ac	OpenDefaultComponent	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009f7c4	NewHandleClear	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 5
+1009f7dc	NewPixMap	out of scope	Mac Toolbox import stub	n/a	HIGH	system glue
+1009f7f4	SndPlay	out of scope	Mac Toolbox import stub	n/a	HIGH	port uses a platform equivalent; cited 2
+1009f80c	FUN_1009f80c	out of scope	library/Sound Tool/runtime helper	n/a	MED	callers: .ActiveToIdleSprite,.GameLoop,.HandleBurn

@@ -1,0 +1,205 @@
+M0001	Camera/Camera.swift:11	d	HIGH	auto-scroll (hdr 0x272a) refused/not built	auto-scroll only on Mlvl 51 (world-data-format §3.2); L1–4 load with 0
+M0002	Camera/Camera.swift:23	d	MED	boss-arena bounds hdr 0x2724 refused	boss levels only (≥5, bosses-2 §1.4); L1–4 header 0, levels load
+M0003	Camera/Camera.swift:25	d	HIGH	auto-scroll (hdr 0x272a) refused/not built	auto-scroll only on Mlvl 51 (world-data-format §3.2); L1–4 load with 0
+M0004	Camera/Camera.swift:46	n	MED	stale "later: SH" — seed shake 0x14 is built in PlayerShotHits.kill; boss writers Phase 6	PlayerShotHits.swift seed arm
+M0005	Camera/Camera.swift:53	d	MED	boss-arena bounds hdr 0x2724 refused	boss levels only (≥5, bosses-2 §1.4); L1–4 header 0, levels load
+M0006	Camera/Camera.swift:54	d	HIGH	auto-scroll (hdr 0x272a) refused/not built	auto-scroll only on Mlvl 51 (world-data-format §3.2); L1–4 load with 0
+M0007	Camera/Camera.swift:86	d	HIGH	auto-scroll (hdr 0x272a) refused/not built	auto-scroll only on Mlvl 51 (world-data-format §3.2); L1–4 load with 0
+M0008	Color/ColorLUT.swift:52	n	HIGH	clut resource parse errors (corrupt/missing data)	data-file error
+M0009	Color/ColorLUT.swift:54	n	HIGH	clut resource parse errors (corrupt/missing data)	data-file error
+M0010	Color/ColorLUT.swift:55	n	HIGH	clut resource parse errors (corrupt/missing data)	data-file error
+M0011	Color/ColorLUT.swift:56	n	HIGH	clut resource parse errors (corrupt/missing data)	data-file error
+M0012	Color/ColorLUT.swift:80	n	HIGH	clut resource parse errors (corrupt/missing data)	data-file error
+M0096	Items/Inventory.swift:8	n	HIGH	history note	
+M0097	Items/Inventory.swift:51	d	MED	MoveSelectedItemToFront with selection −1 not modelled	only reachable with an empty inventory; HandleKeys calls it only after using an item (l.207/219)
+M0098	Items/Smite.swift:23	a	HIGH	enemy Handles/Hit/statue sites Phase 5; L1–4 enemies inert	brief + SpriteSlot.swift:482 plan S2; design §8 Phase 5
+M0099	Items/StatusBarCalls.swift:65	n	HIGH	stale comment: callers built (HandleKeys.swift:207,219 = M l.47560/47583)	
+M0100	Items/StatusBarCalls.swift:123	n	MED	history/doc wording; nothing refused	marker word only
+M0101	Lights/LightTable.swift:120	b	MED	binary dereferences a nil light face unchecked; port ignores	original UB
+M0102	Lights/LightTable.swift:129	n	HIGH	faithful slot 0…199 guard (original ignores too, M l.14419–14432)	
+M0103	Lights/LightTable.swift:137	n	HIGH	faithful slot 0…199 guard (original ignores too, M l.14419–14432)	
+M0104	Lights/LightTable.swift:148	n	HIGH	faithful slot 0…199 guard (original ignores too, M l.14419–14432)	
+M0105	Lights/LightTable.swift:155	n	HIGH	faithful slot 0…199 guard (original ignores too, M l.14419–14432)	
+M0106	Particles/FaceParticles.swift:5	n	MED	history/doc wording; nothing refused	marker word only
+M0107	Particles/FaceParticles.swift:43	n	MED	history/doc wording; nothing refused	marker word only
+M0108	Particles/FaceParticles.swift:138	n	MED	history/doc wording; nothing refused	marker word only
+M0109	Particles/ParticleLife.swift:23	b	HIGH	particle kinds with all-zero life rows die at first draw — the original table	raw 10030790.. ranges
+M0110	Particles/ParticlePool.swift:166	n	MED	history/doc wording; nothing refused	marker word only
+M0111	Particles/ScreenFlash.swift:11	a	HIGH	bosses / rope bridge 1466 — Phase 6	design §8 Phase 6; 1466 placed on no shipped level
+M0112	Particles/WaterEffects.swift:5	n	MED	history/doc wording; nothing refused	marker word only
+M0113	Physics/Integrate.swift:8	n	MED	history/doc wording; nothing refused	marker word only
+M0114	Physics/RectBounce.swift:156	a	HIGH	bosses / rope bridge 1466 — Phase 6	design §8 Phase 6; 1466 placed on no shipped level
+M0115	Physics/SeparateFromTiles.swift:15	n	HIGH	precondition on constant table sizes	
+M0116	Physics/SeparateFromTiles.swift:104	n	HIGH	dead loop in original (results discarded)	physics §3.1
+M0117	Physics/StandardSprite.swift:18	d	MED	wind (FG overlay impulse) not built	probe 2026-10-10: first wind cell on level 10; none on L1–4 [L3/L4 inferred from "first on level 10"]
+M0118	Physics/StandardSprite.swift:61	d	MED	wind (FG overlay impulse) not built	probe 2026-10-10: first wind cell on level 10; none on L1–4 [L3/L4 inferred from "first on level 10"]
+M0119	Physics/StandardSprite.swift:94	a	HIGH	burn-away .HandleBurn not built	only writers of +0x1a2: .HandleWalkerSprite (57770/58221), .ShieldBlock (48416), .HandleSwarmMember (68438) — all Phase 5
+M0120	Physics/StandardSprite.swift:124	a	HIGH	burn-away .HandleBurn not built	only writers of +0x1a2: .HandleWalkerSprite (57770/58221), .ShieldBlock (48416), .HandleSwarmMember (68438) — all Phase 5
+M0121	Physics/UnderWater.swift:12	n	MED	stale: water branch now also in Bonus/Box/Platform/Chain tile hits	grep UnderWater.handle
+M0122	Player/Breathing.swift:21	n	MED	history/doc wording; nothing refused	marker word only
+M0123	Player/GroundCeilingEffects.swift:67	d	MED	Effect ids 1202–1205, 1251, 1830, −1 no Handle arm	no direct MTNewSprite of 0x4b2–0x4b5/0x4e3/0x726 in decompile; no L1–4 spawner
+M0124	Player/GroundCeilingEffects.swift:96	n	MED	history/doc wording; nothing refused	marker word only
+M0125	Player/GroundCeilingEffects.swift:115	n	MED	history/doc wording; nothing refused	marker word only
+M0126	Player/GroundCeilingEffects.swift:136	a	HIGH	geysers 0x5a0–0x5a9 (head hurt, column) Phase 5	brief: geysers NR 2–4 Phase 5; no geyser placed on L1–4
+M0127	Player/GroundCeilingEffects.swift:324	n	MED	history/doc wording; nothing refused	marker word only
+M0128	Player/GroundCeilingEffects.swift:366	d	MED	Effect ids 1202–1205, 1251, 1830, −1 no Handle arm	no direct MTNewSprite of 0x4b2–0x4b5/0x4e3/0x726 in decompile; no L1–4 spawner
+M0129	Player/HandleKeys.swift:37	n	HIGH	debug keys while debug flag set; flag never set in release	engine §7.3
+M0130	Player/HandleKeys.swift:248	n	MED	history/doc wording; nothing refused	marker word only
+M0131	Player/HandleKeys.swift:339	n	MED	history/doc wording; nothing refused	marker word only
+M0132	Player/HandleKeys.swift:453	n	MED	history/doc wording; nothing refused	marker word only
+M0133	Player/HandleKeys.swift:504	n	MED	history/doc wording; nothing refused	marker word only
+M0134	Player/HandleKeys.swift:629	n	MED	history/doc wording; nothing refused	marker word only
+M0135	Player/HitPlayerSprite.swift:10	a	HIGH	enemy / enemy-shot arms (contact hurt, KillEnemyShot, Crawler shot-kill) Phase 5	HitPlayerSprite.swift:10; inert enemies fall to default return (orig. arms M l.49515–49910); no enemy shots exist until Phase 5
+M0136	Player/HitPlayerSprite.swift:22	n	MED	history/doc wording; nothing refused	marker word only
+M0137	Player/HitPlayerSprite.swift:69	a	HIGH	enemy / enemy-shot arms (contact hurt, KillEnemyShot, Crawler shot-kill) Phase 5	HitPlayerSprite.swift:10; inert enemies fall to default return (orig. arms M l.49515–49910); no enemy shots exist until Phase 5
+M0138	Player/HitPlayerSprite.swift:114	d	HIGH	other Background/Box contact arms (0xbf4, falling rocks 0x433/0x434, spiked balls 0x5c3/4)	none placed on L1–4 (placements-all: first L10+); 0x434 made only by a boss (M l.76898)
+M0139	Player/HitPlayerSprite.swift:147	d	HIGH	other Background/Box contact arms (0xbf4, falling rocks 0x433/0x434, spiked balls 0x5c3/4)	none placed on L1–4 (placements-all: first L10+); 0x434 made only by a boss (M l.76898)
+M0140	Player/HitPlayerSprite.swift:165	d	HIGH	other Background/Box contact arms (0xbf4, falling rocks 0x433/0x434, spiked balls 0x5c3/4)	none placed on L1–4 (placements-all: first L10+); 0x434 made only by a boss (M l.76898)
+M0141	Player/HitPlayerSprite.swift:219	a	HIGH	geysers 0x5a0–0x5a9 (head hurt, column) Phase 5	brief: geysers NR 2–4 Phase 5; no geyser placed on L1–4
+M0142	Player/HitPlayerSprite.swift:413	n	MED	history/doc wording; nothing refused	marker word only
+M0143	Player/HitPlayerSprite.swift:912	n	MED	history/doc wording; nothing refused	marker word only
+M0144	Player/HitPlayerSprite.swift:936	n	MED	history/doc wording; nothing refused	marker word only
+M0145	Player/HitPlayerSprite.swift:957	d	MED	passage p2 ≠ 0 arm not built	comment: every L1–4 passage (2900, L2/L4) has p2 0 — not re-verified from Mlvl
+M0146	Player/HitPlayerSprite.swift:994	a	HIGH	enemy / enemy-shot arms (contact hurt, KillEnemyShot, Crawler shot-kill) Phase 5	HitPlayerSprite.swift:10; inert enemies fall to default return (orig. arms M l.49515–49910); no enemy shots exist until Phase 5
+M0147	Player/HitPlayerSprite.swift:1032	a	HIGH	enemy / enemy-shot arms (contact hurt, KillEnemyShot, Crawler shot-kill) Phase 5	HitPlayerSprite.swift:10; inert enemies fall to default return (orig. arms M l.49515–49910); no enemy shots exist until Phase 5
+M0148	Player/HitPlayerSprite.swift:1086	n	HIGH	try! on BonusSprite.setup with fixed types (coin 0x516, shards 0x4bf+, body 0x45, glider 0xbea, crystal 0x514/5) that cannot throw	BonusSprite.swift:225/277 throw only for 0xc25 / out-of-table items
+M0149	Player/HitPlayerSprite.swift:1124	n	HIGH	try! on BonusSprite.setup with fixed types (coin 0x516, shards 0x4bf+, body 0x45, glider 0xbea, crystal 0x514/5) that cannot throw	BonusSprite.swift:225/277 throw only for 0xc25 / out-of-table items
+M0150	Player/HitPlayerSprite.swift:1159	a	HIGH	geysers 0x5a0–0x5a9 (head hurt, column) Phase 5	brief: geysers NR 2–4 Phase 5; no geyser placed on L1–4
+M0151	Player/Pentashield.swift:7	a	HIGH	enemy / enemy-shot arms (contact hurt, KillEnemyShot, Crawler shot-kill) Phase 5	HitPlayerSprite.swift:10; inert enemies fall to default return (orig. arms M l.49515–49910); no enemy shots exist until Phase 5
+M0152	Player/Player.swift:4	n	MED	history/doc wording; nothing refused	marker word only
+M0153	Player/Player.swift:162	d	HIGH	auto-scroll (hdr 0x272a) refused/not built	auto-scroll only on Mlvl 51 (world-data-format §3.2); L1–4 load with 0
+M0154	Player/Player.swift:360	a	HIGH	liquid screen tint (.TintScreen) not built	brief: underwater screen tint named for Phase 5; reachable in L1–4 water (visual omission)
+M0155	Player/Player.swift:776	a	HIGH	bosses / rope bridge 1466 — Phase 6	design §8 Phase 6; 1466 placed on no shipped level
+M0156	Player/Player.swift:805	d	HIGH	auto-scroll (hdr 0x272a) refused/not built	auto-scroll only on Mlvl 51 (world-data-format §3.2); L1–4 load with 0
+M0157	Player/Player.swift:835	d	HIGH	auto-scroll (hdr 0x272a) refused/not built	auto-scroll only on Mlvl 51 (world-data-format §3.2); L1–4 load with 0
+M0158	Player/PlayerLiquids.swift:116	n	MED	history/doc wording; nothing refused	marker word only
+M0159	Player/PlayerLiquids.swift:139	a	HIGH	liquid screen tint (.TintScreen) not built	brief: underwater screen tint named for Phase 5; reachable in L1–4 water (visual omission)
+M0160	Player/PlayerState.swift:62	n	MED	history/doc wording; nothing refused	marker word only
+M0161	Player/PlayerState.swift:196	a	MED	player counter with no writer until Phase 5	PlayerState.swift:196 comment
+M0162	Player/PlayerState.swift:217	n	MED	history/doc wording; nothing refused	marker word only
+M0163	Player/PlayerState.swift:361	n	HIGH	"throw" = melee throw counter, not an error	
+M0164	Player/PlayerState.swift:387	n	MED	history/doc wording; nothing refused	marker word only
+M0165	Player/PlayerState.swift:418	n	MED	history/doc wording; nothing refused	marker word only
+M0166	Player/PlayerState.swift:449	n	MED	history/doc wording; nothing refused	marker word only
+M0167	Player/PlayerStates.swift:7	a	HIGH	boss grab (Chief/Xichra) stub	no writer before bosses (Phase 6)
+M0168	Player/PlayerStates.swift:58	n	MED	history/doc wording; nothing refused	marker word only
+M0169	Player/PlayerStates.swift:240	n	MED	history/doc wording; nothing refused	marker word only
+M0170	Player/PlayerStates.swift:291	n	HIGH	try! on BonusSprite.setup with fixed types (coin 0x516, shards 0x4bf+, body 0x45, glider 0xbea, crystal 0x514/5) that cannot throw	BonusSprite.swift:225/277 throw only for 0xc25 / out-of-table items
+M0171	Player/PlayerStates.swift:312	n	HIGH	try! on BonusSprite.setup with fixed types (coin 0x516, shards 0x4bf+, body 0x45, glider 0xbea, crystal 0x514/5) that cannot throw	BonusSprite.swift:225/277 throw only for 0xc25 / out-of-table items
+M0172	Player/PlayerStates.swift:371	a	HIGH	boss grab (Chief/Xichra) stub	no writer before bosses (Phase 6)
+M0173	Player/PlayerStates.swift:466	n	HIGH	"throw" = melee throw counter, not an error	
+M0174	Player/PlayerStates.swift:483	n	MED	history/doc wording; nothing refused	marker word only
+M0175	Player/PlayerStates.swift:556	a	HIGH	ShieldBlock vs enemy shots Phase 5	
+M0176	Player/PlayerTiles.swift:164	a	HIGH	carpet 1080/1081 Phase 6	first placed on level 22
+M0177	Player/PowerUps.swift:69	n	MED	history/doc wording; nothing refused	marker word only
+M0178	Player/ShadowDouble.swift:25	n	MED	history/doc wording; nothing refused	marker word only
+M0179	Player/ShadowDouble.swift:59	n	MED	history/doc wording; nothing refused	marker word only
+M0180	Player/ShadowDouble.swift:81	b	MED	shadow re-sync reads past its table into PEF data; addresses beyond 28 load-dependent	original over-read
+M0181	Player/ShadowDouble.swift:100	n	MED	history/doc wording; nothing refused	marker word only
+M0255	Shots/CastSpell.swift:15	n	MED	history/doc wording; nothing refused	marker word only
+M0256	Shots/PlayerShotHits.swift:37	n	MED	history/doc wording; nothing refused	marker word only
+M0257	Shots/PlayerShotHits.swift:151	a	HIGH	enemy / enemy-shot arms (contact hurt, KillEnemyShot, Crawler shot-kill) Phase 5	HitPlayerSprite.swift:10; inert enemies fall to default return (orig. arms M l.49515–49910); no enemy shots exist until Phase 5
+M0258	Shots/PlayerShotHits.swift:189	a	HIGH	enemy / enemy-shot arms (contact hurt, KillEnemyShot, Crawler shot-kill) Phase 5	HitPlayerSprite.swift:10; inert enemies fall to default return (orig. arms M l.49515–49910); no enemy shots exist until Phase 5
+M0259	Shots/PlayerShotHits.swift:228	a	HIGH	enemy / enemy-shot arms (contact hurt, KillEnemyShot, Crawler shot-kill) Phase 5	HitPlayerSprite.swift:10; inert enemies fall to default return (orig. arms M l.49515–49910); no enemy shots exist until Phase 5
+M0261	Sprites/BonusHandle.swift:3	n	MED	history/doc wording; nothing refused	marker word only
+M0262	Sprites/BootFaces.swift:29	n	HIGH	placeholder PICT 150 is the original cache placeholder; port takes the cached face	
+M0263	Sprites/IdleSprites.swift:75	n	MED	history/doc wording; nothing refused	marker word only
+M0264	Sprites/SetupFaces.swift:3	n	MED	history/doc wording; nothing refused	marker word only
+M0265	Sprites/SetupFaces.swift:29	n	MED	history/doc wording; nothing refused	marker word only
+M0266	Sprites/SetupFaces.swift:31	d	HIGH	auto-scroll (hdr 0x272a) refused/not built	auto-scroll only on Mlvl 51 (world-data-format §3.2); L1–4 load with 0
+M0267	Sprites/SetupFaces.swift:35	n	MED	history/doc wording; nothing refused	marker word only
+M0268	Sprites/SetupFaces.swift:39	n	HIGH	placeholder PICT 150 is the original cache placeholder; port takes the cached face	
+M0269	Sprites/SetupFaces.swift:41	n	MED	history/doc wording; nothing refused	marker word only
+M0270	Sprites/SetupFaces.swift:136	n	HIGH	placeholder PICT 150 is the original cache placeholder; port takes the cached face	
+M0271	Sprites/SetupFaces.swift:137	n	HIGH	placeholder PICT 150 is the original cache placeholder; port takes the cached face	
+M0272	Sprites/SetupFaces.swift:206	n	HIGH	placeholder PICT 150 is the original cache placeholder; port takes the cached face	
+M0273	Sprites/SetupFaces.swift:217	d	HIGH	1489 (0x5d1) has no PICT	placed on no level
+M0274	Sprites/SetupFaces.swift:288	d	HIGH	unmapped type / class without a Setup	all L1–4 classes (Bonus Box Background Button Platform Rope Walker Crawler Roach Blob Bat Frog) handled; others first L5+
+M0275	Sprites/SetupFaces.swift:327	d	HIGH	cannon p1 ≠ 0 (programmed path / rotating) refused	L1–4 cannon 1090 (L1) p1 0; first p1≠0 on L10
+M0276	Sprites/SetupFaces.swift:328	d	HIGH	cannon p1 ≠ 0 (programmed path / rotating) refused	L1–4 cannon 1090 (L1) p1 0; first p1≠0 on L10
+M0277	Sprites/SetupFaces.swift:339	n	HIGH	placeholder PICT 150 is the original cache placeholder; port takes the cached face	
+M0278	Sprites/SetupFaces.swift:347	d	HIGH	mace/ball modes 1–2 refused	L1 1485 p1 12; first mode 1–2 on L20
+M0279	Sprites/SetupFaces.swift:372	d	HIGH	Background default throw	every L1–4 Background type (1090,1485,1841,1842,2710–2714,2900,3002,3249) has an arm
+M0280	Sprites/SetupFaces.swift:444	d	HIGH	Box default throw	every L1–4 Box type checked against arms (teleporters…crates)
+M0281	Sprites/SetupFaces.swift:457	b	HIGH	rope types 3023–3039 refused	original divides by zero (100845f8); L3 places only 3022
+M0282	Sprites/SetupFaces.swift:482	d	HIGH	Walker default throw	L1–4 walkers 1700/1705/1760 all armed
+M0283	Sprites/SetupFaces.swift:509	d	HIGH	floor crawler p1 ≠ 0 refused	no crawler with p1 ≠ 0 on any level
+M0284	Sprites/SetupFaces.swift:538	a	HIGH	enemy Handles/Hit/statue sites Phase 5; L1–4 enemies inert	brief + SpriteSlot.swift:482 plan S2; design §8 Phase 5
+M0285	Sprites/SetupFaces.swift:539	d	HIGH	other bat types / path modes refused	L1–4: 1740 and 1741 (L3, p1 2 → mode 2) only
+M0286	Sprites/SetupFaces.swift:550	a	HIGH	enemy Handles/Hit/statue sites Phase 5; L1–4 enemies inert	brief + SpriteSlot.swift:482 plan S2; design §8 Phase 5
+M0287	Sprites/SetupFaces.swift:555	d	HIGH	other bat types / path modes refused	L1–4: 1740 and 1741 (L3, p1 2 → mode 2) only
+M0288	Sprites/SetupFaces.swift:570	a	HIGH	enemy Handles/Hit/statue sites Phase 5; L1–4 enemies inert	brief + SpriteSlot.swift:482 plan S2; design §8 Phase 5
+M0289	Sprites/SetupFaces.swift:571	d	HIGH	other blob types refused	L3/L4 only 1730
+M0290	Sprites/SetupFaces.swift:587	a	HIGH	enemy Handles/Hit/statue sites Phase 5; L1–4 enemies inert	brief + SpriteSlot.swift:482 plan S2; design §8 Phase 5
+M0291	Sprites/SetupFaces.swift:588	d	HIGH	other frog types refused	L2–4 only 1800
+M0292	Sprites/SetupFaces.swift:610	d	HIGH	unmapped type / class without a Setup	all L1–4 classes (Bonus Box Background Button Platform Rope Walker Crawler Roach Blob Bat Frog) handled; others first L5+
+M0293	Sprites/SetupFaces.swift:613	d	MED	Setup face outside the sheet table refused	all L1–4 placements spawn (levels load); would throw at level load, not mid-play
+M0294	Sprites/SetupFaces.swift:649	a	HIGH	enemy Handles/Hit/statue sites Phase 5; L1–4 enemies inert	brief + SpriteSlot.swift:482 plan S2; design §8 Phase 5
+M0295	Sprites/SetupFaces.swift:703	d	HIGH	auto-scroll (hdr 0x272a) refused/not built	auto-scroll only on Mlvl 51 (world-data-format §3.2); L1–4 load with 0
+M0296	Sprites/SpriteSlot.swift:4	n	MED	history/doc wording; nothing refused	marker word only
+M0297	Sprites/SpriteSlot.swift:206	n	MED	history/doc wording; nothing refused	marker word only
+M0298	Sprites/SpriteSlot.swift:349	n	MED	history/doc wording; nothing refused	marker word only
+M0299	Sprites/SpriteSlot.swift:380	n	MED	history/doc wording; nothing refused	marker word only
+M0300	Sprites/SpriteSlot.swift:384	a	HIGH	bosses / rope bridge 1466 — Phase 6	design §8 Phase 6; 1466 placed on no shipped level
+M0301	Sprites/SpriteSlot.swift:482	a	HIGH	enemy Handles/Hit/statue sites Phase 5; L1–4 enemies inert	brief + SpriteSlot.swift:482 plan S2; design §8 Phase 5
+M0302	Sprites/SpriteSlot.swift:513	a	HIGH	enemy Handles/Hit/statue sites Phase 5; L1–4 enemies inert	brief + SpriteSlot.swift:482 plan S2; design §8 Phase 5
+M0316	World/Conversation.swift:6	n	HIGH	world-data resource length/missing refusals	corrupt/missing data file
+M0317	World/Conversation.swift:55	n	HIGH	world-data resource length/missing refusals	corrupt/missing data file
+M0318	World/Conversation.swift:82	n	HIGH	world-data resource length/missing refusals	corrupt/missing data file
+M0319	World/LevelFile.swift:4	n	HIGH	world-data resource length/missing refusals	corrupt/missing data file
+M0320	World/LevelFile.swift:19	n	MED	history/doc wording; nothing refused	marker word only
+M0321	World/LevelFile.swift:47	n	HIGH	world-data resource length/missing refusals	corrupt/missing data file
+M0322	World/LevelFile.swift:54	n	HIGH	world-data resource length/missing refusals	corrupt/missing data file
+M0323	World/LevelFile.swift:58	n	HIGH	world-data resource length/missing refusals	corrupt/missing data file
+M0324	World/LevelFile.swift:92	n	HIGH	world-data resource length/missing refusals	corrupt/missing data file
+M0325	World/LevelFile.swift:165	n	HIGH	world-data resource length/missing refusals	corrupt/missing data file
+M0326	World/LevelHeader.swift:40	n	MED	history/doc wording; nothing refused	marker word only
+M0327	World/SpriteClassTable.swift:9	n	MED	history/doc wording; nothing refused	marker word only
+M0328	World/SpriteClassTable.swift:16	n	MED	history/doc wording; nothing refused	marker word only
+M0329	World/StringList.swift:32	n	HIGH	world-data resource length/missing refusals	corrupt/missing data file
+M0330	World/TileMap.swift:10	n	HIGH	precondition on constant table sizes	
+M0331	World/WorldFile.swift:24	n	HIGH	world-data resource length/missing refusals	corrupt/missing data file
+M0332	World/WorldFile.swift:36	n	HIGH	world-data resource length/missing refusals	corrupt/missing data file
+M0333	World/WorldMap.swift:5	n	HIGH	world-data resource length/missing refusals	corrupt/missing data file
+M0334	World/WorldMap.swift:37	n	HIGH	world-data resource length/missing refusals	corrupt/missing data file
+M0335	World/WorldMap.swift:68	n	HIGH	world-data resource length/missing refusals	corrupt/missing data file
+M0336	World/Movers/BackgroundSprite.swift:8	d	HIGH	unbuilt Background Handle arms (fire 0x4b8, 0x4bb–0x4bd scroll markers, 0x73f/0x740, 0x76c–0x76f, clouds, 0xbf4, trees)	none placed on L1–4 (placements-all first L10); 0x4bb–0x4bd only made by auto-scroll setup
+M0337	World/Movers/BackgroundSprite.swift:43	d	HIGH	mace/ball modes 1–2 refused	L1 1485 p1 12; first mode 1–2 on L20
+M0338	World/Movers/BackgroundSprite.swift:81	n	HIGH	faithful no-op for non-radial sprites	
+M0339	World/Movers/BackgroundSprite.swift:111	d	HIGH	unbuilt Background Handle arms (fire 0x4b8, 0x4bb–0x4bd scroll markers, 0x73f/0x740, 0x76c–0x76f, clouds, 0xbf4, trees)	none placed on L1–4 (placements-all first L10); 0x4bb–0x4bd only made by auto-scroll setup
+M0340	World/Movers/BackgroundSprite.swift:114	d	HIGH	unbuilt Background Handle arms (fire 0x4b8, 0x4bb–0x4bd scroll markers, 0x73f/0x740, 0x76c–0x76f, clouds, 0xbf4, trees)	none placed on L1–4 (placements-all first L10); 0x4bb–0x4bd only made by auto-scroll setup
+M0341	World/Movers/BackgroundSprite.swift:132	d	HIGH	mace/ball modes 1–2 refused	L1 1485 p1 12; first mode 1–2 on L20
+M0342	World/Movers/BackgroundSprite.swift:145	d	HIGH	unbuilt Background Handle arms (fire 0x4b8, 0x4bb–0x4bd scroll markers, 0x73f/0x740, 0x76c–0x76f, clouds, 0xbf4, trees)	none placed on L1–4 (placements-all first L10); 0x4bb–0x4bd only made by auto-scroll setup
+M0343	World/Movers/BackgroundSprite.swift:169	d	HIGH	mace/ball modes 1–2 refused	L1 1485 p1 12; first mode 1–2 on L20
+M0344	World/Movers/BackgroundSprite.swift:240	d	HIGH	cannon p1 ≠ 0 (programmed path / rotating) refused	L1–4 cannon 1090 (L1) p1 0; first p1≠0 on L10
+M0345	World/Movers/BackgroundSprite.swift:304	d	HIGH	cannon p1 ≠ 0 (programmed path / rotating) refused	L1–4 cannon 1090 (L1) p1 0; first p1≠0 on L10
+M0346	World/Movers/BackgroundSprite.swift:330	d	HIGH	cannon p1 ≠ 0 (programmed path / rotating) refused	L1–4 cannon 1090 (L1) p1 0; first p1≠0 on L10
+M0347	World/Movers/BackgroundSprite.swift:402	a	HIGH	enemy / enemy-shot arms (contact hurt, KillEnemyShot, Crawler shot-kill) Phase 5	HitPlayerSprite.swift:10; inert enemies fall to default return (orig. arms M l.49515–49910); no enemy shots exist until Phase 5
+M0348	World/Movers/BackgroundSprite.swift:437	a	HIGH	enemy / enemy-shot arms (contact hurt, KillEnemyShot, Crawler shot-kill) Phase 5	HitPlayerSprite.swift:10; inert enemies fall to default return (orig. arms M l.49515–49910); no enemy shots exist until Phase 5
+M0349	World/Movers/BackgroundSprite.swift:466	n	MED	history/doc wording; nothing refused	marker word only
+M0350	World/Movers/BackgroundSprite.swift:514	n	MED	history/doc wording; nothing refused	marker word only
+M0351	World/Movers/BackgroundSprite.swift:709	n	MED	history/doc wording; nothing refused	marker word only
+M0352	World/Movers/BonusSprite.swift:225	d	HIGH	Bonus Setup throws for 0xc25 / out-of-table items	not placed; runtime callers pass fixed safe types or use try? (chest/crate)
+M0353	World/Movers/BonusSprite.swift:277	d	HIGH	Bonus Setup throws for 0xc25 / out-of-table items	not placed; runtime callers pass fixed safe types or use try? (chest/crate)
+M0354	World/Movers/BonusSprite.swift:367	n	HIGH	faithful slot 0…199 guard (original ignores too, M l.14419–14432)	
+M0355	World/Movers/BonusSprite.swift:692	n	HIGH	try! on BonusSprite.setup with fixed types (coin 0x516, shards 0x4bf+, body 0x45, glider 0xbea, crystal 0x514/5) that cannot throw	BonusSprite.swift:225/277 throw only for 0xc25 / out-of-table items
+M0356	World/Movers/BonusSprite.swift:702	n	MED	history/doc wording; nothing refused	marker word only
+M0357	World/Movers/BoxSprite.swift:12	a	HIGH	spout boulders (0x6e1+p4 EnemyShot) not spawned	brief: boulder-spout boulders Phase 5; spouts 1450/1453 placed on L4 → visible: spouts never emit
+M0358	World/Movers/BoxSprite.swift:132	n	MED	history/doc wording; nothing refused	marker word only
+M0359	World/Movers/BoxSprite.swift:205	a	HIGH	bosses / rope bridge 1466 — Phase 6	design §8 Phase 6; 1466 placed on no shipped level
+M0360	World/Movers/BoxSprite.swift:378	d	HIGH	decoration FlipHRect skipped	mirrored L1–4 decorations (0xafd, 0xb04, 0xb1a) have empty rects; 0xb10/0xb11–14 with rects not mirrored on L1–4
+M0361	World/Movers/BoxSprite.swift:420	d	HIGH	unbuilt Box Handle arms (geysers, pipes, carpet, spiked balls, table 0xb71, snowball)	none placed on L1–4
+M0362	World/Movers/BoxSprite.swift:473	d	HIGH	unbuilt Box Handle arms (geysers, pipes, carpet, spiked balls, table 0xb71, snowball)	none placed on L1–4
+M0363	World/Movers/BoxSprite.swift:776	a	HIGH	spout boulders (0x6e1+p4 EnemyShot) not spawned	brief: boulder-spout boulders Phase 5; spouts 1450/1453 placed on L4 → visible: spouts never emit
+M0364	World/Movers/BoxSprite.swift:785	a	HIGH	spout boulders (0x6e1+p4 EnemyShot) not spawned	brief: boulder-spout boulders Phase 5; spouts 1450/1453 placed on L4 → visible: spouts never emit
+M0365	World/Movers/BoxSprite.swift:857	n	MED	history/doc wording; nothing refused	marker word only
+M0366	World/Movers/BoxSprite.swift:1148	d	MED	crate drops of non-Bonus classes make nothing	comment: every L1–4 crate drop is item 3219; Blob drop first on L31 — p2 not re-read
+M0367	World/Movers/BoxSprite.swift:1172	a	HIGH	geysers 0x5a0–0x5a9 (head hurt, column) Phase 5	brief: geysers NR 2–4 Phase 5; no geyser placed on L1–4
+M0368	World/Movers/BoxSprite.swift:1186	n	MED	history/doc wording; nothing refused	marker word only
+M0369	World/Movers/BoxSprite.swift:1273	n	MED	history/doc wording; nothing refused	marker word only
+M0370	World/Movers/BoxSprite.swift:1364	a	HIGH	carpet 1080/1081 Phase 6	first placed on level 22
+M0371	World/Movers/ButtonSprite.swift:101	a	HIGH	enemy / enemy-shot arms (contact hurt, KillEnemyShot, Crawler shot-kill) Phase 5	HitPlayerSprite.swift:10; inert enemies fall to default return (orig. arms M l.49515–49910); no enemy shots exist until Phase 5
+M0372	World/Movers/Radial.swift:70	n	HIGH	MakeRadial no-op for s = 0 (original too)	
+M0373	World/Movers/Radial.swift:326	n	HIGH	MakeRadial no-op for s = 0 (original too)	
+M0374	World/Movers/RopeSprite.swift:55	b	HIGH	rope types 3023–3039 refused	original divides by zero (100845f8); L3 places only 3022
+M0375	World/Movers/StatueSprite.swift:5	a	HIGH	enemy Handles/Hit/statue sites Phase 5; L1–4 enemies inert	brief + SpriteSlot.swift:482 plan S2; design §8 Phase 5

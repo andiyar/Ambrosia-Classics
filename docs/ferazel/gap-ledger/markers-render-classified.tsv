@@ -1,0 +1,253 @@
+id	file:line	class	confidence	finding	evidence
+M0376	Ferazel/Core/Sources/FerazelRender/Audio/MusicTrack.swift:22	n	HIGH	missing music file error	data file absent only
+M0377	Ferazel/Core/Sources/FerazelRender/Audio/MusicTrack.swift:24	n	HIGH	music not IMA4 error	shipped Music file is IMA4 (census)
+M0378	Ferazel/Core/Sources/FerazelRender/Audio/SoundBank.swift:46	n	HIGH	unparsable snd	corrupt data only
+M0379	Ferazel/Core/Sources/FerazelRender/Audio/SoundBank.swift:47	n	HIGH	snd format ≠1	census: all shipped snd format 1
+M0380	Ferazel/Core/Sources/FerazelRender/Audio/SoundBank.swift:49	n	HIGH	snd modifier count	census
+M0381	Ferazel/Core/Sources/FerazelRender/Audio/SoundBank.swift:51	n	HIGH	snd command count	census
+M0382	Ferazel/Core/Sources/FerazelRender/Audio/SoundBank.swift:52	n	HIGH	snd not offset-binary	census
+M0383	Ferazel/Core/Sources/FerazelRender/Census/FerazelCensus.swift:7	n	HIGH	census tool history note	tool only
+M0384	Ferazel/Core/Sources/FerazelRender/Census/FerazelCensus.swift:87	n	HIGH	census: not a resource map	tool, corrupt data
+M0385	Ferazel/Core/Sources/FerazelRender/Census/FerazelCensus.swift:314	n	HIGH	census: Mwld missing	tool
+M0386	Ferazel/Core/Sources/FerazelRender/Census/FerazelCensus.swift:323	n	HIGH	census: Mmap missing	tool
+M0387	Ferazel/Core/Sources/FerazelRender/Census/FerazelCensus.swift:362	n	HIGH	census: no level names a CLUT	tool
+M0388	Ferazel/Core/Sources/FerazelRender/Census/FerazelCensus.swift:398	n	HIGH	census: Mlvl 1 missing	tool
+M0389	Ferazel/Core/Sources/FerazelRender/Census/FerazelCensus.swift:411	n	HIGH	census: 1-bit BitMap search	tool
+M0390	Ferazel/Core/Sources/FerazelRender/Census/FerazelCensus.swift:501	n	HIGH	census level1-start.png note	tool
+M0391	Ferazel/Core/Sources/FerazelRender/Color/ColorSearch.swift:39	n	HIGH	inverse-table bits precondition	internal constant (bits fixed by code)
+M0392	Ferazel/Core/Sources/FerazelRender/Color/InverseTable.swift:21	n	HIGH	inverse-table bits precondition	internal constant
+M0393	Ferazel/Core/Sources/FerazelRender/Effects/DeathEffect.swift:15	b	MED	death fade ignores GammaFadeOutAsync gates (gamma available / already faded)	gates always open on a modern Mac/PC; repeated fade toward black is a no-op; Effects/DeathEffect.swift:15
+M0394	Ferazel/Core/Sources/FerazelRender/Effects/DeathEffect.swift:66	d	HIGH	DeathEffect step outside 0…49 trap	Core's death screen drives k 0..49 only (Front/DeathScreen)
+M0395	Ferazel/Core/Sources/FerazelRender/Effects/ScreenGamma.swift:14	b	MED	async gamma fade gates not modelled	always-open gates; no visible difference (compounding no-op)
+M0396	Ferazel/Core/Sources/FerazelRender/Effects/ScreenGamma.swift:112	n	HIGH	try! ColorLUT from built bytes	data built in code
+M0397	Ferazel/Core/Sources/FerazelRender/Effects/WaterFaceBlitter.swift:20	d	MED	water-face tile outside FG-water set refused (would quit)	Core emits only 0≤tile<0x5f with fgKind≥0 (Particles/WaterEffects.swift:244); set has 0x60 faces
+M0398	Ferazel/Core/Sources/FerazelRender/Faces/BlendFaces.swift:5	n	HIGH	"skips stay transparent" doc	no refusal
+M0399	Ferazel/Core/Sources/FerazelRender/Faces/BlendFaces.swift:20	b	HIGH	truncated blend face (original reads past handle)	corrupt data only; PICT 185 decodes (census)
+M0400	Ferazel/Core/Sources/FerazelRender/Faces/BlendFaces.swift:25	n	HIGH	blend face truncated error	corrupt data
+M0401	Ferazel/Core/Sources/FerazelRender/Faces/BlendFaces.swift:38	n	HIGH	blend face truncated error	corrupt data
+M0402	Ferazel/Core/Sources/FerazelRender/Faces/ConvertedPicture.swift:42	n	HIGH	converted picture pixel count	internal consistency
+M0403	Ferazel/Core/Sources/FerazelRender/Faces/ConvertedPicture.swift:67	n	HIGH	no colour-table entry	census: every shipped PICT converts
+M0404	Ferazel/Core/Sources/FerazelRender/Faces/ConvertedPicture.swift:116	n	HIGH	no colour-table entry	census
+M0405	Ferazel/Core/Sources/FerazelRender/Faces/EncodedFace.swift:9	n	HIGH	EncodedFace malformed-stream doc	FaceEncoder output only
+M0406	Ferazel/Core/Sources/FerazelRender/Faces/EncodedFace.swift:20	d	MED	face mask region (+0x14) not modelled	only tile-set loads pass maskFirst/Last 0,0 (decompile l.828–1050); BuildMaskRegion result has no reader (no PtInRgn/SectRgn in decompile)
+M0407	Ferazel/Core/Sources/FerazelRender/Faces/EncodedFace.swift:39	n	HIGH	op 3 skip doc	no refusal
+M0408	Ferazel/Core/Sources/FerazelRender/Faces/EncodedFace.swift:40	n	HIGH	skip case	no refusal
+M0409	Ferazel/Core/Sources/FerazelRender/Faces/EncodedFace.swift:71	n	HIGH	refuses op ≥4 in token stream	port encodes its own faces (FaceEncoder never emits op ≥4)
+M0410	Ferazel/Core/Sources/FerazelRender/Faces/EncodedFace.swift:79	n	HIGH	same	same
+M0411	Ferazel/Core/Sources/FerazelRender/Faces/EncodedFace.swift:89	n	HIGH	malformed stream	FaceEncoder output
+M0412	Ferazel/Core/Sources/FerazelRender/Faces/EncodedFace.swift:90	n	HIGH	skip case	no refusal
+M0413	Ferazel/Core/Sources/FerazelRender/Faces/EncodedFace.swift:91	n	HIGH	malformed stream	FaceEncoder output
+M0414	Ferazel/Core/Sources/FerazelRender/Faces/EncodedFace.swift:93	n	HIGH	malformed stream	FaceEncoder output
+M0415	Ferazel/Core/Sources/FerazelRender/Faces/EncodedFace.swift:95	n	HIGH	malformed stream	FaceEncoder output
+M0416	Ferazel/Core/Sources/FerazelRender/Faces/EncodedFace.swift:96	n	HIGH	malformed stream	FaceEncoder output
+M0417	Ferazel/Core/Sources/FerazelRender/Faces/EncodedFace.swift:113	n	HIGH	row length mismatch	FaceEncoder output
+M0418	Ferazel/Core/Sources/FerazelRender/Faces/EncodedFace.swift:117	n	HIGH	truncated stream	FaceEncoder output
+M0419	Ferazel/Core/Sources/FerazelRender/Faces/EncodedFace.swift:134	n	HIGH	truncated stream	FaceEncoder output
+M0420	Ferazel/Core/Sources/FerazelRender/Faces/EncodedFace.swift:138	n	HIGH	skip body	no refusal
+M0421	Ferazel/Core/Sources/FerazelRender/Faces/EncodedFace.swift:140	n	HIGH	bad token	FaceEncoder output
+M0422	Ferazel/Core/Sources/FerazelRender/Faces/FaceEncoder.swift:14	n	HIGH	encoder doc	no refusal
+M0423	Ferazel/Core/Sources/FerazelRender/Faces/FaceEncoder.swift:32	n	HIGH	encoder pixel count	internal
+M0424	Ferazel/Core/Sources/FerazelRender/Faces/FaceEncoder.swift:36	n	HIGH	rect > Int16	no shipped PICT that large
+M0425	Ferazel/Core/Sources/FerazelRender/Faces/FaceEncoder.swift:53	n	HIGH	encoder var	no refusal
+M0426	Ferazel/Core/Sources/FerazelRender/Faces/FaceEncoder.swift:69	n	HIGH	encoder skip run	no refusal
+M0427	Ferazel/Core/Sources/FerazelRender/Faces/FaceEncoder.swift:78	n	HIGH	encoder skip run	no refusal
+M0428	Ferazel/Core/Sources/FerazelRender/Faces/FaceEncoder.swift:80	n	HIGH	encoder skip run	no refusal
+M0429	Ferazel/Core/Sources/FerazelRender/Faces/FaceSheet.swift:7	b	HIGH	sheet args no loader passes are refused	every Sheet in BootFaces/SetupFaces is in range; b535527 loads them all
+M0430	Ferazel/Core/Sources/FerazelRender/Faces/FaceSheet.swift:36	b	HIGH	refuse() helper	as above
+M0431	Ferazel/Core/Sources/FerazelRender/Faces/FaceSheet.swift:38	b	HIGH	columns <1	no loader passes it
+M0432	Ferazel/Core/Sources/FerazelRender/Faces/FaceSheet.swift:39	b	HIGH	count <0	no loader passes it
+M0433	Ferazel/Core/Sources/FerazelRender/Faces/FaceSheet.swift:40	b	HIGH	cell width out of range	max 0xd8 (catapult)
+M0434	Ferazel/Core/Sources/FerazelRender/Faces/FaceSheet.swift:41	b	HIGH	cell height out of range	max 200
+M0435	Ferazel/Core/Sources/FerazelRender/Faces/FaceSheet.swift:44	b	HIGH	bottom edge past Int16	no loader
+M0436	Ferazel/Core/Sources/FerazelRender/Faces/FaceSheet.swift:45	b	HIGH	right edge past Int16	no loader
+M0437	Ferazel/Core/Sources/FerazelRender/Faces/FaceSheet.swift:97	d	MED	sheet cell out of range	Core's indices bounded per Handle (e.g. Buttons ≤5 / ≤7, ropes, debris ≤15); a miss surfaces as faceNotLoaded (draw audit)
+M0438	Ferazel/Core/Sources/FerazelRender/Faces/FaceSheet.swift:125	b	HIGH	single PICT frame not at (0,0) refused	"every shipped frame starts at (0,0)"; boot+cache faces all load (b535527 test)
+M0439	Ferazel/Core/Sources/FerazelRender/Faces/LightFaces.swift:54	n	HIGH	LightFace size precondition	internal
+M0440	Ferazel/Core/Sources/FerazelRender/Faces/LightFaces.swift:82	d	HIGH	DirectBits light PICT at a scaled size refused	all requested light PICTs 801,802,806,810–813,820,822 are indexed (806 192²→84² now shrinks, 48a0620)
+M0441	Ferazel/Core/Sources/FerazelRender/Faces/PictureSource.swift:9	n	HIGH	K1 decode error doc	census
+M0442	Ferazel/Core/Sources/FerazelRender/Faces/PictureSource.swift:13	n	HIGH	unsupported case	census
+M0443	Ferazel/Core/Sources/FerazelRender/Faces/PictureSource.swift:34	n	HIGH	undecodable PICT	census: 1,108/0
+M0444	Ferazel/Core/Sources/FerazelRender/Faces/PictureSource.swift:44	n	HIGH	census invariant doc	census
+M0445	Ferazel/Core/Sources/FerazelRender/Faces/PictureSource.swift:51	d	HIGH	v1 PICT depth/mode unsupported	census: none shipped
+M0446	Ferazel/Core/Sources/FerazelRender/Faces/PictureSource.swift:54	d	HIGH	PixMap without colour table	census
+M0447	Ferazel/Core/Sources/FerazelRender/Faces/PictureSource.swift:55	d	HIGH	indexed transfer mode ≠0	census
+M0448	Ferazel/Core/Sources/FerazelRender/Faces/PictureSource.swift:58	d	HIGH	DirectBits mode ≠64	census
+M0449	Ferazel/Core/Sources/FerazelRender/Faces/PictureSource.swift:68	n	HIGH	missing PICT error (loaders filter boot faces by presence)	FrameRenderer.spriteSheets filters missing boot PICTs; cache sheets are placed types
+M0450	Ferazel/Core/Sources/FerazelRender/Faces/TileSets.swift:199	d	MED	missing tileset PICT	L1–4 tilesets load (levels open today)
+M0451	Ferazel/Core/Sources/FerazelRender/Faces/WaterFaceSheet.swift:8	n	HIGH	water sheet doc	no refusal
+M0452	Ferazel/Core/Sources/FerazelRender/Faces/WaterFaceSheet.swift:52	n	HIGH	skip case	no refusal
+M0453	Ferazel/Core/Sources/FerazelRender/Frame/FramePorts.swift:14	b	MED	8-px port slop not modelled; blits clipped to 640×416	slop only receives off-port pixels that are never copied to screen; MED: a ring copy straddling the slop could differ
+M0454	Ferazel/Core/Sources/FerazelRender/Frame/FrameRenderer.swift:58	n	HIGH	Refusal doc	see draw audit
+M0455	Ferazel/Core/Sources/FerazelRender/Frame/FrameRenderer.swift:59	n	HIGH	Refusal enum	see draw audit
+M0456	Ferazel/Core/Sources/FerazelRender/Frame/FrameRenderer.swift:141	n	HIGH	tintTableNotBuilt doc	ordering guard
+M0457	Ferazel/Core/Sources/FerazelRender/Frame/FrameRenderer.swift:165	n	HIGH	Mlvl missing	levels 5+ refused by dialog before this
+M0458	Ferazel/Core/Sources/FerazelRender/Frame/FrameRenderer.swift:233	n	HIGH	addLights doc	see M0459
+M0459	Ferazel/Core/Sources/FerazelRender/Frame/FrameRenderer.swift:240	d	MED	lightSlotsFull at level start (200 slots) would quit	Setup lights: torches first (≤46 on L4), Xichron lights capped at 150 total (BonusSprite.swift:146), then a few items → <200 on L1–4
+M0460	Ferazel/Core/Sources/FerazelRender/Frame/FrameRenderer.swift:272	n	HIGH	doc	ordering guard
+M0461	Ferazel/Core/Sources/FerazelRender/Frame/FrameRenderer.swift:276	d	HIGH	tint-table draw count ≠ 0x1fe	Core produces exactly 255×2 (session.tintTableDraws)
+M0462	Ferazel/Core/Sources/FerazelRender/Frame/FrameRenderer.swift:290	n	HIGH	doc	—
+M0463	Ferazel/Core/Sources/FerazelRender/Frame/FrameRenderer.swift:292	d	HIGH	death step outside 0…49	Core range fixed
+M0464	Ferazel/Core/Sources/FerazelRender/Frame/FrameRenderer.swift:334	n	HIGH	doc	see draw audit
+M0465	Ferazel/Core/Sources/FerazelRender/Frame/FrameRenderer.swift:337	d	HIGH	apply before buildTintTable	Shared driver builds it before first apply (ordering guard)
+M0466	Ferazel/Core/Sources/FerazelRender/Frame/FrameRenderer.swift:343	d	MED	screen CLUT ≠ tables' CLUT	level ops only set level+base CLUT the tables were built for
+M0467	Ferazel/Core/Sources/FerazelRender/Frame/FrameRenderer.swift:391	n	HIGH	changeLightFace slots outside 0…199 ignored (as original)	faithful
+M0468	Ferazel/Core/Sources/FerazelRender/Frame/FrameRenderer.swift:464	n	HIGH	cell outside grid ignored	Core clamps (.ConstrainXY)
+M0469	Ferazel/Core/Sources/FerazelRender/Frame/LevelTables.swift:17	d	HIGH	AnimateCLUT step before BuildTintTable not modelled	only levels 50, 51, 67 have hdr 0x2732≠0
+M0470	Ferazel/Core/Sources/FerazelRender/Frame/LightRenderer.swift:88	d	HIGH	ambient D outside 0…15/-1 (trap)	L1–4 light bytes 0…15 only (scanned BG high bytes: L1 0–11, L2 0–13, L3 0–14, L4 0–15)
+M0471	Ferazel/Core/Sources/FerazelRender/Frame/LightRenderer.swift:91	d	HIGH	same precondition (crash, not refusal)	as M0470
+M0472	Ferazel/Core/Sources/FerazelRender/Frame/LightRenderer.swift:233	n	HIGH	doc	—
+M0473	Ferazel/Core/Sources/FerazelRender/Frame/LightRenderer.swift:252	d	HIGH	light over darkness D outside census (trap)	as M0470
+M0474	Ferazel/Core/Sources/FerazelRender/Frame/LightRenderer.swift:272	n	HIGH	doc	—
+M0475	Ferazel/Core/Sources/FerazelRender/Frame/LightRenderer.swift:296	d	MED	light-table index outside table (trap)	light colours used ≤ 99 (0x63) → (p+colour−0xf5) ≤ 109 < 110 rows per slab
+M0476	Ferazel/Core/Sources/FerazelRender/Frame/LightRenderer.swift:298	d	MED	same precondition	as M0475
+M0477	Ferazel/Core/Sources/FerazelRender/Frame/LightRenderer.swift:303	b	MED	8-px slop not modelled (light)	as M0453
+M0478	Ferazel/Core/Sources/FerazelRender/Frame/LightRenderer.swift:395	d	MED	overlay o1/o2 outside set (trap)	"no shipped level has one" (comment); not re-scanned
+M0479	Ferazel/Core/Sources/FerazelRender/Frame/LightRenderer.swift:398	d	MED	same precondition	as M0478
+M0480	Ferazel/Core/Sources/FerazelRender/Frame/Mosaic.swift:16	n	HIGH	mosaic buffer size precondition	internal
+M0481	Ferazel/Core/Sources/FerazelRender/Frame/ParallaxBlitter.swift:7	d	HIGH	Fire backdrop (levels 52/55) and OmniPx (levels 5/15/25/70) not built	L1–4 hdr 0x2722=0 and 0x26c7=0 (scanned); goes live with level 5 (Phase 6)
+M0482	Ferazel/Core/Sources/FerazelRender/Frame/ParallaxBlitter.swift:55	d	HIGH	ParallaxBlitter Refusal enum	L1–4 flame 0, ripple 0
+M0483	Ferazel/Core/Sources/FerazelRender/Frame/ParallaxBlitter.swift:56	d	HIGH	fire variant refused	levels 52/55 only
+M0484	Ferazel/Core/Sources/FerazelRender/Frame/ParallaxBlitter.swift:58	d	HIGH	ripple flag refused	levels 11, 18 only
+M0485	Ferazel/Core/Sources/FerazelRender/Frame/ParallaxBlitter.swift:90	d	HIGH	doc	as above
+M0486	Ferazel/Core/Sources/FerazelRender/Frame/ParallaxBlitter.swift:101	d	HIGH	ripple table producer not built	levels 11, 18
+M0487	Ferazel/Core/Sources/FerazelRender/Frame/ParallaxBlitter.swift:121	n	HIGH	doc	—
+M0488	Ferazel/Core/Sources/FerazelRender/Frame/ParallaxBlitter.swift:123	n	HIGH	slot count precondition	internal
+M0489	Ferazel/Core/Sources/FerazelRender/Frame/ParallaxBlitter.swift:125	d	HIGH	fireVariant refusal at level open	L1–4 0x2722 = 0
+M0490	Ferazel/Core/Sources/FerazelRender/Frame/ParallaxBlitter.swift:126	d	HIGH	ripple refusal at level open	L1–4 0x26ca = 0
+M0491	Ferazel/Core/Sources/FerazelRender/Frame/ParallaxBlitter.swift:141	n	HIGH	128×128 cell precondition	internal
+M0492	Ferazel/Core/Sources/FerazelRender/Frame/ParallaxBlitter.swift:236	n	HIGH	port size precondition	internal
+M0493	Ferazel/Core/Sources/FerazelRender/Frame/ParallaxBlitter.swift:238	n	HIGH	screen size precondition	internal
+M0494	Ferazel/Core/Sources/FerazelRender/Frame/ParallaxBlitter.swift:269	n	HIGH	doc	—
+M0495	Ferazel/Core/Sources/FerazelRender/Frame/ParallaxBlitter.swift:335	n	HIGH	line-skip doc	—
+M0496	Ferazel/Core/Sources/FerazelRender/Frame/ParallaxBlitter.swift:553	d	HIGH	PxBack/PxMid cell slot with no face (trap)	"unreached with shipped data"; levels 1–4 draw daily
+M0497	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:13	n	HIGH	cull doc	faithful
+M0498	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:50	n	HIGH	Refusal enum	see draw audit
+M0499	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:62	n	HIGH	doc	see A-transform
+M0500	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:69	n	HIGH	doc	see A-0xb
+M0501	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:90	b	HIGH	placeholder PICT 150 for cached faces on frame 1	as .SetupLevelSprites/.LoadCachedSpriteFaces order
+M0502	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:91	b	HIGH	same	same
+M0503	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:107	b	HIGH	same	same
+M0504	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:113	b	HIGH	same	same
+M0505	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:129	n	HIGH	Effects 3 skips light pass (as original)	faithful
+M0506	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:133	n	HIGH	doc	see A-0xb
+M0507	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:150	n	HIGH	doc	see A-5
+M0508	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:169	n	HIGH	doc	see A-face
+M0509	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:175	d	MED	faceNotLoaded (would quit)	every FaceRef Core builds checked: boot set + caches + drops/balloons/coins/held items (BoxSprite.dropSheets, HeldItem.facePicts); see A-face
+M0510	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:266	n	HIGH	doc	—
+M0511	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:290	d	HIGH	mode-5 draw with no seed	Core sets randomSeed for every mode-5 draw (FerazelSession DiffuseRandoms)
+M0512	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:294	d	HIGH	untransformed modes 8/0xd/0xe/≥0x14 refused	no Core writer of these modes reaches a drawn sprite (PxSprites 0x80000 never on the active list); see A-modes
+M0513	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:316	d	HIGH	flipped mode 0xa refused	only writer: springboard gauge (PlatformSprite.swift:867), never mirrored; L3 0x58c ×2
+M0514	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:343	n	HIGH	doc	—
+M0515	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:358	n	HIGH	doc	—
+M0516	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:419	n	HIGH	doc	—
+M0517	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:476	d	MED	mode 0xb background read refused (no parallax / row<0 / unloaded cell)	parallax always set (FrameRenderer.swift:370); drawn rows ≥ view top; pxBackTile clamped
+M0518	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:479	n	HIGH	internal	—
+M0519	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:482	d	HIGH	mode-0xb run >301 px	widest 0xb face is 192 px (debris 0xc1b); trails ≤150
+M0520	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:500	b	HIGH	flipped copy run right after another copy run	FaceEncoder never emits adjacent copy runs
+M0521	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:505	d	HIGH	0xb arg ≥0x80 remap read past 255	0xb args used: 0,1,2,5 only
+M0522	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:509	d	HIGH	0xb table index outside table	args 0..5 hit the 64K pair tables
+M0523	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:526	n	HIGH	doc	—
+M0524	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:529	d	HIGH	transformed table bank index out of range	rotated/scaled modes seen: 0 / 1 sub 4 (seed) / 0xc / 3–4 flash ≤ 7/14
+M0525	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:542	d	HIGH	transformed draw of mode 2/5/7/8/0xa/0xb/0xd–0x13	rotated sprites (cannon, raft, boulder, maces, mace chains, gravity shots) carry 0, 0x10004, 0xc or flash only; see A-transform
+M0526	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:556	d	HIGH	tint sub outside 0…24	largest tint sub written in L1–4 is 0x18 (inLiquid gate, not on L1–4) / 22 (decoration p2); 25 tables
+M0527	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:562	d	HIGH	redden sub out of range	flash ≤0x1e → n≤7, 2n≤14
+M0528	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:566	d	HIGH	water sub out of range (0…5)	L1–4 water kinds used 200, 201, 203 → 0, 1, 3 (scanned)
+M0529	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:571	d	HIGH	ambient L out of range (mode 0xc)	L1–4 light bytes 0…15; radial level ≤12
+M0530	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:577	d	HIGH	light row past table	F ≤ 11 + colour ≤ 99 <110
+M0531	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:581	d	HIGH	Special default refused	see A-modes
+M0532	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:586	n	HIGH	doc	—
+M0533	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:604	n	HIGH	internal	—
+M0534	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:630	n	HIGH	internal	—
+M0535	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:635	n	HIGH	internal	—
+M0536	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:669	d	MED	light pass failure rethrown	see M0547, lightIndex
+M0537	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:694	n	HIGH	doc	—
+M0538	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:697	n	HIGH	internal	—
+M0539	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:702	n	HIGH	internal	—
+M0540	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:769	d	MED	faceNotLoaded at erase	same coverage as M0509
+M0541	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:863	d	HIGH	rotated erase of a face >256 px wide	rotated faces: cannon 150, raft 80, mace 128, ball 100, boulder 32, chain 24, shots ≤32
+M0542	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:890	d	HIGH	same (bool erase)	same
+M0543	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:950	n	HIGH	doc	—
+M0544	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:1079	n	HIGH	internal	—
+M0545	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:1080	n	HIGH	internal	—
+M0546	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:1084	n	HIGH	comment	—
+M0547	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:1085	b	HIGH	ripple phase past 2^31 (≈39 h in one level) refused	original reads before its table too; phase resets each level start
+M0548	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:1125	n	HIGH	doc	—
+M0549	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:1212	d	HIGH	rotation outside 0…359	every writer wraps: cannon 10…348, boulder/raft/mace/chain mod 360, shots 10·dir (0…350)
+M0550	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:1240	b	MED	rotWalk column outside table	original reads past too; faces ≤256 wide
+M0551	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift:1273	d	HIGH	rotation outside 0…359 (erase)	as M0549
+M0552	Ferazel/Core/Sources/FerazelRender/Frame/StatusBar.swift:11	n	HIGH	doc	—
+M0553	Ferazel/Core/Sources/FerazelRender/Frame/StatusBar.swift:63	n	HIGH	PICT 132 size precondition	data fixed
+M0554	Ferazel/Core/Sources/FerazelRender/Frame/StatusBar.swift:188	c	LOW	HUD: empty inventory (selection −1) draws nothing; the original reads G+0x1a…0x23 (gap) and may draw a garbage/item-0 icon	StatusBar.swift:188; settle from Let's Play/VM at a level start with no items
+M0555	Ferazel/Core/Sources/FerazelRender/Frame/TextRasterizer.swift:52	n	HIGH	glyph precondition	internal
+M0556	Ferazel/Core/Sources/FerazelRender/Frame/TileBlitters.swift:7	b	MED	8-px slop not modelled (tiles)	as M0453
+M0557	Ferazel/Core/Sources/FerazelRender/Frame/TileBlitters.swift:16	n	HIGH	doc	—
+M0558	Ferazel/Core/Sources/FerazelRender/Frame/TileBlitters.swift:120	n	HIGH	doc	—
+M0559	Ferazel/Core/Sources/FerazelRender/Frame/TileGridRenderer.swift:33	d	MED	mask-only .RedrawScrollGrid(rect,1) not built here	its caller (erase) uses redrawScrollGridMask instead (SpriteBlitter erase) — built elsewhere
+M0560	Ferazel/Core/Sources/FerazelRender/Frame/TileGridRenderer.swift:46	n	HIGH	Effects 3 skip (faithful)	—
+M0561	Ferazel/Core/Sources/FerazelRender/Frame/TileGridRenderer.swift:284	d	HIGH	BG kind 206…209 under FG cell (water table ≥6)	L1–4 kinds 200, 201, 203 only (L1 table also has 202, unused)
+M0562	Ferazel/Core/Sources/FerazelRender/Frame/TileGridRenderer.swift:286	d	HIGH	same precondition (crash)	as M0561
+M0563	Ferazel/Core/Sources/FerazelRender/Screens/ConversationRenderer.swift:26	d	MED	ConversationRenderer refuses level ops	conversation flow sends only front-end ops + drawBlackLines/restoreView
+M0564	Ferazel/Core/Sources/FerazelRender/Screens/ConversationRenderer.swift:63	n	HIGH	try! system CLUT	built in code
+M0565	Ferazel/Core/Sources/FerazelRender/Screens/ConversationRenderer.swift:67	d	MED	doc of M0563	as above
+M0566	Ferazel/Core/Sources/FerazelRender/Screens/MapRenderer.swift:22	n	HIGH	doc	—
+M0567	Ferazel/Core/Sources/FerazelRender/Screens/MapRenderer.swift:47	d	MED	MapRenderer Refusal enum	map flow ops target fixed ports
+M0568	Ferazel/Core/Sources/FerazelRender/Screens/MapRenderer.swift:95	n	HIGH	doc	—
+M0569	Ferazel/Core/Sources/FerazelRender/Screens/MapRenderer.swift:134	d	MED	map face index out of range	Core map faces from fixed sets 8000…8004
+M0570	Ferazel/Core/Sources/FerazelRender/Screens/MapRenderer.swift:176	d	MED	unexpected op on map port	map ops are WorldMapRun's fixed list
+M0571	Ferazel/Core/Sources/FerazelRender/Screens/MapRenderer.swift:202	d	MED	copy to screen port refused	same
+M0572	Ferazel/Core/Sources/FerazelRender/Screens/MapRenderer.swift:244	n	HIGH	skip case	—
+M0573	Ferazel/Core/Sources/FerazelRender/Screens/ScreenRenderer.swift:18	n	HIGH	white-skip doc	—
+M0574	Ferazel/Core/Sources/FerazelRender/Screens/ScreenRenderer.swift:36	d	HIGH	ScreenRenderer Refusal enum	front-end screens never emit level ops
+M0575	Ferazel/Core/Sources/FerazelRender/Screens/ScreenRenderer.swift:60	n	HIGH	doc	—
+M0576	Ferazel/Core/Sources/FerazelRender/Screens/ScreenRenderer.swift:108	d	HIGH	level op on front-end screen	front end/stage/pause flows emit screen ops only
+M0577	Ferazel/Core/Sources/FerazelRender/Screens/ScreenRenderer.swift:109	d	HIGH	same	same
+M0578	Ferazel/Core/Sources/FerazelRender/Screens/ScreenRenderer.swift:110	d	HIGH	same	same
+M0579	Ferazel/Core/Sources/FerazelRender/Screens/ScreenRenderer.swift:111	d	HIGH	same	same
+M0580	Ferazel/Core/Sources/FerazelRender/Screens/ScreenRenderer.swift:112	d	HIGH	same	same
+M0581	Ferazel/Core/Sources/FerazelRender/Screens/ScreenRenderer.swift:113	d	HIGH	same	same
+M0582	Ferazel/Core/Sources/FerazelRender/Screens/ScreenRenderer.swift:114	d	HIGH	same	same
+M0583	Ferazel/Core/Sources/FerazelRender/Screens/ScreenRenderer.swift:115	d	HIGH	same	same
+M0584	Ferazel/Core/Sources/FerazelRender/Screens/ScreenRenderer.swift:116	d	HIGH	same	same
+M0585	Ferazel/Core/Sources/FerazelRender/Screens/ScreenRenderer.swift:117	d	HIGH	same	same
+M0586	Ferazel/Core/Sources/FerazelRender/Screens/ScreenRenderer.swift:118	d	HIGH	same	same
+M0587	Ferazel/Core/Sources/FerazelRender/Screens/ScreenRenderer.swift:119	d	HIGH	same	same
+M0588	Ferazel/Core/Sources/FerazelRender/Screens/ScreenRenderer.swift:120	d	HIGH	same	same
+M0589	Ferazel/Core/Sources/FerazelRender/Screens/ScreenRenderer.swift:121	d	HIGH	same	same
+M0590	Ferazel/Core/Sources/FerazelRender/Screens/ScreenRenderer.swift:122	d	HIGH	same	same
+M0591	Ferazel/Core/Sources/FerazelRender/Screens/ScreenRenderer.swift:123	d	HIGH	same	same
+M0592	Ferazel/Core/Sources/FerazelRender/Screens/ScreenRenderer.swift:127	d	HIGH	drawBlackLines outside a conversation	only ConversationRenderer gets it
+M0593	Ferazel/Core/Sources/FerazelRender/Screens/ScreenRenderer.swift:147	n	HIGH	try! CLUT	built in code
+M0594	Ferazel/Core/Sources/FerazelRender/Screens/ScreenRenderer.swift:159	u	MED	QuickDraw shrink rule (sampleRows, floor y·src/dst) never measured — used by stage screens, map, light PICT 806	Q15 reviewer item; ~50% should be centre-sampled; settle from a Mac OS 9 VM capture / Let's Play
+M0595	Ferazel/Core/Sources/FerazelRender/Sound/SoundTool.swift:7	n	HIGH	SoundTool doc	—
+M0596	Ferazel/Core/Sources/FerazelRender/Sound/SoundTool.swift:179	n	HIGH	insertion comment	—
+M0597	Ferazel/Core/Sources/FerazelRender/Sound/SoundTool.swift:247	n	HIGH	clamp	—
+M0598	Ferazel/Core/Sources/ferazel-census/main.swift:9	n	HIGH	census main doc	tool
+M0599	Ferazel/Core/Sources/ferazel-census/main.swift:33	n	HIGH	PNG write failure	tool
+M0600	Ferazel/Core/Sources/ferazel-census/main.swift:36	n	HIGH	PNG write failure	tool
+
+# DRAW AUDIT (input × Core writer × reachable in L1–4 × blitter handles → class)
+A01	mode 0 copy	every Setup default	yes	handled (also rotated/scaled)	n	HIGH
+A02	mode 1 tint sub 0…0x18	Walker/Crawler/Frog tiers 0x10002…0x10017, decorations+plants p2 (L1 6,7,22; L3 10,11), outcrops 0x10006/7, player power tints 0x10001/3/4/6/8/9/a/c, shadow 0x1000b, statue 0x1000b, seed 0x10004	yes	25 tint tables; max sub used 22 (0x10018 only when hdr 0x26cd≠0: none of L1–4)	n	HIGH
+A03	mode 3/4 hurt flash	flash ≤0x1e → n≤7 / 2n≤14	yes	redden A 8 / B 16 tables	n	HIGH
+A04	mode 5 sparkle (fixed 0fd056e)	player teleporter charge, PlayerStates.swift:873 (sub 0…15, noWaterSplit)	yes (L1 urn)	diffuseWalk; seed set by FerazelSession.diffuseSeeds for every stored mode-5 draw	n	HIGH
+A05	mode 5 rotated/scaled (Q15)	only the player carries mode 5; no Core writer of player rotation/scale	no	refused	d	HIGH
+A06	mode 6 water ripple	water split 0x60000+kind (BG kind−200)	yes (kinds 0,1,3 in L1–4)	6 water tables	n	HIGH
+A07	mode 9	SetupFaces 399/417, BackgroundSprite 791 (0x90000)	yes	special/table	n	HIGH
+A08	mode 0xa squash (fixed 0fd056e)	springboard gauge, PlatformSprite.swift:867 (q 0xb…0xfa)	yes (L3 0x58c ×2)	squashWalk	n	HIGH
+A09	mode 0xa flipped / transformed (Q15)	gauge never mirrored, rotated or scaled	no	refused	d	HIGH
+A10	mode 0xb args 0,1,2,5	trails, debris, floes, trunks, bonuses, orb, crate fade, Box/Platform blinks	yes	transClip; parallax always attached (FrameRenderer.swift:370); faces ≤192 px	n	HIGH
+A11	mode 0xb rotated/scaled	rotated sprites never carry 0xb (Wizard hovering rock = Phase 6)	no	refused	d	HIGH
+A12	mode 0xc dynamic light / radial depth	boulder, raft, mace balls 10/11, mace chain (applyDynamicLight); radial persp 0xc0000+L·0x100 (L≤12)	yes (L1 maces, L2 rafts, L2/L3 boulders)	L 0…15 ok; F = v+colour ≤110	n	HIGH
+A13	mode 0xc with F=110 at darkness 15	dynamic sprite centred on a colour-99 light (money bags, items) in a light-15 cell	no in L1–4 (light 15 only on L4; no dynamic-light sprite on L4)	refused (original reads the ambient table that follows) → would QUIT in later levels	d	MED
+A14	mode 0xbff00+F (L = −1)	applyDynamicLight with light byte −1	no (every L1–4 BG cell has light byte ≥0)	would hit greyPull at a negative index → refused	d	HIGH
+A15	modes 2,7,8,0xd,0xe,0xf–0x13,≥0x14	only PxSprites.drawMode 0x80000, never put on the active list	no	refused	d	HIGH
+A16	rotation	cannon 10…348 (L1), raft (L2), boulder (L2/L3), mace (L1 p1 12 = persp, unrotated), gravity shots 10·dir	yes	0…359 everywhere; erase faces ≤150 px ≤256	n	HIGH
+A17	scale	Radial persp spokes / ball (L1 0x5cd mode 12)	yes	scaleWalk; never mirrored	n	HIGH
+A18	FaceRef / faceNotLoaded (b535527)	boot set (BootFaces, missing PICTs filtered) + caches + drops (0x519→0x51d, items 0xc81/82/85/93) + balloons (k>0) + held items 750/756/768/771 + Buttons ≤5/≤7	yes	all present (scanned chest/crate p2, item PICTs)	n	MED
+A19	rope faces (48a0620)	0x289/0x28a/0x28c/0x292 boot sets	yes (L3 ropes)	loaded	n	HIGH
+A20	light faces (48a0620)	801,802,806,810–813,820,822	yes	all indexed; 806 192²→84² via sampleRows	n	HIGH
+A21	teleport/passage re-seat (78e81c3)	setDrawnScroll op	yes	handled (FrameRenderer.swift:360)	n	HIGH
+A22	mode-5 RNG at grid vs camera scroll (Q15 item 1)	FrameRenderer.swift:394 draws at grid scroll, Core walks at camera scroll	yes, teleport/passage frames	sparkle pixels and game random stream can drift from the original on those frames	c	MED
+A23	parallax fire / ripple / OmniPx	hdr 0x2722 / 0x26ca / 0x26c7	no (L1–4 all 0; levels 52/55, 11/18, 5/15/25/70)	refused at level open	d	HIGH
+A24	water table ≥6 (BG 206–209)	tile grid + sprite water split	no (L1–4 kinds 200/201/203)	refused/trap	d	HIGH
+A25	conversation portraits	Mcnv +0x70a	yes	all 22 ids present (4001…4033)	n	HIGH
