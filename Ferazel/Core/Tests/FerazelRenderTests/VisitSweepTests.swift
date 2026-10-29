@@ -23,12 +23,11 @@ import XCTest
         let lengths = try SweepShell.soundLengths(resources)
         var rows: [VisitSweep.Failure] = []
         var visited = 0, teleporters = 0, arrived = 0, exits = 0, exitsToMap = 0
-        let shard = VisitSweep.shard
         for level in VisitSweep.selectedLevels {
             let records = try LevelFile.load(from: resources, level: Int16(level)).placements
             let visits = VisitSweep.visits(level: level, records: records)
             var done = 0
-            for (i, v) in visits.enumerated() where i >= VisitSweep.from && i % shard.count == shard.index {
+            for (i, v) in visits.enumerated() where VisitSweep.mine(level: level, index: i) {
                 guard done < VisitSweep.limit else { break }
                 done += 1
                 VisitSweep.progress(v, index: i)
@@ -46,21 +45,17 @@ import XCTest
                 visited += 1
                 rows += failures
                 for f in failures { VisitSweep.append(f.tsv, to: "failures.tsv") }
-                if (0x424...0x426).contains(v.record.type) {
-                    teleporters += 1
-                    if seen.teleportArrived { arrived += 1 }
-                }
-                if v.record.type == 0xcb1 {
-                    exits += 1
-                    if seen.exitReachedMap { exitsToMap += 1 }
-                }
+                if seen.suspensions.contains("teleport1") { teleporters += 1 }
+                if seen.teleportArrived { arrived += 1 }
+                if seen.levelCompleted { exits += 1 }
+                if seen.exitReachedMap { exitsToMap += 1 }
                 VisitSweep.append("\(v.level)\t\(v.record.index)\t\(VisitSweep.hex(v.record.type))\t\(v.offset.rawValue)"
                                   + "\t\(seen.teleportArrived)\t\(seen.levelCompleted)\t\(seen.exitReachedMap)"
                                   + "\t\(seen.suspensions.sorted().joined(separator: ","))", to: "seen.tsv")
             }
         }
-        let summary = "visits \(visited); teleporter visits \(teleporters) (arrived \(arrived)); "
-            + "exit visits \(exits) (reached the map \(exitsToMap))"
+        let summary = "visits \(visited); teleports fired in \(teleporters) (arrived \(arrived)); "
+            + "level exits taken in \(exits) (reached the world map \(exitsToMap))"
         print("VISIT SWEEP (Core): " + summary)
         XCTAssertTrue(rows.isEmpty, "\(rows.count) visit failures — \(summary)\n" + VisitSweep.table(rows))
     }

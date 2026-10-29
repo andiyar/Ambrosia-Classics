@@ -84,6 +84,8 @@ enum VisitSweep {
     /// Ticks allowed after the script for a modal to finish (a conversation, a mosaic, the save flash) and, after a
     /// level exit, for the stage-complete screens to reach the world map.
     static let drainTicks = 1500
+    /// Ticks with nothing moving (no loop iteration, no modal progress, no state change) that count as stuck.
+    static let stuckTicks = 600
 
     /// The input actions held at script tick `k` (`FerazelPrefs.keys` indices: 0 left, 1 right, 2 up, 3 down, 5 jump,
     /// 6 cast, 8 use): stand; walk into the record; tap up (doors, talkers, switches); tap down; tap cast; jump toward
@@ -104,10 +106,17 @@ enum VisitSweep {
     }
 
     /// The keys a player holds at script tick `k` in `context` — a conversation (or sign, hint) is read through and
-    /// answered with Return, tapped, as a player does; the script's own keys otherwise.
+    /// its menu answered with its last choice (down, down, …, Return), as a player leaving a talk does; the script's
+    /// own keys otherwise.
     static func keys(at k: Int, offset: Offset, context: GameFlow.PadContext, prefs: FerazelPrefs) -> [Int] {
         switch context {
-        case .conversation: return (k / 4) % 2 == 0 ? [0x24] : []
+        case .conversation:
+            // Down five times (the menu's last answer — the one that ends a talk that would loop), then Return.
+            switch (k / 4) % 12 {
+            case 0, 2, 4, 6, 8: return [Int(prefs.keys[3])]
+            case 10: return [0x24]
+            default: return []
+            }
         case .playing: return actions(at: k, offset: offset).map { Int(prefs.keys[$0]) }
         default: return []
         }
@@ -176,8 +185,20 @@ enum VisitSweep {
     /// `FERAZEL_VISIT_LIMIT=n`: at most n visits per level (a quick look; the gate runs them all).
     static var limit: Int { Int(ProcessInfo.processInfo.environment["FERAZEL_VISIT_LIMIT"] ?? "") ?? .max }
 
-    /// `FERAZEL_VISIT_FROM=k`: start at the level list's visit k (the runner resumes after a trap with it).
-    static var from: Int { Int(ProcessInfo.processInfo.environment["FERAZEL_VISIT_FROM"] ?? "") ?? 0 }
+    /// `FERAZEL_VISIT_FROM=L:k`: start at level L's visit k, skipping the levels before L (the runner resumes after a
+    /// trap with it).
+    static var from: (level: Int, index: Int) {
+        let p = (ProcessInfo.processInfo.environment["FERAZEL_VISIT_FROM"] ?? "").split(separator: ":")
+        guard p.count == 2, let l = Int(p[0]), let i = Int(p[1]) else { return (0, 0) }
+        return (l, i)
+    }
+
+    /// Whether visit `i` of `level` is this process's to run (the shard, the resume point).
+    static func mine(level: Int, index i: Int) -> Bool {
+        let f = from, s = shard
+        if level < f.level || (level == f.level && i < f.index) { return false }
+        return i % s.count == s.index
+    }
 
     /// `FERAZEL_VISIT_OUT=dir`: where the rows (`failures.tsv`), the coverage (`seen.tsv`) and the progress file
     /// (`progress` — the visit about to run, so a trap that kills the process names its visit) are appended.
@@ -248,7 +269,22 @@ extension VisitSweep {
             let keys = held.isEmpty ? "-" : held.map { "0x" + String($0, radix: 16) }.joined(separator: "+")
             return "\(phase)+\(k) keys \(keys)"
         }
-        /// One tick; false when the visit must stop (a throw, a quit).
+        /// Only a conversation's answers (the modals are read through; nothing else pressed).
+        func answer(_ k: Int) -> [Int] {
+            flow.padContext == .conversation
+                ? keys(at: k, offset: .on, context: .conversation, prefs: flow.levelRun?.prefs ?? FerazelPrefs()) : []
+        }
+        /// The watchdog: what changes while the game is alive (the loop's iterations, a modal's progress, the flow's
+        /// state). Unchanged for `stuckTicks` ticks = stuck.
+        var lastMark = ""
+        var still = 0
+        func mark() -> String {
+            let run = flow.levelRun
+            let c = run?.conversation.map { "\(ObjectIdentifier($0).hashValue)/\($0.wait)/\($0.shown.count)/\($0.index)" }
+            return "\(flow.state)|\(run?.iterations ?? -1)|\(String(describing: c))|\(run?.mosaic != nil)|"
+                + "\(run?.upgrade != nil)|\(flow.worldMap?.iterations ?? -1)|\(flow.padContext)"
+        }
+        /// One tick; false when the visit must stop (a throw, a quit, stuck).
         func step(_ keys: [Int]) -> Bool {
             held = keys
             let out: FrontOutput
@@ -285,16 +321,26 @@ extension VisitSweep {
                 rows.append(failure(v, frame: frame(), "the flow quit"))
                 return false
             }
+            let m = mark()
+            if m == lastMark { still += 1 } else { still = 0; lastMark = m }
+            if still >= stuckTicks {
+                let s = flow.levelRun?.session?.suspension.map(Self.name) ?? "none"
+                rows.append(failure(v, frame: frame(), "stuck \(stuckTicks) ticks: suspension \(s), context "
+                                    + "\(flow.padContext), state \(flow.state), conversation wait "
+                                    + "\(flow.levelRun?.conversation.map { "\($0.wait)" } ?? "none")"))
+                return false
+            }
             return true
         }
 
         flow.openDocument(ref)
         // To the loop: `.ContinueGame` reads the save, `LevelRun` sets the level up (popup, load bars, fades).
-        while !(flow.padContext == .playing) {
-            guard step([]) else { return (rows, seen) }
+        // (An exit or a death on the very first iteration ends the level before it ever reads as playing.)
+        while flow.padContext != .playing && !seen.levelCompleted && flow.padContext != .deathScreen {
+            guard step(answer(k)) else { return (rows, seen) }
             k += 1
             if !rows.isEmpty { return (rows, seen) }
-            if k > 2000 {
+            if k > 4000 {
                 rows.append(failure(v, frame: frame(), "the level never started (state \(flow.state), context \(flow.padContext))"))
                 return (rows, seen)
             }
@@ -303,10 +349,9 @@ extension VisitSweep {
         phase = "play"
         k = 0
         let prefs = flow.levelRun?.prefs ?? FerazelPrefs()
-        while k < playTicks {
+        while k < playTicks && flow.padContext != .deathScreen && !seen.levelCompleted {
             guard step(keys(at: k, offset: v.offset, context: flow.padContext, prefs: prefs)) else { return (rows, seen) }
             k += 1
-            if seen.exitReachedMap { break }
         }
         // The drain: hands off; a conversation still read through; a level exit on to the map.
         phase = "drain"
@@ -319,14 +364,10 @@ extension VisitSweep {
             return flow.padContext == .playing && run.session?.suspension == nil && run.upgrade == nil
                 && run.mosaic == nil
         }
-        while !settled() {
-            guard k < drainTicks else {
-                let s = flow.levelRun?.session?.suspension.map(Self.name) ?? "none"
-                rows.append(failure(v, frame: frame(),
-                                    "stuck: suspension \(s), context \(flow.padContext), state \(flow.state)"))
-                break
-            }
-            guard step(keys(at: k, offset: .on, context: flow.padContext, prefs: prefs).filter { $0 == 0x24 }) else { break }
+        // A modal that keeps moving (an NPC who talks again each time his cooldown ends while Ferazel stands by him) is
+        // alive, not stuck: the drain ends quietly after `drainTicks`; only the watchdog reports.
+        while !settled() && k < drainTicks {
+            guard step(answer(k)) else { break }
             k += 1
         }
         return (rows, seen)
