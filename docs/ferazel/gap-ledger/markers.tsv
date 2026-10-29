@@ -1,0 +1,679 @@
+id	file	line	kind	text
+M0001	Ferazel/Core/Sources/FerazelCore/Camera/Camera.swift	11	refuse	/// auto-scroll modes 1–2 (refused here), or the one-shot `*_DAT_1009fd34` is set — which this test clears (P5); each axis
+M0002	Ferazel/Core/Sources/FerazelCore/Camera/Camera.swift	23	unbuilt,defer	/// hdr 0x2724 ≠ 0: the boss-arena bounds (not built in Phase 1).
+M0003	Ferazel/Core/Sources/FerazelCore/Camera/Camera.swift	25	unbuilt,defer	/// hdr 0x272a ≠ 0: auto-scroll (not built in Phase 1).
+M0004	Ferazel/Core/Sources/FerazelCore/Camera/Camera.swift	46	defer	/// writers set it (the seed explosion 0x14, M l. 51150 // later: SH; the bosses 0x1e / 0x16, M l. 73488…77475
+M0005	Ferazel/Core/Sources/FerazelCore/Camera/Camera.swift	53	throw	guard header.arenaBound == 0 else { throw Error.arenaBound(header.arenaBound) }
+M0006	Ferazel/Core/Sources/FerazelCore/Camera/Camera.swift	54	throw	guard header.autoScrollEnable == 0 else { throw Error.autoScroll(header.autoScrollEnable) }
+M0007	Ferazel/Core/Sources/FerazelCore/Camera/Camera.swift	86	refuse	// Auto-scroll modes 1–2 (`*_DAT_1009fec4`, `_DAT_1009fec0`) would veto too: refused by `init`.
+M0008	Ferazel/Core/Sources/FerazelCore/Color/ColorLUT.swift	52	throw	guard b.count >= 8 else { throw ColorLUTError.truncated(id: id, bytes: b.count) }
+M0009	Ferazel/Core/Sources/FerazelCore/Color/ColorLUT.swift	54	throw	guard count == Self.entryCount else { throw ColorLUTError.entryCount(id: id, count: count) }
+M0010	Ferazel/Core/Sources/FerazelCore/Color/ColorLUT.swift	55	throw	guard u16(4) == 0 else { throw ColorLUTError.unexpectedFlags(id: id, flags: u16(4)) }
+M0011	Ferazel/Core/Sources/FerazelCore/Color/ColorLUT.swift	56	throw	guard b.count >= 8 + count * 8 else { throw ColorLUTError.truncated(id: id, bytes: b.count) }
+M0012	Ferazel/Core/Sources/FerazelCore/Color/ColorLUT.swift	80	throw	guard let r = resources.resource(type: "clut", id: id, chain: chain) else { throw ColorLUTError.missing(id: id) }
+M0013	Ferazel/Core/Sources/FerazelCore/Data/FerazelData.swift	30	throw	guard isDirectory(url, fm) else { throw FerazelDataError.missing("\(environmentVariable)=\(env)") }
+M0014	Ferazel/Core/Sources/FerazelCore/Data/FerazelData.swift	39	throw	throw FerazelDataError.missing("Resources/Ferazel above \(#filePath); set \(environmentVariable)")
+M0015	Ferazel/Core/Sources/FerazelCore/Data/FerazelData.swift	49	throw	throw FerazelDataError.missing(name)
+M0016	Ferazel/Core/Sources/FerazelCore/Data/FerazelData.swift	52	throw	guard isDirectory(music, fm) else { throw FerazelDataError.missing(musicFolder) }
+M0017	Ferazel/Core/Sources/FerazelCore/Data/FerazelData.swift	57	throw	guard ClassicResourceMap.sniff(bytes) else { throw FerazelDataError.missing("\(name) (not a resource map)") }
+M0018	Ferazel/Core/Sources/FerazelCore/Data/FerazelResources.swift	5	defer	/// `NN` in `musicDirectory` (AIFC; decoded by a later task, not here).
+M0019	Ferazel/Core/Sources/FerazelCore/Flow/LevelFlow.swift	7	defer	/// level of `node[cur].links[exit]` (world-data §4.2). Phase 3 runs all of it (`LevelRun`, `WorldMapRun`, `GameFlow`);
+M0020	Ferazel/Core/Sources/FerazelCore/Flow/LevelFlow.swift	31	defer	/// revisit flag (built in Phase 3 as `LevelRun.revisit`).
+M0021	Ferazel/Core/Sources/FerazelCore/Flow/LevelFlow.swift	35	unbuilt	/// header, l. 5821) and `.SetupLevel` `+0x20`/`+0x22`/`+0x176` (not modelled; l. 2376–2381), so score, health,
+M0022	Ferazel/Core/Sources/FerazelCore/Flow/LevelFlow.swift	67	defer	/// 76159, `_KillXichra` 77475; // later: Phase 6): data-section globals no level load,
+M0023	Ferazel/Core/Sources/FerazelCore/Front/BootSequence.swift	33	skip	/// p ≥ 58000; a skipped call leaves the stored width alone.
+M0024	Ferazel/Core/Sources/FerazelCore/Front/BuiltLevels.swift	3	defer,stub	/// ◇ The levels the replica can run (plan S2, F1b; D35 seat stub) — // later: Phases 5–6 widen it as each level's
+M0025	Ferazel/Core/Sources/FerazelCore/Front/BuiltLevels.swift	11	unbuilt	/// "Level n is not built yet (Phases 5-6)." — plain Mac Roman, no symbols (D35; D38 Ruling 2 from LV4).
+M0026	Ferazel/Core/Sources/FerazelCore/Front/BuiltLevels.swift	13	unbuilt	"Level \(n) is not built yet (Phases 5-6)."
+M0027	Ferazel/Core/Sources/FerazelCore/Front/ContinueGame.swift	14	refuse	/// refusals, each its own `ReportDialog` (+4 == 1 → the preview text 0x100a2ec9; +5 == 1 → the demo text 0x100a2f33;
+M0028	Ferazel/Core/Sources/FerazelCore/Front/ContinueGame.swift	96	refuse	/// M l. 6712–6744: the block taken in, the refusals, the default branch.
+M0029	Ferazel/Core/Sources/FerazelCore/Front/DialogResources.swift	4	defer	// R1 (docs/plans/2026-10-14-ferazel-phase3.md S2): Foundation-only parsers for the app fork's Dialog/Menu Manager
+M0030	Ferazel/Core/Sources/FerazelCore/Front/DialogResources.swift	36	throw	throw WorldDataError.missing(type: type, id: id)
+M0031	Ferazel/Core/Sources/FerazelCore/Front/DialogResources.swift	97	stub	/// A `DITL`: a count−1 word, then per item placeholder(4) rect(8) type(1) length(1) payload, padded to even.
+M0032	Ferazel/Core/Sources/FerazelCore/Front/FrontIO.swift	110	unbuilt	/// Every event due by `now` not yet emitted, merged in order; `present` when a draw was made.
+M0033	Ferazel/Core/Sources/FerazelCore/Front/GameFlow.swift	100	refuse	/// `.ContinueGame(reply)` running (the file dialog, the refusals, its loop, the death screen, the menu return).
+M0034	Ferazel/Core/Sources/FerazelCore/Front/GameFlow.swift	196	skip	/// `*_DAT_1009fd64`: skip the next `.StageCompleteEffect` (`LevelRun` clears it at a completion).
+M0035	Ferazel/Core/Sources/FerazelCore/Front/GameFlow.swift	237	defer	case later
+M0036	Ferazel/Core/Sources/FerazelCore/Front/GameFlow.swift	258	defer	/// `.Quit` has started (by any path): it never returns, so no later event is ever dispatched.
+M0037	Ferazel/Core/Sources/FerazelCore/Front/GameFlow.swift	412	unbuilt	/// A level's game loop runs (its iterations, not yet ended): the prefs keys.
+M0038	Ferazel/Core/Sources/FerazelCore/Front/GameFlow.swift	465	refuse	/// dead, and a Continue that comes back without a game (cancelled, refused, a level-load error) live again. Inside a
+M0039	Ferazel/Core/Sources/FerazelCore/Front/GameFlow.swift	574	defer	case .later:
+M0040	Ferazel/Core/Sources/FerazelCore/Front/GameFlow.swift	935	defer	f.wait = .later
+M0041	Ferazel/Core/Sources/FerazelCore/Front/LevelRun.swift	46	refuse	/// `ScreenRenderer` refuses the level ops, `Refusal.levelOp`); `setScreenClut(id)` goes to `.level` when `id` is the level's
+M0042	Ferazel/Core/Sources/FerazelCore/Front/LevelRun.swift	173	skip	/// `*_DAT_1009fd64`: skip the next `.StageCompleteEffect` (cleared at every completion, M l. 5313).
+M0043	Ferazel/Core/Sources/FerazelCore/Front/LevelRun.swift	321	skip	/// A menu item chosen while paused (A1b): taken at the pause loop's next poll; ignored when not paused.
+M0044	Ferazel/Core/Sources/FerazelCore/Front/LevelRun.swift	508	defer	// boss Setup, set by its Kill — engine §4) → `hdr+0x284a = 0x1e`. // later: Phase 5 — the boss Setups and
+M0045	Ferazel/Core/Sources/FerazelCore/Front/LevelRun.swift	518	skip	// 0, O1): no op. Then `.ChapterScreen(hdr+0x273c)` (L2; nil = no clut 280 + n → skipped).
+M0046	Ferazel/Core/Sources/FerazelCore/Front/LevelRun.swift	559	defer	// `_ShutDownAIFFMusic`, `_TurnOffOmniPx`, `_KillOmniPx` (no OmniPx in Phase 3), `_InputActivate(0, 0)`
+M0047	Ferazel/Core/Sources/FerazelCore/Front/LevelRun.swift	627	defer	/// The loop's part of a tick (Invariant 4): returns false when the run waits for a later tick.
+M0048	Ferazel/Core/Sources/FerazelCore/Front/LevelRun.swift	684	skip	// A skipped iteration leaves the screen as it was, but its `.HandleAsyncGammaFade` still moves the gamma.
+M0049	Ferazel/Core/Sources/FerazelCore/Front/LevelRun.swift	687	defer	// not in a suspended part: nothing armed outside the boss rule's in-loop block (M l. 5257–5266, // later:
+M0050	Ferazel/Core/Sources/FerazelCore/Front/LevelRun.swift	728	defer	// returns; the later contacts and `.CheckGameLoopKeys` read the input of this tick (live in the original).
+M0051	Ferazel/Core/Sources/FerazelCore/Front/LevelRun.swift	907	trap	preconditionFailure("beginModal routes the keys")
+M0052	Ferazel/Core/Sources/FerazelCore/Front/LevelRun.swift	1051	defer	/// 70116). // later: Phase 5–6 — the other sets, as their Setups are transcribed.
+M0053	Ferazel/Core/Sources/FerazelCore/Front/LevelRun.swift	1117	defer	/// // later: Phase 5–6 — the other types'.
+M0054	Ferazel/Core/Sources/FerazelCore/Front/LevelServices.swift	30	stub	/// draws (`attach`, right after the session init). Core tests pass a stub; the App (A1a) builds the per-level
+M0055	Ferazel/Core/Sources/FerazelCore/Front/MusicFade.swift	5	stub	/// set just before (a no-op on the movie, e.g. the blocking fade's first `SetMovieVolume` and its step 0).
+M0056	Ferazel/Core/Sources/FerazelCore/Front/NewGame.swift	22	defer	/// `fd48 = 0`; `.Victory` (// later: Phase 6); the menu return: `GammaFadeOut(6)`, `.DrawMainMenu`, then New Game
+M0057	Ferazel/Core/Sources/FerazelCore/Front/NewGame.swift	176	defer	// `*0088` set; `*_DAT_1009ffc4` (victory) 0 — `.Victory` is Phase 6's.
+M0058	Ferazel/Core/Sources/FerazelCore/Front/NewGame.swift	267	defer	wait = .later
+M0059	Ferazel/Core/Sources/FerazelCore/Front/NewGame.swift	276	unbuilt	// ◇ D35: the level is not built yet — the report, then the map again at the node the player chose, nothing
+M0060	Ferazel/Core/Sources/FerazelCore/Front/Pause.swift	54	scope	/// W (0x0d) → the abort confirm; P (0x23) → `.Options`; else the ⌘⇧⌥;0 debug chord (out of scope, Rulings 1). Else Esc
+M0061	Ferazel/Core/Sources/FerazelCore/Front/Pause.swift	85	scope	return nil                                  // the debug chord (M l. 3938–3947): out of scope
+M0062	Ferazel/Core/Sources/FerazelCore/Front/Pause.swift	88	scope	return nil                                      // the debug keys (debug flag only): out of scope
+M0063	Ferazel/Core/Sources/FerazelCore/Front/Pause.swift	92	skip	/// line skip)`; else `WrapCopyToScreen(…, 0)` — the mode folded as `SavePointSave.redraw` does.
+M0064	Ferazel/Core/Sources/FerazelCore/Front/Pause.swift	186	skip	/// with no menu event takes one — the quit (`.DoQuitAppAE` → `.Quit`) or an open (ignored: `DAT_100a5106` is clear
+M0065	Ferazel/Core/Sources/FerazelCore/Front/Pause.swift	194	skip	/// the dialog is up it cannot be cleared from outside (a nil written then is ignored — the close needs the model).
+M0066	Ferazel/Core/Sources/FerazelCore/Front/Pause.swift	273	skip	/// are disabled while paused (`.UpdateMenus`): ignored.
+M0067	Ferazel/Core/Sources/FerazelCore/Front/PrefsDialogModel.swift	29	refuse	case refused(String)
+M0068	Ferazel/Core/Sources/FerazelCore/Front/PrefsDialogModel.swift	89	skip	/// never come back from ModalDialog and are ignored. Returns the music cues the hit made at once.
+M0069	Ferazel/Core/Sources/FerazelCore/Front/PrefsDialogModel.swift	114	stub	/// (`STSetVolume(local_6c)`, a no-op here). `694c = −1` (the next opening rebuilds panel 1).
+M0070	Ferazel/Core/Sources/FerazelCore/Front/PrefsDialogModel.swift	121	stub	/// `.UpdatePrefsPanel(n)`. A no-op when `n` is already up.
+M0071	Ferazel/Core/Sources/FerazelCore/Front/PrefsDialogModel.swift	207	unbuilt	/// (item 12 is the disabled "Graphics:" text) and is not built.
+M0072	Ferazel/Core/Sources/FerazelCore/Front/PrefsDialogModel.swift	250	stub	// `SetMusicAIFFVolume(V)` only — a no-op after the shutdown (`1992` clear, M l. 41959–41971): the dialog never
+M0073	Ferazel/Core/Sources/FerazelCore/Front/PrefsDialogModel.swift	315	refuse	return .refused(Self.keyInUseMessage)
+M0074	Ferazel/Core/Sources/FerazelCore/Front/PrefsDialogModel.swift	323	skip	/// (`lastModifier`), unless already in use — then ignored silently. No modifier bits (0xff00) → `lastModifier = 0`.
+M0075	Ferazel/Core/Sources/FerazelCore/Front/SaveGame.swift	7	skip	/// `*_DAT_1009fd54`: the saved-game file is known — with prefs+1 ("Reuse saved game files") the next save skips
+M0076	Ferazel/Core/Sources/FerazelCore/Front/SaveGame.swift	25	unbuilt	///   not built here — `.IncrementLastSGString` on prefs+0x42 (so the shown default is already incremented), then
+M0077	Ferazel/Core/Sources/FerazelCore/Front/SaveGame.swift	74	trap	guard let files else { preconditionFailure("a save point needs the file seam (LevelRun(files:))") }
+M0078	Ferazel/Core/Sources/FerazelCore/Front/SaveGame.swift	91	trap	guard let files else { preconditionFailure("a save point needs the file seam (LevelRun(files:))") }
+M0079	Ferazel/Core/Sources/FerazelCore/Front/StageScreens.swift	208	skip	/// `GetCTable(280 + n)` finds nothing — the original then skips everything. Otherwise, on the first `tick`:
+M0080	Ferazel/Core/Sources/FerazelCore/Front/StageScreens.swift	273	skip	/// gate on and change it). Ticks the caller skipped are polled with this input.
+M0081	Ferazel/Core/Sources/FerazelCore/Front/StageScreens.swift	332	trap	precondition(events.last.map { $0.at <= t } ?? true)
+M0082	Ferazel/Core/Sources/FerazelCore/Front/WorldMapRun.swift	62	skip	/// `+8`: the face drawn (nil = none; `.DrawNodeSprites` skips it).
+M0083	Ferazel/Core/Sources/FerazelCore/Front/WorldMapRun.swift	342	skip	/// A menu item chosen while paused (A1b): taken at the pause loop's next poll; ignored when not paused.
+M0084	Ferazel/Core/Sources/FerazelCore/Front/WorldMapRun.swift	521	defer	/// The loop's part of a tick: false when it waits for a later tick.
+M0085	Ferazel/Core/Sources/FerazelCore/Input/FerazelPadLayout.swift	8	defer	/// same keys. Foundation + HectorInput only: the Mac shell and Phase 7's Windows shell compile this same file.
+M0086	Ferazel/Core/Sources/FerazelCore/Input/FerazelPrefs.swift	9	defer	/// `Gestalt('cput')` of a modern Mac: every PowerPC G3 or later answers ≥ 0x108, so Effects defaults to 1
+M0087	Ferazel/Core/Sources/FerazelCore/Input/FerazelPrefs.swift	19	skip	/// +0x02 Graphics: 1 High Detail, 2 Low Detail, 3 Line-skipped.
+M0088	Ferazel/Core/Sources/FerazelCore/Input/FerazelPrefs.swift	23	skip	/// +0x06 Effects: 1 Enhanced, 2 Normal, 3 Reduced (3 skips `.DrawLightsOntoTiles`).
+M0089	Ferazel/Core/Sources/FerazelCore/Input/FerazelPrefs.swift	29	unbuilt	/// +0x0a "Use InputSprocket" (not built; design §3.3).
+M0090	Ferazel/Core/Sources/FerazelCore/Input/FerazelPrefs.swift	53	scope	/// +0x3a machine hash for the CD check (out of scope).
+M0091	Ferazel/Core/Sources/FerazelCore/Input/FerazelPrefs.swift	70	trap	precondition(newValue.count == FerazelPrefs.recentNameCount, "eight recent names")
+M0092	Ferazel/Core/Sources/FerazelCore/Input/FerazelPrefs.swift	84	defer	/// junk in the original [MED]; Phase 3 Invariant 7).
+M0093	Ferazel/Core/Sources/FerazelCore/Input/FerazelPrefs.swift	170	trap	precondition(keys.count == FerazelPrefs.actionCount, "nine key codes")
+M0094	Ferazel/Core/Sources/FerazelCore/Input/InputActions.swift	4	unbuilt	/// pressed. InputSprocket (prefs+0xa) is not built (design §3.3), so an action is its prefs key code in the `GetKeys`
+M0095	Ferazel/Core/Sources/FerazelCore/Input/InputActions.swift	29	trap	precondition((0..<FerazelPrefs.actionCount).contains(i), "action \(i)")
+M0096	Ferazel/Core/Sources/FerazelCore/Items/Inventory.swift	8	defer	/// never-written gap `+0x18..+0x1f` (Phase 3 Invariant 7) → 0; the selection never leaves −1…26 (`stepSelection`,
+M0097	Ferazel/Core/Sources/FerazelCore/Items/Inventory.swift	51	unbuilt	/// the binary — not modelled: nothing, false.
+M0098	Ferazel/Core/Sources/FerazelCore/Items/Smite.swift	23	unbuilt,defer	/// The enemy Handles are not built (Phase 5): the Phase-1 enemies are `.inert` and match by their class (plan
+M0099	Ferazel/Core/Sources/FerazelCore/Items/StatusBarCalls.swift	65	defer	/// `.MoveSelectedItemToFront` — M l. 39704 (1, 1, 0) (its callers are later tasks').
+M0100	Ferazel/Core/Sources/FerazelCore/Items/StatusBarCalls.swift	123	skip	/// breath equal the caches, `param` ≠ 0 and both flashes < 1 (M l. 4417–4422); the health part is skipped when
+M0101	Ferazel/Core/Sources/FerazelCore/Lights/LightTable.swift	120	defer,skip	/// 0…199 is ignored. (The binary dereferences the face unchecked — a nil face is a later phase's call site.)
+M0102	Ferazel/Core/Sources/FerazelCore/Lights/LightTable.swift	129	skip	/// is ignored.
+M0103	Ferazel/Core/Sources/FerazelCore/Lights/LightTable.swift	137	skip	/// `+0xc = y`; a slot outside 0…199 is ignored.
+M0104	Ferazel/Core/Sources/FerazelCore/Lights/LightTable.swift	148	skip	/// 0…199 is ignored.
+M0105	Ferazel/Core/Sources/FerazelCore/Lights/LightTable.swift	155	skip	/// `.ChangeLightColor(slot, colour) @ 1001becc` (M l. 14421–14435): `+0x18`; a slot outside 0…199 is ignored.
+M0106	Ferazel/Core/Sources/FerazelCore/Particles/FaceParticles.swift	5	skip	/// 2 = n literal pixels padded to 4, 3 = skip n). Core has no face pixels: FerazelRender hands them over
+M0107	Ferazel/Core/Sources/FerazelCore/Particles/FaceParticles.swift	43	skip	/// yStep − 1), else the counter −1 and the row is skipped; h back to pos.h; v + 1 (so the first row sits at pos.v + 1).
+M0108	Ferazel/Core/Sources/FerazelCore/Particles/FaceParticles.swift	138	skip	/// h ± 1 per pixel (− when flipped). A skip: h ± n.
+M0109	Ferazel/Core/Sources/FerazelCore/Particles/ParticleLife.swift	23	unbuilt	/// - Not built (**0**, all-zero rows — such a particle dies at its first draw): 0, 14…198, 204, 206…209, 212, 214,
+M0110	Ferazel/Core/Sources/FerazelCore/Particles/ParticlePool.swift	166	skip	/// list, in index order; FerazelRender draws it). Ages ≤ 0 are skipped (never drawn, never colour-killed).
+M0111	Ferazel/Core/Sources/FerazelCore/Particles/ScreenFlash.swift	11	defer	/// 73488, 74997, 75372, 75525, 76159, 77475; // later: Phase 6). No routine resets either
+M0112	Ferazel/Core/Sources/FerazelCore/Particles/WaterEffects.swift	5	skip	/// not (l. 9206, after `.HandleLights`, before `.WrapDrawSprites`; outside the `param_1` block, so a skipped iteration
+M0113	Ferazel/Core/Sources/FerazelCore/Physics/Integrate.swift	8	defer	/// pre-separation pixels of the last step; `.HandlePlayerSprite` rewrites them later in the frame, save-continue).
+M0114	Ferazel/Core/Sources/FerazelCore/Physics/RectBounce.swift	156	defer	///   not here; the rope bridge 1466's surface function (unplaced) // later: Phase 6.
+M0115	Ferazel/Core/Sources/FerazelCore/Physics/SeparateFromTiles.swift	15	trap	precondition(fgKinds.count == 0x60 && bgKinds.count == 0x60, "TileGrid kind tables are 96 entries")
+M0116	Ferazel/Core/Sources/FerazelCore/Physics/SeparateFromTiles.swift	104	unbuilt	/// 5. The second 9-cell loop under `+0xe4` computes rects and discards them (dead, physics §3.1) — not built.
+M0117	Ferazel/Core/Sources/FerazelCore/Physics/StandardSprite.swift	18	defer	///   `.LookupModedImpulse`). // later: wind — no overlay wind cell on levels 1–2 (first on level 10, 103 cells;
+M0118	Ferazel/Core/Sources/FerazelCore/Physics/StandardSprite.swift	61	defer	// later: wind (`.GetFGOverlay1Tile`/`2Tile` at the centre cell, `.LookupModedImpulse`, the `+0x96` ramp
+M0119	Ferazel/Core/Sources/FerazelCore/Physics/StandardSprite.swift	94	defer	/// - `+0x1a2 ≠ 0` → `.HandleBurn` // later: burn-away (no Phase-2 writer of `+0x1a2`).
+M0120	Ferazel/Core/Sources/FerazelCore/Physics/StandardSprite.swift	124	defer	// later: `.HandleBurn` (burn-away; no Phase-2 writer of `+0x1a2`).
+M0121	Ferazel/Core/Sources/FerazelCore/Physics/UnderWater.swift	12	defer	/// BG pass, layer 0, with `+0x140 == 0`; 21 callers — Phase 2 has the player's `.HitPlayerTileSprite` (the end pass
+M0122	Ferazel/Core/Sources/FerazelCore/Player/Breathing.swift	21	defer	///   E < 0xa0 the calm cycle **holds at chest frame 1** (phase 5) once it gets there (l. 43367; Bank correction
+M0123	Ferazel/Core/Sources/FerazelCore/Player/GroundCeilingEffects.swift	67	unbuilt	/// Not built (no spawner on the built levels; the bank found none for most): 1202…1205, 1251, 1830, −1 and the
+M0124	Ferazel/Core/Sources/FerazelCore/Player/GroundCeilingEffects.swift	96	skip	/// use this part alone make types in the package's skip list (1201, 1210, 1040, 1220) or add their own arm (1090,
+M0125	Ferazel/Core/Sources/FerazelCore/Player/GroundCeilingEffects.swift	115	skip	/// The ids the explosion package skips (M l. 53745–53751): 1201…1206, 1220, 1040, 1430, 1251, 1210, 3099, 1440,
+M0126	Ferazel/Core/Sources/FerazelCore/Player/GroundCeilingEffects.swift	136	defer	/// The 0x5a0 geyser segment's arm (l. 53805–53811) // later: the geyser task; 0x4c4's is `FerazelSession`'s.
+M0127	Ferazel/Core/Sources/FerazelCore/Player/GroundCeilingEffects.swift	324	stub	// face 0, `.RemoveLight(+0x9a)` (the bubble has none: −1, a no-op), killed; then straight to the tail (`b
+M0128	Ferazel/Core/Sources/FerazelCore/Player/GroundCeilingEffects.swift	366	defer	// while `iRam100a5110` < −0x1d — always so far), 1251, 1830, −1: // later: their spawners' tasks.
+M0129	Ferazel/Core/Sources/FerazelCore/Player/HandleKeys.swift	37	unbuilt	// `GetKeys`, then the debug keys while `*_DAT_100a0064` (engine §7.3) — not built: debug mode is off.
+M0130	Ferazel/Core/Sources/FerazelCore/Player/HandleKeys.swift	248	skip	///   `*_DAT_100a0088 = 1`, `*_DAT_1009fd64 = 1` (`SpriteWorld.stageCompleteSkip`: `LevelRun` skips the panel);
+M0131	Ferazel/Core/Sources/FerazelCore/Player/HandleKeys.swift	339	defer	// record through `w.active` (none in Phase 2 — `.AccelerateBasedOnSlope` and `.FootPressure` take the copy)
+M0132	Ferazel/Core/Sources/FerazelCore/Player/HandleKeys.swift	453	defer	/// exertion +8, snd 497 vol 0x9c unless in spirit form, face 1027[0], cap 2000; a later counter repeats it
+M0133	Ferazel/Core/Sources/FerazelCore/Player/HandleKeys.swift	504	skip	/// (cap ∓4000; UP skips DOWN); then the carpet and the player close a centre gap > 1 px by 1 px each while the
+M0134	Ferazel/Core/Sources/FerazelCore/Player/HandleKeys.swift	629	defer	/// Speed), DOWN → +1000 (+0x578), each with idle/fidgets 0 and wand phase 0 — or vy 0 when a cast began this
+M0135	Ferazel/Core/Sources/FerazelCore/Player/HitPlayerSprite.swift	10	defer	/// and the spikes (LV3). // later: Phase 5 — the enemy and enemy-shot arms; Phase 6 — the types first placed on
+M0136	Ferazel/Core/Sources/FerazelCore/Player/HitPlayerSprite.swift	22	defer	/// Bonus arm (PK, M l. 48571–49123, `bonus`); any other Bonus matches no later arm. Then the Platform arm (l.
+M0137	Ferazel/Core/Sources/FerazelCore/Player/HitPlayerSprite.swift	69	defer	default: return                                                 // later: the other arms
+M0138	Ferazel/Core/Sources/FerazelCore/Player/HitPlayerSprite.swift	114	defer	/// - // later: 0xbf4 and the other Background arms (Phase 6; none placed on levels 1–4). Cannons, springs and
+M0139	Ferazel/Core/Sources/FerazelCore/Player/HitPlayerSprite.swift	147	defer	guard BackgroundSprite.maces.contains(o.type) else { return }    // later: 0xbf4 … (Phase 6)
+M0140	Ferazel/Core/Sources/FerazelCore/Player/HitPlayerSprite.swift	165	defer	/// 4. the special arms of l. 49170–49303: // later: Phase 6 — falling rocks 0x433/0x434 (`+0x160`, `.HurtPlayer` +
+M0141	Ferazel/Core/Sources/FerazelCore/Player/HitPlayerSprite.swift	219	defer	guard o.type == BoxSprite.trampoline else {                     // later: Phase 5 (7, the geyser head)
+M0142	Ferazel/Core/Sources/FerazelCore/Player/HitPlayerSprite.swift	413	defer	/// a later match moves again, last wins): the player to the entry's (x, y) + d — `+0xc = fe68`, `+0xa = fe64`, the
+M0143	Ferazel/Core/Sources/FerazelCore/Player/HitPlayerSprite.swift	912	skip	/// at the binary's call sites — a world without a session (nil) skips them.
+M0144	Ferazel/Core/Sources/FerazelCore/Player/HitPlayerSprite.swift	936	skip	///    skips `.HandleKeys` and zeroes v while `06f0` ≠ 0);
+M0145	Ferazel/Core/Sources/FerazelCore/Player/HitPlayerSprite.swift	957	defer	// later: Phase 6 — p2 ≠ 0 (every passage on levels 1–4 has p2 0): −1 → `G+0x20 = 0`,
+M0146	Ferazel/Core/Sources/FerazelCore/Player/HitPlayerSprite.swift	994	defer	///    Box.] Core has no EnemyShot Handle yet: // later: Phase 5 (enemy shots are `inert` until then).
+M0147	Ferazel/Core/Sources/FerazelCore/Player/HitPlayerSprite.swift	1032	defer	if a.hp < 1 && a.handler != .box { return false }               // later: Phase 5 — or the EnemyShot Handle
+M0148	Ferazel/Core/Sources/FerazelCore/Player/HitPlayerSprite.swift	1086	trap	_ = try! BonusSprite.setup(&s, x: x, y: y, level: w.level, records: w.records, effects: 0,
+M0149	Ferazel/Core/Sources/FerazelCore/Player/HitPlayerSprite.swift	1124	trap	_ = try! BonusSprite.setup(&s, x: x, y: y, level: w.level, records: w.records, effects: 0,
+M0150	Ferazel/Core/Sources/FerazelCore/Player/HitPlayerSprite.swift	1159	defer	/// Charm immunities) // later: Phase 5 (geysers).
+M0151	Ferazel/Core/Sources/FerazelCore/Player/Pentashield.swift	7	defer	/// enemy shots — `.KillEnemyShot` on contact (M l. 50997–51001) — // later: Phase 5 (no sprite has the enemy shot's
+M0152	Ferazel/Core/Sources/FerazelCore/Player/Player.swift	4	defer	/// (`handle`, decompile l. 44396–46650) as 42 rows in the binary's order. Rows that belong to later tasks are named
+M0153	Ferazel/Core/Sources/FerazelCore/Player/Player.swift	162	defer	// re-panned by the player's distance). // later: auto-scroll levels (not L1/L2)
+M0154	Ferazel/Core/Sources/FerazelCore/Player/Player.swift	360	defer	// 41 (l. 46438–46488): the death trigger (HP < 1), the liquid screen tint (// later: no Phase-2 seam), the
+M0155	Ferazel/Core/Sources/FerazelCore/Player/Player.swift	776	defer	///   // later: Phase 6 (bosses) — `fed0`/`fed4`/`ff9c` have no writer or reader yet (no boss Setup clears
+M0156	Ferazel/Core/Sources/FerazelCore/Player/Player.swift	805	defer	// The arena lock and the auto-scroll death: see above. // later: Phase 6 (arena), auto-scroll levels
+M0157	Ferazel/Core/Sources/FerazelCore/Player/Player.swift	835	defer	/// `+0x88 = 0` (M l. 46633–46641; MS); 0564 → 0x10007 // later: auto-scroll levels); `04cc` −1;
+M0158	Ferazel/Core/Sources/FerazelCore/Player/PlayerLiquids.swift	116	skip	/// cooldown −1. Neither the 0x410 Setup (it skips the particle package and the light, l. 53745–53752) nor the
+M0159	Ferazel/Core/Sources/FerazelCore/Player/PlayerLiquids.swift	139	defer	///   §10) // later: no Phase-2 seam carries a screen tint (`.TintScreen @ 10034e88`);
+M0160	Ferazel/Core/Sources/FerazelCore/Player/PlayerState.swift	62	defer	/// Only the globals the P1a rows read or write are kept; later tasks add theirs under their addresses
+M0161	Ferazel/Core/Sources/FerazelCore/Player/PlayerState.swift	196	defer	/// counter (// later: Phase 5, no writer yet); `_DAT_100a0578` / `_DAT_100a0574`: spirit-form timer / transition
+M0162	Ferazel/Core/Sources/FerazelCore/Player/PlayerState.swift	217	skip	/// `PTR_DAT_100a04d8`: the post-jump guard (2 frames; P2 skips FG resolution while it is set).
+M0163	Ferazel/Core/Sources/FerazelCore/Player/PlayerState.swift	361	throw	/// `_DAT_100a0698`: the melee / throw counter — `.HandleKeys`' item switch sets 1 (M l. 47557, 47580),
+M0164	Ferazel/Core/Sources/FerazelCore/Player/PlayerState.swift	387	defer	/// — except a reader later in the same frame, which in the binary sees the new value and here the old one: the
+M0165	Ferazel/Core/Sources/FerazelCore/Player/PlayerState.swift	418	defer	// MARK: ClearPlayerVars' non-zero globals with no P1a reader (kept for the later rows)
+M0166	Ferazel/Core/Sources/FerazelCore/Player/PlayerState.swift	449	defer	/// `PTR_DAT_100a05c8`: the glider's ground-contact frames (row 33, M l. 45224–45238: > 12 at phase 0 → the stow);
+M0167	Ferazel/Core/Sources/FerazelCore/Player/PlayerStates.swift	7	stub	/// the spirit transition and the dying arm's necklace revive MS's; the boss-grab arm is a named stub (no writer until
+M0168	Ferazel/Core/Sources/FerazelCore/Player/PlayerStates.swift	58	defer	/// phase 0 → phase −23 (the stow then runs this same frame). Alive (`_DAT_100a069c` 0): vy ≤ 2000. Then by phase:
+M0169	Ferazel/Core/Sources/FerazelCore/Player/PlayerStates.swift	240	defer	/// on later frames by anything here: the flag ends `.GameLoop` after this iteration.
+M0170	Ferazel/Core/Sources/FerazelCore/Player/PlayerStates.swift	291	trap	_ = try! BonusSprite.setup(&b, x: x, y: y, level: w.level, records: w.records, effects: 0, lightCount: 0,
+M0171	Ferazel/Core/Sources/FerazelCore/Player/PlayerStates.swift	312	trap	_ = try! BonusSprite.setup(&b, x: x, y: y, level: w.level, records: w.records, effects: 0, lightCount: 0,
+M0172	Ferazel/Core/Sources/FerazelCore/Player/PlayerStates.swift	371	defer	// Boss grab (`_DAT_100a0570 > 0`, l. 45625–45672). // later: Phase 5 (Chief, Xichra; no Phase-2 writer)
+M0173	Ferazel/Core/Sources/FerazelCore/Player/PlayerStates.swift	466	throw	// Melee / throw (`_DAT_100a0698 ≠ 0`, M l. 45817–45820): `.HandleItemUse` (IU), then `goto LAB_10050e6c`.
+M0174	Ferazel/Core/Sources/FerazelCore/Player/PlayerStates.swift	483	defer	/// else phase 1, vy 0, 1031[min(wand, 5)] (6 → 5). Pull-up: face 1023[9] at n = 20, else 1023[(n − 1) >> 1],
+M0175	Ferazel/Core/Sources/FerazelCore/Player/PlayerStates.swift	556	defer	// shield; // later: Phase 5, with `.ShieldBlock`), so
+M0176	Ferazel/Core/Sources/FerazelCore/Player/PlayerTiles.swift	164	defer	// 0x100 (the signed-compare idiom `eqv`/`subfc`/`addze`). // later: Phase 6 — the carpet
+M0177	Ferazel/Core/Sources/FerazelCore/Player/PowerUps.swift	69	skip	/// `+0x88` 0, and `+0xb8` 0xb0002 / 0xb0000 / 0xb0001 / 0 / 0 for i 0…4. A trail slot whose sprite is 0 is skipped.
+M0178	Ferazel/Core/Sources/FerazelCore/Player/ShadowDouble.swift	25	defer	/// Row 11 (M l. 44674–44685), after `.StandardSpriteHandles`, on last frame's flag (row 14 re-derives it later in
+M0179	Ferazel/Core/Sources/FerazelCore/Player/ShadowDouble.swift	59	unbuilt	/// `.ShadowBob` (M l. 43012–43050; raw `1004b410..1004b4d0`): not yet synced (`0608` 0) → the re-sync search — as
+M0180	Ferazel/Core/Sources/FerazelCore/Player/ShadowDouble.swift	81	defer	/// The halfword the re-sync reads at `0x100a5fda + 2·phase` (phase 0…46): the table for 0…23; past it the PEF
+M0181	Ferazel/Core/Sources/FerazelCore/Player/ShadowDouble.swift	100	defer	/// - E's x == −1 → face 0; else, with the wand phase w `_DAT_100a06d4` and the wand-held count h `_DAT_100a06d0`:
+M0182	Ferazel/Core/Sources/FerazelCore/Saves/SaveBlock.swift	5	defer	/// routine accesses are gaps — not stored, written 0 (Phase 3 Invariant 7): `+0x07`, `+0x0a..+0x0b`, `+0x14..+0x17`,
+M0183	Ferazel/Core/Sources/FerazelCore/Saves/SaveBlock.swift	21	refuse	/// `+0x04` u8 "preview version" flag (resume refuses 1).
+M0184	Ferazel/Core/Sources/FerazelCore/Saves/SaveBlock.swift	23	refuse	/// `+0x05` u8 "demo version" flag (resume refuses 1).
+M0185	Ferazel/Core/Sources/FerazelCore/Saves/SaveBlock.swift	79	trap	precondition(snapshots.count == SaveBlock.snapshotLevels
+M0186	Ferazel/Core/Sources/FerazelCore/Saves/SaveBlock.swift	81	trap	precondition(worldName.count <= 255, "world name over 255 bytes")
+M0187	Ferazel/Core/Sources/FerazelCore/Saves/SaveBlock.swift	129	trap	precondition((0..<SaveBlock.snapshotLevels).contains(Int(level)), "level outside the 100 snapshot slots")
+M0188	Ferazel/Core/Sources/FerazelCore/Saves/SaveBlock.swift	136	trap	precondition((0..<SaveBlock.snapshotLevels).contains(Int(L)), "level outside the 100 snapshot slots")
+M0189	Ferazel/Core/Sources/FerazelCore/Saves/SaveBlock.swift	137	trap	precondition(records.count == LevelFile.placementCount, "the 511 live records")
+M0190	Ferazel/Core/Sources/FerazelCore/Saves/SavedGameFile.swift	26	skip	/// a real Mac resumes (Known deviation 9: elsewhere the data fork is the only fork and type/creator are skipped).
+M0191	Ferazel/Core/Sources/FerazelCore/Saves/SavedGameFile.swift	60	throw	throw .notASavedGame
+M0192	Ferazel/Core/Sources/FerazelCore/Saves/SavedGameFile.swift	63	throw	guard let block = try? SaveBlock(image: body) else { throw .notASavedGame }
+M0193	Ferazel/Core/Sources/FerazelCore/Seams/DrawOp.swift	20	skip	/// `.DrawLightsOntoTiles`; the caller skips it when prefs+6 (Effects) == 3.
+M0194	Ferazel/Core/Sources/FerazelCore/Seams/DrawOp.swift	31	defer	/// height)` and radius width / 2. Phase 1: the item twinkle (`BonusHandle`).
+M0195	Ferazel/Core/Sources/FerazelCore/Seams/DrawOp.swift	60	skip	/// into the screen's pixels (the cursor hidden and shown around it). Graphics mode 3's copy skips those rows, so the
+M0196	Ferazel/Core/Sources/FerazelCore/Seams/DrawOp.swift	64	defer	/// LT (Phase 4): Core's light table (`_DAT_100a0128`, `LightTable`) as `.DrawLightsOntoTiles` reads it — the table
+M0197	Ferazel/Core/Sources/FerazelCore/Seams/DrawOp.swift	80	defer	// MARK: Front end (Phase 3, FE0 — every case added up front; FerazelRender.ScreenRenderer executes them)
+M0198	Ferazel/Core/Sources/FerazelCore/Seams/DrawOp.swift	87	skip	/// CLUT); `transparent` = transfer mode 0x24 (white source pixels skipped, raw `10079870`).
+M0199	Ferazel/Core/Sources/FerazelCore/Seams/FrameOps.swift	4	defer	/// LOCKED once Phase 1 lands — cases and fields may be added, never renamed). Core records the original's draw calls
+M0200	Ferazel/Core/Sources/FerazelCore/Seams/FrameOps.swift	12	skip	/// False on a skipped draw (prefs[0] "Reduce frame rate": the odd iteration of the pair, engine §4).
+M0201	Ferazel/Core/Sources/FerazelCore/Seams/FrameOps.swift	23	defer	/// S1 (Phase 3): set when the iteration stopped part-way at a modal moment (`FrameSuspension`) — these ops are the
+M0202	Ferazel/Core/Sources/FerazelCore/Seams/FrameOps.swift	33	skip	/// The empty iteration: nothing drawn, played or requested, and not a skipped draw.
+M0203	Ferazel/Core/Sources/FerazelCore/Seams/FrameSuspension.swift	60	defer	/// reads it live (`.IsInputKeyPressed` → `_IsPressed` → `GetKeys`, M l. 42336ff / 32391ff; the later contacts'
+M0204	Ferazel/Core/Sources/FerazelCore/Seams/FrameSuspension.swift	70	defer	/// (the DOWN / climb blocks, the JUMP arm), the player's rows, the later Handles and the frame read it (live in
+M0205	Ferazel/Core/Sources/FerazelCore/Seams/FrameSuspension.swift	74	defer	/// later contacts and `.CheckGameLoopKeys` read it — live in the original).
+M0206	Ferazel/Core/Sources/FerazelCore/Seams/ScreenGammaOp.swift	15	defer	/// `MT_FadeToColor`]. Added in the Phase 3 run-2 review fixes: neither `.tint` (per-channel `.TintFadeProc` factors
+M0207	Ferazel/Core/Sources/FerazelCore/Seams/ShellRequest.swift	11	skip	/// `LevelRun` (A1a), whose level end goes to `GameFlow`; the app ignores this request.
+M0208	Ferazel/Core/Sources/FerazelCore/Seams/ShellRequest.swift	14	skip	/// leave it to `LevelRun` (its `.DeathEffect` steps through `LevelServices.deathEffectStep`); the app ignores it.
+M0209	Ferazel/Core/Sources/FerazelCore/Seams/ShellRequest.swift	17	defer	// MARK: Phase 3 (FE0 adds every case; F1b, S1, P1, A1b use them)
+M0210	Ferazel/Core/Sources/FerazelCore/Seams/SpriteDraw.swift	36	refuse	/// every other mode (a mode-5 draw without it is refused, never drawn from another stream).
+M0211	Ferazel/Core/Sources/FerazelCore/Seams/StatusBarState.swift	72	skip	/// `.UpdateStatusBar`'s param_1 ≠ 0: no whole-port copy, and `.UpdateHealthMagic` / `.UpdateTextStats` skip what
+M0212	Ferazel/Core/Sources/FerazelCore/Seams/StatusBarState.swift	78	skip	/// the cached (skip-if-unchanged) path whatever param_1 is (the plan's name; the dump's effect is that one) — Core
+M0213	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift	15	defer	///   `.MainMenu @ 1000e618` (l. 7349); on a resume by `.ContinueGame` (l. 6877). Phase 1 has no front end, so the
+M0214	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift	63	defer	/// the Setup lights added through it in `.SetupLevelSprites` order, every later light call made on it at its call
+M0215	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift	143	defer	///   `unlocked[L] = 1` before the player spawn). False (every caller before L1) = Phase 2's behaviour exactly.
+M0216	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift	216	stub	// Handle-faced type, the placeholder for a class-cache face (`SetupFaces` header).
+M0217	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift	220	stub	return bounds(FaceRef(pict: SetupFaces.placeholderPict, index: 0, set: .encoded))
+M0218	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift	236	throw	guard let pid = Player.spawn(world: world, x: px, y: py) else { throw SessionError.noPlayerRecord }
+M0219	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift	334	skip	/// (`EffectSprite.setup`; 0x4c4 is in the list that skips the `FastRand(8)` package, l. 53748), then its own arm
+M0220	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift	349	defer	// `.inert`: the digit Handle `.anon_10060c78` (SSH + SSC of a faceless sprite) // later: `.UpdateDigits`
+M0221	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift	363	defer	/// hosted session's `.CheckGameLoopKeys` (a session not hosted by `LevelRun` runs no `.CheckGameLoopKeys`: Phase 2's
+M0222	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift	367	trap	precondition(world.suspension == nil, "FerazelSession.step while the frame is suspended — resume(_:) first")
+M0223	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift	427	skip	// `.HandleLights`, M l. 9200–9205), handed over right before the strip; also when Effects == 3 skips the latter.
+M0224	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift	447	defer	// later: `.UpdateOmniPx` (l. 9434). Then the parity flip (raw `10012710..1001272c`).
+M0225	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift	512	defer	break                                       // later: Phase 5 — the enemies' Handles
+M0226	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift	589	defer	/// sounds). Returns those ops — suspended again when a later contact is modal too.
+M0227	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift	598	trap	guard let pending = world.suspension else { preconditionFailure("FerazelSession.resume without a suspension") }
+M0228	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift	611	defer	// `.PlatformBounce` (`talkDone`; the NPC arm has returned already). The rest of the frame — the later
+M0229	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift	654	trap	preconditionFailure("FerazelSession.resume: the outcome does not answer \(pending)")
+M0230	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift	670	unbuilt	/// (`*_DAT_1009fddc`, the other counter, has no reader: not modelled.)
+M0231	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift	778	trap	preconditionFailure("FerazelSession.resume: \(answer.reply) does not answer \(event)")
+M0232	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift	956	unbuilt	c.shake = world.shakeStore ?? camera.shake                     // CS: a store the camera has not yet taken
+M0233	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift	963	refuse	/// saved, zeroed and restored around them — auto-scroll is refused by `Camera.init`, so it is 0 throughout); the
+M0234	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift	1032	defer	/// `.HitButtonSprite` (BT). // later: Phase 5 (enemies, enemy shots). The session's form:
+M0235	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift	1114	skip	/// the bounding pre-test (it is skipped only when |x + w/2 − lx| ≥ lx + r + w/2 **and** |y + h/2 − ly| ≥ ly + r + h/2
+M0236	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift	1200	unbuilt	/// `DAT_100a53c2` (gamma available) is taken as set. The level-start fades of `.GameLoop` are not built (session
+M0237	Ferazel/Core/Sources/FerazelCore/Session/FerazelSession.swift	1205	defer	/// directly built session (Phase 2); `LevelRun` hands `ScreenFade`'s value over (L1).
+M0238	Ferazel/Core/Sources/FerazelCore/Session/GameGlobals.swift	19	defer	/// 0 (Phase 3 Invariant 7): `+0x18..+0x1f`, `+0x21`, byte `+9` of each inventory slot (see `InventorySlot`), `+0x132..+0x171`, `+0x175`.
+M0239	Ferazel/Core/Sources/FerazelCore/Session/GameGlobals.swift	93	defer	/// Phase 3 level re-entry reads it). A view of the first `crunchCount` slots of the three arrays: setting it writes
+M0240	Ferazel/Core/Sources/FerazelCore/Session/GameGlobals.swift	102	trap	precondition(newValue.count <= GameGlobals.crunchCapacity, "crunch log over 20000")
+M0241	Ferazel/Core/Sources/FerazelCore/Session/GameGlobals.swift	235	trap	precondition(inventory.count == GameGlobals.inventorySlots && hasSnapshot.count == GameGlobals.levelSlots
+M0242	Ferazel/Core/Sources/FerazelCore/Session/SpriteWorld.swift	33	defer	/// solver, P2's `.CrunchTile` (which writes it and emits `DrawOp.setTile`), and every later reader (F3 review: one
+M0243	Ferazel/Core/Sources/FerazelCore/Session/SpriteWorld.swift	58	skip	/// `*_DAT_1009ffa8`: the player is dying / dead — `.HandleSprites` then skips the player pass.
+M0244	Ferazel/Core/Sources/FerazelCore/Session/SpriteWorld.swift	71	skip	/// `.FindUpperLeftCorner` passes, `.HandleIdleSprites` and the draws. nil (a world without a session) skips them.
+M0245	Ferazel/Core/Sources/FerazelCore/Session/SpriteWorld.swift	101	defer	/// opens on 1 (M l. 61022). // later: Phase 6 — the boss Setups that clear it and the Kills that set it again.
+M0246	Ferazel/Core/Sources/FerazelCore/Session/SpriteWorld.swift	122	skip	/// IU: `*_DAT_1009fd64 = 1` — the Escape Ring's store (M l. 47603): skip the next `.StageCompleteEffect`. The global
+M0247	Ferazel/Core/Sources/FerazelCore/Session/SpriteWorld.swift	168	unbuilt	/// include records unlinked by `.MTRemoveSprite` and not yet killed, and idled records until `.UpdateSprites`
+M0248	Ferazel/Core/Sources/FerazelCore/Session/SpriteWorld.swift	195	stub	/// `.MTChangeSpriteLayer @ 10033288` (raw `100332a0..100332bc`): `lwz 0x80; cmpw; beq` — **no-op when the layer
+M0249	Ferazel/Core/Sources/FerazelCore/Session/SpriteWorld.swift	288	defer	/// during the pass is handled this frame only if inserted after the saved `next`; one moved to a later place is
+M0250	Ferazel/Core/Sources/FerazelCore/Session/SpriteWorld.swift	314	trap	guard let saved = handlePassNext else { preconditionFailure("continueHandleSprites without a suspended pass") }
+M0251	Ferazel/Core/Sources/FerazelCore/Session/SpriteWorld.swift	323	skip	// `+0x4c` read from the record, linked or not; 0 (an idled record, `SpriteSlot.handleCleared`) is skipped.
+M0252	Ferazel/Core/Sources/FerazelCore/Session/SpriteWorld.swift	350	defer	/// 7th and later dispatched at once (`A.hit(A, B)` then `B.hit(B, A)` if B has one). One contact: A.hit, B.hit.
+M0253	Ferazel/Core/Sources/FerazelCore/Session/SpriteWorld.swift	428	defer	/// `+0x34` rect plus position meets the player's (`.SectRectFast`); up to 16 collected, later ones get
+M0254	Ferazel/Core/Sources/FerazelCore/Session/SpriteWorld.swift	452	defer	/// Collecting: the next sprite to test (nil = the list's end); `resumeAfter` = the 17th-or-later contact whose
+M0255	Ferazel/Core/Sources/FerazelCore/Shots/CastSpell.swift	15	defer	/// 1. the facing `+0x17e` of the player record (last frame's mirror — row 34 writes it later); the spell = the
+M0256	Ferazel/Core/Sources/FerazelCore/Shots/PlayerShotHits.swift	37	defer	/// record (Ruling 16) runs no Setup and its stores are dropped; the later draws are still made.
+M0257	Ferazel/Core/Sources/FerazelCore/Shots/PlayerShotHits.swift	151	defer	///    `.KillPlayerShot(s, 1, 1)`, `.KillEnemyShot(other)` and return // later: Phase 5 (no sprite has the enemy
+M0258	Ferazel/Core/Sources/FerazelCore/Shots/PlayerShotHits.swift	189	defer	// 2. the enemy shot 0x77b → snd 303 vol 0xab, `.KillPlayerShot(s, 0, 1)` (M l. 50991–50994) // later: Phase 5
+M0259	Ferazel/Core/Sources/FerazelCore/Shots/PlayerShotHits.swift	228	defer	// The Crawler Handle `PTR_PTR_100a04b8` → `.KillPlayerShot(s, 0, 0)` (M l. 51062–51064) // later: Phase 5 (the
+M0260	Ferazel/Core/Sources/FerazelCore/Sound/SoundVoices.swift	12	unbuilt	/// tick; a play evicting another entry (all 16 busy) is not modelled. A play the Sound Tool turns away (all 16 entries
+M0261	Ferazel/Core/Sources/FerazelCore/Sprites/BonusHandle.swift	3	defer	/// The one part of `.HandleBonusSprite @ 1005e934` Phase 1 runs: the item light's twinkle (decompile l. 53295–53416,
+M0262	Ferazel/Core/Sources/FerazelCore/Sprites/BootFaces.swift	29	stub	// `.InitSprites` (M l. 112–115): the placeholder 150 and 151.
+M0263	Ferazel/Core/Sources/FerazelCore/Sprites/IdleSprites.swift	75	skip	/// an index 0…0x1ff — `.HandleIdleSprites` skips it and `.AddIdleSprite` may reuse it (the entry is dropped).
+M0264	Ferazel/Core/Sources/FerazelCore/Sprites/SetupFaces.swift	3	stub	/// ◇ Phase-1 stub (plan S2; replaced by the class Setup routines in Phases 4–5): what each class Setup leaves for the
+M0265	Ferazel/Core/Sources/FerazelCore/Sprites/SetupFaces.swift	29	defer	/// A Setup arm Phase 1 has not transcribed (only the 42 level-1 types are).
+M0266	Ferazel/Core/Sources/FerazelCore/Sprites/SetupFaces.swift	31	unbuilt	/// Header `0x272a` (auto-scroll) ≠ 0: `.SetupLevelSprites` then adds the scroll-marker sprites (l. 2056–2099), not built.
+M0267	Ferazel/Core/Sources/FerazelCore/Sprites/SetupFaces.swift	35	defer	/// Where the face Phase 1 draws comes from.
+M0268	Ferazel/Core/Sources/FerazelCore/Sprites/SetupFaces.swift	39	stub	/// The Setup stores a class-cache face pointer (the placeholder PICT 150 until `.LoadCachedSpriteFaces`).
+M0269	Ferazel/Core/Sources/FerazelCore/Sprites/SetupFaces.swift	41	defer	/// The Setup leaves `+0xc0 = 0` and the class Handle sets the face; Phase 1 draws the first face of the
+M0270	Ferazel/Core/Sources/FerazelCore/Sprites/SetupFaces.swift	136	stub	/// `*_DAT_100a0080`: the cache placeholder face (`.Load1EncFaceFromPICT(0x96)`, app file).
+M0271	Ferazel/Core/Sources/FerazelCore/Sprites/SetupFaces.swift	137	stub	public static let placeholderPict: Int16 = 150
+M0272	Ferazel/Core/Sources/FerazelCore/Sprites/SetupFaces.swift	206	stub	all.append(one(placeholderPict))
+M0273	Ferazel/Core/Sources/FerazelCore/Sprites/SetupFaces.swift	217	stub	/// 1489 is absent from every shipped file: its cache entry keeps the placeholder [LOW: placed on no level].
+M0274	Ferazel/Core/Sources/FerazelCore/Sprites/SetupFaces.swift	288	throw	throw Error.unmapped(type: p.type)
+M0275	Ferazel/Core/Sources/FerazelCore/Sprites/SetupFaces.swift	327	unbuilt,defer	// rest a path without a Setup) are not built: none is placed on levels 1–4. // later: Phase 6.
+M0276	Ferazel/Core/Sources/FerazelCore/Sprites/SetupFaces.swift	328	throw	guard p.p1 == 0 else { throw Error.notTranscribed(type: p.type) }
+M0277	Ferazel/Core/Sources/FerazelCore/Sprites/SetupFaces.swift	339	stub	// On a level's first load that pointer is still the placeholder (PICT 150) face: the binary copies it
+M0278	Ferazel/Core/Sources/FerazelCore/Sprites/SetupFaces.swift	347	throw	guard !(1...2).contains(mode) else { throw Error.notTranscribed(type: p.type) }
+M0279	Ferazel/Core/Sources/FerazelCore/Sprites/SetupFaces.swift	372	throw	throw Error.notTranscribed(type: p.type)
+M0280	Ferazel/Core/Sources/FerazelCore/Sprites/SetupFaces.swift	444	throw	throw Error.notTranscribed(type: p.type)
+M0281	Ferazel/Core/Sources/FerazelCore/Sprites/SetupFaces.swift	457	throw	guard RopeSprite.types.contains(p.type) else { throw Error.notTranscribed(type: p.type) }
+M0282	Ferazel/Core/Sources/FerazelCore/Sprites/SetupFaces.swift	482	throw	default: throw Error.notTranscribed(type: p.type)
+M0283	Ferazel/Core/Sources/FerazelCore/Sprites/SetupFaces.swift	509	throw	guard p.p1 == 0 else { throw Error.notTranscribed(type: p.type) }   // p1 ≠ 0: floor crawler, face 0x5dd
+M0284	Ferazel/Core/Sources/FerazelCore/Sprites/SetupFaces.swift	538	defer	// levels 1–4). // later: Phase 5 (the bat Handle, the path fields it reads).
+M0285	Ferazel/Core/Sources/FerazelCore/Sprites/SetupFaces.swift	539	throw	guard t == 0x6cc || t == 0x6cd else { throw Error.notTranscribed(type: p.type) }
+M0286	Ferazel/Core/Sources/FerazelCore/Sprites/SetupFaces.swift	550	defer	// horizontal path), vx = `+0xfc` = p3. // later: Phase 5 — `+0xf8`, `+0xfc`, `+0x100`, `+0x104` (no field
+M0287	Ferazel/Core/Sources/FerazelCore/Sprites/SetupFaces.swift	555	throw	guard mode == 1 || mode == 2 else { throw Error.notTranscribed(type: p.type) }
+M0288	Ferazel/Core/Sources/FerazelCore/Sprites/SetupFaces.swift	570	defer	// is placed on levels 1–4. // later: Phase 5 (the Blob Handle, Hit, tile hit).
+M0289	Ferazel/Core/Sources/FerazelCore/Sprites/SetupFaces.swift	571	throw	guard t == 0x6c2 else { throw Error.notTranscribed(type: p.type) }
+M0290	Ferazel/Core/Sources/FerazelCore/Sprites/SetupFaces.swift	587	defer	// `+0x8e = 1` (0 on levels 1–2 — no field); `+0xc0` = cache 0x708 face 0. // later: Phase 5 (Handle).
+M0291	Ferazel/Core/Sources/FerazelCore/Sprites/SetupFaces.swift	588	throw	guard (0x708...0x711).contains(t) else { throw Error.notTranscribed(type: p.type) }
+M0292	Ferazel/Core/Sources/FerazelCore/Sprites/SetupFaces.swift	610	throw	throw Error.notTranscribed(type: p.type)
+M0293	Ferazel/Core/Sources/FerazelCore/Sprites/SetupFaces.swift	613	throw	if source != .none, sheet == nil { throw Error.notTranscribed(type: p.type) }   // a face outside the table
+M0294	Ferazel/Core/Sources/FerazelCore/Sprites/SetupFaces.swift	649	defer	/// 67728–67730; LV3). // later: Phase 5–6 — the other enemy classes' sites (Gremlin 69229, Floater 69899,
+M0295	Ferazel/Core/Sources/FerazelCore/Sprites/SetupFaces.swift	703	throw	guard c.level.header.autoScrollEnable == 0 else { throw Error.autoScrollSprites }
+M0296	Ferazel/Core/Sources/FerazelCore/Sprites/SpriteSlot.swift	4	defer	/// Phase 1 reads: what the class Setup leaves (`SetupFaces`) and what `.WrapDrawSprites @ 100144c8` reads per sprite
+M0297	Ferazel/Core/Sources/FerazelCore/Sprites/SpriteSlot.swift	206	defer	/// `+0x11c` water contact (0 in Phase 1).
+M0298	Ferazel/Core/Sources/FerazelCore/Sprites/SpriteSlot.swift	349	skip	/// `+0x1b2` (u8): Handle skip — never the outer sprite of `.MTCollideSprites`.
+M0299	Ferazel/Core/Sources/FerazelCore/Sprites/SpriteSlot.swift	380	skip	/// the record stays on the list — `.MTHandleSprites` skips it, `.UpdateSprites` kills it at the end of the
+M0300	Ferazel/Core/Sources/FerazelCore/Sprites/SpriteSlot.swift	384	defer	/// function `.GetRopeHeight` that routine installs (`RopeBlock`). // later: Phase 6 — the rope bridge 1466's
+M0301	Ferazel/Core/Sources/FerazelCore/Sprites/SpriteSlot.swift	482	defer	/// The Handle a sprite's `+0x4c` names (plan S2, LOCKED). `inert` = the Phase 5 classes (enemies): no Handle
+M0302	Ferazel/Core/Sources/FerazelCore/Sprites/SpriteSlot.swift	513	defer	/// tile callback `.HitBoxTileSprite` (`PTR_PTR_100a01f0`) — `StatueSprite`. The enemies' statue sites are Phase 5's.
+M0303	Ferazel/Core/Sources/FerazelCore/Tables/TableRequests.swift	68	trap	precondition((0..<tintCount).contains(k), "tint table \(k)")
+M0304	Ferazel/Core/Sources/FerazelCore/Tables/TableRequests.swift	136	trap	preconditionFailure("tint table \(k) is not a computed table")
+M0305	Ferazel/Core/Sources/FerazelCore/Tables/TableRequests.swift	193	trap	preconditionFailure("tint table \(k) is not a fixed-index table")
+M0306	Ferazel/Core/Sources/FerazelCore/Tables/TableRequests.swift	220	trap	precondition((0..<waterCount).contains(w), "water table \(w)")
+M0307	Ferazel/Core/Sources/FerazelCore/Tables/TableRequests.swift	249	trap	preconditionFailure("water table \(w) is not written")
+M0308	Ferazel/Core/Sources/FerazelCore/Tables/TableRequests.swift	258	trap	precondition((0..<8).contains(n), "redden A table \(n)")
+M0309	Ferazel/Core/Sources/FerazelCore/Tables/TableRequests.swift	272	trap	precondition((0..<16).contains(n), "redden B table \(n)")
+M0310	Ferazel/Core/Sources/FerazelCore/Tables/TableRequests.swift	334	trap	case .glow: preconditionFailure("handled above")
+M0311	Ferazel/Core/Sources/FerazelCore/Tables/TableRequests.swift	345	trap	precondition((0..<16).contains(a) && (0..<16).contains(b), "grey-pull a \(a) b \(b)")
+M0312	Ferazel/Core/Sources/FerazelCore/Tables/TableRequests.swift	406	trap	precondition((0..<darknessLevels).contains(D), "darkness \(D)")
+M0313	Ferazel/Core/Sources/FerazelCore/Tables/TableRequests.swift	415	trap	precondition((0..<lightGroups).contains(g) && (0..<lightIntensities).contains(k), "light group \(g) k \(k)")
+M0314	Ferazel/Core/Sources/FerazelCore/Tables/TableRequests.swift	416	trap	precondition((0..<darknessLevels).contains(D), "darkness \(D)")
+M0315	Ferazel/Core/Sources/FerazelCore/Tables/TableRequests.swift	462	trap	precondition((0..<darknessLevels).contains(D), "darkness \(D)")
+M0316	Ferazel/Core/Sources/FerazelCore/World/Conversation.swift	6	refuse	/// `0x100 + i·0x72a` (36,936 B). A resource of any other length is refused. Offsets below are record-relative
+M0317	Ferazel/Core/Sources/FerazelCore/World/Conversation.swift	55	throw	throw WorldDataError.wrongLength(type: "Mcnv", id: id, expected: Self.length, actual: b.count)
+M0318	Ferazel/Core/Sources/FerazelCore/World/Conversation.swift	82	throw	throw WorldDataError.missing(type: "Mcnv", id: id)
+M0319	Ferazel/Core/Sources/FerazelCore/World/LevelFile.swift	4	refuse	/// Why a world-data resource was refused (plan C2; HectorKit D2/D5 style: refuse, never guess).
+M0320	Ferazel/Core/Sources/FerazelCore/World/LevelFile.swift	19	skip	/// stale in the file and ignored. A resource whose length is not exactly
+M0321	Ferazel/Core/Sources/FerazelCore/World/LevelFile.swift	47	throw	throw WorldDataError.wrongLength(type: "Mlvl", id: id, expected: Self.headerSize, actual: b.count)
+M0322	Ferazel/Core/Sources/FerazelCore/World/LevelFile.swift	54	throw	throw WorldDataError.badDimensions(type: "Mlvl", id: id, widths: [w0, w1, w2], heights: [h0, h1, h2])
+M0323	Ferazel/Core/Sources/FerazelCore/World/LevelFile.swift	58	throw	throw WorldDataError.wrongLength(type: "Mlvl", id: id, expected: expected, actual: b.count)
+M0324	Ferazel/Core/Sources/FerazelCore/World/LevelFile.swift	92	throw	throw WorldDataError.missing(type: "Mlvl", id: level)
+M0325	Ferazel/Core/Sources/FerazelCore/World/LevelFile.swift	165	throw	throw WorldDataError.truncated(type: type, id: id, offset: offset)
+M0326	Ferazel/Core/Sources/FerazelCore/World/LevelHeader.swift	40	defer	/// (Phase 2 plan Bank correction A10).
+M0327	Ferazel/Core/Sources/FerazelCore/World/SpriteClassTable.swift	9	defer	/// (`.AddIdleSprite`, activated later by `.HandleIdleSprites`).
+M0328	Ferazel/Core/Sources/FerazelCore/World/SpriteClassTable.swift	16	defer	/// 1830 (0x726) is caught by the 1700..1839 sub-chain (Wizard), so the later `0x726 → Effect` arm is dead and kept
+M0329	Ferazel/Core/Sources/FerazelCore/World/StringList.swift	32	throw	throw WorldDataError.missing(type: "STR#", id: id)
+M0330	Ferazel/Core/Sources/FerazelCore/World/TileMap.swift	10	trap	precondition(width >= 0 && height >= 0 && cells.count == width * height, "TileMap \(width)×\(height)")
+M0331	Ferazel/Core/Sources/FerazelCore/World/WorldFile.swift	24	throw	throw WorldDataError.wrongLength(type: "Mwld", id: id, expected: Self.minimumLength, actual: b.count)
+M0332	Ferazel/Core/Sources/FerazelCore/World/WorldFile.swift	36	throw	throw WorldDataError.missing(type: "Mwld", id: 0)
+M0333	Ferazel/Core/Sources/FerazelCore/World/WorldMap.swift	5	refuse	/// (38,144 B). A resource of any other length is refused.
+M0334	Ferazel/Core/Sources/FerazelCore/World/WorldMap.swift	37	throw	throw WorldDataError.wrongLength(type: "Mmap", id: id, expected: Self.length, actual: b.count)
+M0335	Ferazel/Core/Sources/FerazelCore/World/WorldMap.swift	68	throw	throw WorldDataError.missing(type: "Mmap", id: id)
+M0336	Ferazel/Core/Sources/FerazelCore/World/Movers/BackgroundSprite.swift	8	defer	/// `.HitBackgroundSprite`. Part 3 (LV3, below): the retracting spikes 0x730…0x733. // later: fire 0x4b8 /
+M0337	Ferazel/Core/Sources/FerazelCore/World/Movers/BackgroundSprite.swift	43	refuse,defer	/// - modes 1, 2: the programmed path and `+0x188 = 1` (M l. 62342; `SetupFaces` refuses them — // later: no level
+M0338	Ferazel/Core/Sources/FerazelCore/World/Movers/BackgroundSprite.swift	81	stub	/// `rec` — modes 10…14 with a record only; a no-op for any other sprite:
+M0339	Ferazel/Core/Sources/FerazelCore/World/Movers/BackgroundSprite.swift	111	unbuilt	/// The types whose `.HandleBackgroundSprite` arm is not built: their Handle is not run (as before W2a), so
+M0340	Ferazel/Core/Sources/FerazelCore/World/Movers/BackgroundSprite.swift	114	unbuilt	static func isUnbuiltArm(_ t: Int16) -> Bool {
+M0341	Ferazel/Core/Sources/FerazelCore/World/Movers/BackgroundSprite.swift	132	refuse,defer	///   (// later: no level 1–2 placement; the Setup refuses them); modes 10…14: `+0xa6` < 0 counts up, else 0;
+M0342	Ferazel/Core/Sources/FerazelCore/World/Movers/BackgroundSprite.swift	145	unbuilt	guard !isUnbuiltArm(t) else { return }
+M0343	Ferazel/Core/Sources/FerazelCore/World/Movers/BackgroundSprite.swift	169	refuse,defer	// later: modes 1, 2 (`.HandleProgrammedPath`, `.ApplyGravityAndSeparateFromTiles`) — refused at Setup.
+M0344	Ferazel/Core/Sources/FerazelCore/World/Movers/BackgroundSprite.swift	240	refuse	/// The cannon arm of `.SetupBackgroundSprite` (l. 62057–62184) for p1 0 (`SetupFaces` refuses the others): aim
+M0345	Ferazel/Core/Sources/FerazelCore/World/Movers/BackgroundSprite.swift	304	defer	///   recoil eases home; // later: p1 1…100 and > 106 (`.HandleProgrammedPath`), 101…106 (rotation, the 485 cue gated
+M0346	Ferazel/Core/Sources/FerazelCore/World/Movers/BackgroundSprite.swift	330	refuse,defer	// later: p1 ≠ 0 — `.HandleProgrammedPath` (1…100, > 106) and the rotating arm (101…106), refused at Setup.
+M0347	Ferazel/Core/Sources/FerazelCore/World/Movers/BackgroundSprite.swift	402	defer	///   `PlayerShotHits.kill`) and an enemy shot `.KillEnemyShot` (// later: SH); then, if other is not itself a
+M0348	Ferazel/Core/Sources/FerazelCore/World/Movers/BackgroundSprite.swift	437	defer	// kill left it. `.KillEnemyShot(other)` (l. 63721–63723) // later: SH.
+M0349	Ferazel/Core/Sources/FerazelCore/World/Movers/BackgroundSprite.swift	466	stub	/// - spring `+0x1c2 = 32000` (the occluder edge's `.InitSprite` value: a no-op);
+M0350	Ferazel/Core/Sources/FerazelCore/World/Movers/BackgroundSprite.swift	514	refuse	/// origin (`+0x10 − +0xc`, `+0xe − +0xa`, i16); refused for a dead player (HP `+0xa4` < 1) and a sprite whose Handle
+M0351	Ferazel/Core/Sources/FerazelCore/World/Movers/BackgroundSprite.swift	709	stub	/// FastRand(4)` and `.ChangeLightColor(+0x9a, 0)` on `lights` (no light: a no-op, `1001becc`): the first at (x, y), layer 0xb;
+M0352	Ferazel/Core/Sources/FerazelCore/World/Movers/BonusSprite.swift	225	throw	guard t != 0xc25 else { throw SetupFaces.Error.notTranscribed(type: t) }
+M0353	Ferazel/Core/Sources/FerazelCore/World/Movers/BonusSprite.swift	277	throw	guard inTable || outOfTableItems else { throw SetupFaces.Error.notTranscribed(type: t) }
+M0354	Ferazel/Core/Sources/FerazelCore/World/Movers/BonusSprite.swift	367	skip	/// `.ChangeLightFace(+0x9a, f)` on `lights`, and the op for the renderer's copy (a slot outside 0…199 is ignored).
+M0355	Ferazel/Core/Sources/FerazelCore/World/Movers/BonusSprite.swift	692	trap	_ = try! setup(&c, x: x, y: y, level: w.level, records: w.records, effects: effects,
+M0356	Ferazel/Core/Sources/FerazelCore/World/Movers/BonusSprite.swift	702	skip	/// `.HitBonusTileSprite(s, pos, kind, layer) @ 1006010c` (M l. 53571–53638). The debug no-clip skip (`_DAT_100a0064`
+M0357	Ferazel/Core/Sources/FerazelCore/World/Movers/BoxSprite.swift	12	unbuilt,defer	/// blocks 0x4e2…0x4ff (`switchBlockArm`) and the spouts 0x5aa…0x5ad (`spoutArm`; their boulders ◇ Phase 5). Not built
+M0358	Ferazel/Core/Sources/FerazelCore/World/Movers/BoxSprite.swift	132	defer	/// and the chest's `.IsWaterTile` test (`+0xb8 = 0x90000`) is `SetupFaces`'s, with the faces (Phase 1). No arm of a type
+M0359	Ferazel/Core/Sources/FerazelCore/World/Movers/BoxSprite.swift	205	defer	// later: Phase 6 — `+0x1e8 = .GetRopeBridgeHeight` (platforms-ropes-radial §3.7) and `.GenerateSprite`'s
+M0360	Ferazel/Core/Sources/FerazelCore/World/Movers/BoxSprite.swift	378	defer	// later: `.FlipHRect(+0x34, face +6)` — Core has no face record; every decoration placed on levels 1–2
+M0361	Ferazel/Core/Sources/FerazelCore/World/Movers/BoxSprite.swift	420	unbuilt	/// Whether the type's `.HandleBoxSprite` runs (the arm and the common tail). The types whose arm is not built yet
+M0362	Ferazel/Core/Sources/FerazelCore/World/Movers/BoxSprite.swift	473	unbuilt	// The unbuilt arms still return at once (`handleBuilt`), but past the dump's `+0x182 = 0` (M l. 60091,
+M0363	Ferazel/Core/Sources/FerazelCore/World/Movers/BoxSprite.swift	776	defer	/// .SetupEnemyShotSprite)` — ◇ // later: Phase 5 (no EnemyShot class yet): the boulder is not made, so neither its
+M0364	Ferazel/Core/Sources/FerazelCore/World/Movers/BoxSprite.swift	785	defer	// ◇ the spawn of `0x6e1 + (own?.p4 ?? 0)` (Phase 5); its speed draws:
+M0365	Ferazel/Core/Sources/FerazelCore/World/Movers/BoxSprite.swift	857	skip	/// nothing (ids ≥ 3200 skip the package; layers 100 / 0x65 by the Setup's own arm) and their Handle has no branch:
+M0366	Ferazel/Core/Sources/FerazelCore/World/Movers/BoxSprite.swift	1148	defer	/// Built for the Bonus class (every crate drop on levels 1–4: the item 3219); // later: Phase 5 — the other classes'
+M0367	Ferazel/Core/Sources/FerazelCore/World/Movers/BoxSprite.swift	1172	defer	/// 100, 100)`. // later: Phase 5 — the geysers 0x5a0…0x5a8's column buffer `+0x9c` (its 16 pieces and the head
+M0368	Ferazel/Core/Sources/FerazelCore/World/Movers/BoxSprite.swift	1186	skip	/// `.HitBoxTileSprite(s, pos, kind, layer) @ 10070718` (M l. 61521–61683). The debug no-clip skip (`_DAT_100a0064`
+M0369	Ferazel/Core/Sources/FerazelCore/World/Movers/BoxSprite.swift	1273	skip	/// skipped for the NPCs 0xb87…0xbb7, the switch blocks 0x4e2…0x4ff and a geyser part (0x5a0 / 0x5a5 / 0x5a9) against
+M0370	Ferazel/Core/Sources/FerazelCore/World/Movers/BoxSprite.swift	1364	defer	// (M l. 61470–61476) // later: Phase 6 (the carpet's Handle does not run).
+M0371	Ferazel/Core/Sources/FerazelCore/World/Movers/ButtonSprite.swift	101	defer	/// - an enemy shot's (`PTR_PTR_100a0488` // later: Phase 5) or a player shot's (`PTR_PTR_100a04e8`): 4704, level 11;
+M0372	Ferazel/Core/Sources/FerazelCore/World/Movers/Radial.swift	70	stub	/// `.MakeRadial(s, cx, cy, r, speed, angle, g, damp, hubDamp, persp) @ 1003d718` (decompile l. 35737–35767): no-op
+M0373	Ferazel/Core/Sources/FerazelCore/World/Movers/Radial.swift	326	stub	/// §1.6): no-op for s = 0. speed = (int)(speed·−0.75), magnitude raised to 0x100 when below (sign kept, 0 → +);
+M0374	Ferazel/Core/Sources/FerazelCore/World/Movers/RopeSprite.swift	55	refuse	/// placed; `SetupFaces` refuses them).
+M0375	Ferazel/Core/Sources/FerazelCore/World/Movers/StatueSprite.swift	5	defer	/// `.HitPlatformSprite` (M l. 55798–55803, `PlatformSprite.hit`); the enemies' eleven sites are // later: Phase 5.
+M0376	Ferazel/Core/Sources/FerazelRender/Audio/MusicTrack.swift	22	throw	guard FileManager.default.fileExists(atPath: url.path) else { throw MusicTrackError.missing(url.path) }
+M0377	Ferazel/Core/Sources/FerazelRender/Audio/MusicTrack.swift	24	throw	guard audio.encoding == .ima4 else { throw MusicTrackError.notIMA4(url.path) }
+M0378	Ferazel/Core/Sources/FerazelRender/Audio/SoundBank.swift	46	throw	guard let snd = SndSound(data: resource.data) else { throw SoundBankError.unparsable(id: id) }
+M0379	Ferazel/Core/Sources/FerazelRender/Audio/SoundBank.swift	47	throw	guard snd.format == 1 else { throw SoundBankError.unexpectedFormat(id: id, format: snd.format) }
+M0380	Ferazel/Core/Sources/FerazelRender/Audio/SoundBank.swift	49	throw	guard modifiers == 1 else { throw SoundBankError.unexpectedModifierCount(id: id, count: modifiers) }
+M0381	Ferazel/Core/Sources/FerazelRender/Audio/SoundBank.swift	51	throw	guard commands == 1 else { throw SoundBankError.unexpectedCommandCount(id: id, count: commands) }
+M0382	Ferazel/Core/Sources/FerazelRender/Audio/SoundBank.swift	52	throw	guard case .pcm8 = snd.payload else { throw SoundBankError.notOffsetBinary(id: id) }
+M0383	Ferazel/Core/Sources/FerazelRender/Census/FerazelCensus.swift	7	defer	/// `ferazel-census` — the Phase 0 data census of Ferazel's Wand 1.0.3 (plan docs/plans/2026-10-06-ferazel-phase1.md,
+M0384	Ferazel/Core/Sources/FerazelRender/Census/FerazelCensus.swift	87	throw	guard ClassicResourceMap.sniff(data) else { throw FerazelDataError.missing("\(f.name) (not a resource map)") }
+M0385	Ferazel/Core/Sources/FerazelRender/Census/FerazelCensus.swift	314	throw	if mwld.isEmpty { item("Mwld", "World Data", "0", nil) { throw WorldDataError.missing(type: "Mwld", id: 0) } }
+M0386	Ferazel/Core/Sources/FerazelRender/Census/FerazelCensus.swift	323	throw	if mmap.isEmpty { item("Mmap", "World Data", "200", nil) { throw WorldDataError.missing(type: "Mmap", id: 200) } }
+M0387	Ferazel/Core/Sources/FerazelRender/Census/FerazelCensus.swift	362	throw	guard !ids.isEmpty else { throw FerazelDataError.missing("Mlvl (no level names a CLUT)") }
+M0388	Ferazel/Core/Sources/FerazelRender/Census/FerazelCensus.swift	398	throw	guard let l1 = levels.first(where: { $0.id == 1 }) else { throw WorldDataError.missing(type: "Mlvl", id: 1) }
+M0389	Ferazel/Core/Sources/FerazelRender/Census/FerazelCensus.swift	411	scope,throw	throw PictureSourceError.unsupported(id: pict, "1-bit BitMap has no colours to search")
+M0390	Ferazel/Core/Sources/FerazelRender/Census/FerazelCensus.swift	501	defer	/// `level1-start.png` — what Phase 0 can draw of the level-1 start window: the 640×416 play area at scroll
+M0391	Ferazel/Core/Sources/FerazelRender/Color/ColorSearch.swift	39	trap	if case .inverseTable(let bits) = model { precondition((1...6).contains(bits), "inverse table bits \(bits)") }
+M0392	Ferazel/Core/Sources/FerazelRender/Color/InverseTable.swift	21	trap	precondition((1...6).contains(bits), "inverse table bits \(bits)")
+M0393	Ferazel/Core/Sources/FerazelRender/Effects/DeathEffect.swift	15	unbuilt	/// Not modelled: `.GammaFadeOutAsync`'s gates (`DAT_100a53c2` gamma available, `*_DAT_1009fde8` not already faded
+M0394	Ferazel/Core/Sources/FerazelRender/Effects/DeathEffect.swift	66	trap	precondition((0..<Self.steps).contains(k), "DeathEffect step \(k)")
+M0395	Ferazel/Core/Sources/FerazelRender/Effects/ScreenGamma.swift	14	unbuilt	/// Not modelled: the async fades' gates (`DAT_100a53c2` gamma available, `*_DAT_1009fde8` faded-out flag set by the
+M0396	Ferazel/Core/Sources/FerazelRender/Effects/ScreenGamma.swift	112	trap	return try! ColorLUT(id: clut.id, name: clut.name, data: Data(b))
+M0397	Ferazel/Core/Sources/FerazelRender/Effects/WaterFaceBlitter.swift	20	refuse,throw	guard faces.faces.indices.contains(t) else { throw FrameRenderer.Refusal.waterFaceTile(d.tile) }
+M0398	Ferazel/Core/Sources/FerazelRender/Faces/BlendFaces.swift	5	skip	/// copied pixel value `v` (an index in the CLUT current at load time) to a 2-bit weight; skips stay transparent.
+M0399	Ferazel/Core/Sources/FerazelRender/Faces/BlendFaces.swift	20	unbuilt	///   (the original would read past its handle; not modelled).
+M0400	Ferazel/Core/Sources/FerazelRender/Faces/BlendFaces.swift	25	throw	guard p + 4 <= out.data.count else { throw FaceDecodeError.truncated(offset: p) }
+M0401	Ferazel/Core/Sources/FerazelRender/Faces/BlendFaces.swift	38	throw	guard p + padded <= out.data.count else { throw FaceDecodeError.truncated(offset: at) }
+M0402	Ferazel/Core/Sources/FerazelRender/Faces/ConvertedPicture.swift	42	throw	throw ConvertedPictureError.pixelCountMismatch(id: id, count: pixels.count, width: width, height: height)
+M0403	Ferazel/Core/Sources/FerazelRender/Faces/ConvertedPicture.swift	67	throw	throw ConvertedPictureError.noColorTableEntry(id: source.id, value: Int(bad))
+M0404	Ferazel/Core/Sources/FerazelRender/Faces/ConvertedPicture.swift	116	throw	throw ConvertedPictureError.noColorTableEntry(id: source.id, value: v)
+M0405	Ferazel/Core/Sources/FerazelRender/Faces/EncodedFace.swift	9	skip	/// A run reaches past the face's frame, a copy/skip comes before the first row token, or a row token's
+M0406	Ferazel/Core/Sources/FerazelRender/Faces/EncodedFace.swift	20	unbuilt	/// faces in `[maskFirst, maskLast]`; not modelled — no Phase-1 sheet asks for one) · `+0x18` 1 if any pixel 0 was
+M0407	Ferazel/Core/Sources/FerazelRender/Faces/EncodedFace.swift	39	skip	/// op 3: skip n pixels (transparent; pixel value 0).
+M0408	Ferazel/Core/Sources/FerazelRender/Faces/EncodedFace.swift	40	skip	case skip(Int)
+M0409	Ferazel/Core/Sources/FerazelRender/Faces/EncodedFace.swift	71	refuse	/// The stream parsed to its end token. Refuses op ≥ 4.
+M0410	Ferazel/Core/Sources/FerazelRender/Faces/EncodedFace.swift	79	refuse,skip	/// (skips, the unwritten trailing skip of each row). Refuses op ≥ 4.
+M0411	Ferazel/Core/Sources/FerazelRender/Faces/EncodedFace.swift	89	throw	guard row < h else { throw FaceDecodeError.malformed(offset: offset, "row \(row) past height \(h)") }
+M0412	Ferazel/Core/Sources/FerazelRender/Faces/EncodedFace.swift	90	skip	case .skip(let n):
+M0413	Ferazel/Core/Sources/FerazelRender/Faces/EncodedFace.swift	91	skip,throw	guard row >= 0 else { throw FaceDecodeError.malformed(offset: offset, "skip before a row") }
+M0414	Ferazel/Core/Sources/FerazelRender/Faces/EncodedFace.swift	93	skip,throw	guard x <= w else { throw FaceDecodeError.malformed(offset: offset, "skip past width") }
+M0415	Ferazel/Core/Sources/FerazelRender/Faces/EncodedFace.swift	95	throw	guard row >= 0 else { throw FaceDecodeError.malformed(offset: offset, "copy before a row") }
+M0416	Ferazel/Core/Sources/FerazelRender/Faces/EncodedFace.swift	96	throw	guard x + bytes.count <= w else { throw FaceDecodeError.malformed(offset: offset, "copy past width") }
+M0417	Ferazel/Core/Sources/FerazelRender/Faces/EncodedFace.swift	113	throw	throw FaceDecodeError.malformed(offset: rowStart - 4, "row length \(rowLength) ≠ \(q - rowStart)")
+M0418	Ferazel/Core/Sources/FerazelRender/Faces/EncodedFace.swift	117	throw	guard p + 4 <= data.count else { throw FaceDecodeError.truncated(offset: p) }
+M0419	Ferazel/Core/Sources/FerazelRender/Faces/EncodedFace.swift	134	throw	guard p + padded <= data.count else { throw FaceDecodeError.truncated(offset: at) }
+M0420	Ferazel/Core/Sources/FerazelRender/Faces/EncodedFace.swift	138	skip	try body(.skip(n))
+M0421	Ferazel/Core/Sources/FerazelRender/Faces/EncodedFace.swift	140	throw	throw FaceDecodeError.badToken(op: op, offset: at)
+M0422	Ferazel/Core/Sources/FerazelRender/Faces/FaceEncoder.swift	14	skip	/// pixel 0 opens/extends a skip run (and sets the "has a 0 pixel" flag, face `+0x18`), any other value
+M0423	Ferazel/Core/Sources/FerazelRender/Faces/FaceEncoder.swift	32	throw	throw FaceEncodeError.pixelCountMismatch(count: pixels.count, width: width, height: height)
+M0424	Ferazel/Core/Sources/FerazelRender/Faces/FaceEncoder.swift	36	throw	guard int16.contains(h), int16.contains(w) else { throw FaceEncodeError.rectTooLarge(rect) }
+M0425	Ferazel/Core/Sources/FerazelRender/Faces/FaceEncoder.swift	53	skip	var literal = false, skipping = false, firstOpaqueInRow = true
+M0426	Ferazel/Core/Sources/FerazelRender/Faces/FaceEncoder.swift	69	skip	if skipping { run += 1 } else { skipping = true; run = 1 }
+M0427	Ferazel/Core/Sources/FerazelRender/Faces/FaceEncoder.swift	78	skip	if skipping {
+M0428	Ferazel/Core/Sources/FerazelRender/Faces/FaceEncoder.swift	80	skip	skipping = false
+M0429	Ferazel/Core/Sources/FerazelRender/Faces/FaceSheet.swift	7	refuse	/// refused rather than modelled.
+M0430	Ferazel/Core/Sources/FerazelRender/Faces/FaceSheet.swift	36	refuse	func refuse(_ why: String) -> FaceSheetError { .invalidArguments(pict: pict, why) }
+M0431	Ferazel/Core/Sources/FerazelRender/Faces/FaceSheet.swift	38	refuse,throw	guard columns >= 1 else { throw refuse("columns \(columns) < 1") }
+M0432	Ferazel/Core/Sources/FerazelRender/Faces/FaceSheet.swift	39	refuse,throw	guard count >= 0 else { throw refuse("count \(count) < 0") }
+M0433	Ferazel/Core/Sources/FerazelRender/Faces/FaceSheet.swift	40	refuse,throw	guard (1...limit).contains(cellWidth) else { throw refuse("cell width \(cellWidth) outside 1…\(limit)") }
+M0434	Ferazel/Core/Sources/FerazelRender/Faces/FaceSheet.swift	41	refuse,throw	guard (1...limit).contains(cellHeight) else { throw refuse("cell height \(cellHeight) outside 1…\(limit)") }
+M0435	Ferazel/Core/Sources/FerazelRender/Faces/FaceSheet.swift	44	refuse,throw	guard rows <= limit / cellHeight else { throw refuse("bottom edge \(rows) × \(cellHeight) past \(limit)") }
+M0436	Ferazel/Core/Sources/FerazelRender/Faces/FaceSheet.swift	45	refuse,throw	guard cols <= limit / cellWidth else { throw refuse("right edge \(cols) × \(cellWidth) past \(limit)") }
+M0437	Ferazel/Core/Sources/FerazelRender/Faces/FaceSheet.swift	97	throw	guard i >= 0, i < a.count else { throw FaceSheetError.cellOutOfRange(index: i, count: a.count) }
+M0438	Ferazel/Core/Sources/FerazelRender/Faces/FaceSheet.swift	125	throw	throw FaceSheetError.singleFrameNotAtOrigin(pict: pict, top: picture.frameTop, left: picture.frameLeft)
+M0439	Ferazel/Core/Sources/FerazelRender/Faces/LightFaces.swift	54	trap	precondition(width >= 0 && height >= 0 && pixels.count == width * height, "LightFace \(width)×\(height)")
+M0440	Ferazel/Core/Sources/FerazelRender/Faces/LightFaces.swift	82	throw	throw LightFaceError.scaled(pict: pict, frameWidth: source.width, frameHeight: source.height,
+M0441	Ferazel/Core/Sources/FerazelRender/Faces/PictureSource.swift	9	refuse	/// K1's `PICT.decodePixels` refused or could not parse the picture (its error, described).
+M0442	Ferazel/Core/Sources/FerazelRender/Faces/PictureSource.swift	13	scope	case unsupported(id: Int16, String)
+M0443	Ferazel/Core/Sources/FerazelRender/Faces/PictureSource.swift	34	throw	throw PictureSourceError.undecodable(id: id, String(describing: error))
+M0444	Ferazel/Core/Sources/FerazelRender/Faces/PictureSource.swift	44	refuse	/// The census checks over K1's decoded form (invariant 6). K1 itself refuses these shapes from data today
+M0445	Ferazel/Core/Sources/FerazelRender/Faces/PictureSource.swift	51	scope,throw	throw PictureSourceError.unsupported(id: id, "v1 depth \(p.depth) mode \(p.transferMode)")
+M0446	Ferazel/Core/Sources/FerazelRender/Faces/PictureSource.swift	54	scope,throw	guard p.colorTable != nil else { throw PictureSourceError.unsupported(id: id, "PixMap without a colour table") }
+M0447	Ferazel/Core/Sources/FerazelRender/Faces/PictureSource.swift	55	scope,throw	guard p.transferMode == 0 else { throw PictureSourceError.unsupported(id: id, "indexed mode \(p.transferMode)") }
+M0448	Ferazel/Core/Sources/FerazelRender/Faces/PictureSource.swift	58	scope,throw	guard p.transferMode == 64 else { throw PictureSourceError.unsupported(id: id, "DirectBits mode \(p.transferMode)") }
+M0449	Ferazel/Core/Sources/FerazelRender/Faces/PictureSource.swift	68	throw	guard let r = resources.resource(type: "PICT", id: id, chain: chain) else { throw PictureSourceError.missing(id: id) }
+M0450	Ferazel/Core/Sources/FerazelRender/Faces/TileSets.swift	199	throw	throw PictureSourceError.missing(id: id)
+M0451	Ferazel/Core/Sources/FerazelRender/Faces/WaterFaceSheet.swift	8	skip	/// stores a literal 0 per copied byte — `li r4,0` / `stw r4`, disasm 10023148..100231cc; skips leave the port
+M0452	Ferazel/Core/Sources/FerazelRender/Faces/WaterFaceSheet.swift	52	skip	case .skip(let n): col += n
+M0453	Ferazel/Core/Sources/FerazelRender/Frame/FramePorts.swift	14	unbuilt	/// The 8-pixel slop around each port is not modelled: every blit here is clipped to the 640×416 port. `.NewBlitPortSlop`
+M0454	Ferazel/Core/Sources/FerazelRender/Frame/FrameRenderer.swift	58	refuse	/// What the renderer refuses instead of reading memory the original would have.
+M0455	Ferazel/Core/Sources/FerazelRender/Frame/FrameRenderer.swift	59	refuse	public enum Refusal: Error, Equatable {
+M0456	Ferazel/Core/Sources/FerazelRender/Frame/FrameRenderer.swift	141	refuse	/// `buildTintTable` ran (until then `apply` refuses).
+M0457	Ferazel/Core/Sources/FerazelRender/Frame/FrameRenderer.swift	165	throw	throw WorldDataError.missing(type: "Mlvl", id: Int16(level))
+M0458	Ferazel/Core/Sources/FerazelRender/Frame/FrameRenderer.swift	233	refuse	/// - Throws: `Refusal.lightSlotsFull`; `LightFaceError` / `PictureSourceError` for a face that does not load.
+M0459	Ferazel/Core/Sources/FerazelRender/Frame/FrameRenderer.swift	240	refuse,throw	guard i >= 0 else { throw Refusal.lightSlotsFull }
+M0460	Ferazel/Core/Sources/FerazelRender/Frame/FrameRenderer.swift	272	refuse	/// `Refusal.tintTableNotBuilt`). Only the sprite
+M0461	Ferazel/Core/Sources/FerazelRender/Frame/FrameRenderer.swift	276	refuse,throw	guard draws.count == 0xff * 2 else { throw Refusal.tintTableDraws(draws.count) }
+M0462	Ferazel/Core/Sources/FerazelRender/Frame/FrameRenderer.swift	290	refuse	/// - Throws: `Refusal.deathEffectStep` for k outside 0 … 49, `Refusal.tintTableNotBuilt` before the hand-off.
+M0463	Ferazel/Core/Sources/FerazelRender/Frame/FrameRenderer.swift	292	refuse,throw	guard (0..<DeathEffect.steps).contains(k) else { throw Refusal.deathEffectStep(k) }
+M0464	Ferazel/Core/Sources/FerazelRender/Frame/FrameRenderer.swift	334	refuse	/// - Throws: `SpriteBlitter.Refusal` for a sprite shape outside the census, `Refusal.screenClut` for a CLUT the
+M0465	Ferazel/Core/Sources/FerazelRender/Frame/FrameRenderer.swift	337	refuse,throw	guard tintTableBuilt else { throw Refusal.tintTableNotBuilt }
+M0466	Ferazel/Core/Sources/FerazelRender/Frame/FrameRenderer.swift	343	refuse,throw	throw Refusal.screenClut(id, tablesBuiltFor: tables.screenClutId)
+M0467	Ferazel/Core/Sources/FerazelRender/Frame/FrameRenderer.swift	391	skip	// `.ChangeLightFace @ 1001bdbc`: slots outside 0…199 are ignored; `+4` face, `+0x14` = width >> 1.
+M0468	Ferazel/Core/Sources/FerazelRender/Frame/FrameRenderer.swift	464	skip	/// A cell outside the grid (Core clamps as `.ConstrainXY`, so none comes) is ignored.
+M0469	Ferazel/Core/Sources/FerazelRender/Frame/LevelTables.swift	17	unbuilt	/// one animation step before `.BuildTintTable` is not modelled here (pass `workingClut` for those).
+M0470	Ferazel/Core/Sources/FerazelRender/Frame/LightRenderer.swift	88	refuse	/// other D outside 0…15 reads past it and is refused (no shipped level enables darkness over such a byte).
+M0471	Ferazel/Core/Sources/FerazelRender/Frame/LightRenderer.swift	91	trap	precondition(D == -1, "ambient darkness D = \(D) is outside the census")
+M0472	Ferazel/Core/Sources/FerazelRender/Frame/LightRenderer.swift	233	skip	/// run of the face becomes `slab[pixel]` — the face's own pixels are not read; skip runs leave the port alone.
+M0473	Ferazel/Core/Sources/FerazelRender/Frame/LightRenderer.swift	252	trap	precondition((0..<ambient.count).contains(D), "light over darkness D = \(D) is outside the census")
+M0474	Ferazel/Core/Sources/FerazelRender/Frame/LightRenderer.swift	272	defer	/// `.BlitAfterLightOverFaceClip @ 1001dd8c` (second and later lights on the same face; raw `1001dfe4..`): the D = 0
+M0475	Ferazel/Core/Sources/FerazelRender/Frame/LightRenderer.swift	296	refuse	/// small colour, or past slab 15) reads other memory and is refused.
+M0476	Ferazel/Core/Sources/FerazelRender/Frame/LightRenderer.swift	298	trap	precondition(i >= 0 && i < table.count, "light-table index \(i) is outside the table")
+M0477	Ferazel/Core/Sources/FerazelRender/Frame/LightRenderer.swift	303	unbuilt	/// when the face sits at port position (x, y), clipped to the 640×416 port (the 8-px slop is not modelled; a
+M0478	Ferazel/Core/Sources/FerazelRender/Frame/LightRenderer.swift	395	refuse	/// an unset register / outside the array and is refused (no shipped level has one).
+M0479	Ferazel/Core/Sources/FerazelRender/Frame/LightRenderer.swift	398	trap	precondition((0..<set.count).contains(o2), "overlay o1 \(o1) / o2 \(o2) is outside the census")
+M0480	Ferazel/Core/Sources/FerazelRender/Frame/Mosaic.swift	16	trap	precondition(source.count == w * IndexedFrame.height && screen.count == source.count,
+M0481	Ferazel/Core/Sources/FerazelRender/Frame/ParallaxBlitter.swift	7	unbuilt	/// (`…Fire @ 10018dd4`, header `0x2722 > 0`, levels 52/55, §1.6) and OmniPx (§3) are not built: a level with a
+M0482	Ferazel/Core/Sources/FerazelRender/Frame/ParallaxBlitter.swift	55	refuse	public enum Refusal: Error, Equatable {
+M0483	Ferazel/Core/Sources/FerazelRender/Frame/ParallaxBlitter.swift	56	unbuilt	/// Header `0x2722 > 0`: `.DoubleBlitUniversal` takes the Fire variant (§1.6), not built.
+M0484	Ferazel/Core/Sources/FerazelRender/Frame/ParallaxBlitter.swift	58	unbuilt	/// Header `0x26ca ≠ 0` (levels 11, 18): the rows need the ripple table, whose producer is not built.
+M0485	Ferazel/Core/Sources/FerazelRender/Frame/ParallaxBlitter.swift	90	refuse	/// Header `0x2722` (≤ 0 here: init refuses > 0).
+M0486	Ferazel/Core/Sources/FerazelRender/Frame/ParallaxBlitter.swift	101	unbuilt,defer	/// with header `0x26ca` (levels 11, 18). Not produced in Phase 1: its producer is not built and those levels are
+M0487	Ferazel/Core/Sources/FerazelRender/Frame/ParallaxBlitter.swift	121	refuse	/// refusals apply to all of them.
+M0488	Ferazel/Core/Sources/FerazelRender/Frame/ParallaxBlitter.swift	123	trap	precondition(faceSlots.count == Self.slotCount, "ParallaxBlitter: \(Self.slotCount) face slots")
+M0489	Ferazel/Core/Sources/FerazelRender/Frame/ParallaxBlitter.swift	125	refuse,throw	guard h.flameMode <= 0 else { throw Refusal.fireVariant(flameMode: h.flameMode) }
+M0490	Ferazel/Core/Sources/FerazelRender/Frame/ParallaxBlitter.swift	126	refuse,throw	guard h.parallaxRipple == 0 else { throw Refusal.ripple(flag: h.parallaxRipple) }
+M0491	Ferazel/Core/Sources/FerazelRender/Frame/ParallaxBlitter.swift	141	trap	precondition(face.count == Self.cellBytes, "ParallaxBlitter: slot \(slot) is not 128×128")
+M0492	Ferazel/Core/Sources/FerazelRender/Frame/ParallaxBlitter.swift	236	trap	precondition(source.count == FramePorts.width * FramePorts.height && mask.count == source.count
+M0493	Ferazel/Core/Sources/FerazelRender/Frame/ParallaxBlitter.swift	238	trap	precondition(screen.count == Self.screenWidth * Self.screenHeight, "ParallaxBlitter: screen is 640×480")
+M0494	Ferazel/Core/Sources/FerazelRender/Frame/ParallaxBlitter.swift	269	refuse	guard parallax != 3 else { return }                 // flame mode ≤ 0: refused at init otherwise
+M0495	Ferazel/Core/Sources/FerazelRender/Frame/ParallaxBlitter.swift	335	skip	// Prologue (`10017950..10017a78`): parity of the top as passed, clamps, then the line-skip top made even.
+M0496	Ferazel/Core/Sources/FerazelRender/Frame/ParallaxBlitter.swift	553	trap	precondition((0..<Self.slotCount).contains(slot) && slotLoaded[slot],
+M0497	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	13	skip	///    cancel, so only a face whose bounds miss (0, 0, 608, 384) in face-local px is skipped;
+M0498	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	50	refuse	public enum Refusal: Error, Equatable {
+M0499	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	62	refuse	/// `.BlitEncFaceBackScratchRot` build 256 entries (a wider face), and `rotWalk` refuses a copy-run column
+M0500	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	69	refuse	/// `parallax` blitter, a `.CalcPxRowContents` fetch `ParallaxBlitter.pxRowContents` refuses (x = the fetch
+M0501	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	90	stub	let placeholder = SetupFaces.sheet(pict: SetupFaces.placeholderPict).map { [$0] } ?? []
+M0502	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	91	stub	for s in Array(wanted) + placeholder where sheets[s.pict] == nil {
+M0503	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	107	stub	/// holds — the loaded face for `.setup`, the placeholder PICT 150 for `.setupCached` (the caches load after
+M0504	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	113	stub	case .setupCached: face = sheets[SetupFaces.placeholderPict]?.faces.first
+M0505	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	129	skip	/// prefs `+6` Effects (3 skips the light pass).
+M0506	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	133	refuse	/// The PxBack layer mode 0xb reads under an 0xff mask byte (`.CalcPxRowContents`); nil refuses that read.
+M0507	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	150	refuse	/// refused at the draw). The cull's grid pair cancels out (see `wrapDrawSprites`), so (h, v) serves for both.
+M0508	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	169	refuse	/// `_DAT_1009fe74` / `_DAT_1009fe70` pair the cull offsets by. A `FaceRef` with no loaded face is refused.
+M0509	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	175	refuse,throw	guard let face = faces.face(d.face) else { throw Refusal.faceNotLoaded(d.face) }
+M0510	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	266	refuse	///   `.BlitEncFaceFlipDiffuse`; `diffuseWalk` with `random`, the replayed game stream — nil is refused), the others
+M0511	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	290	refuse,throw	guard let random else { throw Refusal.diffuseSeed }
+M0512	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	294	refuse,throw	guard mode == 6 else { throw Refusal.mode(word) }
+M0513	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	316	refuse,throw	guard !flip else { throw Refusal.mode(word) }
+M0514	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	343	skip	/// `put(portIndex, value)`. Skips and pixels outside the window draw no random. The mask is `blitEncFaceX`'s pass.
+M0515	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	358	skip	/// pointer starts at dv − sv and, per row token: while the row counter is below sv the row's data is skipped, the
+M0516	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	419	refuse	/// reads past it → refused). Clipped by its own token walk (not `forEachRun`): the left/top port edge moves the
+M0517	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	476	refuse,throw	else { throw Refusal.translucency(x: x, y: y) }
+M0518	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	479	trap	guard let f = fetch else { preconditionFailure() }
+M0519	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	482	refuse,throw	guard index < f.bytes.count else { throw Refusal.translucency(x: f.x + index, y: y) }
+M0520	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	500	refuse,throw	if flip && afterCopy && k != 0 { throw Refusal.translucency(x: origin.x + a, y: y) }
+M0521	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	505	refuse,throw	guard s < remap.count else { throw Refusal.mode(word) }
+M0522	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	509	refuse,throw	guard table.indices.contains(i) else { throw Refusal.mode(word) }
+M0523	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	526	refuse	/// sub; 0xc ambient L (F = 0) or light (L, F). Any other mode leaves the table register undefined → refused.
+M0524	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	529	refuse,throw	guard bank.indices.contains(sub) else { throw Refusal.mode(word) }
+M0525	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	542	refuse,throw	default: throw Refusal.mode(word)
+M0526	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	556	refuse,throw	guard tables.tint.indices.contains(sub) else { throw Refusal.mode(word) }
+M0527	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	562	refuse,throw	guard bank.indices.contains(sub) else { throw Refusal.mode(word) }
+M0528	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	566	refuse,throw	guard tables.water.indices.contains(sub) else { throw Refusal.mode(word) }
+M0529	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	571	refuse,throw	guard tables.ambient.indices.contains(L) else { throw Refusal.darkness(L) }
+M0530	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	577	refuse,throw	guard base + 0x100 <= tables.light.count else { throw Refusal.mode(word) }
+M0531	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	581	refuse,throw	throw Refusal.mode(word)
+M0532	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	586	skip	/// D = `.GetAmbDarkVal(x + w'/2, y + h'/2)` (the clipped w', h'); each active slot (200, slot order) is skipped
+M0533	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	604	refuse	var failure: Refusal?
+M0534	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	630	refuse	func blit(_ s: (Int, Int), _ t: (Int, Int), _ height: Int, _ under: Bool) -> Refusal? {
+M0535	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	635	refuse	var f: Refusal?
+M0536	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	669	throw	if let failure { throw failure }
+M0537	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	694	refuse	/// Returns a refusal for a light-table index outside the table.
+M0538	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	697	refuse	offCol: Int, rowShift: ((Int) -> Int)? = nil) -> Refusal? {
+M0539	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	702	refuse	var failure: Refusal?
+M0540	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	769	refuse,throw	guard let face = faces.face(prev.face) else { throw Refusal.faceNotLoaded(prev.face) }
+M0541	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	863	refuse,throw	guard face.width <= 0x100 else { throw Refusal.transform }
+M0542	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	890	refuse,throw	guard face.width <= 0x100 else { throw Refusal.transform }
+M0543	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	950	skip	/// becomes `op(source pixel, port pixel)`; skips leave the port alone.
+M0544	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	1079	skip	let skipped = rowsSeen < (sv & 0xffff)
+M0545	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	1080	skip	if skipped { p += n }
+M0546	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	1084	skip	// A negative index reads before the table; harmless for a row whose data is skipped.
+M0547	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	1085	refuse,skip,throw	guard m >= 0 || skipped else { throw Refusal.ripplePhase(phase) }
+M0548	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	1125	skip	/// advance 1:1 and their data is skipped); the row is drawn at the destination row **before** that advance, and
+M0549	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	1212	refuse,throw	guard (0..<360).contains(angle) else { throw Refusal.rotation(rotation) }
+M0550	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	1240	refuse,throw	guard X.indices.contains(c) else { throw Refusal.transform }
+M0551	Ferazel/Core/Sources/FerazelRender/Frame/SpriteBlitter.swift	1273	refuse,throw	guard (0..<360).contains(Int(rotation)) else { throw Refusal.rotation(rotation) }
+M0552	Ferazel/Core/Sources/FerazelRender/Frame/StatusBar.swift	11	defer	///   port and the port to the screen; the first CT copy gives the port the screen's seed, so the later plain
+M0553	Ferazel/Core/Sources/FerazelRender/Frame/StatusBar.swift	63	trap	precondition(back.width == Self.width && back.height == Self.height, "PICT 132 is the 640×88 status port")
+M0554	Ferazel/Core/Sources/FerazelRender/Frame/StatusBar.swift	188	defer	// outside 0…26 (−1: the empty inventory) would read G+0x1a…+0x23 (the gap, Phase 3 Invariant 7) — not
+M0555	Ferazel/Core/Sources/FerazelRender/Frame/TextRasterizer.swift	52	trap	precondition(glyph.coverage.count == glyph.width * glyph.height,
+M0556	Ferazel/Core/Sources/FerazelRender/Frame/TileBlitters.swift	7	unbuilt	/// wrapped copies; the replica clips each copy to the 640×416 port (the 8-px slop is not modelled).
+M0557	Ferazel/Core/Sources/FerazelRender/Frame/TileBlitters.swift	16	skip	/// What one blit does to each pixel a copy run covers (skip runs leave the port alone in every blitter here).
+M0558	Ferazel/Core/Sources/FerazelRender/Frame/TileBlitters.swift	120	skip	/// Walks a face's token stream in place (u32 tokens: op 1 row, 3 skip n, 2 copy n bytes padded to 4, 0 end) and
+M0559	Ferazel/Core/Sources/FerazelRender/Frame/TileGridRenderer.swift	33	unbuilt	/// The `param_2 ≠ 0` (mask-only) mode of `.RedrawScrollGrid` is not built (its one caller is outside R1).
+M0560	Ferazel/Core/Sources/FerazelRender/Frame/TileGridRenderer.swift	46	skip	/// prefs `+0x06` Effects (`FerazelPrefs.effects`): 3 skips the per-cell lights and `.DrawLightsOntoTiles`.
+M0561	Ferazel/Core/Sources/FerazelRender/Frame/TileGridRenderer.swift	284	refuse	/// w 0..5; no shipped level has a BG kind 206..209 under a drawn FG cell — refused, not invented.
+M0562	Ferazel/Core/Sources/FerazelRender/Frame/TileGridRenderer.swift	286	trap	precondition(w < tables.water.count, "water table w ≥ 6 is outside the census (w = \(w))")
+M0563	Ferazel/Core/Sources/FerazelRender/Screens/ConversationRenderer.swift	26	refuse	/// - Every other front-end op: `ScreenRenderer`'s (the level ops refused there).
+M0564	Ferazel/Core/Sources/FerazelRender/Screens/ConversationRenderer.swift	63	trap	return try! ColorLUT(id: 8, name: "System 8-bit", data: Data(b))
+M0565	Ferazel/Core/Sources/FerazelRender/Screens/ConversationRenderer.swift	67	refuse	/// - Throws: `ScreenRenderer.Refusal.levelOp` for a level op other than `drawBlackLines`; `ColorLUTError` /
+M0566	Ferazel/Core/Sources/FerazelRender/Screens/MapRenderer.swift	22	skip	///   (x, y), w, h)` — the token stream's copy runs written raw (clut-700 indices into a clut-700 port), skips leave the
+M0567	Ferazel/Core/Sources/FerazelRender/Screens/MapRenderer.swift	47	refuse	public enum Refusal: Error, Equatable {
+M0568	Ferazel/Core/Sources/FerazelRender/Screens/MapRenderer.swift	95	refuse	/// - Throws: `Refusal.unexpected`, `ScreenRenderer.Refusal`, missing CLUT / picture errors.
+M0569	Ferazel/Core/Sources/FerazelRender/Screens/MapRenderer.swift	134	throw	guard faces.indices.contains(index) else { throw FaceSheetError.cellOutOfRange(index: index, count: faces.count) }
+M0570	Ferazel/Core/Sources/FerazelRender/Screens/MapRenderer.swift	176	refuse,throw	throw Refusal.unexpected(String(describing: op).prefix { $0 != "(" }.description, port)
+M0571	Ferazel/Core/Sources/FerazelRender/Screens/MapRenderer.swift	202	refuse,throw	case .screen: throw Refusal.unexpected("copy", from)
+M0572	Ferazel/Core/Sources/FerazelRender/Screens/MapRenderer.swift	244	skip	case .skip(let n):
+M0573	Ferazel/Core/Sources/FerazelRender/Screens/ScreenRenderer.swift	18	skip	///   whose colour is white are skipped (raw `10079870`) [MED].
+M0574	Ferazel/Core/Sources/FerazelRender/Screens/ScreenRenderer.swift	36	refuse	public enum Refusal: Error, Equatable {
+M0575	Ferazel/Core/Sources/FerazelRender/Screens/ScreenRenderer.swift	60	refuse	/// - Throws: `Refusal.levelOp`, `ColorLUTError` / `PictureSourceError` for a missing CLUT or picture.
+M0576	Ferazel/Core/Sources/FerazelRender/Screens/ScreenRenderer.swift	108	refuse,throw	case .redrawScrollGrid: throw Refusal.levelOp("redrawScrollGrid")
+M0577	Ferazel/Core/Sources/FerazelRender/Screens/ScreenRenderer.swift	109	refuse,throw	case .redrawEntireScrollGrid: throw Refusal.levelOp("redrawEntireScrollGrid")
+M0578	Ferazel/Core/Sources/FerazelRender/Screens/ScreenRenderer.swift	110	refuse,throw	case .setDrawnScroll: throw Refusal.levelOp("setDrawnScroll")
+M0579	Ferazel/Core/Sources/FerazelRender/Screens/ScreenRenderer.swift	111	refuse,throw	case .drawLightsOntoTiles: throw Refusal.levelOp("drawLightsOntoTiles")
+M0580	Ferazel/Core/Sources/FerazelRender/Screens/ScreenRenderer.swift	112	refuse,throw	case .wrapDrawSprites: throw Refusal.levelOp("wrapDrawSprites")
+M0581	Ferazel/Core/Sources/FerazelRender/Screens/ScreenRenderer.swift	113	refuse,throw	case .copyToScreen: throw Refusal.levelOp("copyToScreen")
+M0582	Ferazel/Core/Sources/FerazelRender/Screens/ScreenRenderer.swift	114	refuse,throw	case .copyMaskToScreen: throw Refusal.levelOp("copyMaskToScreen")
+M0583	Ferazel/Core/Sources/FerazelRender/Screens/ScreenRenderer.swift	115	refuse,throw	case .mosaic: throw Refusal.levelOp("mosaic")
+M0584	Ferazel/Core/Sources/FerazelRender/Screens/ScreenRenderer.swift	116	refuse,throw	case .changeLightFace: throw Refusal.levelOp("changeLightFace")
+M0585	Ferazel/Core/Sources/FerazelRender/Screens/ScreenRenderer.swift	117	refuse,throw	case .lightTable: throw Refusal.levelOp("lightTable")
+M0586	Ferazel/Core/Sources/FerazelRender/Screens/ScreenRenderer.swift	118	refuse,throw	case .wrapEraseSprites: throw Refusal.levelOp("wrapEraseSprites")
+M0587	Ferazel/Core/Sources/FerazelRender/Screens/ScreenRenderer.swift	119	refuse,throw	case .statusBar: throw Refusal.levelOp("statusBar")
+M0588	Ferazel/Core/Sources/FerazelRender/Screens/ScreenRenderer.swift	120	refuse,throw	case .setTile: throw Refusal.levelOp("setTile")
+M0589	Ferazel/Core/Sources/FerazelRender/Screens/ScreenRenderer.swift	121	refuse,throw	case .wrapDrawWaterEffects: throw Refusal.levelOp("wrapDrawWaterEffects")
+M0590	Ferazel/Core/Sources/FerazelRender/Screens/ScreenRenderer.swift	122	refuse,throw	case .drawParticles: throw Refusal.levelOp("drawParticles")
+M0591	Ferazel/Core/Sources/FerazelRender/Screens/ScreenRenderer.swift	123	refuse,throw	case .eraseParticles: throw Refusal.levelOp("eraseParticles")
+M0592	Ferazel/Core/Sources/FerazelRender/Screens/ScreenRenderer.swift	127	refuse,throw	throw Refusal.levelOp("drawBlackLines")
+M0593	Ferazel/Core/Sources/FerazelRender/Screens/ScreenRenderer.swift	147	trap	return try! ColorLUT(id: clut.id, name: clut.name, data: Data(b))
+M0594	Ferazel/Core/Sources/FerazelRender/Screens/ScreenRenderer.swift	159	skip	/// skips white source pixels. Pixels outside the picture read 0 (`ConvertedPicture.pixel`); dest is clipped to the
+M0595	Ferazel/Core/Sources/FerazelRender/Sound/SoundTool.swift	7	defer	/// bank sprites-backgrounds-sounds §6.2, plan 2026-10-10-ferazel-phase2 S2):
+M0596	Ferazel/Core/Sources/FerazelRender/Sound/SoundTool.swift	179	skip	// M l. 78254–78263: skip while new.prio < e.prio (cmplw) or new.L+R < e.L+R (cmpw); else insert here.
+M0597	Ferazel/Core/Sources/FerazelRender/Sound/SoundTool.swift	247	stub	let frames = min(max(frames, 0), buffer.count / 2)   // as PCMMixer: ≤ 0 → no-op, never past the buffer
+M0598	Ferazel/Core/Sources/ferazel-census/main.swift	9	defer	// ferazel-census — thin main over `FerazelRender.FerazelCensus` (plan docs/plans/2026-10-06-ferazel-phase1.md, C6).
+M0599	Ferazel/Core/Sources/ferazel-census/main.swift	33	throw	throw RenderError.pngWriteFailed(url.lastPathComponent)
+M0600	Ferazel/Core/Sources/ferazel-census/main.swift	36	throw	guard CGImageDestinationFinalize(dest) else { throw RenderError.pngWriteFailed(url.lastPathComponent) }
+M0601	Ferazel/Shared/FerazelAudio.swift	18	defer	/// Shared by both shells (Phase W, WF1 — moved from the Mac app unchanged in logic): the mixer is a `FerazelMixer` (the
+M0602	Ferazel/Shared/FerazelDriver.swift	40	defer	/// `BuiltLevels.range` (1…4 since Phase 4 LV4).
+M0603	Ferazel/Shared/FerazelDriver.swift	84	defer	/// The platform-neutral half of the shell (Phase W, WF1, Ruling 1; moved from the Mac's `FerazelController` with the
+M0604	Ferazel/Shared/FerazelDriver.swift	173	throw	/// the prefs, the seed and the flow. A throw is the shell's to report (the Mac terminates).
+M0605	Ferazel/Shared/FerazelDriver.swift	303	refuse,throw	guard let r = levelRenderer else { throw FrameRenderer.Refusal.tintTableNotBuilt }
+M0606	Ferazel/Shared/FerazelDriver.swift	441	refuse,throw	guard let r = levelRenderer else { throw FrameRenderer.Refusal.tintTableNotBuilt }
+M0607	Ferazel/Shared/FerazelDriver.swift	448	refuse,throw	guard let r = levelRenderer else { throw FrameRenderer.Refusal.tintTableNotBuilt }
+M0608	Ferazel/Shared/FerazelDriver.swift	449	refuse,throw	guard (0..<DeathEffect.steps).contains(k) else { throw FrameRenderer.Refusal.deathEffectStep(k) }
+M0609	Ferazel/Shared/FerazelMenuRules.swift	4	defer	/// MBAR 128's rules, shared by both shells (Phase W, WF3, Ruling 5; moved from the Mac's `FerazelMenus` unchanged in
+M0610	Ferazel/App/FerazelController.swift	17	defer	/// Phase W (WF1, Ruling 1): the platform-neutral half — the boot's game part, the tick's flow / draw / audio, the
+M0611	Ferazel/App/FerazelController.swift	391	refuse	/// `.OpenSG`'s `CustomGetFile` (DITL 1500, type 'FWSg'): the macOS open panel, any file (Core refuses a file that
+M0612	Ferazel/App/FerazelController.swift	479	skip	/// first file (`DAT_100a5106` set); inside a game the pause loop's ignores it (`5106` clear) and `.GameLoop`'s
+M0613	Ferazel/App/FerazelController.swift	505	stub	/// Assigning an equal mapping is a no-op in HectorShell.
+M0614	Ferazel/App/FerazelFiles.swift	50	throw	throw SaveWriteError(error)
+M0615	Ferazel/App/FerazelMenus.swift	20	unbuilt	/// the desk accessories `AppendResMenu` added are not built; the system Quit is File ▸ Quit — a Dock / logout quit
+M0616	Ferazel/App/FerazelMenus.swift	106	defer	/// `.UpdateMenus`' enables (the shared `FerazelMenuRules`, Phase W WF3).
+M0617	Ferazel/App/Dialogs/CreditsDialog.swift	125	trap	required init?(coder: NSCoder) { fatalError("not used") }
+M0618	Ferazel/App/Dialogs/DialogViews.swift	74	trap	required init?(coder: NSCoder) { fatalError("not used") }
+M0619	Ferazel/App/Dialogs/DialogViews.swift	104	trap	required init?(coder: NSCoder) { fatalError("not used") }
+M0620	Ferazel/App/Dialogs/DialogViews.swift	147	trap	required init?(coder: NSCoder) { fatalError("not used") }
+M0621	Ferazel/App/Dialogs/DialogViews.swift	248	trap	required init?(coder: NSCoder) { fatalError("not used") }
+M0622	Ferazel/App/Dialogs/PrefsDialogView.swift	13	refuse	/// modifiers (its modifier capture) — and redraws from it. A refused key shows `.ReportDialog` (DLOG 200) over it.
+M0623	Ferazel/App/Dialogs/PrefsDialogView.swift	95	refuse	case .refused(let text):
+M0624	Ferazel/Windows/Sources/FerazelWin/WinFileDialogs.swift	84	stub	/// The panels this launch uses: none shown headless (`--frames`: the stub cancels); else Windows' native dialogs,
+M0625	Ferazel/Windows/Sources/FerazelWin/main.swift	18	skip	//          (--seed N) and GetDateTime scripted; real input is ignored except the close box. --dump writes the last
+M0626	Ferazel/Windows/Sources/FerazelWinKit/BakedTextRasterizer.swift	13	unbuilt	/// Measured against `CoreTextRasterizer` byte for byte (FerazelWinKitTests.BakedTextTests). Not modelled (no game
+M0627	Ferazel/Windows/Sources/FerazelWinKit/BakedTextRasterizer.swift	32	refuse	/// The fonts directory holds no `*.fzfont` — every string would draw invisibly, so it is refused.
+M0628	Ferazel/Windows/Sources/FerazelWinKit/BakedTextRasterizer.swift	45	defer	/// stays unbaked, with one log line (at load; asking for it later logs nothing more).
+M0629	Ferazel/Windows/Sources/FerazelWinKit/BakedTextRasterizer.swift	49	throw	guard !names.isEmpty else { throw LoadError.noFonts(fontsDirectory.path) }
+M0630	Ferazel/Windows/Sources/FerazelWinKit/FZFont.swift	45	trap	precondition(coverage.count == Int(width) * Int(height), "coverage size ≠ width·height")
+M0631	Ferazel/Windows/Sources/FerazelWinKit/FZFont.swift	55	trap	precondition(phases.first?.start == 0, "a glyph's phases start at 0")
+M0632	Ferazel/Windows/Sources/FerazelWinKit/FZFont.swift	106	scope	case badMagic, unsupportedVersion(UInt16), truncated, badName
+M0633	Ferazel/Windows/Sources/FerazelWinKit/FZFont.swift	160	throw	guard try r.bytes(4) == Self.magic else { throw FormatError.badMagic }
+M0634	Ferazel/Windows/Sources/FerazelWinKit/FZFont.swift	162	scope,throw	guard version == Self.version else { throw FormatError.unsupportedVersion(version) }
+M0635	Ferazel/Windows/Sources/FerazelWinKit/FZFont.swift	165	throw	throw FormatError.badName
+M0636	Ferazel/Windows/Sources/FerazelWinKit/FZFont.swift	185	throw	guard i == Self.blank || Int(i) < bitmapCount else { throw FormatError.badBitmapIndex(i) }
+M0637	Ferazel/Windows/Sources/FerazelWinKit/FZFont.swift	187	throw	throw FormatError.badPhases
+M0638	Ferazel/Windows/Sources/FerazelWinKit/FZFont.swift	191	throw	guard !phases.isEmpty else { throw FormatError.badPhases }
+M0639	Ferazel/Windows/Sources/FerazelWinKit/FZFont.swift	212	throw	guard r.atEnd else { throw FormatError.trailingBytes }
+M0640	Ferazel/Windows/Sources/FerazelWinKit/FZFont.swift	234	throw	guard n >= 0, i + n <= b.count else { throw FZFont.FormatError.truncated }
+M0641	Ferazel/Windows/Sources/FerazelWinKit/WinArgs.swift	14	defer	/// only "yes" / "true" / "1" are true). A later pair for the same key wins. Any other argument is a saved game to open
+M0642	Ferazel/Windows/Sources/FerazelWinKit/WinArgs.swift	26	skip	/// (`WinAnswerFilePanels`, plan WF5); Windows shows its native dialogs and ignores them, `--frames` runs cancel.
+M0643	Ferazel/Windows/Sources/FerazelWinKit/WinArgs.swift	67	throw	guard let v = rest.popFirst() else { throw UsageError(message: "\(flag) needs a value") }
+M0644	Ferazel/Windows/Sources/FerazelWinKit/WinArgs.swift	80	throw	guard let n = Int(try value(arg)), n > 0 else { throw UsageError(message: "--frames needs a count > 0") }
+M0645	Ferazel/Windows/Sources/FerazelWinKit/WinArgs.swift	86	throw	throw UsageError(message: "--seed needs a 32-bit integer")
+M0646	Ferazel/Windows/Sources/FerazelWinKit/WinArgs.swift	90	throw	if arg.hasPrefix("--") { throw UsageError(message: "unknown option \(arg)\n\(usage)") }
+M0647	Ferazel/Windows/Sources/FerazelWinKit/WinArgs.swift	104	throw	throw UsageError(message: "--dump, --keys and --seed need --frames")
+M0648	Ferazel/Windows/Sources/FerazelWinKit/WinDialogs.swift	100	stub	/// The stub's answer: Cancel for a confirm and Options, OK for the rest.
+M0649	Ferazel/Windows/Sources/FerazelWinKit/WinFileRequests.swift	22	refuse	/// The type filter: "All files (*.*)" only (the Mac panel takes any file; Core refuses a non-save itself).
+M0650	Ferazel/Windows/Sources/FerazelWinKit/WinFiles.swift	44	throw	guard let appData = environment["APPDATA"], !appData.isEmpty else { throw .noAppData }
+M0651	Ferazel/Windows/Sources/FerazelWinKit/WinFiles.swift	126	throw	throw SaveWriteError(error)
+M0652	Ferazel/Windows/Sources/FerazelWinKit/WinGame.swift	47	skip	/// input and the pad, the present, the requests (cursor; menu-bar requests ignored, D21; the menu state → the
+M0653	Ferazel/Windows/Sources/FerazelWinKit/WinGame.swift	161	throw	/// the command line named (the Mac's Finder open). A throw is the executable's to report.
+M0654	Ferazel/Windows/Sources/FerazelWinKit/WinGame.swift	326	skip	case .held, .ignored: break
+M0655	Ferazel/Windows/Sources/FerazelWinKit/WinGame.swift	516	skip	public func skip(iterations n: Int) { scripted.skip(n) }
+M0656	Ferazel/Windows/Sources/FerazelWinKit/WinInput.swift	71	skip	case ignored
+M0657	Ferazel/Windows/Sources/FerazelWinKit/WinInput.swift	77	skip	/// a shortcut again on a repeat, as AppKit does, and ignores a repeat's full-screen toggle).
+M0658	Ferazel/Windows/Sources/FerazelWinKit/WinInput.swift	80	skip	if code == Self.capsLockCode { return .ignored }
+M0659	Ferazel/Windows/Sources/FerazelWinKit/WinInput.swift	109	skip	/// the focus returns is ignored until released — BTX `WinGameDriver`'s rule, HectorShell's inactive app).
+M0660	Ferazel/Windows/Sources/FerazelWinKit/WinInput.swift	119	skip	/// taken by the dialog, so every key and the button are up, and a pad button still held is ignored until
+M0661	Ferazel/Windows/Sources/FerazelWinKit/WinInput.swift	136	skip	/// buttons held on return are ignored until released (`ShellView.pollKeyState`). Returns the translation, whose
+M0662	Ferazel/Windows/Sources/FerazelWinKit/WinKeyScript.swift	44	skip	/// skipped. `<frame>` is the loop wake (0-based; 240 a second under `--frames`, a game tick every 4) at whose start the
+M0663	Ferazel/Windows/Sources/FerazelWinKit/WinKeyScript.swift	85	throw	throw ParseError(line: lineNo, message: "expected `<frame> <command> …`")
+M0664	Ferazel/Windows/Sources/FerazelWinKit/WinKeyScript.swift	88	throw	guard words.count > i else { throw ParseError(line: lineNo, message: "missing key") }
+M0665	Ferazel/Windows/Sources/FerazelWinKit/WinKeyScript.swift	96	throw	throw ParseError(line: lineNo, message: "unknown key \(words[i])")
+M0666	Ferazel/Windows/Sources/FerazelWinKit/WinKeyScript.swift	105	throw	default: throw ParseError(line: lineNo, message: "unknown modifier \(m)")
+M0667	Ferazel/Windows/Sources/FerazelWinKit/WinKeyScript.swift	112	throw	throw ParseError(line: lineNo, message: "expected `\(words[1]) <x> <y>`")
+M0668	Ferazel/Windows/Sources/FerazelWinKit/WinKeyScript.swift	137	throw	throw ParseError(line: lineNo, message: "expected `caps on|off`")
+M0669	Ferazel/Windows/Sources/FerazelWinKit/WinKeyScript.swift	143	throw	throw ParseError(line: lineNo, message: "unknown command \(words[1])")
+M0670	Ferazel/Windows/Sources/FerazelWinKit/WinKeyScript.swift	206	skip	public mutating func skip(_ n: Int) { frame += n }
+M0671	Ferazel/Windows/Sources/FerazelWinKit/WinPrefsDialog.swift	14	refuse	/// flagged) and each tick's null event with the modifiers held — and redraws from it. A refused key shows DLOG 200 over
+M0672	Ferazel/Windows/Sources/FerazelWinKit/WinPrefsDialog.swift	82	refuse	case .refused(let text):
+M0673	Ferazel/Windows/Sources/FerazelWinKit/WinShortcuts.swift	34	skip	/// The command a key-down picks: Ctrl alone (Caps Lock ignored) + an entry's key, when the shared rules say the
+M0674	Ferazel/Windows/Sources/FerazelWinKit/WinStartup.swift	71	skip	/// (rewritten at each launch, the last launch's kept as "… (previous).log"; BTX `WinLog`). Thread-safe; a log that cannot be written is silently skipped (the game
+M0675	Ferazel/Windows/Sources/fz-bake-font/main.swift	47	trap	bitmapInfo: CGImageAlphaInfo.alphaOnly.rawValue) else { fatalError("no context") }
+M0676	Ferazel/Windows/Sources/fz-bake-font/main.swift	59	trap	precondition(minR > 0 && minC > 0 && maxR < h - 1 && maxC < w - 1, "ink reaches the bake margin")
+M0677	Ferazel/Windows/Sources/fz-bake-font/main.swift	75	trap	precondition(s.unicodeScalars.count == 1, "MacRoman 0x\(String(byte, radix: 16)) is not one scalar")
+M0678	Ferazel/Windows/Sources/fz-bake-font/main.swift	94	trap	precondition(i != FZFont.blank, "too many bitmaps")

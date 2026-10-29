@@ -1,0 +1,1237 @@
+address	name	source	cites	deferred	files
+10000000	FUN_10000000	pef	0	0	
+1000001c	.CopyBitsCT	pef	2	0	StatusBar.swift:2
+100000a8	.CopyBitsCTForce	pef	4	0	StageScreens.swift:2,ScreenRenderer.swift:1,DrawOp.swift:1
+10000128	.SLDisable	pef	0	0	
+10000148	.SLEnable	pef	0	0	
+10000168	.InitEngine	pef	1	0	GameFlow.swift:1
+100001ec	.InitToolbox	pef	0	0	
+100002ac	.InitSprites	pef	8	0	BootFaces.swift:2,LevelRun.swift:2,SetupFaces.swift:1,HeldItem.swift:1,GameFlow.swift:1,FerazelDriver.swift:1
+10000408	.InitPlayerKickRects	pef	0	0	
+10000924	.LoadCoolingMap	pef	0	0	
+100009c8	.InitAppGlobals	pef	19	0	GameFlow.swift:4,FerazelDriver.swift:4,FerazelAudio.swift:2,StatusBar.swift:1,FramePorts.swift:1,TileSets.swift:1
+10001400	.ProcessFGBlendTileFaces	pef	5	0	BlendFaces.swift:2,TileSets.swift:2,TileGridRenderer.swift:1
+10001498	.InitGameGlobals	pef	33	0	GameGlobals.swift:11,TileSets.swift:3,InventorySlot.swift:3,NewGame.swift:3,StatusBar.swift:2,StatusBarState.swift:2
+10001cac	.InitTiles	pef	2	0	ConversationRenderer.swift:1,GameFlow.swift:1
+10001e50	.LoadBGTileset	pef	3	0	TileSets.swift:3
+10001f2c	.LoadFGTileset	pef	2	0	TileSets.swift:2
+10002008	.LoadFGWaterTileset	pef	4	0	TileSets.swift:3,WaterFaceBlitter.swift:1
+100020ec	.LoadFGPatternTileset	pef	2	0	TileSets.swift:2
+1000224c	.LoadPxBackTileset	pef	3	0	TileSets.swift:2,LevelHeader.swift:1
+10002344	.LoadPxMidTileset	pef	3	0	TileSets.swift:2,LevelHeader.swift:1
+1000246c	.DisposeBGTileset	pef	0	0	
+10002534	.DisposeFGTileset	pef	0	0	
+100025fc	.DisposeFGWaterTileset	pef	0	0	
+100026c8	.DisposeFGPatternTileset	pef	0	0	
+100027cc	.DisposePxBackTileset	pef	0	0	
+100027f8	.DisposePxMidTileset	pef	0	0	
+10002824	.InitTileHotRects	pef	2	0	SeparateFromTiles.swift:1,TileHotRects.swift:1
+10002c5c	.TrackClickOnCommandButton	pef	5	0	GameFlow.swift:3,MainMenu.swift:2
+10002f24	.DrawMainMenu	pef	4	1	GameFlow.swift:2,MainMenu.swift:1,NewGame.swift:1
+10003024	.DisposeLevelTilesets	pef	0	0	
+10003098	.LoadLevelTilesets	pef	8	0	TileSets.swift:5,LevelRun.swift:3
+1000332c	.LoadLevelPhysics	pef	0	0	
+100033d4	.LoadLevelSounds	pef	0	0	
+10003478	.GenerateSprite	pef	12	1	SetupFaces.swift:5,SpriteClassTable.swift:3,BoxSprite.swift:3,SpriteSlot.swift:1
+10003cd0	.SetupLevelSprites	pef	28	3	SetupFaces.swift:9,FerazelSession.swift:7,FrameRenderer.swift:2,LevelFile.swift:2,LevelRun.swift:2,SpriteWorld.swift:2
+10004114	.ReportMem	pef	2	0	NewGame.swift:2
+10004134	.AltClutMod	pef	0	0	
+100042e8	.CheckFlags	pef	1	0	DeathScreen.swift:1
+1000430c	.SetupLevel	pef	59	0	LevelRun.swift:13,FerazelSession.swift:13,SetupFaces.swift:8,FrameRenderer.swift:3,LevelFlow.swift:3,TileSets.swift:2
+10005070	.InitTrackMap	pef	0	0	
+10005130	.SetTrackMap	pef	0	0	
+1000518c	.UpdateTrackMap	pef	0	0	
+10005270	.DeathEffect	pef	22	2	FrameRenderer.swift:6,LevelRun.swift:5,DeathEffect.swift:4,ShellRequest.swift:2,LevelServices.swift:2,FerazelDriver.swift:2
+10005510	.FillPercent	pef	5	0	StageScreens.swift:5
+10005894	.CalcPercent	pef	4	0	StageScreens.swift:4
+10005950	.StageCompleteEffect	pef	9	0	StageScreens.swift:3,LevelRun.swift:3,GameFlow.swift:1,SpriteWorld.swift:1,LevelFlow.swift:1
+10005ba0	.PopupStageLoad	pef	6	0	StageScreens.swift:3,LevelRun.swift:2,LevelServices.swift:1
+10005ce4	.UpdateStageLoad	pef	6	0	StageScreens.swift:4,LevelRun.swift:2
+10005e2c	.UpLevel	pef	0	0	
+10005e4c	.RestoreWindowBackground	pef	3	0	DrawOp.swift:1,Pause.swift:1,FerazelSession.swift:1
+10005ec8	.RestorePreExistingWindowBackground	pef	1	0	NewGame.swift:1
+10005f04	.CapsLockDown	pef	8	0	Pause.swift:3,FerazelSession.swift:3,FrameSuspension.swift:2
+10005f5c	.MySleepProc	tvector	1	0	Pause.swift:1
+10006008	.MyInstallSleepProc	pef	1	0	Pause.swift:1
+10006078	.Pause	pef	28	0	FerazelSession.swift:9,Pause.swift:7,WorldMapRun.swift:5,LevelRun.swift:3,ScreenRenderer.swift:1,FrameSuspension.swift:1
+100064b0	.FindFPS	pef	0	0	
+1000650c	.DisplayFPS	pef	0	0	
+100066f4	.CheckGameEvents	pef	0	0	
+10006784	.ConfirmAbortGameDialog	pef	7	0	Pause.swift:2,FerazelDialogs.swift:2,LevelRun.swift:1,FerazelCarbonDialog.swift:1,DialogWindow.swift:1
+10006970	.TrackClickOnCommandButtonDeath	pef	3	0	DeathScreen.swift:3
+10006b6c	.WandGlow	pef	5	0	DeathScreen.swift:5
+10006ca4	.TurnGray	pef	10	0	DeathScreen.swift:7,ScreenRenderer.swift:1,ScreenGammaOp.swift:1,NewGame.swift:1
+10007190	.AskToContinue	pef	12	0	DeathScreen.swift:4,NewGame.swift:4,GameFlow.swift:3,SaveGame.swift:1
+10007684	.CheckGameLoopKeys	pef	41	2	FerazelSession.swift:17,LevelRun.swift:12,FrameSuspension.swift:5,Pause.swift:2,DrawOp.swift:1,StatusBarCalls.swift:1
+10007c24	.HandleSprites	pef	14	0	FerazelSession.swift:6,SpriteWorld.swift:4,BoxSprite.swift:1,ParticlePool.swift:1,DrawOp.swift:1,BonusHandle.swift:1
+10007c9c	FUN_10007c9c	pef	0	0	
+10007d8c	.AddIdleSprite	pef	10	1	IdleSprites.swift:3,SetupFaces.swift:2,SpriteWorld.swift:2,SpriteBlitter.swift:1,SpriteClassTable.swift:1,FerazelSession.swift:1
+10007ed4	.ActiveToIdleSprite	pef	16	0	IdleSprites.swift:5,SpriteSlot.swift:2,SetupFaces.swift:2,FerazelSession.swift:2,SpriteBlitter.swift:1,FrameRenderer.swift:1
+1000803c	.IdleToActiveSprite	pef	8	0	SpriteSlot.swift:3,IdleSprites.swift:2,SpriteWorld.swift:2,RopeSprite.swift:1
+100081ac	.HandleIdleSprites	pef	19	1	FerazelSession.swift:7,IdleSprites.swift:5,SpriteWorld.swift:3,HitPlayerSprite.swift:2,SpriteClassTable.swift:1,FrameSuspension.swift:1
+10008430	.UpdateHealthMagic	pef	18	0	StatusBar.swift:5,StatusBarCalls.swift:5,StatusBarState.swift:3,WorldMapRun.swift:2,SpriteWorld.swift:1,FerazelSession.swift:1
+10008c14	.DrawNumAsString	pef	0	0	
+10008c6c	.UpdateTextStats	pef	19	0	StatusBar.swift:7,StatusBarState.swift:3,StatusBarCalls.swift:3,FrameRenderer.swift:1,TextRasterizer.swift:1,MapRenderer.swift:1
+10008f90	.UpdateItemStat	pef	34	0	StatusBar.swift:9,StatusBarState.swift:4,StatusBarCalls.swift:4,ConvActions.swift:4,Player.swift:3,HitPlayerSprite.swift:3
+100095dc	.UpdateStatusBar	pef	57	0	FerazelSession.swift:11,StatusBarCalls.swift:6,StatusBarState.swift:5,WorldMapRun.swift:5,Pause.swift:5,HitPlayerSprite.swift:5
+100097e0	.DeadTime	pef	6	0	DeathScreen.swift:3,StageScreens.swift:2,WorldMapRun.swift:1
+1000982c	.UpdateSprites	pef	29	1	SpriteSlot.swift:11,SpriteWorld.swift:4,FerazelSession.swift:4,IdleSprites.swift:3,BackgroundSprite.swift:2,PlatformSprite.swift:1
+10009b9c	.ChapterScreen	pef	6	1	StageScreens.swift:2,LevelRun.swift:2,StatusBarCalls.swift:1,FerazelSession.swift:1
+10009d48	.GameLoop	pef	71	2	FerazelSession.swift:18,LevelRun.swift:11,NewGame.swift:6,GameFlow.swift:5,PlayerState.swift:3,Player.swift:3
+1000a4c8	.WarpDialog	pef	0	0	
+1000a6ac	.CopyVictoryStitch	pef	0	0	
+1000aa68	.CreditScreen	pef	0	0	
+1000ac3c	.Victory	pef	2	2	NewGame.swift:2
+1000b11c	.NewGame	pef	25	0	GameFlow.swift:7,FerazelSession.swift:4,NewGame.swift:3,ContinueGame.swift:2,LevelRun.swift:2,GameGlobals.swift:2
+1000b5ec	.FindUpperLeftCorner	pef	21	1	FerazelSession.swift:8,Camera.swift:4,PlayerState.swift:4,SpriteWorld.swift:3,HitPlayerSprite.swift:2
+1000bec0	.AbortGame	pef	5	0	Pause.swift:3,FerazelSession.swift:1,FerazelMenus.swift:1
+1000bfb0	.DoSaveGame	pef	1	0	SaveBlock.swift:1
+1000c104	.SavePointSave	pef	19	0	LevelRun.swift:6,SaveGame.swift:4,FrameSuspension.swift:3,HitPlayerSprite.swift:2,SaveBlock.swift:1,StatusBarCalls.swift:1
+1000c8d8	.EndLevelSGUpdate	pef	9	0	LevelRun.swift:4,FerazelSession.swift:2,SaveBlock.swift:1,GameFlow.swift:1,LevelFlow.swift:1
+1000d004	.ContinueGame	pef	21	1	GameFlow.swift:10,SaveBlock.swift:2,ContinueGame.swift:2,NewGame.swift:2,WorldMapRun.swift:1,Pause.swift:1
+1000df94	.ToggleMusic	pef	7	0	Pause.swift:3,PrefsToggles.swift:2,GameFlow.swift:1,FerazelMenus.swift:1
+1000e118	.UpdateSGString	pef	9	0	SaveGame.swift:4,LevelRun.swift:4,NewGame.swift:1
+1000e22c	.ToggleSound	pef	7	0	Pause.swift:3,PrefsToggles.swift:2,GameFlow.swift:1,FerazelMenus.swift:1
+1000e340	.MakeCurrPrefs	pef	24	0	SaveGame.swift:5,PrefsToggles.swift:4,LevelRun.swift:4,GameFlow.swift:3,Pause.swift:2,NewGame.swift:2
+1000e470	.Options	pef	83	1	GameFlow.swift:10,Pause.swift:10,LevelRun.swift:8,DialogWindow.swift:7,WinDialogs.swift:7,PrefsDialogModel.swift:6
+1000e5b4	.Credits	pef	29	0	GameFlow.swift:6,Pause.swift:6,DialogSystem.swift:4,WinDialogs.swift:3,MainMenu.swift:2,FerazelDialogs.swift:2
+1000e618	.MainMenu	pef	37	0	GameFlow.swift:22,MainMenu.swift:4,FerazelMenuRules.swift:4,FerazelPadLayout.swift:2,BootSequence.swift:1,LevelRun.swift:1
+1000e9d4	.Quit	pef	35	1	GameFlow.swift:9,Pause.swift:9,LevelRun.swift:4,NewGame.swift:4,FerazelController.swift:4,FerazelSession.swift:2
+1000eb34	.CheckEvent	pef	19	0	GameFlow.swift:11,Pause.swift:3,FerazelController.swift:2,NewGame.swift:1,FerazelMenuRules.swift:1,FerazelMenus.swift:1
+1000eb98	.HandleEvent	pef	1	0	GameFlow.swift:1
+1000ec88	.HandleMouseEvent	pef	0	0	
+1000ecf8	.HandleResSwitch	pef	0	0	
+1000eec0	.HandleUpdateEvent	pef	0	0	
+1000efc4	.HandleOSEvent	pef	0	0	
+1000f180	.InitPrefs	pef	19	0	FerazelPrefs.swift:6,PrefsFile.swift:2,PrefsToggles.swift:2,SaveGame.swift:2,PrefsDialogModel.swift:2,TileGridRenderer.swift:1
+1000f4c4	.CheckSysVersion	pef	0	0	
+1000f548	.GetProcessorInfo	pef	0	0	
+1000f5e8	.OpenResourceFiles	pef	0	0	
+1000f71c	.CloseResourceFiles	pef	0	0	
+1000f790	.InitFaces	pef	1	0	GameFlow.swift:1
+1000f7b0	.ResSwitchDialog	pef	0	0	
+1000fa10	.CopyScreenClut	pef	0	0	
+1000faa8	.SetScreenClut	pef	23	0	FrameRenderer.swift:4,LevelTables.swift:3,ScreenRenderer.swift:2,ColorLUT.swift:2,DeathScreen.swift:2,StatusBar.swift:1
+1000fc14	.ResSwitch	pef	1	0	FerazelPrefs.swift:1
+1000fdf0	.DateChecks	pef	0	0	
+1000ffc0	.main	pef	16	0	GameFlow.swift:4,PrefsToggles.swift:2,BootSequence.swift:2,FerazelController.swift:2,SetupFaces.swift:1,ScreenFade.swift:1
+10010834	.SetLongRect	pef	1	0	TileGridRenderer.swift:1
+10010868	.PreparePaintFrame	pef	2	0	TileGridRenderer.swift:2
+100109c0	.GenerateRain	pef	1	0	ScreenFlash.swift:1
+10010d04	.HandleMovieCapture	pef	0	0	
+10010d30	.FillCachedTileArray	pef	5	0	WaterEffects.swift:2,PlayerState.swift:1,Player.swift:1,LevelFlow.swift:1
+10010fac	.WrapDrawWaterEffects	pef	18	0	WaterEffects.swift:6,FerazelSession.swift:4,FrameRenderer.swift:2,DrawOp.swift:2,WaterFaceBlitter.swift:1,WaterFaceDraw.swift:1
+1001171c	.RipplePxBackOffsets	pef	0	0	
+1001180c	.AnimateCLUT	pef	6	0	LevelTables.swift:3,FerazelSession.swift:3
+10011cf8	.PaintFrameWrap	pef	64	0	Pause.swift:13,FerazelSession.swift:13,FrameRenderer.swift:5,DrawOp.swift:5,SpriteWorld.swift:4,FrameSuspension.swift:3
+10012848	.SetScrollLocation	pef	15	0	FerazelSession.swift:7,TileGridRenderer.swift:3,WaterEffects.swift:2,DrawOp.swift:2,Pause.swift:1
+10012a50	.ChangedTile	pef	6	0	FrameRenderer.swift:2,FerazelSession.swift:2,DrawOp.swift:1,PlayerTiles.swift:1
+10012ab4	.PlainWrapFGTile	pef	2	0	LightRenderer.swift:2
+10012ea8	.PlainWrapBGTile	pef	2	0	LightRenderer.swift:2
+10012f84	.PlainWrapFGOverlayTile	pef	3	0	LightRenderer.swift:3
+100131e8	.DrawLightOpBGTile	pef	1	0	LightRenderer.swift:1
+100132a0	.DrawLightOpFGTile	pef	1	0	LightRenderer.swift:1
+10013358	.DrawLightOpFGOverlayTile	pef	2	0	LightRenderer.swift:2
+10013498	.RedrawScrollGrid	pef	21	1	TileGridRenderer.swift:4,SpriteBlitter.swift:4,LightRenderer.swift:3,TileBlitters.swift:2,FrameRenderer.swift:2,FramePorts.swift:2
+10013fd0	.RedrawEntireScrollGrid	pef	29	0	FerazelSession.swift:11,Pause.swift:4,HitPlayerSprite.swift:4,DrawOp.swift:3,TileGridRenderer.swift:2,FrameRenderer.swift:2
+10014054	.LightAnyFGTile	pef	3	0	TileGridRenderer.swift:2,LightRenderer.swift:1
+1001413c	.LightAnyBGTile	pef	4	0	TileGridRenderer.swift:3,LightRenderer.swift:1
+100141cc	.LightAnyFGOverlayFGTile	pef	2	0	TileGridRenderer.swift:2
+10014264	.LightAnyFGOverlayBGTile	pef	1	0	TileGridRenderer.swift:1
+100142fc	.WrapRectBlitX	pef	4	0	TileGridRenderer.swift:1,TileBlitters.swift:1,LightRenderer.swift:1,FramePorts.swift:1
+100144c8	.WrapDrawSprites	pef	39	0	SpriteSlot.swift:10,FerazelSession.swift:10,SpriteBlitter.swift:4,DrawOp.swift:4,SpriteDraw.swift:3,HitPlayerSprite.swift:2
+10014a58	.WrapEraseSprites	pef	16	0	SpriteBlitter.swift:5,FerazelSession.swift:4,DrawOp.swift:2,SpriteSlot.swift:2,FrameRenderer.swift:1,FramePorts.swift:1
+100151c4	.WrapDrawFace	pef	8	0	SpriteBlitter.swift:4,WaterFaceBlitter.swift:2,WaterEffects.swift:1,FerazelSession.swift:1
+10015454	.WrapBackScratchFace	pef	3	0	SpriteBlitter.swift:3
+100156c8	.WrapLightFace	pef	7	0	SpriteBlitter.swift:5,WaterFaceBlitter.swift:1,WaterEffects.swift:1
+10015948	.WrapDrawParticle	pef	9	0	ParticleRenderer.swift:5,ParticlePool.swift:2,ParticleDraw.swift:2
+10015fb8	FUN_10015fb8	pef	2	0	ParticleRenderer.swift:2
+10016440	FUN_10016440	pef	2	0	ParticleRenderer.swift:2
+10016784	.WrapEraseBoolFace	pef	3	0	SpriteBlitter.swift:3
+100169f4	.WrapDrawTile	pef	3	0	TileBlitters.swift:1,LightRenderer.swift:1,FramePorts.swift:1
+10016c8c	.WrapLightTile	pef	3	0	LightRenderer.swift:2,TileGridRenderer.swift:1
+10016d80	.WrapLightOpTile	pef	1	0	LightRenderer.swift:1
+10016f84	.WrapDrawBoolTile	pef	1	0	TileBlitters.swift:1
+10017220	.WrapEraseBoolTile	pef	1	0	TileBlitters.swift:1
+100174bc	.WrapCopyToScreen	pef	26	0	ParallaxBlitter.swift:6,DrawOp.swift:6,FerazelSession.swift:4,FrameRenderer.swift:2,Pause.swift:2,ScreenRenderer.swift:1
+10017924	.DoubleBlitPPCParallaxOneLayer	pef	4	0	ParallaxBlitter.swift:4
+10018dd4	.DoubleBlitPPCParallaxOneLayerFire	pef	1	1	ParallaxBlitter.swift:1
+100196e8	.MosaicScreenBlit	pef	5	0	FrameRenderer.swift:2,Mosaic.swift:1,DrawOp.swift:1,LevelRun.swift:1
+100198bc	.MosaicTransition	pef	18	0	LevelRun.swift:7,FrameRenderer.swift:3,FrameSuspension.swift:3,DrawOp.swift:2,Mosaic.swift:1,HitPlayerSprite.swift:1
+10019ac4	.TurnOnOmniPx	pef	0	0	
+10019bac	.TurnOffOmniPx	pef	0	0	
+10019d78	.SetupOmniPx	pef	0	0	
+1001a184	.InterlaceBlit128	pef	0	0	
+1001a434	.UpdateOmniPx	pef	3	1	DrawOp.swift:1,SpriteWorld.swift:1,FerazelSession.swift:1
+1001a86c	.KillOmniPx	pef	0	0	
+1001a928	.InitScanline	pef	0	0	
+1001a9f8	.InitLighting	pef	2	0	SetupFaces.swift:1,LightTable.swift:1
+1001aaf8	.GetAmbDarkVal	pef	5	0	SpriteBlitter.swift:2,LightRenderer.swift:2,BoxSprite.swift:1
+1001ab74	.CalcAmbientDarken	pef	2	0	TableRequests.swift:2
+1001acc4	.CalcLightingTable	pef	3	0	TableRequests.swift:2,LevelTables.swift:1
+1001bc08	.AddLight	pef	28	0	SetupFaces.swift:10,FrameRenderer.swift:4,LightTable.swift:3,FerazelSession.swift:3,GroundCeilingEffects.swift:2,LightRenderer.swift:1
+1001bd34	.RemoveLight	pef	17	0	LightTable.swift:3,GroundCeilingEffects.swift:3,BackgroundSprite.swift:2,HitPlayerSprite.swift:2,FerazelSession.swift:2,BoxSprite.swift:1
+1001bdbc	.ChangeLightFace	pef	21	0	BonusSprite.swift:6,BonusHandle.swift:4,GroundCeilingEffects.swift:3,FrameRenderer.swift:2,LightTable.swift:2,LightRenderer.swift:1
+1001be18	.SetLightPos	pef	3	0	LightTable.swift:2,BonusSprite.swift:1
+1001be7c	.ChangeLightSpeed	pef	2	0	LightTable.swift:1,PlayerShot.swift:1
+1001becc	.ChangeLightColor	pef	8	0	PlayerShotHits.swift:3,BackgroundSprite.swift:2,PlayerShot.swift:2,LightTable.swift:1
+1001bf18	.RemoveAllLights	pef	5	0	LightTable.swift:3,SetupFaces.swift:1,FerazelSession.swift:1
+1001bff0	.HandleLights	pef	16	0	LightTable.swift:6,FrameRenderer.swift:4,DrawOp.swift:2,FerazelSession.swift:2,LightRenderer.swift:1,WaterEffects.swift:1
+1001c1cc	FUN_1001c1cc	pef	3	0	LightRenderer.swift:3
+1001c2c0	.AddLightOp	pef	3	0	LightRenderer.swift:3
+1001c390	.HasLightChanged	pef	4	0	LightRenderer.swift:3,LightTable.swift:1
+1001c45c	.CalcLightOps	pef	4	0	LightRenderer.swift:4
+1001c6f4	.DrawLightOps	pef	5	0	LightRenderer.swift:5
+1001c8e4	.DrawLightsOntoTiles	pef	12	0	LightRenderer.swift:3,FerazelSession.swift:3,FrameRenderer.swift:2,DrawOp.swift:2,TileGridRenderer.swift:1,FerazelPrefs.swift:1
+1001c934	.DrawLightOverTile	pef	5	0	LightRenderer.swift:4,TileGridRenderer.swift:1
+1001cc70	.DrawLightOpOverTile	pef	2	0	LightRenderer.swift:2
+1001cf38	.DrawLightOverFace	pef	5	0	SpriteBlitter.swift:5
+1001d708	.GetFakeLight	pef	4	0	FerazelSession.swift:2,SpriteSlot.swift:1,ActiveList.swift:1
+1001d8e8	.BlitLightOverFaceClip	pef	4	0	LightRenderer.swift:2,SpriteBlitter.swift:1,LightFaces.swift:1
+1001dd8c	.BlitAfterLightOverFaceClip	pef	3	1	LightRenderer.swift:2,SpriteBlitter.swift:1
+1001e1ac	.BlitAmbDarkenOverFaceClip	pef	3	0	LightRenderer.swift:2,SpriteBlitter.swift:1
+1001e6a0	.BlitAmbDarkenOverFaceNoClip	pef	2	0	LightRenderer.swift:2
+1001ea20	.BlitLightOverFaceFlipClip	pef	1	0	SpriteBlitter.swift:1
+1001eee0	.BlitAfterLightOverFaceFlipClip	pef	1	0	SpriteBlitter.swift:1
+1001f314	.BlitAmbDarkenOverFaceFlipClip	pef	0	0	
+1001f828	.BlitRectMeat32s	pef	0	0	
+1001f904	.BlitRect32s	pef	1	0	TileBlitters.swift:1
+1001fa58	.DrawBlackLines	pef	19	0	Pause.swift:7,FerazelSession.swift:4,ConversationRun.swift:3,FrameRenderer.swift:1,ScreenRenderer.swift:1,DrawOp.swift:1
+1001fcac	.BuildPosterizationTable	pef	0	0	
+1001fd98	.BuildTranslucTable	pef	0	0	
+1001ff1c	.BuildReddenTable	pef	4	0	FerazelSession.swift:2,LevelTables.swift:1,TableRequests.swift:1
+100201a0	.BuildSineTable	pef	1	0	SpriteBlitter.swift:1
+100203dc	.BuildWaterTintTable	pef	2	0	LevelTables.swift:1,TableRequests.swift:1
+10020a5c	.BuildTintTable	pef	11	0	LevelTables.swift:3,FrameRenderer.swift:3,FerazelSession.swift:3,SpriteBlitter.swift:1,TableRequests.swift:1
+10022b74	.BlitEncFaceToPixMap	pef	0	0	
+10022e34	.DoubleBlitUniversal	pef	6	1	ParallaxBlitter.swift:6
+100230bc	.BlitEncBoolTile	pef	3	0	WaterFaceSheet.swift:2,TileBlitters.swift:1
+10023260	.BlitEncBoolTileUnmasked	pef	1	0	TileBlitters.swift:1
+100233c0	.BlitEncEraseBoolTile	pef	1	0	TileBlitters.swift:1
+10023574	.BlitEncBoolFaceClip	pef	3	0	SpriteBlitter.swift:3
+100238f4	.BlitEncBoolFaceNoClip	pef	0	0	
+10023ab8	.BlitEncBoolFaceFlipNoClip	pef	0	0	
+10023cc8	.BlitEncBoolFaceFlipClip	pef	0	0	
+10023fd0	.BlitEncBoolFaceWaterRipple	pef	1	0	SpriteBlitter.swift:1
+10024358	.BlitEncBoolFaceFlipWaterRipple	pef	1	0	SpriteBlitter.swift:1
+100246b4	.BlitEncEraseBoolTileUnmasked	pef	1	0	TileBlitters.swift:1
+10024818	.BlitEncTileUnmasked	pef	1	0	TileBlitters.swift:1
+10024998	.BlitEncFaceClipX	pef	7	0	SpriteBlitter.swift:3,MapRenderer.swift:3,WorldMapRun.swift:1
+10024da8	.BlitEncFaceNoClipX	pef	1	0	TileBlitters.swift:1
+10025044	.BlitEncFaceBackScratchClip	pef	0	0	
+10025518	.BlitEncFaceBackScratchNoClip	pef	0	0	
+10025814	.BlitEncFaceBackScratchFlipClip	pef	0	0	
+10025d14	.BlitEncFaceBackScratchFlipNoClip	pef	0	0	
+10026010	.BlitEncFaceBackScratchWaterRippleClip	pef	1	0	SpriteBlitter.swift:1
+100264d0	.BlitEncFaceBackScratchWaterRippleFlipClip	pef	1	0	SpriteBlitter.swift:1
+100269c4	.BlitEncFaceBehindTilesClip	pef	0	0	
+10026d38	.BlitEncFaceBehindTilesNoClip	pef	0	0	
+10026f34	.BlitEncTileFaceNoClipX	pef	1	0	TileBlitters.swift:1
+100271d4	.BlitEncFaceSpecialClipX	pef	3	0	SpriteBlitter.swift:3
+100276ac	.BlitEncFaceSpecialNoClipX	pef	1	0	TileBlitters.swift:1
+10027aac	.CalcPxRowContents	pef	8	2	SpriteBlitter.swift:5,ParallaxBlitter.swift:2,FrameRenderer.swift:1
+10027d04	.BlitEncFaceTransClip	pef	2	0	SpriteBlitter.swift:2
+10028220	.BlitEncFaceTransRippleClip	pef	0	0	
+100287cc	.BlitEncFaceTransFlipClip	pef	2	0	SpriteBlitter.swift:2
+10028d00	.BlitEncFaceFlipNoClip	pef	0	0	
+10028f48	.BlitEncFaceFlipClip	pef	1	0	SpriteBlitter.swift:1
+10029310	.BlitEncFaceFlipNoClipSpecial	pef	0	0	
+10029588	.BlitEncFaceFlipClipSpecial	pef	1	1	SpriteBlitter.swift:1
+10029988	.BlitEncFaceDiffuse	pef	7	0	SpriteBlitter.swift:3,FerazelSession.swift:2,SpriteDraw.swift:1,LevelServices.swift:1
+10029c6c	.BlitEncFaceFlipDiffuse	pef	4	1	SpriteBlitter.swift:3,LevelServices.swift:1
+10029f70	.BlitEncFaceWaterRipple	pef	4	0	SpriteBlitter.swift:3,WaterFaceBlitter.swift:1
+1002a300	.BlitEncFaceFlipWaterRipple	pef	2	0	SpriteBlitter.swift:2
+1002a6b0	.ProcessFGBlendTileFace	pef	1	0	BlendFaces.swift:1
+1002a810	.BlitEncFaceTileBlend	pef	1	0	TileBlitters.swift:1
+1002aa00	.BlitEncFaceTileBlendSpecial	pef	1	0	TileBlitters.swift:1
+1002ac00	.BlitEncFaceRot	pef	4	1	SpriteBlitter.swift:4
+1002b0e0	.BlitEncFaceBoolRot	pef	3	0	SpriteBlitter.swift:3
+1002b724	.BlitEncFaceBackScratchRot	pef	3	1	SpriteBlitter.swift:3
+1002bdc0	.BlitEncFaceScale	pef	4	1	SpriteBlitter.swift:4
+1002c220	.BlitEncFaceScaleBool	pef	2	0	SpriteBlitter.swift:2
+1002c528	.BlitEncFaceScaleBackScratch	pef	2	0	SpriteBlitter.swift:2
+1002c878	.RectInRect	pef	2	0	SpriteBlitter.swift:2
+1002c908	.BlitEncFaceX	pef	10	0	SpriteBlitter.swift:7,TileGridRenderer.swift:1,WaterFaceBlitter.swift:1,FerazelSession.swift:1
+1002d2f8	.BackScratchBlitEncFace	pef	2	0	SpriteBlitter.swift:2
+1002d844	.EraseBoolEncFaceX	pef	2	0	SpriteBlitter.swift:2
+1002dd70	.EncodeRect	pef	3	0	EncodedFace.swift:1,FaceEncoder.swift:1,FaceSheet.swift:1
+1002e0e4	.Threshold255Blit	pef	0	0	
+1002e248	.BuildMaskRegion	pef	0	0	
+1002e4e0	.Load1FlipFaceFromPICT	pef	0	0	
+1002e74c	.LoadFlipFaceSetFromPICT	pef	0	0	
+1002eafc	.Load1EncFaceFromPICT	pef	17	0	FaceSheet.swift:5,MapRenderer.swift:2,BootFaces.swift:2,SetupFaces.swift:2,TileGridRenderer.swift:1,FrameRenderer.swift:1
+1002ef2c	.LoadEncFaceSetFromPICT	pef	11	0	FaceSheet.swift:2,MapRenderer.swift:1,WaterFaceSheet.swift:1,TileSets.swift:1,PlatformSprite.swift:1,BackgroundSprite.swift:1
+1002f528	.LoadEncWaterFaceSetFromPICT	pef	3	0	WaterFaceSheet.swift:2,FaceRef.swift:1
+1002fab8	.LoadPlainFaceSetFromPICT	pef	2	0	PlainFaceSheet.swift:1,FaceRef.swift:1
+1002fe68	.Load1PlainFaceFromPICT	pef	2	0	LightFaces.swift:2
+1002ff1c	.Load1LightFaceFromPICT	pef	9	0	LightFaces.swift:3,FrameRenderer.swift:1,StatueSprite.swift:1,DrawOp.swift:1,BootFaces.swift:1,SetupFaces.swift:1
+1002ffb8	.DisposeEncFace	pef	0	0	
+10030088	.DisposeEncFaceContents	pef	0	0	
+10030130	.DisposePlainFace	pef	0	0	
+10030194	.LoadMenuBar	pef	0	0	
+1003027c	.UpdateMenus	pef	23	0	Pause.swift:7,GameFlow.swift:5,FerazelMenus.swift:4,FerazelMenuRules.swift:2,PrefsToggles.swift:1,PrefsDialogModel.swift:1
+10030398	.HandleMenuSelection	pef	5	0	GameFlow.swift:2,Pause.swift:2,FerazelMenus.swift:1
+10030438	.HandleAppleMenuSelection	pef	1	0	Pause.swift:1
+100304e0	.HandleFileMenuSelection	pef	1	0	Pause.swift:1
+10030598	.HandleGameMenuSelection	pef	1	0	Pause.swift:1
+1003062c	.InitParticles	pef	7	0	ParticlePool.swift:3,FrameRenderer.swift:1,ParticleRenderer.swift:1,FerazelSession.swift:1,LevelFlow.swift:1
+100306b4	.InitParticleColors	pef	5	0	ParticleRenderer.swift:3,FrameRenderer.swift:1,ParticleLife.swift:1
+10031828	.HandleParticles	pef	6	0	ParticlePool.swift:4,SpriteWorld.swift:1,FerazelSession.swift:1
+10031aa4	.DrawParticles	pef	15	0	ParticleLife.swift:3,ParticlePool.swift:3,ParticleRenderer.swift:2,SpriteWorld.swift:2,FerazelSession.swift:2,ScreenFlash.swift:1
+10031d6c	.EraseParticles	pef	5	0	ParticleRenderer.swift:2,ParticlePool.swift:1,DrawOp.swift:1,FerazelSession.swift:1
+10031e68	.NewParticle	pef	18	0	BonusSprite.swift:3,ParticlePool.swift:3,WaterEffects.swift:3,PlayerShot.swift:3,FaceParticles.swift:2,BackgroundSprite.swift:1
+10031f68	.MTUpdateScreenPtrs	pef	0	0	
+10032074	.MTSetScreenPtrsToBackScreen	pef	1	0	Pause.swift:1
+10032160	.MTInit	pef	1	0	Pause.swift:1
+1003259c	.MTHandleSprites	pef	12	0	FerazelSession.swift:4,SpriteSlot.swift:2,SpriteWorld.swift:2,BoxSprite.swift:1,BackgroundSprite.swift:1,ActiveList.swift:1
+10032614	.CalcHotRect	pef	4	0	SpriteSlot.swift:2,SpriteWorld.swift:2
+10032688	.TheSectRect	pef	2	0	ActiveList.swift:1,SpriteWorld.swift:1
+100326cc	.MTCollideSprites	pef	14	0	SpriteSlot.swift:4,SpriteWorld.swift:3,FerazelSession.swift:3,ActiveList.swift:2,ButtonSprite.swift:1,PlayerShotHits.swift:1
+10032ac8	.MTCollideSpecialSprite	pef	7	0	SpriteWorld.swift:3,FerazelSession.swift:2,ButtonSprite.swift:1,HitPlayerSprite.swift:1
+10032f1c	.MTInsertSprite	pef	11	0	ActiveList.swift:4,SpriteWorld.swift:3,SetupFaces.swift:1,PlayerTiles.swift:1,GroundCeilingEffects.swift:1,Player.swift:1
+10032ff8	.MTRemoveSprite	pef	8	1	ActiveList.swift:4,SpriteWorld.swift:4
+10033060	.MTNewSprite	pef	107	0	BoxSprite.swift:13,PlayerShot.swift:12,FerazelSession.swift:10,SetupFaces.swift:7,PlayerShotHits.swift:7,SpriteWorld.swift:6
+10033288	.MTChangeSpriteLayer	pef	8	0	BoxSprite.swift:2,BackgroundSprite.swift:2,SpriteWorld.swift:2,ChainSprite.swift:1,ActiveList.swift:1
+100332fc	.MTKillSprite	pef	9	0	SpriteWorld.swift:4,ActiveList.swift:3,IdleSprites.swift:1,SetupFaces.swift:1
+10033378	.HandlePxSprite	tvector	4	0	PxSprites.swift:4
+10033418	.SetupPxSprite	tvector	3	0	PxSprites.swift:3
+100334b8	.MTKillPxSprites	pef	2	0	PxSprites.swift:2
+1003359c	.MTAddPxSprite	pef	4	0	PxSprites.swift:4
+10033798	.MTHandlePxSprites	pef	1	0	Camera.swift:1
+10033828	.KillAllSprites	pef	5	0	ContinueGame.swift:2,NewGame.swift:2,GameFlow.swift:1
+10033894	.MTSetPortScreen	pef	6	0	DeathEffect.swift:1,GameFlow.swift:1,Pause.swift:1,StageScreens.swift:1,DeathScreen.swift:1,HitPlayerSprite.swift:1
+10033910	.MTRedraw	pef	29	0	Pause.swift:7,ContinueGame.swift:5,GameFlow.swift:5,NewGame.swift:4,FrameRenderer.swift:3,ScreenRenderer.swift:1
+100339b8	.MTGetandDrawPICTResInRect	pef	5	0	MapRenderer.swift:1,WorldMapRun.swift:1,GameFlow.swift:1,StageScreens.swift:1,DeathScreen.swift:1
+10033a74	.MTBackChanged	pef	0	0	
+10033a98	.MTSetPortBackScreen	pef	0	0	
+10033af4	.MTHideWindow	pef	0	0	
+10033b40	.MTShowWindow	pef	3	0	ContinueGame.swift:2,GameFlow.swift:1
+10033ba0	.AllocateGameMem	pef	1	0	RopeSprite.swift:1
+10033c70	.DisposeGameMem	pef	0	0	
+10033d10	.MyGotRequiredParams	pef	0	0	
+10033d94	.DoOpenAppAE	tvector	0	0	
+10033dbc	.DoOpenDocAE	tvector	3	0	GameFlow.swift:2,FerazelController.swift:1
+10033efc	.DoPrintDocAE	tvector	0	0	
+10033f24	.DoQuitAppAE	tvector	8	0	GameFlow.swift:2,Pause.swift:2,NewGame.swift:2,LevelRun.swift:1,FerazelController.swift:1
+10033f7c	.InstallAppleEvents	pef	0	0	
+100340e0	.FastRand	pef	164	0	SetupFaces.swift:14,BonusSprite.swift:13,BoxSprite.swift:12,HitPlayerSprite.swift:12,FerazelSession.swift:10,WaterEffects.swift:9
+100341d8	.DrawPicInGWorld	pef	1	0	LightFaces.swift:1
+100342cc	.DrawPicInRect	pef	1	0	ConversationRun.swift:1
+1003437c	.NewBlitPort	pef	2	0	ParallaxBlitter.swift:1,LightFaces.swift:1
+10034650	.NewBlitPortSlop	pef	8	0	MapRenderer.swift:3,SpriteBlitter.swift:2,FramePorts.swift:2,WorldMapRun.swift:1
+100349c4	.ChangeBlitPortClut	pef	6	0	ConvertedPicture.swift:2,StatusBar.swift:1,MapRenderer.swift:1,WorldMapRun.swift:1,DeathScreen.swift:1
+10034ab4	.DisposeBlitPort	pef	0	0	
+10034b1c	.IsAnyKeyDown	pef	2	0	StageScreens.swift:1,ConversationRun.swift:1
+10034ba8	.CopyPString	pef	7	0	FerazelPrefs.swift:6,SaveGame.swift:1
+10034bf4	.ConcatPString	pef	1	0	SaveName.swift:1
+10034c74	.StringsEqual	pef	0	0	
+10034ce8	.CalcWrappedStringInBoxHeight	pef	4	0	ConversationRun.swift:2,TextRasterizer.swift:1,ConversationRenderer.swift:1
+10034db4	.SectRectFast	pef	8	1	IdleSprites.swift:2,SpriteBlitter.swift:1,BloodSpray.swift:1,RectBounce.swift:1,PlayerTiles.swift:1,SpriteWorld.swift:1
+10034df8	.DrawPICTToBackScreen	pef	5	0	FrameRenderer.swift:2,ScreenRenderer.swift:1,BootSequence.swift:1,FerazelSession.swift:1
+10034e88	.TintScreen	pef	3	1	PlayerLiquids.swift:3
+10034f40	.TintFadeProc	tvector	7	0	ScreenGammaOp.swift:3,ScreenGamma.swift:2,ScreenRenderer.swift:1,ScreenFade.swift:1
+10035310	.GammaFadeOut	pef	14	1	ScreenFade.swift:3,NewGame.swift:3,StageScreens.swift:2,LevelRun.swift:2,ScreenGamma.swift:1,ScreenGammaOp.swift:1
+10035444	.GammaFadeIn	pef	14	0	GameFlow.swift:3,ScreenFade.swift:2,ContinueGame.swift:2,DeathScreen.swift:2,LevelRun.swift:2,ScreenGammaOp.swift:1
+10035584	.GammaFadeInSlow	pef	4	0	ScreenFade.swift:2,ScreenGammaOp.swift:1,StageScreens.swift:1
+1003565c	.GammaFadeInAsync	pef	9	0	LevelRun.swift:2,HitPlayerSprite.swift:2,FerazelSession.swift:2,ScreenGamma.swift:1,DrawOp.swift:1,SpriteWorld.swift:1
+100356c0	.GammaFadeOutAsync	pef	23	0	HitPlayerSprite.swift:7,DeathEffect.swift:4,LevelRun.swift:4,FerazelSession.swift:2,ScreenGamma.swift:1,FrameSuspension.swift:1
+10035788	.HandleAsyncGammaFade	pef	20	0	LevelRun.swift:7,FerazelSession.swift:3,FrameRenderer.swift:2,ScreenGamma.swift:2,ScreenRenderer.swift:1,DeathEffect.swift:1
+10035918	.FinalGammaFadeIn	pef	0	0	
+100359c8	.SafeReportStr	pef	0	0	
+10035a28	.PointInRect	pef	3	0	DeathScreen.swift:2,MainMenu.swift:1
+10035a84	.SetColorPerc	pef	1	0	BootSequence.swift:1
+10035b0c	.PlotColoredPoint	pef	1	0	BootSequence.swift:1
+10035b8c	.PlotColoredHLine	pef	1	0	BootSequence.swift:1
+10035c18	.Init3DProgBar	pef	4	0	BootSequence.swift:3,GameFlow.swift:1
+10035d40	.Update3DProgBar	pef	5	0	BootSequence.swift:3,GameFlow.swift:1,FerazelDriver.swift:1
+1003626c	.FatalError	pef	0	0	
+100362e8	.SwitchTo8BitColorMT	pef	5	0	Pause.swift:2,IndexedFrame.swift:1,GameFlow.swift:1,FerazelDriver.swift:1
+100363c4	.InitCursorUtils	pef	0	0	
+10036454	.ShowCursorSafe	pef	21	0	Pause.swift:4,LevelRun.swift:3,NewGame.swift:3,FerazelSession.swift:3,ScreenFade.swift:2,GameFlow.swift:2
+100364bc	.HideCursorSafe	pef	15	0	HitPlayerSprite.swift:6,LevelRun.swift:2,FerazelSession.swift:2,ShellRequest.swift:1,SaveGame.swift:1,Pause.swift:1
+1003652c	.ResetCursor	pef	11	0	NewGame.swift:3,GameFlow.swift:2,Pause.swift:2,DeathScreen.swift:2,ContinueGame.swift:1,SaveGame.swift:1
+100365a4	.SetWatchCursor	pef	3	0	GameFlow.swift:2,Pause.swift:1
+10036618	.CleanUpCursors	pef	0	0	
+10036640	.ShowTheMenuBar	pef	6	0	GameFlow.swift:3,Pause.swift:2,FerazelController.swift:1
+100366b8	.HideTheMenuBar	pef	6	0	GameFlow.swift:3,Pause.swift:2,ContinueGame.swift:1
+10036738	.IsOptionPressed	pef	1	0	NewGame.swift:1
+1003679c	.IsPressed	pef	5	0	KeyState.swift:2,BootSequence.swift:2,InputActions.swift:1
+10036804	.LimitValueToRange	pef	1	0	WallBounce.swift:1
+10036854	.StandardSpriteHandles	pef	41	2	SpriteSlot.swift:13,PlatformSprite.swift:2,BoxSprite.swift:2,RopeSprite.swift:2,BackgroundSprite.swift:2,ChainSprite.swift:2
+10036da0	.CalcCenterPos	pef	6	1	BonusSprite.swift:2,PlayerShot.swift:2,SpriteSlot.swift:1,Smite.swift:1
+10036e0c	.StandardSpriteCleanup	pef	34	0	SpriteSlot.swift:7,Player.swift:4,FerazelSession.swift:3,RopeSprite.swift:2,PlayerShot.swift:2,GroundCeilingEffects.swift:2
+10037034	.HurtSprite	pef	7	0	HitPlayerSprite.swift:7
+100370c4	.ApplyFriction	pef	5	0	PlatformSprite.swift:2,BoxSprite.swift:1,Integrate.swift:1,StandardSprite.swift:1
+1003713c	.AccelerateSprite	pef	5	0	Integrate.swift:3,HandleKeys.swift:2
+100372b0	.SetSpriteSpeed	pef	0	0	
+10037350	.AccelerateBasedOnSlope	pef	7	0	Integrate.swift:4,HandleKeys.swift:3
+100375b0	.ApplyGravityAndSeparateFromTiles	pef	8	1	PlatformSprite.swift:2,GroundCeilingEffects.swift:2,BoxSprite.swift:1,BonusSprite.swift:1,BackgroundSprite.swift:1,Integrate.swift:1
+100377c4	.PlatformBounce	pef	23	1	HitPlayerSprite.swift:10,SpriteSlot.swift:5,RectBounce.swift:2,PlatformSprite.swift:1,BoxSprite.swift:1,BonusSprite.swift:1
+10037a54	.WallBounce	pef	27	0	SpriteSlot.swift:4,PlayerTiles.swift:4,WallBounceBG.swift:3,SeparateFromTiles.swift:3,PlatformSprite.swift:2,BoxSprite.swift:2
+1003a2e8	.WallBounceBG	pef	13	0	SpriteSlot.swift:2,SeparateFromTiles.swift:2,PlatformSprite.swift:1,BoxSprite.swift:1,BonusSprite.swift:1,WallBounceBG.swift:1
+1003be0c	.ConstrainXY	pef	11	0	ParallaxBlitter.swift:2,FrameRenderer.swift:1,LightRenderer.swift:1,TileMap.swift:1,LevelFile.swift:1,ParticlePool.swift:1
+1003be90	.GetFGTile	pef	4	0	SeparateFromTiles.swift:2,LevelFile.swift:1,WaterEffects.swift:1
+1003bf40	.GetFGCrunchDirTile	pef	5	0	SeparateFromTiles.swift:2,LevelFile.swift:1,PlayerTiles.swift:1,FerazelSession.swift:1
+1003bffc	.GetFGCrunchKindTile	pef	4	0	PlayerTiles.swift:3,LevelFile.swift:1
+1003c0b8	.GetFGPatternTile	pef	1	0	TileGridRenderer.swift:1
+1003c204	.GetBGTile	pef	7	0	SeparateFromTiles.swift:2,LevelFile.swift:1,BonusSprite.swift:1,WaterEffects.swift:1,SetupFaces.swift:1,UnderWater.swift:1
+1003c2b4	.GetLightTile	pef	6	0	LightRenderer.swift:2,LevelFile.swift:1,SpriteSlot.swift:1,ActiveList.swift:1,FerazelSession.swift:1
+1003c368	.GetFGOverlay1Tile	pef	5	1	WaterEffects.swift:2,StandardSprite.swift:2,LevelFile.swift:1
+1003c420	.GetFGOverlay2Tile	pef	4	0	WaterEffects.swift:3,LevelFile.swift:1
+1003c4d8	.GetPxBackTile	pef	4	1	ParallaxBlitter.swift:3,LevelFile.swift:1
+1003c59c	.GetPxMidTile	pef	2	0	ParallaxBlitter.swift:1,LevelFile.swift:1
+1003c648	.SetFGTile	pef	6	0	PlayerTiles.swift:2,FrameRenderer.swift:1,DrawOp.swift:1,PlayerState.swift:1,FerazelSession.swift:1
+1003c710	.SetFGCrunchDirTile	pef	6	0	PlayerTiles.swift:2,FrameRenderer.swift:1,DrawOp.swift:1,PlayerState.swift:1,FerazelSession.swift:1
+1003c804	.SeparateFromTiles2	pef	25	0	SpriteSlot.swift:5,SeparateFromTiles.swift:3,PlatformSprite.swift:2,Integrate.swift:2,TileHotRects.swift:2,PlayerShot.swift:2
+1003cf04	.GenericMessage	pef	5	0	FerazelDialogs.swift:2,FerazelCarbonDialog.swift:1,DialogWindow.swift:1,DialogSystem.swift:1
+1003d0f0	.DebugMessage	pef	0	0	
+1003d2a0	.ReportError	pef	17	0	SavedGameFile.swift:2,GroundCeilingEffects.swift:2,FerazelDialogs.swift:2,SpriteBlitter.swift:1,FrameRenderer.swift:1,LightRenderer.swift:1
+1003d33c	.ReportDialog	pef	13	2	PrefsDialogView.swift:2,FerazelDialogs.swift:2,WinPrefsDialog.swift:2,SavedGameFile.swift:1,IdleSprites.swift:1,MainMenu.swift:1
+1003d3bc	.InitSprite	pef	39	0	SpriteSlot.swift:16,BackgroundSprite.swift:4,ChainSprite.swift:3,RopeSprite.swift:2,Player.swift:2,PlatformSprite.swift:1
+1003d5c4	.MakeRadialTables	pef	1	0	Radial.swift:1
+1003d718	.MakeRadial	pef	7	0	Radial.swift:3,SetupFaces.swift:2,BackgroundSprite.swift:1,SpriteSlot.swift:1
+1003d854	.MakeRadiusSprites	pef	6	0	Radial.swift:3,BackgroundSprite.swift:1,SetupFaces.swift:1,SpriteWorld.swift:1
+1003d980	.SetRadiusSpritesEffect	pef	1	0	Radial.swift:1
+1003da00	.UpdateRadiusSprites	pef	4	0	Radial.swift:2,PlatformSprite.swift:1,BackgroundSprite.swift:1
+1003dde4	.FindUpdatedRadialSpeed	pef	1	0	Radial.swift:1
+1003debc	.UpdateRadialPos	pef	7	0	Radial.swift:4,PlatformSprite.swift:2,BackgroundSprite.swift:1
+1003e32c	.FindRadWheelStepSpeedMod	pef	2	0	Radial.swift:2
+1003e3e8	.RadialWheelStep	pef	4	0	PlatformSprite.swift:2,Radial.swift:2
+1003e490	.RectBounce	pef	6	0	SpriteSlot.swift:3,RectBounce.swift:3
+1003ecc0	.RectBounceFake2	pef	3	0	PlayerTiles.swift:3
+1003f0f0	.EnforceMaxSpeed	pef	4	0	BoxSprite.swift:1,Integrate.swift:1,StandardSprite.swift:1,PlayerShot.swift:1
+1003f218	FUN_1003f218	pef	4	0	PlayerShot.swift:2,BoxSprite.swift:1,PlayerShotHits.swift:1
+100404a4	.LookupModedImpulse	pef	5	2	StandardSprite.swift:3,WaterEffects.swift:2
+100417bc	FUN_100417bc	pef	2	0	BloodSpray.swift:2
+10041dcc	.LoadTileDefinitions	pef	4	0	TileGridRenderer.swift:1,LevelHeader.swift:1,LevelFile.swift:1,SeparateFromTiles.swift:1
+10041f98	.LookupBGTileKind	pef	8	0	SeparateFromTiles.swift:2,LevelFile.swift:1,BonusSprite.swift:1,ParticlePool.swift:1,WaterEffects.swift:1,SetupFaces.swift:1
+10041fe8	.LookupFGTileKind	pef	10	0	SeparateFromTiles.swift:3,WaterFaceSheet.swift:2,TileGridRenderer.swift:1,LevelFile.swift:1,WaterEffects.swift:1,TileHotRects.swift:1
+10042038	.FindDesiredDirectionGeneric	pef	6	0	BloodSpray.swift:2,PlayerShot.swift:2,BoxSprite.swift:1,PlayerShotHits.swift:1
+10042404	.RedrawGameArea	pef	4	0	Pause.swift:2,DrawOp.swift:1,SaveGame.swift:1
+100424e4	.PromptGetFile	pef	1	0	ContinueGame.swift:1
+1004258c	.PromptPutFile	pef	1	0	SaveGame.swift:1
+100425f8	.BloodSpray	pef	15	0	BloodSpray.swift:4,HitPlayerSprite.swift:4,BoxSprite.swift:3,PlayerShot.swift:2,PlayerShotHits.swift:1,SpriteWorld.swift:1
+10042874	.Splash	pef	19	0	UnderWater.swift:5,StandardSprite.swift:3,BoxSprite.swift:2,Splash.swift:2,SpriteSlot.swift:2,SpriteWorld.swift:2
+10042d04	.HandleFlotation	pef	5	0	SpriteSlot.swift:2,PlatformSprite.swift:1,UnderWater.swift:1,Flotation.swift:1
+10042e30	.HandleUnderWater	pef	13	0	UnderWater.swift:2,PlayerTiles.swift:2,PlatformSprite.swift:1,BoxSprite.swift:1,BonusSprite.swift:1,ChainSprite.swift:1
+100430c8	.IsWaterTile	pef	17	0	UnderWater.swift:4,BoxSprite.swift:2,WaterEffects.swift:2,TileGridRenderer.swift:1,LightRenderer.swift:1,BonusSprite.swift:1
+1004310c	.GetWaterTileKind	pef	5	0	UnderWater.swift:3,LightRenderer.swift:1,WaterEffects.swift:1
+10043138	.TurnIntoStatue	pef	8	0	SpriteSlot.swift:4,StatueSprite.swift:2,PlatformSprite.swift:1,FerazelSession.swift:1
+100431ec	.FootPressure	pef	6	0	HandleKeys.swift:5,BoxSprite.swift:1
+100433e0	.ChangeFGTile	pef	3	0	PlayerTiles.swift:2,DrawOp.swift:1
+10043448	.ExplodeFaceIntoParticles	pef	12	0	PlatformSprite.swift:2,BoxSprite.swift:2,FaceParticles.swift:2,PlayerTiles.swift:2,BonusSprite.swift:1,PlayerShotHits.swift:1
+100437d8	.BurnFaceRow	pef	0	0	
+10043ad0	.ParticleGlow	pef	8	0	StandardSprite.swift:3,FaceParticles.swift:2,SpriteSlot.swift:1,SpriteWorld.swift:1,FerazelSession.swift:1
+10043cd8	.HandleBurn	pef	3	2	StandardSprite.swift:2,SpriteSlot.swift:1
+10043f14	.ReshapeCrunchedTile	pef	3	0	PlayerTiles.swift:3
+100444f0	.ExplodeCrunchedTile	pef	4	0	PlayerTiles.swift:3,FerazelSession.swift:1
+100445b0	.DestroyCrunchTile	pef	10	0	PlayerTiles.swift:3,PlayerState.swift:2,WaterEffects.swift:1,GroundCeilingEffects.swift:1,Player.swift:1,FerazelSession.swift:1
+10044718	.ClearCrunchSprites	pef	4	0	LevelRun.swift:1,PlayerState.swift:1,Player.swift:1,FerazelSession.swift:1
+10044788	.FindCrunchSprite	pef	3	0	PlayerTiles.swift:2,PlayerState.swift:1
+1004481c	.MakeCrunchSprite	pef	6	0	PlayerTiles.swift:2,PlayerState.swift:2,SpriteSlot.swift:1,GroundCeilingEffects.swift:1
+10044928	.CrunchTile	pef	18	1	GameGlobals.swift:4,PlayerTiles.swift:3,PlayerState.swift:3,SpriteSlot.swift:2,SeparateFromTiles.swift:2,DrawOp.swift:1
+10044c58	.SetupProgrammedPath	pef	4	1	SetupFaces.swift:3,BackgroundSprite.swift:1
+10044fe8	.HandleProgrammedPath	pef	4	3	BackgroundSprite.swift:4
+10045230	.FlipHCoord	pef	2	0	PlatformSprite.swift:2
+10045258	.FlipHRect	pef	3	1	PlatformSprite.swift:1,BoxSprite.swift:1,SetupFaces.swift:1
+100452dc	.Deviation	pef	1	0	SaveGame.swift:1
+10045340	.SectLineSegs	pef	0	0	
+10045468	.SectRectLineSeg	pef	0	0	
+10045594	.RemoveItem	pef	19	0	HitPlayerSprite.swift:4,HandleKeys.swift:3,Player.swift:3,ConvActions.swift:2,InventorySlot.swift:1,StatusBarState.swift:1
+100456e8	.MoveSelectedItemToFront	pef	5	1	HandleKeys.swift:3,Inventory.swift:1,StatusBarCalls.swift:1
+100457d0	.HaveItem	pef	3	0	HitPlayerSprite.swift:2,Inventory.swift:1
+10045838	.InitSounds	pef	13	0	GameFlow.swift:4,SoundSlots.swift:3,FerazelAudio.swift:3,WorldMapRun.swift:1,BootSequence.swift:1,FerazelDriver.swift:1
+10046394	.DisposeSounds	pef	0	0	
+10047580	.STPlayRegSound	pef	35	0	HitPlayerSprite.swift:11,StageScreens.swift:4,WorldMapRun.swift:2,SoundCues.swift:2,HandleKeys.swift:2,Player.swift:2
+10047648	.PEDistance	pef	6	0	StereoVolume.swift:3,FerazelSession.swift:2,BoxSprite.swift:1
+10047738	.CalcStereoVolume	pef	6	0	SoundCues.swift:2,StereoVolume.swift:2,PlayerState.swift:2
+10047938	.InitDynamicSounds	pef	0	0	
+100479a4	.UpdateDynamicSounds	pef	0	0	
+10047ac0	.STPlay3DSound	pef	13	0	PlayerShotHits.swift:4,ButtonSprite.swift:2,SoundCues.swift:2,StatueSprite.swift:1,PlayerShot.swift:1,PlayerTiles.swift:1
+10047b8c	.STPlay3DSoundPitched	pef	14	0	BoxSprite.swift:2,SoundCues.swift:2,PlayerShotHits.swift:2,HitPlayerSprite.swift:2,PlatformSprite.swift:1,DeathScreen.swift:1
+10047c98	.STPlayRegSoundPitched	pef	5	0	SoundCues.swift:2,HitPlayerSprite.swift:2,PlayerState.swift:1
+10047d44	.STPlay3DSoundRand	pef	30	0	BoxSprite.swift:4,BackgroundSprite.swift:4,SoundCues.swift:3,PlatformSprite.swift:2,Splash.swift:2,PlayerShotHits.swift:2
+10047dd8	.STLoopCallBack	tvector	0	0	
+10047e34	.STPlayLoopedSound	pef	2	0	SoundTool.swift:1,Player.swift:1
+10047ee8	.STSetVolume	pef	4	0	PrefsDialogModel.swift:3,GameFlow.swift:1
+10047f40	.STGetVolume	pef	2	0	PrefsDialogModel.swift:2
+10047f6c	.IsDigit	pef	0	0	
+10048088	FUN_10048088	pef	0	0	
+1004811c	.IncrementLastSGString	pef	3	1	FerazelPrefs.swift:1,SaveName.swift:1,SaveGame.swift:1
+10048294	.SaveSG	pef	35	0	LevelRun.swift:11,SaveGame.swift:7,SavedGameFile.swift:4,SaveBlock.swift:2,FrontFiles.swift:2,FerazelPrefs.swift:1
+10048608	.OpenSG	pef	12	1	ContinueGame.swift:3,GameFlow.swift:3,SavedGameFile.swift:2,SaveGame.swift:1,FrontFiles.swift:1,FerazelController.swift:1
+100487d4	.OpenDefaultWorldConv	pef	2	0	Conversation.swift:1,ConversationRun.swift:1
+10048940	.OpenDefaultWorldMap	pef	1	0	WorldMap.swift:1
+10048ac0	.OpenDefaultWorldLevel	pef	8	0	NewGame.swift:4,ContinueGame.swift:2,LevelFile.swift:1,GameFlow.swift:1
+10048c98	.SetResWorldFile	pef	0	0	
+10048d7c	.RestoreResWorldFile	pef	1	0	ConversationRun.swift:1
+10048de0	.OpenWorld	pef	0	0	
+10048fb8	.OpenDefaultWorld	pef	3	0	NewGame.swift:2,WorldFile.swift:1
+1004913c	.SetupLevelTilemapPtrs	pef	1	0	LevelFile.swift:1
+1004923c	.GetApplicationFSSpec	pef	0	0	
+100492b8	.CopyPasString	pef	0	0	
+10049304	.ConcatPasString	pef	0	0	
+10049388	.SetAIFFMusic	pef	17	0	MusicFade.swift:3,NewGame.swift:3,WorldMapRun.swift:2,FerazelSession.swift:2,FerazelAudio.swift:2,MusicCue.swift:1
+100495d8	.MusicAIFFTickle	pef	2	0	GameFlow.swift:1,StageScreens.swift:1
+10049644	.ShutDownAIFFMusic	pef	10	0	MusicFade.swift:3,NewGame.swift:3,LevelRun.swift:2,ContinueGame.swift:1,FerazelAudio.swift:1
+100496c0	.SetMusicAIFFVolume	pef	5	0	PrefsToggles.swift:3,Pause.swift:1,PrefsDialogModel.swift:1
+1004974c	.FadeAIFFMusic	pef	20	1	NewGame.swift:5,Pause.swift:4,LevelRun.swift:4,WorldMapRun.swift:2,ContinueGame.swift:1,GameFlow.swift:1
+100499c4	.HandleAsyncAIFFMusicFade	pef	1	0	MusicFade.swift:1
+10049bac	.FadeAIFFMusicAsync	pef	1	0	MusicFade.swift:1
+10049ca8	.InitInputSprocket	pef	0	0	
+10049e24	.InputExit	pef	0	0	
+10049e74	.InputActivate	pef	14	0	Pause.swift:4,LevelRun.swift:4,SaveBlock.swift:1,WorldMapRun.swift:1,SaveGame.swift:1,GameFlow.swift:1
+10049f50	.InputGetKeyState	pef	0	0	
+1004a134	.IsInputKeyPressed	pef	17	1	InputActions.swift:3,HitPlayerSprite.swift:3,FerazelSession.swift:3,FerazelPadLayout.swift:1,FerazelPrefs.swift:1,FrameSuspension.swift:1
+1004a1d4	.IsAnyInputKeyDown	pef	3	0	StageScreens.swift:2,ConversationRun.swift:1
+1004a284	.InitPlayerSprite	pef	9	0	HeldItem.swift:2,PlayerStates.swift:2,HitPlayerSprite.swift:2,FrameRenderer.swift:1,FaceSheet.swift:1,BootFaces.swift:1
+1004aa48	.ClearPlayerVars	pef	20	1	PlayerState.swift:14,Player.swift:4,PowerUps.swift:1,SpriteWorld.swift:1
+1004aefc	.SetupPlayerSprite	tvector	23	0	PlayerState.swift:9,Player.swift:5,SpriteWorld.swift:2,FerazelSession.swift:2,LevelFlow.swift:2,SpriteSlot.swift:1
+1004b354	.HandleTrailSprite	tvector	4	0	SpriteSlot.swift:1,PlayerState.swift:1,Player.swift:1,FerazelSession.swift:1
+1004b3b4	.SetupTrailSprite	tvector	4	0	Player.swift:2,SpriteSlot.swift:1,PlayerState.swift:1
+1004b410	.ShadowBob	pef	6	1	ShadowDouble.swift:5,PlayerState.swift:1
+1004b4f0	.HandleShadowSprite	tvector	8	0	ShadowDouble.swift:3,PlayerState.swift:2,SpriteSlot.swift:1,PowerUps.swift:1,FerazelSession.swift:1
+1004b7d4	.SetupShadowSprite	tvector	4	0	ShadowDouble.swift:3,SpriteSlot.swift:1
+1004b83c	.ApplySpeedAndSeparateFromTiles	pef	5	0	Integrate.swift:2,SpriteSlot.swift:1,PlayerState.swift:1,Player.swift:1
+1004ba14	.ShouldEmitBubbles	pef	5	0	Breathing.swift:2,PlayerLiquids.swift:2,Player.swift:1
+1004ba74	.EmitBubble	pef	9	0	PlayerLiquids.swift:4,Breathing.swift:2,PlayerState.swift:1,GroundCeilingEffects.swift:1,Player.swift:1
+1004bb44	.HandleBreathing	pef	8	0	PlayerState.swift:3,Breathing.swift:2,Player.swift:2,PlayerLiquids.swift:1
+1004bdd0	.SetupHeldItemSprite	tvector	6	0	Player.swift:3,HeldItem.swift:2,SpriteSlot.swift:1
+1004be74	.HandleHeldItemSprite	tvector	6	0	HeldItem.swift:3,SpriteSlot.swift:1,Player.swift:1,FerazelSession.swift:1
+1004bf2c	.SetHeldItemPos	pef	4	0	HeldItem.swift:3,PlayerState.swift:1
+1004c0e0	.HasItem	pef	5	0	InventorySlot.swift:1,Inventory.swift:1,HandleKeys.swift:1,PlayerStates.swift:1,HitPlayerSprite.swift:1
+1004c148	.HasItemWhichSlot	pef	5	1	PlayerStates.swift:2,Inventory.swift:1,Player.swift:1,HitPlayerSprite.swift:1
+1004c1bc	.TickTock	pef	9	0	PowerUps.swift:3,Player.swift:3,PlayerState.swift:2,ShadowDouble.swift:1
+1004c364	.TickTockLong	pef	4	0	Player.swift:3,PlayerState.swift:1
+1004c528	.PlayerScroll	pef	20	0	PlayerScroll.swift:4,BackgroundSprite.swift:4,Player.swift:4,FerazelSession.swift:4,PlayerState.swift:3,Camera.swift:1
+1004c82c	.RopeCollide	pef	10	0	PlayerState.swift:3,RopeSprite.swift:2,Player.swift:2,SpriteSlot.swift:1,RectBounce.swift:1,PlayerStates.swift:1
+1004cb4c	.PlayerConstraints	pef	3	1	Player.swift:3
+1004ce64	.UpdatePentSprites	pef	6	0	Player.swift:2,Pentashield.swift:2,PlayerState.swift:1,HitPlayerSprite.swift:1
+1004d054	.HandleItemUse	pef	7	1	PlayerStates.swift:3,HeldItem.swift:2,SpriteSlot.swift:1,PlayerState.swift:1
+1004d370	.DoubleSpeedTrail	pef	6	0	PowerUps.swift:2,Player.swift:2,BackgroundSprite.swift:1,PlayerState.swift:1
+1004d5fc	.HandlePlayerSprite	tvector	25	1	Player.swift:3,FerazelSession.swift:3,PlayerScroll.swift:2,PowerUps.swift:2,HitPlayerSprite.swift:2,LevelHeader.swift:1
+10051d1c	.CastSpell	pef	13	0	PlayerState.swift:6,Player.swift:3,CastSpell.swift:2,ShadowDouble.swift:2
+10052964	.SmiteEnemies	pef	4	0	Smite.swift:2,CastSpell.swift:1,HandleKeys.swift:1
+10052ac0	.HandleKeys	pef	38	0	Player.swift:10,HandleKeys.swift:5,PlayerState.swift:4,FrameSuspension.swift:3,PlayerStates.swift:3,BoxSprite.swift:2
+100544d8	.CheckGroundCeilingHitEffects	pef	5	0	GroundCeilingEffects.swift:2,SpriteSlot.swift:1,PlayerTiles.swift:1,HitPlayerSprite.swift:1
+1005473c	.HurtPlayer	pef	20	1	HitPlayerSprite.swift:13,PlayerState.swift:4,BonusSprite.swift:1,BloodSpray.swift:1,SpriteSlot.swift:1
+10054ca8	.HitPlayerTileSprite	tvector	13	0	PlayerTiles.swift:4,Integrate.swift:2,SeparateFromTiles.swift:2,UnderWater.swift:1,PowerUps.swift:1,PlayerState.swift:1
+10055434	.ShieldBlock	pef	1	1	PlayerStates.swift:1
+100556f4	.HitPlayerSprite	tvector	68	1	HitPlayerSprite.swift:10,FerazelSession.swift:10,PlayerState.swift:9,SpriteWorld.swift:7,LevelRun.swift:5,BoxSprite.swift:4
+10058594	.TurnIntoCannoned	pef	8	1	BackgroundSprite.swift:4,SpriteSlot.swift:3,FerazelSession.swift:1
+10058710	.HandleCannonedSprite	tvector	6	0	BackgroundSprite.swift:3,SpriteSlot.swift:1,PowerUps.swift:1,FerazelSession.swift:1
+10058fac	.InitPlayerShotSprite	pef	7	0	PlayerShot.swift:3,SetupFaces.swift:2,LightFaces.swift:1,BootFaces.swift:1
+1005925c	.SetupPlayerShotSprite	tvector	13	0	SpriteSlot.swift:4,PlayerShot.swift:3,HeldItem.swift:2,CastSpell.swift:2,Smite.swift:1,Pentashield.swift:1
+10059704	.HandlePlayerShotSprite	tvector	7	0	SpriteSlot.swift:4,PlayerShot.swift:2,FerazelSession.swift:1
+1005a7fc	.HitPlayerShotSprite	tvector	9	0	PlayerShotHits.swift:4,PlayerShot.swift:3,FerazelSession.swift:2
+1005ac34	.KillPlayerShot	pef	30	5	PlayerShotHits.swift:13,PlayerShot.swift:4,GroundCeilingEffects.swift:3,BoxSprite.swift:2,BonusSprite.swift:2,BackgroundSprite.swift:2
+1005b0bc	.HitPlayerShotTileSprite	tvector	6	0	PlayerShot.swift:4,PlayerShotHits.swift:2
+1005b670	.InitEnemyShotSprite	pef	2	0	BootFaces.swift:1,PlayerShot.swift:1
+1005ba5c	.SetupEnemyShotSprite	tvector	1	1	BoxSprite.swift:1
+1005bffc	.HandleEnemyShotSprite	tvector	1	0	HitPlayerSprite.swift:1
+1005c9a8	.HitEnemyShotSprite	tvector	0	0	
+1005cc08	.KillEnemyShot	pef	7	5	PlayerShotHits.swift:3,BackgroundSprite.swift:2,GroundCeilingEffects.swift:1,Pentashield.swift:1
+1005d034	.HitEnemyShotTileSprite	tvector	0	0	
+1005d4f0	.InitBonusSprite	pef	13	0	SetupFaces.swift:5,BonusSprite.swift:4,LightFaces.swift:2,BoxSprite.swift:1,BootFaces.swift:1
+1005d988	.SetupBonusSprite	tvector	19	0	BonusSprite.swift:4,SetupFaces.swift:4,BoxSprite.swift:3,SpriteSlot.swift:3,PlayerStates.swift:3,HitPlayerSprite.swift:2
+1005e934	.HandleBonusSprite	tvector	8	0	SpriteSlot.swift:3,BonusSprite.swift:2,FerazelSession.swift:2,BonusHandle.swift:1
+1005fd38	.HitBonusSprite	tvector	8	0	BonusSprite.swift:4,PlayerShotHits.swift:2,FerazelSession.swift:2
+10060024	.KillBonus	pef	15	0	HitPlayerSprite.swift:7,BonusSprite.swift:6,SpriteWorld.swift:2
+1006010c	.HitBonusTileSprite	tvector	2	0	BonusSprite.swift:2
+10060378	.InitEffectSprite	pef	7	0	LightFaces.swift:1,BackgroundSprite.swift:1,BootFaces.swift:1,BonusHandle.swift:1,SetupFaces.swift:1,GroundCeilingEffects.swift:1
+10060680	.SetupEffectSprite	tvector	23	0	PlayerShotHits.swift:5,GroundCeilingEffects.swift:5,BoxSprite.swift:3,BackgroundSprite.swift:3,FerazelSession.swift:3,PlayerShot.swift:2
+10060c0c	.SetupDigitSprite	tvector	2	0	FerazelSession.swift:2
+10060c78	.anon_10060c78	tvector	2	1	FerazelSession.swift:2
+10060cd8	.HandleGeyserSegSprite	tvector	0	0	
+10060d04	.UpdateDigits	pef	4	2	GroundCeilingEffects.swift:2,FerazelSession.swift:2
+10061160	.HandleEffectSprite	tvector	3	0	GroundCeilingEffects.swift:2,FerazelSession.swift:1
+10061978	.HitEffectSprite	tvector	2	0	GroundCeilingEffects.swift:1,FerazelSession.swift:1
+100619a0	.HitEffectTileSprite	tvector	4	0	GroundCeilingEffects.swift:3,UnderWater.swift:1
+10061ac8	.BounceRadial	pef	2	0	PlatformSprite.swift:1,Radial.swift:1
+10061cc0	.InitPlatformSprite	pef	6	0	SetupFaces.swift:3,PlatformSprite.swift:2,BootFaces.swift:1
+10061f94	.SetupPlatformSprite	tvector	10	0	PlayerShot.swift:4,PlatformSprite.swift:3,SetupFaces.swift:2,SpriteSlot.swift:1
+10062098	.DoSetupPlatformSprite	pef	6	0	PlatformSprite.swift:4,SpriteSlot.swift:1,SetupFaces.swift:1
+100635b4	.HandlePlatformSprite	tvector	5	0	PlatformSprite.swift:2,Splash.swift:1,HitPlayerSprite.swift:1,FerazelSession.swift:1
+10064d94	.HitPlatformSprite	tvector	5	1	PlatformSprite.swift:3,StatueSprite.swift:1,FerazelSession.swift:1
+10064f04	.HitPlatformTileSprite	tvector	4	0	PlatformSprite.swift:3,SpriteSlot.swift:1
+100652c0	.SetupChainSprite	tvector	4	0	ChainSprite.swift:2,BackgroundSprite.swift:1,SpriteSlot.swift:1
+10065374	.HandleChainSprite	tvector	3	0	ChainSprite.swift:2,FerazelSession.swift:1
+10065508	.SetupSeeSawSegSprite	tvector	4	0	ChainSprite.swift:2,SpriteSlot.swift:1,SpriteWorld.swift:1
+100655c8	.HandleSeeSawSegSprite	tvector	4	0	ChainSprite.swift:2,SpriteSlot.swift:1,SpriteWorld.swift:1
+10065798	.HitChainTileSprite	tvector	3	0	ChainSprite.swift:3
+10065828	.InitCrawlerSprite	pef	5	0	SetupFaces.swift:2,LightFaces.swift:1,StatueSprite.swift:1,BootFaces.swift:1
+100659a0	.SetupCrawlerSprite	tvector	2	0	SetupFaces.swift:2
+10065c00	.HandleCrawlerSprite	tvector	1	0	Smite.swift:1
+100664a8	.HandleStatueSprite	tvector	7	0	SpriteSlot.swift:4,StatueSprite.swift:2,FerazelSession.swift:1
+100665bc	.HitCrawlerSprite	tvector	0	0	
+10066a2c	.KillCrawler	pef	0	0	
+10066aa4	.HitCrawlerTileSprite	tvector	0	0	
+10066c5c	.InitWalkerSprite	pef	3	0	SetupFaces.swift:2,BootFaces.swift:1
+10066ef4	.STPlay3DSoundPitchedGob	pef	0	0	
+10066f6c	.STPlay3DSoundRandGob	pef	0	0	
+10067018	.GoblinHurtCry	pef	0	0	
+100671b0	.GoblinRandomCry	pef	0	0	
+10067318	.SetupWalkerSprite	tvector	3	0	SetupFaces.swift:3
+10067840	.AxGoblinCoreLogic	pef	0	0	
+10067edc	.PopupGoblinCoins	pef	0	0	
+100683b8	.HandleWalkerSprite	tvector	1	0	Smite.swift:1
+1006a128	.HurtGoblin	pef	0	0	
+1006a260	.HitWalkerSprite	tvector	0	0	
+1006a6cc	.KillWalker	pef	0	0	
+1006a740	.HitWalkerTileSprite	tvector	0	0	
+1006aa5c	.InitBoxSprite	pef	16	0	SetupFaces.swift:9,BoxSprite.swift:6,BootFaces.swift:1
+1006b3d8	.GetRopeBridgeHeight	tvector	2	1	BoxSprite.swift:1,SpriteSlot.swift:1
+1006b43c	.SetupBoxSprite	tvector	15	0	SetupFaces.swift:7,BoxSprite.swift:5,PlayerShot.swift:2,PlayerShotHits.swift:1
+1006cf7c	.HandleGeyserColumn	pef	1	1	HitPlayerSprite.swift:1
+1006d590	.CreateBalloonSprite	pef	4	0	BoxSprite.swift:3,GroundCeilingEffects.swift:1
+1006d6f4	.DestructBalloonSprite	pef	4	0	BoxSprite.swift:4
+1006d758	.BoxUW	pef	2	0	BoxSprite.swift:1,Splash.swift:1
+1006d7b0	.BoxClean	pef	2	0	BoxSprite.swift:2
+1006d824	.BoxCleanUp	pef	1	0	BoxSprite.swift:1
+1006d878	.HandleBoxSprite	tvector	9	1	BoxSprite.swift:5,SpriteSlot.swift:1,HandleKeys.swift:1,HitPlayerSprite.swift:1,FerazelSession.swift:1
+1006fa98	.KillCrate	pef	16	0	BoxSprite.swift:13,GroundCeilingEffects.swift:1,HitPlayerSprite.swift:1,FerazelSession.swift:1
+10070024	.HitBoxSprite	tvector	16	2	BoxSprite.swift:7,StatueSprite.swift:2,SpriteSlot.swift:2,GroundCeilingEffects.swift:2,FerazelSession.swift:2,PlayerShotHits.swift:1
+100705f0	.KillBox	pef	10	0	BoxSprite.swift:7,HitPlayerSprite.swift:3
+10070718	.HitBoxTileSprite	tvector	9	1	BoxSprite.swift:6,StatueSprite.swift:2,SpriteSlot.swift:1
+10070c48	.InitButtonSprite	pef	5	0	ButtonSprite.swift:3,BootFaces.swift:1,SetupFaces.swift:1
+10070d30	.SetupButtonSprite	tvector	5	0	ButtonSprite.swift:2,SpriteSlot.swift:2,SetupFaces.swift:1
+10070e60	.HandleButtonSprite	tvector	5	0	ButtonSprite.swift:2,SpriteSlot.swift:2,FerazelSession.swift:1
+100710e4	.HitButtonSprite	tvector	5	1	ButtonSprite.swift:2,FerazelSession.swift:2,SpriteSlot.swift:1
+100711f0	.InitBackgroundSprite	pef	7	0	SetupFaces.swift:6,BackgroundSprite.swift:1
+10071710	.SetupBackgroundSprite	tvector	6	1	BackgroundSprite.swift:4,SetupFaces.swift:1,SpriteWorld.swift:1
+10072f50	.SetupTree	pef	0	0	
+10073afc	.HandleBackgroundSprite	tvector	8	1	BackgroundSprite.swift:6,SpriteSlot.swift:1,FerazelSession.swift:1
+10074e60	.SuperSpring	pef	3	0	BackgroundSprite.swift:3
+10075044	.HitBackgroundSprite	tvector	11	1	BackgroundSprite.swift:6,PlayerShotHits.swift:2,FerazelSession.swift:2,HitPlayerSprite.swift:1
+10075398	.InitScenery	pef	0	0	
+100753c8	.SetTextDItem	pef	0	0	
+10075484	.GetTextDItem	pef	0	0	
+10075548	.InitMusic	pef	1	0	GameFlow.swift:1
+100756b0	.IsQuickTimeInstalled	pef	0	0	
+10075770	.Randomize	pef	0	0	
+100757b8	.DrawGreyOutline	tvector	7	0	PrefsDialogView.swift:2,DialogRenderer.swift:2,DialogWindow.swift:2,WinPrefsDialog.swift:1
+100758f8	.AlreadyUsingKey	pef	5	0	PrefsDialogModel.swift:3,PrefsDialogView.swift:1,WinPrefsDialog.swift:1
+10075990	.PrefDialogFilter	tvector	8	0	PrefsDialogModel.swift:3,PrefsDialogView.swift:3,WinPrefsDialog.swift:2
+10075f68	.UpdateDisabledItems	pef	4	0	PrefsDialogModel.swift:2,FerazelCarbonDialog.swift:1,DialogWindow.swift:1
+100760dc	.PreferencesDialog	pef	8	0	FerazelDialogs.swift:2,PrefsDialogModel.swift:1,LevelRun.swift:1,FerazelCarbonDialog.swift:1,PrefsDialogView.swift:1,DialogSystem.swift:1
+10076d38	.SwitchPrefsPanel	pef	6	0	PrefsDialogModel.swift:2,PrefsDialogView.swift:2,WinPrefsDialog.swift:2
+10076e30	.UpdatePrefsPanel	pef	3	0	PrefsDialogModel.swift:3
+10077250	.ConvertKeyName	pef	6	0	PrefsDialogModel.swift:3,FerazelController.swift:1,PrefsDialogView.swift:1,WinPrefsDialog.swift:1
+1007771c	.SetPrefFile	pef	6	0	PrefsFile.swift:1,PrefsToggles.swift:1,SaveGame.swift:1,FrontFiles.swift:1,LevelRun.swift:1,FerazelDriver.swift:1
+10077868	.InitRoachSprite	pef	2	0	SetupFaces.swift:2
+10077914	.SetupRoachSprite	tvector	2	0	SetupFaces.swift:2
+10077a88	.HandleRoachSprite	tvector	1	0	Smite.swift:1
+1007801c	.HitRoachSprite	tvector	0	0	
+100782f8	.KillRoach	pef	0	0	
+10078384	.HitRoachTileSprite	tvector	0	0	
+1007853c	.DoAboutDialog	pef	10	0	GameFlow.swift:2,FerazelDialogs.swift:2,WinCreditsDialog.swift:2,Pause.swift:1,CreditsScroll.swift:1,CreditsDialog.swift:1
+10078b14	.ConvPressAnyKeyDeadTime	pef	2	0	ConversationRun.swift:2
+10078bd0	.InitConversation	pef	3	0	ConversationRun.swift:2,ConversationRenderer.swift:1
+10078ee4	.DrawConvPic	pef	5	0	ConversationRun.swift:3,ConversationRenderer.swift:2
+10078f34	.DrawConvPicToScreen	pef	3	0	ConversationRun.swift:2,ConversationRenderer.swift:1
+10078fc8	.DrawConvNameString	pef	2	0	ConversationRenderer.swift:1,ConversationRun.swift:1
+10079094	.CharByCharDelay	pef	4	0	ConversationRun.swift:4
+1007912c	.DrawStringCharByCharOrig	pef	2	0	ConversationRenderer.swift:1,ConversationRun.swift:1
+10079210	.DrawStringCharByChar	pef	6	0	ConversationRun.swift:5,TextRasterizer.swift:1
+1007940c	.DrawConvTextString	pef	11	0	ConversationRun.swift:8,ConversationRenderer.swift:2,TextRasterizer.swift:1
+100797e4	.CopyConvToScreen	pef	4	0	ConversationRun.swift:3,ConversationRenderer.swift:1
+100798cc	.EraseConvNameAndText	pef	5	0	ConversationRun.swift:3,ConversationRenderer.swift:2
+10079a30	.SimpleConv	pef	23	0	HandleKeys.swift:5,FrameSuspension.swift:4,LevelRun.swift:4,HitPlayerSprite.swift:3,ConversationRun.swift:3,FerazelSession.swift:2
+10079c60	.HandleLineResponses	pef	3	0	ConversationRun.swift:3
+1007a0fc	.HandleLineActions	pef	7	0	StatusBarState.swift:2,StatusBarCalls.swift:2,ConversationRun.swift:2,ConvActions.swift:1
+1007a624	.HandleConvLine	pef	4	0	ConversationRun.swift:4
+1007a7e8	.Conversation	pef	30	0	ConversationRun.swift:13,HitPlayerSprite.swift:4,Conversation.swift:3,LevelRun.swift:3,FrameSuspension.swift:2,ConvActions.swift:2
+1007aa88	.InitPlayerMapData	pef	2	0	GameFlow.swift:1,NewGame.swift:1
+1007ac38	.InitMapFaces	pef	6	0	MapRenderer.swift:2,FerazelDriver.swift:2,BootFaces.swift:1,WorldMapRun.swift:1
+1007ad84	.InitMapLevelNames	pef	6	0	ContinueGame.swift:2,NewGame.swift:2,StringList.swift:1,WorldMapRun.swift:1
+1007ae3c	.AddNodeSprite	pef	5	0	WorldMapRun.swift:5
+1007aea4	.MakeNodeSprites	pef	5	0	WorldMapRun.swift:4,MapRenderer.swift:1
+1007afd8	.RedrawLinks	pef	6	0	WorldMapRun.swift:5,MapRenderer.swift:1
+1007b0dc	.UpdateNodeSprites	pef	4	0	WorldMapRun.swift:4
+1007b268	.DrawNodeSprites	pef	5	0	WorldMapRun.swift:4,MapRenderer.swift:1
+1007b344	.EraseNodeSprites	pef	5	0	WorldMapRun.swift:5
+1007b438	.CopyNodeSpritesToScreen	pef	1	0	WorldMapRun.swift:1
+1007b560	.ReInitWorldMapGraphics	pef	3	0	WorldMapRun.swift:2,MapRenderer.swift:1
+1007b674	.FindPlayerNodeLoc	pef	2	0	WorldMapRun.swift:2
+1007b7c8	.DrawLink	pef	8	0	WorldMapRun.swift:6,MapRenderer.swift:2
+1007b998	.DrawLinkScratch	pef	4	0	MapRenderer.swift:2,WorldMapRun.swift:2
+1007bb80	.FindCurrNode	pef	7	0	WorldMapRun.swift:4,WorldMap.swift:1,NewGame.swift:1,LevelFlow.swift:1
+1007bc28	.DrawNewLink	pef	9	0	WorldMapRun.swift:8,MapRenderer.swift:1
+1007bfdc	.CheckPlayerNodeMovement	pef	2	0	WorldMapRun.swift:2
+1007c494	.ShowWorldMap	pef	18	0	WorldMapRun.swift:7,NewGame.swift:4,LevelFlow.swift:2,WorldMap.swift:1,StatusBarCalls.swift:1,GameFlow.swift:1
+1007cd3c	.InitBlobSprite	pef	1	0	SetupFaces.swift:1
+1007cdb0	.SetupBlobSprite	tvector	2	0	SetupFaces.swift:2
+1007cf64	.HandleDeadBlobSprite	tvector	0	0	
+1007d044	.HandleBlobSprite	tvector	1	0	Smite.swift:1
+1007d6e0	.HitBlobSprite	tvector	0	0	
+1007d8dc	.KillBlob	pef	0	0	
+1007d968	.HitBlobTileSprite	tvector	0	0	
+1007daf8	.InitBatSprite	pef	1	0	SetupFaces.swift:1
+1007dc30	.SetupBatSprite	tvector	2	0	SetupFaces.swift:2
+1007e220	.SetupSwarmMemberSprite	tvector	0	0	
+1007e2c8	.HandleSwarmMemberSprite	tvector	0	0	
+1007e6b0	.HandleBatSprite	tvector	1	0	Smite.swift:1
+1007f440	.SetupInsectBodySprite	tvector	0	0	
+1007f4a0	.HandleInsectBodySprite	tvector	0	0	
+1007f508	.HitBatSprite	tvector	0	0	
+1007f734	.HitSwarmMemberSprite	tvector	0	0	
+1007f874	.KillBat	pef	0	0	
+1007f91c	.HitBatTileSprite	tvector	0	0	
+1007faac	.InitGremlinSprite	pef	0	0	
+1007fc88	.SetupGremlinSprite	tvector	0	0	
+1007feec	.HandleGremlinSprite	tvector	1	0	Smite.swift:1
+10080d34	.HitGremlinSprite	tvector	0	0	
+100810d4	.KillGremlinSprite	tvector	0	0	
+100811a4	.HitGremlinTileSprite	tvector	0	0	
+100813dc	.InitFloaterSprite	pef	0	0	
+100814b8	.SetupFloaterSprite	tvector	0	0	
+100816d8	.HandleFloaterSprite	tvector	1	0	Smite.swift:1
+10081aa4	.HitFloaterSprite	tvector	0	0	
+10081c60	.HitFloaterTileSprite	tvector	0	0	
+10081df4	.InitFrogSprite	pef	1	0	SetupFaces.swift:1
+10081e68	.STPlay3DSoundRandFrog	pef	0	0	
+10081f14	.SetupFrogSprite	tvector	2	0	SetupFaces.swift:2
+1008214c	.HandleFrogSprite	tvector	1	0	Smite.swift:1
+100828cc	.HitFrogSprite	tvector	0	0	
+10082c14	.KillFrog	tvector	0	0	
+10082d04	.HitFrogTileSprite	tvector	0	0	
+10082ea8	.InitSalamanderSprite	pef	0	0	
+10082f20	.SetupSalamanderSprite	tvector	0	0	
+10083074	.HandleSalamanderSprite	tvector	1	0	Smite.swift:1
+1008350c	.HitSalamanderSprite	tvector	0	0	
+10083724	.KillSalamander	tvector	0	0	
+100837b8	.HitSalamanderTileSprite	tvector	0	0	
+10083980	.InitRopeSprite	pef	3	0	BootFaces.swift:2,RopeSprite.swift:1
+10083f20	.SetupRopeSprite	tvector	4	0	RopeSprite.swift:2,IdleSprites.swift:1,SetupFaces.swift:1
+10084044	.SetupRopeSegSprite	tvector	3	0	RopeSprite.swift:3
+100840b4	.HandleRopeSegSprite	tvector	2	0	RopeSprite.swift:2
+10084118	.MakeRopeSegSprites	pef	6	0	RopeSprite.swift:6
+10084264	.GetRopeHeight	tvector	5	1	RopeSprite.swift:4,SpriteSlot.swift:1
+100843ac	.SetupRopeSegArray	pef	6	0	RopeSprite.swift:4,SpriteSlot.swift:1,SetupFaces.swift:1
+10084b00	.RopeIdleize	tvector	4	0	RopeSprite.swift:3,IdleSprites.swift:1
+10084ba8	.RopeDeIdleize	tvector	5	0	RopeSprite.swift:3,IdleSprites.swift:1,SpriteWorld.swift:1
+10084c1c	.HandleRopeSprite	tvector	3	0	RopeSprite.swift:2,FerazelSession.swift:1
+10085300	.FlameCreate	pef	0	0	
+100854e4	.FlameAddSpark	pef	0	0	
+10085560	.FlameAddLine	pef	0	0	
+10085698	.FlameUpdate	pef	0	0	
+1008574c	.FlameDispose	pef	1	0	GameFlow.swift:1
+100857e0	.FlameUp	pef	0	0	
+10085df4	.MyNewPixMap	pef	0	0	
+10085f44	.MyRandomizePixmap	pef	0	0	
+10086048	.MyDisposePixMap	pef	0	0	
+100860e0	.MyRandom	pef	0	0	
+10086120	.InitDilloSprite	pef	0	0	
+1008622c	.SetupDilloSprite	tvector	0	0	
+1008648c	.ShootSpines	pef	0	0	
+1008678c	.DilloLayEgg	pef	0	0	
+100867fc	.RandomDilloAttack	pef	0	0	
+1008697c	.HandleDilloSprite	tvector	2	0	Smite.swift:2
+10087334	.HitDilloSprite	tvector	0	0	
+100875bc	.KillDillo	tvector	0	0	
+1008763c	.HitDilloTileSprite	tvector	0	0	
+100877d0	.InitWarriorSprite	pef	0	0	
+100878ac	.SetupWarriorSprite	tvector	0	0	
+10087afc	.WarriorLayEgg	pef	0	0	
+10087b6c	.RandomWarriorAttack	pef	0	0	
+10087c04	.HandleWarriorSprite	tvector	2	0	Smite.swift:2
+1008854c	.HitWarriorSprite	tvector	0	0	
+1008874c	.KillWarrior	tvector	0	0	
+10088834	.HitWarriorTileSprite	tvector	0	0	
+100889c8	.InitSpriteCache	pef	0	0	
+10088ae0	FUN_10088ae0	pef	1	0	LevelRun.swift:1
+10088c9c	.NeedToReloadForThisClut	pef	2	0	LevelRun.swift:2
+10088d04	.DisposeUnneededCachedSpriteFaces	pef	1	0	LevelRun.swift:1
+10088ee4	.CountNeededCachedSpriteFaces	pef	1	0	LevelRun.swift:1
+10088fa8	.LoadCachedSpriteFaces	pef	12	0	LevelRun.swift:6,SetupFaces.swift:3,BackgroundSprite.swift:1,BootFaces.swift:1,LevelFlow.swift:1
+10089250	.CacheEncFaceSetFromPICT	pef	4	0	SetupFaces.swift:2,SpriteBlitter.swift:1,LevelRun.swift:1
+100893d4	.Cache1EncFaceFromPICT	pef	5	0	SetupFaces.swift:3,SpriteBlitter.swift:1,LevelRun.swift:1
+10089454	.InitCrabSprite	pef	0	0	
+100894e4	.SetupCrabSprite	tvector	0	0	
+10089828	.HandleCrabSprite	tvector	0	0	
+10089dec	.HandleCrabSegSprite	tvector	0	0	
+10089e24	.HitCrabSprite	tvector	0	0	
+10089ec4	.InitDemonSprite	pef	0	0	
+1008a0ac	.SetupDemonSprite	tvector	0	0	
+1008a400	.HandleDemonSegs	pef	0	0	
+1008a594	.HandleDemonSegSprite	tvector	0	0	
+1008a630	.HandleDemonSprite	tvector	1	0	Smite.swift:1
+1008b0b4	.HitDemonSprite	tvector	0	0	
+1008b2d0	.KillDemon	tvector	0	0	
+1008b3f8	.InitChiefSprite	pef	0	0	
+1008b538	.SetupChiefSprite	tvector	0	0	
+1008b724	.GoblinChiefRandomCry	pef	0	0	
+1008b878	.HandleChiefSprite	tvector	1	0	Smite.swift:1
+1008c0e0	.HitChiefSprite	tvector	0	0	
+1008c350	.KillChief	tvector	0	0	
+1008c434	.HitChiefTileSprite	tvector	0	0	
+1008c5c8	.InitWizardSprite	pef	0	0	
+1008c6a8	.SetupWizardSprite	tvector	0	0	
+1008c8e8	.HandleWizardSprite	tvector	1	0	Smite.swift:1
+1008d470	.HitWizardSprite	tvector	0	0	
+1008d69c	.KillWizard	tvector	0	0	
+1008d784	.HitWizardTileSprite	tvector	0	0	
+1008d918	.InitXichraSprite	pef	0	0	
+1008dc7c	.HandleXichraWingSprite	tvector	0	0	
+1008dce4	.sinDegrees	pef	0	0	
+1008dd44	.SetupXichraSprite	tvector	0	0	
+1008e180	.StandardXichraFloat	pef	0	0	
+1008e24c	.UpdateXichraCannons	pef	0	0	
+1008e388	.DoXichraShot	pef	0	0	
+1008e4ec	.HandleXichraSprite	tvector	1	0	Smite.swift:1
+1008fdf4	.HitXichraSprite	tvector	0	0	
+100902a4	.KillXichra	tvector	0	0	
+10090384	.HitXichraTileSprite	tvector	0	0	
+10090478	.pcstrcat	pef	0	0	
+10090498	FUN_10090498	pef	0	0	
+100904c4	.pnumcat	pef	0	0	
+100906a0	.MetroNubActive	pef	0	0	
+10090770	.Debug	pef	0	0	
+100908d8	.SLEnterInterrupt	pef	0	0	
+10090900	.SLLeaveInterrupt	pef	0	0	
+10090928	FUN_10090928	pef	0	0	
+1009097c	FUN_1009097c	pef	0	0	
+100909d0	FUN_100909d0	pef	0	0	
+100909e0	FUN_100909e0	pef	0	0	
+100909ec	entry	pef	1	0	Pause.swift:1
+10090a64	FUN_10090a64	pef	2	0	ScreenGamma.swift:1,ScreenFade.swift:1
+10090ab8	FUN_10090ab8	pef	0	0	
+10090ba8	FUN_10090ba8	pef	0	0	
+10090c40	FUN_10090c40	pef	0	0	
+10090d08	FUN_10090d08	pef	0	0	
+10090db4	FUN_10090db4	pef	0	0	
+10090e38	FUN_10090e38	pef	1	0	SoundTool.swift:1
+10091090	FUN_10091090	pef	0	0	
+10091124	FUN_10091124	pef	1	0	SoundTool.swift:1
+1009118c	FUN_1009118c	pef	0	0	
+10091208	FUN_10091208	pef	8	0	SoundTool.swift:3,FrameOps.swift:1,SoundVoices.swift:1,SoundCues.swift:1,PlayerState.swift:1,FerazelAudio.swift:1
+10091504	FUN_10091504	pef	18	0	SoundTool.swift:3,FrameOps.swift:2,SoundVoices.swift:2,PlayerState.swift:2,FerazelAudio.swift:2,BackgroundSprite.swift:1
+100916dc	FUN_100916dc	pef	22	0	SoundTool.swift:4,SoundVoices.swift:4,StageScreens.swift:2,PlayerState.swift:2,BoxSprite.swift:1,BackgroundSprite.swift:1
+10091748	FUN_10091748	pef	5	0	SoundTool.swift:1,Splash.swift:1,MainMenu.swift:1,Pause.swift:1,SoundSlots.swift:1
+10091890	FUN_10091890	pef	0	0	
+10091a60	FUN_10091a60	pef	0	0	
+10091b44	FUN_10091b44	pef	3	0	SoundTool.swift:3
+10091c94	FUN_10091c94	pef	2	0	SoundTool.swift:2
+10091ddc	FUN_10091ddc	pef	3	0	SoundTool.swift:3
+10091f00	FUN_10091f00	pef	1	0	SoundTool.swift:1
+10091fe4	FUN_10091fe4	pef	1	0	SoundTool.swift:1
+1009213c	FUN_1009213c	pef	0	0	
+100921d0	FUN_100921d0	pef	0	0	
+10092208	FUN_10092208	pef	0	0	
+100922d8	FUN_100922d8	pef	0	0	
+10092378	FUN_10092378	pef	0	0	
+10092400	FUN_10092400	pef	0	0	
+1009245c	FUN_1009245c	pef	0	0	
+100924c4	FUN_100924c4	pef	0	0	
+1009250c	FUN_1009250c	pef	0	0	
+10092550	.MT_Open	pef	0	0	
+1009279c	.MT_Close	pef	0	0	
+10092894	.MT_FindMonitor	pef	0	0	
+10092c10	.MT_GetMode	pef	0	0	
+10092dc4	.MT_SetMode	pef	0	0	
+100931a4	.MT_FadeTo	pef	0	0	
+10093304	.MT_FadeToColor	pef	13	0	ScreenGamma.swift:4,ScreenGammaOp.swift:4,ScreenFade.swift:2,ScreenSurface.swift:1,DrawOp.swift:1,FerazelSession.swift:1
+10093734	.MT_FadeCustom	pef	6	0	ScreenFade.swift:3,ScreenGamma.swift:2,ScreenGammaOp.swift:1
+10093c74	.MT_Prepare	pef	0	0	
+10093e04	.MT_Suspend	pef	0	0	
+100940a4	.MT_Resume	pef	0	0	
+100943a8	.MT_Restore	pef	0	0	
+10094500	.MT_ShowMenubar	pef	0	0	
+100945f4	.MT_HideMenubar	pef	1	0	GameFlow.swift:1
+100946e8	._MT_CountMonitors	pef	0	0	
+100947b0	._MT_PreflightMonitor	pef	0	0	
+10094bbc	._MT_PostflightMonitor	pef	0	0	
+10094dd0	._MT_SetStateWrapper	pef	0	0	
+10095100	._MT_EvalResolution	pef	0	0	
+100953c8	._MT_EvalRefresh	pef	0	0	
+1009558c	._MT_EvalDepth	pef	0	0	
+10095808	._MT_HasGammaFade	pef	0	0	
+10095860	._MT_HasColorTable	pef	0	0	
+100958d4	._MT_Lookup	pef	0	0	
+10095a2c	._MT_Next	pef	0	0	
+10095ab4	.GetD3	pef	0	0	
+10095b04	.SetD3	pef	0	0	
+10095b5c	.SBIsControlStripVisible	pef	0	0	
+10095bc8	.SBShowHideControlStrip	pef	0	0	
+10095c38	._MT_ShowMenubar	pef	0	0	
+10096044	._MT_HideMenubar	pef	0	0	
+100963c4	._MT_ForceUpdate	pef	0	0	
+10096540	._MT_LockGDevices	pef	0	0	
+10096650	._MT_GetColorTable	pef	0	0	
+100967f0	._MT_SetColorTable	pef	0	0	
+10096a38	._MT_GetGamma	pef	0	0	
+10096c38	._MT_SetGamma	pef	0	0	
+10096df0	._MT_CloneGamma	pef	0	0	
+10096f34	._MT_DisposeGamma	pef	0	0	
+10096ff4	._MT_BlendGamma	pef	0	0	
+100974cc	._MT_ColorGamma	pef	0	0	
+10097724	._MT_Gamma2ColorList	pef	0	0	
+100979d0	._MT_ColorList2Gamma	pef	0	0	
+10097c64	._MT_GetAllModes	pef	0	0	
+10098110	._MT_GetState	pef	0	0	
+10098330	._MT_SetState	pef	0	0	
+100986a0	.DisplayManagerAvailable	pef	0	0	
+1009873c	.DisplayManagerVersion	pef	0	0	
+100987ac	.MyDMIterator	tvector	0	0	
+100989a4	.AtomicEnterCritical	pef	0	0	
+10098ac0	.AtomicLeaveCritical	pef	0	0	
+10098bc4	.AtomicValueSwapSafe	pef	0	0	
+10098ccc	.AtomicIncrement	pef	0	0	
+10098dd0	.AtomicMaskApply	pef	0	0	
+10098f40	.AtomicMaskClear	pef	0	0	
+100990b4	.AtomicMaskTest	pef	0	0	
+100991c8	FUN_100991c8	pef	0	0	
+10099218	FUN_10099218	pef	0	0	
+10099264	FUN_10099264	pef	0	0	
+100992c0	FUN_100992c0	pef	0	0	
+1009931c	.MemoryAllocate	pef	0	0	
+10099424	.MemoryDeallocate	pef	0	0	
+10099520	.MemoryClear	pef	7	0	SpriteWorld.swift:3,SpriteSlot.swift:2,ActiveList.swift:1,StandardSprite.swift:1
+100995fc	.MemoryCopy	pef	0	0	
+100996dc	.QueueCreate	pef	0	0	
+10099830	.QueueDispose	pef	0	0	
+10099938	.QueueInsert	pef	0	0	
+10099a54	.QueueRemove	pef	0	0	
+10099b30	.QueueExtract	pef	0	0	
+10099c54	.QueueTransfer	pef	0	0	
+10099d18	.QueueGetCount	pef	0	0	
+10099db0	.QueueIsEmpty	pef	0	0	
+10099e4c	FUN_10099e4c	pef	0	0	
+10099ec4	FUN_10099ec4	pef	0	0	
+10099f40	FUN_10099f40	pef	0	0	
+10099fa4	FUN_10099fa4	pef	0	0	
+1009a044	FUN_1009a044	pef	0	0	
+1009a0a4	.StringGetLength	pef	0	0	
+1009a148	.StringCopySafe	pef	0	0	
+1009a274	.StringAppend	pef	0	0	
+1009a360	.StringFromNumber	pef	0	0	
+1009a460	.P2CStringCopy	pef	0	0	
+1009a550	.StringFormatSafe	pef	0	0	
+1009a5e4	._StringFormatPrivate	pef	0	0	
+1009ac68	._StringFormatNumber	pef	0	0	
+1009addc	._StringFormatString	pef	0	0	
+1009af34	.PlatformOpen	pef	0	0	
+1009b54c	.SystemSetQuitProc	pef	0	0	
+1009b694	._MacOSE2SInstall	pef	0	0	
+1009b77c	._MacOSE2SRemove	pef	0	0	
+1009b7c4	._MacOSE2SHook	tvector	0	0	
+1009b8a0	._MacOSFindSymbol	pef	0	0	
+1009ba98	.TimerGetMicroseconds	pef	0	0	
+1009bb40	._MacOSGetMicroseconds	pef	0	0	
+1009bd10	FUN_1009bd10	pef	0	0	
+1009bd5c	FUN_1009bd5c	pef	0	0	
+1009bda8	.ThreadsPreflight	pef	0	0	
+1009c1ac	.ThreadsPostflight	tvector	0	0	
+1009c388	.ThreadDispose	pef	0	0	
+1009c724	.ThreadYield	pef	0	0	
+1009c938	.MutexDispose	pef	0	0	
+1009cb14	.MutexRequest	pef	0	0	
+1009cc5c	.MutexRelease	pef	0	0	
+1009cdec	._MutexMove	pef	0	0	
+1009cf1c	._ThreadCreate	pef	0	0	
+1009d14c	._ThreadDispose	pef	0	0	
+1009d20c	._ThreadRef2Ptr	pef	0	0	
+1009d2e4	._ThreadPtr2Ref	pef	0	0	
+1009d394	._ThreadCurrent	pef	0	0	
+1009d43c	._ThreadEnterCritical	pef	0	0	
+1009d490	._ThreadLeaveCritical	pef	0	0	
+1009d4e4	._ThreadSuggest	pef	0	0	
+1009d730	._ThreadReady	pef	0	0	
+1009d830	._ThreadTimer	tvector	0	0	
+1009d880	._ThreadDefer	tvector	0	0	
+1009da30	._ThreadImpersonate	pef	0	0	
+1009dad8	FUN_1009dad8	pef	0	0	
+1009dc94	GetMainDevice	pef	0	0	
+1009dcac	MaxApplZone	pef	0	0	
+1009dcc4	MoreMasters	pef	0	0	
+1009dcdc	InitGraf	pef	0	0	
+1009dcf4	InitFonts	pef	0	0	
+1009dd0c	FlushEvents	pef	29	0	GameFlow.swift:6,Pause.swift:5,LevelRun.swift:3,FerazelSession.swift:3,ContinueGame.swift:2,DeathScreen.swift:2
+1009dd24	InitWindows	pef	0	0	
+1009dd3c	InitMenus	pef	1	0	FerazelMenus.swift:1
+1009dd54	TEInit	pef	0	0	
+1009dd6c	InitDialogs	pef	0	0	
+1009dd84	InitCursor	pef	1	0	GameFlow.swift:1
+1009dd9c	GetDateTime	pef	16	0	WinGame.swift:5,FerazelDriver.swift:3,LevelRun.swift:2,FerazelController.swift:2,SaveBlock.swift:1,SaveGame.swift:1
+1009ddb4	GetTime	pef	0	0	
+1009ddcc	SetCursor	pef	0	0	
+1009dde4	HideCursor	pef	0	0	
+1009ddfc	ISpResume	pef	0	0	
+1009de14	ISpSuspend	pef	0	0	
+1009de2c	ShowCursor	pef	0	0	
+1009de44	SetGWorld	pef	0	0	
+1009de5c	ForeColor	pef	9	0	MapRenderer.swift:2,DeathEffect.swift:2,WorldMapRun.swift:2,StatusBar.swift:1,FrameRenderer.swift:1,ConversationRun.swift:1
+1009de74	BackColor	pef	0	0	
+1009de8c	NumToString	pef	5	0	SaveName.swift:2,SavedGameFile.swift:1,FerazelDialogs.swift:1,DialogSystem.swift:1
+1009dea4	ParamText	pef	19	0	DialogWindow.swift:6,Pause.swift:2,FerazelCarbonDialog.swift:2,FerazelDialogs.swift:2,DialogSystem.swift:2,SavedGameFile.swift:1
+1009debc	Gestalt	pef	3	1	FerazelPrefs.swift:2,PrefsDialogModel.swift:1
+1009ded4	BlockMoveData	pef	1	0	SoundTool.swift:1
+1009deec	CallUniversalProc	pef	0	0	
+1009df04	DebugStr	pef	3	0	BlendFaces.swift:2,EncodedFace.swift:1
+1009df1c	ExitToShell	pef	11	0	WorldMapRun.swift:4,GameFlow.swift:3,ShellRequest.swift:1,NewGame.swift:1,LevelFlow.swift:1,FerazelController.swift:1
+1009df34	GetDeviceList	pef	0	0	
+1009df4c	TestDeviceAttribute	pef	0	0	
+1009df64	HGetState	pef	0	0	
+1009df7c	HLock	pef	0	0	
+1009df94	GetNextDevice	pef	0	0	
+1009dfac	NewPtr	pef	2	0	WaterFaceSheet.swift:1,FaceEncoder.swift:1
+1009dfc4	Microseconds	pef	0	0	
+1009dfdc	PBControlSync	pef	0	0	
+1009dff4	GetGDevice	pef	0	0	
+1009e00c	SetGDevice	pef	0	0	
+1009e024	SetEntries	pef	8	0	DeathScreen.swift:3,ScreenRenderer.swift:2,IndexedFrame.swift:1,ColorLUT.swift:1,ScreenGammaOp.swift:1
+1009e03c	HSetState	pef	0	0	
+1009e054	DisposePtr	pef	0	0	
+1009e06c	Button	pef	27	1	ButtonSprite.swift:6,DeathScreen.swift:5,WinCreditsDialog.swift:3,BackgroundSprite.swift:2,SpriteSlot.swift:2,MainMenu.swift:2
+1009e084	MoviesTask	pef	0	0	
+1009e09c	GetNewDialog	pef	9	0	FerazelCarbonDialog.swift:2,DialogWindow.swift:2,CreditsScroll.swift:1,CreditsDialog.swift:1,PrefsDialogView.swift:1,WinPrefsDialog.swift:1
+1009e0b4	GetGWorld	pef	0	0	
+1009e0cc	SetPort	pef	1	0	StatusBar.swift:1
+1009e0e4	BeginUpdate	pef	0	0	
+1009e0fc	GetDialogItem	pef	1	0	PrefsDialogModel.swift:1
+1009e114	InsetRect	pef	5	0	DialogRenderer.swift:2,FerazelCarbonDialog.swift:1,FerazelDialogs.swift:1,DialogWindow.swift:1
+1009e12c	PenSize	pef	0	0	
+1009e144	FrameRoundRect	pef	6	0	DialogWindow.swift:3,FerazelCarbonDialog.swift:2,DialogViews.swift:1
+1009e15c	EndUpdate	pef	0	0	
+1009e174	DrawDialog	pef	4	0	CreditsDialog.swift:2,WinCreditsDialog.swift:2
+1009e18c	ShowWindow	pef	2	0	CreditsDialog.swift:1,FerazelCarbonDialog.swift:1
+1009e1a4	SelectWindow	pef	1	0	FerazelCarbonDialog.swift:1
+1009e1bc	ModalDialog	pef	23	0	PrefsDialogModel.swift:5,FerazelDialogs.swift:4,FerazelCarbonDialog.swift:3,PrefsDialogView.swift:3,DialogWindow.swift:3,DialogViews.swift:2
+1009e1d4	DisposeDialog	pef	5	0	FerazelCarbonDialog.swift:1,PrefsDialogView.swift:1,FerazelDialogs.swift:1,DialogSystem.swift:1,WinPrefsDialog.swift:1
+1009e1ec	SetRect	pef	60	0	StageScreens.swift:8,BackgroundSprite.swift:7,BoxSprite.swift:4,GroundCeilingEffects.swift:4,IdleSprites.swift:3,SetupFaces.swift:3
+1009e204	CopyBits	pef	36	0	StatusBar.swift:6,ParallaxBlitter.swift:6,FrameRenderer.swift:3,ScreenRenderer.swift:3,LightFaces.swift:3,CreditsDialog.swift:3
+1009e21c	CurResFile	pef	1	0	ScreenRenderer.swift:1
+1009e234	FindFolder	pef	0	0	
+1009e24c	FSMakeFSSpec	pef	0	0	
+1009e264	FSpOpenResFile	pef	1	0	SavedGameFile.swift:1
+1009e27c	ResError	pef	2	0	SavedGameFile.swift:1,ContinueGame.swift:1
+1009e294	FSpCreate	pef	2	0	SavedGameFile.swift:1,SaveGame.swift:1
+1009e2ac	FSpCreateResFile	pef	1	0	SavedGameFile.swift:1
+1009e2c4	UseResFile	pef	0	0	
+1009e2dc	Get1Resource	pef	2	0	PrefsFile.swift:1,FrontFiles.swift:1
+1009e2f4	NewHandle	pef	2	0	FerazelPrefs.swift:2
+1009e30c	SetMovieVolume	pef	9	0	MusicFade.swift:7,PrefsToggles.swift:1,FerazelAudio.swift:1
+1009e324	TickCount	pef	19	0	LevelRun.swift:3,WinGame.swift:3,WorldMapRun.swift:2,WinKeyScript.swift:2,DialogWindow.swift:2,WinDialogs.swift:2
+1009e33c	FUN_1009e33c	pef	0	0	
+1009e354	DisposeMovie	pef	0	0	
+1009e36c	RecoverHandle	pef	0	0	
+1009e384	DisposeHandle	pef	0	0	
+1009e39c	DisposePixMap	pef	0	0	
+1009e3b4	GetMBarHeight	pef	0	0	
+1009e3cc	NewRgn	pef	0	0	
+1009e3e4	GetGrayRgn	pef	0	0	
+1009e3fc	GetPort	pef	0	0	
+1009e414	CopyRgn	pef	0	0	
+1009e42c	DiffRgn	pef	0	0	
+1009e444	LMSetMBarHeight	pef	0	0	
+1009e45c	RectRgn	pef	0	0	
+1009e474	UnionRgn	pef	0	0	
+1009e48c	FrontWindow	pef	0	0	
+1009e4a4	PaintBehind	pef	0	0	
+1009e4bc	CalcVisBehind	pef	0	0	
+1009e4d4	EventAvail	pef	0	0	
+1009e4ec	DisposeRgn	pef	0	0	
+1009e504	CTabChanged	pef	0	0	
+1009e51c	MakeITable	pef	3	0	InverseTable.swift:1,ColorSearch.swift:1,LevelTables.swift:1
+1009e534	BlockMove	pef	0	0	
+1009e54c	GetGWorldPixMap	pef	0	0	
+1009e564	GetWMgrPort	pef	0	0	
+1009e57c	GetClip	pef	0	0	
+1009e594	SetClip	pef	0	0	
+1009e5ac	GetForeColor	pef	0	0	
+1009e5c4	RGBForeColor	pef	11	0	StatusBar.swift:3,MapRenderer.swift:2,TextRasterizer.swift:1,ScreenRenderer.swift:1,TextRun.swift:1,DrawOp.swift:1
+1009e5dc	PaintRgn	pef	0	0	
+1009e5f4	DrawMenuBar	pef	4	0	Pause.swift:2,GameFlow.swift:1,FerazelMenus.swift:1
+1009e60c	HideWindow	pef	2	0	PrefsDialogView.swift:1,WinPrefsDialog.swift:1
+1009e624	DMBeginConfigureDisplays	pef	0	0	
+1009e63c	DMSetDisplayMode	pef	0	0	
+1009e654	SetDepth	pef	0	0	
+1009e66c	DMEndConfigureDisplays	pef	0	0	
+1009e684	DMGetDisplayMode	pef	0	0	
+1009e69c	RestoreDeviceClut	pef	0	0	
+1009e6b4	GetCTSeed	pef	0	0	
+1009e6cc	DisposeCTable	pef	1	0	StageScreens.swift:1
+1009e6e4	ISpStop	pef	0	0	
+1009e6fc	SetDefaultOutputVolume	pef	0	0	
+1009e714	SndDisposeChannel	pef	0	0	
+1009e72c	CloseResFile	pef	1	0	SavedGameFile.swift:1
+1009e744	SetOrigin	pef	0	0	
+1009e75c	AddResource	pef	4	0	PrefsFile.swift:2,SavedGameFile.swift:1,SaveGame.swift:1
+1009e774	ChangedResource	pef	4	0	PrefsFile.swift:1,PrefsToggles.swift:1,SaveGame.swift:1,FrontFiles.swift:1
+1009e78c	WriteResource	pef	6	0	SaveGame.swift:2,PrefsFile.swift:1,SavedGameFile.swift:1,PrefsToggles.swift:1,FrontFiles.swift:1
+1009e7a4	GetHandleSize	pef	0	0	
+1009e7bc	SetHandleSize	pef	2	0	FerazelPrefs.swift:2
+1009e7d4	GetFrontProcess	pef	0	0	
+1009e7ec	GetProcessInformation	pef	0	0	
+1009e804	OpenMovieFile	pef	0	0	
+1009e81c	NewMovieFromFile	pef	0	0	
+1009e834	CloseMovieFile	pef	0	0	
+1009e84c	GetMovieTime	pef	0	0	
+1009e864	GetMovieTimeBase	pef	0	0	
+1009e87c	SetTimeBaseFlags	pef	0	0	
+1009e894	SetMoviePlayHints	pef	0	0	
+1009e8ac	GetMovieDuration	pef	0	0	
+1009e8c4	LoadMovieIntoRam	pef	0	0	
+1009e8dc	PrerollMovie	pef	0	0	
+1009e8f4	StartMovie	pef	0	0	
+1009e90c	OpenResFile	pef	1	0	TileSets.swift:1
+1009e924	GetVRefNum	pef	0	0	
+1009e93c	NewPtrClear	pef	1	0	Radial.swift:1
+1009e954	PBHGetVInfoSync	pef	0	0	
+1009e96c	GetSharedLibrary	pef	0	0	
+1009e984	ISpElement_NewVirtualFromNeeds	pef	0	0	
+1009e99c	ISpInit	pef	0	0	
+1009e9b4	ISpDevices_ActivateClass	pef	0	0	
+1009e9cc	FindSymbol	pef	0	0	
+1009e9e4	LMGetTicks	pef	4	0	FastRand.swift:2,FerazelDriver.swift:1,FerazelController.swift:1
+1009e9fc	DTInstall	pef	0	0	
+1009ea14	PrimeTime	pef	0	0	
+1009ea2c	InsTime	pef	0	0	
+1009ea44	RmvTime	pef	0	0	
+1009ea5c	UnholdMemory	pef	0	0	
+1009ea74	SetCurrentA5	pef	0	0	
+1009ea8c	SetA5	pef	0	0	
+1009eaa4	NewRoutineDescriptor	pef	0	0	
+1009eabc	NGetTrapAddress	pef	0	0	
+1009ead4	NSetTrapAddress	pef	0	0	
+1009eaec	HoldMemory	pef	0	0	
+1009eb04	ProtectEntry	pef	0	0	
+1009eb1c	ReserveEntry	pef	0	0	
+1009eb34	DMGetDisplayIDByGDevice	pef	0	0	
+1009eb4c	DMNewDisplayModeList	pef	0	0	
+1009eb64	Fix2Long	pef	0	0	
+1009eb7c	DMGetIndexedDisplayModeFromList	pef	0	0	
+1009eb94	HasDepth	pef	0	0	
+1009ebac	PBStatusSync	pef	0	0	
+1009ebc4	DMDisposeList	pef	0	0	
+1009ebdc	DisableItem	pef	0	0	
+1009ebf4	EnableItem	pef	0	0	
+1009ec0c	CheckItem	pef	0	0	
+1009ec24	GetCTable	pef	9	0	ScreenRenderer.swift:2,TileSets.swift:2,StageScreens.swift:2,ColorLUT.swift:1,WorldMapRun.swift:1,DeathScreen.swift:1
+1009ec3c	AEInstallEventHandler	pef	0	0	
+1009ec54	AEGetParamDesc	pef	0	0	
+1009ec6c	AECountItems	pef	0	0	
+1009ec84	AEGetNthPtr	pef	0	0	
+1009ec9c	GetPicture	pef	7	0	SpriteBlitter.swift:1,PlainFaceSheet.swift:1,PictureSource.swift:1,ConvertedPicture.swift:1,FaceSheet.swift:1,BootFaces.swift:1
+1009ecb4	OffsetRect	pef	3	0	WorldMapRun.swift:2,CreditsScroll.swift:1
+1009eccc	NewGWorld	pef	3	0	ConversationRenderer.swift:2,ConvertedPicture.swift:1
+1009ece4	FreeMem	pef	0	0	
+1009ecfc	LockPixels	pef	0	0	
+1009ed14	DrawPicture	pef	13	0	LightFaces.swift:4,ConvertedPicture.swift:2,ConversationRenderer.swift:1,Dither.swift:1,GameFlow.swift:1,StageScreens.swift:1
+1009ed2c	GetPixBaseAddr	pef	0	0	
+1009ed44	MoveTo	pef	4	0	StatusBar.swift:1,MapRenderer.swift:1,BootSequence.swift:1,DialogViews.swift:1
+1009ed5c	LineTo	pef	1	0	BootSequence.swift:1
+1009ed74	PaintRect	pef	7	0	StatusBar.swift:3,ScreenRenderer.swift:1,DeathEffect.swift:1,DrawOp.swift:1,StageScreens.swift:1
+1009ed8c	UnlockPixels	pef	0	0	
+1009eda4	DisposeGWorld	pef	0	0	
+1009edbc	HUnlock	pef	0	0	
+1009edd4	HPurge	pef	0	0	
+1009edec	ReleaseResource	pef	0	0	
+1009ee04	HNoPurge	pef	0	0	
+1009ee1c	HLockHi	pef	0	0	
+1009ee34	EraseRect	pef	0	0	
+1009ee4c	BitMapToRegion	pef	0	0	
+1009ee64	GetResource	pef	5	0	SavedGameFile.swift:3,MainMenu.swift:2
+1009ee7c	DetachResource	pef	0	0	
+1009ee94	CustomGetFile	pef	3	1	ShellRequest.swift:1,FerazelController.swift:1,WinFileRequests.swift:1
+1009eeac	GetIndString	pef	6	0	StringList.swift:1,FrameSuspension.swift:1,WorldMapRun.swift:1,HitPlayerSprite.swift:1,SpriteWorld.swift:1,FerazelSession.swift:1
+1009eec4	MaxMem	pef	0	0	
+1009eedc	HandToHand	pef	1	0	DeathScreen.swift:1
+1009eef4	MemError	pef	0	0	
+1009ef0c	QDError	pef	0	0	
+1009ef24	NoPurgePixels	pef	0	0	
+1009ef3c	GetPixelsState	pef	0	0	
+1009ef54	GetKeys	pef	19	3	FerazelController.swift:3,FerazelPadLayout.swift:2,FerazelMenuRules.swift:2,FerazelMenus.swift:2,InputActions.swift:1,KeyState.swift:1
+1009ef6c	LMGetTime	pef	5	0	FastRand.swift:3,FerazelDriver.swift:1,FerazelController.swift:1
+1009ef84	SectRect	pef	4	0	SpriteBlitter.swift:1,LightRenderer.swift:1,BloodSpray.swift:1,IdleSprites.swift:1
+1009ef9c	UnionRect	pef	2	0	LightRenderer.swift:1,IdleSprites.swift:1
+1009efb4	FixDiv	pef	2	0	SoundTool.swift:2
+1009efcc	FixMul	pef	1	0	SoundTool.swift:1
+1009efe4	pow	pef	0	0	
+1009effc	ISpElement_GetSimpleState	pef	0	0	
+1009f014	TextFont	pef	6	0	StatusBar.swift:1,TextRasterizer.swift:1,ConversationRenderer.swift:1,TextRun.swift:1,CoreTextRasterizer.swift:1,FZFont.swift:1
+1009f02c	TextFace	pef	5	0	StatusBar.swift:1,TextRasterizer.swift:1,TextRun.swift:1,CoreTextRasterizer.swift:1,FZFont.swift:1
+1009f044	TextSize	pef	5	0	StatusBar.swift:1,TextRasterizer.swift:1,ConversationRenderer.swift:1,TextRun.swift:1,CoreTextRasterizer.swift:1
+1009f05c	DrawString	pef	11	0	TextRasterizer.swift:2,FerazelDriver.swift:2,StatusBar.swift:1,ConversationRenderer.swift:1,ScreenRenderer.swift:1,TextRun.swift:1
+1009f074	cos	pef	0	0	
+1009f08c	sin	pef	0	0	
+1009f0a4	PtInRect	pef	3	0	PlayerScroll.swift:1,MainMenu.swift:1,FerazelSession.swift:1
+1009f0bc	SysBeep	pef	12	0	FerazelDriver.swift:2,main.swift:2,CreditsScroll.swift:1,FerazelController.swift:1,CreditsDialog.swift:1,FerazelDialogs.swift:1
+1009f0d4	StringWidth	pef	0	0	
+1009f0ec	CharWidth	pef	9	0	ConversationRenderer.swift:3,ConversationRun.swift:3,TextRasterizer.swift:1,FerazelDriver.swift:1,CoreTextRasterizer.swift:1
+1009f104	DrawChar	pef	5	0	ConversationRenderer.swift:2,TextRasterizer.swift:1,ConversationRun.swift:1,FerazelDriver.swift:1
+1009f11c	TENew	pef	0	0	
+1009f134	TESetText	pef	0	0	
+1009f14c	TECalText	pef	1	0	ConversationRenderer.swift:1
+1009f164	TEDispose	pef	0	0	
+1009f17c	Random	pef	0	0	
+1009f194	PenPat	pef	2	0	MapRenderer.swift:1,WorldMapRun.swift:1
+1009f1ac	Color2Index	pef	46	0	TableRequests.swift:8,ColorSearch.swift:5,StatusBar.swift:5,ScreenRenderer.swift:5,FrameRenderer.swift:4,LevelTables.swift:3
+1009f1c4	LocalToGlobal	pef	0	0	
+1009f1dc	CustomPutFile	pef	6	0	ShellRequest.swift:2,SaveGame.swift:2,FerazelController.swift:1,WinFileRequests.swift:1
+1009f1f4	FSpDelete	pef	5	0	SavedGameFile.swift:3,SaveGame.swift:2
+1009f20c	HiliteControl	pef	10	0	FerazelCarbonDialog.swift:4,DialogWindow.swift:4,DialogViews.swift:1,DialogRenderer.swift:1
+1009f224	SetDialogItemText	pef	2	0	FerazelCarbonDialog.swift:1,DialogWindow.swift:1
+1009f23c	GetScriptManagerVariable	pef	0	0	
+1009f254	BitSet	pef	0	0	
+1009f26c	KeyTranslate	pef	10	0	FerazelDriver.swift:3,FerazelController.swift:3,PrefsDialogModel.swift:2,GameFlow.swift:1,WinGame.swift:1
+1009f284	SelectDialogItemText	pef	8	0	PrefsDialogView.swift:2,DialogWindow.swift:2,PrefsDialogModel.swift:1,FerazelCarbonDialog.swift:1,DialogViews.swift:1,WinPrefsDialog.swift:1
+1009f29c	TEKey	pef	0	0	
+1009f2b4	GetDialogItemText	pef	0	0	
+1009f2cc	UpperString	pef	1	0	PrefsDialogModel.swift:1
+1009f2e4	GlobalToLocal	pef	0	0	
+1009f2fc	CountDITL	pef	0	0	
+1009f314	TrackControl	pef	6	0	DialogWindow.swift:3,DialogViews.swift:2,DialogSystem.swift:1
+1009f32c	HiliteColor	pef	10	0	PrefsDialogView.swift:3,WinPrefsDialog.swift:3,DialogViews.swift:2,DialogRenderer.swift:1,DialogWindow.swift:1
+1009f344	FrameRect	pef	3	0	PrefsDialogView.swift:2,DialogRenderer.swift:1
+1009f35c	Draw1Control	pef	2	0	PrefsDialogView.swift:2
+1009f374	SetDialogItem	pef	1	0	FerazelCarbonDialog.swift:1
+1009f38c	ShortenDITL	pef	6	0	FerazelCarbonDialog.swift:2,PrefsDialogModel.swift:1,PrefsDialogView.swift:1,DialogWindow.swift:1,WinPrefsDialog.swift:1
+1009f3a4	AppendDITL	pef	6	0	FerazelCarbonDialog.swift:2,PrefsDialogModel.swift:1,PrefsDialogView.swift:1,DialogWindow.swift:1,WinPrefsDialog.swift:1
+1009f3bc	SetControlValue	pef	5	0	PrefsDialogModel.swift:2,DialogWindow.swift:2,FerazelCarbonDialog.swift:1
+1009f3d4	HideDialogItem	pef	2	0	FerazelCarbonDialog.swift:1,DialogWindow.swift:1
+1009f3ec	GetControlValue	pef	1	0	DialogWindow.swift:1
+1009f404	ISpConfigure	pef	1	0	PrefsDialogModel.swift:1
+1009f41c	BitTst	pef	0	0	
+1009f434	SleepQInstall	pef	0	0	
+1009f44c	WaitNextEvent	pef	10	0	GameFlow.swift:6,LevelRun.swift:2,BootSequence.swift:1,Pause.swift:1
+1009f464	MenuSelect	pef	2	0	GameFlow.swift:1,FerazelController.swift:1
+1009f47c	ClipRect	pef	1	0	CreditsScroll.swift:1
+1009f494	GetBackColor	pef	0	0	
+1009f4ac	RGBBackColor	pef	0	0	
+1009f4c4	Delay	pef	0	0	
+1009f4dc	GetMouse	pef	5	0	MainMenu.swift:1,DeathScreen.swift:1,FerazelController.swift:1,FerazelCarbonDialog.swift:1,WinCreditsDialog.swift:1
+1009f4f4	GetMenuItemText	pef	0	0	
+1009f50c	OpenDeskAcc	pef	0	0	
+1009f524	SetControlTitle	pef	0	0	
+1009f53c	GetControlTitle	pef	0	0	
+1009f554	StringToNum	pef	0	0	
+1009f56c	HiliteMenu	pef	0	0	
+1009f584	MenuKey	pef	1	0	GameFlow.swift:1
+1009f59c	EqualRect	pef	0	0	
+1009f5b4	InvalMenuBar	pef	0	0	
+1009f5cc	AEProcessAppleEvent	pef	3	0	GameFlow.swift:2,Pause.swift:1
+1009f5e4	SleepQRemove	pef	1	0	Pause.swift:1
+1009f5fc	PenMode	pef	1	0	DeathEffect.swift:1
+1009f614	AEGetAttributePtr	pef	0	0	
+1009f62c	GetCursor	pef	0	0	
+1009f644	GetNewMBar	pef	1	0	FerazelMenus.swift:1
+1009f65c	SetMenuBar	pef	0	0	
+1009f674	GetMenuHandle	pef	0	0	
+1009f68c	AppendResMenu	pef	2	1	FerazelMenus.swift:2
+1009f6a4	GetNewCWindow	pef	0	0	
+1009f6bc	SizeWindow	pef	0	0	
+1009f6d4	GetToolboxTrapAddress	pef	0	0	
+1009f6ec	SndSoundManagerVersion	pef	0	0	
+1009f704	SndNewChannel	pef	0	0	
+1009f71c	SndGetInfo	pef	0	0	
+1009f734	SndPlayDoubleBuffer	pef	0	0	
+1009f74c	GetDefaultOutputVolume	pef	0	0	
+1009f764	TuneStop	pef	0	0	
+1009f77c	CloseComponent	pef	0	0	
+1009f794	EnterMovies	pef	0	0	
+1009f7ac	OpenDefaultComponent	pef	0	0	
+1009f7c4	NewHandleClear	pef	5	0	SaveBlock.swift:2,GameGlobals.swift:2,NewGame.swift:1
+1009f7dc	NewPixMap	pef	0	0	
+1009f7f4	SndPlay	pef	2	0	MainMenu.swift:2
+1009f80c	FUN_1009f80c	pef	3	0	SoundTool.swift:1,SeparateFromTiles.swift:1,SpriteWorld.swift:1

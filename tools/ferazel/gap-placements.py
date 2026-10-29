@@ -4,20 +4,21 @@
 Record layout world-data-format.md §3.4 (the port's `Placement`, header +4 + 16·i, 511 records): flag u8, byte1 u8,
 type i16, p1..p4 i16, y i16, x i16. Class = `.GenerateSprite`'s selection, transcribed in
 docs/ferazel/tools/gensprite_map.py (`gen`; p1 < 0 is the record-8 sign the Background range reads).
-Usage: tools/ferazel/gap-placements.py [levels, default 1 2 3 4] > placements.tsv
+Usage: tools/ferazel/gap-placements.py [levels | all, default 1 2 3 4] > placements.tsv
 Columns: level  type  type_hex  class  idle  count  p1_values (distinct, up to 8)
 """
 import os, sys, struct, collections
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, '..', '..'))
+sys.dont_write_bytecode = True
 sys.path.insert(0, os.path.join(ROOT, 'docs/ferazel/tools'))
 from rsrc_census import parse          # noqa: E402
 from gensprite_map import gen          # noqa: E402
 
 def main():
-    levels = [int(a) for a in sys.argv[1:]] or [1, 2, 3, 4]
     _, res = parse(os.path.join(ROOT, "Resources/Ferazel/Ferazel's Wand World Data.rsrc"))
     mlvl = {rid: body for rid, _, body in res['Mlvl']}
+    levels = sorted(mlvl) if sys.argv[1:] == ['all'] else ([int(a) for a in sys.argv[1:]] or [1, 2, 3, 4])
     print('level\ttype\ttype_hex\tclass\tidle\tcount\tp1_values')
     for lv in levels:
         body = mlvl[lv]
