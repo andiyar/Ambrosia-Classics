@@ -52,6 +52,12 @@ the Core writes against what the blitter draws, in all levels of the phase, as a
 through the real render path on both the Core and Windows-shell paths, failing on any refusal/throw/trap — built as a
 loop task and run at every phase end beside the visit-every-object sweep (`tools/ferazel-visit-sweep.sh`, being built
 2026-10-29 by Ben's attended session) and the load-every-face test. A phase cannot close while any of the three fails.
+(6) 2026-10-29 fixes 78e81c3 (teleport/passage re-seat), 48a0620 (PICT 806 light shrink → level 2 quit; rope faces →
+level 3 quit), b535527 (every boot face loaded as `.InitSprites` does). Reviewer open items: the QuickDraw shrink rule
+(`ScreenRenderer.sampleRows`, floor `y·src/dst`, also used by the stage screens and map) has never been measured —
+~50% it should be centre-sampled; settle it from a capture of the original (Ben has a Mac OS 9 VM, the Let's Play);
+`LightFaces.swift:69` comment (light faces load at boot, not level setup); newly loaded faces may change box hot-rects
+/ particle emitters (closer to the original, untested); `BootFacesTests` source scan misses computed pict ids.
 Options: (a) as default; (b) Ben says otherwise.
 Recommendation: a.
 Blocks: nothing.
