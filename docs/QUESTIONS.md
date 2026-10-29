@@ -48,6 +48,10 @@ camera scroll — passage-jump / teleport-mosaic frames can drift the RNG (visua
 the Core writes against what the blitter draws, in all levels of the phase, as a standing phase-end check; (3)
 `docs/ferazel/draw-effects.md` §2.6 lacks the colour-pass row guard the code follows; (4) a teleporter test through
 `LevelRun` (mosaic + after-arrival sparkle, `HitPlayerSprite.swift:456`).
+(5) Ben 2026-10-29 ("yes"): a random-play bot — headless, per level in scope, a few minutes of random/mashed input
+through the real render path on both the Core and Windows-shell paths, failing on any refusal/throw/trap — built as a
+loop task and run at every phase end beside the visit-every-object sweep (`tools/ferazel-visit-sweep.sh`, being built
+2026-10-29 by Ben's attended session) and the load-every-face test. A phase cannot close while any of the three fails.
 Options: (a) as default; (b) Ben says otherwise.
 Recommendation: a.
 Blocks: nothing.
