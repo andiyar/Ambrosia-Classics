@@ -32,6 +32,27 @@ brother's Windows machine.
 
 ## Open
 
+### Q15 — 2026-10-29 — Andrew's Windows test: the teleporter quit the game (fixed); four follow-ups for the loop (written by Ben's attended session)
+Context: Andrew (Windows beta tester) found the game closes when Ferazel uses the level-1 teleporter (the urn). Test
+build 2 (commit 0bb92b9: the Windows log keeps the previous launch, a crash filter, stderr in the log, "where:" lines)
+showed it was not a crash: "the screen could not be drawn: mode(327683)" — draw mode 5 (teleporter-charge sparkle) was
+still refused by `SpriteBlitter`, and both shells end the game on any draw failure. Mac affected identically (Ben had
+never used a teleporter). Fixed in 0fd056e (Opus implementer + Opus reviewer PASS WITH FIXES): modes 5 (Diffuse, game
+FastRand threaded via per-draw seeds + a Core walk) and 0xa (springboard gauge squash, level 3); Core 490 → 495/0,
+Windows 77/0. Test build 3 published for Andrew. Andrew's log also shows both his saves brought up the Windows
+"name your saved game" dialog (saving works on real Windows; restore still unconfirmed — Q14).
+Follow-ups for the loop (default: plan them as one small task at the start of Phase 5 planning; none blocks):
+(1) the renderer draws the sparkle at the last grid-redraw scroll (`FrameRenderer.swift:394`) while Core walks at the
+camera scroll — passage-jump / teleport-mosaic frames can drift the RNG (visual only); (2) still-refused combos
+(rotated/scaled mode 5, flipped 0xa, and every other refused mode) quit the game if ever reached — audit every mode
+the Core writes against what the blitter draws, in all levels of the phase, as a standing phase-end check; (3)
+`docs/ferazel/draw-effects.md` §2.6 lacks the colour-pass row guard the code follows; (4) a teleporter test through
+`LevelRun` (mosaic + after-arrival sparkle, `HitPlayerSprite.swift:456`).
+Options: (a) as default; (b) Ben says otherwise.
+Recommendation: a.
+Blocks: nothing.
+Answer:
+
 ### Q14 — 2026-10-27 — Windows gate: does Ferazel's Wand on Windows behave like the Mac build?
 Context: The Windows build of Ferazel's Wand (the same game as the Phase 4 Mac build: levels 1–4, spells, items, saves,
 map, controller) is finished on the machine side (loop run 35). The loop checked it muted, by day: in a clean CrossOver
