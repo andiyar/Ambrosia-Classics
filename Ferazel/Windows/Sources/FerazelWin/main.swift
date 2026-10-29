@@ -44,8 +44,11 @@ import WinSDK
 
 nonisolated(unsafe) var startupLog: WinLog?
 
+/// True once stderr is redirected into the log (test build 2, Windows, not headless): `report` then writes once.
+nonisolated(unsafe) var stderrInLog = false
+
 func report(_ message: String) {
-    fputs("Ferazel's Wand: \(message)\n", stderr)
+    if !stderrInLog { fputs("Ferazel's Wand: \(message)\n", stderr) }
     startupLog?.write(message)
 }
 
@@ -99,6 +102,43 @@ startupLog?.write("executable: \(WinStartup.displayPath(Bundle.main.executableUR
 startupLog?.write("arguments: \(argv.joined(separator: " "))")
 startupLog?.write("data: \(WinStartup.displayPath(dataDir)); fonts: \(WinStartup.displayPath(fontsDir))")
 startupLog?.write("prefs: \(prefsURL.map(WinStartup.displayPath) ?? "in memory")")
+
+// MARK: Crash notes (test build 2)
+
+#if os(Windows)
+// Swift's own fatal-error text goes to stderr, which a windowed program throws away: append it to the log instead.
+if !headless, let logURL = startupLog?.url {
+    let path = WinStartup.displayPath(logURL)
+    let reopened = path.withCString(encodedAs: UTF16.self) { p in
+        "a".withCString(encodedAs: UTF16.self) { m in _wfreopen(p, m, stderr) }
+    }
+    if reopened != nil {
+        setvbuf(stderr, nil, _IONBF, 0)
+        stderrInLog = true
+    }
+}
+
+/// Any crash: the exception code and where (module + offset) into the log, then Windows' own handling (its crash
+/// record in Event Viewer is still made).
+let crashFilter: @convention(c) (UnsafeMutablePointer<EXCEPTION_POINTERS>?) -> LONG = { info in
+    guard let rec = info?.pointee.ExceptionRecord?.pointee else { return 0 }
+    let code = String(UInt32(truncatingIfNeeded: rec.ExceptionCode), radix: 16)
+    let address = UInt(bitPattern: rec.ExceptionAddress)
+    var where_ = "0x" + String(address, radix: 16)
+    var module: HMODULE?
+    let flags = DWORD(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS) | DWORD(GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT)
+    _ = GetModuleHandleExW(flags, rec.ExceptionAddress?.assumingMemoryBound(to: WCHAR.self), &module)
+    if let module {
+        var buf = [WCHAR](repeating: 0, count: 1024)
+        let n = Int(GetModuleFileNameW(module, &buf, DWORD(buf.count)))
+        let name = String(decoding: buf[..<n], as: UTF16.self).split(separator: "\\").last.map(String.init) ?? "?"
+        where_ = "\(name)+0x" + String(address &- UInt(bitPattern: module), radix: 16)
+    }
+    startupLog?.write("CRASH: exception 0x\(code) at \(where_) (please send this log)")
+    return 0   // EXCEPTION_CONTINUE_SEARCH
+}
+if !headless { _ = SetUnhandledExceptionFilter(crashFilter) }
+#endif
 
 /// A failure to start: reported (stderr + log) and, unless headless, shown in a message box; exit 1.
 func startupFailure(_ message: String) -> Never {
@@ -217,6 +257,7 @@ do {
             let out = try SDLAudioOut(source: source)
             out.start()
             outputs.append(out)
+            report("audio: stream \(outputs.count) open and started")
             return true
         } catch {
             report("cannot open the audio device: \(error)")
@@ -254,7 +295,8 @@ let game = WinGame(args: args, host: host, text: text, files: files, dialogs: Di
                        _ = MessageBeep(UINT(MB_OK))   // `SysBeep`; the driver never calls this when muted
                        #endif                         // the Mac SDL development build: silent
                    },
-                   log: report, padSource: headless ? nil : { sdl.padState() })
+                   log: report, padSource: headless ? nil : { sdl.padState() },
+                   trace: headless ? nil : { startupLog?.write($0) })
 host.present(rgba: [UInt8](repeating: 0, count: WinCanvas.width * WinCanvas.height * 4).enumerated()
     .map { $0.offset % 4 == 3 ? 0xff : 0 })                               // black until the flow first presents
 // A quit that arrives before the flow exists ends at once (the Mac's `applicationShouldTerminate` before launch). Each

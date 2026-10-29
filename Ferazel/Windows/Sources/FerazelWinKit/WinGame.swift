@@ -64,6 +64,10 @@ public enum WinClock {
     private let panels: any WinFilePanels
     private let padSource: (() -> ShellPadState)?
     private let log: (String) -> Void
+    /// Diagnostic notes for the player's log (test build 2): where the game is, written when it changes, so a crash
+    /// leaves its last step behind. Nil in tests and headless runs.
+    private let trace: ((String) -> Void)?
+    private var lastTrace = ""
     private(set) var input = WinInput()
     private var shortcuts = WinShortcuts(entries: [])
     /// What the flow last sent (`.showMenuBarItems`): the shortcuts take by it.
@@ -110,8 +114,10 @@ public enum WinClock {
     public init(args: WinArgs, host: any WinHost, text: any TextRasterizer, files: WinFiles,
                 dialogs: any WinDialogs = WinStubDialogs(), panels: any WinFilePanels = WinStubFilePanels(),
                 audio: (any WinAudioDevice)? = nil, beeper: @escaping () -> Void = {},
-                log: @escaping (String) -> Void = { _ in }, padSource: (() -> ShellPadState)? = nil) {
+                log: @escaping (String) -> Void = { _ in }, padSource: (() -> ShellPadState)? = nil,
+                trace: ((String) -> Void)? = nil) {
         self.args = args
+        self.trace = trace
         self.host = host
         self.files = files
         self.dialogs = dialogs
@@ -192,6 +198,20 @@ public enum WinClock {
         guard !finished else { return }
         runDueTick()
         presentDialogs()
+        traceWhere()
+    }
+
+    /// Writes "where the game is" to the trace when it changed since the last wake.
+    private func traceWhere() {
+        guard let trace, let flow = driver.flow else { return }
+        var s = "where: \(flow.state)"
+        if let run = flow.levelRun { s += " · level \(run.levelNumber)" }
+        if flow.worldMap != nil { s += " · world map" }
+        if dialogs.isShowing { s += " · dialog up" }
+        if panelUp { s += " · file dialog up" }
+        guard s != lastTrace else { return }
+        lastTrace = s
+        trace(s)
     }
 
     /// The window is being dragged or resized and Windows' modal move/size loop blocks the poll inside `step()`
@@ -345,6 +365,10 @@ public enum WinClock {
     // MARK: Requests
 
     private func honour(_ request: ShellRequest) {
+        switch request {
+        case .hideCursor, .showCursor, .hideMenuBar, .showMenuBar, .showMenuBarItems: break
+        default: trace?("request: " + String(String(describing: request).prefix(160)))
+        }
         switch request {
         case .hideCursor: wantsCursorHidden = true
         case .showCursor: wantsCursorHidden = false

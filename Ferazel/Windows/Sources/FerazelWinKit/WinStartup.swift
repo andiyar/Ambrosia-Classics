@@ -68,7 +68,7 @@ public enum WinStartup {
 }
 
 /// `Ferazel's Wand.log`, beside the prefs file: the start-up facts and every reported problem of the last launch
-/// (rewritten at each launch; BTX `WinLog`). Thread-safe; a log that cannot be written is silently skipped (the game
+/// (rewritten at each launch, the last launch's kept as "… (previous).log"; BTX `WinLog`). Thread-safe; a log that cannot be written is silently skipped (the game
 /// must never fail because of it). Never `FileHandle.standardError` (Ruling 18): a file handle of its own.
 public final class WinLog: @unchecked Sendable {
     public static let fileName = "Ferazel's Wand.log"
@@ -83,11 +83,24 @@ public final class WinLog: @unchecked Sendable {
         let fm = FileManager.default
         do {
             try fm.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            // Test build 2: the last launch's log is kept as "… (previous).log", so a crash's notes survive the
+            // player starting the game again.
+            if fm.fileExists(atPath: url.path) {
+                let previous = Self.previousURL(of: url)
+                try? fm.removeItem(at: previous)
+                try? fm.moveItem(at: url, to: previous)
+            }
             guard fm.createFile(atPath: url.path, contents: nil) else { return nil }
             handle = try FileHandle(forWritingTo: url)
         } catch {
             return nil
         }
+    }
+
+    /// "Ferazel's Wand (previous).log" beside `url`.
+    public static func previousURL(of url: URL) -> URL {
+        let base = url.deletingPathExtension().lastPathComponent
+        return url.deletingLastPathComponent().appendingPathComponent("\(base) (previous).log")
     }
 
     /// The log beside a prefs file.
@@ -109,6 +122,7 @@ public final class WinLog: @unchecked Sendable {
         defer { lock.unlock() }
         guard let handle else { return }
         do {
+            _ = try handle.seekToEnd()                 // stderr may append to the same file (test build 2)
             try handle.write(contentsOf: Data("\(Self.stamp(now)) \(line)\(eol)".utf8))
         } catch {
             self.handle = nil                          // stop trying; never let the log take the game down

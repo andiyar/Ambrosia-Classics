@@ -44,6 +44,7 @@ public enum WinAudioDriver {
         music = PCMMixer(voices: Self.musicVoices, outputRate: Self.musicRate)
         self.device = device
         self.log = log
+        log("audio: opening the music stream")
         guard device.open(music) else {
             log("no sound: the audio device could not open")
             return nil
@@ -51,18 +52,21 @@ public enum WinAudioDriver {
     }
 
     func load(id: Int, samples: [Int16], channels: Int, sampleRate: Double) {
+        log("music: load \(samples.count / max(channels, 1)) frames, \(channels) ch, \(Int(sampleRate)) Hz")
         music.load(id: id, samples: samples, channels: channels, sampleRate: sampleRate)
     }
 
     func play(id: Int, on voice: Int, volume: Float, loops: Int) {
+        log("music: play")
         music.play(id: id, on: voice, volume: volume, loops: loops)
     }
 
     func stop(voice: Int) { music.stop(voice: voice) }
-    func stopAll() { music.stopAll() }
+    func stopAll() { log("music: stop all"); music.stopAll() }
     func setVolume(voice: Int, _ volume: Float) { music.setVolume(voice: voice, volume) }
 
     func attach(stream: SoundTool) {
+        log("audio: opening the sound-effects stream")
         if !device.open(stream) { log("no sound effects: their audio stream could not open") }
     }
 }
