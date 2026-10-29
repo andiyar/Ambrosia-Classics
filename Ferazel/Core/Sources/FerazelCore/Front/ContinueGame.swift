@@ -128,6 +128,17 @@ extension GameFlow {
             }])
             return
         }
+        // ◇ D35: a saved game naming a level the replica cannot run yet (an original save from level 5 on) gets the
+        // not-built report and the menu, as New Game's map does — never a level with unbuilt sprites (gap ledger #1).
+        // A level missing from the world file keeps the original's load error above.
+        guard BuiltLevels.range.contains(levelNumber) else {
+            report(BuiltLevels.notBuiltReport(levelNumber), &out)
+            run([{ f, _, _, out in
+                f.state = .mainMenu
+                f.menuLoopListening(true, &out)
+            }])
+            return
+        }
         if saveBlock.isCheckpoint == 0 { globals.startFacing = Int16(h.startFacingLeft) }
         run([
             { f, now, _, out in

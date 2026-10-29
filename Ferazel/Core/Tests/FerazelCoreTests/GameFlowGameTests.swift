@@ -688,13 +688,15 @@ final class GameFlowGameTests: XCTestCase {
         var all = try checkpoint(r, level: 80)
         all.preview = 1
         all.demo = 1
+        let seven = try checkpoint(r, level: 5)                            // an original full-game save, not built yet
         rig.files.blocks = [url("preview"): preview, url("demo"): demo, url("eighty"): eighty, url("both"): both,
-                            url("previewDemo"): previewDemo, url("all"): all]
+                            url("previewDemo"): previewDemo, url("all"): all, url("seven"): seven]
         let previewText = "Sorry, this saved game was saved with a preview version of Ferazel and can not be used with this version."
         let demoText = "Sorry, this saved game was saved with a demo version of Ferazel and can not be used with this version."
         for (name, expected) in [("preview", [previewText]), ("demo", [demoText]), ("eighty", [demoText]),
                                  ("both", [demoText, demoText]), ("previewDemo", [previewText, demoText]),
-                                 ("all", [previewText, demoText, demoText])] {
+                                 ("all", [previewText, demoText, demoText]),
+                                 ("seven", [BuiltLevels.notBuiltReport(5)])] {
             rig.press(0x0f)                                                // R
             let ask = rig.drive { _ in self.askedFile(rig.last) }
             XCTAssertEqual(ask.last?.out.requests.last,
