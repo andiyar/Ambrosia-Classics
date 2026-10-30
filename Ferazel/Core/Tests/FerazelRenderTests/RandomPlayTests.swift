@@ -72,9 +72,11 @@ final class RandomPlayTests: XCTestCase {
         var levels: Set<Int> = [], seeds: Set<Int> = []
         for (i, run) in RandomPlay.runs().enumerated() where RandomPlay.mine(index: i) {
             RandomPlay.progress(run, index: i, step: 0)
-            let shell = try SweepShell(resources: resources, files: SweepFiles(), soundLengths: lengths)
-            shell.flow.startLevel = run.level
-            let (failures, stats) = RandomPlay.play(run, index: i, game: shell)
+            let (failures, stats) = RandomPlay.play(run, index: i) {
+                let shell = try SweepShell(resources: resources, files: SweepFiles(), soundLengths: lengths)
+                shell.flow.startLevel = run.level
+                return shell
+            }
             rows += failures
             total.add(stats)
             levels.insert(run.level)

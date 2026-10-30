@@ -11,7 +11,8 @@ import Foundation
 // `FERAZEL_BOT_MINUTES` of steps (a step = two game ticks, the 30-a-second cap's one loop iteration, keys held across
 // both). In play the keys are the generator's; every other context is answered as a player and the shells answer it:
 // a conversation read through and left by its last answer, the death screen's Continue (Return), the main menu's
-// New Game, the world map walked back to the level's node and entered again, the pause left when Caps Lock comes up,
+// New Game, the world map walked back to the level's node and entered again (once a run: every later level end starts
+// a fresh game at the level, as the run's start does), the pause left when Caps Lock comes up,
 // dialogs as the shells answer them (OK; Cancel for a confirm and Options; a file for a save point's panel).
 // Any render refusal, thrown error, error/report dialog, quit, stuck modal (600 ticks with nothing moving) or trap
 // (the process dies — the runner records the run and step from the progress file) is a failure row.
@@ -250,23 +251,29 @@ protocol BotGame: SweepGame {
 }
 
 extension RandomPlay {
-    /// One run on a freshly made game (not booted): to the main menu, New Game at `run.level` (the flow's
-    /// `startLevel` is the caller's), then `steps` steps. Returns the rows (empty = clean; the run stops at the first)
-    /// and the counts.
-    @MainActor static func play(_ run: Run, index: Int, game: BotGame, steps: Int = RandomPlay.steps)
+    /// One run: `make` gives a freshly made game (not booted) whose flow starts New Game at `run.level` (the flow's
+    /// `startLevel`, the caller's); to the main menu, New Game, then `steps` steps. The first level end goes on through
+    /// the map back into the level; every later one starts a fresh game from `make` the same way (the map path is
+    /// exercised once; a level that starts near its exit would otherwise spend the run on the map and stage screens).
+    /// Returns the rows (empty = clean; the run stops at the first) and the counts.
+    @MainActor static func play(_ run: Run, index: Int, make: () throws -> BotGame, steps: Int = RandomPlay.steps)
         -> ([Failure], Stats) {
         var rows: [Failure] = []
         var stats = Stats()
         var gen = RandomPlayGenerator(seed: run.generatorSeed)
-        let flow = game.flow
         var step = 0
         var held: [Int] = []
         var context = GameFlow.PadContext.other
+        var game: BotGame
+        var flow: GameFlow
+        var restarts = 0
         func frame() -> String {
             let keys = held.isEmpty ? "-" : held.map { "0x" + String($0, radix: 16) }.joined(separator: "+")
             return "step \(step) \(context) keys \(keys)" + (game.capsLock ? " caps" : "")
         }
         do {
+            game = try make()
+            flow = game.flow
             try VisitSweep.toMainMenu(game)
         } catch {
             return ([Failure(level: run.level, seed: run.seed, frame: "boot", error: "\(error)")], stats)
@@ -375,6 +382,28 @@ extension RandomPlay {
                 lastRunCounted = false
             }
             count(lastRun)
+            // A later level end: a fresh game at the level (the first one goes on through the map).
+            if stats.exits > 1 + restarts {
+                restarts += 1
+                do {
+                    let caps = game.capsLock
+                    game = try make()
+                    flow = game.flow
+                    game.capsLock = caps
+                    try VisitSweep.toMainMenu(game)
+                } catch {
+                    rows.append(Failure(level: run.level, seed: run.seed, frame: frame(),
+                                        error: "restart after exit \(stats.exits): \(error)"))
+                    return false
+                }
+                lastRun = nil
+                lastRunCounted = false
+                lastConversation = nil
+                onMap = 0
+                still = 0
+                lastMark = ""
+                return true
+            }
             // The map: walked back to the level's node; no way back for `mapTicks` is a row.
             if flow.worldMap != nil { onMap += 1 } else { onMap = 0 }
             if onMap > mapTicks {

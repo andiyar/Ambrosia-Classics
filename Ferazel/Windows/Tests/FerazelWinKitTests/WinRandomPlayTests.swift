@@ -26,8 +26,9 @@ import XCTest
         var levels: Set<Int> = [], seeds: Set<Int> = []
         for (i, run) in RandomPlay.runs().enumerated() where RandomPlay.mine(index: i) {
             RandomPlay.progress(run, index: i, step: 0)
-            let game = try WinBotGame(text: text, folder: folder, level: run.level)
-            let (failures, stats) = RandomPlay.play(run, index: i, game: game)
+            let (failures, stats) = RandomPlay.play(run, index: i) {
+                try WinBotGame(text: text, folder: folder, level: run.level)
+            }
             rows += failures
             total.add(stats)
             levels.insert(run.level)
@@ -113,7 +114,12 @@ extension WinBotGame: @MainActor BotGame {
             host.advance()
         }
         if game.finished {
-            throw VisitSweep.SweepError("WinGame ended (exit \(game.exitCode)): " + (logBox.lines.last ?? "no log"))
+            // Exit 0 is the shell's quit (a Quit that got through); exit 1 its draw failure, logged.
+            let last = logBox.lines.last
+            if game.exitCode == 0 {
+                throw VisitSweep.SweepError("the game quit (WinGame exit 0)" + (last.map { "; last log: " + $0 } ?? ""))
+            }
+            throw VisitSweep.SweepError("WinGame ended (exit \(game.exitCode)): " + (last ?? "no log"))
         }
         return game.lastOutput
     }
