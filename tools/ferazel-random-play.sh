@@ -14,7 +14,9 @@
 #   windows  Ferazel/Windows FerazelWinKitTests.WinRandomPlayTests               (headless WinGame + the shared driver)
 #
 # Usage: tools/ferazel-random-play.sh [core|windows|both]   (default both)
-#   JOBS=n                    processes per path (default: half the cores, at least 1)
+#   JOBS=n                    processes per path (default 4, at least 1, never more than 6 — Ben's Mac panicked out
+#                             of RAM on 2026-10-30 when 14 sweep processes ran beside builds; each build and each
+#                             worker also waits while free memory is < MIN_FREE_PCT, default 30%)
 #   FERAZEL_BOT_SEEDS=4  FERAZEL_BOT_MINUTES=3  FERAZEL_BOT_LEVELS=1,2      (the defaults: 4 seeds, 3 minutes, all)
 #   FERAZEL_BOT_WATCHDOG=s    wall-clock limit of one test process (default 120 s + 120 s per minute of play per run
 #                             it has to do); a process past it is killed and its run is a row (then the next run)
@@ -38,9 +40,12 @@
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 WHICH="${1:-both}"
-JOBS="${JOBS:-$(( $(sysctl -n hw.ncpu 2>/dev/null || echo 8) / 2 ))}"
+case "$WHICH" in core|windows|both) ;; *) echo "usage: $0 [core|windows|both]"; exit 2 ;; esac
+JOBS="${JOBS:-4}"
 case "$JOBS" in ''|*[!0-9]*) JOBS=1 ;; esac
 [ "$JOBS" -ge 1 ] || JOBS=1
+[ "$JOBS" -gt 6 ] && JOBS=6
+MIN_FREE_PCT="${MIN_FREE_PCT:-30}"
 OUT="${OUT:-$(mktemp -d "${TMPDIR:-/tmp}/ferazel-random-play.XXXXXX")}"
 mkdir -p "$OUT"
 export FERAZEL_BOT=1
@@ -78,8 +83,20 @@ for p in core windows; do
 done
 rm -f "${OUT:?}/build-Core.log" "${OUT:?}/build-Windows.log"
 
+# Waits (up to 10 min) while the system's free memory is below MIN_FREE_PCT, so the bot never pushes the Mac into swap.
+wait_for_memory() {
+    local tries=0 free
+    while :; do
+        free=$(memory_pressure 2>/dev/null | awk -F': ' '/free percentage/ {gsub(/%/,"",$2); print $2}')
+        [ -z "$free" ] || [ "$free" -ge "$MIN_FREE_PCT" ] && return 0
+        [ "$tries" -ge 60 ] && { echo "memory still below ${MIN_FREE_PCT}% free after 10 min; continuing"; return 1; }
+        tries=$((tries + 1)); sleep 10
+    done
+}
+
 build() {   # $1 package dir
-    (cd "$1" && swift build -c release --build-tests -Xswiftc -enable-testing > "$OUT/build-$(basename "$1").log" 2>&1) \
+    wait_for_memory
+    (cd "$1" && swift build -j 4 -c release --build-tests -Xswiftc -enable-testing > "$OUT/build-$(basename "$1").log" 2>&1) \
         || { echo "BUILD FAILED: $1 (see $OUT/build-$(basename "$1").log)"; exit 2; }
 }
 
@@ -147,7 +164,7 @@ play() {    # $1 path name, $2 package dir, $3 bundle name, $4 test
     local start=$SECONDS
     build "$2"
     local bundle="$2/.build/release/$3"
-    for ((i = 0; i < JOBS; i++)); do worker "$1" "$bundle" "$4" "$i" & done
+    for ((i = 0; i < JOBS; i++)); do wait_for_memory; worker "$1" "$bundle" "$4" "$i" & sleep 5; done
     wait
     cat "$OUT/$1"/shard-*/failures.tsv 2>/dev/null | sort -t$'\t' -k1,1n -k2,2n > "$OUT/$1-failures.tsv"
     cat "$OUT/$1"/shard-*/runs.tsv 2>/dev/null > "$OUT/$1-runs.tsv"
