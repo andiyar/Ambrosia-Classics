@@ -19,7 +19,9 @@
 # hour override. A watchdog kill (exit 124, WIN_RUN_TIMEOUT=3600 here) is reported as "timed out", never as a count.
 set -euo pipefail
 export HECTOR_SDL_AUDIO_DRIVER=dummy HECTOR_SDL_VIDEO_DRIVER=dummy
-unset WIN_SWIFT_FLAGS HECTORKIT_PATH FERAZEL_PNG_OUT
+# Proof B passes the caller's environment into Wine: the opt-in tests' switches are cleared, so they always skip there.
+unset WIN_SWIFT_FLAGS HECTORKIT_PATH FERAZEL_PNG_OUT FERAZEL_VISIT_SWEEP FERAZEL_BOT
+unset -m 'FERAZEL_BOT_*'
 here="${0:A:h}"
 repo="${here:h:h}"
 
@@ -108,21 +110,31 @@ for t in $tests; do
     else print "crashed $t"; fi
 done >> "$verdicts"
 
-passed=$(grep -c '^passed' "$verdicts" || true); failed=$(grep -c '^failed' "$verdicts" || true)
-skipped=$(grep -c '^skipped' "$verdicts" || true); crashed=$(grep -c '^crashed' "$verdicts" || true)
-print "  exit $code after ${elapsed} s"
-grep -v '^passed' "$verdicts" | sed 's/^/  /' || true
-(( crashed > 0 )) && print "  a crash: re-run one class with --class NAME to find it"
-print "logs: $logs"
-# The only skips allowed (WF0b): tests that skip under Wine alone, never on the Mac or real Windows. Any other
-# skipped test, or one of these not skipped while the rest pass, is not a pass.
+# The only skips allowed: tests that skip under Wine alone, never on the Mac or real Windows (WF0b), and the opt-in
+# tests, which skip everywhere unless their switch is set (cleared above). Any other skipped test, or one of these not
+# skipped while the rest pass, is not a pass.
 wine_skips=(FerazelRenderTests.CensusTests/testExitCodes)   # Process → advapi32 SaferiIsExecutableFileType (Wine lacks it)
-unexpected=(${(f)"$(grep '^skipped ' "$verdicts" | cut -d' ' -f2- | grep -vxF -f <(print -l $wine_skips) || true)"})
-(( ${#unexpected} )) && print "  skipped but not on the Wine-only list: ${unexpected[*]}"
-print "proof-b: $passed passed / $failed failed / $skipped skipped / $crashed crashed (of ${#tests})"
-if [[ $mode == class ]]; then
-    (( failed == 0 && crashed == 0 && ${#unexpected} == 0 ))
-else
-    (( failed == 0 && crashed == 0 && ${#unexpected} == 0 && skipped == ${#wine_skips} \
-       && passed + skipped == ${#tests} ))
-fi
+optin_skips=(FerazelRenderTests.VisitSweepTests/testVisitEveryObject)   # FERAZEL_VISIT_SWEEP=1 (Phase 5 PB)
+
+# verdict <verdicts file> <test count> <all|class> — prints the tally and the pass line; status 0 only for a pass.
+verdict() {
+    local v=$1 n=$2 m=$3 passed failed skipped crashed
+    local -a unexpected
+    passed=$(grep -c '^passed' "$v" || true); failed=$(grep -c '^failed' "$v" || true)
+    skipped=$(grep -c '^skipped' "$v" || true); crashed=$(grep -c '^crashed' "$v" || true)
+    grep -v '^passed' "$v" | sed 's/^/  /' || true
+    (( crashed > 0 )) && print "  a crash: re-run one class with --class NAME to find it"
+    unexpected=(${(f)"$(grep '^skipped ' "$v" | cut -d' ' -f2- | grep -vxF -f <(print -l $wine_skips $optin_skips) || true)"})
+    (( ${#unexpected} )) && print "  skipped but not on the Wine-only or opt-in lists: ${unexpected[*]}"
+    print "proof-b: $passed passed / $failed failed / $skipped skipped / $crashed crashed (of $n)"
+    if [[ $m == class ]]; then
+        (( failed == 0 && crashed == 0 && ${#unexpected} == 0 ))
+    else
+        (( failed == 0 && crashed == 0 && ${#unexpected} == 0 && skipped == ${#wine_skips} + ${#optin_skips} \
+           && passed + skipped == n ))
+    fi
+}
+
+print "  exit $code after ${elapsed} s"
+print "logs: $logs"
+verdict "$verdicts" ${#tests} $mode

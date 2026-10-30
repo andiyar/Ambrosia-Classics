@@ -56,6 +56,9 @@ repo="${here:h:h}"
 #   (runs A and B draw no text at all; C is the one whose picture depends on the baked glyphs from Data\Fonts\)
 # The plan's "4 × (ticks + a 60-tick margin)" was not what WF3's Mac half used (1,437, exact): the exact count lands
 # the dump ON the reference frame, so the Mac dump's FNV can be checked against the recorded one as well.
+# These six values are also pinned in-process, headless, by Ferazel/Windows/Tests/FerazelWinKitTests/
+# WinReferenceFramesTests.swift (testSmokeReferencesInProcess: the exe's --frames loop through the scripted host, the
+# same wakes, keys and baked fonts) — a change that moves a reference moves it there in the same commit.
 menu_frames=1437
 menu_fnv=0xae2b1ee08c089b2a
 newgame_frames=1865

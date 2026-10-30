@@ -239,14 +239,17 @@ shared `work/HectorKit` symlink, as `proof-b.sh`), cross-builds the tests, point
 runner's default 900 s is too short). Expected last line:
 
 ```
-proof-b: 489 passed / 0 failed / 1 skipped / 0 crashed (of 490)
+proof-b: P passed / 0 failed / 2 skipped / 0 crashed (of N)     # N = the Core suite's count; at Phase 5 PB 500 / 2 of 502
 ```
 
-The one skip is `FerazelRenderTests.CensusTests/testExitCodes`, Wine-only (WF0b, below); the script passes only for
-exactly that skip set (any other skip, or that test not skipping, is a fail).
+The skips are `FerazelRenderTests.CensusTests/testExitCodes`, Wine-only (WF0b, below; `wine_skips`), and the opt-in
+tests, which skip everywhere unless switched on (`optin_skips`: `FerazelRenderTests.VisitSweepTests/testVisitEveryObject`,
+`FERAZEL_VISIT_SWEEP=1`); the script clears `FERAZEL_VISIT_SWEEP`, `FERAZEL_BOT` and every `FERAZEL_BOT_*` before Wine
+starts, so they always skip there. It passes only for exactly that skip set, skipped = the two lists' length together
+(any other skip, or one of those tests not skipping, is a fail).
 
 - `--class NAME` re-runs one class — only after a crash, to find it. A watchdog kill (exit 124) prints "timed out",
-  never a crash count. A count other than 490 in the `--list-tests` total is itself a finding.
+  never a crash count. A `--list-tests` total other than the Core suite's count at that commit (the plan's ladder) is itself a finding.
 - **Night rule (D42):** it refuses (exit 64, one line) unless `date +%H` is 09..20 and the audio driver it passes is
   `dummy`; it sets `HECTOR_SDL_AUDIO_DRIVER=dummy HECTOR_SDL_VIDEO_DRIVER=dummy` itself and never inherits the caller's.
   There is no hour override. `--check-guard` evaluates only the hour and the driver (builds and runs nothing): by night
