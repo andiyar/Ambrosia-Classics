@@ -22,6 +22,18 @@ import FerazelCore
 /// then an indexed `CopyBits` srcCopy with c ≠ black: the health / magic flashes, the suffocation tick, the item flash)
 /// combine the pixel values as QuickDraw's colourising does on indexed pixels, `(src & fg) | (~src & bg)`, fg =
 /// `Color2Index(c)` and bg = white against the screen device [MED: QuickDraw colourise]; c black is a plain copy.
+///
+/// **On the world map** (`translatesToScreen`, `.ShowWorldMap` M l. 67498–67539): `*_DAT_100a0088` (level complete) is
+/// set — the map refuses to open without it (M l. 67492) — so `.CopyBitsCT` (M l. 19–22) no longer copies the screen's
+/// seed into the status port, and `.SetScreenClut(700)` has given the screen a new one (`CTabChanged`, M l. 7997):
+/// every status port → screen copy (`.UpdateStatusBar`'s full copy l. 4875, the bar copies l. 4510–4514 / 4570–4574,
+/// the text l. 4640–4668, the items l. 4834–4837) translates — each port pixel's colour under the port's own colour
+/// table, clut 200 (`.ChangeBlitPortClut` at `.InitAppGlobals` l. 472), matched (`Color2Index`) into the screen CLUT
+/// [HIGH reading; MED that QuickDraw translates on unequal seeds]. The port then holds clut-200 indices throughout:
+/// the HUD piece (seeds equal, raw) and the icons enter raw [MED: the original's map frame (Let's Play) shows the
+/// icons in their own colours, which a translation into clut-700 indices read back through clut 200 would not]; text
+/// smoothing and the colourising foreground match against clut 200 [MED]; black / white are 255 / 0 under 200 and 700
+/// alike.
 public struct StatusBar {
     public static let width = 0x280
     public static let height = 0x58
@@ -42,17 +54,22 @@ public struct StatusBar {
     let text: any TextRasterizer
     /// The screen device's search (`Color2Index` of the colourising colours).
     let prepared: ColorSearch.Prepared
-    /// The screen device's CLUT: the port's indices are copied to the screen raw, so a smoothed text pixel's colour
-    /// under it is looked up here (TX).
+    /// The CLUT the port's indices are read under: the screen device's in a level (the port's indices are copied to
+    /// the screen raw), clut 200 on the map — a smoothed text pixel's colour is looked up here (TX).
     let screenClut: ColorLUT
+    /// The map's translating port → screen copy: `Color2Index`(clut 200 entry i) in the screen CLUT; nil in a level
+    /// (raw).
+    let toScreen: [UInt8]?
 
     // `.UpdateTextStats`' statics `…9c0` (score), `…9c4` (coins); nil before the first draw. (`.UpdateHealthMagic`'s
     // caches are Core's — `StatusBarCalls`; the op says which parts draw.)
     var lastScore: Int?, lastCoins: Int?
 
-    /// - Parameter screenClut: the level CLUT the screen device holds (`.SetScreenClut`).
+    /// - Parameters:
+    ///   - screenClut: the CLUT the screen device holds (`.SetScreenClut`): the level's, or clut 700 on the map.
+    ///   - translatesToScreen: the world map — every port → screen copy translated from clut 200 (see the type).
     public init(resources: FerazelResources, screenClut: ColorLUT, search: ColorSearch,
-                dither: DitherModel = .errorDiffusion, text: any TextRasterizer) throws {
+                dither: DitherModel = .errorDiffusion, text: any TextRasterizer, translatesToScreen: Bool = false) throws {
         let c199 = try ColorLUT.load(id: 199, from: resources, chain: .level)
         let c200 = try ColorLUT.load(id: 200, from: resources, chain: .level)
         func picture(_ id: Int16, _ clut: ColorLUT) throws -> ConvertedPicture {
@@ -66,13 +83,16 @@ public struct StatusBar {
         itemSmall = try picture(703, c200)
         spellBig = try picture(700, c200)
         spellSmall = try picture(701, c200)
-        let prepared = search.prepared(for: screenClut)
-        translate = c200.entries.map { prepared.index(of: RGB16($0.red, $0.green, $0.blue)) }
+        let screenSearch = search.prepared(for: screenClut)
+        let into200 = c200.entries.map { screenSearch.index(of: RGB16($0.red, $0.green, $0.blue)) }
+        let prepared = translatesToScreen ? search.prepared(for: c200) : screenSearch
+        translate = translatesToScreen ? (0...255).map { UInt8($0) } : into200
+        toScreen = translatesToScreen ? into200 : nil
         black = prepared.index(of: RGB16(0, 0, 0))
         white = prepared.index(of: RGB16(0xffff, 0xffff, 0xffff))
         self.text = text
         self.prepared = prepared
-        self.screenClut = screenClut
+        self.screenClut = translatesToScreen ? c200 : screenClut
         port = back.pixels
         // `.InitGameGlobals` l. 852–860: the 30 inventory boxes painted black.
         for i in 0..<30 { paint(Self.box(i), 0xff) }
@@ -271,10 +291,13 @@ public struct StatusBar {
         }
     }
 
-    /// The port rect (top, left, bottom, right) → the screen at + (0, 392), raw.
+    /// The port rect (top, left, bottom, right) → the screen at + (0, 392): raw in a level, translated on the map.
     func copyToScreen(top: Int, left: Int, bottom: Int, right: Int, screen: inout IndexedFrame) {
         for y in top..<bottom {
-            for x in left..<right { screen[x, y + Self.screenTop] = port[y * Self.width + x] }
+            for x in left..<right {
+                let p = port[y * Self.width + x]
+                screen[x, y + Self.screenTop] = toScreen.map { $0[Int(p)] } ?? p
+            }
         }
     }
 }

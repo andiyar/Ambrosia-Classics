@@ -64,7 +64,9 @@ final class MapRenderTests: XCTestCase {
         // 256 entries as 16-bit big-endian R, G, B — the first tick of `.ShowWorldMap` after level 1 (seed 1): PICT 129
         // under clut 700, the status bar, PICT 7000 in the background with the 1–2 link, the node / marker / ambient
         // sprites (`.ruled`, lowest tie-break, error diffusion; `BoxRasterizer` text).
-        XCTAssertEqual(String(fnv1a(image(m.screen.surface)), radix: 16), "38563faaa2276f05")
+        // Re-pinned 2026-10-30 (map status bar fix): the old value "38563faaa2276f05" pinned the status bar's clut-199
+        // indices read raw through clut 700 (the blue speckle); now they are translated from clut 200 into clut 700.
+        XCTAssertEqual(String(fnv1a(image(m.screen.surface)), radix: 16), "eaed376517e32afd")
 
         // The ambient sprite (type 100) is never erased: `.EraseNodeSprites` skips it (M l. 66888–66917). Its counter
         // starts at −4 (no face), so run on until it is drawn; no background → work copy ever covers its rect, and
@@ -113,6 +115,54 @@ final class MapRenderTests: XCTestCase {
             XCTAssertGreaterThan(differing, 0)
         }
         XCTAssertGreaterThan(ambientFrames, 0)
+    }
+
+    /// The status bar on the map (M l. 67505, 67539): `*_DAT_100a0088` (level complete) is set, so `.CopyBitsCT @
+    /// 1000001c` leaves the seeds alone and the status port → screen copy translates — each port pixel's colour under
+    /// the port's clut 200 matched into clut 700 — the grey stone bar the original shows, not clut-199 indices read
+    /// through clut 700 (the blue speckle). Reference: the in-level path (`StatusBar` raw on a screen under clut 200)
+    /// with the same calls, each colour then matched into clut 700.
+    func testMapStatusBarIsTheInLevelBarMatchedIntoClut700() throws {
+        let r = try Self.resources.get()
+        let run = try mapAfterLevel1()
+        let m = try renderer()
+        let ops = run.tick(now: 1000, input: FrontInput()).ops
+        try m.apply(ops)
+        let c200 = try ColorLUT.load(id: 200, from: r, chain: .level)
+        let c700 = try clut700()
+        let search = ColorSearch(model: .ruled)
+        var reference = try StatusBar(resources: r, screenClut: c200, search: search, dither: .errorDiffusion,
+                                      text: StatusBarTests.BoxRasterizer())
+        var frame = IndexedFrame()
+        var bars = 0
+        for op in ops {
+            if case .draw(.statusBar(let state), port: .screen) = op { reference.update(state, screen: &frame); bars += 1 }
+        }
+        XCTAssertEqual(bars, 2)
+        let into700 = search.prepared(for: c700)
+        let screen = m.screen.surface.frame
+        var mismatches = 0
+        for y in StatusBar.screenTop..<IndexedFrame.height {
+            for x in 0..<IndexedFrame.width {
+                let e = c200.entries[Int(frame[x, y])]
+                let want = c700.entries[Int(into700.index(of: RGB16(e.red, e.green, e.blue)))]
+                if c700.entries[Int(screen[x, y])].rgb != want.rgb { mismatches += 1 }
+            }
+        }
+        XCTAssertEqual(mismatches, 0)
+        // The stone: PICT 132's commonest pixel (clut 199/200 index 157, 0x4c4c4c) stays a grey on the map — clut 700's
+        // nearest is 0x435549 (channels within 24); the unfixed bar showed it as clut 700's own entry 157, 0x1457bd.
+        var stones = 0, notGrey = 0
+        for y in StatusBar.screenTop..<IndexedFrame.height {
+            for x in 0..<IndexedFrame.width where frame[x, y] == 157 {
+                let s = c700.entries[Int(screen[x, y])]
+                let (r, g, b) = (Int(s.red >> 8), Int(s.green >> 8), Int(s.blue >> 8))
+                if max(r, g, b) - min(r, g, b) >= 24 { notGrey += 1 }
+                stones += 1
+            }
+        }
+        XCTAssertGreaterThan(stones, 1000)
+        XCTAssertEqual(notGrey, 0)
     }
 
     func testLinkPixels() throws {

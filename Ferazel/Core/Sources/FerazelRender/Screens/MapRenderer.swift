@@ -38,7 +38,9 @@ import FerazelCore
 ///   device's differs) [MED]; nearest stretch (the map's rects never change size); clipped to both.
 /// - **`.draw(op, port: .screen)`**: `screen.apply([op])`, except `statusBar` — the bar the map shows over PICT 129
 ///   (`.UpdateStatusBar`, its level name in Times (20) 12 bold white `0xffff` at `MoveTo(27, 46)` in the status port,
-///   `.UpdateTextStats` M l. 4612–4666) through the existing `StatusBar` path, built on the screen CLUT of the moment.
+///   `.UpdateTextStats` M l. 4612–4666) through the existing `StatusBar` path, built on the screen CLUT of the moment
+///   and translating: the level-complete flag stops `.CopyBitsCT`'s seed copy, so every status port → screen copy
+///   matches clut 200's colours into clut 700 — the grey stone bar (`StatusBar`, "On the world map").
 ///   Each bar is drawn as its call says (HU: full = param_1 0, `!call.partial`): the entry, first-frame and idle calls
 ///   (0, 0, 0), every iteration's call after the marker (1, 0, 0).
 /// - **`loadMapGraphics`** (`.ReInitWorldMapGraphics`): PICTs 600 / 601 into two blit ports nothing draws from — no op.
@@ -143,7 +145,7 @@ public final class MapRenderer {
             let clut = screen.surface.clut
             if statusBar == nil || statusBarClut != clut {
                 statusBar = try StatusBar(resources: screen.resources, screenClut: clut, search: screen.search,
-                                          dither: screen.dither, text: screen.text)
+                                          dither: screen.dither, text: screen.text, translatesToScreen: true)
                 statusBarClut = clut
             }
             statusBar?.update(state, screen: &screen.surface.frame)
