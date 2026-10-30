@@ -1834,3 +1834,21 @@ names the tint unbuilt at l. 38 and its l. 170 count; aborting a level while tin
 (probably the original's too); the tint's on-screen strength unchecked by eye (MED); the audit's `try!` check accepts any
 `try!` (the four sites are fixed-type, unreachable, prose only); the water-row probes have no water-free control; the
 audit takes ~125 s, not "fast". Re-review leg PASS (nine mutations, all caught).
+
+**As built — loop run 39 (2026-10-30/31, by night), RB ⚑ + EC ⚑.** Ladder (+1 vs the plan): RB **518** / 2 opt-in skips,
+EC **526** / 2; FerazelWinKit **81** / 2 skips; census 1,108/0; no golden moved; **Proof B owed (night rule)** — expected
+523 / 0 / 3 / 0 (of 526), run 40 runs it first by day. (a) **RB** (f5fb48e + 34290ad + fe7b20c; two Opus legs
+MERGEABLE / MERGEABLE WITH FIXES, fix round, re-review MERGEABLE): `tools/ferazel-random-play.sh both` — 4 levels × 4
+seeds × 3 min per path, 86,400 steps, 0 failures, identical counts on the Core and Windows paths; every failure kind
+injected and caught on both. **Seat rulings:** after the first level end → map → re-enter, later level ends start a
+fresh New Game at the level (level 3 starts ~156 px from an exit; re-entry resumes there); the runner fails on a
+failed / missing run, has a watchdog, clears only its own files; **Ben's 8f7746f memory limits (after his Mac ran out
+of RAM under the visit sweep) copied into the bot's runner** (4 workers, 6 max, `-j 4`, 30 %-free wait). (b) **EC**
+(8180742 + a2d1fa9; two Opus legs both MERGEABLE WITH FIXES, fix round, re-review MERGEABLE): the S2 handler cases
+(named no-ops), `EnemyCounting` (the window; the run-29 `+0x1b5` carry fixed; level-1 total 0xf unchanged), the Kill
+idiom, contact damage rows keyed on the handler cases (dormant until each class task), goblin voices, the enemy statue
+wrapper, hazards and liquids, `Burn` from `.StandardSpriteCleanup`, Smite at the stored centre over the enemy Handles.
+**Both legs caught the implementer's Gremlin reading backwards** (`.KillGremlinSprite` returns when `+0xe9 ≠ 0`,
+M l. 69736–69738) and the burn's Kill on a held slot copy (landmine (o)) — fixed; 38 surviving mutations now fail.
+BC52: enemies drop only 0x50d / 0x50c / 0x516. The Ring of Smiting hits nothing on levels 1–4 until each class task maps
+its handler (plan-mandated). Carried [LOW]: Dillo coin count asserted as a range; the bot reaches a save once per 16 runs.

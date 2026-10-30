@@ -760,6 +760,24 @@ records the summary line.
 - **Gate:** G2 517 / 2 skips, GW2 81 / 2 skips, GWB by day **514 / 0 / 3 / 0 (of 517)**. **Commit:**
   `Ferazel: the random-play bot — Core and Windows paths, runner script, Proof B opt-in list; 3 tests`.
 
+- **As executed (2026-10-30, loop run 39):** f5fb48e + fix round 34290ad (rebased onto Ben's 8f7746f) + runner limits
+  fe7b20c. G2 **518** / 0 failed / the two opt-in skips; GW2 **81** / 0 / 2 skips; census 1,108/0; GWB **owed (night
+  rule)** — run 40 runs it first. `tools/ferazel-random-play.sh both` (defaults: levels 1–4, 4 seeds, 3 min): `== core:
+  random play — levels 4, seeds 4, steps 86400, deaths 10, exits 47, conversations 21, saves 1, failures 0` and the
+  Windows line identical (seat, ≈ 3–4 min wall). Every failure kind (refusal, throw, error and report dialog, quit, stuck
+  modal, trap) injected by the two legs and caught on both paths at the same seed/step. A "step" = 2 game ticks (5,400
+  steps = 3 min). Deviations: `VisitSweepTests.swift` (+2 lines: the Core test shell gains a Caps Lock setting, default
+  off — the sweep never sets it) outside Files; the bot taps Space while a level has not started (the chapter card waits
+  1,200 ticks); on Windows Ctrl accompanies a key pressed while ⌘ is held; after a trap the logged step is ≤ 30 steps
+  early. **Seat ruling (fix round):** level 3 starts ~156 px from an exit, so a re-entered level ends at once — the
+  contract's "level end → map → re-enter" runs once per run, every later level end starts a fresh New Game at the
+  level (level 3 still gives ~40 of 47 exits — level data). Fix round: the runner fails on a failed / never-reported run,
+  floors JOBS at 1, refuses a level outside `BuiltLevels.range` (exit 2), clears only its own files in a reused `OUT`,
+  has a per-shard watchdog (`FERAZEL_BOT_WATCHDOG`); a Windows exit 0 is reported as a quit. **Ben's 8f7746f** (his Mac
+  ran out of RAM under the sweep's 14 workers) copied into the bot's runner: 4 workers (6 max), `swift build -j 4`, a
+  30 %-free-memory wait. Carried [LOW]: saves reached once per 16 runs; a trapped run's counts are zero; conversations
+  counted by object identity; the Windows test class is main-actor (Proof B does not run WinKit).
+
 ### Wave 5.1 — the enemy foundation
 
 #### EC — ⚑ MAJOR — enemy common: handlers, counting, kills, statues, hazards, the burn-away, goblin voices, contact damage (→ 525)
@@ -816,6 +834,27 @@ records the summary line.
   465/466/468) · `testSmiteMatchesEnemyHandles` (16-target cap; the seed at the stored `+0x10` − 4, `+0xe` − 4, with a stale stored
   centre to prove it is not recomputed; the Warrior Handle is a target).
 - **Gate:** G2 525. No golden moves (no Handle body runs yet). **Commit:** `FerazelCore: enemy common — handlers, the counting window, kills, contact damage, statues, hazards, the burn-away, goblin voices; 8 tests`.
+
+- **As executed (2026-10-31, loop run 39):** 8180742 + fix round a2d1fa9. G2 **526** / 0 failed / 2 opt-in skips; GW2
+  **81** / 0 / 2; census 1,108/0; no golden or other count moved; level-1 counted total **0xf** unchanged (the run-29
+  carry fixed: `+0x1b5` only inside the window). Dump vs plan: `+0x1b2` already existed as `handleSkip` (`emerging` is
+  a second name); every enemy Kill except the Walker's sets `+0xea` (the bank listed three classes); Smite's spawn is at
+  M l. 47036 (not 47038); 11 of the 15 Smite Handles have cases (the four bosses stay `.inert`); the crush helper's
+  `+0xb0 ≠ 4` gate is at M l. 58584, before `.PlatformBounce`. **BC52:** the enemy spans spawn only money bags 0x50d /
+  0x50c and coin 0x516 (goblins via `.PopupGoblinCoins`; one 0x516 each from Crawler, Roach, Bat, Gremlin) — no item
+  drops. **`testSmitingRing` (seat ruling in advance):** its enemies are now bat / frog / walker handlers with stale
+  stored centres; seeds (323,227) (457,192) (76,304) → (313,229) (447,194) (66,306) — the stored `+0x10`/`+0xe` − 4
+  (M l. 47036) instead of the hot-rect centre; the cap enemies are roaches, the idled one a bat. **Visible now:** the
+  Ring of Smiting hits nothing on levels 1–4 until each class task maps its handler (plan-mandated dormancy).
+  **Fix round (both legs):** the implementer had the Gremlin backwards — `.KillGremlinSprite` returns at once when
+  `+0xe9 ≠ 0` (M l. 69736–69738), now as the dump with the test corrected; the burn's Kill ran on a held slot copy
+  (landmine (o)) — now written back before and re-read after, the Kill against the world by id; burn with no face = no-op
+  (`.HandleBurn` M l. 38780; headless-only); citations fixed (BC52 coin lines 57435/57452/57470/57485, shield block
+  48389); `Smite.enemyClasses` removed; 38 surviving mutations (taunt 467, step-6 rows and exclusions, Bat/Blob damage,
+  liquids, hazards, `.HurtGoblin`, the tally window) now each fail an assert; `DrawModeAuditTests` two rows re-pointed
+  (values unchanged) — a file outside Files. Carried [LOW]: the Dillo 0x74f coin count is asserted as a range (6 → 5
+  survives); with no face provider the burn skips its sound's random draw (headless only); a non-numeric `MIN_FREE_PCT`
+  stalls the runner's memory wait 10 min (as Ben's sweep).
 
 #### ES — ⚑ MAJOR — the EnemyShot class, the shield block, the Magical Shield crouch, boulder spouts firing (→ 536)
 - **Files:** `Sources/FerazelCore/World/Enemies/EnemyShot.swift` (new), `Sources/FerazelCore/Player/HitPlayerSprite.swift`
