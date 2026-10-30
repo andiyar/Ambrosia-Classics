@@ -333,4 +333,82 @@ final class LightingTests: XCTestCase {
         XCTAssertNil(r.lights.slots[6].face)
         XCTAssertEqual(r.lights.slots[6].radius, 0)
     }
+
+    /// A 16×16 face of every pixel value 0…255 (row r, column c = 16r + c; 0 is a skip), for the mode-0xc tests.
+    private static let allValues = FaceRef(pict: 9101, index: 0, set: .encoded)
+
+    private func allValuesBlitter(_ f: TileGridTests.Fixture) throws -> SpriteBlitter {
+        let px = (0..<256).map { UInt8($0) }
+        let face = try FaceEncoder.encode(pixels: px, width: 16, height: 16,
+                                          rect: EncodedFace.Rect(top: 0, left: 0, bottom: 16, right: 16), sourceId: 9101)
+        let a = try FaceSheet.Arguments(pict: 9101, count: 1, cellWidth: 16, cellHeight: 16, columns: 1)
+        let sheet = FaceSheet(arguments: a, faces: [face], shortCells: [:], clutId: 202)
+        return SpriteBlitter(level: f.level, tables: f.tables, faces: SpriteBlitter.Faces(sheets: [9101: sheet]))
+    }
+
+    /// The frame bytes of the 16×16 face drawn at world (100, 50) with `word` (fill 0xee), row-major.
+    private func drawAllValues(_ b: SpriteBlitter, word: UInt32) throws -> [UInt8] {
+        var ports = FramePorts(fill: 0xee)
+        try b.wrapDrawSprites([SpriteDraw(face: Self.allValues, x: 100, y: 50, mode: word,
+                                          clip: SpriteClip(left: 0, right: 32000, bottom: 32000, top: 0))],
+                              h: 0, v: 0, ports: &ports)
+        return (0..<256).map { ports.frame[FramePorts.ringOffset(x: 100 + $0 % 16, y: 50 + $0 / 16)] }
+    }
+
+    func testDynamicLightAtFullDarknessReadsFollowingTable() throws {
+        // Ledger A13 (DK; lighting-tables §7, draw-effects §2 mode 0xc): `+0xb8 = 0xc0000 + L·0x100 + F`, light read
+        // `_DAT_100a0134 + L·0x6e00 + F·0x100`. The TOC slots point the light table at data+0x5c52c (16 × 0x6e00) and
+        // the ambient table `_DAT_100a0130` at data+0xca52c — the light table's end — so L 15, F 110 + k reads
+        // ambient row k. F = `.GetFakeLight`'s k (0…11) + the slot colour `+0x18` (max 99 from every live writer):
+        // at most 110, so only ambient row 0 is reachable; rows up to 15 (F 125) are the original's bytes too.
+        let f = try fixture()
+        let b = try allValuesBlitter(f)
+        var lit = SpriteSlot(type: 1, x: 0, y: 0, face: Self.allValues); lit.dynamicLight = true
+        XCTAssertEqual(lit.applyDynamicLight(lightTile: 15, fakeLight: 110), 0xc0f6e)
+        XCTAssertEqual(f.tables.light.count, 0x6e000)
+        for (F, row) in [(110, 0), (111, 1), (125, 15)] {
+            let word = UInt32(0xc0000 + 15 * 0x100 + F)
+            let op = try b.special(word)
+            XCTAssertEqual((0..<256).map { op(UInt8($0), 0) }, f.tables.ambient[row], "F \(F)")
+            let drawn = try drawAllValues(b, word: word)
+            XCTAssertEqual(drawn[0], 0xee)   // pixel 0 is a skip
+            XCTAssertEqual(Array(drawn[1...]), Array(f.tables.ambient[row][1...]), "F \(F) drawn")
+        }
+        // The neighbours stay in their own tables: F 109 is the light table's last 0x100 bytes, F 0 ambient 15, and
+        // L 14 F 110 is inside the light table (it reads L 15's first 0x100 bytes, as the original).
+        let last = try b.special(0xc0f6d)
+        XCTAssertEqual((0..<256).map { last(UInt8($0), 0) }, Array(f.tables.light[(0x6e000 - 0x100)...]))
+        let amb = try b.special(0xc0f00)
+        XCTAssertEqual((0..<256).map { amb(UInt8($0), 0) }, f.tables.ambient[15])
+        let inside = try b.special(0xc0e6e)
+        XCTAssertEqual((0..<256).map { inside(UInt8($0), 0) }, Array(f.tables.light[(15 * 0x6e00)..<(15 * 0x6e00 + 0x100)]))
+        // Past F 125 the original reads the table at data+0xcb52c (slot `0x100a0120`): still refused, no clamp.
+        for F in [126, 0xff] {
+            let word = UInt32(0xc0000 + 15 * 0x100 + F)
+            XCTAssertThrowsError(try b.special(word)) { XCTAssertEqual($0 as? SpriteBlitter.Refusal, .mode(word)) }
+            XCTAssertThrowsError(try drawAllValues(b, word: word)) {
+                XCTAssertEqual($0 as? SpriteBlitter.Refusal, .mode(word))
+            }
+        }
+    }
+
+    func testA14LightByteMinusOneStillRefused() throws {
+        // Ledger A14: `.GetLightTile` = high byte − 1, so a cell byte 0 gives L = −1; with F ≥ 1 the `+0x89` word
+        // `0xc0000 − 0x100 + F` = `0xbff00 + F` is mode 0xb with a negative arg (`rlwinm 8; addis 0xc`) — refused
+        // (DA proves it unreachable). L = −1 with F = 0 is mode 0 (both < 1), drawn as a plain copy.
+        let f = try fixture()
+        let b = try allValuesBlitter(f)
+        var lit = SpriteSlot(type: 1, x: 0, y: 0, face: Self.allValues); lit.dynamicLight = true
+        for F in [1, 11, 110] {
+            let word = lit.applyDynamicLight(lightTile: -1, fakeLight: F)
+            XCTAssertEqual(word, UInt32(0xbff00 + F))
+            XCTAssertEqual(lit.mode, word)
+            XCTAssertThrowsError(try drawAllValues(b, word: word)) {
+                XCTAssertEqual($0 as? SpriteBlitter.Refusal, .mode(word))
+            }
+        }
+        XCTAssertEqual(lit.applyDynamicLight(lightTile: -1, fakeLight: 0), 0)
+        let plain = try drawAllValues(b, word: 0)
+        XCTAssertEqual(Array(plain[1...]), (1..<256).map { UInt8($0) })
+    }
 }

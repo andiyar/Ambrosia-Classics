@@ -597,6 +597,18 @@ records the summary line.
   15; F 126 → still refused) · `testA14LightByteMinusOneStillRefused` (pins A14 as still refused — DA proves it
   unreachable).
 - **Gate:** G2 510. **Commit:** `Ferazel: mode 0xc at full darkness reads the ambient table that follows the light table, as the original; 2 tests`.
+- **As executed (2026-10-30, loop run 38):** G2 **511** (the +1 after Ben's 3cf72df, as run 37 recorded), 0 failed,
+  the one opt-in skip; no golden or other count moved. **F max = 110**, derived from the dump: `.GetFakeLight` (M l.
+  15290–15359) gives k = 0xb − dist·11/r kept in 0…11 (k = 11 at a distance under r/11 — the bank's "k 0..10" is
+  short by one), plus the slot colour `+0x18`; every live colour writer is ≤ 99 (AddLight constants 0x16…99 incl. 0x58
+  at M l. 52562, `.ChangeLightColor` 0/0x21/0x42/0x4d), the only data-sourced colour (M l. 54143, record p1) is the
+  dead 0x726 arm. So index ≥ 0x6f000 (F ≥ 126) is unreachable and stays `Refusal.mode`. `.CalcAmbientDarken` (M l.
+  13655–13689) builds the table colours and does not bound F (cited by the plan, no bearing). TOC slots re-checked with
+  `pef.py`: 0x5c52c / 0xca52c / 0xcb52c, as the contract. Built as `LevelTables.followingLightRow(at:)` (ambient row
+  for a base in [0x6e000, 0x6f000), nil past it) called from the mode-0xc arm only when the light read would leave the
+  table — the light table itself is unchanged, no contiguous copy. Bank: ⚑ note appended to lighting-tables (k 11,
+  the 0x58 writer, F max). Tests also pin F 111, F 109 (light's last row), L 14 F 110 (inside), F 0 → ambient 15,
+  F 0xff refused, the drawn frame bytes, and A14 for F 1/11/110 plus L −1 F 0 → mode 0.
 
 #### UT — minor ◈ — the underwater screen tint (Phase 2 carry, D38 A4 ruling) (→ 513)
 - **Files:** `Sources/FerazelCore/Player/PlayerLiquids.swift` (`:137–139` stub), `Sources/FerazelCore/Player/Player.swift`

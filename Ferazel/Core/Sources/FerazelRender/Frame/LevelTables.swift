@@ -44,6 +44,16 @@ public struct LevelTables: Sendable, Equatable {
     /// `_DAT_100a0134` light, 16 × 0x6e00 (§7.3).
     public let light: [UInt8]
 
+    /// The 0x100 bytes the original reads at `_DAT_100a0134 + base` past the light table's end (ledger A13, DK): the
+    /// TOC slots put light at data+0x5c52c and ambient (`_DAT_100a0130`) at data+0xca52c — exactly light's end — so
+    /// a base in [0x6e000, 0x6f000) reads ambient row (base − 0x6e000) >> 8. Past that the original reads the table at
+    /// data+0xcb52c (slot `0x100a0120`): nil, the caller refuses. `base` is a multiple of 0x100 (the mode-0xc read).
+    func followingLightRow(at base: Int) -> [UInt8]? {
+        let row = (base - light.count) >> 8
+        guard base >= light.count, base & 0xff == 0, ambient.indices.contains(row) else { return nil }
+        return ambient[row]
+    }
+
     /// - Parameters:
     ///   - workingClut: the working copy the tint/water/redden/pair builders read.
     ///   - levelBaseClut: the unanimated level+base CLUT the lighting builder reads.

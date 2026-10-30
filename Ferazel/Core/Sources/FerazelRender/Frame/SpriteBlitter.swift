@@ -552,7 +552,8 @@ public struct SpriteBlitter: Sendable {
     /// The per-pixel rule of `.BlitEncFaceX` for `word` (draw-effects §1.2, §2.2): mode 0 copies; 1 → tint table
     /// sub (`_DAT_100a0140 + sub·0x100`); 3 / 4 → redden A / B sub (the hurt flash); 9 → water table 0 (`_DAT_100a0170`, sub always 0 from the writers; the
     /// table is `sub`); 0xc → F = sub low byte, L = sub >> 8 signed: F = 0 → ambient L (`_DAT_100a0130 + L·0x100`),
-    /// else light `_DAT_100a0134 + L·0x6e00 + F·0x100`.
+    /// else light `_DAT_100a0134 + L·0x6e00 + F·0x100` (past its end at L 15, F 110…125: the ambient table that
+    /// follows it, `LevelTables.followingLightRow`).
     func special(_ word: UInt32) throws -> (UInt8, UInt8) -> UInt8 {
         let mode = Int(word >> 16), sub = Int(Int16(truncatingIfNeeded: word & 0xffff))
         switch mode {
@@ -580,7 +581,12 @@ public struct SpriteBlitter: Sendable {
                 return { s, _ in t[Int(s)] }
             }
             let base = L * 0x6e00 + F * 0x100
-            guard base + 0x100 <= tables.light.count else { throw Refusal.mode(word) }
+            guard base + 0x100 <= tables.light.count else {
+                // L 15 with F ≥ 110 runs off the light table into the ambient table that follows it in memory
+                // (ledger A13); past F 125 (the next table) still refused, no clamp.
+                guard let t = tables.followingLightRow(at: base) else { throw Refusal.mode(word) }
+                return { s, _ in t[Int(s)] }
+            }
             let light = tables.light
             return { s, _ in light[base + Int(s)] }
         default:

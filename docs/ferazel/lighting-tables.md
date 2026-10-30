@@ -662,3 +662,16 @@ slot pending removal still has `+0` = 1 and is not free). With a **nil face** an
 the count does not move (`ReportError(…, 200)`), but the call still **returns that free slot's index** — the store path
 and the `ReportError` path both end at `1001bd08 or r3,r31,r31` (raw `1001bc58..1001bd08`); −1 only when all 200 slots
 are in use. Transcribed in `FerazelCore.LightTable.add` (LT) [HIGH].
+
+⚑ planner-probe (Phase 5 plan DK, landed 2026-10-30; follow the binary): two §7.3/§7.4 readings corrected from the
+dump. (1) **k reaches 11, not 10**: `.GetFakeLight @ 1001d708` (M l. 15290–15359) returns `F = 0xb − (dist·11)/r +
+slot +0x18` under `-1 < k < 0xc`, so k = 11 at a distance below r/11 — t = g·11 + 11 reads the next group's k = 0
+row (contiguous), and group 9's k = 11 (F = 110) runs past the light table. (2) **group 8 (0x58) does have an AddLight
+writer**: the Setup of sprite 0x51b (M l. 52556–52562) adds its light with colour 0x58 when its record word `+0xc` ≠ 0
+(else 0x16). Every live colour writer (AddLight constants 0x16, 0x21, 0x2c, 0x37, 0x42, 0x4d, 0x58, 99;
+`.ChangeLightColor` 0, 0x21, 0x42, 0x4d) is ≤ 99; the one data-sourced colour (record p1, M l. 54143) is the dead
+0x726 Effect arm (triggers-background-2 row 1830). So F ≤ 99 + 11 = **110**. The TOC slots (`tools/pef.py u32`):
+`0x100a0134` light → data+0x5c52c (0x6e000 B), `0x100a0130` ambient → data+0xca52c = light's end (0x1000 B),
+`0x100a0120` → data+0xcb52c; so L 15, F 110…125 reads ambient row F − 110 (`LevelTables.followingLightRow`), and F
+≥ 126 (unreachable) stays refused. `.CalcAmbientDarken` (M l. 13655–13689) builds table colours only and does not
+bound F.
