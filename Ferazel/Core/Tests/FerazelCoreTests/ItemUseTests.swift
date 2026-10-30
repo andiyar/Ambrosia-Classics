@@ -587,13 +587,12 @@ final class ItemUseTests: XCTestCase {
         stock(v, [Self.item(0x10)], selected: 0)
         HandleKeys.run(world: v, keys: .use, ridden: nil)
         XCTAssertEqual(shots(v).count, 16)
-        // The 15 Handles resolved (`pef.py tocfunc`): no Crab, no Button.
-        XCTAssertEqual(Set(Smite.enemyClasses), [.xichra, .wizard, .warrior, .walker, .salamander, .roach, .gremlin,
-                                                 .frog, .floater, .demon, .dillo, .crawler, .chief, .blob, .bat])
-        XCTAssertEqual(Smite.enemyClasses.count, 15)
-        // EC: as `SpriteHandler` cases — the eleven classes of levels 1–5, the Warrior's included (Ruling 3a).
+        // The 15 Handles resolved (`pef.py tocfunc`) as `SpriteHandler` cases (EC): the eleven classes of levels 1–5,
+        // the Warrior's included (Ruling 3a); the four bosses have no case yet; no Crab, no Button.
         XCTAssertEqual(Set(Smite.enemyHandlers), [.warrior, .walker, .salamander, .roach, .gremlin, .frog, .floater,
                                                   .dillo, .crawler, .blob, .bat])
+        XCTAssertEqual(Smite.enemyHandlers.count, 11)
+        XCTAssertEqual([Smite.enemyHandlers.contains(.crab), Smite.enemyHandlers.contains(.button)], [false, false])
     }
 
     func testHintSuspendsInsidePlayerHandle() throws {

@@ -1228,7 +1228,7 @@ extension HitPlayerSprite {
 
     /// Step 7, the generic path for the enemy classes (EC; M l. 49802–49929, raw `10057968..10057bcc`;
     /// enemy-shots-and-damage §3.5 non-shot rows): none for a type 0x76c…0x775 or 0x754 with gravity `+0x110 > 0`;
-    /// `.ShieldBlock` answers 0 for any Handle but the EnemyShot's (M l. 48380–48381); none for type 0x6e6 with `+0x164
+    /// `.ShieldBlock` answers 0 for any Handle but the EnemyShot's (M l. 48389); none for type 0x6e6 with `+0x164
     /// ≥ 2`, type 0x74d, or 0x73a…0x73e with `+0x160 ≠ 0`. Damage by Handle: Gremlin 0xe0; Crawler, Roach, Bat, Blob
     /// 0x38; Warrior, Frog 0x70; the rest (Walker, swarm member) the default 0x70; invulnerability 0x3c. Type 0x6a9 →
     /// 0x70; type 0x6d6 → 0x70 with invulnerability 0x24. Coins: damage 0x70 → `FastRand(100)` (M l. 49899–49904) > 0x50

@@ -6,7 +6,9 @@ import Foundation
 /// (`+0x1bc`, drawn by `SpriteBlitter`) and each consumed row sparks particles.
 ///
 /// Core has no face records: the opaque top / bottom (face `+8` / `+0xc`), the width (`+6`) and the token stream come
-/// from `SpriteWorld.particleFaces` (FerazelRender's); without a provider the burn plays its sound and stops there.
+/// from `SpriteWorld.particleFaces` (FerazelRender's). In the dump `+0xc0 ≠ 0` always has its face record (top,
+/// bottom), so the burn always advances to the Kill; a face Core cannot see (a headless session, no provider — the
+/// Mac and Windows shells always pass the renderer's) is a no-op: no sound, no draw, no state (EC fix round).
 /// prefs+6 (Effects, `_DAT_1009fe44 + 6`) is the iteration's live prefs (`SpriteWorld.voices.prefs`).
 public enum Burn {
     /// `*PTR_DAT_100a01ec` = snd 462 (`SoundSlots`).
@@ -22,9 +24,9 @@ public enum Burn {
     ///    and return; `.BurnFaceRow(face, (+0xa, +0xc), 2, +0x1a2, +0x17e, kind)`; Effects == 1 → `FastRand(100)` > 50
     ///    with `+0x8d == 0` → again with spacing 1; `+0x1bc = +0x1a2`;
     /// 5. `+0x1a2 >` the opaque bottom → (type 0x780: +1 then −1, no change) the Kill proc `+0x50`, or `+0xe9 = 1`
-    ///    without one (`EnemyCommon.killProc`).
+    ///    without one (`EnemyCommon.killProc`, by id: the copy is written back before it and re-read after).
     public static func handle(_ w: SpriteWorld, _ s: inout SpriteSlot) {
-        guard let f = s.face else { return }
+        guard let f = s.face, let face = w.particleFaces.sprite(f) else { return }
         s.burning = true
         if s.burnRow == 1 {
             let r = s.hotRect
@@ -39,7 +41,6 @@ public enum Burn {
                 }
             }
         }
-        guard let face = w.particleFaces.sprite(f) else { return }
         let top = face.bounds[0], bottom = face.bounds[2]
         if 0 < s.burnRow && s.burnRow < top { s.burnRow = top }
         let effects = w.voices.prefs.effects
@@ -60,7 +61,10 @@ public enum Burn {
             k += 1
         }
         if bottom < s.burnRow {
-            EnemyCommon.killProc(w, &s)
+            // SpriteWorld rule 2: the Kill proc writes the world by id — write the copy back first, re-read after.
+            w.active.update(id: s.id) { $0 = s }
+            EnemyCommon.killProc(w, id: s.id)
+            if let t = w.active.record(id: s.id) { s = t }
         }
     }
 

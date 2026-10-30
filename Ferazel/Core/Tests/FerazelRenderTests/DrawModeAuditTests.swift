@@ -195,11 +195,11 @@ final class DrawModeAuditTests: XCTestCase {
         W("Particles/WaterEffects.swift:144", .waterKind, .levelLiquid, "waterFace", pins: ["UnderWater.waterKind("]),
         // EC: the burn-away's top clip (`.HandleBurn` `+0x1bc = +0x1a2`: from the opaque top, one row or `+0x8d + 1` a
         // frame, up to one past the opaque bottom — any face's height; a top past the face draws nothing).
-        W("Particles/Burn.swift:59", .clipTop, .range(1...0x100), "any", at: ["44", "49"],
+        W("Particles/Burn.swift:60", .clipTop, .range(1...0x100), "any", at: ["45", "50"],
           pins: ["s.burnRow = top", "s.burnRow &+= 1"]),
         // EC: the ground enemies' liquid hurt flash (`EnemyCommon.liquids`: 0xc for the Walker in water, else 0x11).
-        W("World/Enemies/EnemyCommon.swift:224", .flash, .range(0xc...0x11), "walker", "crawler", "roach", "dillo",
-          at: ["210", "215", "216", "217"], pins: ["(0xc, 0x96, 0xc)", "(0x13, 100, 0x11)"]),
+        W("World/Enemies/EnemyCommon.swift:229", .flash, .range(0xc...0x11), "walker", "crawler", "roach", "dillo",
+          at: ["215", "220", "221", "222"], pins: ["(0xc, 0x96, 0xc)", "(0x13, 100, 0x11)"]),
         W("Physics/StandardSprite.swift:32", .flash, .range(0...0x1d), "any", pins: ["if s.flash > 0 { s.flash -= 1 }"]),
         // `.StandardSpriteHandles`' per-frame reset, then the occluder's clip, each edge clamped to 0…the face width
         // (the right edge 32000 when past it) on the next lines when the sprite has a face (no face, no draw).

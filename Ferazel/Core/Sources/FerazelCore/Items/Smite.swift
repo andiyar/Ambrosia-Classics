@@ -11,10 +11,8 @@ public enum Smite {
     /// `04ac` `.HandleFloaterSprite` 100816d8 · `04b0` `.HandleDemonSprite` 1008a630 · `04b4` `.HandleDilloSprite`
     /// 1008697c · `04b8` `.HandleCrawlerSprite` 10065c00 · `04bc` `.HandleChiefSprite` 1008b878 · `04c0`
     /// `.HandleBlobSprite` 1007d044 · `04c4` `.HandleBatSprite` 1007e6b0. Not listed: the Crab, the Buttons.
-    public static let enemyClasses: [SpriteClass] = [.xichra, .wizard, .warrior, .walker, .salamander, .roach, .gremlin,
-                                                     .frog, .floater, .demon, .dillo, .crawler, .chief, .blob, .bat]
-
-    /// The 15 Handles as `SpriteHandler` cases (EC): the eleven enemy classes of levels 1–5, the Warrior's included
+    ///
+    /// As `SpriteHandler` cases (EC): the eleven enemy classes of levels 1–5, the Warrior's included
     /// (0x100a0494 — Ruling 3a). The four bosses' Handles (Xichra, Wizard, Demon, Chief) have no case yet: those
     /// sprites are `.inert` and placed on no level 1–5 // later: Phase 6–7 (their Handles).
     public static let enemyHandlers: [SpriteHandler] = [.warrior, .walker, .salamander, .roach, .gremlin, .frog,

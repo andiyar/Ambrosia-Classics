@@ -359,7 +359,7 @@ kind is UNDETERMINABLE from code; the behaviour table is what a replica needs.
    Salamander 70642–70981, Dillo 72276–72974, Warrior 72975–73532, Crab 73957–74323) for the bare tokens
    `MTNewSprite` / `GenerateSprite` (the type read from the next line where the decompiler wraps the call) finds the
    Bonus Setup (`_DAT_1009ff38` = `.SetupBonusSprite`) only with the money: `.PopupGoblinCoins` (Walker) — one 0x50d
-   (M l. 57436), 2 + R(3) × 0x50c (M l. 57453), one 0x50c (M l. 57471) or 2 + R(3) × 0x516 (M l. 57486) — and one
+   (M l. 57435), 2 + R(3) × 0x50c (M l. 57452), one 0x50c (M l. 57470) or 2 + R(3) × 0x516 (M l. 57485) — and one
    coin 0x516 from the Handles of the Crawler (M l. 56468), Roach (65085), Bat (68798) and Gremlin (69324). Every
    other spawn there uses another Setup (the EnemyShot's `PTR_PTR_100a0830` for the shots and corpses, the Box's
    `_DAT_1009ff34` for the Warrior's rocks 0x433, the Bat's children `PTR_PTR_100a0c74` / `0c70`, the Gremlin's

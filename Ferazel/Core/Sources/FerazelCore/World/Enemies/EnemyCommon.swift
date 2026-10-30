@@ -27,11 +27,10 @@ public struct EnemyCounting: Equatable, Sendable {
     /// The Kill idiom (`.KillCrawler` M l. 56695–56701, `.KillWalker` M l. 58624–58629, `.KillWarrior` M l.
     /// 73479–73485 and every other enemy Kill): `+0xe9 == 0 && +0x1b5 ≠ 0` → live − 1 and the enemies stat
     /// `G+0x306+2·L` + 1; then `+0xe9 = 1` unconditionally and `+0xea = 1` where the class's Kill stores it (`forGood`:
-    /// every enemy Kill but `.KillWalker`'s — `killsForGood`). `testsDying` false: `.KillGremlinSprite` tests `+0x1b5`
-    /// only (M l. 69739), so a second call counts again.
-    public mutating func kill(_ s: inout SpriteSlot, globals: inout GameGlobals, level: Int, forGood: Bool = false,
-                              testsDying: Bool = true) {
-        if (!testsDying || s.killCount == 0) && s.countedInTotals {
+    /// every enemy Kill but `.KillWalker`'s — `killsForGood`). `.KillGremlinSprite` returns at once while `+0xe9 ≠ 0`
+    /// (M l. 69736–69738) — its caller's guard.
+    public mutating func kill(_ s: inout SpriteSlot, globals: inout GameGlobals, level: Int, forGood: Bool = false) {
+        if s.killCount == 0 && s.countedInTotals {
             live &-= 1
             if (0..<GameGlobals.levelSlots).contains(level) { globals.achieved[0][level] &+= 1 }
         }
@@ -83,20 +82,25 @@ public enum EnemyCommon {
 
     /// The Kill proc `+0x50` (`FUN_1009f80c(s)`, ptr-glue) for `s`'s class, as `.HandleBurn` calls it at the opaque
     /// bottom: the enemy Kills' counting part (`EnemyCounting.kill`); with no Kill proc `+0xe9 = 1` (M l. 38834–38838).
-    /// The classes' own parts (score `G+0`, sounds, children) are their tasks'.
-    public static func killProc(_ w: SpriteWorld, _ s: inout SpriteSlot) {
+    /// The classes' own parts (score `G+0`, sounds, children) are their tasks'. It runs against the world by id
+    /// (`SpriteWorld` rule 2: a Kill tail writes other sprites and spawns) — a caller holding a copy of the slot writes
+    /// it back first and re-reads after (`Burn.handle`).
+    public static func killProc(_ w: SpriteWorld, id: Int) {
+        guard var s = w.active.record(id: id) else { return }
         switch s.handler {
         case .walker, .crawler, .roach, .dillo, .bat, .frog, .salamander, .blob, .warrior:
             w.enemies.kill(&s, globals: &w.globals, level: w.levelIndex, forGood: EnemyCounting.killsForGood(s.handler))
             // later: WK1 / CR / DL / BA / FR / BL / LV5 — each Kill's own tail (score, sounds, children)
         case .gremlin:
-            w.enemies.kill(&s, globals: &w.globals, level: w.levelIndex, forGood: true, testsDying: false)
+            guard s.killCount == 0 else { return }      // `+0xe9 ≠ 0` → return (M l. 69736–69738, raw 100810e0 bnelr)
+            w.enemies.kill(&s, globals: &w.globals, level: w.levelIndex, forGood: true)
             // later: GF — `.KillGremlinSprite`'s score and rider
         case .enemyShot:
             s.dead = true                               // later: ES — `.KillEnemyShot`
         default:
             s.dead = true                               // `+0x50 == 0` → `+0xe9 = 1`
         }
+        w.active.update(id: id) { $0 = s }
     }
 
     // MARK: - goblin voices (enemies-ground §2.6, enemies-ground-2 §3)
@@ -176,11 +180,12 @@ public enum EnemyCommon {
         bounce == 2 && (0 < solid.vy || mover.groundKind != 0)
     }
 
-    /// The Walker's crush (`.HitWalkerSprite` M l. 58578–58589): against a Statue, Box or Platform solid, `+0xb0 ≠ 4`,
+    /// The Walker's crush (`.HitWalkerSprite` M l. 58578–58589): against a Statue, Box or Platform solid, the Walker's
+    /// `+0xb0 ≠ 4` (M l. 58584, tested before `.PlatformBounce` is called — `bounce` runs only past it),
     /// `.PlatformBounce` returned 2, the solid is not one-way (`+0x185 == 0`) and not an enemy pipe 0x5d2…0x5d6 — the
     /// caller then sets HP 0.
-    public static func crushesWalker(bounce: Int16, solid: SpriteSlot) -> Bool {
-        bounce == 2 && !solid.oneWay && !(0x5d2...0x5d6).contains(solid.type)
+    public static func crushesWalker(mover: SpriteSlot, solid: SpriteSlot, bounce: () -> Int16) -> Bool {
+        mover.subtype != 4 && bounce() == 2 && !solid.oneWay && !(0x5d2...0x5d6).contains(solid.type)
     }
 
     /// The environmental hazards of the enemy Hit routines (`.HitWalkerSprite` M l. 58590–58595, `.HitCrawlerSprite`
