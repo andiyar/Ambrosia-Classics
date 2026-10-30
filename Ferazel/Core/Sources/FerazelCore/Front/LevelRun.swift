@@ -1051,7 +1051,8 @@ public struct CachedFaces: Equatable, Sendable {
     /// order Platform … Crawler, Roach, Walker, Box, Background, …, Bat, Blob, …, Frog) — the records levels 1–4 can mark
     /// (Crawler M l. 56142–56144, Roach 64893–64894, Walker 56757–56768, Box 58785–58786 (LV3: the mine cart's 0xb72 /
     /// 0xb73) and 58806, Background 61864 (LV3: the wall spikes' 0x730) and 61875, Bat 68099, Blob 67666 (LV3), Frog
-    /// 70116). ES: `.InitEnemyShotSprite`'s four (M l. 51434–51437, after the Background's, flag 0 — `.InitBackgroundSprite`
+    /// 70116). ES: the dart traps' three (Background M l. 61886–61888, after 0x442; marked only from level 22 on);
+    /// `.InitEnemyShotSprite`'s four (M l. 51434–51437, after the Background's, flag 0 — `.InitBackgroundSprite`
     /// leaves `*_DAT_100a0a48` 0, M l. 61912): 0x46a three times (6 × 48×48, then 6 × 64×64 twice) and 0x77b (16 faces);
     /// only the boss Setups mark them (`EnemyShot.cachedSheets`). One PICT in three records: `loadedSets` keys by PICT,
     /// so a mark of 0x46a counts all three [LOW: no mark before Phase 6]. // later: Phase 5–6 — the other sets, as their
@@ -1066,6 +1067,8 @@ public struct CachedFaces: Equatable, Sendable {
         Record(pict: 0xb72, faces: 14, flag: 0), Record(pict: 0xb73, faces: 21, flag: 0),
         Record(pict: 0x5be, faces: 4, flag: 0),
         Record(pict: 0x730, faces: 12, flag: 0), Record(pict: 0x442, faces: 5, flag: 0),
+        Record(pict: 0x76c, faces: 6, flag: 0), Record(pict: 0x76e, faces: 6, flag: 0),
+        Record(pict: 0x76f, faces: 6, flag: 0),
         Record(pict: 0x46a, faces: 6, flag: 0), Record(pict: 0x46a, faces: 6, flag: 0),
         Record(pict: 0x46a, faces: 6, flag: 0), Record(pict: 0x77b, faces: 16, flag: 0),
         Record(pict: 0x6cc, faces: 11, flag: 0), Record(pict: 0x6c2, faces: 16, flag: 0),
@@ -1119,7 +1122,8 @@ public struct CachedFaces: Equatable, Sendable {
     /// 0x708 → set 0x708 (70211). LV3: Bat 0x6cd → set 0x6cc (the same arm, 68286); Blob 0x6c2 → set 0x6c2 (67726);
     /// the spikes 0x730 / 0x731 → set 0x730 (61984, 62281), 0x732 / 0x733 → **both** singles 0x732 and 0x733 (62460–
     /// 62461); the mine cart 0xb72 / 0xb73 with a record → sets 0xb72, 0xb73 (59434–59435); the level-3 decoration,
-    /// outcrop and mushroom singles of the same id (59647, 59699, 59709). LV4: level 4's new types mark nothing —
+    /// outcrop and mushroom singles of the same id (59647, 59699, 59709). ES (unplaced before level 22): the dart traps
+    /// 0x76c / 0x76d → set 0x76c, 0x76e → 0x76e, 0x76f → 0x76f (62497–62505). LV4: level 4's new types mark nothing —
     /// the switch blocks 1250 and the spouts 1450 / 1453 face from the boot sets `_DAT_100a0a54` / `0a4c` (M l.
     /// 59581–59597), the Buttons, the Platform 1410 and the Bonus 1331 / 1334 / 1340 / 3216 Setups store no mark.
     /// Every other level-1–4 type marks nothing.
@@ -1136,6 +1140,8 @@ public struct CachedFaces: Equatable, Sendable {
         case 0x6cc, 0x6cd: return ([0x6cc], [])
         case 0x6c2: return ([0x6c2], [])
         case 0x730, 0x731: return ([0x730], [])
+        case 0x76c, 0x76d: return ([0x76c], [])
+        case 0x76e, 0x76f: return ([t], [])
         case 0x732, 0x733: return ([], [0x732, 0x733])
         case 0xb72, 0xb73: return ([0xb72, 0xb73], [])
         case 0x708: return ([0x708], [])

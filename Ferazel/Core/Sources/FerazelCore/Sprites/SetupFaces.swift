@@ -203,6 +203,9 @@ public enum SetupFaces {
         for p: Int16 in [0xafc, 0xafd, 0xb04, 0xb05, 0xb10, 0xb1b, 0xb44, 0x732, 0x733] { all.append(one(p)) }
         all += [one(0xb34, clut: 202), one(0xb35, clut: 202), set(0x6c2, 0x10, 0x40, 0x2c, 0x10),
                 set(BackgroundSprite.wallSpikeSheet, 0xc, 0x18, 0x80, 0xc)]
+        // ES: the dart traps' cache sets 0x76c, 0x76e, 0x76f (`.InitBackgroundSprite` M l. 61886–61888: 6 × 0x5c×0x5c,
+        // 6 per row, flag 0).
+        all += [set(0x76c, 6, 0x5c, 0x5c, 6), set(0x76e, 6, 0x5c, 0x5c, 6), set(0x76f, 6, 0x5c, 0x5c, 6)]
         all.append(one(placeholderPict))
         // BN: every face `.InitBonusSprite` loads (`BonusSprite.sheets`; the level-1/2 entries above are the same sheets).
         var table = Dictionary(uniqueKeysWithValues: all)
@@ -379,6 +382,12 @@ public enum SetupFaces {
                 } else {
                     face(Int16(t), 0, .handle)
                 }
+            case 0x76c...0x76f:                                // the dart traps (M l. 62495–62520; ES)
+                // `BackgroundSprite.setupDartTrap`: p1 / p2 defaults written back; `+0xc0` stays 0 — the Handle faces
+                // cell `+0x46 >> 2` = 4 of its cache set (0x76d: 0x76c's, mirrored by the Handle). None placed on
+                // levels 1–5.
+                record = BackgroundSprite.setupDartTrap(&s, record: p)
+                face(BackgroundSprite.dartTrapSheet(Int16(t)), Int(s.phase >> 2), .handle)
             case 0xcb1:                                        // level exit: `+0xc0 = 0` (l. 62593)
                 s.hotRect = IdleSprites.Rect(top: 0xc, left: 0xc, bottom: 0x54, right: 0x54)   // l. 62594 (W4)
             default:

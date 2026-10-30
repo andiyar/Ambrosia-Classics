@@ -95,6 +95,12 @@ type numbers deliberately reuse the spawner's type space: 0x6a9/0x6d6 are also W
 0x753/0x754 Dillo range, 0x771..0x774 the dart-trap range, 0x77b Chief range — class is decided by
 `+0x4c`, never by the type alone.
 
+⚑ ES build (2026-10-31, Phase 5) — two corrections to this table, read from the dump: (1) the 0x71f row's facing is
+`+0x17e = (vx > 0)`, not `(vx ≤ 0)` — raw `1005c408..1005c428` (`lwz r5,0x24`; `eqv`/`subfc`/`addze`; `stb r0,0x17e`),
+M l. 51768–51770: 0 for vx ≤ 0, 1 for vx > 0. (2) The 0x6f4 Wraith shot homes **19** frames, not 20 (§1.5 too): the
+Handle adds 1 to the age `+0xa6` (M l. 51650) before the `+0xa6 < 0x14` test (M l. 51725), so ages 1…19 take the
+impulse (|v| ≤ 19·0x8c).
+
 ### 1.3 Tile and sprite collisions  [HIGH]
 `.HitEnemyShotTileSprite(s, pos, kind, layer)` (l. 6396–6560), skipped entirely when `+0x16c ≠ 0`
 (set only on Xichra's darts → they fly through walls) or when the debug key 0x32 is held with the

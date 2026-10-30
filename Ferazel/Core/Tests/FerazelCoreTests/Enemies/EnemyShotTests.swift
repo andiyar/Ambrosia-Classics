@@ -208,6 +208,15 @@ final class EnemyShotTests: XCTestCase {
         w.active.update(id: rock) { $0.classWord15c = 1 }
         EnemyShot.handle(world: w, id: rock, solver: solver, lights: &lt, effects: 1, faceBounds: { _ in bounds })
         XCTAssertEqual(try slot(w, rock).phase, 0xf)
+        // The arm's own bottom test, before the move (M l. 51818: `hdr+0xb282·0x20 + 0x20 < +0xa`): at rows + 0x21,
+        // rising 0x22 px, it dies though the common test after the move (M l. 51879) would pass it; at rows + 0x20 not.
+        for (dy, gone) in [(0x21, true), (0x20, false)] {
+            let c = try XCTUnwrap(EnemyShot.spawn(w, type: 0x77b, x: 300, y: rows + dy, layer: 5))
+            w.active.update(id: c) { $0.gravity = 0; $0.vy = -(0x22 << 8) }
+            EnemyShot.handle(world: w, id: c, solver: solver, lights: &lt, effects: 1, faceBounds: { _ in bounds })
+            XCTAssertEqual(try slot(w, c).y, rows + dy - 0x22)
+            XCTAssertEqual(try slot(w, c).dead, gone, "rows + \(dy)")
+        }
         // The fireball 0x46a: layer 8, rect (6, 6, 0x2a, 0x1a), `+0x88` 0, R(5) twice at Setup; each Handle on a level
         // with no flame (`hdr+0x2722 == 0`) R(3) + 5 sparks: R(0x24), R(0x24), R(2) each (M l. 51822–51848).
         XCTAssertEqual(w.level.header.flameMode, 0)
@@ -217,12 +226,36 @@ final class EnemyShotTests: XCTestCase {
         XCTAssertEqual(w.rng.seed, r2.seed)
         XCTAssertEqual([Int(try slot(w, fb).layer), try slot(w, fb).lightOverlay ? 1 : 0], [8, 0])
         XCTAssertEqual(try slot(w, fb).hotRect, IdleSprites.Rect(top: 6, left: 6, bottom: 0x1a, right: 0x2a))
+        // Each spark `NewParticle(1, 0xbe, (y + (vy >> 8) + 6 + dv, x + (vx >> 8) + 6 + dh), R(2) + 1, 0, 0, 0, 1)`,
+        // from the position before the move (M l. 51829–51846).
+        w.active.update(id: fb) { $0.vx = 0x3ff; $0.vy = -0x280 }
         let n = Int(r2.next(3)) + 5
-        for _ in 0..<n { _ = (r2.next(0x24), r2.next(0x24), r2.next(2)) }
+        var sparks: [[Int]] = []
+        for _ in 0..<n {
+            let dh = Int(r2.next(0x24)), dv = Int(r2.next(0x24)), sh = Int(r2.next(2)) + 1
+            sparks.append([1, 0xbe, (300 + 3 + 6 + dh) << 8, (100 - 3 + 6 + dv) << 8, sh, 0, 0, 0, 1])
+        }
         let p0 = w.particles.counters.count
+        let alive0 = w.particles.records.map(\.alive)
         frame(w, fb, solver)
         XCTAssertEqual(w.rng.seed, r2.seed)
         XCTAssertEqual(Int(w.particles.counters.count - p0), n)
+        XCTAssertEqual(w.particles.records.indices.filter { w.particles.records[$0].alive && !alive0[$0] }.map {
+            let q = w.particles.records[$0]
+            return [Int(q.kind), Int(q.gravity), Int(q.x), Int(q.y), Int(q.shape), Int(q.vx), Int(q.vy), Int(q.age),
+                    Int(q.mode)]
+        }, sparks)
+        // Its Kill (M l. 52074–52079): R(13000), `.STPlay3DSoundPitched(301, 1, 0x100, +0xe, R + 44000)`, the particles
+        // (2, 2, 2, 0x96, 0x66) — none with no face — and `+0xe9 = 1`.
+        var r3 = w.rng
+        let pitch = Int32(r3.next(13000)) + 44000
+        w.player.cues = []
+        var lk = LightTable()
+        EnemyShot.kill(w, shot: fb, lights: &lk, effects: 1)
+        XCTAssertEqual(w.player.cues, [PlayerCue(call: .threeDPitched, snd: 301, priority: 1, volume: 0x100,
+                                                 position: try slot(w, fb).centre, rate: pitch)])
+        XCTAssertEqual(w.rng.seed, r3.seed)
+        XCTAssertTrue(try slot(w, fb).dead)
     }
 
     func testBoulderBounceBudget() throws {
@@ -255,13 +288,16 @@ final class EnemyShotTests: XCTestCase {
         XCTAssertEqual(s0.hotRect, IdleSprites.Rect(top: 8, left: 8, bottom: 0x18, right: 0x18))
         // The budget on FG contacts (M l. 52113–52138): each counted contact plays snd 436 (`*_DAT_100a03ac`, vol 0x55,
         // `.STPlay3DSoundRand` at `+0xe`), `+0x150` + 1 and `+0x154 = 1`; killed when `+0x150 ≥ 0`. The Handle re-arms
-        // `+0x154` (− 1 a frame, M l. 51882–51884); while it is 1 the FG arm does nothing.
+        // `+0x154` (− 1 a frame, M l. 51882–51884, never below 0); while it is 1 the FG arm does nothing. Each contact
+        // below follows one real Handle call in the open (no tile) — the gate's only re-arm.
         let solver = TileSolver(world: w)
         let start = s0.bounceCount
         var contacts = 0
         while try !slot(w, b0).dead && contacts < 10 {
+            let gate = try slot(w, b0).classWord154
+            frame(w, b0, solver)
+            XCTAssertEqual(try slot(w, b0).classWord154, max(gate - 1, 0), "contact \(contacts + 1)")
             intoFloor(w, b0)
-            w.active.update(id: b0) { $0.classWord154 = 0 }
             var r = w.rng
             let rate = r.soundRate()
             w.player.cues = []
@@ -304,6 +340,23 @@ final class EnemyShotTests: XCTestCase {
         intoFloor(w, f, vx: 0x1195)
         tile(w, f, solver)
         XCTAssertTrue(try slot(w, f).dead)
+        // The edges (M l. 52119–52132: |vx| < 0x1195 and |vy| < 0x1965 is slow), with a budget the contact leaves < 0.
+        for (vx, vy, dead) in [(Int32(0x1194), Int32(0x400), false), (0, 0x1965, true), (0, 0x1964, false)] {
+            let g = try XCTUnwrap(EnemyShot.spawn(w, type: 0x6e1, x: 0, y: 0, layer: 9))
+            w.active.update(id: g) { $0.bounceCount = -5 }
+            intoFloor(w, g, vy: vy, vx: vx)
+            tile(w, g, solver)
+            XCTAssertEqual(try slot(w, g).bounceCount, -4)
+            XCTAssertEqual(try slot(w, g).dead, dead, "vx \(vx) vy \(vy)")
+        }
+        // BG (and crunch) contacts skip the types 0x46a…0x46f (M l. 52163): no bounce, no budget.
+        for (type, bounces) in [(Int16(0x469), true), (0x46a, false), (0x46f, false), (0x470, true)] {
+            let g = try XCTUnwrap(EnemyShot.spawn(w, type: type, x: 0, y: 0, layer: 9))
+            intoFloor(w, g)
+            tile(w, g, solver, layer: .background)
+            XCTAssertEqual([try slot(w, g).vy, try slot(w, g).bounceCount], bounces ? [-((0x400 * 0xa0) >> 8), 1] : [0x400, 0],
+                           "type \(type)")
+        }
         // The split (`.KillEnemyShot` M l. 51995–52022): n = R(3) + 3 shards 0x6e6; shard i (1…n): R(16) (dy), R(16) (dx),
         // `MTNewSprite(0x6e6, x + dx, y + dy, the parent's layer, −1, .SetupEnemyShotSprite)` — its Setup's R(5) —
         // `+0x154 = +0x150 = 1`, vx = parent vx + R(200i) − 100i, vy = parent vy + R(200i) − 100i. 0x6e1 then just dies.
@@ -357,12 +410,28 @@ final class EnemyShotTests: XCTestCase {
         EnemyShot.hit(w, shot: b, other: pid, lights: &lights, effects: 1)
         XCTAssertTrue(try slot(w, b).dead)
         XCTAssertEqual(w.active.sprites.filter { $0.handler == .effect && $0.type == EffectSprite.bigExplosion }.count, 2)
+        // The whole list against the player (M l. 51925–51931): spared 0x6e6, 0x709, 0x712, 0x76c…0x775, 0x6f4, 0x753,
+        // 0x754, 0x71f, 0, 1, 0x77b, 0x46a…0x46c; killed one outside each range and any other type — except 1, 0x6a9
+        // and 0x6d6, which this Kill never takes (M l. 51934–51936).
+        for (type, killed) in [(Int16(0x6e6), false), (0x709, false), (0x712, false), (0x76b, true), (0x76c, false),
+                               (0x775, false), (0x776, true), (0x6f4, false), (0x753, false), (0x754, false),
+                               (0x71f, false), (0, false), (1, false), (0x77b, false), (0x469, true), (0x46a, false),
+                               (0x46c, false), (0x46d, true), (0x6a9, false), (0x6d6, false), (0x6a5, true)] {
+            let k = try XCTUnwrap(EnemyShot.spawn(w, type: type, x: 300, y: 120, layer: 9))
+            EnemyShot.hit(w, shot: k, other: pid, lights: &lights, effects: 1)
+            XCTAssertEqual(try slot(w, k).dead, killed, "type \(type)")
+        }
         // A player shot kills 0x6e1 / 0x6e2 / 0x753 (M l. 51927–51928); a Box spout does not eat its own bomb
         // (Boxes 0x5aa…0x5b3 are left out, M l. 51942–51944).
         let ps = try XCTUnwrap(PlayerShot.spawn(w, type: 0x0001, x: 0, y: 0))
         let b2 = try XCTUnwrap(EnemyShot.spawn(w, type: 0x6e2, x: 300, y: 120, layer: 9))
         EnemyShot.hit(w, shot: b2, other: ps, lights: &lights, effects: 1)
         XCTAssertTrue(try slot(w, b2).dead)
+        for (type, killed) in [(Int16(0x6e1), true), (0x753, true), (0x712, false), (0x6e6, false)] {
+            let k = try XCTUnwrap(EnemyShot.spawn(w, type: type, x: 300, y: 120, layer: 9))
+            EnemyShot.hit(w, shot: k, other: ps, lights: &lights, effects: 1)
+            XCTAssertEqual(try slot(w, k).dead, killed, "type \(type) vs a player shot")
+        }
         let spout = try XCTUnwrap(w.newSprite(type: 0x5aa, x: 300, y: 120, layer: 10, handler: .box))
         let b3 = try XCTUnwrap(EnemyShot.spawn(w, type: 0x6e2, x: 300, y: 120, layer: 9))
         EnemyShot.hit(w, shot: b3, other: spout, lights: &lights, effects: 1)
@@ -370,6 +439,22 @@ final class EnemyShotTests: XCTestCase {
         let box = try XCTUnwrap(w.newSprite(type: 0x424, x: 300, y: 120, layer: 10, handler: .box))
         EnemyShot.hit(w, shot: b3, other: box, lights: &lights, effects: 1)
         XCTAssertTrue(try slot(w, b3).dead, "a solid Box outside 0x5aa…0x5b3 with no one-way top kills it")
+        // The range's ends (M l. 51942–51944), a Statue, a wall-passing shot (`+0x16c`), a shard (never by this arm).
+        // A Box with a one-way top or a surface function (`+0x185`, `+0x1e8`) kills only on a `.PlatformBounce`
+        // contact — none for a shot far from it (M l. 51946–51960).
+        func versus(_ type: Int16, _ handler: SpriteHandler, shot: Int16 = 0x6e2, oneWay: Bool = false,
+                    rope: Bool = false, passes: Int32 = 0, x: Int = 300) throws -> Bool {
+            let o = try XCTUnwrap(w.newSprite(type: type, x: x, y: 120, layer: 10, handler: handler))
+            w.active.update(id: o) { $0.oneWay = oneWay; $0.rope = rope ? RopeBlock() : nil }
+            let k = try XCTUnwrap(EnemyShot.spawn(w, type: shot, x: 300, y: 120, layer: 9))
+            w.active.update(id: k) { $0.classWord16c = passes }
+            EnemyShot.hit(w, shot: k, other: o, lights: &lights, effects: 1)
+            return try slot(w, k).dead
+        }
+        XCTAssertEqual(try [versus(0x5a9, .box), versus(0x5b3, .box), versus(0x5b4, .box), versus(0x424, .statue),
+                            versus(0x424, .box, passes: 1), versus(0x424, .box, shot: 0x6e6),
+                            versus(0x424, .box, oneWay: true, x: 3000), versus(0x424, .box, rope: true, x: 3000)],
+                       [true, false, true, true, false, false, false, false])
         // A Pentashield orb (a player shot 0x50) against an enemy shot (`.HitPlayerShotSprite` M l. 50997–51001):
         // `.STPlay3DSound(303, 1, 0x55, other +0xe)`, `.KillPlayerShot(orb, 1, 1)`, `.KillEnemyShot(other)`. A spout
         // bomb (layer 10) before an orb (11): its own Hit splits it, then the orb's splits it again
@@ -384,17 +469,27 @@ final class EnemyShotTests: XCTestCase {
         EnemyShot.hit(w, shot: b4, other: orb, lights: &lights, effects: 1)
         XCTAssertEqual(shots(w, 0x6e6).count - shards0, n1)
         w.player.cues = []
+        var r4 = w.rng
+        let orbRate = r4.soundRate()
+        let o0 = try slot(w, orb)                                            // the Cleanup's centre (`+0xe`) first
+        let orbCentre = SpriteSlot.Point(x: o0.x + o0.hotRect.left + ((o0.hotRect.right - o0.hotRect.left) >> 1),
+                                         y: o0.y + o0.hotRect.top + ((o0.hotRect.bottom - o0.hotRect.top) >> 1))
         PlayerShotHits.hit(w, shot: orb, other: b4, effects: 1, lights: &lights)
         XCTAssertGreaterThan(shots(w, 0x6e6).count - shards0, n1, "split twice")
-        XCTAssertEqual(w.player.cues.first, PlayerCue(call: .threeD, snd: 303, priority: 1, volume: 0x55,
-                                                      position: SpriteSlot.Point(x: 316, y: 136)))
+        // `.KillPlayerShot(orb, 1, 1)`: with hits left the orb's snd 423 (`STPlay3DSoundRand`, the sound flag 1).
+        XCTAssertEqual(Array(w.player.cues.prefix(2)), [
+            PlayerCue(call: .threeD, snd: 303, priority: 1, volume: 0x55, position: SpriteSlot.Point(x: 316, y: 136)),
+            PlayerCue(call: .threeDRand, snd: 423, priority: 1, volume: 0x100, position: orbCentre, rate: orbRate),
+        ])
         XCTAssertEqual(try slot(w, orb).stackX, 2, "one of the orb's three hits")
         // The Chief's boulder against a player shot: snd 303 vol 0xab, `.KillPlayerShot(s, 0, 1)` (M l. 50991–50994).
         let ps2 = try XCTUnwrap(PlayerShot.spawn(w, type: 0x0001, x: 0, y: 0))
         let rock = try XCTUnwrap(EnemyShot.spawn(w, type: 0x77b, x: 300, y: 120, layer: 5))
         w.player.cues = []
         PlayerShotHits.hit(w, shot: ps2, other: rock, effects: 1, lights: &lights)
-        XCTAssertEqual(w.player.cues.first?.volume, 0xab)
+        // The sound flag 0: snd 303 only — no 301 from `.KillPlayerShot`.
+        XCTAssertEqual(w.player.cues, [PlayerCue(call: .threeD, snd: 303, priority: 1, volume: 0xab,
+                                                 position: try slot(w, rock).centre)])
         XCTAssertTrue(try slot(w, ps2).dead)
         XCTAssertFalse(try slot(w, rock).dead)
         // A spring kills an enemy shot (`.HitBackgroundSprite` l. 63721–63723) — the bomb explodes, no launch; a cannon
@@ -443,15 +538,39 @@ final class EnemyShotTests: XCTestCase {
         w.active.update(id: egg) { $0.vx = 0x200; $0.groundKind = 1 }
         EnemyShot.handle(world: w, id: egg, solver: solver, lights: &lt, effects: 1)
         XCTAssertEqual(try slot(w, egg).vx, 0)
+        // Its contact (M l. 52136–52146): the bounce (restitution 0xa0), then |vy| < 300 → vx = vy = 0, gravity 0x200;
+        // no budget, no kill. A fall at 479 rebounds to −299 and stops; at 480 to −300 and goes on.
+        for (vy, stops) in [(Int32(479), true), (480, false)] {
+            let e = try XCTUnwrap(EnemyShot.spawn(w, type: 0x753, x: 0, y: 0, layer: 0))
+            intoFloor(w, e, vy: vy, vx: 0x80)
+            tile(w, e, solver)
+            let q = try slot(w, e)
+            XCTAssertEqual([q.vx, q.vy, Int32(q.gravity), q.bounceCount], stops ? [0, 0, 0x200, 0] : [0x80, -300, 0xaf, 0],
+                           "vy \(vy)")
+            XCTAssertFalse(q.dead)
+        }
         // The fuse: `.KillEnemyShot` inside the Handle — snd 435, the Effect 0x4b7 at (x − 0x2a, y − 0x2a), eight smoke
-        // puffs 0x442.
+        // puffs 0x442, each after its Setup's 45 sparks: R(0x96) (the push) and `+0x46 = R(7)` (M l. 52049–52059).
         w.active.update(id: egg) { $0.classWord15c = 1; $0.vx = 0; $0.vy = 0; $0.gravity = 0 }
         let big0 = w.active.sprites.filter { $0.handler == .effect && $0.type == EffectSprite.bigExplosion }.count
         let smoke0 = w.active.sprites.filter { $0.handler == .effect && $0.type == EffectSprite.smoke }.count
+        let smokeIDs = Set(w.active.sprites.filter { $0.handler == .effect && $0.type == EffectSprite.smoke }.map(\.id))
         w.player.cues = []
         let ex = try slot(w, egg)
+        var r5 = w.rng
+        _ = r5.soundRate()
+        for _ in 0..<0x2d { _ = (r5.next(2000), r5.next(2000), r5.next(2)) }      // the 0x4b7's sparks
+        var puffs: [Int16] = []
+        for _ in 0..<8 {
+            for _ in 0..<0x2d { _ = (r5.next(2000), r5.next(2000), r5.next(2)) }  // the 0x442's (no plume, no light)
+            _ = r5.next(0x96)
+            puffs.append(r5.next(7))
+        }
         EnemyShot.handle(world: w, id: egg, solver: solver, lights: &lt, effects: 1)
         XCTAssertTrue(try slot(w, egg).dead)
+        XCTAssertEqual(w.rng.seed, r5.seed)
+        XCTAssertEqual(w.active.sprites.filter { $0.handler == .effect && $0.type == EffectSprite.smoke
+                                                 && !smokeIDs.contains($0.id) }.map(\.phase), puffs)
         XCTAssertEqual(w.player.cues.first?.snd, 435)
         let bigs = w.active.sprites.filter { $0.handler == .effect && $0.type == EffectSprite.bigExplosion }
         XCTAssertEqual(bigs.count, big0 + 1)
@@ -520,6 +639,25 @@ final class EnemyShotTests: XCTestCase {
             XCTAssertNotEqual(w.rng.seed, seed, "the hurt's own draws")
             XCTAssertTrue(try slot(w, id).dead)
         }
+        // The face test is vx < 1 (M l. 51742–51760): vx 0 takes 0x455 / 0x457, vx 1 0x454 / 0x456.
+        for (type, vx, pict) in [(Int16(0x709), Int32(0), Int16(0x455)), (0x709, 1, 0x454), (0x712, 0, 0x457),
+                                 (0x712, 1, 0x456)] {
+            let id = try XCTUnwrap(EnemyShot.spawn(w, type: type, x: 300, y: 100, layer: 5))
+            w.active.update(id: id) { $0.vx = vx }
+            frame(w, id, solver)
+            XCTAssertEqual(try slot(w, id).face?.pict, pict, "type \(type) vx \(vx)")
+        }
+        // An EnemyShot 0x77b with `+0x14c ≠ 0` is passed over (M l. 49810–49812; no code writes it — enemy-shots-and-
+        // damage-2 §4.1); the test is the EnemyShot Handle's: another Handle's 0x77b with it set still hurts 0x70.
+        w.active.update(id: pid) { $0.hp = 1000; $0.invulnerable = 0 }
+        let held = try XCTUnwrap(EnemyShot.spawn(w, type: 0x77b, x: 300, y: 100, layer: 5))
+        w.active.update(id: held) { $0.classTimer = 1; $0.vx = -2000 }
+        HitPlayerSprite.hit(w, player: pid, other: held)
+        XCTAssertEqual([Int(try slot(w, pid).hp), Int(try slot(w, held).vx), try slot(w, held).dead ? 1 : 0], [1000, -2000, 0])
+        let other = try XCTUnwrap(w.newSprite(type: 0x77b, x: 300, y: 100, layer: 5, handler: .walker) { $0.hp = 100 })
+        w.active.update(id: other) { $0.classTimer = 1 }
+        HitPlayerSprite.hit(w, player: pid, other: other)
+        XCTAssertEqual(try slot(w, pid).hp, 1000 - 0x70)
         // The rest of step 7's type table (M l. 49852–49891): 0x46a 0x70, 0x46c 0xa8 (5 coins, no draw), 0x6f4 0x70,
         // 0x71f 0x70, 0x753 / 0x754 / 0x771…0x774 their `+0xa4`, 0x775 0x38, 0x77b 0x70. A landed hurt zeroes the stagger
         // `_DAT_100a0570` (M l. 49910–49912); every shot but 0x77b is killed, landed or not; 0x77b: `+0x15c = 1`, vx ×
@@ -644,6 +782,24 @@ final class EnemyShotTests: XCTestCase {
             w.active.update(id: e) { $0.centre.x = pr.x + pr.hotRect.right + dx }
             XCTAssertEqual(EnemyShot.shieldBlock(w, player: pid, shot: e, lights: &lights, effects: 1), blocked, "dx \(dx)")
         }
+        // ax takes the shot's speed off (M l. 48380: `+0x10 − (+0x24 >> 8)`, arithmetic): at right − 10, vx −0x100 and
+        // −0xff (>> 8 = −1) put ax one past the edge; at right − 9 vx 0x100 and at right − 11 vx −0x100 put it on it.
+        for (dx, vx, blocked) in [(-10, Int32(-0x100), true), (-10, -0xff, true), (-9, 0x100, false), (-11, -0x100, false)] {
+            w.player.shieldRaise = 3
+            let e = try shotBeside(w, pid, 0x772, dx: 0, vx: vx)
+            w.active.update(id: e) { $0.centre.x = pr.x + pr.hotRect.right + dx }
+            XCTAssertEqual(EnemyShot.shieldBlock(w, player: pid, shot: e, lights: &lights, effects: 1), blocked,
+                           "dx \(dx) vx \(vx)")
+        }
+        // The left side, facing left, is strict too (M l. 48385: ax < player x + rect left + 10).
+        w.player.facing = 1
+        for (dx, blocked) in [(10, false), (9, true)] {
+            w.player.shieldRaise = 3
+            let e = try shotBeside(w, pid, 0x772, dx: 0, vx: 0)
+            w.active.update(id: e) { $0.centre.x = pr.x + pr.hotRect.left + dx }
+            XCTAssertEqual(EnemyShot.shieldBlock(w, player: pid, shot: e, lights: &lights, effects: 1), blocked, "dx \(dx)")
+        }
+        w.player.facing = 2
         // Facing left with the shot on the left: blocked (a spine 0x754 too).
         w.player.facing = 1
         w.player.shieldRaise = 6
@@ -714,6 +870,43 @@ final class EnemyShotTests: XCTestCase {
         w.player.centreY = 360
         BackgroundSprite.handle(world: w, id: trap) { _ in 92 }
         XCTAssertEqual(try slot(w, trap).phase, 0x11)
+        // The band is strict both sides (M l. 63398–63403: cy − d < pcy < cy + d; cy 306, d 50) and the side strict
+        // (pcx < cx 446): 256 / 356 and pcx 446 do not fire, 257 / 355 do.
+        func fires(_ type: Int16, px: Int16, py: Int16) throws -> Bool {
+            w.active.update(id: trap) { $0.type = type; $0.phase = 0x11; $0.counterA6 = 0 }
+            w.player.centreX = px
+            w.player.centreY = py
+            BackgroundSprite.handle(world: w, id: trap) { _ in 92 }
+            return try slot(w, trap).phase == 0x12
+        }
+        XCTAssertEqual(try [(Int16(100), Int16(256)), (100, 257), (100, 355), (100, 356), (446, 300), (445, 300)]
+                        .map { try fires(0x76d, px: $0.0, py: $0.1) }, [false, true, true, false, false, true])
+        // 0x76e (M l. 63376–63380): cx − d < pcx < cx + d and pcy ≤ cy + 0x23 (341); 0x76f (M l. 63411–63416): the
+        // same band and pcy > cy.
+        XCTAssertEqual(try [(Int16(396), Int16(300)), (397, 300), (495, 300), (496, 300), (446, 341), (446, 342)]
+                        .map { try fires(0x76e, px: $0.0, py: $0.1) }, [false, true, true, false, true, false])
+        XCTAssertEqual(try [(Int16(446), Int16(306)), (446, 307)].map { try fires(0x76f, px: $0.0, py: $0.1) },
+                       [false, true])
+        // The traps' Setup arm (`.SetupBackgroundSprite` M l. 62496–62520): after the common part, the cache marked,
+        // `+0x46 = 0x10`; the live record's p1 0 → 0x2d and p2 0 → 0x32 written back; `+0x14c` = `+0xa6` = p1,
+        // `+0x150` = p2; `SetRect(0x20, 0x20, 0x3c, 0x3c)`; both callbacks 0. The Handle's first call faces the cell
+        // 0x10 >> 2 = 4 (`.handle`) and arms it.
+        let ctx = SetupFaces.Context(level: w.level, playerX: 0)
+        for (type, p1, p2, sheet) in [(Int16(0x76d), Int16(0), Int16(0), Int16(0x76c)), (0x76f, 30, 40, 0x76f)] {
+            let rec = Placement(index: 5, flag: 0, byte1: 0, type: type, p1: p1, p2: p2, p3: 7, p4: 9, y: 300, x: 200)
+            let e = try SetupFaces.setup(rec, context: ctx)
+            let (q1, q2): (Int16, Int16) = p1 == 0 ? (0x2d, 0x32) : (p1, p2)
+            XCTAssertEqual([e.record.p1, e.record.p2, e.record.p3, e.record.p4], [q1, q2, 7, 9])
+            XCTAssertEqual([Int(e.slot.phase), Int(e.slot.classTimer), Int(e.slot.counterA6), Int(e.slot.classWord150),
+                            Int(e.slot.layer), Int(e.slot.hp)], [0x10, Int(q1), Int(q1), Int(q2), 1, 6])
+            XCTAssertEqual(e.slot.hotRect, IdleSprites.Rect(top: 0x20, left: 0x20, bottom: 0x3c, right: 0x3c))
+            XCTAssertEqual([e.slot.hasHit, e.slot.hasTileHit, e.slot.handler == .background], [false, false, true])
+            XCTAssertEqual([e.source == .handle ? 1 : 0, e.faceIndex, Int(e.sheet?.pict ?? 0), e.sheet?.count ?? 0,
+                            e.sheet?.cellWidth ?? 0, e.sheet?.cellHeight ?? 0], [1, 4, Int(sheet), 6, 0x5c, 0x5c])
+        }
+        XCTAssertEqual([CachedFaces.marks(type: 0x76c).sets, CachedFaces.marks(type: 0x76d).sets,
+                        CachedFaces.marks(type: 0x76e).sets, CachedFaces.marks(type: 0x76f).sets],
+                       [[0x76c], [0x76c], [0x76e], [0x76f]])
     }
 
     func testShieldBlockKillsOthers() throws {
@@ -778,10 +971,28 @@ final class EnemyShotTests: XCTestCase {
         var lights = LightTable()
         let wr = try shotBeside(w, pid, 0x6f4, dx: 20, vx: -0x300, vy: 0x100)
         w.active.update(id: wr) { $0.face = FaceRef(pict: 0x45d, index: 0, set: .encoded) }
+        /// The particles made since `alive0`: [kind, gravity, shape, age].
+        func made(since alive0: [Bool]) -> [[Int]] {
+            w.particles.records.indices.filter { w.particles.records[$0].alive && !alive0[$0] }.map {
+                let q = w.particles.records[$0]
+                return [Int(q.kind), Int(q.gravity), Int(q.shape), Int(q.age)]
+            }
+        }
+        /// Style 0x65 (`.ExplodeFaceIntoParticles` per pixel px: R(0x3c), R(0x3c), R(0x10), R(0xc) → kind −(px + 0x100),
+        /// gravity g + R(0xc), age 0x68 − R(0x10)) for `pixels`, shape 1.
+        func style65(_ r: inout FastRand, _ pixels: [Int], gravity g: Int) -> [[Int]] {
+            pixels.map { px in
+                _ = (r.next(0x3c), r.next(0x3c))
+                let r16 = Int(r.next(0x10)), r12 = Int(r.next(0xc))
+                return [-(px + 0x100), g + r12, 1, 0x68 - r16]
+            }
+        }
         var r = w.rng
-        for _ in 0..<3 { _ = (r.next(0x3c), r.next(0x3c), r.next(0x10), r.next(0xc)) }   // style 0x65, 3 pixels
+        let want = style65(&r, [10, 11, 12], gravity: 100)                          // (…, 1, 1, 1, 100, 0x65)
         let p0 = w.particles.counters.count
+        let alive0 = w.particles.records.map(\.alive)
         XCTAssertTrue(EnemyShot.shieldBlock(w, player: pid, shot: wr, lights: &lights, effects: 1))
+        XCTAssertEqual(made(since: alive0), want)
         var s = try slot(w, wr)
         XCTAssertEqual([s.vx, s.vy, s.classWord160], [0x300, -0x100 + 0x140, 1])
         XCTAssertFalse(s.dead)
@@ -805,9 +1016,38 @@ final class EnemyShotTests: XCTestCase {
         w.globals.inventory[0] = InventorySlot(id: 0, count: 0, field4: 0, field6: 0, isSpell: 0)
         w.player.shieldRaise = 3
         let wr2 = try shotBeside(w, pid, 0x6f4, dx: 20, vx: -0x300)
+        // Two rows of three: every row and pixel taken (steps 1, 1). 0x6f4: gravity 0, style 0x65 (M l. 52069–52072).
+        let face2 = ParticleFace(frame: [0, 0, 2, 3], bounds: [0, 0, 2, 3],
+                                 tokens: tok(1, 8) + tok(2, 3) + [10, 11, 12, 0] + tok(1, 8) + tok(2, 3) + [20, 21, 22, 0]
+                                    + tok(0, 0))
+        w.particleFaces = ParticleFaces(sprite: { _ in face2 })
+        w.active.update(id: wr2) { $0.face = FaceRef(pict: 0x45d, index: 0, set: .encoded) }
+        var r2 = w.rng
+        let want2 = style65(&r2, [10, 11, 12, 20, 21, 22], gravity: 0)
+        let alive2 = w.particles.records.map(\.alive)
         XCTAssertTrue(EnemyShot.shieldBlock(w, player: pid, shot: wr2, lights: &lights, effects: 1))
         XCTAssertTrue(try slot(w, wr2).dead)
         XCTAssertEqual(try slot(w, wr2).vx, -0x300)
+        XCTAssertEqual(made(since: alive2), want2)
+        XCTAssertEqual(w.rng.seed, r2.seed)
+        // The darts and the spine (M l. 52086–52089): `+0xe9 = 1`, then (…, 1, 1, 1, 100, 100) — style 100 per pixel:
+        // R(0x14), R(0x2ee), R(100), R(0x1e) → kind −(px + 0x100), gravity 100 + R(0x1e), age 0x62 − R(0x14).
+        for type: Int16 in [0x754, 0x771] {
+            let k = try XCTUnwrap(EnemyShot.spawn(w, type: type, x: 300, y: 100, layer: 0))
+            w.active.update(id: k) { $0.face = FaceRef(pict: type, index: 0, set: .encoded) }
+            var r3 = w.rng
+            let want3: [[Int]] = [10, 11, 12, 20, 21, 22].map { px in
+                let r20 = Int(r3.next(0x14))
+                _ = (r3.next(0x2ee), r3.next(100))
+                let r30 = Int(r3.next(0x1e))
+                return [-(px + 0x100), 100 + r30, 1, 0x62 - r20]
+            }
+            let alive3 = w.particles.records.map(\.alive)
+            EnemyShot.kill(w, shot: k, lights: &lights, effects: 1)
+            XCTAssertTrue(try slot(w, k).dead)
+            XCTAssertEqual(made(since: alive3), want3, "type \(type)")
+            XCTAssertEqual(w.rng.seed, r3.seed)
+        }
     }
 
     // MARK: - the spouts
@@ -853,6 +1093,39 @@ final class EnemyShotTests: XCTestCase {
         fire()
         XCTAssertEqual(shots(w, 0x6e1).count, 1)
         XCTAssertEqual(shots(w, 0x6e2).count, 1)
+        // The other speeds (M l. 60496–60540): level 4's 1453 (rec 68: p1 57, p4 0) and, as fixtures, rec 28's spout
+        // retyped 1451 / 1452 (no level 1–5 places them): 1451 vx = R(300) − 0x96, vy = −3000 − R(300); 1452 vx =
+        // R(600) + 0xaf0, vy = −(R(700) + 500); 1453 vx = −(R(600) + 0xaf0), vy = −(R(700) + 500).
+        XCTAssertEqual([w.records[68].type, w.records[68].p1, w.records[68].p4], [1453, 57, 0])
+        setP4(57, 1)
+        for (rec, type) in [(68, Int16(0x5ad)), (28, 0x5ab), (28, 0x5ac)] {
+            var sp = try SetupFaces.setup(w.records[rec], context: SetupFaces.Context(level: w.level, playerX: 0)).slot
+            sp.type = type
+            let id = w.active.insert(sp)
+            var r = w.rng
+            _ = r.next(5)
+            _ = r.next(2)
+            if 0x56 < r.next(100) { _ = r.next(5) }
+            let vx: Int32, vy: Int32
+            switch type {
+            case 0x5ab:
+                vx = Int32(r.next(300)) - 0x96
+                vy = -3000 - Int32(r.next(300))
+            case 0x5ac:
+                vx = Int32(r.next(600)) + 0xaf0
+                vy = -(Int32(r.next(700)) + 500)
+            default:
+                vx = -(Int32(r.next(600)) + 0xaf0)
+                vy = -(Int32(r.next(700)) + 500)
+            }
+            let t = r.next(30) + 50
+            let before = Set(shots(w, 0x6e1).map(\.id))
+            BoxSprite.handle(world: w, id: id, solver: solver, lights: &lights, effects: 1)
+            XCTAssertEqual(w.rng.seed, r.seed, "type \(type)")
+            XCTAssertEqual(try slot(w, id).counterA6, t, "type \(type)")
+            XCTAssertEqual(shots(w, 0x6e1).filter { !before.contains($0.id) }.map { [Int($0.vx), Int($0.vy)] },
+                           [[Int(vx), Int(vy)]], "type \(type)")
+        }
         // With all 700 records in use: no Setup, no speed draws — only the re-arm's R(30) (Ruling 16).
         while w.active.sprites.count < SpriteWorld.recordCount { _ = w.active.insert(SpriteSlot(type: 1, x: 0, y: 0)) }
         w.active.update(id: k) { $0.counterA6 = 0 }

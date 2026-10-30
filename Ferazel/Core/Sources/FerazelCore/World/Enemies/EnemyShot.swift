@@ -641,8 +641,9 @@ public enum EnemyShot {
     /// - 0x6f4 with `.HasItem(0xf)`: once (`+0x160 == 0`) snd 303, vx and vy negated, vy + 0x140, `+0x160 = 1`,
     ///   `.ExplodeFaceIntoParticles(+0xc0, +0xa, 1, 1, 1, 100, 0x65)` — not killed;
     /// - every other shot: snd 303, `.KillEnemyShot`.
-    /// The non-shot arm of the body (the Kill proc `+0x50` / `+0xe9 = 1`, M l. 48429–48434) sits behind the same
-    /// EnemyShot test and is unreachable — not built.
+    /// The body's second Handle test (M l. 48392, the same `PTR_PTR_100a0488` the gate read at M l. 48389) has a
+    /// non-shot `else` (M l. 48430–48435): the Kill proc `+0x50`, or `+0xe9 = 1` without one (`EnemyCommon.killProc`).
+    /// Built as read; the gate makes it unreachable.
     @discardableResult
     public static func shieldBlock(_ w: SpriteWorld, player pID: Int, shot oID: Int, lights: inout LightTable,
                                    effects: Int16) -> Bool {
@@ -655,6 +656,10 @@ public enum EnemyShot {
             return false
         }
         w.player.shieldRaise = 7
+        guard BackgroundSprite.runs(o, .enemyShot) else {
+            EnemyCommon.killProc(w, id: oID)                            // M l. 48430–48435: unreachable
+            return true
+        }
         let metal = PlayerCue(call: .threeD, snd: metalSound, priority: 1, volume: 0x100, position: p.centre)
         let t = o.type
         if (0x76c...0x775).contains(t) || t == spine {

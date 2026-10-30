@@ -5,10 +5,10 @@ import Foundation
 /// from the class caches (plants 0xa8c…, tunnels 3000…). Part 2 (W2b, below): cannons 0x442… (p1 0) and their
 /// captives (`.TurnIntoCannoned`, `.HandleCannonedSprite`), springs 0x47e…0x481 (`.SuperSpring`), the wall tunnels'
 /// occluder window, passages 0xb54 / 0xb55 (the Handle's face; the jump is `HitPlayerSprite`'s), and
-/// `.HitBackgroundSprite`. Part 3 (LV3, below): the retracting spikes 0x730…0x733. ES: the dart traps' Handle arm
-/// 0x76c…0x76f (`dartTrap`, built as read — their Setup arm is not: `SetupFaces` refuses them, first placed on level
-/// 22). // later: fire 0x4b8 / 0x4bb…0x4bd, 0x73f / 0x740, 0xb4a…0xb4d, 0xbf4, trees 0xc08…0xc0f, the dart traps'
-/// Setup arm — none placed on levels 1–5.
+/// `.HitBackgroundSprite`. Part 3 (LV3, below): the retracting spikes 0x730…0x733. ES: the dart traps 0x76c…0x76f,
+/// Handle arm (`dartTrap`) and Setup arm (`setupDartTrap`), built as read — first placed on level 22, unreachable on
+/// levels 1–5. // later: fire 0x4b8 / 0x4bb…0x4bd, 0x73f / 0x740, 0xb4a…0xb4d, 0xbf4, trees 0xc08…0xc0f — none
+/// placed on levels 1–5.
 public enum BackgroundSprite {
     /// The radial bars (0x5c8…0x5cc) and balls (0x5cd…0x5d1).
     public static let maces: ClosedRange<Int16> = 0x5c8...0x5d1
@@ -416,7 +416,7 @@ extension BackgroundSprite {
     ///   vx / vy (±0x1000, 0) / (0, ∓0x1000) — the stores dropped with no record (the binary writes record 0); `+0x46`
     ///   + 1; the cell 0;
     /// - above: `+0xa6` − 1, below 1 → `+0x46 = 0`, `+0xa6 = (short) +0x14c`.
-    /// Then the Handle's tail (`.StandardSpriteCleanup`). Unreachable on levels 1–5 (the Setup arm is refused).
+    /// Then the Handle's tail (`.StandardSpriteCleanup`). Unreachable on levels 1–5 (no trap placed before level 22).
     static func dartTrap(_ w: SpriteWorld, id: Int) {
         guard let s = w.active.record(id: id) else { return }
         let t = s.type, sheet = dartTrapSheet(t)
@@ -940,5 +940,23 @@ extension BackgroundSprite {
                 s.hotRect = IdleSprites.Rect(top: 0xc, left: 7, bottom: 0x74, right: 0x20)
             }
         }
+    }
+
+    /// The dart traps' Setup arm (`.SetupBackgroundSprite` M l. 62495–62520, after the common part `setupCommon`): the
+    /// cache marked (0x76c / 0x76d `_DAT_100a0aec`, 0x76e `0ae8`, 0x76f `0ae4`; `CachedFaces.marks`); `+0x46 = 0x10`;
+    /// the live record's p1 0 → 0x2d and p2 0 → 0x32 **written back**; `+0x14c` = `+0xa6` = p1, `+0x150` = p2;
+    /// `SetRect(0x20, 0x20, 0x3c, 0x3c)`; `+0x5c` = `+0x1f8` = 0. `+0xc0` stays 0: the Handle faces it (`dartTrap`).
+    /// First placed on level 22 (Mlvl 22, 30, 31, 45, 62) — unreachable on levels 1–5. Returns the record as written.
+    public static func setupDartTrap(_ s: inout SpriteSlot, record p: Placement) -> Placement {
+        s.phase = 0x10
+        let rec = Placement(index: p.index, flag: p.flag, byte1: p.byte1, type: p.type, p1: p.p1 == 0 ? 0x2d : p.p1,
+                            p2: p.p2 == 0 ? 0x32 : p.p2, p3: p.p3, p4: p.p4, y: p.y, x: p.x)
+        s.classTimer = Int32(rec.p1)
+        s.counterA6 = rec.p1
+        s.classWord150 = Int32(rec.p2)
+        s.hotRect = IdleSprites.Rect(top: 0x20, left: 0x20, bottom: 0x3c, right: 0x3c)
+        s.hasHit = false
+        s.hasTileHit = false
+        return rec
     }
 }
