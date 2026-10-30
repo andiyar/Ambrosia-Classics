@@ -381,24 +381,33 @@ final class ButtonGateTests: XCTestCase {
         let count = w.active.sprites.count
         for _ in 0..<3 { frame() }
         XCTAssertEqual([Int(w.rng.seed), Int(w.active.sprite(id: k)!.counterA6)], [Int(seed), 0])
-        // Button 31 pressed: at `+0xa6` 0 the spout would fire — ◇ no sprite (Phase 5), its R(300), R(400) made, then
-        // `+0xa6 = R(30) + 50`.
+        // Button 31 pressed: at `+0xa6` 0 the spout fires (ES): `MTNewSprite(0x6e1 + own p4 = 0x6e2, …,
+        // .SetupEnemyShotSprite)` — the Setup's R(5), R(2), R(100) and, above 0x56, R(5) (M l. 51449, 51478–51485) —
+        // then R(300), R(400) for its speeds, then `+0xa6 = R(30) + 50`; one sprite more.
+        func shotSetup(_ r: inout FastRand) {
+            _ = r.next(5)
+            _ = r.next(2)
+            if 0x56 < r.next(100) { _ = r.next(5) }
+        }
         setP4(w, 31, 1)
         var r = w.rng
+        shotSetup(&r)
         _ = r.next(300)
         _ = r.next(400)
         let t = Int16(r.next(30)) + 50
         frame()
         XCTAssertEqual(w.rng.seed, r.seed)
         XCTAssertEqual(w.active.sprite(id: k)!.counterA6, t)
-        XCTAssertEqual(w.active.sprites.count, count)
+        XCTAssertEqual(w.active.sprites.count, count + 1)
+        XCTAssertEqual(w.active.sprites.filter { $0.handler == .enemyShot && $0.type == 0x6e2 }.count, 1)
         // The timer counts down with no draw until it is 0 again.
         for _ in 0..<Int(t) - 1 { frame() }
         XCTAssertEqual([Int(w.rng.seed), Int(w.active.sprite(id: k)!.counterA6)], [Int(r.seed), 1])
-        // Each type's pair: 1451 R(300), R(300); 1452 / 1453 R(600), R(700).
+        // Each type's pair after the shot's Setup: 1451 R(300), R(300); 1452 / 1453 R(600), R(700).
         for (type, a, b) in [(Int16(0x5ab), 300, 300), (0x5ac, 600, 700), (0x5ad, 600, 700)] {
             w.active.update(id: k) { $0.type = type; $0.counterA6 = 0 }
             var q = w.rng
+            shotSetup(&q)
             _ = q.next(Int16(a))
             _ = q.next(Int16(b))
             let u = Int16(q.next(30)) + 50
@@ -406,6 +415,7 @@ final class ButtonGateTests: XCTestCase {
             XCTAssertEqual(w.rng.seed, q.seed, "type \(type)")
             XCTAssertEqual(w.active.sprite(id: k)!.counterA6, u, "type \(type)")
         }
+        XCTAssertEqual(w.active.sprites.filter { $0.handler == .enemyShot && $0.type == 0x6e2 }.count, 4)
         // Spout 183 names record 0 twice (a 1401 with p4 0): it never fires.
         XCTAssertEqual([w.records[183].p1, w.records[183].p2, w.records[0].p4], [0, 0, 0])
         let n = try add(w, record: 183)

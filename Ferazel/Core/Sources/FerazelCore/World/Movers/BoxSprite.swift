@@ -9,7 +9,7 @@ import Foundation
 ///
 /// BX2: the chest 0x51c and door 0xb5e / 0xb5f Handle arms (`chestArm`, `doorArm`) and the thought balloons
 /// (`createBalloon`, `destructBalloon`). BT: the gate 0xb7c (`gateArm`, with the 2941's move and clip), the switch
-/// blocks 0x4e2…0x4ff (`switchBlockArm`) and the spouts 0x5aa…0x5ad (`spoutArm`; their boulders ◇ Phase 5). Not built
+/// blocks 0x4e2…0x4ff (`switchBlockArm`) and the spouts 0x5aa…0x5ad (`spoutArm`; ES: their boulders). Not built
 /// (named where they stand): the geysers
 /// 0x5a0…0x5a9 and the pipes 0x5d2…0x5d5 (Phase 5), the carpet 0x438 / 0x439, the spiked balls 0x5c3 / 0x5c4, the table
 /// 0xb71 and the snowball 0xbfe (Phase 6) — those types still return at once from the Handle (`handleBuilt`) and stand
@@ -770,23 +770,42 @@ public enum BoxSprite {
                                rate: Int32(r) + 43000))
     }
 
-    /// The boulder spouts 0x5aa…0x5ad (M l. 60488–60547; raw `1006e8d8..1006ea6c`; pickups-boxes §2.2,
+    /// The boulder spouts 0x5aa…0x5ad (M l. 60488–60547; raw `1006e8f4..1006eb1c`; pickups-boxes §2.2,
     /// triggers-background §1): `+0xa6 > 0` → − 1; at 0, when record[own p1]'s p4 == 1 or record[own p2]'s p4 == 1
-    /// (an index outside the table reads as 0): `MTNewSprite(0x6e1 + own p4, (+0xc, +0xa), layer − 1, −1,
-    /// .SetupEnemyShotSprite)` — ◇ // later: Phase 5 (no EnemyShot class yet): the boulder is not made, so neither its
-    /// Setup's draws nor the speed stores happen — but the two speed draws a made shot takes are made, by type (1450
-    /// R(300), R(400); 1451 R(300), R(300); 1452 / 1453 R(600), R(700)); then `+0xa6 = R(30) + 50`. Neither pressed:
-    /// the timer stays 0 and is tested again next frame.
+    /// (an index outside the table reads as 0): `MTNewSprite(0x6e1 + own p4, +0xc, +0xa, +0x80 − 1, −1,
+    /// .SetupEnemyShotSprite)` (`EnemyShot.spawn`: its Setup's draws inside the call) and — **only with a record**
+    /// (`or. r19,r3,r3; beq` before each store, raw `1006e9a8`, `1006e9c8`; Ruling 16) — the speeds by type: 1450 vx =
+    /// R(300) − 0x96, vy = R(400); 1451 vx = R(300) − 0x96, vy = −3000 − R(300); 1452 vx = R(600) + 0xaf0, vy = −(R(700)
+    /// + 500); 1453 vx = −(R(600) + 0xaf0), vy = −(R(700) + 500); then `+0xa6 = R(30) + 50`. Neither pressed: the timer
+    /// stays 0 and is tested again next frame.
     static func spoutArm(_ w: SpriteWorld, id: Int) {
         w.active.update(id: id) { if 0 < $0.counterA6 { $0.counterA6 -= 1 } }
         guard let s = w.active.record(id: id), s.counterA6 == 0 else { return }
         let own = liveRecord(w, s.recordIndex)
         guard liveRecord(w, own?.p1 ?? 0)?.p4 == 1 || liveRecord(w, own?.p2 ?? 0)?.p4 == 1 else { return }
-        // ◇ the spawn of `0x6e1 + (own?.p4 ?? 0)` (Phase 5); its speed draws:
-        switch s.type {
-        case 0x5aa: _ = w.rng.next(300); _ = w.rng.next(400)       // vx = R − 0x96, vy = R
-        case 0x5ab: _ = w.rng.next(300); _ = w.rng.next(300)       // vx = R − 0x96, vy = −3000 − R
-        default: _ = w.rng.next(600); _ = w.rng.next(700)          // vx = ±(R + 0xaf0), vy = −(R + 500)
+        let type = Int16(truncatingIfNeeded: Int(own?.p4 ?? 0) + Int(EnemyShot.boulder))
+        let t = s.type
+        if (0x5aa...0x5ad).contains(t),
+           let b = EnemyShot.spawn(w, type: type, x: h(s.x), y: h(s.y), layer: Int16(truncatingIfNeeded: s.layer &- 1)) {
+            let vx: Int32, vy: Int32
+            switch t {
+            case 0x5aa:
+                vx = Int32(w.rng.next(300)) - 0x96
+                vy = Int32(w.rng.next(400))
+            case 0x5ab:
+                vx = Int32(w.rng.next(300)) - 0x96
+                vy = -3000 - Int32(w.rng.next(300))
+            case 0x5ac:
+                vx = Int32(w.rng.next(600)) + 0xaf0
+                vy = -(Int32(w.rng.next(700)) + 500)
+            default:
+                vx = -(Int32(w.rng.next(600)) + 0xaf0)
+                vy = -(Int32(w.rng.next(700)) + 500)
+            }
+            w.active.update(id: b) { u in
+                u.vx = vx
+                u.vy = vy
+            }
         }
         let r = w.rng.next(0x1e)
         w.active.update(id: id) { $0.counterA6 = r &+ 0x32 }

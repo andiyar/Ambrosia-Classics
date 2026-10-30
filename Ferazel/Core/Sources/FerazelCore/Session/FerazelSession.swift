@@ -523,8 +523,13 @@ public final class FerazelSession {
                               faceWidth: { Self.frameRect($0, resources: res).right }, faceBounds: bounds)
         case .inert:
             break                                       // the four bosses not placed on levels 1–5 // later: Phase 6–7
+        case .enemyShot:
+            // `.HandleEnemyShotSprite @ 1005bffc` (ES, `EnemyShot.handle`): its Kills' Effects take `lightTable` and
+            // prefs+6; the Chief boulder's hot rect reads the face bounds.
+            EnemyShot.handle(world: world, id: id, solver: solver, lights: &self.lightTable, effects: effects,
+                             faceWidth: { Self.frameRect($0, resources: res).right }, faceBounds: bounds)
         case .walker, .crawler, .roach, .dillo, .bat, .swarmMember, .insectBody, .gremlin, .floater, .frog, .salamander,
-             .blob, .deadBlob, .crab, .crabSegment, .enemyShot, .geyserSegment, .warrior:
+             .blob, .deadBlob, .crab, .crabSegment, .geyserSegment, .warrior:
             // EC: the enemy Handles — the `+0x1b2` early return, then each a named no-op until its task
             // (`EnemyCommon.handle`).
             EnemyCommon.handle(world: world, id: id)
@@ -1097,7 +1102,7 @@ public final class FerazelSession {
     /// Effect class's `.HitEffectSprite` is empty; `.HitBackgroundSprite` (W2b: cannons, springs, wall tunnels);
     /// `.HitBonusSprite` (BN; its container arm SH); `.HitPlayerShotSprite` (SH); the Box class's `.HitBoxSprite` (SH:
     /// the stalactite's shot case; BX1 the rest; SW: a Statue's hit is the Box class's, `.TurnIntoStatue`);
-    /// `.HitButtonSprite` (BT). // later: Phase 5 (enemies, enemy shots). The session's form:
+    /// `.HitButtonSprite` (BT); `.HitEnemyShotSprite` (ES). // later: Phase 5 (the enemy classes). The session's form:
     /// `hitCallback` on `lightTable`.
     private func hit(_ w: SpriteWorld, _ a: Int, _ b: Int) {
         let res = resources
@@ -1133,6 +1138,8 @@ public final class FerazelSession {
             BoxSprite.hit(w, id: a, other: b, lights: &lights, effects: effects, faceWidth: faceWidth,
                           faceBounds: faceBounds)
         case .button: ButtonSprite.hit(w, id: a, other: b)                              // `.HitButtonSprite` (BT)
+        case .enemyShot:                                                                // `.HitEnemyShotSprite` (ES)
+            EnemyShot.hit(w, shot: a, other: b, lights: &lights, effects: effects)
         default: break
         }
     }

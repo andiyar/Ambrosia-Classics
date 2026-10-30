@@ -4,8 +4,8 @@ import Foundation
 /// (M l. 44127–44196), called last in `.HandlePlayerSprite` (M l. 46648). The orbs are player shots of id 0x50
 /// (`PlayerShot`): 300 damage, 3 hits (`+0x168`, `.KillPlayerShot` counts them, `PlayerShotHits.kill`), no tile
 /// callback, no gravity, no light; they open no containers (`BonusSprite.container`, `PlayerShotHits.hit`). Against
-/// enemy shots — `.KillEnemyShot` on contact (M l. 50997–51001) — // later: Phase 5 (no sprite has the enemy shot's
-/// Handle yet). The pickup's orb table is `HitPlayerSprite.sphere`'s (M l. 49085–49112).
+/// enemy shots — `.KillEnemyShot` on contact (M l. 50997–51001; `PlayerShotHits.hit` step 2, ES). The pickup's orb
+/// table is `HitPlayerSprite.sphere`'s (M l. 49085–49112).
 public enum Pentashield {
     /// The orb's spawn type `0x5001` (id 0x50, power 1).
     static let spawnType: Int16 = 0x5001

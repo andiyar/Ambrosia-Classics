@@ -8,8 +8,9 @@ import HectorResources
 /// suspends the frame), and the **Bonus** arm (PK, `bonus`: every pickup; the upgrades suspend the frame),
 /// the Box mechanisms placed on levels 1–4 (BX1, BX2, BT, TP), the **Effect** arm (EF), the **Statue** arm (SW)
 /// and the spikes (LV3); EC: the enemy rows of step 6 (`enemyHazard`) and step 7's generic path (`enemyContact`),
-/// keyed on the `SpriteHandler` cases — dormant until each class's task maps its `forClass` row. // later: ES — the
-/// enemy-shot rows; GY — the geyser segment 0x5a0; Phase 6 — the types first placed on levels 5+.
+/// keyed on the `SpriteHandler` cases — dormant until each class's task maps its `forClass` row; ES: step 7's
+/// enemy-shot rows with `.ShieldBlock` (`EnemyShot.shieldBlock`). // later: GY — the geyser segment 0x5a0; Phase 6 —
+/// the types first placed on levels 5+.
 public enum HitPlayerSprite {
     /// The test form: the light calls (`.KillBonus`'s `.RemoveLight`) go to a scratch table, Effects is the default
     /// prefs'.
@@ -60,11 +61,10 @@ public enum HitPlayerSprite {
         case .salamander, .floater, .crab, .dillo:
             enemyHazard(w, player: pID, other: oID)                     // step 6's enemy rows (EC)
             return
-        case .walker, .crawler, .roach, .warrior, .gremlin, .frog, .bat, .blob, .swarmMember:
-            enemyContact(w, player: pID, other: oID)                    // step 7, the generic path (EC)
+        case .walker, .crawler, .roach, .warrior, .gremlin, .frog, .bat, .blob, .swarmMember, .enemyShot:
+            // Step 7, the generic path (EC) with the EnemyShot rows (ES).
+            enemyContact(w, player: pID, other: oID, lights: &lights, effects: effects)
             return
-        case .enemyShot:
-            return                                                      // later: ES — step 7's EnemyShot rows
         case .statue:
             // `PTR_PTR_100a01f8` (M l. 49506–49513; SW): `.PlatformBounce(player, statue, the player's hot-rect centre
             // offset, 0, his rect, 0)` and return — no latches, no ground effects.
@@ -1226,20 +1226,31 @@ extension HitPlayerSprite {
         }
     }
 
-    /// Step 7, the generic path for the enemy classes (EC; M l. 49802–49929, raw `10057968..10057bcc`;
-    /// enemy-shots-and-damage §3.5 non-shot rows): none for a type 0x76c…0x775 or 0x754 with gravity `+0x110 > 0`;
-    /// `.ShieldBlock` answers 0 for any Handle but the EnemyShot's (M l. 48389); none for type 0x6e6 with `+0x164
-    /// ≥ 2`, type 0x74d, or 0x73a…0x73e with `+0x160 ≠ 0`. Damage by Handle: Gremlin 0xe0; Crawler, Roach, Bat, Blob
-    /// 0x38; Warrior, Frog 0x70; the rest (Walker, swarm member) the default 0x70; invulnerability 0x3c. Type 0x6a9 →
-    /// 0x70; type 0x6d6 → 0x70 with invulnerability 0x24. Coins: damage 0x70 → `FastRand(100)` (M l. 49899–49904) > 0x50
-    /// → 3 — drawn **before** `.HurtPlayer` and whatever it decides (Ferazel invulnerable, the attacker dead); damage >
-    /// 0x70 → 5 with no draw. Then `.HurtPlayer(player, other, damage, blood 1, invul, coins)`. // later: ES — the
-    /// EnemyShot rows (the 0x77b test, the `.ShieldBlock` block, the per-type damage, `_DAT_100a0570`, the shot's tail).
-    static func enemyContact(_ w: SpriteWorld, player pID: Int, other oID: Int) {
+    /// Step 7, the generic path (EC; M l. 49802–49929, raw `10057968..10057bcc`; enemy-shots-and-damage §3.5), with
+    /// the EnemyShot rows (ES): none for a type 0x76c…0x775 or 0x754 with gravity `+0x110 > 0` (a reflected dart); none
+    /// for an EnemyShot 0x77b with `+0x14c ≠ 0` (never written, enemy-shots-and-damage-2 §4.1); none when
+    /// `.ShieldBlock` blocks (`EnemyShot.shieldBlock`: only an EnemyShot is ever blocked, M l. 48389); none for type
+    /// 0x6e6 with `+0x164 ≥ 2`, type 0x74d, or 0x73a…0x73e with `+0x160 ≠ 0`. Damage by Handle: Gremlin 0xe0; Crawler,
+    /// Roach, Bat, Blob 0x38; Warrior, Frog 0x70; the rest (Walker, swarm member) the default 0x70; an EnemyShot by type
+    /// (M l. 49852–49891, the type re-read after the shield): 0x71f, 0x46a / 0x46b, 0x6f4, 0x77b 0x70; 0x46c 0xa8; 0x753 /
+    /// 0x754 and 0x771…0x774 its `+0xa4`; every other type 0x38. Invulnerability 0x3c. Type 0x6a9 → 0x70; type 0x6d6 →
+    /// 0x70 with invulnerability 0x24. Coins: damage 0x70 → `FastRand(100)` (M l. 49899–49904) > 0x50 → 3 — drawn
+    /// **before** `.HurtPlayer` and whatever it decides (Ferazel invulnerable, the attacker dead); damage > 0x70 → 5
+    /// with no draw. Then `.HurtPlayer(player, other, damage, blood 1, invul, coins)`; an EnemyShot whose hurt landed
+    /// zeroes the boss-landing stagger `_DAT_100a0570` (`bossGrab`, M l. 49910–49912); then an EnemyShot 0x77b → `+0x15c
+    /// = 1`, vx = (int)(vx · −0.15) (f64 `0x100a1a00`), gravity < 1 → 0x15e; every other shot `.KillEnemyShot`, landed
+    /// or not (M l. 49913–49926).
+    static func enemyContact(_ w: SpriteWorld, player pID: Int, other oID: Int, lights: inout LightTable,
+                             effects: Int16) {
         guard let o = w.active.record(id: oID) else { return }
-        let t = o.type
+        var t = o.type
         if ((0x76c...0x775).contains(t) || t == 0x754) && 0 < o.gravity { return }
-        if t == 0x6e6 && 1 < o.launchSpeed { return }
+        let isShot = BackgroundSprite.runs(o, .enemyShot)
+        if isShot && t == EnemyShot.chiefBoulder && o.classTimer != 0 { return }
+        if EnemyShot.shieldBlock(w, player: pID, shot: oID, lights: &lights, effects: effects) { return }
+        guard let o = w.active.record(id: oID) else { return }
+        t = o.type
+        if t == 0x6e6 && 1 < o.shardAge { return }
         if t == 0x74d { return }
         if (0x73a...0x73e).contains(t) && o.classWord160 != 0 { return }
         var damage: Int16 = 0x70
@@ -1248,6 +1259,7 @@ extension HitPlayerSprite {
         switch o.handler {
         case .gremlin: damage = 0xe0
         case .crawler, .roach, .bat, .blob: damage = 0x38
+        case .enemyShot: damage = shotDamage(o)
         default: break                                                  // Warrior, Frog 0x70; Walker, swarm member
         }
         if t == 0x6a9 { damage = 0x70 }
@@ -1260,7 +1272,34 @@ extension HitPlayerSprite {
         } else if 0x70 < damage {
             coins = 5
         }
-        HurtPlayer.hurt(w, player: pID, attacker: oID, damage: damage, blood: true, invulnerable: invulnerable,
-                        coins: coins)
+        let landed = HurtPlayer.hurt(w, player: pID, attacker: oID, damage: damage, blood: true,
+                                     invulnerable: invulnerable, coins: coins)
+        guard let a = w.active.record(id: oID), BackgroundSprite.runs(a, .enemyShot) else { return }
+        if landed { w.player.bossGrab = 0 }
+        if a.type == EnemyShot.chiefBoulder {
+            w.active.update(id: oID) { u in
+                u.classWord15c = 1
+                u.vx = EnemyShot.scaled(u.vx, EnemyShot.rebound)
+                if u.gravity < 1 { u.gravity = 0x15e }
+            }
+        } else {
+            EnemyShot.kill(w, shot: oID, lights: &lights, effects: effects)
+        }
+    }
+
+    /// Step 7's EnemyShot damage by type (M l. 49852–49891; raw `10057a8c..10057b60`), as the compare tree reads it.
+    static func shotDamage(_ o: SpriteSlot) -> Int16 {
+        let t = o.type
+        if t == EnemyShot.warriorShot { return 0x70 }
+        if t < EnemyShot.warriorShot {
+            if t == 0x46c { return 0xa8 }
+            if t < 0x46c { return 0x469 < t ? 0x70 : 0x38 }
+            return t == EnemyShot.wraith ? 0x70 : 0x38
+        }
+        if t < 0x775 {
+            if t < 0x755 { return 0x752 < t ? o.hp : 0x38 }
+            return 0x770 < t ? o.hp : 0x38
+        }
+        return t == EnemyShot.chiefBoulder ? 0x70 : 0x38
     }
 }

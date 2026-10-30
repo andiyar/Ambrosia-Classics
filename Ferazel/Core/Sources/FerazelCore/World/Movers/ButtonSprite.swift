@@ -98,7 +98,7 @@ public enum ButtonSprite {
     /// - other's Handle the player's (`PTR_PTR_100a052c`), a Platform's (`_DAT_100a0200`), a Box's (`PTR_PTR_100a0484`)
     ///   or a Statue's (`PTR_PTR_100a01f8`, SW): level 0 → `.STPlay3DSound(4704, 10,
     ///   0x100, centre)`; level + 8;
-    /// - an enemy shot's (`PTR_PTR_100a0488` // later: Phase 5) or a player shot's (`PTR_PTR_100a04e8`): 4704, level 11;
+    /// - an enemy shot's (`PTR_PTR_100a0488`, ES) or a player shot's (`PTR_PTR_100a04e8`): 4704, level 11;
     /// - anything else (an idled record's Handle 0 included): nothing.
     /// Both collision passes call it: a player standing on a Button presses it twice a frame (`.MTCollideSprites`, the
     /// Button the outer sprite; `.MTCollideSpecialSprite`, after `.HitPlayerSprite`), a Box or a Platform twice too
@@ -111,7 +111,7 @@ public enum ButtonSprite {
                 w.player.cue(PlayerCue(call: .threeD, snd: downSound, priority: 10, volume: 0x100, position: s.centre))
             }
             w.active.update(id: id) { $0.phase &+= 8 }
-        } else if runs(o, .playerShot) {
+        } else if runs(o, .enemyShot) || runs(o, .playerShot) {
             w.player.cue(PlayerCue(call: .threeD, snd: downSound, priority: 10, volume: 0x100, position: s.centre))
             w.active.update(id: id) { $0.phase = 0xb }
         }

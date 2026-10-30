@@ -147,9 +147,8 @@ public enum PlayerShotHits {
     ///    `G+0xe` + 8 (no clamp), power > 1 → the four followers `+0xe9 = 1` — no `.KillPlayerShot` (no sound, no
     ///    effect); the routine goes on;
     /// 2. other an enemy shot (`PTR_PTR_100a0488`) of type 0x77b → `.STPlay3DSound(303, 1, 0xab, other +0xe)`,
-    ///    `.KillPlayerShot(s, 0, 1)`; then the orb 0x50 vs any enemy shot → `.STPlay3DSound(303, 1, 0x55, other +0xe)`,
-    ///    `.KillPlayerShot(s, 1, 1)`, `.KillEnemyShot(other)` and return // later: Phase 5 (no sprite has the enemy
-    ///    shot's Handle until the enemies are built);
+    ///    `.KillPlayerShot(s, 0, 1)` (and on); then the orb 0x50 vs any enemy shot → `.STPlay3DSound(303, 1, 0x55, other
+    ///    +0xe)`, `.KillPlayerShot(s, 1, 1)`, `.KillEnemyShot(other)` (`EnemyShot.kill`) and return (ES);
     /// 3. the orb vs the gate 0xb7c → nothing;
     /// 4. a Box (`PTR_PTR_100a0484`) of type 0x2c8 / 0x2c9 (a tree trunk): id 4 grows it (`trunkGrowth`), any other id
     ///    nothing;
@@ -186,10 +185,22 @@ public enum PlayerShotHits {
                 for f in PlayerShot.followers(s).compactMap({ $0 }) { w.active.update(id: f) { $0.dead = true } }
             }
         }
-        // 2. the enemy shot 0x77b → snd 303 vol 0xab, `.KillPlayerShot(s, 0, 1)` (M l. 50991–50994) // later: Phase 5
-        // (the enemy shot's Handle `PTR_PTR_100a0488`); the orb vs any enemy shot → snd 303 vol 0x55,
-        // `.KillPlayerShot(s, 1, 1)`, `.KillEnemyShot(other)`, return (M l. 50997–51001) // later: Phase 5 (the enemy
-        // shot's Handle and `.KillEnemyShot`).
+        // 2. the enemy shot 0x77b → snd 303 vol 0xab, `.KillPlayerShot(s, 0, 1)` (M l. 50991–50994); the orb vs any
+        // enemy shot → snd 303 vol 0x55, `.KillPlayerShot(s, 1, 1)`, `.KillEnemyShot(other)`, return (M l. 50997–51001).
+        func metal(_ volume: Int16) {
+            let c = w.active.record(id: oID)?.centre ?? o.centre
+            w.player.cue(PlayerCue(call: .threeD, snd: EnemyShot.metalSound, priority: 1, volume: volume, position: c))
+        }
+        if runs(o, .enemyShot) && o.type == EnemyShot.chiefBoulder {
+            metal(0xab)
+            killShot(false, true)
+        }
+        if let o = w.active.record(id: oID), runs(o, .enemyShot), s.type == PlayerShot.orb {
+            metal(0x55)
+            killShot(true, true)
+            EnemyShot.kill(w, shot: oID, lights: &lights, effects: effects)
+            return
+        }
         // 3. (M l. 51004: a type test, no Handle)
         if s.type == PlayerShot.orb && o.type == 0xb7c { return }
         // 4. (M l. 51005: `+0x4c == PTR_PTR_100a0484`, the Box Handle)

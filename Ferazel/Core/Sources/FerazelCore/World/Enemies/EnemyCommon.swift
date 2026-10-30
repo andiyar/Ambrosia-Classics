@@ -73,7 +73,6 @@ public enum EnemyCommon {
         case .gremlin, .floater: break                  // later: GF — `.HandleGremlinSprite` / `.HandleFloaterSprite`
         case .frog, .salamander: break                  // later: FR — `.HandleFrogSprite` / `.HandleSalamanderSprite`
         case .blob, .deadBlob, .crab, .crabSegment: break   // later: BL — the Blob, the dead Blob, the Crab, its segments
-        case .enemyShot: break                          // later: ES — `.HandleEnemyShotSprite`
         case .geyserSegment: break                      // later: GY — `.HandleGeyserSegSprite`
         case .warrior: break                            // later: LV5 ◇ — the Warrior stand-in (Ruling 3)
         default: break
@@ -95,10 +94,10 @@ public enum EnemyCommon {
             guard s.killCount == 0 else { return }      // `+0xe9 ≠ 0` → return (M l. 69736–69738, raw 100810e0 bnelr)
             w.enemies.kill(&s, globals: &w.globals, level: w.levelIndex, forGood: true)
             // later: GF — `.KillGremlinSprite`'s score and rider
-        case .enemyShot:
-            s.dead = true                               // later: ES — `.KillEnemyShot`
         default:
-            s.dead = true                               // `+0x50 == 0` → `+0xe9 = 1`
+            // `+0x50 == 0` → `+0xe9 = 1` — the EnemyShot class too: `.SetupEnemyShotSprite` stores no `+0x50` (ES; a
+            // shield-reflected dart burns away to this, never to `.KillEnemyShot`).
+            s.dead = true
         }
         w.active.update(id: id) { $0 = s }
     }

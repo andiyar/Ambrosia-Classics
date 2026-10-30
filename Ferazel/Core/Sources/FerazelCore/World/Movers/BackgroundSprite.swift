@@ -5,8 +5,10 @@ import Foundation
 /// from the class caches (plants 0xa8c…, tunnels 3000…). Part 2 (W2b, below): cannons 0x442… (p1 0) and their
 /// captives (`.TurnIntoCannoned`, `.HandleCannonedSprite`), springs 0x47e…0x481 (`.SuperSpring`), the wall tunnels'
 /// occluder window, passages 0xb54 / 0xb55 (the Handle's face; the jump is `HitPlayerSprite`'s), and
-/// `.HitBackgroundSprite`. Part 3 (LV3, below): the retracting spikes 0x730…0x733. // later: fire 0x4b8 /
-/// 0x4bb…0x4bd, 0x73f / 0x740, 0x76c…0x76f, 0xb4a…0xb4d, 0xbf4, trees 0xc08…0xc0f — none placed on levels 1–4.
+/// `.HitBackgroundSprite`. Part 3 (LV3, below): the retracting spikes 0x730…0x733. ES: the dart traps' Handle arm
+/// 0x76c…0x76f (`dartTrap`, built as read — their Setup arm is not: `SetupFaces` refuses them, first placed on level
+/// 22). // later: fire 0x4b8 / 0x4bb…0x4bd, 0x73f / 0x740, 0xb4a…0xb4d, 0xbf4, trees 0xc08…0xc0f, the dart traps'
+/// Setup arm — none placed on levels 1–5.
 public enum BackgroundSprite {
     /// The radial bars (0x5c8…0x5cc) and balls (0x5cd…0x5d1).
     public static let maces: ClosedRange<Int16> = 0x5c8...0x5d1
@@ -109,11 +111,11 @@ public enum BackgroundSprite {
     // MARK: - Handle
 
     /// The types whose `.HandleBackgroundSprite` arm is not built: their Handle is not run (as before W2a), so
-    /// nothing of it — `.StandardSpriteHandles` included — changes them. // later: fire, 0x73f / 0x740,
-    /// 0x76c…0x76f, clouds, 0xbf4, trees (none placed on levels 1–4, so `SetupFaces` refuses them; the spikes: LV3).
+    /// nothing of it — `.StandardSpriteHandles` included — changes them. // later: fire, 0x73f / 0x740, clouds,
+    /// 0xbf4, trees (none placed on levels 1–4, so `SetupFaces` refuses them; the spikes: LV3; the dart traps: ES).
     static func isUnbuiltArm(_ t: Int16) -> Bool {
         t == 0x4b8 || (0x4bb...0x4bd).contains(t) || (0x73f...0x740).contains(t)
-            || (0x76c...0x76f).contains(t) || (0xb4a...0xb4d).contains(t) || t == 0xbf4 || (0xc08...0xc0f).contains(t)
+            || (0xb4a...0xb4d).contains(t) || t == 0xbf4 || (0xc08...0xc0f).contains(t)
     }
 
     /// Modes 12…14's layer and harmful flag from the depth D (radial `+0x40`; l. 63167–63180, raw
@@ -155,6 +157,8 @@ public enum BackgroundSprite {
             passage(w, id: id)
         } else if spikes.contains(t) {
             spike(w, id: id)
+        } else if dartTraps.contains(t) {
+            dartTrap(w, id: id)
         } else if (0xa8c...0xaef).contains(t) || (3000...0xbc1).contains(t) {
             w.active.update(id: id) { $0.face = FaceRef(pict: t, index: 0, set: .encoded) }
         }
@@ -390,6 +394,91 @@ extension BackgroundSprite {
         }
     }
 
+    // MARK: the dart traps (ES)
+
+    /// The dart traps 1900…1903 (0x76c…0x76f; triggers-background §2.8).
+    public static let dartTraps: ClosedRange<Int16> = 0x76c...0x76f
+    /// The caches `_DAT_100a0aec` (PICT 0x76c, 6 × 92×92 — 0x76c and, mirrored, 0x76d), `_DAT_100a0ae8` (0x76e),
+    /// `_DAT_100a0ae4` (0x76f) (`.InitBackgroundSprite` M l. 61886–61888).
+    static func dartTrapSheet(_ t: Int16) -> Int16 { t == 0x76d ? 0x76c : t }
+    /// `*_DAT_100a02e0` = snd 499 'ArrowShootSound'.
+    static let arrowSound: Int16 = 499
+
+    /// The dart traps' Handle arm (M l. 63345–63507), by the state `+0x46`, with `+0x14c` the reload (p1) and `+0x150`
+    /// the half-width (p2) the Setup stores:
+    /// - 0…0x10: face = its cache's cell `+0x46 >> 2` (0x76d mirrored, `+0x17e = 1`); `+0x46` + 1;
+    /// - 0x11 (armed): `+0xa6 > 0` → − 1; below 1 the player's centre (`*_DAT_1009fd94` / `fd90`) against the trap's
+    ///   `+0x10` / `+0xe` (d = (short) `+0x150`): 0x76c |pcy − cy| < d and pcx > cx; 0x76d the band and pcx < cx; 0x76e
+    ///   |pcx − cx| < d and pcy ≤ cy + 0x23; 0x76f the band and pcy > cy (each band strict both sides) → `+0x46` + 1,
+    ///   `+0xa6 = 8`, the cell 5;
+    /// - 0x12: `.STPlay3DSound(499, 1, 0xab, +0xe)`; `MTNewSprite(type + 5, +0xc + dx, +0xa + dy, 0xb, −1,
+    ///   .SetupEnemyShotSprite)` with (dx, dy) = (0x20, 0x2a), (−0x20, 0x2a), (0x2a, −0x20), (0x2a, 0x20) and the dart's
+    ///   vx / vy (±0x1000, 0) / (0, ∓0x1000) — the stores dropped with no record (the binary writes record 0); `+0x46`
+    ///   + 1; the cell 0;
+    /// - above: `+0xa6` − 1, below 1 → `+0x46 = 0`, `+0xa6 = (short) +0x14c`.
+    /// Then the Handle's tail (`.StandardSpriteCleanup`). Unreachable on levels 1–5 (the Setup arm is refused).
+    static func dartTrap(_ w: SpriteWorld, id: Int) {
+        guard let s = w.active.record(id: id) else { return }
+        let t = s.type, sheet = dartTrapSheet(t)
+        func cell(_ k: Int) {
+            w.active.update(id: id) { c in
+                c.face = FaceRef(pict: sheet, index: k, set: .encoded)
+                if t == 0x76d { c.mirrored = true }
+            }
+        }
+        let state = s.phase
+        if state < 0x11 {
+            cell(Int(state >> 2))
+            w.active.update(id: id) { $0.phase &+= 1 }
+        } else if state == 0x11 {
+            w.active.update(id: id) { c in if 0 < c.counterA6 { c.counterA6 &-= 1 } }
+            guard let c = w.active.record(id: id), c.counterA6 < 1 else { return }
+            let d = Int(Int16(truncatingIfNeeded: c.classWord150))
+            let cx = h(c.centre.x), cy = h(c.centre.y)
+            let px = Int(w.player.centreX), py = Int(w.player.centreY)
+            let bandY = cy - d < py && py < cy + d, bandX = cx - d < px && px < cx + d
+            let fire: Bool
+            switch t {
+            case 0x76c: fire = bandY && cx < px
+            case 0x76d: fire = bandY && px < cx
+            case 0x76e: fire = bandX && py <= cy + 0x23
+            default: fire = bandX && cy < py
+            }
+            guard fire else { return }
+            w.active.update(id: id) { u in
+                u.phase &+= 1
+                u.counterA6 = 8
+            }
+            cell(5)
+        } else if state == 0x12 {
+            w.player.cue(PlayerCue(call: .threeD, snd: arrowSound, priority: 1, volume: 0xab, position: s.centre))
+            let (dx, dy, vx, vy): (Int, Int, Int32, Int32) = {
+                switch t {
+                case 0x76c: return (0x20, 0x2a, 0x1000, 0)
+                case 0x76d: return (-0x20, 0x2a, -0x1000, 0)
+                case 0x76e: return (0x2a, -0x20, 0, -0x1000)
+                default: return (0x2a, 0x20, 0, 0x1000)
+                }
+            }()
+            if let dart = EnemyShot.spawn(w, type: t + 5, x: h(h(s.x) + dx), y: h(h(s.y) + dy), layer: 0xb) {
+                w.active.update(id: dart) { u in
+                    u.vx = vx
+                    u.vy = vy
+                }
+            }
+            w.active.update(id: id) { $0.phase &+= 1 }
+            cell(0)
+        } else {
+            w.active.update(id: id) { c in
+                c.counterA6 &-= 1
+                if c.counterA6 < 1 {
+                    c.phase = 0
+                    c.counterA6 = Int16(truncatingIfNeeded: c.classTimer)
+                }
+            }
+        }
+    }
+
     // MARK: `.HitBackgroundSprite`
 
     /// `.HitBackgroundSprite(bg, other) @ 10075044` (decompile l. 63660–63745), the hit callback of cannons, springs
@@ -399,7 +488,8 @@ extension BackgroundSprite {
     ///   `+0x1c2 = bg.bottom + y + 0x27` (bg's `+0x34` rect, x/y its 24.8 position) — for 3002 at (x, y): x + 38 …
     ///   x + 153, y − 54 … y + 189. Nothing resets it (`.InitSprite`'s 32000s only).
     /// - **spring** 0x47e…0x487 (l. 63716–63731): a player shot gets `.KillPlayerShot(other, 1, 1)` (l. 63718–63720,
-    ///   `PlayerShotHits.kill`) and an enemy shot `.KillEnemyShot` (// later: SH); then, if other is not itself a
+    ///   `PlayerShotHits.kill`) and an enemy shot `.KillEnemyShot` (l. 63721–63723, `EnemyShot.kill`, ES); then, if
+    ///   other is not itself a
     ///   Background 0x47e…0x487, the spring's `+0x46` is 0, other's `+0xe9` is 0 and its Handle is not the Effect's:
     ///   `+0x46 = 4`, `.SuperSpring(bg, other)`. The kill sets `+0xe9` for ids < 100 except an orb 0x50 with hits left
     ///   (`+0x168` still ≥ 1 after its − 1), and never for ids ≥ 100 (100 included): those are launched.
@@ -407,8 +497,8 @@ extension BackgroundSprite {
     ///   (`045c`), Button (`0ac4`), EnemyShot (`0488`), Effect (`0460`); its type none of 0x41f, 0x434, 0x771, 0x772,
     ///   0xb7c, 0x5c3, 0x5c4; `+0x130 ≥ 0` → (a player shot at a 105 / 106 cannon is steered — // later: SH, and
     ///   those cannons are refused at Setup) `.TurnIntoCannoned(other, bg)`, then bg `+0x154 = 6` (write-only).
-    ///   The EnemyShot Handle does not exist yet (// later: Phase 5); a Button runs `.button` (BT), a Statue
-    ///   `.statue` (SW).
+    ///   An enemy shot is never captured (its Handle is excluded, l. 63684; ES); a Button runs `.button` (BT), a
+    ///   Statue `.statue` (SW).
     ///
     /// Without a light table (the test-only form): `.TurnIntoCannoned`'s `.RemoveLight` goes to a scratch table.
     public static func hit(_ w: SpriteWorld, id: Int, other oID: Int) {
@@ -433,11 +523,14 @@ extension BackgroundSprite {
                 c.occluder.bottom = Int16(truncatingIfNeeded: r.bottom + y + 0x27)
             }
         } else if (0x47e...0x487).contains(t) {
-            // `.KillPlayerShot(other, 1, 1)` (l. 63718–63720), then — no return — the launch test on the record as the
-            // kill left it. `.KillEnemyShot(other)` (l. 63721–63723) // later: SH.
+            // `.KillPlayerShot(other, 1, 1)` (l. 63718–63720), `.KillEnemyShot(other)` (l. 63721–63723), then — no
+            // return — the launch test on the record as the kill left it.
             if runs(o, .playerShot) {
                 PlayerShotHits.kill(w, shot: oID, sound: true, effect: true, effects: effects, lights: &lights,
                                     faceWidth: faceWidth, faceBounds: faceBounds)
+            }
+            if let o = w.active.record(id: oID), runs(o, .enemyShot) {
+                EnemyShot.kill(w, shot: oID, lights: &lights, effects: effects)
             }
             guard let o = w.active.record(id: oID), let bg = w.active.record(id: id) else { return }
             let otherSpring = runs(o, .background) && (0x47e...0x487).contains(o.type)
@@ -449,7 +542,7 @@ extension BackgroundSprite {
             // Handles: it is captured like any other, and its saved Handle (0) comes back at the launch.
             if !o.handleCleared {
                 switch o.handler {
-                case .background, .statue, .cannoned, .effect, .button: return
+                case .background, .statue, .cannoned, .effect, .button, .enemyShot: return
                 default: break
                 }
             }

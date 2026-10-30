@@ -198,8 +198,14 @@ final class DrawModeAuditTests: XCTestCase {
         W("Particles/Burn.swift:60", .clipTop, .range(1...0x100), "any", at: ["45", "50"],
           pins: ["s.burnRow = top", "s.burnRow &+= 1"]),
         // EC: the ground enemies' liquid hurt flash (`EnemyCommon.liquids`: 0xc for the Walker in water, else 0x11).
-        W("World/Enemies/EnemyCommon.swift:229", .flash, .range(0xc...0x11), "walker", "crawler", "roach", "dillo",
-          at: ["215", "220", "221", "222"], pins: ["(0xc, 0x96, 0xc)", "(0x13, 100, 0x11)"]),
+        W("World/Enemies/EnemyCommon.swift:228", .flash, .range(0xc...0x11), "walker", "crawler", "roach", "dillo",
+          at: ["214", "219", "220", "221"], pins: ["(0xc, 0x96, 0xc)", "(0x13, 100, 0x11)"]),
+        // ES: the enemy shots — the egg's random facing (`R(100) > 0x32`) and its flash every 45 frames, the Warrior
+        // shot's facing by vx, the Wraith shot's tint by age (`.HandleEnemyShotSprite` M l. 51711–51723).
+        W("World/Enemies/EnemyShot.swift:154", .mirrored, .flags([false, true]), "enemyShot.egg"),
+        W("World/Enemies/EnemyShot.swift:314", .mode, .words([0xb0002, 0xb0000, 0xb0001, 0]), "enemyShot.wraith"),
+        W("World/Enemies/EnemyShot.swift:339", .mirrored, .flags([false, true]), "enemyShot.warrior"),
+        W("World/Enemies/EnemyShot.swift:348", .flash, .range(5...5), "enemyShot.egg"),
         W("Physics/StandardSprite.swift:32", .flash, .range(0...0x1d), "any", pins: ["if s.flash > 0 { s.flash -= 1 }"]),
         // `.StandardSpriteHandles`' per-frame reset, then the occluder's clip, each edge clamped to 0…the face width
         // (the right edge 32000 when past it) on the next lines when the sprite has a face (no face, no draw).
@@ -238,12 +244,12 @@ final class DrawModeAuditTests: XCTestCase {
         W("Player/PlayerStates.swift:133", .mirrored, .flags([false, true]), "player"),
         W("Player/PlayerStates.swift:295", .mirrored, .copy, "player.mistBody"),
         // The power tints, or the mode it had (walk-on-liquid kinds other than 0…2 store nothing).
-        W("Player/PlayerStates.swift:836", .mode, .words([0, 0x1000a, 0x10004, 0x10001, 0x1000c, 0x10003, 0x10008]),
-          "player", at: ["816", "822", "825", "828", "831", "834"]),
-        W("Player/PlayerStates.swift:850", .mode, .words([0x10006]), "player"),
-        W("Player/PlayerStates.swift:853", .mode, .words([0x10009]), "player"),
-        W("Player/PlayerStates.swift:864", .mode, .words([0]), "player"),
-        W("Player/PlayerStates.swift:875", .mode, .wordRange(0x50000...0x5000f), "player", at: ["871", "872", "873"],
+        W("Player/PlayerStates.swift:841", .mode, .words([0, 0x1000a, 0x10004, 0x10001, 0x1000c, 0x10003, 0x10008]),
+          "player", at: ["821", "827", "830", "833", "836", "839"]),
+        W("Player/PlayerStates.swift:855", .mode, .words([0x10006]), "player"),
+        W("Player/PlayerStates.swift:858", .mode, .words([0x10009]), "player"),
+        W("Player/PlayerStates.swift:869", .mode, .words([0]), "player"),
+        W("Player/PlayerStates.swift:880", .mode, .wordRange(0x50000...0x5000f), "player", at: ["876", "877", "878"],
           pins: ["if 0xf < k { k = 0xf }", "if k < 0 { k = 0 }", "UInt32(truncatingIfNeeded: Int(k) + 0x50000)"]),  // k 0…15
         W("Player/PlayerTiles.swift:131", .mirrored, .flags([false, true]), "player"),
         W("Player/PowerUps.swift:109", .mirrored, .copy, "player.trail"),
@@ -269,7 +275,7 @@ final class DrawModeAuditTests: XCTestCase {
         W("Shots/PlayerShot.swift:460", .mode, .words([0]), "shot.orb"),
         W("Shots/PlayerShot.swift:474", .mode, .words([0x10004]), "shot.gravity"),        // the seed (gravity 0xfa)
         W("Shots/PlayerShotHits.swift:109", .mode, .words([0x10004]), "shot.gravity"),    // the seed
-        W("Shots/PlayerShotHits.swift:210", .flash, .range(10...10), "box"),
+        W("Shots/PlayerShotHits.swift:221", .flash, .range(10...10), "box"),
         W("Sprites/SetupFaces.swift:366", .mirrored, .flags([true]), "background.plant"),
         W("Sprites/SetupFaces.swift:367", .mode, .placedTint(0xa8c...0xaef), "background.plant",
           pins: ["if p.p2 != 0 { s.mode = UInt32(truncatingIfNeeded: Int(p.p2) + 0x10000) }"]),
@@ -298,32 +304,34 @@ final class DrawModeAuditTests: XCTestCase {
         W("Sprites/SpriteSlot.swift:460", .mode, .levelLight, "platform.raft", "box.boulder", "background.maceBall",
           "chain.maceChain", pins: ["mode = UInt32(truncatingIfNeeded: L * 0x100 + 0xc0000 + F)"]),
         // (angle >> 8) + 0x5a with the angle wrapped into 0…0x167ff (`RadialMotion.updatePosition`), − 360 once.
-        W("World/Movers/BackgroundSprite.swift:190", .rotation, .range(0...359), "background.maceBall", at: ["188", "189"],
+        W("World/Movers/BackgroundSprite.swift:194", .rotation, .range(0...359), "background.maceBall", at: ["192", "193"],
           pins: ["UInt32(bitPattern: c.radial?.angle ?? 0) >> 8) &+ 0x5a", "if 0x167 < r { r &-= 0x168 }"]),
-        W("World/Movers/BackgroundSprite.swift:269", .clipBottom, .range(32000...32000), "background.spring"),
-        W("World/Movers/BackgroundSprite.swift:276", .mode, .words([0x10018]), "background.spring"),  // hdr 0x26cd ≠ 0
-        W("World/Movers/BackgroundSprite.swift:336", .mirrored, .flags([false]), "background.cannon"),
-        W("World/Movers/BackgroundSprite.swift:338", .mirrored, .flags([true]), "background.cannon"),
-        W("World/Movers/BackgroundSprite.swift:341", .mirrored, .flags([false]), "background.cannon"),
-        W("World/Movers/BackgroundSprite.swift:346", .mirrored, .flags([false]), "background.cannon"),
-        W("World/Movers/BackgroundSprite.swift:348", .mirrored, .flags([true]), "background.cannon"),
-        W("World/Movers/BackgroundSprite.swift:351", .rotation, .range(0...0), "background.cannon"),
-        W("World/Movers/BackgroundSprite.swift:353", .mode, .words([0]), "background.cannon"),
-        W("World/Movers/BackgroundSprite.swift:358", .mirrored, .flags([false]), "background.cannon"),
+        W("World/Movers/BackgroundSprite.swift:273", .clipBottom, .range(32000...32000), "background.spring"),
+        W("World/Movers/BackgroundSprite.swift:280", .mode, .words([0x10018]), "background.spring"),  // hdr 0x26cd ≠ 0
+        W("World/Movers/BackgroundSprite.swift:340", .mirrored, .flags([false]), "background.cannon"),
+        W("World/Movers/BackgroundSprite.swift:342", .mirrored, .flags([true]), "background.cannon"),
+        W("World/Movers/BackgroundSprite.swift:345", .mirrored, .flags([false]), "background.cannon"),
+        W("World/Movers/BackgroundSprite.swift:350", .mirrored, .flags([false]), "background.cannon"),
+        W("World/Movers/BackgroundSprite.swift:352", .mirrored, .flags([true]), "background.cannon"),
+        W("World/Movers/BackgroundSprite.swift:355", .rotation, .range(0...0), "background.cannon"),
+        W("World/Movers/BackgroundSprite.swift:357", .mode, .words([0]), "background.cannon"),
+        W("World/Movers/BackgroundSprite.swift:362", .mirrored, .flags([false]), "background.cannon"),
         // r = ((0x20 − aim)·0xb4 / 16) / 2 for aim 1…31 not ≡ 0 mod 4 → 5…174, doubled: 10…348.
-        W("World/Movers/BackgroundSprite.swift:360", .rotation, .range(10...348), "background.cannon",
-          at: ["355", "356", "359"], pins: ["0x20 - aim)) * 0xb4", "(u / 16) / 2", "if 0xb3 < r { r -= 0xb4 }",
+        W("World/Movers/BackgroundSprite.swift:364", .rotation, .range(10...348), "background.cannon",
+          at: ["359", "360", "363"], pins: ["0x20 - aim)) * 0xb4", "(u / 16) / 2", "if 0xb3 < r { r -= 0xb4 }",
                                             "c.rotation = r << 1"]),
-        W("World/Movers/BackgroundSprite.swift:375", .mirrored, .flags([true]), "background.spring"),
-        W("World/Movers/BackgroundSprite.swift:723", .mirrored, .flags([false, true]), "background.smoke"),
-        W("World/Movers/BackgroundSprite.swift:781", .mirrored, .flags([true]), "background.spike"),
-        W("World/Movers/BackgroundSprite.swift:789", .mode, .words([0x10018]), "background.spike"),   // hdr 0x26cd ≠ 0
-        W("World/Movers/BackgroundSprite.swift:791", .mode, .words([0x90000]), "background.spike"),
+        W("World/Movers/BackgroundSprite.swift:379", .mirrored, .flags([true]), "background.spring"),
+        // ES: the dart traps' Handle arm (1901 mirrored; built as read — their Setup arm is refused, none on 1–5).
+        W("World/Movers/BackgroundSprite.swift:426", .mirrored, .flags([true]), "background.dartTrap"),
+        W("World/Movers/BackgroundSprite.swift:816", .mirrored, .flags([false, true]), "background.smoke"),
+        W("World/Movers/BackgroundSprite.swift:874", .mirrored, .flags([true]), "background.spike"),
+        W("World/Movers/BackgroundSprite.swift:882", .mode, .words([0x10018]), "background.spike"),   // hdr 0x26cd ≠ 0
+        W("World/Movers/BackgroundSprite.swift:884", .mode, .words([0x90000]), "background.spike"),
         // The retracting spikes (0x732 / 0x733): f = the phase 0…0xb.
-        W("World/Movers/BackgroundSprite.swift:831", .clipBottom, .range(0...0x14), "background.spike",
-          at: ["822", "825"], pins: ["} else if s.phase < 0xb {", "max(0, 0x14 - f * 2)"]),
-        W("World/Movers/BackgroundSprite.swift:835", .clipTop, .range(0...0x16), "background.spike",
-          at: ["822", "825", "834"], pins: ["} else if s.phase < 0xb {", "s.y = h(base - f * 2)", "h(base - s.y)"]),
+        W("World/Movers/BackgroundSprite.swift:924", .clipBottom, .range(0...0x14), "background.spike",
+          at: ["915", "918"], pins: ["} else if s.phase < 0xb {", "max(0, 0x14 - f * 2)"]),
+        W("World/Movers/BackgroundSprite.swift:928", .clipTop, .range(0...0x16), "background.spike",
+          at: ["915", "918", "927"], pins: ["} else if s.phase < 0xb {", "s.y = h(base - f * 2)", "h(base - s.y)"]),
         W("World/Movers/BonusSprite.swift:130", .mode, .words([0]), "bonus"),
         W("World/Movers/BonusSprite.swift:388", .mode, .words([0x10008]), "bonus"),
         W("World/Movers/BonusSprite.swift:389", .mode, .words([0x10009]), "bonus"),
@@ -367,7 +375,7 @@ final class DrawModeAuditTests: XCTestCase {
           at: ["735", "738", "739", "740", "754", "755"],
           pins: ["if 0 < above { step = 0x200 }", "} else if above < 100 {", "step = -0x200",
                  "Int16(truncatingIfNeeded: g.y) &+ 7", "if p2 != 0 { c &+= 0x20 }"]),
-        W("World/Movers/BoxSprite.swift:866", .mirrored, .copy, "box.balloon"),
+        W("World/Movers/BoxSprite.swift:885", .mirrored, .copy, "box.balloon"),
         // (subtype + 0x5a) % 360, subtype a spoke's degrees 0…359 or −90 (`Radial.updateSpokes`) → 0…359.
         W("World/Movers/ChainSprite.swift:51", .rotation, .range(0...359), "chain.maceChain", at: ["49"],
           pins: ["Int(s.subtype) + 0x5a", "a % 0x168"]),
@@ -1346,13 +1354,15 @@ final class DrawModeAuditTests: XCTestCase {
                 }
             }
             // The hovering rock (`box.boulder.hover`, `+0x160 < 0`) is a state no boulder reaches: `+0x160`
-            // (`classWord160`, also named `stepX`) is set only by `PlayerShot.setup` (0 or 10, on shots) and counted
-            // up only inside the hover branch itself (`BoxSprite.boulder`) — never made negative.
+            // (`classWord160`, also named `stepX`) is set only by `PlayerShot.setup` (0 or 10, on shots) and
+            // `EnemyShot.shieldBlock` (1, on a Wraith shot — ES) and counted up only inside the hover branch itself
+            // (`BoxSprite.boulder`) — never made negative.
             var writes: [String] = []
             for l in core where !Self.assignedFields(l.code, ["classWord160", "stepX"]).isEmpty {
                 writes.append("\(l.file) \(Self.trim(l.code))")
             }
             XCTAssertEqual(writes.sorted(), ["Shots/PlayerShot.swift s.stepX = sx",
+                                             "World/Enemies/EnemyShot.swift u.classWord160 = 1",
                                              "World/Movers/BoxSprite.swift s.classWord160 &+= 1"], "\(c): +0x160 writers")
             // The floe's 0xb word (`platform.floe`, PlatformSprite.swift:947) and the raft's tilt (:925) never meet: the
             // tilt is written only for subtype 3 inside `tail`, the word only while `+0xa6` > 0; the raft's Setup arm

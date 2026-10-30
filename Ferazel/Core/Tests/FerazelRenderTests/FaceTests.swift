@@ -566,6 +566,15 @@ final class FaceTests: XCTestCase {
         want("wheel", 0xb73, cells: 21)
         want("balloon", BoxSprite.balloon)
         want("floe", 0x578, cells: 5)
+        // ES: the enemy shots' boot sets (`.InitEnemyShotSprite` M l. 51402–51432) — the spouts' boulders 0x6e1 /
+        // 0x6e2 and their shards 0x6e6 on level 4, every other shot type a later class's; the caches 0x46a / 0x77b
+        // (M l. 51434–51437) load only when a boss Setup marks them — none on levels 1–5 — but the data holds them.
+        for sh in EnemyShot.sheets { want("enemy shot", sh.pict, cells: sh.count) }
+        for sh in EnemyShot.cachedSheets {
+            XCTAssertNotNil(r.resource(type: "PICT", id: sh.pict, chain: .frontEnd), "cache PICT \(sh.pict)")
+            XCTAssertNil(one.sprites.faces.face(FaceRef(pict: sh.pict, index: 0, set: .encoded)),
+                         "cache PICT \(sh.pict) unmarked on level 1")
+        }
         // The drops of every chest and crate on levels 1–4 and the key faces their locks show — each in its own
         // level's renderer. The original loads every Bonus face at boot (`.InitBonusSprite` M l. 52261–52337); the
         // replica's per-level load (`BoxSprite.dropSheets`) is a seam, so the faces are named here, not derived from it.

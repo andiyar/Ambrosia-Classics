@@ -1051,7 +1051,11 @@ public struct CachedFaces: Equatable, Sendable {
     /// order Platform … Crawler, Roach, Walker, Box, Background, …, Bat, Blob, …, Frog) — the records levels 1–4 can mark
     /// (Crawler M l. 56142–56144, Roach 64893–64894, Walker 56757–56768, Box 58785–58786 (LV3: the mine cart's 0xb72 /
     /// 0xb73) and 58806, Background 61864 (LV3: the wall spikes' 0x730) and 61875, Bat 68099, Blob 67666 (LV3), Frog
-    /// 70116). // later: Phase 5–6 — the other sets, as their Setups are transcribed.
+    /// 70116). ES: `.InitEnemyShotSprite`'s four (M l. 51434–51437, after the Background's, flag 0 — `.InitBackgroundSprite`
+    /// leaves `*_DAT_100a0a48` 0, M l. 61912): 0x46a three times (6 × 48×48, then 6 × 64×64 twice) and 0x77b (16 faces);
+    /// only the boss Setups mark them (`EnemyShot.cachedSheets`). One PICT in three records: `loadedSets` keys by PICT,
+    /// so a mark of 0x46a counts all three [LOW: no mark before Phase 6]. // later: Phase 5–6 — the other sets, as their
+    /// Setups are transcribed.
     static let sets: [Record] = [
         Record(pict: 0x6ae, faces: 6, flag: 0), Record(pict: 0x6af, faces: 6, flag: 0),
         Record(pict: 0x6b1, faces: 6, flag: 0),
@@ -1062,6 +1066,8 @@ public struct CachedFaces: Equatable, Sendable {
         Record(pict: 0xb72, faces: 14, flag: 0), Record(pict: 0xb73, faces: 21, flag: 0),
         Record(pict: 0x5be, faces: 4, flag: 0),
         Record(pict: 0x730, faces: 12, flag: 0), Record(pict: 0x442, faces: 5, flag: 0),
+        Record(pict: 0x46a, faces: 6, flag: 0), Record(pict: 0x46a, faces: 6, flag: 0),
+        Record(pict: 0x46a, faces: 6, flag: 0), Record(pict: 0x77b, faces: 16, flag: 0),
         Record(pict: 0x6cc, faces: 11, flag: 0), Record(pict: 0x6c2, faces: 16, flag: 0),
         Record(pict: 0x708, faces: 8, flag: 0),
     ]

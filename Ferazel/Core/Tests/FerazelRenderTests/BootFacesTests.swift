@@ -20,7 +20,8 @@ final class BootFacesTests: XCTestCase {
 
     /// Every sheet Core declares outside the per-placement Setups.
     private static var classSheets: [SetupFaces.Sheet] {
-        BonusSprite.sheets + PlayerShot.sheets + HeldItem.sheets + ButtonSprite.sheets + SetupFaces.boxChildSheets
+        BonusSprite.sheets + PlayerShot.sheets + EnemyShot.sheets + HeldItem.sheets + ButtonSprite.sheets
+            + SetupFaces.boxChildSheets
             + SetupFaces.platformSheets + SetupFaces.backgroundSheets + SetupFaces.backgroundW2bSheets
             + Array(BoxSprite.spawnSheets) + Array(BonusSprite.dropSheets)
             + (FaceSheet.playerSheets + FaceSheet.gliderSheets).map(sheet)
@@ -138,6 +139,9 @@ final class BootFacesTests: XCTestCase {
         var all = Self.classSheets
         for r in res.world.resources(of: "Mlvl") { all += Self.setupSheets(try LevelFile(resource: r)) }
         for s in all { if let b = boot[s.pict] { XCTAssertEqual(s, b, "PICT \(s.pict)") } }
+        // ES: every enemy-shot boot set is a boot face; its level-load caches (0x46a, 0x77b) are not.
+        for s in EnemyShot.sheets { XCTAssertEqual(boot[s.pict], s, "enemy shot PICT \(s.pict)") }
+        for s in EnemyShot.cachedSheets { XCTAssertNil(boot[s.pict], "cache PICT \(s.pict)") }
     }
 
     /// Levels 1–4: every boot face the data holds, every class sheet Core declares and every Setup sheet of the level's
