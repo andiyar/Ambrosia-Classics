@@ -671,6 +671,33 @@ records the summary line.
   **Ruling 6:** refusals stay refusals (a quit is loud), guarded by DA + the visit sweep + the bot at every phase end.
 - **Tests (2):** the two above.
 - **Gate:** G2 515. **Commit:** `Ferazel: the draw-mode audit — every written mode drawable, every refusal unreachable, levels in scope; 2 tests`.
+- **As executed (2026-10-30, loop run 38):** G2 **516** (the +1 after Ben's 3cf72df), 0 failed, the one opt-in skip; no
+  golden or other count moved. **Writer table:** 147 rows, one per writer site of a mode word, rotation, scale, mirror,
+  flash, flash table or water kind in `Sources/FerazelCore` (a pure-Swift scan of `.<field> <op> ` lines; two file /
+  field pairs listed as not draw inputs: the particle pool's erase mode, the screen flash); a writer without a row or a
+  row whose line no longer writes fails, printing the scanned `file:line`. Each distinct value is drawn and erased on
+  every built level (plain, mirrored, wrapped; the transform-safe modes 0/1/3/4/6/9/0xc also rotated and scaled; the
+  dynamic-light words over the level's own light bytes, F 0…110); every Setup once; then 2,000 `LevelRun` steps per
+  level (scripted keys, Return, all-keys-up blocks) applied to `FrameRenderer`, skipping only the ops whose `apply` arm
+  holds no `try` (checked by a source scan) — every drawn word, rotation, scale and water kind must be one a row names.
+  **Refusal table:** the scan finds 99 `throw`s in FerazelRender in 47 (file, name) rows — DK's new `Refusal.darkness`
+  included: no writer 3 rows / 14 throws (mode, rotation, diffuse seed), data absent 4 / 5 (faces loaded, the light
+  pass's carried refusals, darkness, light slots), header value 0 2 / 2 (fire backdrop, ripple), by construction 7 / 11
+  (translucency, transform, tint draws, death step, tint table attached, level CLUT, water-face tile), loads clean
+  17 / 33 (face / picture / light-face loaders, Mlvl), not on a level frame 13 / 33 (the level ops in ScreenRenderer,
+  MapRenderer, SoundBank, MusicTrack, the census), time bound 1 / 1. **No refusal reachable.** DK's index ≥ 0x6f000 stays
+  refused (F max 110); A14 is pinned unreachable (every cell of levels 1–4 has light byte 0…15 — measured 0…11/13/14/15,
+  so no 0xbff00 + F word). Reasons that needed a code read: the hovering rock's 0xb modes (`+0x160 < 0`) never meet the
+  boulder's rotation (`+0x160` is written only by `PlayerShot.setup`, 0 or 10, and the hover branch's own count-up);
+  the floe's 0xb0000 (`tail`, `+0xa6` 1…0x2c) never meets the raft's tilt (the raft's Setup arm sets `+0xa6 = 0`); the
+  orb's 0xb flashes never meet a shot rotation (orb gravity 0). **Time bound:** the ripple phase goes negative only after
+  2^23 frames in one level (> 77 h at 30 a second). **Deviation:** the run's renderer uses `LevelSweepTests`' search
+  (ruled, lowest) — with the shells' exact-nearest / highest faces Core's steps ran about 4× slower in this harness (not
+  investigated; follow-up). **Cost:** the two tests take ≈ 100 s of the suite (four renderers and 4 × 2,000 Core steps
+  are ≈ 50 s of it in a debug build); `runSteps` is the knob. **Seat ruling (Q15 item 7):** `StatusBar.swift`'s header
+  now says black is 96 (lowest) / 255 (highest) in clut 200, which holds black at 96 and 160…255, and 255 in clut 700;
+  `MapRenderTests.testMapStatusBarIsTheInLevelBarMatchedIntoClut700` gains pins worked by hand from the clut data
+  (157 → 74, white 0 → 0, every clut-200 black → 255, checked on the bar's pixels).
 
 #### RB — ⚑ MAJOR — the random-play bot, both shells (Q15 item 5, Ben's "yes") (→ 517; WinKit 81)
 - **Files:** `Tests/FerazelRenderTests/RandomPlayTests.swift` (new; reuses `VisitSweepPlan.swift`'s `SweepShell` and

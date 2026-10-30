@@ -32,8 +32,10 @@ import FerazelCore
 /// [HIGH reading; MED that QuickDraw translates on unequal seeds]. The port then holds clut-200 indices throughout:
 /// the HUD piece (seeds equal, raw) and the icons enter raw [MED: the original's map frame (Let's Play) shows the
 /// icons in their own colours, which a translation into clut-700 indices read back through clut 200 would not]; text
-/// smoothing and the colourising foreground match against clut 200 [MED]; black / white are 255 / 0 under 200 and 700
-/// alike.
+/// smoothing and the colourising foreground match against clut 200 [MED]. So `black` / `white` are clut-200 indices
+/// there: white is 0 (clut 200's only white); clut 200 holds black at 96 and at 160…255, so black is 96 under the
+/// lowest tie-break and 255 under the highest. The translating copy takes either black to clut 700's one black, 255,
+/// and white to its 0.
 public struct StatusBar {
     public static let width = 0x280
     public static let height = 0x58

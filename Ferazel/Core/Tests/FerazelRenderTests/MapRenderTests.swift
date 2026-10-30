@@ -163,6 +163,34 @@ final class MapRenderTests: XCTestCase {
         }
         XCTAssertGreaterThan(stones, 1000)
         XCTAssertEqual(notGrey, 0)
+        // Pins worked apart from `ColorSearch` (D44 run 38, Q15 item 7): clut 200's and 700's colours read from the
+        // data, the nearest clut-700 entry by squared 8-bit RGB distance (ties to the lower index) — the stone grey
+        // 157 (0x4c4c4c → entry 74, 0x435549: distance 171, the next 726), white 0 → 0, and clut 200's blacks (96,
+        // 160…255) → 255, clut 700's only black.
+        func nearest700(_ i: Int) -> Int {
+            let e = c200.entries[i]
+            func d(_ j: Int) -> Int {
+                let f = c700.entries[j]
+                return [(e.red, f.red), (e.green, f.green), (e.blue, f.blue)]
+                    .map { (Int($0.0 >> 8) - Int($0.1 >> 8)) * (Int($0.0 >> 8) - Int($0.1 >> 8)) }.reduce(0, +)
+            }
+            return c700.entries.indices.min { d($0) < d($1) || (d($0) == d($1) && $0 < $1) } ?? -1
+        }
+        let blacks = c200.entries.indices.filter { c200.entries[$0].red | c200.entries[$0].green | c200.entries[$0].blue == 0 }
+        XCTAssertEqual(blacks, [96] + Array(160...255))
+        XCTAssertEqual([nearest700(157), nearest700(0)], [74, 0])
+        XCTAssertEqual(Set(blacks.map(nearest700)), [255])
+        var pinned = 0
+        for y in StatusBar.screenTop..<IndexedFrame.height {
+            for x in 0..<IndexedFrame.width {
+                let want: UInt8? = frame[x, y] == 157 ? 74 : frame[x, y] == 0 ? 0 : blacks.contains(Int(frame[x, y])) ? 255 : nil
+                guard let want else { continue }
+                XCTAssertEqual(screen[x, y], want, "(\(x), \(y))")
+                pinned += 1
+                if screen[x, y] != want { return }
+            }
+        }
+        XCTAssertGreaterThan(pinned, 1000)
     }
 
     func testLinkPixels() throws {

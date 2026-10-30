@@ -43,7 +43,8 @@ import FerazelCore
 /// Still refused by name (`Refusal`): behind-tiles (8), translucent ripple (0xd), silhouette (0xe), tile blends
 /// (≥ 0x14), the undefined Special tables (2, 7, 0xf..0x13, and a flipped 0xa: the flip twins have no mode-10 arm), the
 /// same modes and 5, 0xa, 0xb under scale / rotation (no table: the register keeps garbage), a mode-0xb arg whose
-/// table read leaves its table, and a mode-5 draw with no seed.
+/// table read leaves its table, and a mode-5 draw with no seed. Each refusal (as every `throw` in FerazelRender) has its
+/// row and its checked reason it cannot be reached in a built level in `DrawModeAuditTests` (DA) — a new one needs a row.
 /// The light pass over a sprite with a water row uses `.DrawLightOverFace`'s underwater variants (P4).
 public struct SpriteBlitter: Sendable {
 

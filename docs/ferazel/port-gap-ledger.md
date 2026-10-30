@@ -134,6 +134,13 @@ enemy-shot part is Phase 5), `StatusBarCalls.swift:65` (callers built at `Handle
 
 ### 2.1 Draw audit — every input the renderer can refuse × can Core produce it in levels 1–4
 
+**Maintained by DrawModeAuditTests** (`Ferazel/Core/Tests/FerazelRenderTests/DrawModeAuditTests.swift`, Phase 5 DA,
+in the normal suite): its writer table (one row per writer site of a draw input in Core) and its refusal table (every
+`throw` in FerazelRender, each with a code-checked reason it is unreachable in `BuiltLevels.range`) supersede the
+table below as the levels in scope grow; a new writer or throw without a row fails the suite. Since DK, A13 is drawn
+(the ambient table that follows the light table); A14 stays refused and is pinned unreachable there (no built level
+has a BG cell with light byte −1).
+
 From `markers-render-classified.tsv`, section DRAW AUDIT (25 rows A01–A25). Every sprite draw mode, rotation, scale,
 mirror flag, face reference, light face, rope face, water kind, backdrop mode and conversation portrait that Core writes
 was traced to its writer and checked against the placements:
