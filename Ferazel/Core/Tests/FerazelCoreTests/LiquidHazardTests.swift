@@ -682,4 +682,96 @@ final class LiquidHazardTests: XCTestCase {
             XCTAssertEqual(t.player.diedInLiquid, wet, "+0x11c \(row), +0x120 \(last)")
         }
     }
+
+    // MARK: - UT: the underwater screen tint (row 41, M l. 46449–46476; `.TintScreen @ 10034e88`, M l. 31704–31727)
+
+    /// A bare player record with `+0x11c` / `+0x128` set (full HP: no death trigger), the tint flag as given.
+    private func tintWorld(row: Int32, kind: Int16 = 0, flag: Bool = false) throws -> SpriteWorld {
+        let t = pool(try level(1), rows: nil, floor: false)
+        XCTAssertNotNil(Player.spawn(world: t, x: 100, y: 100))
+        t.active.update(id: t.playerID!) { p in
+            p.waterRow = row
+            p.waterKind = kind
+        }
+        t.player.screenTinted = flag
+        return t
+    }
+
+    /// Row 41 once, the outputs drained first; returns the row's draws.
+    private func row41(_ t: SpriteWorld) -> [DrawOp] {
+        _ = t.player.drainFrameOutputs()
+        PlayerLiquids.deathAndRefill(t, id: t.playerID!)
+        return t.player.tileOps
+    }
+
+    func testUnderwaterTintBlue() throws {
+        // Kind 0, `+0x11c` 3, flag clear → `.TintScreen(&(0, 0, 64000), 0xf)` = `MT_FadeToColor(0, rgb, 15, 1, 1)`:
+        // the 1 ms linear call reaches 15 % at once (`.fadeToColor(percent: 15)`); then the flag. A second frame,
+        // flag set: nothing.
+        let t = try tintWorld(row: 3)
+        XCTAssertEqual(row41(t), [.screenGamma(.fadeToColor(percent: 15, rgb: RGB16(0, 0, 64000)))])
+        XCTAssertTrue(t.player.screenTinted)
+        XCTAssertEqual(row41(t), [])
+        XCTAssertTrue(t.player.screenTinted)
+        // The other kinds (`+0x128`): 1 green, 2 red, ≥ 3 and < 0 black; the band 1…9 (0 and 10 do not tint).
+        let cases: [(Int32, Int16, RGB16?)] = [(1, 1, RGB16(0, 64000, 0)), (9, 2, RGB16(64000, 0, 0)),
+                                               (5, 3, RGB16(0, 0, 0)), (5, -1, RGB16(0, 0, 0)),
+                                               (0, 0, nil), (10, 0, nil), (-4, 0, nil)]
+        for (row, kind, rgb) in cases {
+            let u = try tintWorld(row: row, kind: kind)
+            let want: [DrawOp] = rgb.map { [.screenGamma(.fadeToColor(percent: 15, rgb: $0))] } ?? []
+            XCTAssertEqual(row41(u), want, "+0x11c \(row), +0x128 \(kind)")
+            XCTAssertEqual(u.player.screenTinted, rgb != nil, "+0x11c \(row), +0x128 \(kind)")
+        }
+    }
+
+    func testTintClearsOnSurfacing() throws {
+        // Flag set, `+0x11c` 0 (out of the liquid) → flag 0, then `.TintScreen(0, 0)` = `MT_FadeToColor(0, 0, 100,
+        // 1, 1)`: the original gamma at once (`.fadeToColor(percent: 100, rgb: nil)`). Once cleared, nothing more.
+        let t = try tintWorld(row: 0, flag: true)
+        XCTAssertEqual(row41(t), [.screenGamma(.fadeToColor(percent: 100, rgb: nil))])
+        XCTAssertFalse(t.player.screenTinted)
+        XCTAssertEqual(row41(t), [])
+        // `+0x11c` above 10 (the head still well above the surface, `.HandleUnderWater`) also clears; 10 itself, and
+        // the band with the flag set, leave both alone; a negative `+0x11c` neither tints nor clears.
+        for (row, clears) in [(Int32(11), true), (69, true), (10, false), (5, false), (-4, false)] {
+            let u = try tintWorld(row: row, flag: true)
+            XCTAssertEqual(row41(u), clears ? [.screenGamma(.fadeToColor(percent: 100, rgb: nil))] : [], "+0x11c \(row)")
+            XCTAssertEqual(u.player.screenTinted, !clears, "+0x11c \(row)")
+        }
+        // Through the frame: the pool (level 2, BG liquid rows 6…11). Dropped in from above, `+0x11c` falls 77, 64,
+        // 48, 31, 12, then 1 (submerged, clamped): one tint there and none while he stays under; the liquid gone
+        // (BG kind 0: `+0x11c` 0 on the next end pass), one clear.
+        let w = pool(try level(2))
+        let solver = enter(w, y: 192 - 0x55 - 40)
+        var log: [(Int32, DrawOp)] = []
+        for _ in 0..<40 {
+            frame(w, solver)
+            for op in w.player.tileOps { log.append((player(w).waterRow, op)) }
+        }
+        XCTAssertEqual(log.map(\.1), [.screenGamma(.fadeToColor(percent: 15, rgb: RGB16(0, 0, 64000)))])
+        XCTAssertEqual(log.map(\.0), [1])
+        w.tiles.bgKinds[1] = 0
+        frame(w, solver)
+        XCTAssertEqual(player(w).waterRow, 0)
+        XCTAssertEqual(w.player.tileOps, [.screenGamma(.fadeToColor(percent: 100, rgb: nil))])
+        XCTAssertFalse(w.player.screenTinted)
+    }
+
+    func testTintGatedByFading() throws {
+        // `.TintScreen` acts only while fading is enabled (`DAT_100a53c2`); row 41 writes the flag either way — after
+        // the call when tinting (M l. 46472–46473), before it when clearing (M l. 46452–46453).
+        let t = try tintWorld(row: 3)
+        t.gammaFade = AsyncGammaFade(fadedOut: false, done: true, fadingEnabled: false)
+        XCTAssertEqual(row41(t), [])
+        XCTAssertTrue(t.player.screenTinted)
+        t.active.update(id: t.playerID!) { $0.waterRow = 0 }
+        XCTAssertEqual(row41(t), [])
+        XCTAssertFalse(t.player.screenTinted)
+        // The helper itself (`ScreenFade.tintScreen`): enabled → the op, disabled → none.
+        XCTAssertEqual(ScreenFade.tintScreen(RGB16(0, 0, 64000), 0xf, fadingEnabled: true),
+                       .screenGamma(.fadeToColor(percent: 15, rgb: RGB16(0, 0, 64000))))
+        XCTAssertEqual(ScreenFade.tintScreen(nil, 0, fadingEnabled: true), .screenGamma(.fadeToColor(percent: 100, rgb: nil)))
+        XCTAssertNil(ScreenFade.tintScreen(RGB16(0, 0, 64000), 0xf, fadingEnabled: false))
+    }
 }

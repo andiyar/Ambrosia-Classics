@@ -357,8 +357,7 @@ public enum Player {
             set { $0.x &-= 0x14 }
         }
         w.player.flag055c = false
-        // 41 (l. 46438–46488): the death trigger (HP < 1), the liquid screen tint (// later: no Phase-2 seam), the
-        // breath refill (P4).
+        // 41 (l. 46438–46488): the death trigger (HP < 1), the liquid screen tint (UT), the breath refill (P4).
         PlayerLiquids.deathAndRefill(w, id: id)
         // 42 (l. 46489–46649).
         tail(w, id: id, faceWidth: faceWidth)

@@ -16,6 +16,18 @@ public struct ScreenFade: Equatable, Sendable {
 
     public init() {}
 
+    /// `.TintScreen(rgb, n) @ 10034e88` (M l. 31704–31727; row 41's liquid tint, UT): only while fading is enabled
+    /// (`DAT_100a53c2` — in a level the session's `AsyncGammaFade.fadingEnabled`, handed over from here) — nil →
+    /// `MT_FadeToColor(0, 0, 100, 1, 1)`, else `MT_FadeToColor(0, rgb << 16, n, 1, 1)`. A 1 ms linear call reaches its
+    /// full percent at once (`.MT_FadeToColor @ 10093304`, M l. 79455ff: `param_3 · min(elapsed, 1) / 1`, then
+    /// `· 100`), so: `.fadeToColor(percent: n, rgb:)`, the clear `.fadeToColor(percent: 100, rgb: nil)` (the original
+    /// gamma). Recorded deviation: the library's 1 ms wait inside the call is not kept (under one tick, nothing drawn).
+    public static func tintScreen(_ rgb: RGB16?, _ n: Int, fadingEnabled: Bool) -> DrawOp? {
+        guard fadingEnabled else { return nil }
+        guard let rgb else { return .screenGamma(.fadeToColor(percent: 100, rgb: nil)) }
+        return .screenGamma(.fadeToColor(percent: Int(Int16(truncatingIfNeeded: n)), rgb: rgb))
+    }
+
     /// `ticks = ceil(ms · 60 / 1000)` (Invariant 3).
     public static func ticks(milliseconds ms: Int) -> Int {
         ms <= 0 ? 0 : (ms * 60 + 999) / 1000

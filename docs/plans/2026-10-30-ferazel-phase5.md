@@ -635,6 +635,21 @@ records the summary line.
   frame emits nothing) · `testTintClearsOnSurfacing` (`+0x11c` 0 with the flag → `.TintScreen(0,0)`, flag 0) ·
   `testTintGatedByFading` (fading disabled → no op, flag still set as the dump does — check the order).
 - **Gate:** G2 513 + ◈ record. **Commit:** `Ferazel: the underwater screen tint (.TintScreen, row 41); swim golden moved as recorded; 3 tests`.
+- **As executed (2026-10-30, loop run 38):** G2 **514** (the +1 after Ben's 3cf72df), 0 failed, the one opt-in skip.
+  **No golden moved** (swim `c1dd428a3f146d77` and every other value unchanged; the Windows references not moved).
+  Switch-off check: with the row-41 tint branch disabled locally the FerazelRenderTests suite is also 0 failed, same
+  values — on and off agree. Why nothing moved: (1) the swim route never enters the band — `+0x11c` is how far the top
+  of the hot rect is above the surface (`.HandleUnderWater`, clamped to 1 once submerged), so 1…9 means *under* the
+  surface and > 10 head out; the route swims at the surface (`+0x11c` 69 at its end) and a probe found no
+  `.screenGamma` op in any of its 397 iterations; (2) even when it fires, the golden hashes FrameRenderer's indexed
+  pixels and the sound words, and FrameRenderer drops `.screenGamma` (the screen surface's gamma is not in the hash).
+  Dump re-read (M l. 46449–46476, 31704–31727, 79455ff): agrees with the contract — tint branch calls `.TintScreen`
+  then sets the flag; clear branch clears the flag then calls it; so with fading disabled the flag is still written
+  both ways (test 3). rgb by `+0x128` in the local's order (uStack_c6 red, c4 green, c2 blue). The flag lives in
+  `.ClearPlayerVars` (M l. 42631) → `PlayerState.screenTinted`, reset by every `Player.spawn` (level load, restart,
+  new game); only row 41 writes it. The gate reads `SpriteWorld.gammaFade.fadingEnabled` (LevelRun hands
+  `ScreenFade.fadingEnabled` over at `.armFade`); the op is built by `ScreenFade.tintScreen` and goes out in
+  `PlayerState.tileOps`, i.e. at the player Handle's place in the pass. Both `// later: no Phase-2 seam` labels gone.
 
 #### DA — minor — the standing draw-mode audit (Q15 item 2) (→ 515)
 - **Files:** `Tests/FerazelRenderTests/DrawModeAuditTests.swift` (new), `docs/ferazel/port-gap-ledger.md` (§2.1 gains

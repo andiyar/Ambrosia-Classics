@@ -234,6 +234,10 @@ public struct PlayerState: Equatable, Sendable {
     public var animation05f8: Int16 = 0
     /// `PTR_DAT_100a0670`: the standing flag (the cling / stun arms clear it; P3 reads it).
     public var standing0670 = false
+    /// `PTR_DAT_100a066c` (u8): the screen is tinted for the liquid (row 41, UT) — 0 at `.ClearPlayerVars` (M l.
+    /// 42631), so a new level, a death's restart and a new game start untinted; only row 41 writes it (M l. 46452,
+    /// 46473), whether or not `.TintScreen` acts.
+    public var screenTinted = false
     /// `PTR_DAT_100a0648` / `PTR_DAT_100a063c`: the walk-on-liquid power-up and its liquid kind — `.HitPlayerTileSprite`
     /// turns a matching BG water cell into an FG kind-3 floor 16 px up. PK: the 1331…1333 spheres set them (M l.
     /// 49039–49046); row 14 re-derives the flag from `0640` (PU).
@@ -517,7 +521,8 @@ public struct PlayerState: Equatable, Sendable {
     }
 
     /// The map changes made since the last `drainFrameOutputs()`, in call order (`DrawOp.setTile`, one per
-    /// `.SetFGTile` / `.SetFGCrunchDirTile` write — from the player's tile callback or the overlay's Handle).
+    /// `.SetFGTile` / `.SetFGCrunchDirTile` write — from the player's tile callback or the overlay's Handle), and row
+    /// 41's `.TintScreen` gamma op (UT: `DrawOp.screenGamma`) — the session emits them at the Handle's place in the pass.
     public var tileOps: [DrawOp] = []
 
     /// Hands over and clears `cues` and `tileOps`. The frame driver calls it once per frame after the whole

@@ -134,9 +134,10 @@ public enum PlayerLiquids {
     ///   `PTR_DAT_100a0560` = (`+0x11c ≠ 0 ∨ +0x120 ≠ 0`), 417 (`*_DAT_100a03ec`, prio 1, vol 0x100), dying
     ///   `_DAT_100a069c` = 1 (row 33's dying arm then runs from the next frame; its end sets the game-over flag
     ///   `DAT_100a5106` for W4);
-    /// - the liquid screen tint (`+0x11c` 1…9 → `.TintScreen(kind 0 blue / 1 green / 2 red / else black, 15)` and
-    ///   `PTR_DAT_100a066c` 1; `+0x11c` > 10, or 0 with the flag set → `.TintScreen(0, 0)`, flag 0; lighting-tables
-    ///   §10) // later: no Phase-2 seam carries a screen tint (`.TintScreen @ 10034e88`);
+    /// - the liquid screen tint (M l. 46449–46476; lighting-tables §10, UT): `+0x11c` in 1…9 and `PTR_DAT_100a066c`
+    ///   clear → `.TintScreen(rgb, 0xf)` with rgb by `+0x128` (1 green 64000; 0 blue; 2 red; else black), then flag 1;
+    ///   else `+0x11c` > 10 or 0 with the flag set → flag 0, then `.TintScreen(0, 0)` (`ScreenFade.tintScreen`: only
+    ///   while fading is enabled — the flag is written either way); the op goes out with the Handle's (`tileOps`);
     /// - not `.ShouldEmitBubbles` (tested after the trigger): oxygen < `+0xa4` → +8; < 0 → 1; > `+0xa4` → `+0xa4`;
     ///   G+8 = 0x1e.
     static func deathAndRefill(_ w: SpriteWorld, id: Int) {
@@ -146,6 +147,19 @@ public enum PlayerLiquids {
             w.player.diedInLiquid = !(s.waterRow == 0 && s.lastWater == 0)
             w.player.cue(PlayerCue(call: .reg, snd: 417, priority: 1, volume: 0x100))
             w.player.dying = 1
+        }
+        let row = s.waterRow, fading = w.gammaFade.fadingEnabled
+        if row < 1 || 9 < row || w.player.screenTinted {
+            if (10 < row || row == 0) && w.player.screenTinted {
+                w.player.screenTinted = false
+                if let op = ScreenFade.tintScreen(nil, 0, fadingEnabled: fading) { w.player.tileOps.append(op) }
+            }
+        } else {
+            let kind = s.waterKind
+            let c: UInt16 = 64000
+            let rgb = kind == 1 ? RGB16(0, c, 0) : kind == 0 ? RGB16(0, 0, c) : kind == 2 ? RGB16(c, 0, 0) : RGB16(0, 0, 0)
+            if let op = ScreenFade.tintScreen(rgb, 0xf, fadingEnabled: fading) { w.player.tileOps.append(op) }
+            w.player.screenTinted = true
         }
         if !Breathing.shouldEmitBubbles(world: w, id: id) {
             let hp = s.hp
