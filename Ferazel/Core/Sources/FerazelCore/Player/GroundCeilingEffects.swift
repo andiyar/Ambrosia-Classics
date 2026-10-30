@@ -66,8 +66,8 @@ public enum GroundCeilingEffects {
 /// their spawners (CS / SH: `.KillPlayerShot`, `.KillEnemyShot`; BX1: `.KillCrate`; BX2: `.CreateBalloonSprite`).
 /// Not built (no spawner on the built levels; the bank found none for most): 1202…1205, 1251, 1830, −1 and the
 /// countdown's `.UpdateDigits` // later: their spawners' tasks (Phase 5–6). The 1207 against Crawler / Walker / Roach /
-/// Frog (their Hit routines) // later: Phase 5 ◇; against crates (`.HitBoxSprite`: −10 on any frame, then
-/// `.KillPlayerShot`; pickups-boxes-2 §7) built (BX1, `BoxSprite.hit`).
+/// Frog (their Hit routines' test: `EnemyCommon.environmentalHazard`, EC) // later: WK1, CR, FR — their Hits; against
+/// crates (`.HitBoxSprite`: −10 on any frame, then `.KillPlayerShot`; pickups-boxes-2 §7) built (BX1, `BoxSprite.hit`).
 public enum EffectSprite {
     /// 0x4b1 'dust cloud' (PICT 1201, 6 × 56×8) and 0x4ba 'crumble overlay' (PICT 1210, 3 × 32×32).
     public static let dust: Int16 = 0x4b1

@@ -91,6 +91,9 @@ public final class SpriteWorld {
     /// BN: the pending counts `*_DAT_1009ffb0` (Xichrons) / `*_DAT_1009ffac` (secrets) the Setups tallied during
     /// `.SetupLevelSprites` (`SetupFaces.Tallies`); `.KillBonus` moves one unit from here to `G`'s achieved counters.
     public var pendingTallies = SetupFaces.Tallies()
+    /// EC: the counting window `*_DAT_1009fe8c` and the live-enemy count `*_DAT_1009ffb4` (`EnemyCounting`) — the
+    /// session opens the window around `.SetupLevelSprites`; the enemy Kills count down from here.
+    public var enemies = EnemyCounting()
     /// VS: the voice query's base for this iteration (`SoundVoices`) — the session sets it from the shell's playing set
     /// at each `step` / `resume`; `isSoundPlaying(_:)` adds the calls made since.
     public var voices = SoundVoices()

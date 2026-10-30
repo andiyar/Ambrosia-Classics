@@ -255,6 +255,8 @@ public enum SetupFaces {
     // MARK: - one Setup
 
     /// The class Setup for record `p` with a throwaway `FastRand(seed: 1)` — for callers that read faces only.
+    /// The forms without a `counting` argument run the Setup as `.SetupLevelSprites` does: inside the counting window
+    /// (`*_DAT_1009fe8c` set, a throwaway `EnemyCounting`).
     public static func setup(_ p: Placement, context c: SetupFaces.Context, lightsInUse: Int = 0) throws -> Entry {
         var rng = FastRand(seed: 1)
         return try setup(p, context: c, lightsInUse: lightsInUse, rng: &rng)
@@ -267,14 +269,25 @@ public enum SetupFaces {
     /// spawn adds through its `LightTable` instead, `setup(_:context:lights:rng:)`).
     public static func setup(_ p: Placement, context c: SetupFaces.Context, lightsInUse: Int = 0,
                              rng: inout FastRand) throws -> Entry {
-        try setup(p, context: c, lightsInUse: lightsInUse, rng: &rng) { _ in Int16(lightsInUse) }
+        var counting = EnemyCounting(window: true)
+        return try setup(p, context: c, lightsInUse: lightsInUse, rng: &rng, counting: &counting) { _ in
+            Int16(lightsInUse)
+        }
     }
 
     /// LT: the Setup with its `.AddLight` made on `lights` (`*_DAT_100a0124` = `lights.count` for the Xichron gate);
     /// the slot `.AddLight` returns goes to `+0x9a`.
     public static func setup(_ p: Placement, context c: SetupFaces.Context, lights: inout LightTable,
                              rng: inout FastRand) throws -> Entry {
-        try setup(p, context: c, lightsInUse: Int(lights.count), rng: &rng) { l in
+        var counting = EnemyCounting(window: true)
+        return try setup(p, context: c, lights: &lights, counting: &counting, rng: &rng)
+    }
+
+    /// EC: the Setup under the counting window `counting.window` (`*_DAT_1009fe8c`): a counted class sets `+0x1b5` and
+    /// adds 1 to `counting.live` only while it is set (`EnemyCounting.countIfWindow`).
+    public static func setup(_ p: Placement, context c: SetupFaces.Context, lights: inout LightTable,
+                             counting: inout EnemyCounting, rng: inout FastRand) throws -> Entry {
+        try setup(p, context: c, lightsInUse: Int(lights.count), rng: &rng, counting: &counting) { l in
             lights.add(face: LightFaceRef(pict: l.pict, width: l.width, height: l.height),
                        x: Int16(truncatingIfNeeded: l.x), y: Int16(truncatingIfNeeded: l.y), vx: 0, vy: 0, accelY: 0,
                        colour: Int16(truncatingIfNeeded: l.colour))
@@ -283,7 +296,7 @@ public enum SetupFaces {
 
     /// The Setup body; `addLight` makes the `.AddLight` call and returns its slot.
     private static func setup(_ p: Placement, context c: SetupFaces.Context, lightsInUse: Int, rng: inout FastRand,
-                              addLight addToTable: (Light) -> Int16) throws -> Entry {
+                              counting: inout EnemyCounting, addLight addToTable: (Light) -> Int16) throws -> Entry {
         guard let (cls, spawn) = SpriteClassTable.classify(type: p.type, p1Negative: p.p1 < 0) else {
             throw Error.unmapped(type: p.type)
         }
@@ -381,7 +394,7 @@ public enum SetupFaces {
             let records = c.records ?? c.level.placements
             if let f = try BonusSprite.setup(&s, x: Int(p.x), y: Int(p.y), level: c.level, records: records,
                                              effects: c.effects, lightCount: Int16(truncatingIfNeeded: lightsInUse),
-                                             counting: true, playerLayer: Int32(Player.layer), rng: &rng,
+                                             counting: counting.window, playerLayer: Int32(Player.layer), rng: &rng,
                                              addLight: { lf, h, v, colour in
                 let l = Light(pict: lf.pict, width: lf.width, height: lf.height, x: h, y: v, colour: Int(colour))
                 light = l
@@ -502,7 +515,7 @@ public enum SetupFaces {
             s.voicePitch = Int32(rng.next(0x5fff)) * 2 + 0xbfff     // `+0xf0` (`rlwinm 1; addis 1; subi 0x4001`)
             s.classTimer = Int32(rng.next(0x46)) + 0x78            // `+0x14c`
             s.classWord154 = Int32(rng.next(400)) + 1000           // `+0x154`
-            s.countedInTotals = true                           // `+0x1b5 = 1` (M l. 57091–57093; review fix round)
+            counting.countIfWindow(&s)                         // `+0x1b5 = 1`, live + 1 in the window (M l. 57091–57093)
 
         case .crawler:
             s.layer = 0xb                                      // l. 56180
@@ -516,7 +529,7 @@ public enum SetupFaces {
             case 1: s.mode = 0x10002
             default: break
             }
-            s.countedInTotals = true                           // `+0x1b5 = 1` (M l. 56237–56239; review fix round)
+            counting.countIfWindow(&s)                         // `+0x1b5 = 1`, live + 1 in the window (M l. 56237–56239)
 
         case .roach:
             s.layer = 0xb                                      // l. 64923
@@ -526,7 +539,7 @@ public enum SetupFaces {
                 record = Placement(index: p.index, flag: p.flag, byte1: p.byte1, type: p.type, p1: p.p1, p2: p.p2,
                                    p3: 0xaa, p4: p.p4, y: p.y, x: p.x)
             }
-            s.countedInTotals = true                           // `+0x1b5 = 1` (M l. 64948–64950; review fix round)
+            counting.countIfWindow(&s)                         // `+0x1b5 = 1`, live + 1 in the window (M l. 64948–64950)
 
         case .bat:
             // `.SetupBatSprite @ 1007dc30` (M l. 68108–68316; W4, inert): layer 0xb, `+0xc0 = 0`, `+0x150 = −1`; the
@@ -541,7 +554,7 @@ public enum SetupFaces {
             s.classWord150 = -1
             s.hp = 500
             s.hotRect = IdleSprites.Rect(top: 0xf, left: 0xc, bottom: 0x2f, right: 0x2b)
-            s.countedInTotals = true                           // `+0x1b5 = 1` (M l. 68282–68285; review fix round)
+            counting.countIfWindow(&s)                         // `+0x1b5 = 1`, live + 1 in the window (M l. 68282–68285)
             if t == 0x6cd {
                 s.keepRecord = true                            // `+0x188 = 1` (M l. 68300)
                 s.counterA6 = 1                                // `+0xa6 = 1`
@@ -577,7 +590,7 @@ public enum SetupFaces {
             s.classWord150 = -1
             s.subtype = 6
             s.phase = 2
-            s.countedInTotals = true                           // `+0x1b5 = 1` while `*_DAT_1009fe8c` is set
+            counting.countIfWindow(&s)                         // `+0x1b5 = 1`, live + 1 in the window (M l. 67728–67730)
             face(0x6c2, 0, .setupCached)
 
         case .frog:
@@ -604,7 +617,7 @@ public enum SetupFaces {
             default: break
             }
             face(0x708, 0, .setupCached)                       // `+0xc0 = cache 0x708 + 4` (l. 70209)
-            s.countedInTotals = true                           // `+0x1b5 = 1` (M l. 70213–70215; review fix round)
+            counting.countIfWindow(&s)                         // `+0x1b5 = 1`, live + 1 in the window (M l. 70213–70215)
 
         default:
             throw Error.notTranscribed(type: p.type)
@@ -648,9 +661,9 @@ public enum SetupFaces {
     /// `.SetupFrogSprite` at its end (M l. 70211–70215), `.SetupBlobSprite` at its end for every type (M l.
     /// 67728–67730; LV3). // later: Phase 5–6 — the other enemy classes' sites (Gremlin 69229, Floater 69899,
     /// Salamander 70697, Dillo 72370, Warrior 73069, Demon 74493, Chief 75110, Wizard 75676, Xichra 76435), some
-    /// branch-gated, are not transcribed (their Setups throw `notTranscribed` before any tally). The Setups set the
-    /// sprite's `countedInTotals` (`+0x1b5`); the tally here counts by type and class only — one count per Setup, the
-    /// flag is not read back.
+    /// branch-gated, are not transcribed (their Setups throw `notTranscribed` before any tally). EC: the enemies are
+    /// `EnemyCounting.live` — each counted Setup's `countIfWindow` — copied here after the spawn; the secrets and
+    /// Xichrons are counted here by type, while the window is set.
     public struct Tallies: Equatable, Sendable {
         public var secrets: Int16 = 0
         public var xichrons: Int16 = 0
@@ -667,8 +680,6 @@ public enum SetupFaces {
             switch cls {
             case .bonus where type == 0x423: secrets &+= 1
             case .bonus where type == 0x41f || type == 0x420: xichrons &+= 1
-            case .walker, .crawler, .roach, .frog, .blob: enemies &+= 1        // Blob: M l. 67728–67730 (LV3)
-            case .bat where (0x6cc...0x6d5).contains(type): enemies &+= 1
             default: break
             }
         }
@@ -697,15 +708,25 @@ public enum SetupFaces {
         return try spawnLevelSprites(context: c, rng: &rng, idleFaceRect: idleFaceRect)
     }
 
-    /// The spawn with the session stream: each Setup draws in spawn order (plan "F1 ⚑ FastRand sites").
-    public static func spawnLevelSprites(context c: Context, rng: inout FastRand,
+    /// The spawn with the session stream, inside a window of its own (a fresh `EnemyCounting`, window set) — for
+    /// callers that keep no live count.
+    public static func spawnLevelSprites(context c: SetupFaces.Context, rng: inout FastRand,
+                                         idleFaceRect: (Entry) -> IdleSprites.Rect) throws -> Spawned {
+        var counting = EnemyCounting(window: true)
+        return try spawnLevelSprites(context: c, rng: &rng, counting: &counting, idleFaceRect: idleFaceRect)
+    }
+
+    /// The spawn with the session stream: each Setup draws in spawn order (plan "F1 ⚑ FastRand sites"). EC: under
+    /// `counting` (the caller opens and closes the window around it, as `.SetupLevel` does); `tallies.enemies` is the
+    /// live count it ends with (i16, as `.SetupLevel` stores it, M l. 2533).
+    public static func spawnLevelSprites(context c: Context, rng: inout FastRand, counting: inout EnemyCounting,
                                          idleFaceRect: (Entry) -> IdleSprites.Rect) throws -> Spawned {
         guard c.level.header.autoScrollEnable == 0 else { throw Error.autoScrollSprites }
         var out = Spawned(active: ActiveList(), idle: IdleSprites(), created: [], lights: [],
                           records: c.records ?? c.level.placements)
         for p in c.records.map(spawnOrder) ?? c.level.spawnOrder {
-            var e = try setup(p, context: c, lights: &out.lightTable, rng: &rng)
-            out.tallies.count(type: e.type, class: e.spriteClass)
+            var e = try setup(p, context: c, lights: &out.lightTable, counting: &counting, rng: &rng)
+            if counting.window { out.tallies.count(type: e.type, class: e.spriteClass) }
             if e.type == BoxSprite.cart || e.type == BoxSprite.wheel, e.slot.recordIndex != -1 {
                 // The cart arm of `.SetupBoxSprite` (M l. 59444–59463; BX1) makes two children before the cart is
                 // inserted or idled: `MTNewSprite(0xb72, +8, +6, 100, −1, .SetupBoxSprite)` — its Setup's head stores
@@ -762,6 +783,7 @@ public enum SetupFaces {
                 _ = out.idle.add(e.slot, faceRect: idleFaceRect(e))
             }
         }
+        out.tallies.enemies = Int16(truncatingIfNeeded: counting.live)
         return out
     }
 }

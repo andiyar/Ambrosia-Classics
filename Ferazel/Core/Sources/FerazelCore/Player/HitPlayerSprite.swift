@@ -7,8 +7,9 @@ import HectorResources
 /// **Box / see-saw segment** arm up to its mechanism branches (W3, `box`) plus the save point (S1, `savePoint`, which
 /// suspends the frame), and the **Bonus** arm (PK, `bonus`: every pickup; the upgrades suspend the frame),
 /// the Box mechanisms placed on levels 1–4 (BX1, BX2, BT, TP), the **Effect** arm (EF), the **Statue** arm (SW)
-/// and the spikes (LV3). // later: Phase 5 — the enemy and enemy-shot arms; Phase 6 — the types first placed on
-/// levels 5+.
+/// and the spikes (LV3); EC: the enemy rows of step 6 (`enemyHazard`) and step 7's generic path (`enemyContact`),
+/// keyed on the `SpriteHandler` cases — dormant until each class's task maps its `forClass` row. // later: ES — the
+/// enemy-shot rows; GY — the geyser segment 0x5a0; Phase 6 — the types first placed on levels 5+.
 public enum HitPlayerSprite {
     /// The test form: the light calls (`.KillBonus`'s `.RemoveLight`) go to a scratch table, Effects is the default
     /// prefs'.
@@ -56,6 +57,14 @@ public enum HitPlayerSprite {
         case .effect:
             effect(w, player: pID, other: oID)                          // `PTR_PTR_100a0460` (EF)
             return
+        case .salamander, .floater, .crab, .dillo:
+            enemyHazard(w, player: pID, other: oID)                     // step 6's enemy rows (EC)
+            return
+        case .walker, .crawler, .roach, .warrior, .gremlin, .frog, .bat, .blob, .swarmMember:
+            enemyContact(w, player: pID, other: oID)                    // step 7, the generic path (EC)
+            return
+        case .enemyShot:
+            return                                                      // later: ES — step 7's EnemyShot rows
         case .statue:
             // `PTR_PTR_100a01f8` (M l. 49506–49513; SW): `.PlatformBounce(player, statue, the player's hot-rect centre
             // offset, 0, his rect, 0)` and return — no latches, no ground effects.
@@ -991,7 +1000,7 @@ extension HitPlayerSprite {
 /// 1. **The attacker gate** (l. 47983–47985, raw `10054768..10054794`): an attacker with HP `+0xa4` < 1 whose Handle is
 ///    neither `.HandleEnemyShotSprite` (`PTR_PTR_100a0488`) nor `.HandleBoxSprite` (`PTR_PTR_100a0484`) hurts not at
 ///    all (0, no draw). [Plan W2a named "Platform / Background" — the dump and the bank (review A3) say EnemyShot /
-///    Box.] Core has no EnemyShot Handle yet: // later: Phase 5 (enemy shots are `inert` until then).
+///    Box.] EC: the EnemyShot Handle is `.enemyShot` (its class is ES's).
 /// 2. `.HurtSprite(player, damage, (i16) attacker vx, −1000, invul, 0xc)` (`HurtSprite.apply`); 0 → return 0.
 /// 3. The Multi Crystal (M l. 47989–48032; MS): the attacker's Handle not the Blob's (`PTR_PTR_100a04c0` — // later:
 ///    Phase 5, no Blob in Core) and not a Background (`runs`) of type 0x730…0x733, and `.HasItemWhichSlot(0x13)` → the
@@ -1029,7 +1038,7 @@ public enum HurtPlayer {
     public static func hurt(_ w: SpriteWorld, player pID: Int, attacker aID: Int, damage: Int16, blood: Bool,
                             invulnerable: Int16, coins: Int16) -> Bool {
         guard let a = w.active.record(id: aID) else { return false }
-        if a.hp < 1 && a.handler != .box { return false }               // later: Phase 5 — or the EnemyShot Handle
+        if a.hp < 1 && a.handler != .box && a.handler != .enemyShot { return false }
         guard HurtSprite.apply(w, id: pID, damage: damage, dvx: Int16(truncatingIfNeeded: a.vx), dvy: -1000,
                                invulnerable: invulnerable, flash: 0xc) else { return false }
         if !(BackgroundSprite.runs(a, .background) && (0x730...0x733).contains(a.type)),
@@ -1182,5 +1191,76 @@ public enum HurtSprite {
             c.flash = flash
         }
         return true
+    }
+}
+
+extension HitPlayerSprite {
+    /// Step 6's enemy rows (EC; M l. 49514–49573, enemy-shot-and-damage §3.4, enemies-ground §2.1): reached by a
+    /// Handle not in step 7's list. Salamander (`PTR_PTR_100a049c`) → `.HurtPlayer(0x70, no blood, 0x3c, R(100) < 0x51 ?
+    /// 0 : 3)`; Floater (`04ac`) only at `+0x46 > 12`, the same; Crab (`046c`) → `(0x70, 0, 0x3c, R(100) < 0x3d ? 0 :
+    /// 3)`; Dillo (`04b4`) 0x74e → `(0xe0, 0, 0x3c, R(100) < 0x3d ? 0 : 4)`, 0x74f → `(0x1c0, 0, 0x3c, 6)`, any other
+    /// Dillo type nothing. A Floater at `+0x46 ≤ 12` reaches the later rows, none of which matches it.
+    static func enemyHazard(_ w: SpriteWorld, player pID: Int, other oID: Int) {
+        guard let o = w.active.record(id: oID) else { return }
+        func coins(_ below: Int16, _ n: Int16) -> Int16 { w.rng.next(100) < below ? 0 : n }
+        switch o.handler {
+        case .salamander:
+            let c = coins(0x51, 3)
+            HurtPlayer.hurt(w, player: pID, attacker: oID, damage: 0x70, blood: false, invulnerable: 0x3c, coins: c)
+        case .floater:
+            guard 0xc < o.phase else { return }
+            let c = coins(0x51, 3)
+            HurtPlayer.hurt(w, player: pID, attacker: oID, damage: 0x70, blood: false, invulnerable: 0x3c, coins: c)
+        case .crab:
+            let c = coins(0x3d, 3)
+            HurtPlayer.hurt(w, player: pID, attacker: oID, damage: 0x70, blood: false, invulnerable: 0x3c, coins: c)
+        case .dillo:
+            if o.type == 0x74e {
+                let c = coins(0x3d, 4)
+                HurtPlayer.hurt(w, player: pID, attacker: oID, damage: 0xe0, blood: false, invulnerable: 0x3c, coins: c)
+            } else if o.type == 0x74f {
+                HurtPlayer.hurt(w, player: pID, attacker: oID, damage: 0x1c0, blood: false, invulnerable: 0x3c, coins: 6)
+            }
+        default:
+            break
+        }
+    }
+
+    /// Step 7, the generic path for the enemy classes (EC; M l. 49802–49929, raw `10057968..10057bcc`;
+    /// enemy-shots-and-damage §3.5 non-shot rows): none for a type 0x76c…0x775 or 0x754 with gravity `+0x110 > 0`;
+    /// `.ShieldBlock` answers 0 for any Handle but the EnemyShot's (M l. 48380–48381); none for type 0x6e6 with `+0x164
+    /// ≥ 2`, type 0x74d, or 0x73a…0x73e with `+0x160 ≠ 0`. Damage by Handle: Gremlin 0xe0; Crawler, Roach, Bat, Blob
+    /// 0x38; Warrior, Frog 0x70; the rest (Walker, swarm member) the default 0x70; invulnerability 0x3c. Type 0x6a9 →
+    /// 0x70; type 0x6d6 → 0x70 with invulnerability 0x24. Coins: damage 0x70 → `FastRand(100)` (M l. 49899–49904) > 0x50
+    /// → 3 — drawn **before** `.HurtPlayer` and whatever it decides (Ferazel invulnerable, the attacker dead); damage >
+    /// 0x70 → 5 with no draw. Then `.HurtPlayer(player, other, damage, blood 1, invul, coins)`. // later: ES — the
+    /// EnemyShot rows (the 0x77b test, the `.ShieldBlock` block, the per-type damage, `_DAT_100a0570`, the shot's tail).
+    static func enemyContact(_ w: SpriteWorld, player pID: Int, other oID: Int) {
+        guard let o = w.active.record(id: oID) else { return }
+        let t = o.type
+        if ((0x76c...0x775).contains(t) || t == 0x754) && 0 < o.gravity { return }
+        if t == 0x6e6 && 1 < o.launchSpeed { return }
+        if t == 0x74d { return }
+        if (0x73a...0x73e).contains(t) && o.classWord160 != 0 { return }
+        var damage: Int16 = 0x70
+        var invulnerable: Int16 = 0x3c
+        var coins: Int16 = 0
+        switch o.handler {
+        case .gremlin: damage = 0xe0
+        case .crawler, .roach, .bat, .blob: damage = 0x38
+        default: break                                                  // Warrior, Frog 0x70; Walker, swarm member
+        }
+        if t == 0x6a9 { damage = 0x70 }
+        if t == 0x6d6 {
+            damage = 0x70
+            invulnerable = 0x24
+        }
+        if damage == 0x70 {
+            if 0x50 < w.rng.next(100) { coins = 3 }
+        } else if 0x70 < damage {
+            coins = 5
+        }
+        HurtPlayer.hurt(w, player: pID, attacker: oID, damage: damage, blood: true, invulnerable: invulnerable,
+                        coins: coins)
     }
 }

@@ -348,6 +348,13 @@ public struct SpriteSlot: Equatable, Sendable {
     public var sameHandlerExempt = false
     /// `+0x1b2` (u8): Handle skip — never the outer sprite of `.MTCollideSprites`.
     public var handleSkip = false
+    /// EC (plan S2 `emerging`, added, Invariant 9): `+0x1b2` as the enemies name it — pipe emergence (written by PI);
+    /// every class Handle returns at once while it is set (enemies-flyers §7.4). The same byte as `handleSkip` (one
+    /// field per offset), so this is a second name for it, not a second store.
+    public var emerging: Bool {
+        get { handleSkip }
+        set { handleSkip = newValue }
+    }
     /// BT (added, Invariant 9): `+0xa0` (i32) — a Button's level as its last Handle left it (`.HandleButtonSprite`'s
     /// last store, M l. 61812; the 4705 test reads it, M l. 61772–61775). The doors' dead `+0xa0 = 0` is not kept.
     public var buttonPrevious: Int32 = 0
@@ -357,6 +364,14 @@ public struct SpriteSlot: Equatable, Sendable {
     public var firstHandled = false
     /// `+0x1a2` (i16): burn-away row (≠ 0 → `.HandleBurn` from `.StandardSpriteCleanup`).
     public var burnRow: Int16 = 0
+    /// EC (added, Invariant 9): `+0x8c` (u8) — the burn's sound is the pitched 462 (`.HandleBurn` M l. 38783–38791;
+    /// set by `.SetupEnemyShotSprite` and the Wizard / Xichra hits, draw-effects §4.2). `.InitSprite` 0.
+    public var burnPitched = false
+    /// EC (added, Invariant 9): `+0x8d` (u8) — rows the burn consumes a frame, less one (`.SetupChiefSprite` 1).
+    public var burnSpeed: UInt8 = 0
+    /// EC (added, Invariant 9): `+0x8e` (u8) — the burn's particle kind 0xd instead of 1 (`.SetupFrogSprite` with
+    /// hdr+0x26cd ≠ 0).
+    public var burnStyle = false
     /// `+0x1a6` / `+0x1a8` (i16): glow particle kind / glow chance (`.ParticleGlow` from `.StandardSpriteCleanup`).
     public var glowKind: Int16 = 0
     public var glowChance: Int16 = 0
@@ -512,6 +527,15 @@ public enum SpriteHandler: Equatable, Hashable, Sendable {
     /// `.TurnIntoStatue @ 10043138` (M l. 38244–38272) with the Box class's hit `.HitBoxSprite` (`PTR_PTR_100a01f4`) and
     /// tile callback `.HitBoxTileSprite` (`PTR_PTR_100a01f0`) — `StatueSprite`. The enemies' statue sites are Phase 5's.
     case statue
+    /// EC (added at once, plan S2, Invariant 9): the enemy Handles — each a named no-op (`EnemyCommon.handle`, drawn like
+    /// `.inert`, no hit) until its class's task fills it and maps its `forClass` row. TOC slots (`pef.py tocfunc`):
+    /// `.walker` 0x100a0498 (WK1), `.crawler` 04b8 / `.roach` 04a0 (CR), `.dillo` 04b4 (DL), `.bat` 04c4,
+    /// `.swarmMember` 0470 and the insect body (BA), `.gremlin` 04a4 / `.floater` 04ac (GF), `.frog` 04a8 /
+    /// `.salamander` 049c (FR), `.blob` 04c0, the dead Blob, `.crab` 046c and its segments (BL), `.enemyShot` 0488 (ES),
+    /// `.geyserSegment` (`.HandleGeyserSegSprite`, GY), `.warrior` 0494 (◇ LV5, Ruling 3). `.inert` stays for the four
+    /// bosses not placed on levels 1–5 (Demon 04b0, Chief 04bc, Wizard 0490, Xichra 048c).
+    case walker, crawler, roach, dillo, bat, swarmMember, insectBody, gremlin, floater, frog, salamander, blob,
+         deadBlob, crab, crabSegment, enemyShot, geyserSegment, warrior
 
     /// The Handle the class Setup `.GenerateSprite` selects for `type` installs (`SpriteClassTable`). The player
     /// (`.SetupPlayerSprite`), chain spokes (`.SetupChainSprite`, W1) and rope segments (W3) are set by their makers.

@@ -91,7 +91,7 @@ extension SpriteWorld {
     /// - Left the water this frame (`+0x120 ≠ 0`, `+0x11c == 0`): `.Splash(s, 4)` (`exitSplash`) and `+0x144 = 0`.
     /// - The centre `+0x10 = x + r.left + (r.right − r.left) >> 1`, `+0xe = y + r.top + (r.bottom − r.top) >> 1`.
     /// - `+0xdc = 0`; `+0xe0 = 0` unless `+0x186`; `+0xd6 = 0`.
-    /// - `+0x1a2 ≠ 0` → `.HandleBurn` // later: burn-away (no Phase-2 writer of `+0x1a2`).
+    /// - `+0x1a2 ≠ 0` → `.HandleBurn` (`Burn.handle`, EC): the top clip `+0x1bc`, the row particles, the Kill proc.
     /// - `+0x1a8 ≠ 0` with a face → `.ParticleGlow(+0xc0, (+0xa, +0xc), +0x1a6, +0x1a8, +0x17e) @ 10043ad0`
     ///   (l. 32664–32668; `ParticleGlow`, E1a; its `FastRand` draws need the face's pixels, `particleFaces`). Only the
     ///   player sets `+0x1a8`: row 36 writes 0x10 while blinking with `+0x116` > 60 and 8 under a power-up tint (P3),
@@ -121,7 +121,7 @@ extension SpriteWorld {
         if !s.ridingLatch { s.rider = nil }
         s.slope = 0
         if s.burnRow != 0 {
-            // later: `.HandleBurn` (burn-away; no Phase-2 writer of `+0x1a2`).
+            Burn.handle(self, &s)                                           // `.HandleBurn(s)` (M l. 32661–32663)
         }
         if s.glowChance != 0, let f = s.face {
             ParticleGlow.glow(self, face: particleFaces.sprite(f), v: Int16(truncatingIfNeeded: s.y),

@@ -219,7 +219,11 @@ public final class FerazelSession {
         }
         setupLevelTileOps = world.player.tileOps
         world.player.tileOps = []
-        let spawned = try SetupFaces.spawnLevelSprites(context: context, rng: &world.rng) { e in
+        // EC: `.SetupLevel` zeroes the tallies, sets the counting window, runs `.SetupLevelSprites` and clears it
+        // (M l. 2521–2526, raw `10004da4..10004dc0`); the live count stays the world's (`EnemyCounting`).
+        world.enemies = EnemyCounting(window: true)
+        let spawned = try SetupFaces.spawnLevelSprites(context: context, rng: &world.rng,
+                                                       counting: &world.enemies) { e in
             // `.ActiveToIdleSprite`: the bounds of the face `+0xc0` holds at `.AddIdleSprite` time — none for a
             // Handle-faced type, the placeholder for a class-cache face (`SetupFaces` header).
             switch e.source {
@@ -229,6 +233,7 @@ public final class FerazelSession {
             case .setup: return e.slot.face.map(bounds) ?? .noFace
             }
         }
+        world.enemies.window = false
         lights = spawned.lights
         lightTable = spawned.lightTable
         tallies = spawned.tallies
@@ -517,7 +522,12 @@ public final class FerazelSession {
             PlayerShot.handle(world: world, id: id, solver: solver, lights: &self.lightTable, effects: effects,
                               faceWidth: { Self.frameRect($0, resources: res).right }, faceBounds: bounds)
         case .inert:
-            break                                       // later: Phase 5 — the enemies' Handles
+            break                                       // the four bosses not placed on levels 1–5 // later: Phase 6–7
+        case .walker, .crawler, .roach, .dillo, .bat, .swarmMember, .insectBody, .gremlin, .floater, .frog, .salamander,
+             .blob, .deadBlob, .crab, .crabSegment, .enemyShot, .geyserSegment, .warrior:
+            // EC: the enemy Handles — the `+0x1b2` early return, then each a named no-op until its task
+            // (`EnemyCommon.handle`).
+            EnemyCommon.handle(world: world, id: id)
         case .button:
             // `.HandleButtonSprite @ 10070e60` (BT, `ButtonSprite.handle`).
             ButtonSprite.handle(world: world, id: id) { Self.frameRect($0, resources: res).right }

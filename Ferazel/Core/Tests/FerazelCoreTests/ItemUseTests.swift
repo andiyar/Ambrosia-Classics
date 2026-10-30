@@ -531,31 +531,33 @@ final class ItemUseTests: XCTestCase {
     }
 
     func testSmitingRing() throws {
-        // `.SmiteEnemies` (M l. 46981–47046): every listed sprite whose Handle is one of the 15 enemy Handles (TOC
-        // 0x100a048c…0x100a04c4; the Phase-1 enemies are inert, matched by class — Ruling 3), the first 16 only:
-        // `MTNewSprite(0x5a01, centre x − 4, centre y − 4, 0xb, −1, .SetupPlayerShotSprite)`, `+0xf0` 0, `+0xa6` 0.
+        // `.SmiteEnemies` (M l. 46981–47046): every listed sprite whose Handle (`+0x4c`) is one of the 15 enemy Handles
+        // (TOC 0x100a048c…0x100a04c4 — EC: the `SpriteHandler` cases, Ruling 3a), the first 16 only:
+        // `MTNewSprite(0x5a01, +0x10 − 4, +0xe − 4, 0xb, −1, .SetupPlayerShotSprite)` (M l. 47036 — the **stored**
+        // centre, whatever the last `.CalcCenterPos` left), `+0xf0` 0, `+0xa6` 0. Each centre below is stale: the one a
+        // Cleanup computed 10 px left and 2 px down of where the sprite stands now (its hot rect would say otherwise).
         let w = try world()
         let solver = standing(w)
-        let enemies: [(Int16, IdleSprites.Rect, (Int, Int))] = [
-            (0x6cc, IdleSprites.Rect(top: 0xf, left: 0xc, bottom: 0x2f, right: 0x2b), (300, 200)),   // bat
-            (0x708, IdleSprites.Rect(top: 0x14, left: 0xb, bottom: 0x49, right: 0x48), (420, 150)),  // frog
-            (0x6a4, IdleSprites.Rect(top: 0x10, left: 0x10, bottom: 0x50, right: 0x40), (40, 260)),  // walker
+        let enemies: [(Int16, SpriteHandler, IdleSprites.Rect, (Int, Int))] = [
+            (0x6cc, .bat, IdleSprites.Rect(top: 0xf, left: 0xc, bottom: 0x2f, right: 0x2b), (300, 200)),
+            (0x708, .frog, IdleSprites.Rect(top: 0x14, left: 0xb, bottom: 0x49, right: 0x48), (420, 150)),
+            (0x6a4, .walker, IdleSprites.Rect(top: 0x10, left: 0x10, bottom: 0x50, right: 0x40), (40, 260)),
         ]
-        var centres: [SpriteSlot.Point] = []
-        for (type, rect, at) in enemies {
-            let id = try XCTUnwrap(w.newSprite(type: type, x: at.0, y: at.1, layer: 4, handler: .inert) { s in
+        for (type, handler, rect, at) in enemies {
+            w.newSprite(type: type, x: at.0, y: at.1, layer: 4, handler: handler) { s in
                 s.x = at.0
                 s.y = at.1
                 s.hotRect = rect
-            })
-            let e = w.active.sprite(id: id)!
-            centres.append(SpriteSlot.Point(x: e.x + rect.left + ((rect.right - rect.left) >> 1),
-                                            y: e.y + rect.top + ((rect.bottom - rect.top) >> 1)))
+                s.centre = SpriteSlot.Point(x: at.0 - 10 + rect.left + ((rect.right - rect.left) >> 1),
+                                            y: at.1 + 2 + rect.top + ((rect.bottom - rect.top) >> 1))
+            }
         }
+        // The stored centres: bat (317, 233), frog (451, 198), walker (70, 310).
+        let centres = [SpriteSlot.Point(x: 317, y: 233), SpriteSlot.Point(x: 451, y: 198), SpriteSlot.Point(x: 70, y: 310)]
         // Not enemies: a Button (0x528, its own Handle — not one of the 15), a Bonus, an idled enemy record (Handle 0).
         w.newSprite(type: 0x528, x: 10, y: 10, layer: 4, handler: .button)
         w.newSprite(type: 0x532, x: 10, y: 10, layer: 4, handler: .bonus)
-        let idled = try XCTUnwrap(w.newSprite(type: 0x6cc, x: 10, y: 10, layer: 4, handler: .inert))
+        let idled = try XCTUnwrap(w.newSprite(type: 0x6cc, x: 10, y: 10, layer: 4, handler: .bat))
         w.active.update(id: idled) { $0.handleCleared = true }
         stock(w, [Self.spell(0), Self.item(0x10)], selected: 1)
         w.player.cues = []
@@ -581,7 +583,7 @@ final class ItemUseTests: XCTestCase {
         // The first 16 only (`sVar19` from 0x10).
         let v = try world()
         XCTAssertNotNil(Player.spawn(world: v, x: 100, y: standY))
-        for k in 0..<18 { v.newSprite(type: 0x6b8, x: 20 * k, y: 50, layer: 0xb, handler: .inert) }
+        for k in 0..<18 { v.newSprite(type: 0x6b8, x: 20 * k, y: 50, layer: 0xb, handler: .roach) }
         stock(v, [Self.item(0x10)], selected: 0)
         HandleKeys.run(world: v, keys: .use, ridden: nil)
         XCTAssertEqual(shots(v).count, 16)
@@ -589,6 +591,9 @@ final class ItemUseTests: XCTestCase {
         XCTAssertEqual(Set(Smite.enemyClasses), [.xichra, .wizard, .warrior, .walker, .salamander, .roach, .gremlin,
                                                  .frog, .floater, .demon, .dillo, .crawler, .chief, .blob, .bat])
         XCTAssertEqual(Smite.enemyClasses.count, 15)
+        // EC: as `SpriteHandler` cases — the eleven classes of levels 1–5, the Warrior's included (Ruling 3a).
+        XCTAssertEqual(Set(Smite.enemyHandlers), [.warrior, .walker, .salamander, .roach, .gremlin, .frog, .floater,
+                                                  .dillo, .crawler, .blob, .bat])
     }
 
     func testHintSuspendsInsidePlayerHandle() throws {

@@ -608,9 +608,11 @@ public final class LevelRun {
         emit(&out, FrontOutput(draws: s.setupLevelTileOps))
         emit(&out, StageScreens.updateStageLoad(0x32, of: 100))
         if !revisit {
-            // A first visit (`bVar1`, M l. 2528–2536): achieved 0, totals ← the Setups' tallies.
+            // A first visit (`bVar1`, M l. 2528–2536): achieved 0, totals ← the Setups' tallies — the enemies' is the
+            // live count the counting window left (`*_DAT_1009ffb4`, EC: `EnemyCounting`, opened by the session's
+            // `.SetupLevel` around `.SetupLevelSprites`).
             for k in 0..<3 { s.world.globals.achieved[k][L] = 0 }
-            s.world.globals.totals[0][L] = s.tallies.enemies
+            s.world.globals.totals[0][L] = Int16(truncatingIfNeeded: s.world.enemies.live)
             s.world.globals.totals[1][L] = s.tallies.xichrons
             s.world.globals.totals[2][L] = s.tallies.secrets
         }
