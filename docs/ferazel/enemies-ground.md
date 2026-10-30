@@ -583,3 +583,16 @@ sprites. 1751..1759 additionally get the 1750 sheets/rect and state 1. Dillo 187
 7. physics.md §7 Bat row "HP 100, 200" (review 1a #5, adj. 3): 1740 family **500** (`1007dcbc cmpwi 0x6d6; bge` → `1007dcc0 li 0x1f4`), 1850 family 100 (`1007dde0 li 0x64`), insects 200 (`1007e144 li 0xc8`); Floater row rect (0x17,2,0x38,0x5c) → shipped 1780 (0x23,1,0x3e,0x4b) at `10081550–1008155c`.
 8. physics.md §2 water gravity `max(0.7·g, 0x100)` — add the caveat (review 1a #2, adjudication 4): taken only when `+0x11c ≠ 0` at the routine's entry (`lwz 0x11c @100375c8`), before its own `SeparateFromTiles2` (`bl 1003c804 @10037624`); `.StandardSpriteHandles` zeroes `+0x11c` each frame (`100368d4 … 100369ac`), so every sprite's first call uses dry gravity; only a second same-frame call (Frog) or a direct `+0x11c` writer (Bonus 1055 in-water flag, 1350 air bubble) takes the 0x100 branch.
 9. spells-items.md §2.1 (review 1a adjudication 1) — names only: id 2 "Ice Crystals" (cost 10, gravity 0, unholdable), id 3 "Ice Wall" (cost 0x1e `1005213c`, dmg 0x12c `10052138`, floes `1005a2e4–1005a30c`, ledges `1005b2c4/1005b2f4`), id 7 second Ice-Wall icon (cost 0xc, dmg 0x96, gravity 0xfa, no floe); PICT 700 captions 0..11 = Fireball, Statue, Ice Crystals, Ice Wall, Tree Trunk, Boomerang, VBlade, Ice Wall, DensityBall, Sandstorm, EnergyBolt, Ice Shards.
+10. ⚑ CR (2026-10-31, loop run 41; the committed dump, M l. N) — read while building the Crawler and the Roach:
+    (a) §5 "Death and crush exactly as the Crawler": the Roach's dying block (M l. 65065–65099) has **no** vx × 0.97
+    (the Crawler's M l. 56458–56460) — its vx is left to the tiles; (b) neither Setup stores a Kill proc `+0x50`
+    (`.SetupCrawlerSprite` M l. 56153–56246, `.SetupRoachSprite` M l. 64899–64957 store `+0x4c`/`+0x5c`/`+0x1f8` only):
+    their Handles call `.KillCrawler` / `.KillRoach` directly (M l. 56464, 65081) — a burn or any other `+0x50` caller
+    on these classes would only set `+0xe9`; (c) §4 state 2: the `+0xb2` count-down and the leap run before the on-ground
+    test (M l. 56299–56321), so a leap is taken airborne too, and the leap frame's own grounded block then counts the new
+    `+0xa6 = 10 + R(10)` once (effective 9 + R(10) after the frame); (d) §4 state 3 "flipped to point away" and "vx halves
+    while still moving away" are both made the hop frame itself (still on ground); the HP < 300 test there (M l. 56390) only
+    re-stores state 3; (e) the coins' and the particles' draws per kill: R(3) first (every dying frame), then per coin its
+    `.SetupBonusSprite` draws, R(1600), R(1000), then 100 × (R(700), R(600)); (f) §5's hazard "Box 0x5a0" is a type test
+    only (no Handle test), as the Crawler's; (g) the Roach's patrol band half-width is `p3 / 2` toward zero (`srawi 1;
+    addze`, M l. 65034–65035).

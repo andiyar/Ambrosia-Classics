@@ -763,7 +763,12 @@ final class GameFlowGameTests: XCTestCase {
         XCTAssertEqual(s.world.records[24].p1, 2)
         // `restoreSnapshot(save+8)` puts the 6 back on x and y: the records stand where the level file has them.
         let L1 = try LevelFile.load(from: r, level: 1)
-        XCTAssertEqual(s.world.records.map(\.x), L1.placements.map(\.x))
+        // CR (◈): the Roach rec 15 the first iteration wakes runs its Handle (the Setup's vx 0x4b0, the patrol's −100):
+        // x 2275 → 2279, written back; every other record's x is the file's.
+        var xs = L1.placements.map(\.x)
+        XCTAssertEqual([L1.placements[15].type, xs[15]], [0x6b8, 2275])
+        xs[15] = 2279
+        XCTAssertEqual(s.world.records.map(\.x), xs)
         // BN: record 2, the sphere 0x537 (gravity 200), settles 758 → 757 under its first Handle's gravity tail and
         // `.UpdateSprites` writes it back; every other record stands where the level file has it.
         var ys = L1.placements.map(\.y)
@@ -777,6 +782,11 @@ final class GameFlowGameTests: XCTestCase {
         ys[33] = 1098
         ys[37] = 973
         ys[73] = 27
+        // CR (◈): the woken Roach rec 15 settles onto its floor with its hot rect (bottom 0x2d), 1130 → 1123; the
+        // ceiling Crawler rec 39 rises against its ceiling (gravity −0x151, rect top 0xc), 742 → 740.
+        XCTAssertEqual([15, 39].map { L1.placements[$0].type }, [1720, 1712])
+        ys[15] = 1123
+        ys[39] = 740
         XCTAssertEqual(s.world.records.map(\.y), ys)
         XCTAssertTrue(flow.mapSprites.isEmpty, "`.InitGameGlobals`' `.InitPlayerMapData` (M l. 864) on Continue too")
         XCTAssertFalse(draws(entry).contains(.setScreenClut(id: 281)))

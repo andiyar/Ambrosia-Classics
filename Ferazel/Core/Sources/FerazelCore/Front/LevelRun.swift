@@ -1157,12 +1157,19 @@ public struct CachedFaces: Equatable, Sendable {
     /// The cache sets' geometry the Setup-face table (`SetupFaces.sheet(pict:)`) does not hold — the sets only a Handle
     /// faces from: `.InitWalkerSprite`'s 0x6a5 walk (8 × 100×0x50, 4 a row), 0x6a6 throw (6 × 100×0x50, 6 a row), 0x6aa
     /// turn (2 × 0xcc×0x59) and 0x6ab thrust (9 × 0xcc×0x59, one a row) (`.CacheEncFaceSetFromPICT`, M l. 56757–56758,
-    /// 56762–56763; flag 0 → clut 200), marked by the 1700 / 1705 Setups (M l. 56966–56969, 56977–56980; WK1).
+    /// 56762–56763; flag 0 → clut 200), marked by the 1700 / 1705 Setups (M l. 56966–56969, 56977–56980; WK1); CR:
+    /// `.InitCrawlerSprite`'s 0x6ae walk, 0x6af jump and 0x6b1 death (6 × 0x40×0x2c, 6 a row; M l. 56142–56144) and
+    /// `.InitRoachSprite`'s 0x6b9 death (6 × 100×0x36, 6 a row; M l. 64894; its 0x6b8 walk is the Setup-face table's),
+    /// marked by the Crawler / Roach Setups (M l. 56188–56190, 64931–64932).
     public static let handleSets: [SetupFaces.Sheet] = [
         SetupFaces.Sheet(pict: 0x6a5, count: 8, cellWidth: 100, cellHeight: 0x50, columns: 4, clut: 200),
         SetupFaces.Sheet(pict: 0x6a6, count: 6, cellWidth: 100, cellHeight: 0x50, columns: 6, clut: 200),
         SetupFaces.Sheet(pict: 0x6aa, count: 2, cellWidth: 0xcc, cellHeight: 0x59, columns: 1, clut: 200),
         SetupFaces.Sheet(pict: 0x6ab, count: 9, cellWidth: 0xcc, cellHeight: 0x59, columns: 1, clut: 200),
+        SetupFaces.Sheet(pict: 0x6ae, count: 6, cellWidth: 0x40, cellHeight: 0x2c, columns: 6, clut: 200),
+        SetupFaces.Sheet(pict: 0x6af, count: 6, cellWidth: 0x40, cellHeight: 0x2c, columns: 6, clut: 200),
+        SetupFaces.Sheet(pict: 0x6b1, count: 6, cellWidth: 0x40, cellHeight: 0x2c, columns: 6, clut: 200),
+        SetupFaces.Sheet(pict: 0x6b9, count: 6, cellWidth: 100, cellHeight: 0x36, columns: 6, clut: 200),
     ]
 
     /// The level-load cache faces the Setups of `types` mark (`marks`), as sheets, in mark order — what

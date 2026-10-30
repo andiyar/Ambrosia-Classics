@@ -795,7 +795,10 @@ final class PlayerTileTests: XCTestCase {
         XCTAssertEqual(made.count, 2)
         XCTAssertEqual(session.world.active.next(after: spawned), crawler.id)
         let roaches = session.world.active.sprites.filter { $0.type == 0x6b8 }
-        XCTAssertEqual(roaches.map { [$0.x, $0.y, Int($0.layer)] }, [[2275, 1130, 0xb], [3168, 572, 0xb]])
+        // CR (◈): woken at (2275, 1130) and (3168, 572), each runs its Handle the same iteration (the Setup's vx 0x4b0
+        // and the patrol's −100: x + 4; gravity and the separation with the hot rect (0x23, 0x1b, 0x44, 0x2d): onto
+        // its floor, y − 7 / − 5).
+        XCTAssertEqual(roaches.map { [$0.x, $0.y, Int($0.layer)] }, [[2279, 1123, 0xb], [3172, 567, 0xb]])
         XCTAssertEqual(session.world.active.next(after: crawler.id), roaches.first?.id)
         XCTAssertEqual(roaches.last.flatMap { session.world.active.next(after: $0.id) }, made.first?.id)
         XCTAssertEqual(made.map(\.phase), [14, 14])                     // handled on the frame they were made

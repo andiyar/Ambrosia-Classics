@@ -143,8 +143,9 @@ final class BootFacesTests: XCTestCase {
         for s in EnemyShot.sheets { XCTAssertEqual(boot[s.pict], s, "enemy shot PICT \(s.pict)") }
         for s in EnemyShot.cachedSheets { XCTAssertNil(boot[s.pict], "cache PICT \(s.pict)") }
         // WK1: the Walker Handles' four sets are level-load caches (`.CacheEncFaceSetFromPICT`, M l. 56757–56758,
-        // 56762–56763), not boot faces, and no Setup-face table entry defines them otherwise.
-        XCTAssertEqual(CachedFaces.handleSets.map(\.pict), [0x6a5, 0x6a6, 0x6aa, 0x6ab])
+        // 56762–56763), not boot faces, and no Setup-face table entry defines them otherwise; CR: so are the Crawler's
+        // walk / jump / death sets (M l. 56142–56144) and the Roach's death set (M l. 64894).
+        XCTAssertEqual(CachedFaces.handleSets.map(\.pict), [0x6a5, 0x6a6, 0x6aa, 0x6ab, 0x6ae, 0x6af, 0x6b1, 0x6b9])
         for s in CachedFaces.handleSets {
             XCTAssertNil(boot[s.pict], "cache PICT \(s.pict)")
             XCTAssertNil(SetupFaces.sheet(pict: s.pict), "cache PICT \(s.pict) in the Setup-face table")
@@ -183,6 +184,16 @@ final class BootFacesTests: XCTestCase {
             if types.contains(Walker.spearGuard) {
                 XCTAssertTrue(marked.contains(CachedFaces.handleSets[2]) && marked.contains(CachedFaces.handleSets[3]),
                               "level \(level): the 1705's turn / thrust sets marked")
+            }
+            // CR: the Crawler Handle faces from 0x6ae / 0x6af / 0x6b1 (marked by its Setup, M l. 56188–56190), the Roach
+            // Handle from 0x6b8 (its Setup sheet) and 0x6b9 (M l. 64931–64932); the ceiling face 0x6b0 is a boot single.
+            if types.contains(CrawlerRoach.crawler) {
+                XCTAssertTrue(CachedFaces.handleSets[4...6].allSatisfy(marked.contains), "level \(level): the Crawler's sets")
+                XCTAssertNotNil(loaded[CrawlerRoach.ceilingFace], "level \(level): the ceiling face")
+            }
+            if types.contains(CrawlerRoach.roach) {
+                XCTAssertTrue(marked.contains(CachedFaces.handleSets[7]), "level \(level): the Roach's death set")
+                XCTAssertNotNil(loaded[CrawlerRoach.roachWalk], "level \(level): the Roach's walk set")
             }
             for sh in marked where present(sh.pict) {
                 let a = loaded[sh.pict]?.arguments
@@ -243,12 +254,17 @@ final class BootFacesTests: XCTestCase {
         let res = try Self.resources.get()
         // (level, phase) → (rows, FNV-1a of the rows' text, one "\n" after each), measured at b535527^. WK1 (◈) re-pinned
         // the FNVs (row counts unchanged): `.SetupWalkerSprite` now sets the Walkers' hot rects and the Walker Handle
-        // re-faces them; with the Walker's `forClass` row and Setup switched back off every b535527^ value returns.
+        // re-faces them; with the Walker's `forClass` row and Setup switched back off every b535527^ value returns. CR (◈)
+        // re-pinned them again (counts unchanged): `.SetupCrawlerSprite` / `.SetupRoachSprite` set the hot rects (0x14,
+        // 0xc, 0x2c, 0x21) / (0x23, 0x1b, 0x44, 0x2d) and their Handles re-face them; with the two `forClass` rows and the
+        // Setups switched back off the WK1 values return (was L1 f478cf71be64b444 / fd95d79c159b3841 / 9a2c740b2d61f7a3,
+        // L2 8667712c97eea1fa / d2ea580ff2c8d3ba / cc76204bbc1385bd, L3 9d0811a45f709596 / 9bcd46780b6ba8ea /
+        // 50bcf3ea0ff24018, L4 fec73bab774581f5 / 9b87a71eafe9f70c / d53bf909322b2ca4).
         let pinned: [String: (rows: Int, fnv: UInt64)] = [
-            "L1 init": (190, 0xf478cf71be64b444), "L1 f30": (240, 0xfd95d79c159b3841), "L1 f120": (240, 0x9a2c740b2d61f7a3),
-            "L2 init": (229, 0x8667712c97eea1fa), "L2 f30": (278, 0xd2ea580ff2c8d3ba), "L2 f120": (278, 0xcc76204bbc1385bd),
-            "L3 init": (234, 0x9d0811a45f709596), "L3 f30": (310, 0x9bcd46780b6ba8ea), "L3 f120": (310, 0x50bcf3ea0ff24018),
-            "L4 init": (264, 0xfec73bab774581f5), "L4 f30": (342, 0x9b87a71eafe9f70c), "L4 f120": (342, 0xd53bf909322b2ca4),
+            "L1 init": (190, 0x157d6742ce800e1f), "L1 f30": (240, 0x8190d7eb68896260), "L1 f120": (240, 0xcda33ae9706a4618),
+            "L2 init": (229, 0x8fb8d314f8d35783), "L2 f30": (278, 0x7e9c0511f07e745d), "L2 f120": (278, 0x35c9c2eb3280e4b0),
+            "L3 init": (234, 0x9ee49e49aaa668a4), "L3 f30": (310, 0xd4f7e113045d39a2), "L3 f120": (310, 0x5a2e3d4e64f7c1ee),
+            "L4 init": (264, 0x1d9360dec485c68b), "L4 f30": (342, 0x96ede8588083992a), "L4 f120": (342, 0xc6e32956a351c41f),
         ]
         func rect(_ x: IdleSprites.Rect) -> String { "(\(x.top),\(x.left),\(x.bottom),\(x.right))" }
         func emitter(_ f: ParticleFace?) -> String {

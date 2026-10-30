@@ -1003,6 +1003,42 @@ records the summary line.
   `+0x150 = 0x16`) · `testCrawlerRoachLiquids` (§2.4 rows) · `testKillScores` (Crawler 500, Roach 600, `+0xea`).
 - **Gate:** G2 553 + ◈. Quick bot levels 1–2. **Commit:** `FerazelCore: Crawlers and Roaches; goldens moved as recorded; 8 tests`.
 
+- **As executed (2026-10-31, loop run 41, implementer):** G2 **554** / 0 failed / the 2 opt-in skips (ladder +1, the
+  attended commit); GW1 exit 0, 2; GW2 **81** / 0 / 2 opt-in skips (references unchanged, `WinReferenceFramesTests` green); G5 BUILD SUCCEEDED; G7 / G7b / G8 empty. Quick bot (levels 1–2, 1 min): `== core: random play
+  — levels 2, seeds 4, steps 14400, deaths 2, exits 1, conversations 5, saves 0, failures 0`. **◈ goldens:** only the
+  two level-1 routes on which a Crawler wakes moved — swim `[67, 321]` / `c1dd428a3f146d77` → `[67, 322]` /
+  `3e99f74fa10e87e2`; 600-frame `a8dda9cf3e448016` / 3114 / `28a48762cfff1b2b` / seed 1574122804 / 156 →
+  `0cce4b0446e2a48e` (the test's `hex` prints `cce4b0446e2a48e`) / 3160 / `1b06b8a4117cf9dc` / 1361095401 / 150 (the
+  player's path and the scroll unchanged). Every other golden (Phase 1 first frame, tie-break, pans 30 / 60, chain, L2
+  both frames, jump, FE0, map) and the Windows references unchanged. **Awake log** (every Crawler / Roach Handle call on
+  every golden route): swim — Crawler rec 39 iterations 183…318 (136 Handles, ceiling throughout), Crawler rec 9
+  275…397 (123: drops at 302, lands at 316, y 452 → 559, floor); 600-frame — rec 39 183…501 (169, ceiling), rec 9
+  275…600 (326); **no Roach wakes on any golden route, and nothing on level 2's, the jump's or the Phase-1 routes** —
+  the plan's "level 1 and level 2 goldens move" was wrong (as WK1's). Also moved for the same cause: `BootFacesTests`'
+  twelve hot-rect FNVs (counts unchanged — the two Setups set hot rects), `GameFlowGameTests` continue write-backs
+  (Roach rec 15 x 2275 → 2279, y 1130 → 1123; ceiling Crawler rec 39 y 742 → 740), `PlayerTileTests` crunch (the two
+  woken Roaches (2275, 1130) / (3168, 572) → (2279, 1123) / (3172, 567)). **Switch-off** (both `forClass` rows `.inert`
+  + HEAD's `SetupFaces.swift`, HEAD expectations): the goldens, the BootFaces FNVs, the continue and crunch pins and
+  SpriteList / LevelRun / BackgroundMover / EnemyCommon / ItemUse — 54 tests, all pass: every old value returns. New
+  values measured twice. **Dump vs plan / bank** (⚑ enemies-ground Corrections #10): the Roach's death has no × 0.97
+  friction; neither Setup stores a Kill proc `+0x50` (the Handles call `.KillCrawler` / `.KillRoach`; `EnemyCommon.
+  killProc`'s Crawler / Roach arm is therefore never the original's — unreachable, left as EC built it); the leap and
+  the `+0xb2` count-down run before the ground test and the leap frame counts the new `+0xa6` once; the hop's halving
+  runs on the hop frame; the Crawler's state-3 `HP < 300` only re-stores 3; the Roach's band is `p3 / 2` toward zero;
+  `.KillPlayerShot(o, 0, 0)`'s stale r29 in both Hit routines is the shot itself (`or r29,r4,r4`, raw `100665d4` /
+  `10078034`) — its own `+0x9a` is recoloured for ids 1…4; the floor crawler (p1 ≠ 0, placed nowhere) now sets up with
+  no face (the absent 0x5dd) instead of refusing; the ceiling crawler keeps the Phase-1 `.handle` stand-in 0x6b0 (the
+  Handle's face; it is idled at spawn, so never drawn before its Handle). No save flag `+0x188…+0x18b` is stored by
+  either class; `+0xea` by both Kills (pinned); no idle margins; no new run-time face sheet (coins 0x516 are boot faces).
+  **Cache marks:** the marks already existed; `CachedFaces.handleSets` gains 0x6ae / 0x6af / 0x6b1 / 0x6b9. **Outside
+  Files:** `FerazelSession.swift` (Handle + hit dispatch), `EnemyCommon.swift` (comment), `GameFlowGameTests.swift`,
+  `PlayerTileTests.swift`, `BootFacesTests.swift`, `DrawModeAuditTests.swift` (Crawler / Roach mode + facing rows, the
+  HurtSprite flash row's sites, the shifted SetupFaces rows, the SetupFaces `notTranscribed` count 13 → 12),
+  `docs/ferazel/enemies-ground.md` (#10). **Self-mutation:** 112 mutants of the new code and the shot arm, 103 killed;
+  the 9 survivors are equivalent or unreachable (the wind-up face clamp at 4; the two state-3 self-stores; `+0xb2 == 0`
+  at the hold test; +100 at the Roach's cap; the `HP > 0` cry branch behind `HP < 3`; tile kinds 99 / 199 that neither
+  bounce routine acts on).
+
 #### WK2 — ⚑ MAJOR ◈ — Walker 1760 boulder thrower and 1750 Ax goblin (→ 559)
 - **Files:** `Sources/FerazelCore/World/Enemies/Walker.swift`, `Sources/FerazelCore/World/Enemies/AxGoblin.swift` (new),
   `Sources/FerazelCore/Front/LevelRun.swift` (1750–1754 marks), `Tests/FerazelCoreTests/Enemies/WalkerTests.swift`, golden

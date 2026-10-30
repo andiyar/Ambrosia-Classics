@@ -509,28 +509,20 @@ public enum SetupFaces {
             Walker.setup(&s, record: p, playerX: c.playerX, rng: &rng, counting: &counting)
 
         case .crawler:
-            s.layer = 0xb                                      // l. 56180
-            guard p.p1 == 0 else { throw Error.notTranscribed(type: p.type) }   // p1 ≠ 0: floor crawler, face 0x5dd
-            // `+0xc0 = PTR_DAT_100a09b0[0]`, loaded from PICT 0x5dc, which no shipped file holds (enemies-ground §4):
-            // 0. The Handle's state 0 (ceiling) sets the face 1712 (`*_DAT_100a09ac`, PICT 0x6b0).
-            face(0x6b0, 0, .handle)
-            switch p.p2 {                                      // tiers (enemies-ground §4)
-            case 2: s.mode = 0x10003
-            case 3: s.mode = 0x1000f
-            case 1: s.mode = 0x10002
-            default: break
-            }
-            counting.countIfWindow(&s)                         // `+0x1b5 = 1`, live + 1 in the window (M l. 56237–56239)
+            // `.SetupCrawlerSprite @ 100659a0` (M l. 56153–56246; CR, `CrawlerRoach.setupCrawler`): the class fields, the
+            // state by p1, the tier by p2, the rect and the counting window. `+0xc0 = PTR_DAT_100a09b0[p1 == 0 ? 0 : 1]`,
+            // loaded from PICT 0x5dc / 0x5dd, which no shipped file holds (enemies-ground §4): 0. p1 0: the Handle's
+            // state 0 (ceiling) sets the face 1712 (`*_DAT_100a09ac`, PICT 0x6b0) — the Phase-1 stand-in; p1 ≠ 0 (placed
+            // on no level): no face until the Handle's walk set 0x6ae.
+            if p.p1 == 0 { face(0x6b0, 0, .handle) }
+            CrawlerRoach.setupCrawler(&s, record: p, counting: &counting)
 
         case .roach:
-            s.layer = 0xb                                      // l. 64923
+            // `.SetupRoachSprite @ 10077914` (M l. 64899–64957; CR, `CrawlerRoach.setupRoach`): `+0xc0` = cache 0x6b8
+            // face 0 (M l. 64933); the live record's p3 (`*_DAT_100a0058 + 16·(+0x48) + 0xc`) 0 → 0xaa, written back (M
+            // l. 64940–64944); `+0x154` = x and vx 0x4b0 (M l. 64945–64946).
             face(0x6b8, 0, .setupCached)
-            // The live record's p3 (`*_DAT_100a0058 + 16·(+0x48) + 0xc`): 0 → 0xaa, written back (l. 64940–64944).
-            if p.p3 == 0 {
-                record = Placement(index: p.index, flag: p.flag, byte1: p.byte1, type: p.type, p1: p.p1, p2: p.p2,
-                                   p3: 0xaa, p4: p.p4, y: p.y, x: p.x)
-            }
-            counting.countIfWindow(&s)                         // `+0x1b5 = 1`, live + 1 in the window (M l. 64948–64950)
+            record = CrawlerRoach.setupRoach(&s, record: p, counting: &counting)
 
         case .bat:
             // `.SetupBatSprite @ 1007dc30` (M l. 68108–68316; W4, inert): layer 0xb, `+0xc0 = 0`, `+0x150 = −1`; the

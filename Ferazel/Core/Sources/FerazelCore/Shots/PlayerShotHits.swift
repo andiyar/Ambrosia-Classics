@@ -159,8 +159,8 @@ public enum PlayerShotHits {
     ///    300`, `cmpwi r0,0x12c` raw `1005ab7c` → HP − 0x50, `+0xaa = 10`, `+0x116 = 10`,
     ///    `.STPlay3DSoundPitched(419, 1, 0x100, shot +0xa, 35000)`) then `.KillPlayerShot(s, 1, 1)`; with one →
     ///    `.PlatformBounce(s, other, the hot-rect centre offset, 0, +0x34, 0)`, a contact (≠ 0) →
-    ///    `.KillPlayerShot(s, 1, 1)`; the Crawler (`PTR_PTR_100a04b8`) → `.KillPlayerShot(s, 0, 0)` // later: Phase 5
-    ///    (the level-1–4 Crawler stand-in is `.inert`); any other Handle nothing.
+    ///    `.KillPlayerShot(s, 1, 1)`; the Crawler (`PTR_PTR_100a04b8`, CR) → `.KillPlayerShot(s, 0, 0)` (any `+0xa6`);
+    ///    any other Handle nothing.
     /// Every Handle comparison is `+0x4c == Handle`, so an idled record (`+0x4c` 0, `handleCleared`) matches none
     /// (`BackgroundSprite.runs`); the orb-vs-0xb7c test reads the type only.
     /// No `+0xe9` test: `.MTCollideSprites` calls both sides of a contact, so a shot killed by the other side's Hit in
@@ -235,9 +235,11 @@ public enum PlayerShotHits {
                     killShot(true, true)
                 }
             }
+        } else if runs(o, .crawler) {
+            // The Crawler Handle `PTR_PTR_100a04b8` → `.KillPlayerShot(s, 0, 0)` (M l. 51062–51064; CR).
+            killShot(false, false)
         }
-        // The Crawler Handle `PTR_PTR_100a04b8` → `.KillPlayerShot(s, 0, 0)` (M l. 51062–51064) // later: Phase 5 (the
-        // Crawler's Handle; the level-1–4 stand-in is `.inert`). Any other Handle (or none): nothing.
+        // Any other Handle (or none): nothing.
     }
 
     /// The Tree Trunk's growth (`.HitPlayerShotSprite` M l. 51007–51030; raw `1005a984..1005aa58`; spells-detail §3.5):

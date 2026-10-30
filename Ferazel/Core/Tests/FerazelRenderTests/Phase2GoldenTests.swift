@@ -182,9 +182,14 @@ final class Phase2GoldenTests: XCTestCase {
         // iteration 61) and the Xichrons of recs 92, 91, 93, 94 (324…338: score, snd 501, their light freed, the
         // `.ExplodeFaceIntoParticles` bursts and their `FastRand` draws); route, entry and splashes unchanged; with the
         // pickup arm disabled the old values return; was [68, 305] / 10b7b133cdc273c2).
-        XCTAssertEqual([liquidParticles(s), s.world.particles.live], [67, 321])
+        // ◈ Re-measured 2026-10-31 (CR: the Crawler Handle — the ceiling crawler rec 39 wakes on iterations 183…318 and
+        // holds the ceiling; rec 9 wakes at 275, drops at 302 and lands at 316 (y 452 → 559) and walks the floor —
+        // its faces, draws and sounds; no Roach wakes on this route; route, entry, splashes and the player unchanged;
+        // with the Crawler / Roach `forClass` rows and Setups switched back off the old values return; was [67, 321] /
+        // c1dd428a3f146d77).
+        XCTAssertEqual([liquidParticles(s), s.world.particles.live], [67, 322])
         XCTAssertEqual(chain.count, 397)
-        XCTAssertEqual(hex(fnv1a(bytes(chain) + bytes(cues))), "c1dd428a3f146d77")
+        XCTAssertEqual(hex(fnv1a(bytes(chain) + bytes(cues))), "3e99f74fa10e87e2")
     }
 
     /// 600 iterations: the swim route (357: the col-24 wall break, the camera pan, the pool entry), the pool strokes
@@ -225,14 +230,19 @@ final class Phase2GoldenTests: XCTestCase {
         // of recs 92, 91, 93, 94 (324…338) and 95 (497): six more cues (506, 501 ×5 = 36 cue words), the Xichron
         // bursts' particles and `FastRand` draws; the player's path and the scroll unchanged; with the pickup arm
         // disabled the old values return; was 1ebeb6a5f3f3b6b0 / 3078 / e350390fb4658cfd / seed 1248094906 / 151).
-        XCTAssertEqual(hex(fnv1a(bytes(chain))), "a8dda9cf3e448016")
-        XCTAssertEqual(cues.count, 3114)
-        XCTAssertEqual(hex(fnv1a(bytes(cues))), "28a48762cfff1b2b")
+        // ◈ Re-measured 2026-10-31 (CR: the Crawler Handle — rec 39 awake on iterations 183…501 on the ceiling, rec 9
+        // on 275…600: it drops at 302, lands at 316 and runs its floor arm (the leaps' `FastRand` draws and snd 700,
+        // its faces); no Roach wakes on this route; the player's path and the scroll unchanged; with the Crawler /
+        // Roach `forClass` rows and Setups switched back off the old values return; was a8dda9cf3e448016 / 3114 /
+        // 28a48762cfff1b2b / seed 1574122804 / 156).
+        XCTAssertEqual(hex(fnv1a(bytes(chain))), "cce4b0446e2a48e")
+        XCTAssertEqual(cues.count, 3160)
+        XCTAssertEqual(hex(fnv1a(bytes(cues))), "1b06b8a4117cf9dc")
         XCTAssertEqual([p.x, p.y, Int(p.vx), Int(p.vy)], [1591, 361, 1150, 705])
         XCTAssertNotEqual([s.camera.scrollH, s.camera.scrollV], [0, 0])
         XCTAssertEqual([s.camera.scrollH, s.camera.scrollV], [1353, 309])
-        XCTAssertEqual(s.rngSeed, 1574122804)
-        XCTAssertEqual(s.world.particles.live, 156)
+        XCTAssertEqual(s.rngSeed, 1361095401)
+        XCTAssertEqual(s.world.particles.live, 150)
     }
 
     /// C1: a sign / conversation suspension answered "ended" at once with the rest of the frame merged in (the

@@ -567,6 +567,8 @@ public enum SpriteHandler: Equatable, Hashable, Sendable {
         case .bonus: return .bonus
         case .button: return .button
         case .walker: return .walker        // WK1: the Walker class 1700…1709, 1750…1769 (1750 / 1760 arms WK2)
+        case .crawler: return .crawler      // CR: the Crawler 1712
+        case .roach: return .roach          // CR: the Roach 1720
         default: return .inert
         }
     }

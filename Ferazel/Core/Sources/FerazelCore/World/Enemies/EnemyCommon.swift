@@ -67,7 +67,7 @@ public enum EnemyCommon {
         guard let s = w.active.record(id: id), !s.emerging else { return }   // `+0x1b2` → return
         switch s.handler {
         case .walker: break                             // the session dispatches `Walker.handle` (WK1)
-        case .crawler, .roach: break                    // later: CR — `.HandleCrawlerSprite` / `.HandleRoachSprite`
+        case .crawler, .roach: break                    // the session dispatches `CrawlerRoach` (CR)
         case .dillo: break                              // later: DL — `.HandleDilloSprite`
         case .bat, .swarmMember, .insectBody: break     // later: BA — the Bat class, the swarm members, the insect body
         case .gremlin, .floater: break                  // later: GF — `.HandleGremlinSprite` / `.HandleFloaterSprite`
