@@ -14,10 +14,18 @@ import XCTest
 /// Runs only with `FERAZEL_VISIT_SWEEP=1` (skipped otherwise, so the normal suite stays green while it fails on known
 /// bugs): `FERAZEL_VISIT_SWEEP=1 swift test --filter VisitSweepTests` — or tools/ferazel-visit-sweep.sh, which shards
 /// it across processes and survives a trap.
-@MainActor final class VisitSweepTests: XCTestCase {
+///
+/// The class and its test method are not main-actor isolated: Windows XCTest (swift-corelibs-xctest) casts every listed
+/// test to `(Self) -> () throws -> ()` and traps on a `@MainActor` one, so Proof B's test listing died. XCTest runs a
+/// synchronous test on the main thread on both platforms, so the sweep enters the main actor with `assumeIsolated`.
+final class VisitSweepTests: XCTestCase {
 
     func testVisitEveryObject() throws {
         guard VisitSweep.enabled else { throw XCTSkip("set FERAZEL_VISIT_SWEEP=1 (tools/ferazel-visit-sweep.sh)") }
+        try MainActor.assumeIsolated { try Self.sweep() }
+    }
+
+    @MainActor private static func sweep() throws {
         let resources = try FerazelData.open(try FerazelData.dataDirectory())
         let stamp = try WorldFile.load(from: resources).stamp
         let lengths = try SweepShell.soundLengths(resources)

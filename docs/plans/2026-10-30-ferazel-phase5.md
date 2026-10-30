@@ -448,6 +448,14 @@ records the summary line.
   `Ferazel/Windows/Sources/FerazelWin/main.swift` into `WinGame.runFrames(_:scripted:)`
   (`Ferazel/Windows/Sources/FerazelWinKit/WinGame.swift`), called by both the exe and `WinReferenceFramesTests`
   (behaviour unchanged). Known, left as is: `--class` mode's verdict does not check the opt-in skip.
+- **As executed (fix round 2):** Proof B's `--list-tests` step crashed in Windows XCTest (swift-corelibs-xctest casts
+  every listed test to `(Self) -> () throws -> ()`; `VisitSweepTests` was `@MainActor`, so its method's type carried
+  the main actor and the cast trapped). The class and `testVisitEveryObject` are now non-isolated; the sweep body
+  moved into a `@MainActor private static func sweep()` entered with `MainActor.assumeIsolated` (XCTest runs a
+  synchronous test on the main thread on both platforms). Skip and opted-in behaviour unchanged; the test's name is
+  unchanged, so `optin_skips` still matches. Files fence amended: `Ferazel/Core/Tests/FerazelRenderTests/VisitSweepTests.swift`.
+  It was the only global-actor-isolated or async test in Ferazel/Core/Tests. The FerazelWinKit test classes are all
+  `@MainActor` too, but they run macOS-hosted only (GW2) and are not in GW1's Windows test exe — left as is.
 
 #### SP — minor — the sparkle: one scroll for Core's walk and the renderer; the bank's row guard; a teleporter through LevelRun (→ 505)
 - **Q15 items 1, 3, 4; gap ledger #2 (A22).** Today `FerazelSession.diffuseSeeds` walks mode-5 draws at the **camera**
