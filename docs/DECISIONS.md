@@ -1794,3 +1794,12 @@ adds a range row); 3,257 hot-rect/emitter rows identical before and after the bo
 re-derived them from `b535527^`); BC51 corrected (the squash row counter starts at 0, raw 10027328). Carried [LOW]: the
 face scan misses variable ids and ternary literals (covered by the class sheet lists today); hash pins cannot name the
 changed row; the pin renderer uses ruled/lowest colour settings.
+
+**Seat ruling — loop run 38 (2026-10-30): how Q15 item 7 is carried** (Ben's 13:01 addition with 3cf72df; his Q15 is
+unanswered, so its default (a) holds). (1) The `StatusBar.swift` header comment ("black / white are 255 / 0 under 200
+and 700 alike" — black is index 96 in clut 200 under the lowest tie-break) and the `MapRenderTests` reference that is
+rebuilt with the fix's own model are **folded into DA** as a comment fix + asserts inside DA's or the existing map test
+functions (independent pins of a few clut-700 indices) — **ladder unchanged**, scope fence of DA widened to those two
+files. (2) The map text smoothing / flash colours in clut 700 (latent: map text is pure black/white) needs a capture of
+the original — stays with Ben (Q15 item 7, beside Q16 (3)); no task. (3) The screen-vs-Let's-Play comparison check is
+an idea for Ben to rule (Q15); not planned.
