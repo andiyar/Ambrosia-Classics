@@ -1739,3 +1739,31 @@ full-screen key). Mac carries [LOW]: the Mac key field's 4 px click outset; the 
 button is held (Windows models it; the Mac app does not). FerazelWinKit **77/0** — the Phase W ladder's top.
 
 **As built — WF6 + Phase W END (loop run 35, 2026-10-27; cd32864 + 08c30f3 + 5481d97 + 4387e2b + 589a900):** `tools/windows/stage-ferazel-win.sh` (zsh; fixed folders `$WIN_CROSS/{work,build}/stage-ferazel`, Ruling 19; GUI subsystem — llvm-objdump prints `00000002`; manifest + icon + version info; 19 DLLs by the import walk; `Data\` = the original data + `Fonts`; WHAT-TO-EXPECT.txt BOM + CRLF; MANIFEST.txt; zip ≈ 92 MB, 60 files) and the CrossOver half of `tools/windows/smoke-ferazel-win.sh` (three headless muted runs of the staged exe in a clean bottle, each `cmp`-ed with the Mac SDL build's dump, whose FNV is checked against the recorded one: A menu 1,437 wakes `0xae2b1ee08c089b2a`, B level 1's first frame 1,865 `0xc99ce8e85b4bd8f7`, **C level 1 text at full brightness, step 959, 3,833 wakes `0xfbb2dd7a1d289726`** — the Fable phase leg found step 881's first text frame is nearly black; every run log must say `video=dummy audio=none` and carry no `BakedTextRasterizer:` line; the smoke refuses a zip not stamped with HEAD). Seat ruling: exact frame counts (4 × (T − 1) + 1) instead of the plan's 4 × (ticks + 60) margin, so each reference FNV is checked too. Gate card `Ferazel/WINDOWS-WHAT-TO-EXPECT.md` (→ QUESTIONS Q14, for Ben and Andrew; asks for a real save + restore — the Windows Open/Save code has never run). **Launch gates by day, muted:** G9M clean; Proof B **489/0/1/0** (4 min 48 s); GW6 three "identical" lines. Reviews: one Opus leg PASS WITH FIXES, FABLE-GRADE phase leg PASS WITH FIXES (re-ran G2 490/0, GW2 77/0, GW6; the Mac app's diff is a move plus the gated mixer/beeper) → one round, seat-read. **Phase W is machine-closed:** Ferazel/Core 490/0, FerazelWinKit 77/0, census 1,108/0, HK 35a85ba untouched (Ruling 17). From here every task carries its Windows side (lockstep, Ruling 16).
+
+## D44 — Ferazel's Wand Phase 5 "Enemies": planning rulings (2026-10-30, loop run 36)
+
+Plan `docs/plans/2026-10-30-ferazel-phase5.md` (Opus planner 8b4e63a; two Opus review legs ACCEPT_WITH_FIXES, 27 findings →
+fix round 1dfffd0; FABLE-GRADE leg ACCEPT_WITH_FIXES, 9 findings → fix round 1911e48; the seat checked the one partly
+rejected finding against the dump: `.KillWarrior` sets the screen shake `_DAT_1009ffa0 = 30`, not the music track). Seat
+rulings under D34's plan authority; Ben reads them later (QUESTIONS Q16). The plan's "Rulings" section is the full text:
+
+1. **Scope:** design §8 row 5 in full — every non-boss enemy class (placed on levels 1–5 or not), the EnemyShot class,
+   pipes, geysers (§9 (b)), damage both ways, the burn-away, enemy Effects; plus the underwater tint and the Magical
+   Shield crouch face (Phase 2/4 carries), Ben's Q15 follow-ups (wave 5.0, its default (a); item 5 = the random-play bot),
+   gap-ledger #3 (follow the binary). Out: bosses' Handles/Hits/Kills, level features first used on levels ≥ 10, `.Victory`.
+2. **"Through the first boss door" = levels 1–4 with every enemy alive, plus level 5 up to the Warrior's arena**
+   (`BuiltLevels` → 1...5 at task LV5; the moving backdrop OmniPx modes 2/4/5 built first, task OX).
+3. **The Warrior is a stand-in:** Setup transcribed in full (RNG draws, write-backs, layer before the insert), Handle
+   only stands, contact damage as read, no Hit/Kill, its three falling-crate children not spawned (Phase 6). 3a: it stays
+   a Ring-of-Smiting target (faithful list; can reach HP < 1 with no Kill — harmless, gate stays shut, Esc leaves).
+4. **Draw refusals stay quits;** every phase end runs the visit sweep, the random-play bot and the load-every-face tests
+   on both shells plus the draw-mode audit — **a phase cannot close while any fails** (Ben's Q15 (5)).
+5. **Test bars with opt-in skips:** G2 = ladder total, 0 failed, skipped exactly the named opt-in tests
+   (`VisitSweepTests.testVisitEveryObject`; + the bot's at RB); GW2 the same with the Windows names; Proof B =
+   `(N − 1 − k) passed / 0 / (1 + k) skipped / 0 crashed (of N)` (task PB fixes the script: today it fails on the sweep's
+   skip, and it must unset `FERAZEL_VISIT_SWEEP` / `FERAZEL_BOT*`).
+6. Gap #4 (16-voice eviction) a recorded deviation; the QuickDraw shrink rule a QUESTIONS item (needs a capture); the
+   dark-level lit-sprite over-read (light table runs into the ambient table) built from the binary (task DK).
+7. No HectorKit change (35a85ba, floor 361). Lockstep (Phase W Ruling 16) verbatim in the preamble.
+8. **Ladder:** Ferazel/Core 502 (501 + 1 opt-in skip) → **617**; FerazelWinKit 79 (78 + 1 opt-in skip) → **81**; 22 tasks +
+   phase end A5, 13 ⚑, ten runs (run 37 = PB → SP → RV).

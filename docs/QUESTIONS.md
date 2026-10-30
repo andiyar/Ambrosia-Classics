@@ -32,6 +32,23 @@ brother's Windows machine.
 
 ## Open
 
+### Q16 — 2026-10-30 — Phase 5 plan (enemies): five small choices, for your later read
+Context: Loop run 36 wrote the plan for Phase 5 (`docs/plans/2026-10-30-ferazel-phase5.md`, D44): 22 tasks over about
+ten runs, Mac and Windows together. It starts with your Q15 follow-ups (the sparkle fix, the draw-mode audit, the
+random-play bot), then brings every enemy on levels 1–4 to life and opens level 5 up to the Warrior's arena. Reviewed
+by two Opus legs and one Fable leg; all findings fixed. The loop builds with the defaults below unless you say otherwise.
+Options: (1) "Through the first boss door": (a) levels 1–4 with live enemies + level 5 up to the Warrior's arena (the
+arena locks, the Warrior stands still until Phase 6) (b) keep level 5 closed until Phase 6. (2) A picture the port
+cannot draw: (a) keep quitting the game (loud; the new checks make it unreachable) (b) draw nothing and log it.
+(3) The picture-shrink rule (stage screens, map, level 2's big light): a capture from your Mac OS 9 VM of a stage screen
+or that light, or a Let's Play time, settles it — no task until then. (4) The empty item box: the port now draws what the
+original reads there; if you ever see the original with an empty inventory, say what the box shows. (5) Enemies first
+placed after level 5 (Dillo, Gremlin, Wraith, Salamander, Crab, pipes, geysers) are built and tested now though not
+reachable until Phase 6: (a) yes (b) wait.
+Recommendation: (1a), (2a), (5a); (3) and (4) only when convenient.
+Blocks: nothing (D34: execution does not wait).
+Answer:
+
 ### Q15 — 2026-10-29 — Andrew's Windows test: the teleporter quit the game (fixed); four follow-ups for the loop (written by Ben's attended session)
 Context: Andrew (Windows beta tester) found the game closes when Ferazel uses the level-1 teleporter (the urn). Test
 build 2 (commit 0bb92b9: the Windows log keeps the previous launch, a crash filter, stderr in the log, "where:" lines)
@@ -62,6 +79,7 @@ Options: (a) as default; (b) Ben says otherwise.
 Recommendation: a.
 Blocks: nothing.
 Answer:
+_Loop run 36 (2026-10-30): planned per the item's default (a) as Phase 5 wave 5.0 (tasks PB, SP, RV, DK, UT, DA, RB — D44); item 6's shrink rule became Q16 (3). Left open for Ben's word._
 
 ### Q14 — 2026-10-27 — Windows gate: does Ferazel's Wand on Windows behave like the Mac build?
 Context: The Windows build of Ferazel's Wand (the same game as the Phase 4 Mac build: levels 1–4, spells, items, saves,
