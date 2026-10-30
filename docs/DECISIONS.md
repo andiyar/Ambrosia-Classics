@@ -1803,3 +1803,34 @@ functions (independent pins of a few clut-700 indices) — **ladder unchanged**,
 files. (2) The map text smoothing / flash colours in clut 700 (latent: map text is pure black/white) needs a capture of
 the original — stays with Ben (Q15 item 7, beside Q16 (3)); no task. (3) The screen-vs-Let's-Play comparison check is
 an idea for Ben to rule (Q15); not planned.
+
+**As built — loop run 38 (2026-10-30), wave 5.0 part 2 [DK UT DA].** Ladder (+1 vs the plan, as run 37): DK **511**,
+UT **514**, DA **516**; FerazelWinKit 80 unchanged; Proof B **514 / 0 / 2 / 0 (of 516)** at 78f9231 (seat, by day); GW4R
+menu identical at c49bbd4; census 1,108/0. (a) **DK** (e65087c, one leg PASS): mode 0xc reads past the light table into
+the ambient table that follows it in the data section (light 0x100a0134 → data+0x5c52c, 0x6e000 bytes; ambient
+0x100a0130 → data+0xca52c), ambient row `(index − 0x6e000) >> 8`; ≥ 0x6f000 stays a refusal. **F max over the built
+levels = 110** (`.GetFakeLight` intensity 0…11 — the bank said 10; every live colour writer ≤ 99, incl. a 0x58 writer at
+M l. 52562 the bank lacked; the only level-data colour read, M l. 54143, is the dead 0x726 path) — bank ⚑ note appended.
+(b) **UT ◈** (c49bbd4 + fix round e573236, one leg PASS WITH FIXES): the underwater tint as row 41 has it, through the
+existing `.fadeToColor` ops; the flag is a `.ClearPlayerVars` global (reset on every player setup). **No golden moved** —
+legitimately: `+0x11c` is the head's height above the surface (1 = submerged/clamp, 2…9 = head 2–9 px out), the swim
+golden's route only wades (69), no golden route enters the band (the leg's probe: zero hits over all 124 render tests),
+and the goldens hash pixels + sounds while the frame renderer drops gamma ops. The plan's "swim golden moves" was wrong;
+the commit says "no golden moved (recorded)". Windows references not moved. (c) **DA** (991f924 + fix rounds fe2d9d9,
+78f9231; leg PASS WITH FIXES, then a re-review leg): `DrawModeAuditTests` — 99 throws in 47 rows, each with a code-checked
+reason; no refusal reachable in levels 1–4; ~120 s of the suite. **The seat's Proof B found the audit crashing the whole
+Windows test process** (86 tests lost): on Windows `String.contains(String)` resolves to Foundation's, which traps
+(illegal instruction) under Wine — symbolized with the toolchain's `llvm-symbolizer` on the test exe, proved by a
+`--class` re-run in a scratch copy; the audit now searches and trims in plain Swift. **Seat ruling (extends run 37's):
+a test that Proof B runs must also avoid Foundation's string search and trim (`contains(String)`, `range(of:)`,
+`components(separatedBy:)`, `trimmingCharacters`, CharacterSet).** The review found the first audit's Setup draws culled before the mode read (placement
+coordinates) — the re-review leg showed its table probes did read the mode, so the check was weak, not empty — round 2 draws on
+screen with a drawn-not-culled check, checks the writer table against the cited source lines, adds clip/face rows, the
+floe/raft and orb/rotation arguments and the ripple increment/reset in code, a whitespace-tolerant writer scan, and the
+FerazelCore throws a level frame can propagate. Q15 item 7 carried as ruled above (StatusBar comment verified correct by
+the leg from the clut data; map pins independent). Carried [LOW]: `try!` at `PlayerStates.swift:291` would crash rather
+than refuse on a refused bonus type; the orb argument checks gravity writers inside Shots/ only; the gap ledger still
+names the tint unbuilt at l. 38 and its l. 170 count; aborting a level while tinted leaves the tint until the next fade
+(probably the original's too); the tint's on-screen strength unchecked by eye (MED); the audit's `try!` check accepts any
+`try!` (the four sites are fixed-type, unreachable, prose only); the water-row probes have no water-free control; the
+audit takes ~125 s, not "fast". Re-review leg PASS (nine mutations, all caught).

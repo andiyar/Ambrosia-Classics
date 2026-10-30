@@ -89,6 +89,7 @@ Blocks: nothing.
 Answer:
 _Loop run 36 (2026-10-30): planned per the item's default (a) as Phase 5 wave 5.0 (tasks PB, SP, RV, DK, UT, DA, RB — D44); item 6's shrink rule became Q16 (3). Left open for Ben's word._
 _Loop run 37 (2026-10-30): PB, SP, RV built and merged (0b02d31). Item 1: the drift was not actually happening at 6a70bce (every sprite pass follows a grid redraw at the camera) — the walk now uses the renderer's own scroll, so it cannot start. Items 3, 4 and 6's code items done; Proof B passes again (507/0/2/0 of 509) after two Windows-only test fixes. Item 7 (your 13:01 addition) is handed to run 38 to carry. Left open for Ben's word._
+_Loop run 38 (2026-10-30): item 2 built as a standing audit test (no picture the port refuses can be reached in levels 1–4; it runs in every suite and at every phase end). Item 7: the status-bar comment checked against the colour tables (it was right) and the map test now pins colours worked out independently; the map-text colours and the Let's-Play comparison idea stay with you (no task). Left open for Ben's word._
 
 ### Q14 — 2026-10-27 — Windows gate: does Ferazel's Wand on Windows behave like the Mac build?
 Context: The Windows build of Ferazel's Wand (the same game as the Phase 4 Mac build: levels 1–4, spells, items, saves,
