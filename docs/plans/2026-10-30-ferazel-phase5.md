@@ -308,7 +308,7 @@ pickups-boxes-2 §1.2; colourised CopyBits). Added for Phase 5:
 - **Idle children:** swarm members and the insect body are `MTNewSprite` children with record 0x200 — never idled,
   never counted; they keep running while their parent is idle (enemies-flyers §7.5).
 - **`.IdleToActiveSprite` (M l. 4215–4275) re-runs no Setup:** it calls `.MTNewSprite` with setup 0, restores the
-  0x220-byte snapshot, **clears `+0xe9`** (M l. 4264), calls the sprite's `+0x58` proc if one is set (M l. 4266–4268),
+  0x220-byte snapshot, **clears `+0xe9`** (M l. 4264), **writes `+0xa8` = the idle index (its argument, M l. 4265)**, calls the sprite's `+0x58` proc if one is set (M l. 4266–4268),
   and **kills the sprite at once when its restored `+0x4c` is 0 or its type is 0** (M l. 4269–4270) (verified 2026-10-30).
 - **The 16-voice pool:** `FUN_100916dc(x)` counts voices playing x (by id or sound pointer; 0 = all);
   `FUN_10091504(x)` stops every such voice (enemies-ground-2 §3) — `SoundVoices` answers the first, `FrameOps`
@@ -537,7 +537,8 @@ records the summary line.
 
 #### UT — minor ◈ — the underwater screen tint (Phase 2 carry, D38 A4 ruling) (→ 513)
 - **Files:** `Sources/FerazelCore/Player/PlayerLiquids.swift` (`:137–139` stub), `Sources/FerazelCore/Player/Player.swift`
-  (`:360` comment), `Sources/FerazelCore/Player/PlayerState.swift` (the flag `PTR_DAT_100a066c`),
+  (`:360` comment) — both labelled `// later: no Phase-2 seam…` (`:139`, `:360`), not `later: Phase 5`, so A5's grep
+  cannot see them: UT removes both labels when the tint lands, `Sources/FerazelCore/Player/PlayerState.swift` (the flag `PTR_DAT_100a066c`),
   `Sources/FerazelCore/Front/ScreenFade.swift` (the `fadingEnabled` gate `DAT_100a53c2`),
   `Tests/FerazelCoreTests/LiquidHazardTests.swift`, `Tests/FerazelRenderTests/Phase2GoldenTests.swift` (◈ values),
   `Ferazel/Windows/Tests/FerazelWinKitTests/WinReferenceFramesTests.swift` + `tools/windows/smoke-ferazel-win.sh` (◈
@@ -618,7 +619,8 @@ records the summary line.
 #### EC — ⚑ MAJOR — enemy common: handlers, counting, kills, statues, hazards, the burn-away, goblin voices, contact damage (→ 525)
 - **Files:** `Sources/FerazelCore/World/Enemies/EnemyCommon.swift` (new), `Sources/FerazelCore/Particles/Burn.swift`
   (new), `Sources/FerazelCore/Sprites/SpriteSlot.swift` (S2 cases, `+0x1b2`), `Sources/FerazelCore/Physics/StandardSprite.swift`
-  (`:94`, `:124` — the burn call), `Sources/FerazelCore/Sprites/SetupFaces.swift` (`:538–:649` the enemy stubs: counted
+  (`:94`, `:124` — the burn call; both stubs are labelled `// later: burn-away` / `// later: \`.HandleBurn\``, not
+  `later: Phase 5`, so A5's grep cannot see them — EC removes both labels when the call lands), `Sources/FerazelCore/Sprites/SetupFaces.swift` (`:538–:649` the enemy stubs: counted
   only inside the window — run 29 carry [MED], `SetupFaces.swift:575–580`'s tally), `Sources/FerazelCore/Front/LevelRun.swift`
   (the window around the sprite setup), `Sources/FerazelCore/Session/{FerazelSession,SpriteWorld}.swift` (dispatch for the
   new cases, each a named no-op until its task; the `+0x1b2` early return), `Sources/FerazelCore/Player/HitPlayerSprite.swift`
@@ -642,8 +644,14 @@ records the summary line.
   `.BurnFaceRow` (M l. 38765–38840 / 38514–38663), `.StandardSpriteCleanup` (M l. 32629–32704), `.SmiteEnemies` (M l.
   46981–47046), `.SetupLevel` (M l. 2189–2590; the window raw `10004da4..10004dc0`). **INDEX item 29 remainder (§9 (c)):**
   scan every enemy Setup/Handle/Hit/Kill span (Research note 1) for `MTNewSprite`/`.GenerateSprite` with the Bonus Setup
-  and list the types spawned; record in `held-item-melee.md` NR 4 as BC52 (expected: coins 0x516 only; items 8/21 never
-  — if any class drops an item, its class task builds it as read).
+  and list the types spawned; record in `held-item-melee.md` NR 4 as BC52 (expected: **money bags 0x50d and 0x50c and
+  coins 0x516** — `.PopupGoblinCoins` (M l. 57348ff) draws `FastRand(total)` to choose one of: one 0x50d (M l. 57435,
+  then R(1000)); 2 + R(3) × 0x50c (M l. 57452, each R(1000), R(2000)); one 0x50c (M l. 57470, R(1000)); 2 + R(3) ×
+  0x516 (M l. 57485, each R(1000), R(2000)); the other classes spawn 0x516 from their Handles; items 8/21 never — if any class drops an
+  item, its class task builds it as read). 0x50c/0x50d/0x516 are already boot faces (`BootFaces.swift:55–56`,
+  `.InitBonusSprite`) — no draw gap. **Scan the bare token `MTNewSprite` (and `GenerateSprite`), never `MTNewSprite(`:**
+  the decompiler wraps long calls as `.debug::_MTNewSprite` + newline + `(0x516, …` (`.HandleCrawlerSprite` M l. 56468, Roach 65085,
+  Bat 68798, Gremlin 69324) — read the type from the next line.
   **Contact damage stays dormant until each class is mapped:** the new step-6/step-7 rows key on the new
   `SpriteHandler` cases (`.walker`, `.crawler`, …), never on type, so while `forClass` still answers `.inert` for every
   enemy (EC through the class's own task) none of them runs — "no golden moves" holds for EC, and each ◈ task's
@@ -704,7 +712,7 @@ records the summary line.
   the Magical Shield: velocities negated, vy + 0x140, `+0x160` 1, particles, not killed; a second block leaves it; without
   the item → killed) · `testSpoutFiresWhenLinkedButtonPressed` (level 4 rec 28: p1/p2 record p4 == 1 → spawn
   0x6e1 + p4 at own x,y with the arm's velocities; re-arm R(30) + 50) · `testMagicalShieldCrouchFace`.
-- **Gate:** G2 536. **Commit:** `FerazelCore: the EnemyShot class, the shield block and reflection, the Magical Shield crouch, boulder spouts fire; 11 tests`.
+- **Gate:** G2 536. Wave 5.1 end: G3, GWB by day. **Commit:** `FerazelCore: the EnemyShot class, the shield block and reflection, the Magical Shield crouch, boulder spouts fire; 11 tests`.
 
 ### Wave 5.2 — ground enemies (levels 1–4 come alive)
 
@@ -854,7 +862,7 @@ records the summary line.
   58892–59730; raw `1006bbdc..1006bde8`), `.HandleBoxSprite`'s eruption arm (inside M l. 60030–61180; raw
   `1006df20..1006e274`), `.HandleGeyserColumn` M l. 59731–59920, `.HandleGeyserSegSprite` M l. 53891–53899. **§9 (b)
   rulings (Ruling 9):** NR 2 — **no Setup re-run** on idle → active (`.IdleToActiveSprite` re-read 2026-10-30: setup 0,
-  snapshot restored, `+0xe9` cleared, `+0x58` proc called if set, killed if `+0x4c` 0 or type 0). **Settled (fix round
+  snapshot restored, `+0xe9` cleared, `+0xa8` = the idle index (M l. 4265), `+0x58` proc called if set, killed if `+0x4c` 0 or type 0). **Settled (fix round
   1):** the only Setup that stores a `+0x58` proc is `.SetupRopeSprite` (M l. 71122), so a geyser has none; and
   `.MTKillSprite` (M l. 30739ff) only unlinks the record and frees nothing, so the geyser's `+0x9c` column buffer
   (`AllocateGameMem(0x44)`) survives idling and is reused as it was; NR 3 —
@@ -862,7 +870,8 @@ records the summary line.
   no placement) — never a refusal; NR 4 — p4 inert as read; no sound (§6). Placed on levels 10, 50, 51 — synthetic.
 - **Tests (7):** `testGeyserSetupDefaults` (p1 0 → 0x6400, p2/p3 0 → 60) · `testEruptionPhase` (`C mod (on+off+1)`) ·
   `testColumnSegmentsAndHead` · `testHeadHurtsByKind` (acid 0x70 / lava 0x150, the immunities) · `testSegmentHazard` ·
-  `testTripleChildrenKind0` · `testIdleReactivationKeepsBlock`.
+  `testTripleChildrenKind0` · `testIdleReactivationKeepsBlock` (no Setup draw; the column buffer kept; `+0xe9` 0 and
+  `+0xa8` = the idle index it came back from).
 - **Gate:** G2 602. **Commit:** `FerazelCore: geysers — setup, eruption, column, head and segment hurt; §9 (b) as read; 7 tests`.
 
 #### PI — minor — the enemy pipes (→ 606)
@@ -916,13 +925,17 @@ records the summary line.
   (new), `Sources/FerazelCore/Camera/Camera.swift` (`.FindUpperLeftCorner`'s arena bounds and pan; `:46` relabel),
   `Sources/FerazelCore/Player/Player.swift` (`.PlayerConstraints`' arena clamp — the routine lives there today), `Sources/FerazelCore/World/Movers/BoxSprite.swift`
   (the 2940 gate's p1 −1 arm), `Sources/FerazelCore/World/Enemies/Warrior.swift` (new: Setup as read, M l. 72989–73079,
-  in the dump's order — `.InitSprite`; Handle `+0x4c` 0x100a0494, Hit `+0x5c` 0x100a0d44, HitTile `+0x1f8` 0x100a0d40,
-  Kill `+0x50` 0x100a0d3c stored (the stand-in's Handle/Hit/Kill bodies are ◇); `+0x18a = 1`; `+0x170 = p4` (record
-  +0xe); `+0x110 = 0x122`; **p4 ≠ 0 → HP `+0xa4` 2000, `noBossAlive = 0`, `+0x88 = 0`; p4 = 0 → HP 0x4b0 and no boss
-  flag**; `+0x1b4 = 1`; `+0x168` = HP then x; hot rect (0x1a, 0x17, 0x4a, 0x3a); `+0x150 = −1`, `+0xb0 = 6`, `+0xb2 = 0`,
-  `+0x46 = 2`, `+0x14c = 0`; **`+0xa6 = FastRand(10)`**; the record's p2 (record +0xa) **written back 0 → 0x96**;
-  `+0x15c` / `+0x160` = x − 350 / x + 350; `+0x164 = 0`; **`+0x17e = (FastRand(100) < 51)`**; `+0xc0` = the 0x71c set's
-  first face; `+0xf0 = 0x1e`; counted only inside the window; `+0x14`/`+0x1c` from the position. `.InitWarriorSprite` M l.
+  in the dump's order — `.InitSprite`; **`+0x84 = 0`, `+0x86 = 0`, `+0x80 = 0xc` (M l. 73015–73019: the layer — the
+  Setup runs inside `.MTNewSprite` before `.MTInsertSprite` (M l. 30711 / 30716 / 30719), so layer 12 overrides the
+  caller's and decides the Warrior's place in the active list and its draw/erase order)**; Handle `+0x4c` 0x100a0494,
+  Hit `+0x5c` 0x100a0d44, HitTile `+0x1f8` 0x100a0d40, Kill `+0x50` 0x100a0d3c stored (the stand-in's Handle/Hit/Kill
+  bodies are ◇); `+0x18a = 1`; the three sets marked; `+0x170 = p4` (record +0xe); `+0x110 = 0x122`; `+0xc0 = 0`; **p4
+  ≠ 0 → HP `+0xa4` 2000, `noBossAlive = 0`, `+0x88 = 0`; p4 = 0 → HP 0x4b0 and no boss flag**; `+0x1b4 = 1`; `+0x168` =
+  HP; **the re-seat `+0xc = +8`, `+0xa = +6` (M l. 73046–73047)**; hot rect (0x1a, 0x17, 0x4a, 0x3a); `+0x150 = −1`,
+  `+0xb0 = 6`, `+0xb2 = 0`, `+0x46 = 2`, `+0x14c = 0`; **`+0xa6 = FastRand(10)`**; the record's p2 (record +0xa)
+  **written back 0 → 0x96**; `+0x15c` / `+0x160` = `+0xc` − 350 / `+0xc` + 350 (the re-seated x); `+0x168 = +0xc`;
+  `+0x164 = 0`; **`+0x17e = (FastRand(100) < 51)`**; `+0xc0` = the 0x71c set's first face; `+0xf0 = 0x1e`; counted only
+  inside the window; `+0x14`/`+0x1c` = `+8`/`+6` << 8. `.InitWarriorSprite` M l.
   72975–72988: three cached sets 0x71c (8), 0x71d (8), 0x71e (6), each marked by the Setup; the Handle **◇** —
   `.StandardSpriteHandles` + its Setup face, no AI, no shot, no Hit callback, `// later: Phase 6`),
   `Sources/FerazelCore/Sprites/{SetupFaces,SpriteSlot}.swift` (`.warrior`; whatever level 5's census
@@ -947,7 +960,10 @@ records the summary line.
   ∧ fed0 ≠ 0`; in the loop (M l. 5266–5269) track 30 is set (async fade 0x3c) when `hdr+0x2724 ≠ 0 ∧ fed0 ≠ 0 ∧ the
   current track ≠ 0x1e ∧ …`. So **level 5 plays its own track 23 from the start** (the Warrior's Setup cleared `fed0`
   before the loop), **the arena lock changes nothing musically**, and track 30 comes only after the Warrior's Kill sets
-  `fed0` (Phase 6). `.HandleBoxSprite`'s 2940 arm (p1 −1: open
+  `fed0` (Phase 6). **`.KillWarrior` itself (M l. 73486–73493), when p4 ≠ 0:** snd 453 at 48000, **screen shake
+  `_DAT_1009ffa0 = 0x1e`** (the shake counter, engine §5 / `Camera.swift` `shake` — not the music track, which is
+  `_DAT_100a5be0`), flash `_DAT_100a00fc = 3`, `fed0 = 1`; the music switch to 30 is still the loop rule's on the next
+  frame. Phase 6 builds all four. `.HandleBoxSprite`'s 2940 arm (p1 −1: open
   while `fed0 == 1` — rise 2 px/frame to 100 px above `+0x158`, else back down). Level 5 census (Research note 2): 16
   types, 32 records. With the ◇ Warrior alive (`fed0 = 0`): walking left past x 1384 locks the arena (`fed4 = 1`, the
   40-frame pan), the player is clamped at x ≤ 1384, the gate at x 416 stays shut. **Camera bounds
@@ -960,7 +976,8 @@ records the summary line.
   switches to track 30 — tested, unreachable in play this phase.
 - **Tests (6):** `testLevel5SetsUpEveryRecord` (32 records, no `notTranscribed`; the Warrior record: the two
   `FastRand`s in order (R(10) → `+0xa6`, R(100) → `+0x17e`), p2 written back 0 → 0x96, `+0x1b4` 1, `+0x88` 0, `+0x170`
-  = p4, `+0x15c`/`+0x160` = x ∓ 350, the four procs, HP and the boss flag for level 5's p4 — plus a synthetic p4 = 0
+  = p4, **`+0x80` 12 (and its place in the active list follows layer 12, not the caller's layer), `+0x84` 0, `+0x86`
+  0, `+0xc`/`+0xa` re-seated from `+8`/`+6`**, `+0x15c`/`+0x160` = the re-seated x ∓ 350, the four procs, HP and the boss flag for level 5's p4 — plus a synthetic p4 = 0
   record: HP 0x4b0, `noBossAlive` untouched) · `testArenaLocksAtX1384` (lock, pan counter −40 → 0 over 40 frames,
   clamp; **before the lock**, boss alive, the scroll's lower bound is 1444) · `testCameraWindowWhileLocked` (**during
   the pan** the lower bound is 1444 − 0x260, after it −32000; the upper bound) · `testGateStaysShutWhileBossAlive` ·
@@ -1006,7 +1023,7 @@ argument on the Mac (`open -n … --args -FerazelLevel 5`) and on the Windows ex
    (they fly out and blink); a big hit makes the big "ouch". Dead enemies never hurt.
 6. **Hurting them** — every spell, the dagger and the other held weapons, crushing boxes, the big explosion and the
    Ring of Smiting; goblins die with their death frames and burn away; a goblin dying in water leaves a corpse that
-   floats and can be stood on; scores add up (goblin 500–800, crawler 500, roach 600, bat 600); the stage-complete panel
+   floats and can be stood on; scores add up (goblin 500–800, crawler 500, roach 600, bat 500); the stage-complete panel
    counts the enemies defeated.
 7. **Statue spell on an enemy** — it turns to stone for 4 s, you can stand on it, it thaws 200 HP weaker.
 8. **Shields** — a raised shield blocks shots from the front with a clang; the Magical Shield reflects darts and spines
@@ -1016,7 +1033,8 @@ argument on the Mac (`open -n … --args -FerazelLevel 5`) and on the Windows ex
 11. **Level 5 "Manditraki Warrior"** — the moving sky behind the level; its own music from the start (the boss track
     comes only after the Warrior is beaten, Phase 6 — the arena locking does not change the music); walk left: the
     camera pans and the arena locks behind you, the gate ahead stays shut, the Warrior stands (Phase 6 builds the
-    fight) and hurts on contact; leave with Esc → abort. If you use the Ring of Smiting on it, it may stop hurting but
+    fight) and hurts on contact; leave with Esc → abort. Expected missing until Phase 6: the three falling crates the real
+    Warrior drops from above on its first frames (type 0x433 into `+0x1d4/+0x1d8/+0x1dc`, M l. 73145–73182) do not fall. If you use the Ring of Smiting on it, it may stop hurting but
     stays standing and the gate stays shut — expected until Phase 6.
 12. **Readings Ben can't see but may feel (MED):** the tint tables' colours, the burn-away, the backdrop's look, the
     goblins' voices' pitch spread.
@@ -1035,7 +1053,7 @@ Known stand-ins/deviations: the Warrior (Phase 6); levels 10+ (Phase 6); the ene
 | 1 | **PB → SP → RV** (wave 5.0) | one each | 508 |
 | 2 | **DK → UT ◈ → DA** (wave 5.0) | one each | 515 |
 | 3 | **RB ⚑** (wave 5.0 end) **→ EC ⚑** | two each | 525 |
-| 4 | **ES ⚑ → WK1 ⚑◈** | two each | 545 |
+| 4 | **ES ⚑** (wave 5.1 end) **→ WK1 ⚑◈** | two each | 545 |
 | 5 | **CR ⚑◈ → WK2 ⚑◈** (wave 5.2 end) | two each | 559 |
 | 6 | **BA ⚑◈ → FR ⚑◈** | two each | 576 |
 | 7 | **BL ⚑ → GF ⚑** | two each | 590 |
@@ -1076,7 +1094,7 @@ No HectorKit task: G1 = HK `35a85ba` untouched for the whole phase.
 
 | ◇ | where | replaced by |
 |---|---|---|
-| The Warrior's Handle/Hit/Kill: it stands in its Setup face, hurts on contact as read, has no Hit callback, never dies; the gate stays shut while it lives | LV5 (`Warrior.swift`) | Phase 6 |
+| The Warrior's Handle/Hit/Kill: it stands in its Setup face, hurts on contact as read, has no Hit callback, never dies; the gate stays shut while it lives; the real Handle's three falling-crate children (0x433 into `+0x1d4/+0x1d8/+0x1dc`, spawned when p4 ≠ 0 on its first frames, M l. 73145–73182) are not spawned | LV5 (`Warrior.swift`) | Phase 6 |
 | The Warrior under the Ring of Smiting (Ruling 3a): `.SmiteEnemies` targets its Handle (0x100a0494) as the binary does, so a seed explosion lands on it and can take its HP below 1 — with no Kill until Phase 6 it stays standing, harmless (a dead attacker hurts nobody), `fed0` stays 0, the gate stays shut for good and only Esc / ⌘W leaves | EC (target list) + LV5 | Phase 6 (the Kill) |
 | The other bosses (Wizard, Chief, Demon, Xichra) stay `.inert`; their projectiles' spawners | — | Phase 6 |
 | OmniPx modes 1/3/6/7/≥8 (rain, thunder, interlace, ping-pong) refused at level open (caught, not a quit) | OX | Phase 6 (levels 15, 70) |
@@ -1090,7 +1108,7 @@ No HectorKit task: G1 = HK `35a85ba` untouched for the whole phase.
 
 | carry (file:line at 6a70bce, or source) | owner |
 |---|---|
-| underwater tint — `PlayerLiquids.swift:137–139`, `Player.swift:360` (D38 A4) | UT |
+| underwater tint — `PlayerLiquids.swift:137–139`, `Player.swift:360` (D38 A4; labelled `later: no Phase-2 seam`, outside A5's grep — UT removes the labels) | UT |
 | Magical Shield crouch face — `PlayerStates.swift:556` (D38 A4) | ES |
 | `+0x1b5` counted only inside `_DAT_1009fe8c` — `SetupFaces.swift:538–:649` stubs (run 29 [MED]) | EC |
 | Bat cache marks: Bat types 0x6ce–0x6d5 mark the 0x6cc set (run 29), plus 0x744/0x74d/0x73a/0x73b; Bat path mode in `voicePitch` | BA |
@@ -1108,7 +1126,7 @@ No HectorKit task: G1 = HK `35a85ba` untouched for the whole phase.
 | enemy Handles dispatch — `FerazelSession.swift:512/:1032`, `SpriteSlot.swift:482`, `SpriteWorld.swift:435` | EC (cases) + class tasks (bodies) |
 | enemy Setup stubs — `SetupFaces.swift:538/:550` (Bat), `:570` (Blob), `:587` (Frog), `:649` (others) | BA, BL, FR, GF/DL |
 | 1207 vs enemies — `GroundCeilingEffects.swift:68–:69` | each class's Hit (EC relabels) |
-| burn-away — `StandardSprite.swift:94/:124` | EC |
+| burn-away — `StandardSprite.swift:94/:124` (labelled `later: burn-away` / `later: .HandleBurn`, outside A5's grep — EC removes the labels) | EC |
 | boss music rule — `LevelRun.swift:504–:512`, `:684–:690`; boss Setups' `fed0` | LV5 |
 | level-load cache marks for other classes — `LevelRun.swift:1051/:1117` | each class task; LV5 for level 5 |
 | boss grab — `PlayerStates.swift:371`, `PlayerState.swift:196` | **Phase 6** (Chief, Xichra) — A5 relabels |
@@ -1197,7 +1215,7 @@ No HectorKit task: G1 = HK `35a85ba` untouched for the whole phase.
 BC51 `draw-effects.md` §2.6 — the colour-pass row guard the code follows (SP; text from `SpriteBlitter`'s mode-5/0xa
 walk and Q15 item 3).
 BC52 `held-item-melee.md` NR 4 / INDEX item 29 remainder — enemy drops: the scan of every enemy routine's spawns
-(EC; expected coins 0x516 only).
+(EC; expected money bags 0x50d/0x50c (goblins, `.PopupGoblinCoins`) and coins 0x516; scan the bare token `MTNewSprite`).
 BC53 `geysers.md` NR 2 — closed: `.IdleToActiveSprite` (M l. 4215–4275) calls `.MTNewSprite` with setup 0, restores the
 0x220-byte snapshot, clears `+0xe9`, calls `+0x58` if set and kills a record whose `+0x4c` or type is 0 — no Setup
 re-run, no second `AllocateGameMem(0x44)`; a geyser has no `+0x58` proc (only `.SetupRopeSprite` M l. 71122 stores
@@ -1299,8 +1317,8 @@ A5's gate updated together.
 | # | finding | verified | done |
 |---|---|---|---|
 | A1 | Kill bookkeeping also needs `+0x1b5 ≠ 0` | ✅ M l. 56695 / 58624 / 73479 (and every enemy Kill) | S2 `kill` contract; `testKillBookkeeping` gains the uncounted kill (cites corrected to 56695–56700 / 58624–58629 / 73479–73485) |
-| A2 | DK: refused at `:577`; the over-read lands in the ambient table | ✅ `SpriteBlitter.swift:571/:577`; TOC 0x100a0134 → data+0x5c52c, 0x100a0130 → data+0xca52c, 0x100a0120 → data+0xcb52c (`pef.py`) | DK rewritten: F = 110 + k reads ambient row k; past F = 125 kept a refusal (DA row); STOP clause removed; Files → `Frame/LevelTables.swift` (there is no `Color/*` table file) |
-| A3 | Warrior Setup omits draws and writes | ✅ M l. 72989–73079 | LV5 Files list every write in order; `testLevel5SetsUpEveryRecord` pins them + a synthetic p4 = 0 record |
+| A2 | DK: refused at `:577`; the over-read lands in the ambient table | ✅ `SpriteBlitter.swift:571/:577`; TOC 0x100a0134 → data+0x5c52c, 0x100a0130 → data+0xca52c, 0x100a0120 → data+0xcb52c (`pef.py` has no CLI for this; the repeatable recipe is its Python API from the worktree root: `FZ_PEF=ghidra/ferazel/Ferazel_pef PYTHONDONTWRITEBYTECODE=1 python3 -c "import sys; sys.path.insert(0,'docs/ferazel/tools'); from pef import u32; print(hex(u32(0x100a0134)))"` → `0x5c52c`, the data-section offset (absolute = + `DBASE` 0x1009f840); re-run 2026-10-30, all three match) | DK rewritten: F = 110 + k reads ambient row k; past F = 125 kept a refusal (DA row); STOP clause removed; Files → `Frame/LevelTables.swift` (there is no `Color/*` table file) |
+| A3 | Warrior Setup omits draws and writes | ✅ M l. 72989–73079 | LV5 Files list the Setup's writes in order — **corrected by the FABLE-GRADE leg (F1):** fix round 1 missed `+0x84`/`+0x86`/`+0x80 = 0xc`, `+0xc0 = 0` and the `+0xc`/`+0xa` re-seat; now listed; `testLevel5SetsUpEveryRecord` pins them + a synthetic p4 = 0 record |
 | A4 | boss-music cites; level 5 plays 23 throughout | ✅ M l. 5218–5221 / 5266–5269 | LV5 Files + Contract; gate card item 11 rewritten |
 | A5 | UT span; no new seam case | ✅ M l. 46449–46476; `.MT_FadeToColor` M l. 79455ff | UT maps to `.fadeToColor(15, rgb)` / `.fadeToColor(100, nil)`; S3 comment; 1 ms wait → Known deviation 5 (MED) |
 | A6 | camera bounds before the lock and during the pan | ✅ M l. 5941–5948 / 5953–5954 (and 5961, 6011–6028, 6171–6172) | LV5 Contract; asserts inside `testArenaLocksAtX1384` (before the lock) and `testCameraWindowWhileLocked` (the pan) — ladder unchanged |
@@ -1331,4 +1349,19 @@ A5's gate updated together.
 | B12 | UT: name the Windows references | ✅ | UT Files (expected "not moved") |
 | B13 | EC's contact damage dormant until mapped | ✅ | EC Contract: rows key on the new handler cases |
 
-(FABLE-GRADE plan leg and its fix round: below, when run.)
+**FABLE-GRADE leg (run 36)** — fix round 2 (2026-10-30, loop run 36, planner Opus 5.5). Every finding re-read in the
+committed dump `ghidra/ferazel/` before it was written. Eight applied, one applied with a correction (F3). **No count
+change:** every new pin is an assert inside an existing test — Core ladder 617, Proof B **614 / 0 / 3 / 0 (of 617)**,
+WinKit 81 unchanged. No new question for Ben.
+
+| # | finding | verified | done |
+|---|---|---|---|
+| F1 | IMPORTANT — LV5's Warrior Setup omits `+0x80 = 0xc`, `+0x84`, `+0x86` and the `+0xc`/`+0xa` re-seat; A3 claimed "every write" | ✅ M l. 73015–73019, 73046–73047; layer before insert: `.MTNewSprite` M l. 30711 (caller's layer) → 30716 (Setup) → 30719 (`.MTInsertSprite`). Also found: `+0xc0 = 0` before the HP arm | LV5 Files list them in order (with `+0xc0 = 0`; `+0x15c/+0x160/+0x168` from the re-seated `+0xc`; `+0x14/+0x1c` from `+8/+6`); asserts in `testLevel5SetsUpEveryRecord`; A3 wording corrected |
+| F2 | IMPORTANT — BC52 "coins 0x516 only" is wrong; the scan misses wrapped calls | ✅ `.PopupGoblinCoins` (only caller `.HandleWalkerSprite`) spawns 0x50d M l. 57435, 0x50c 57452 / 57470, 0x516 57485 with the R(1000)/R(2000)/R(3) draws; wrapped `_MTNewSprite` + newline at 56468 (Crawler Handle), 65085 (Roach), 68798 (Bat), 69324 (Gremlin); 0x50c/0x50d/0x516 are `.InitBonusSprite` boot faces (`BootFaces.swift:55–56`) — no draw gap | EC Contract + BC52 expect 0x50d/0x50c/0x516; scan the bare token |
+| F3 | MINOR — `.KillWarrior` sets "track 0x1e" itself | ⚠ partly: M l. 73486–73493 writes `_DAT_1009ffa0 = 0x1e`, which is the **screen shake** counter (engine §5; bosses.md Kill step 2; `Camera.swift` `shake`), not the music track (`_DAT_100a5be0`, M l. 5267); it also sets flash `_DAT_100a00fc = 3`, snd 453 and `fed0 = 1` | LV5's Phase 6 note names all four Kill writes and keeps track 30 on the loop rule (rejected only the "track" reading) |
+| F4 | MINOR — the stand-in omits the real Handle's three children | ✅ M l. 73145–73182: when p4 ≠ 0, type 0x433 (falling crates, bosses.md) into `+0x1d4/+0x1d8/+0x1dc` once `+0x16c` counts below 1 | gate card item 11 + Stand-ins row |
+| F5 | MINOR — gate card "bat 600" | ✅ M l. 68795 `+ 500` | card item 6 → bat 500 |
+| F6 | MINOR — wave 5.1's end names no G3/GWB | ✅ | ES Gate line + Execution order run 4 "(wave 5.1 end)" |
+| F7 | MINOR — three carries are outside the `later: Phase 5` grep | ✅ `Player.swift:360`, `PlayerLiquids.swift:139` (`later: no Phase-2 seam…`), `Physics/StandardSprite.swift:94` (`later: burn-away`) and `:124` (`later: .HandleBurn`) | UT and EC Files: remove the labels; Carries rows say so |
+| F8 | MINOR — A2's `pef.py` check has no CLI | ✅ `pef.py`'s `__main__` prints only the section table; default path `../../../ghidra/Ferazel_pef` is stale (the PEF is `ghidra/ferazel/Ferazel_pef`) | A2 records the Python-API recipe with `FZ_PEF`; re-run, all three offsets match |
+| F9 | MINOR — `.IdleToActiveSprite` also writes `+0xa8` | ✅ M l. 4265 (`+0xa8 = param_1`, the idle index) | Hazards line, GY Contract, assert in `testIdleReactivationKeepsBlock` |
