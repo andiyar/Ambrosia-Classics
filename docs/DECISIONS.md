@@ -1767,3 +1767,30 @@ rulings under D34's plan authority; Ben reads them later (QUESTIONS Q16). The pl
 7. No HectorKit change (35a85ba, floor 361). Lockstep (Phase W Ruling 16) verbatim in the preamble.
 8. **Ladder:** Ferazel/Core 502 (501 + 1 opt-in skip) → **617**; FerazelWinKit 79 (78 + 1 opt-in skip) → **81**; 22 tasks +
    phase end A5, 13 ⚑, ten runs (run 37 = PB → SP → RV).
+
+**As built — loop run 37 (2026-10-30), wave 5.0 part 1 [PB SP RV], merged 0b02d31.** (a) **Ladder +1:** Ben's attended
+commit 3cf72df (world-map status bar matched into clut 700) added one Core test mid-run, so every later Core total is one
+higher than the plan's table: PB 503, SP 506, RV **509**, DK 511, UT 514, DA 516, RB 518 … LV5/A5 **618**; Proof B at
+the phase end **615 / 0 / 3 / 0 (of 618)**. FerazelWinKit 79 → **80** (PB), RB → 81 unchanged. (b) **PB** (09cccce +
+three fix rounds 7a6fadc, 56883b7, 3bf6882): the opt-in skip list; `unset -m 'FERAZEL_BOT_*' || true` (zsh returns 1
+when nothing matches — under `set -e` the script died silently; the seat caught it, the leg had exported the vars);
+the `--frames` loop is one public `WinGame.runFrames(_:scripted:)` shared by `FerazelWin/main.swift` and
+`WinReferenceFramesTests` (leg finding); the first real Proof B then showed two Wine gaps in Ben's 2026-10-29 tests that
+had never run under CrossOver — **a `@MainActor` XCTestCase crashes swift-corelibs-xctest's test listing** (VisitSweepTests
+now nonisolated, body via `MainActor.assumeIsolated`; every FerazelWinKit test class is `@MainActor` too — harmless while
+they run only macOS-hosted), and **`FileManager.enumerator` / `NSRegularExpression` find nothing under Wine**
+(BootFacesTests' source scan is pure Swift on every platform; same 20 PICTs on the Mac). Proof B measured by the seat:
+500/0/2/0 of 502 at PB, **507/0/2/0 of 509** at RV; GW4R menu identical. Seat ruling: a test that runs under Proof B must
+avoid Foundation's enumerator, regex and file-attribute calls and must not be actor-isolated. (c) **SP** (7be824a): the
+mode-5 walk takes the renderer's own scroll and drawn pair (`DiffuseRandomsAt`, the session tracks the last scroll op
+it emitted); **the plan's Q15-item-1 drift was not happening at 6a70bce** — every sprite pass follows a grid redraw at the
+camera; the leg confirmed by forcing the old walk (both real routes still agree). The change is a guarantee, not a
+visible fix; the drawn pair cannot change the random count (the cull offsets both rects) [LOW]; scroll ops made outside
+the session (Pause, SaveGame, LevelRun's start redraw) are untracked, safe today [LOW]. (d) **RV** (0b02d31): the
+empty-inventory box reads G+0x1a / G+0x22 / G+0x1c as `.UpdateItemStat` does (a count is drawn only when > 1; seam
+field `StatusBarState.gapSlot`, filled in `GameGlobals.statusBar` — every shell path); computed face ids (key icons
+3201–3226, held items 750/756/768/771) checked loaded; the plan's boulder `0x6e1 + p1` is not in the code yet (its task
+adds a range row); 3,257 hot-rect/emitter rows identical before and after the boot faces (12 hash pins; the leg
+re-derived them from `b535527^`); BC51 corrected (the squash row counter starts at 0, raw 10027328). Carried [LOW]: the
+face scan misses variable ids and ternary literals (covered by the class sheet lists today); hash pins cannot name the
+changed row; the pin renderer uses ruled/lowest colour settings.
