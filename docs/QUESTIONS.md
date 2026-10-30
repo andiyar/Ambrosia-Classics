@@ -75,6 +75,14 @@ level 3 quit), b535527 (every boot face loaded as `.InitSprites` does). Reviewer
 ~50% it should be centre-sampled; settle it from a capture of the original (Ben has a Mac OS 9 VM, the Let's Play);
 `LightFaces.swift:69` comment (light faces load at boot, not level setup); newly loaded faces may change box hot-rects
 / particle emitters (closer to the original, untested); `BootFacesTests` source scan misses computed pict ids.
+(7) 2026-10-29/30 attended fixes since: e9fa8b0 (Continue refuses unbuilt-level saves), the visit sweep
+(`tools/ferazel-visit-sweep.sh`), the gap ledger (`docs/ferazel/port-gap-ledger.md`), 3cf72df (world-map status bar:
+colour-translated from clut 200 into clut 700 as `.CopyBitsCT`'s seed rule makes QuickDraw do — Andrew saw it blue).
+Its reviewer's open items: `.UpdateTextStats` draws via SetPort (screen device, clut 700 on the map) — text smoothing and
+flash colours may need matching in 700 then reading back through 200 (latent: map text is pure black/white; the icons
+contradict the strict reading — settle from a capture); StatusBar.swift:35 comment (black is index 96 in clut 200 under
+the lowest tie-break); MapRenderTests reference rebuilds with the fix's own model. Also: a screen-vs-Let's-Play
+comparison check would catch wrong-picture bugs the crash checks can't (Ben's Andrew found this one by eye).
 Options: (a) as default; (b) Ben says otherwise.
 Recommendation: a.
 Blocks: nothing.
