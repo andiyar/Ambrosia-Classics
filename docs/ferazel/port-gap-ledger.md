@@ -112,7 +112,7 @@ eviction; ruled M0060/M0061 debug chord, M0652 Windows menu bar, M0069 system vo
 
 Class (a), by phase: Phase 5 — enemy Handles/Hits/Kills (the `inert` class), enemy contacts in `.HitPlayerSprite`, shots
 vs enemies, the Crawler shot-kill, Statue spell / burning on enemies, geysers NR 2–4, boulder-spout boulders, the
-underwater tint, the Magical Shield crouch picture; Phase 6 — bosses, rope bridge 1466, magic carpet, spiked balls,
+Magical Shield crouch picture (the underwater tint is built: UT, c49bbd4); Phase 6 — bosses, rope bridge 1466, magic carpet, spiked balls,
 falling rocks, rotating blade; level 5+ entry (the planned "not built yet" dialog).
 
 Class (b) highlights: rope types 3023–3039 divide by zero in the original (refused); missing PICT ids above; the

@@ -702,6 +702,31 @@ records the summary line.
   now says black is 96 (lowest) / 255 (highest) in clut 200, which holds black at 96 and 160…255, and 255 in clut 700;
   `MapRenderTests.testMapStatusBarIsTheInLevelBarMatchedIntoClut700` gains pins worked by hand from the clut data
   (157 → 74, white 0 → 0, every clut-200 black → 255, checked on the bar's pixels).
+- **Fix rounds (2026-10-30, loop run 38):** **Round 1 — the Proof B crash.** Under CrossOver both audit tests trapped
+  (illegal instruction inside Foundation) and took the rest of the Windows run with them: on Windows `String.contains`
+  with a string argument resolves to Foundation's version, which traps under Wine (the same family as the regex that
+  finds nothing). The audit now searches and trims in plain Swift (`has`, `trim`); the file's header lists it with the
+  other Wine-safe rules. **Round 2 — the review's seven findings.** (1) The draw checks were mostly empty: the Setup
+  draws sat at their level points and were culled before the mode was read, and every table probe carried
+  `SpriteDraw`'s default all-zero clip, an empty window (found while fixing this; the "wrapped" probe was also off the
+  view at scroll 0). Every probe now has the whole face, the wrapped one draws at scroll 0x40 across the ring's edges,
+  the Setup draws move to (100, 100), and each must reach its mode read — a non-empty window in view, proved once per
+  place and transform by a control draw with the unwritten word 0x20000 being refused. All 717 Setup draws of levels
+  1–4 reach it. (2) Each writer row is checked against the lines it cites: a word row's words must be exactly the
+  mode-word literals there, a one-value row's value a literal, a flag row's literal assignment, and every derived row
+  (ranges, light words, tints, liquids) carries pins — the constants it is computed from; rows that assign a variable
+  cite the lines that set it (the shadow double's row now reads the 0x1000b literal, not the constant). (3) The floe /
+  raft and orb / rotated-shot arguments are code checks like the hovering rock's (the guards enclosing each writer, the
+  raft's Setup arm, every later `+0xa6` write, every shot rotation and gravity write). (4) Clip rows: 19 writer sites of
+  the four clip edges (the per-frame reset, the occluder clamp, the blink / crumble platforms, the spikes, the gate,
+  the spring), each edge value drawn under one word of every mode the level writes, mirrored, and transformed where a
+  row transforms the sprite; the face is not a row — `Check.facesLoaded` now also holds every face the run draws.
+  (5) The assignment scan takes any spacing (`s.mode=0x20000`). (6) A second refusal table covers every `throw` in
+  FerazelCore (45 throws, 25 rows: CLUT and level loads, Setups, camera header values, the saved-game reader, dialog
+  resources, conversations), each reason checked. (7) The ripple's step is checked in code (+0x100 only in the
+  `.wrapEraseSprites` arm, start 0x200, one renderer per level start) and in the run (phase = 0x200 + 0x100 per erase,
+  renderers = restarts + 1). Every finding's mutation fails the audit (the round's report has the table). The two tests
+  now take ≈ 121 s (was ≈ 104; the probes now walk real windows); `runSteps` stays 2,000. G2 **516**, 0 failed, the one opt-in skip.
 
 #### RB — ⚑ MAJOR — the random-play bot, both shells (Q15 item 5, Ben's "yes") (→ 517; WinKit 81)
 - **Files:** `Tests/FerazelRenderTests/RandomPlayTests.swift` (new; reuses `VisitSweepPlan.swift`'s `SweepShell` and

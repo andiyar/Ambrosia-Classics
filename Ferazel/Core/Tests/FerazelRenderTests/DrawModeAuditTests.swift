@@ -8,15 +8,18 @@ import XCTest
 ///    (`SpriteDraw` mode word, rotation, scale, mirror, the dynamic-light byte case, water kind, clip, backdrop mode,
 ///    OmniPx mode) is drawn by `SpriteBlitter` / `FrameRenderer` with no refusal: every value of every row of
 ///    `writers` (one row per writer site in `Sources/FerazelCore`, file:line — a source scan fails on a writer without
-///    a row, or a row whose line no longer writes), under every transform the renderer builds for it; each placement's
-///    Setup (run once); and a 2,000-step scripted run of the level through `LevelRun` + `FrameRenderer`, whose every
-///    drawn value must also be one the table names.
-/// 2. `testEveryRefusalIsUnreachable` — every `throw` in `Sources/FerazelRender` (counted per file and thrown name;
-///    a new throw without a row fails) with the reason it cannot be reached on a level frame of a built level, each
-///    reason checked by code (the writer table, the data, the level headers, the routing).
+///    a row, or a row whose line no longer writes; each row's values are checked against the literals and pins of
+///    the lines it cites), under every transform the renderer builds for it, on screen (each probe reaches its mode
+///    read — a non-empty window in view, proved by a control word's refusal); every clip edge value of the clip rows;
+///    each placement's Setup (run once, moved to (100, 100)); and a 2,000-step scripted run of the level through
+///    `LevelRun` + `FrameRenderer`, whose every drawn value must also be one the table names.
+/// 2. `testEveryRefusalIsUnreachable` — every `throw` in `Sources/FerazelRender` and in `Sources/FerazelCore` (what a
+///    level frame can propagate; counted per file and thrown name; a new throw without a row fails) with the reason it
+///    cannot be reached on a level frame of a built level, each reason checked by code (the writer table, the data,
+///    the level headers, the routing, the combinations' guards in the source).
 ///
-/// **Maintained by every task** that adds a writer of a draw input or a renderer throw (Invariant 8): add its row here
-/// in the same task. When a row's line moves, the failure prints the scanned `file:line` to paste.
+/// **Maintained by every task** that adds a writer of a draw input or a Core / renderer throw (Invariant 8): add its
+/// row here in the same task. When a row's line moves, the failure prints the scanned `file:line` to paste.
 ///
 /// Proof B runs this file under Wine: the source scan walks directories with `contentsOfDirectory` /
 /// `fileExists(atPath:isDirectory:)` and matches in pure Swift (as `BootFacesTests`) — no directory enumerator, no
@@ -79,6 +82,22 @@ final class DrawModeAuditTests: XCTestCase {
         return false
     }
 
+    /// The openers enclosing `lines[i]`, innermost first (trimmed): each line above it indented less than the last.
+    static func enclosing(_ lines: [SourceLine], _ i: Int) -> [String] {
+        func indent(_ s: String) -> Int { s.prefix { $0 == " " }.count }
+        var depth = indent(lines[i].code), out: [String] = []
+        var k = i - 1
+        while k >= 0 && depth > 0 {
+            let t = trim(lines[k].code)
+            if !t.isEmpty && indent(lines[k].code) < depth {
+                out.append(t)
+                depth = indent(lines[k].code)
+            }
+            k -= 1
+        }
+        return out
+    }
+
     /// `code` without its leading and trailing spaces and tabs (no Foundation trim).
     static func trim(_ code: String) -> String {
         var s = Substring(code)
@@ -87,7 +106,8 @@ final class DrawModeAuditTests: XCTestCase {
         return String(s)
     }
 
-    /// The fields of `code` assigned as `.<field> <op> ` (op `=`, `+=`, `-=`, `&+=`, `&-=`, `|=`, `&=`; not `==`).
+    /// The fields of `code` assigned as `.<field> <op>` (op `=`, `+=`, `-=`, `&+=`, `&-=`, `|=`, `&=`; not `==`), any
+    /// spacing (`s.mode=0x20000` too).
     static func assignedFields(_ code: String, _ fields: [String]) -> [String] {
         let c = Array(code)
         var out: [String] = []
@@ -98,14 +118,12 @@ final class DrawModeAuditTests: XCTestCase {
                 defer { i += 1 }
                 guard Array(c[i..<(i + pat.count)]) == pat else { continue }
                 var j = i + pat.count
-                guard j == c.count || !isWord(c[j]) else { continue }
-                var k = j
-                while k < c.count && c[k] == " " { k += 1 }
-                guard k > j else { continue }
-                j = k
+                guard j == c.count || (!isWord(c[j]) && c[j] != ".") else { continue }
+                while j < c.count && (c[j] == " " || c[j] == "\t") { j += 1 }
                 for op in ["&+=", "&-=", "+=", "-=", "|=", "&=", "="] {
                     let o = Array(op)
-                    guard j + o.count < c.count, Array(c[j..<(j + o.count)]) == o, c[j + o.count] == " " else { continue }
+                    guard j + o.count <= c.count, Array(c[j..<(j + o.count)]) == o,
+                          j + o.count == c.count || c[j + o.count] != "=" else { continue }
                     out.append(f)
                     break
                 }
@@ -116,7 +134,13 @@ final class DrawModeAuditTests: XCTestCase {
 
     // MARK: - The writer table (Invariant 8: one row per writer site, kept by every task that adds one)
 
-    enum Input: String, Sendable { case mode, rotation, scale, mirrored, flash, flashTable, waterKind }
+    /// The draw inputs Core writes (the clip edges as `clip.<edge>`; `clip` a whole-struct write). The face (`FaceRef`)
+    /// is not a row: every face a sprite can be given must be loaded, and that is `Check.facesLoaded` (each Setup's
+    /// face, every face the scripted run draws, no `faceNotLoaded` refusal) with BootFacesTests' whole-set census.
+    enum Input: String, Sendable, CaseIterable {
+        case mode, rotation, scale, mirrored, flash, flashTable, waterKind, clip
+        case clipTop = "clip.top", clipLeft = "clip.left", clipBottom = "clip.bottom", clipRight = "clip.right"
+    }
 
     enum Values: Sendable {
         /// Mode words.
@@ -136,6 +160,8 @@ final class DrawModeAuditTests: XCTestCase {
         case flags([Bool])
         /// `UnderWater.waterKind`: the level's liquid BG kinds − 200 (written only on a liquid cell).
         case levelLiquid
+        /// A clip edge 0…the drawn face's width (an occluder's edge, clamped to the face).
+        case faceWidth
     }
 
     struct Writer: Sendable {
@@ -144,10 +170,16 @@ final class DrawModeAuditTests: XCTestCase {
         let values: Values
         /// The sprites the site writes (for the combinations the renderer refuses by design).
         let who: [String]
+        /// The lines (besides the site's) whose literals give the values — `N` in the site's file or `file:N` — when the
+        /// site assigns a variable (`checkSources`).
+        let at: [String]
+        /// Code the cited lines must hold: the constants a range or derived value is computed from (`checkSources`).
+        let pins: [String]
     }
 
-    private static func W(_ site: String, _ input: Input, _ values: Values, _ who: String...) -> Writer {
-        Writer(site: site, input: input, values: values, who: who)
+    private static func W(_ site: String, _ input: Input, _ values: Values, _ who: String..., at: [String] = [],
+                          pins: [String] = []) -> Writer {
+        Writer(site: site, input: input, values: values, who: who, at: at, pins: pins)
     }
 
     /// The scanned files and fields whose writes are not a sprite draw input, with the reason.
@@ -160,23 +192,39 @@ final class DrawModeAuditTests: XCTestCase {
 
     static let writers: [Writer] = [
         W("Items/HeldItem.swift:111", .mirrored, .copy, "heldItem"),
-        W("Particles/WaterEffects.swift:144", .waterKind, .levelLiquid, "waterFace"),
-        W("Physics/StandardSprite.swift:32", .flash, .range(0...0x1d), "any"),
-        W("Physics/UnderWater.swift:63", .waterKind, .levelLiquid, "any"),
+        W("Particles/WaterEffects.swift:144", .waterKind, .levelLiquid, "waterFace", pins: ["UnderWater.waterKind("]),
+        W("Physics/StandardSprite.swift:32", .flash, .range(0...0x1d), "any", pins: ["if s.flash > 0 { s.flash -= 1 }"]),
+        // `.StandardSpriteHandles`' per-frame reset, then the occluder's clip, each edge clamped to 0…the face width
+        // (the right edge 32000 when past it) on the next lines when the sprite has a face (no face, no draw).
+        W("Physics/StandardSprite.swift:34", .clipTop, .range(0...0), "any"),
+        W("Physics/StandardSprite.swift:35", .clipLeft, .range(0...0), "any"),
+        W("Physics/StandardSprite.swift:36", .clipBottom, .range(32000...32000), "any"),
+        W("Physics/StandardSprite.swift:37", .clipRight, .range(32000...32000), "any"),
+        W("Physics/StandardSprite.swift:136", .clipRight, .faceWidth, "any", at: ["138", "139"],
+          pins: ["if faceWidth(f) < s.clip.right { s.clip.right = 32000 }", "if s.clip.right < 0 { s.clip.right = 0 }"]),
+        W("Physics/StandardSprite.swift:138", .clipRight, .range(32000...32000), "any"),
+        W("Physics/StandardSprite.swift:139", .clipRight, .range(0...0), "any"),
+        W("Physics/StandardSprite.swift:142", .clipLeft, .faceWidth, "any", at: ["145", "146"],
+          pins: ["if fw < s.clip.left { s.clip.left = fw }", "if s.clip.left < 0 { s.clip.left = 0 }"]),
+        W("Physics/StandardSprite.swift:145", .clipLeft, .faceWidth, "any", pins: ["s.clip.left = fw"]),
+        W("Physics/StandardSprite.swift:146", .clipLeft, .range(0...0), "any"),
+        W("Physics/UnderWater.swift:63", .waterKind, .levelLiquid, "any", pins: ["waterKind(w.tiles.bgKind("]),
         W("Player/GroundCeilingEffects.swift:280", .mode, .words([0xb0004]), "effect.plume"),
         W("Player/GroundCeilingEffects.swift:357", .mode, .words([0xb0001]), "effect.debris"),
         W("Player/GroundCeilingEffects.swift:358", .mode, .words([0]), "effect.debris"),
         W("Player/GroundCeilingEffects.swift:359", .mode, .words([0xb0000]), "effect.debris"),
         W("Player/GroundCeilingEffects.swift:360", .mode, .words([0xb0002]), "effect.debris"),
-        W("Player/GroundCeilingEffects.swift:392", .mode, .wordRange(0x10001...0x1000f), "effect.explosion"),
+        W("Player/GroundCeilingEffects.swift:392", .mode, .wordRange(0x10001...0x1000f), "effect.explosion",
+          pins: ["0 < p.type && p.type < 0x10", "p.mode = 0x10000 + UInt32(p.type)"]),
         W("Player/GroundCeilingEffects.swift:393", .mode, .words([0x10005]), "effect.explosion"),
         W("Player/HitPlayerSprite.swift:87", .flash, .range(0xc...0xc), "player"),
         W("Player/HitPlayerSprite.swift:902", .flash, .range(0x1e...0x1e), "player"),
-        W("Player/HitPlayerSprite.swift:1182", .flash, .range(0xc...0xc), "player"),     // `HurtSprite.apply`'s one caller
+        W("Player/HitPlayerSprite.swift:1182", .flash, .range(0xc...0xc), "player", at: ["1034", "1164"],   // its two callers
+          pins: ["flash: 0xc"]),
         W("Player/Player.swift:126", .mirrored, .flags([false, true]), "player"),
         W("Player/Player.swift:332", .mirrored, .flags([false, true]), "player"),
-        W("Player/Player.swift:873", .mode, .words([0x10008, 0x10009]), "player"),
-        W("Player/Player.swift:878", .mode, .words([0xb0005, 0xb0001]), "player"),
+        W("Player/Player.swift:873", .mode, .words([0x10008, 0x10009]), "player", at: ["872"]),
+        W("Player/Player.swift:878", .mode, .words([0xb0005, 0xb0001]), "player", at: ["876"]),
         W("Player/PlayerLiquids.swift:55", .flash, .range(0xd...0xd), "player"),
         W("Player/PlayerLiquids.swift:78", .flash, .range(0x12...0x12), "player"),
         W("Player/PlayerState.swift:280", .mirrored, .copy, "player.shadowRing"),
@@ -184,22 +232,27 @@ final class DrawModeAuditTests: XCTestCase {
         W("Player/PlayerStates.swift:295", .mirrored, .copy, "player.mistBody"),
         // The power tints, or the mode it had (walk-on-liquid kinds other than 0…2 store nothing).
         W("Player/PlayerStates.swift:836", .mode, .words([0, 0x1000a, 0x10004, 0x10001, 0x1000c, 0x10003, 0x10008]),
-          "player"),
+          "player", at: ["816", "822", "825", "828", "831", "834"]),
         W("Player/PlayerStates.swift:850", .mode, .words([0x10006]), "player"),
         W("Player/PlayerStates.swift:853", .mode, .words([0x10009]), "player"),
         W("Player/PlayerStates.swift:864", .mode, .words([0]), "player"),
-        W("Player/PlayerStates.swift:875", .mode, .wordRange(0x50000...0x5000f), "player"),   // the sparkle, k 0…15
+        W("Player/PlayerStates.swift:875", .mode, .wordRange(0x50000...0x5000f), "player", at: ["871", "872", "873"],
+          pins: ["if 0xf < k { k = 0xf }", "if k < 0 { k = 0 }", "UInt32(truncatingIfNeeded: Int(k) + 0x50000)"]),  // k 0…15
         W("Player/PlayerTiles.swift:131", .mirrored, .flags([false, true]), "player"),
         W("Player/PowerUps.swift:109", .mirrored, .copy, "player.trail"),
-        W("Player/PowerUps.swift:112", .mode, .words([0xb0002, 0xb0000, 0xb0001, 0]), "player.trail"),
+        W("Player/PowerUps.swift:112", .mode, .words([0xb0002, 0xb0000, 0xb0001, 0]), "player.trail",
+          at: ["99", "100", "101", "102"]),
         W("Player/ShadowDouble.swift:156", .mirrored, .copy, "player.shadowDouble"),
-        W("Player/ShadowDouble.swift:157", .mode, .words([ShadowDouble.tint]), "player.shadowDouble"),
+        W("Player/ShadowDouble.swift:157", .mode, .words([0x1000b]), "player.shadowDouble",
+          at: ["Player/ShadowDouble.swift:13"]),
         W("Session/FerazelSession.swift:204", .mirrored, .copy, "player.shadowRing"),
         W("Shots/CastSpell.swift:164", .mirrored, .flags([false]), "shot"),
         // 10·dir, dir 0…0x23, only for a shot with gravity (`0 < +0x110`: ids 0, 1, 3, 4, 7 and the seed 0x5a); the
         // followers take their main's angle (the orb 0x50 has gravity 0, PlayerShot.setup, so its followers get 0).
-        W("Shots/PlayerShot.swift:313", .rotation, .range(0...350), "shot.gravity"),
-        W("Shots/PlayerShot.swift:342", .rotation, .range(0...350), "shot.gravity"),
+        W("Shots/PlayerShot.swift:313", .rotation, .range(0...350), "shot.gravity", at: ["312"],
+          pins: ["if 0x23 < dir { dir -= 0x24 }", "Int16(dir * 10)"]),
+        W("Shots/PlayerShot.swift:342", .rotation, .range(0...350), "shot.gravity", at: ["341"],
+          pins: ["let angle = s.rotation", "$0.rotation = angle"]),
         W("Shots/PlayerShot.swift:449", .mode, .words([0]), "shot.orb"),
         W("Shots/PlayerShot.swift:450", .mode, .words([0x10008]), "shot.orb"),
         W("Shots/PlayerShot.swift:451", .mode, .words([0x10009]), "shot.orb"),
@@ -211,7 +264,8 @@ final class DrawModeAuditTests: XCTestCase {
         W("Shots/PlayerShotHits.swift:109", .mode, .words([0x10004]), "shot.gravity"),    // the seed
         W("Shots/PlayerShotHits.swift:210", .flash, .range(10...10), "box"),
         W("Sprites/SetupFaces.swift:353", .mirrored, .flags([true]), "background.plant"),
-        W("Sprites/SetupFaces.swift:354", .mode, .placedTint(0xa8c...0xaef), "background.plant"),
+        W("Sprites/SetupFaces.swift:354", .mode, .placedTint(0xa8c...0xaef), "background.plant",
+          pins: ["if p.p2 != 0 { s.mode = UInt32(truncatingIfNeeded: Int(p.p2) + 0x10000) }"]),
         W("Sprites/SetupFaces.swift:399", .mode, .words([0x90000]), "box.teleporter"),
         W("Sprites/SetupFaces.swift:417", .mode, .words([0x90000]), "box.chest"),
         W("Sprites/SetupFaces.swift:477", .mirrored, .flags([false, true]), "walker"),
@@ -235,9 +289,11 @@ final class DrawModeAuditTests: XCTestCase {
         W("Sprites/SpriteSlot.swift:443", .mode, .words([0]), "platform.raft", "box.boulder", "background.maceBall",
           "chain.maceChain"),
         W("Sprites/SpriteSlot.swift:445", .mode, .levelLight, "platform.raft", "box.boulder", "background.maceBall",
-          "chain.maceChain"),
+          "chain.maceChain", pins: ["mode = UInt32(truncatingIfNeeded: L * 0x100 + 0xc0000 + F)"]),
         // (angle >> 8) + 0x5a with the angle wrapped into 0…0x167ff (`RadialMotion.updatePosition`), − 360 once.
-        W("World/Movers/BackgroundSprite.swift:190", .rotation, .range(0...359), "background.maceBall"),
+        W("World/Movers/BackgroundSprite.swift:190", .rotation, .range(0...359), "background.maceBall", at: ["188", "189"],
+          pins: ["UInt32(bitPattern: c.radial?.angle ?? 0) >> 8) &+ 0x5a", "if 0x167 < r { r &-= 0x168 }"]),
+        W("World/Movers/BackgroundSprite.swift:269", .clipBottom, .range(32000...32000), "background.spring"),
         W("World/Movers/BackgroundSprite.swift:276", .mode, .words([0x10018]), "background.spring"),  // hdr 0x26cd ≠ 0
         W("World/Movers/BackgroundSprite.swift:336", .mirrored, .flags([false]), "background.cannon"),
         W("World/Movers/BackgroundSprite.swift:338", .mirrored, .flags([true]), "background.cannon"),
@@ -248,12 +304,19 @@ final class DrawModeAuditTests: XCTestCase {
         W("World/Movers/BackgroundSprite.swift:353", .mode, .words([0]), "background.cannon"),
         W("World/Movers/BackgroundSprite.swift:358", .mirrored, .flags([false]), "background.cannon"),
         // r = ((0x20 − aim)·0xb4 / 16) / 2 for aim 1…31 not ≡ 0 mod 4 → 5…174, doubled: 10…348.
-        W("World/Movers/BackgroundSprite.swift:360", .rotation, .range(10...348), "background.cannon"),
+        W("World/Movers/BackgroundSprite.swift:360", .rotation, .range(10...348), "background.cannon",
+          at: ["355", "356", "359"], pins: ["0x20 - aim)) * 0xb4", "(u / 16) / 2", "if 0xb3 < r { r -= 0xb4 }",
+                                            "c.rotation = r << 1"]),
         W("World/Movers/BackgroundSprite.swift:375", .mirrored, .flags([true]), "background.spring"),
         W("World/Movers/BackgroundSprite.swift:723", .mirrored, .flags([false, true]), "background.smoke"),
         W("World/Movers/BackgroundSprite.swift:781", .mirrored, .flags([true]), "background.spike"),
         W("World/Movers/BackgroundSprite.swift:789", .mode, .words([0x10018]), "background.spike"),   // hdr 0x26cd ≠ 0
         W("World/Movers/BackgroundSprite.swift:791", .mode, .words([0x90000]), "background.spike"),
+        // The retracting spikes (0x732 / 0x733): f = the phase 0…0xb.
+        W("World/Movers/BackgroundSprite.swift:831", .clipBottom, .range(0...0x14), "background.spike",
+          at: ["822", "825"], pins: ["} else if s.phase < 0xb {", "max(0, 0x14 - f * 2)"]),
+        W("World/Movers/BackgroundSprite.swift:835", .clipTop, .range(0...0x16), "background.spike",
+          at: ["822", "825", "834"], pins: ["} else if s.phase < 0xb {", "s.y = h(base - f * 2)", "h(base - s.y)"]),
         W("World/Movers/BonusSprite.swift:130", .mode, .words([0]), "bonus"),
         W("World/Movers/BonusSprite.swift:388", .mode, .words([0x10008]), "bonus"),
         W("World/Movers/BonusSprite.swift:389", .mode, .words([0x10009]), "bonus"),
@@ -274,10 +337,12 @@ final class DrawModeAuditTests: XCTestCase {
         W("World/Movers/BoxSprite.swift:203", .mirrored, .flags([true]), "box.bridge"),
         W("World/Movers/BoxSprite.swift:243", .mirrored, .flags([true]), "box.door"),
         W("World/Movers/BoxSprite.swift:289", .flashTable, .flags([true]), "box.iceWall"),
+        W("World/Movers/BoxSprite.swift:299", .clipTop, .range(4...4), "box.gate"),
         W("World/Movers/BoxSprite.swift:305", .mode, .words([0x10018]), "box.gate"),          // hdr 0x26cd ≠ 0
         W("World/Movers/BoxSprite.swift:337", .mode, .words([0xb0001]), "box.lantern"),
         W("World/Movers/BoxSprite.swift:377", .mirrored, .flags([true]), "box.decoration"),
-        W("World/Movers/BoxSprite.swift:381", .mode, .placedTint(0xaf5...0xb21), "box.decoration"),
+        W("World/Movers/BoxSprite.swift:381", .mode, .placedTint(0xaf5...0xb21), "box.decoration",
+          pins: ["if p.p2 != 0 { s.mode = UInt32(truncatingIfNeeded: Int(p.p2) + 0x10000) }"]),
         W("World/Movers/BoxSprite.swift:391", .mode, .words([0x10006]), "box.outcrop"),
         W("World/Movers/BoxSprite.swift:392", .mode, .words([0x10007]), "box.outcrop"),
         W("World/Movers/BoxSprite.swift:393", .mode, .words([0xb0005]), "box.outcrop"),
@@ -288,35 +353,53 @@ final class DrawModeAuditTests: XCTestCase {
         W("World/Movers/BoxSprite.swift:622", .mode, .words([0xb0000, 0xb0002]), "box.boulder.hover"),
         W("World/Movers/BoxSprite.swift:624", .mode, .words([0xb0002, 0]), "box.boulder.hover"),
         W("World/Movers/BoxSprite.swift:628", .mode, .words([0]), "box.boulder.hover"),
-        W("World/Movers/BoxSprite.swift:643", .rotation, .range(0...359), "box.boulder"),     // wrapped into 0…359
+        W("World/Movers/BoxSprite.swift:643", .rotation, .range(0...359), "box.boulder", at: ["641", "642"],
+          pins: ["while s.phase < 0 { s.phase &+= 0x168 }", "while 0x167 < s.phase { s.phase &-= 0x168 }"]),
+        // The gate's clip: `+0x158 − y` (0…100 in 2-pixel steps: up while < 100 open, down while > 0 shut) + 7, + 0x20.
+        W("World/Movers/BoxSprite.swift:756", .clipTop, .range(7...139), "box.gate",
+          at: ["735", "738", "739", "740", "754", "755"],
+          pins: ["if 0 < above { step = 0x200 }", "} else if above < 100 {", "step = -0x200",
+                 "Int16(truncatingIfNeeded: g.y) &+ 7", "if p2 != 0 { c &+= 0x20 }"]),
         W("World/Movers/BoxSprite.swift:866", .mirrored, .copy, "box.balloon"),
         // (subtype + 0x5a) % 360, subtype a spoke's degrees 0…359 or −90 (`Radial.updateSpokes`) → 0…359.
-        W("World/Movers/ChainSprite.swift:51", .rotation, .range(0...359), "chain.maceChain"),
+        W("World/Movers/ChainSprite.swift:51", .rotation, .range(0...359), "chain.maceChain", at: ["49"],
+          pins: ["Int(s.subtype) + 0x5a", "a % 0x168"]),
         W("World/Movers/ChainSprite.swift:103", .mirrored, .flags([false, true]), "chain.seeSawSegment"),
         W("World/Movers/PlatformSprite.swift:322", .mirrored, .flags([true]), "platform.catapult"),
         W("World/Movers/PlatformSprite.swift:600", .mode, .words([0xb0001]), "platform.blink"),
         W("World/Movers/PlatformSprite.swift:601", .mode, .words([0xb0000]), "platform.blink"),
         W("World/Movers/PlatformSprite.swift:602", .mode, .words([0xb0002]), "platform.blink"),
+        W("World/Movers/PlatformSprite.swift:609", .clipBottom, .range(0...0), "platform.blink"),
         W("World/Movers/PlatformSprite.swift:637", .mode, .words([0xb0002]), "platform.blink"),
+        W("World/Movers/PlatformSprite.swift:638", .clipBottom, .range(32000...32000), "platform.blink"),
         W("World/Movers/PlatformSprite.swift:640", .mode, .words([0xb0000]), "platform.blink"),
         W("World/Movers/PlatformSprite.swift:642", .mode, .words([0]), "platform.blink"),
         W("World/Movers/PlatformSprite.swift:698", .mode, .words([0]), "platform.blink"),
+        W("World/Movers/PlatformSprite.swift:699", .clipBottom, .range(32000...32000), "platform.blink"),
         W("World/Movers/PlatformSprite.swift:703", .mode, .words([0xb0001]), "platform.blink"),
         W("World/Movers/PlatformSprite.swift:706", .mode, .words([0xb0000]), "platform.blink"),
         W("World/Movers/PlatformSprite.swift:707", .mode, .words([0xb0002]), "platform.blink"),
+        W("World/Movers/PlatformSprite.swift:712", .clipBottom, .range(0...0), "platform.blink"),
         W("World/Movers/PlatformSprite.swift:865", .mode, .words([0]), "platform.gauge"),
-        W("World/Movers/PlatformSprite.swift:867", .mode, .wordRange(0xa000b...0xa00fa), "platform.gauge"),
+        W("World/Movers/PlatformSprite.swift:867", .mode, .wordRange(0xa000b...0xa00fa), "platform.gauge", at: ["863"],
+          pins: ["if q < 0xb {", "g.mode = q < 0xfb ? UInt32(bitPattern: q &+ 0xa0000) : 0"]),
         // The raft's tilt (`tail`, subtype 3 only), wrapped into 0…359.
-        W("World/Movers/PlatformSprite.swift:925", .rotation, .range(0...359), "platform.raft"),
+        W("World/Movers/PlatformSprite.swift:925", .rotation, .range(0...359), "platform.raft", at: ["924"],
+          pins: ["if r < 0 { r += 0x168 }"]),
         // The floe's last 0x2c frames (`+0xa6` in 1…0x2c): subtypes 4 / 0x6a4 (`PlayerShot.floe` / `ledge` set
         // `+0xa6 = 0xb4`); the raft (subtype 3) has `+0xa6 = 0` from its Setup arm and no writer after it.
         W("World/Movers/PlatformSprite.swift:947", .mode, .words([0xb0000, 0]), "platform.floe"),
         // 255 − f·(0x100 − 0x96), f ∈ [0, 1] → 149…255 (the ball); the spokes 203 + J·(drawScale − 203)·2 / n.
-        W("World/Movers/Radial.swift:213", .scale, .range(0x95...0xff), "radial.persp"),
-        W("World/Movers/Radial.swift:215", .mode, .radialLight, "radial.persp"),
-        W("World/Movers/Radial.swift:263", .mode, .words([0x10018]), "radial.spokes"),   // its one caller (PlatformSprite)
-        W("World/Movers/Radial.swift:297", .scale, .range(0x5f...0x133), "radial.persp"),
-        W("World/Movers/Radial.swift:302", .mode, .radialLight, "radial.persp"),
+        W("World/Movers/Radial.swift:213", .scale, .range(0x95...0xff), "radial.persp", at: ["210", "211", "212"],
+          pins: ["Double(Float(255.0) - f * Float(0x100 - Int32(b.farScale)))", "b.drawScale = scale"]),
+        W("World/Movers/Radial.swift:215", .mode, .radialLight, "radial.persp", at: ["208", "214"],
+          pins: ["Float(256.0) * f", "fctiwz(0.05 * Double(f3))", "Int32(level) &* 0x100 &+ 0xc0000"]),
+        W("World/Movers/Radial.swift:263", .mode, .words([0x10018]), "radial.spokes",   // its one caller (PlatformSprite)
+          at: ["World/Movers/PlatformSprite.swift:122"]),
+        W("World/Movers/Radial.swift:297", .scale, .range(0x5f...0x133), "radial.persp", at: ["294", "295", "296"],
+          pins: ["Int32(b.farScale) + 0x100", "u / 2", "(Int32(b.drawScale) - Int32(s0)) * 2", "(J * span) / n"]),
+        W("World/Movers/Radial.swift:302", .mode, .radialLight, "radial.persp", at: ["300", "301"],
+          pins: ["((n - J) * 0xc0) / n", "fctiwz(0.05 * Double(mix))", "Int32(level) &* 0x100 &+ 0xc0000"]),
         W("World/Movers/StatueSprite.swift:50", .mode, .words([0x1000b]), "statue"),
         W("World/Movers/StatueSprite.swift:55", .mode, .words([0]), "statue"),
         W("World/Movers/StatueSprite.swift:61", .mode, .copy, "statue"),     // the sprite's own mode, restored
@@ -324,7 +407,7 @@ final class DrawModeAuditTests: XCTestCase {
 
     /// Every writer site the scan finds: `file:line` and the field.
     private static func scannedWriters() throws -> [(site: String, input: Input, code: String)] {
-        let fields = ["mode", "rotation", "scale", "mirrored", "flash", "flashTable", "waterKind"]
+        let fields = Input.allCases.map(\.rawValue)
         var out: [(String, Input, String)] = []
         for l in try coreLines.get() where !l.file.hasPrefix("Seams/") {
             var found = assignedFields(l.code, fields)
@@ -334,6 +417,80 @@ final class DrawModeAuditTests: XCTestCase {
                 guard let input = Input(rawValue: f) else { continue }
                 if notDrawInputs.contains(where: { $0.file == l.file && $0.field == input }) { continue }
                 out.append(("\(l.file):\(l.line)", input, Self.trim(l.code)))
+            }
+        }
+        return out
+    }
+
+    /// The integer literals of `code` (hex or decimal; not a digit run inside a name, nor a float's).
+    static func intLiterals(_ code: String) -> [Int] {
+        let c = Array(code.utf8)
+        func digit(_ b: UInt8) -> Bool { b >= 48 && b <= 57 }
+        func hexDigit(_ b: UInt8) -> Int? {
+            if digit(b) { return Int(b) - 48 }
+            if b >= 97 && b <= 102 { return Int(b) - 87 }
+            if b >= 65 && b <= 70 { return Int(b) - 55 }
+            return nil
+        }
+        func name(_ b: UInt8) -> Bool { b == 95 || b == 46 || digit(b) || (b | 0x20 >= 97 && b | 0x20 <= 122) }
+        var out: [Int] = [], i = 0
+        while i < c.count {
+            guard digit(c[i]), i == 0 || !name(c[i - 1]) else { i += 1; continue }
+            var v = 0, j = i
+            if c[i] == 48 && i + 1 < c.count && c[i + 1] == 120 {
+                j = i + 2
+                while j < c.count, let d = hexDigit(c[j]) ?? (c[j] == 95 ? -1 : nil) { if d >= 0 { v = v * 16 + d }; j += 1 }
+            } else {
+                while j < c.count && (digit(c[j]) || c[j] == 95) { if c[j] != 95 { v = v * 10 + Int(c[j]) - 48 }; j += 1 }
+                if j + 1 < c.count && c[j] == 46 && digit(c[j + 1]) {     // a float: skipped
+                    j += 1
+                    while j < c.count && digit(c[j]) { j += 1 }
+                    i = j
+                    continue
+                }
+            }
+            out.append(v)
+            i = j
+        }
+        return out
+    }
+
+    /// Each row against the source it cites: the site's line (and `at`) hold every `pins` string; a word row's words
+    /// are exactly the mode-word literals (≥ 0x10000) there, plus 0 as a literal; a one-value range's value is a
+    /// literal there; a flag row's line assigns that literal (`= true` / `= false`, 1 for `flashTable`) or neither when
+    /// it writes both; every derived row (ranges, light words, tints, liquids, face widths) carries its pins.
+    static func sourceMismatches() throws -> [String] {
+        var code: [String: String] = [:]
+        for l in try coreLines.get() { code["\(l.file):\(l.line)"] = l.code }
+        var out: [String] = []
+        for w in writers {
+            let file = String(w.site.split(separator: ":").first ?? "")
+            let sites = [w.site] + w.at.map { has($0, ":") ? $0 : "\(file):\($0)" }
+            let lines = sites.map { code[$0] ?? "" }
+            for (site, line) in zip(sites, lines) where trim(line).isEmpty { out.append("\(w.site): \(site) holds no code") }
+            for p in w.pins where !lines.contains(where: { has($0, p) }) { out.append("\(w.site): no `\(p)`") }
+            let literals = Set(lines.flatMap(intLiterals))
+            switch w.values {
+            case .words(let ws):
+                for x in ws where !literals.contains(Int(x)) { out.append("\(w.site): \(hex(x)) is not in the source") }
+                for v in literals.sorted() where v >= 0x10000 && !ws.contains(UInt32(truncatingIfNeeded: v)) {
+                    out.append("\(w.site): the source writes \(hex(UInt32(truncatingIfNeeded: v))), not in the row")
+                }
+            case .range(let r) where r.lowerBound == r.upperBound:
+                if !literals.contains(r.lowerBound) { out.append("\(w.site): \(r.lowerBound) is not in the source") }
+            case .flags(let f):
+                let own = lines[0]
+                if w.input == .flashTable {
+                    if f != [true] || !literals.contains(1) { out.append("\(w.site): flashTable \(f)") }
+                } else {
+                    let t = has(own, "= true"), u = has(own, "= false")
+                    if (f == [true] && !t) || (f == [false] && !u) || (f.count == 2 && (t || u)) {
+                        out.append("\(w.site): flags \(f) against `\(trim(own))`")
+                    }
+                }
+            case .copy: break
+            default:
+                if w.pins.isEmpty { out.append("\(w.site): a derived row with no pins") }
             }
         }
         return out
@@ -366,7 +523,7 @@ final class DrawModeAuditTests: XCTestCase {
         case .placedTint(let types):
             return Set(l.file.activePlacements.filter { types.contains($0.type) && $0.p2 != 0 }
                 .map { UInt32(truncatingIfNeeded: Int($0.p2) + 0x10000) }).sorted()
-        case .copy, .range, .flags, .levelLiquid: return []
+        case .copy, .range, .flags, .levelLiquid, .faceWidth: return []
         }
     }
 
@@ -397,6 +554,12 @@ final class DrawModeAuditTests: XCTestCase {
         var deathSteps: Set<Int> = []
         /// `FerazelSession.tintTableDraws.count` of every session the run hosted.
         var tintDraws: Set<Int> = []
+        /// Every face the run drew.
+        var faces: Set<FaceRef> = []
+        /// Level starts (`LevelServices.prepare`, a new renderer each), the `.wrapEraseSprites` the last one applied,
+        /// and its ripple phase at the end.
+        var prepares = 0, erasesSinceStart = 0
+        var finalPhase: Int32 = 0
     }
 
     struct Audit {
@@ -449,12 +612,14 @@ final class DrawModeAuditTests: XCTestCase {
         let resources: FerazelResources
         private(set) var renderer: FrameRenderer?
         private(set) var first: FrameRenderer?
+        private(set) var prepares = 0
         var deathSteps: Set<Int> = []
         init(_ resources: FerazelResources) { self.resources = resources }
         func prepare(level: Int) throws -> LevelFaces {
             let r = try FrameRenderer(resources: resources, level: level, search: DrawModeAuditTests.search,
                                       dither: .errorDiffusion, text: StatusBarTests.BoxRasterizer(), prefs: FerazelPrefs())
             renderer = r
+            prepares += 1
             if first == nil { first = r }
             return LevelFaces(faceBounds: r.faceBounds, particleFaces: r.particleFaces, diffuseRandoms: r.diffuseRandoms,
                               diffuseRandomsAt: r.diffuseRandomsAt)
@@ -520,6 +685,10 @@ final class DrawModeAuditTests: XCTestCase {
             seen.ticks += 1
             seen.steps += run.lastSteps.count
             if let session = run.session { seen.tintDraws.insert(session.tintTableDraws.count) }
+            if services.prepares != seen.prepares {
+                seen.prepares = services.prepares
+                seen.erasesSinceStart = 0
+            }
             for q in out.merged.requests {
                 switch q {
                 case .putFile, .getFile: run.fileDone(.cancelled)
@@ -536,13 +705,17 @@ final class DrawModeAuditTests: XCTestCase {
                 for op in g.output.draws { observe(op, &seen) }
                 guard let r = services.renderer else { continue }
                 let ops = g.output.draws.filter { !skippedOps.contains(name($0)) }
-                do { try r.apply(FrameOps(draws: ops)) } catch {
+                do {
+                    try r.apply(FrameOps(draws: ops))
+                    for op in ops { if case .wrapEraseSprites = op { seen.erasesSinceStart += 1 } }
+                } catch {
                     seen.refusals.append("tick \(seen.ticks): \(error)")
                 }
             }
             if !seen.refusals.isEmpty { break }
         }
         seen.deathSteps = services.deathSteps
+        seen.finalPhase = services.renderer?.sprites.ripplePhase ?? 0
         let r = try XCTUnwrap(services.first)
         let L = r.level
         var bytes = Set<Int>(), liquids = Set<Int16>()
@@ -567,6 +740,7 @@ final class DrawModeAuditTests: XCTestCase {
         case .wrapDrawSprites(let ds):
             for d in ds {
                 s.modes.insert(d.mode)
+                s.faces.insert(d.face)
                 s.rotations.insert(d.rotation)
                 s.scales.insert(d.scale)
                 if d.waterRow >= 1 && !d.noWaterSplit { s.waterKinds.insert(d.waterKind) }
@@ -612,18 +786,44 @@ final class DrawModeAuditTests: XCTestCase {
             blitter.parallax = r.parallax
             ports.mask = [UInt8](repeating: 0xff, count: ports.mask.count)
         }
-        /// Draws and erases `d`; nil when drawn, else the refusal.
-        mutating func draw(_ d: SpriteDraw) -> String? {
+        /// Draws and erases `d` at scroll (h, v); nil when drawn, else the refusal.
+        mutating func draw(_ d: SpriteDraw, h: Int = 0, v: Int = 0) -> String? {
             do {
-                try blitter.wrapDrawSprites([d], h: 0, v: 0, ports: &ports)
+                try blitter.wrapDrawSprites([d], h: h, v: v, ports: &ports)
                 // No grid re-stamp: the erase leaves the mask 0xff under the face again.
-                try blitter.wrapEraseSprites([DrawModeAuditTests.erased(d)], h: 0, v: 0, ports: &ports)
+                try blitter.wrapEraseSprites([DrawModeAuditTests.erased(d)], h: h, v: v, ports: &ports)
             } catch {
                 return "\(error)"
             }
             return nil
         }
+
+        /// Whether `d` at scroll (h, v) reaches its mode read: a face call with a non-empty window that `.Wrap*Face`'s
+        /// view test passes (`SpriteBlitter.wrap`; its ring position then passes `blitEncFaceX`'s entry test).
+        func reaches(_ d: SpriteDraw, h: Int = 0, v: Int = 0) -> Bool {
+            guard let face = blitter.faces.face(d.face) else { return false }
+            return SpriteBlitter.faceCalls(d, face: face).calls.contains { c in
+                c.w > 0 && c.h > 0 && c.dstH + c.w >= h && c.dstV + c.h >= v && c.dstH <= h + 0x260
+                    && c.dstV <= v + 0x180
+            }
+        }
+
+        /// The control: `d` with the unwritten mode word 0x20000 (no flash, light, water or seed) must be refused —
+        /// proof that a draw at this place and transform reaches the mode read.
+        mutating func controlRefused(_ d: SpriteDraw, h: Int = 0, v: Int = 0) -> Bool {
+            var c = d
+            c.mode = 0x20000
+            c.flash = 0
+            c.lightOverlay = false
+            c.waterRow = 0
+            c.randomSeed = nil
+            guard let e = draw(c, h: h, v: v) else { return false }
+            return DrawModeAuditTests.has(e, "mode")
+        }
     }
+
+    /// `.InitSprite`'s clip (`SpriteSlot.clip`, `.StandardSpriteHandles`' reset): the whole face.
+    static let openClip = SpriteClip(left: 0, right: 32000, bottom: 32000, top: 0)
 
     /// The widest loaded face (the transforms' and the erase twins' bound) and a small one, by PICT order.
     private static func probeFaces(_ r: FrameRenderer) -> [FaceRef] {
@@ -646,8 +846,24 @@ final class DrawModeAuditTests: XCTestCase {
         var failures: [String] = []
         let faces = probeFaces(r)
         guard let wide = faces.first, let small = faces.last else { return ["level \(a.level.number): no probe face"] }
-        func put(_ d: SpriteDraw, _ label: String) {
-            if let e = pad.draw(d) { failures.append("level \(a.level.number) \(label): \(e)") }
+        // Every probe has the whole face (`openClip`), reaches its mode read (checked), and each place / transform is
+        // proved once by the control draw.
+        var proved = Set<String>()
+        func put(_ d0: SpriteDraw, _ label: String, h: Int = 0, v: Int = 0) {
+            var d = d0
+            if d.clip == SpriteClip() { d.clip = openClip }
+            guard pad.reaches(d, h: h, v: v) else {
+                failures.append("level \(a.level.number) \(label): culled before the mode read")
+                return
+            }
+            let key = "\(d.face) \(d.x) \(d.y) \(d.mirrored) \(d.rotation) \(d.scale) \(h) \(v)"
+            if !proved.contains(key) {
+                proved.insert(key)
+                if !pad.controlRefused(d, h: h, v: v) {
+                    failures.append("level \(a.level.number) \(label): the control draw was not refused")
+                }
+            }
+            if let e = pad.draw(d, h: h, v: v) { failures.append("level \(a.level.number) \(label): \(e)") }
         }
         var wordSite: [UInt32: String] = [:], rotations: [Int: String] = [:], scales: [Int: String] = [:]
         var flashes: [Int: String] = [:], kinds: String?
@@ -666,7 +882,9 @@ final class DrawModeAuditTests: XCTestCase {
             // The squash (0xa) has no flipped arm: unmirrored, on the small face (q only changes the squash).
             put(SpriteDraw(face: small, x: 100, y: 100, mode: word, lightOverlay: true, randomSeed: seed),
                 "\(site) word \(hex(word))")
-            put(SpriteDraw(face: small, x: 0x26c, y: 0x188, mode: word, randomSeed: seed), "\(site) word \(hex(word)) wrapped")
+            // Across the ring's right and bottom edges (scroll 0x40: 620 % 640 + width > 640, 392 % 416 + 56 > 416).
+            put(SpriteDraw(face: small, x: 0x26c, y: 0x188, mode: word, randomSeed: seed), "\(site) word \(hex(word)) wrapped",
+                h: 0x40, v: 0x40)
             guard m != 0xa else { continue }
             for mirrored in [false, true] {
                 put(SpriteDraw(face: wide, x: 100, y: 100, mode: word, mirrored: mirrored, lightOverlay: true,
@@ -724,7 +942,66 @@ final class DrawModeAuditTests: XCTestCase {
                 }
             }
         }
+        // Every clip edge value of every clip row, the other edges open, under one word of each mode the level's rows
+        // write, mirrored or not, and rotated / scaled when a row transforms the sprite ("any": every sprite). A
+        // window the edge empties draws nothing (the blitters' `w > 0, h > 0`); the face is the wide one.
+        var firstOfMode: [Int: UInt32] = [:]
+        for word in wordSite.keys.sorted() where firstOfMode[modeOf(word)] == nil { firstOfMode[modeOf(word)] = word }
+        let transformedWho = Set(transformedSprites)
+        let wideWidth = r.sprites.faces.face(wide)?.width ?? 0
+        var clipDrawn = 0
+        // Each edge's values over its rows (a range over 8 values: its ends and every 4th; over 32, every 16th), with
+        // whether a row transforms them.
+        var edges: [Input: [Int: Bool]] = [:]
+        for w in writers where has(w.input.rawValue, "clip.") {
+            let values: [Int]
+            switch w.values {
+            case .range(let x):
+                let step = x.count > 32 ? 16 : x.count > 8 ? 4 : 1
+                values = Array(stride(from: x.lowerBound, to: x.upperBound, by: step)) + [x.upperBound]
+            case .faceWidth: values = [0, 1, wideWidth / 2, wideWidth - 1, wideWidth]
+            default: failures.append("\(w.site): a clip row with no values"); continue
+            }
+            let transforms = w.who.contains("any") || w.who.contains(where: transformedWho.contains)
+            for v in values { edges[w.input, default: [:]][v] = (edges[w.input]?[v] ?? false) || transforms }
+        }
+        for (input, values) in edges.sorted(by: { $0.key.rawValue < $1.key.rawValue }) {
+            for (v, transforms) in values.sorted(by: { $0.key < $1.key }) {
+                var clip = openClip
+                switch input {
+                case .clipTop: clip.top = v
+                case .clipLeft: clip.left = v
+                case .clipBottom: clip.bottom = v
+                default: clip.right = v
+                }
+                for (m, word) in firstOfMode.sorted(by: { $0.key < $1.key }) {
+                    let seed: Int32? = m == 5 ? 1 : nil
+                    for mirrored in m == 0xa ? [false] : [false, true] {
+                        var shapes: [(Int16, Int16)] = [(0, 0x100)]
+                        if transforms && transformSafe.contains(m) { shapes += [(90, 0x100), (0, 0x5f), (359, 0x133)] }
+                        for (rot, sc) in shapes {
+                            let d = SpriteDraw(face: wide, x: 100, y: 100, mode: word, mirrored: mirrored, clip: clip,
+                                               lightOverlay: true, rotation: rot, scale: sc, randomSeed: seed)
+                            if pad.reaches(d) { clipDrawn += 1 }
+                            if let e = pad.draw(d) {
+                                failures.append("level \(a.level.number) \(input.rawValue) \(v) word "
+                                                + "\(hex(word)) mirrored \(mirrored) rotation \(rot) scale \(sc): \(e)")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if clipDrawn == 0 { failures.append("level \(a.level.number): no clip probe reached its mode read") }
         return failures
+    }
+
+    /// The sprites some rotation or scale row writes with a value other than none.
+    static var transformedSprites: [String] {
+        writers.filter { w in
+            guard w.input == .rotation || w.input == .scale, case .range(let r) = w.values else { return false }
+            return r != (0...0) && r != (0x100...0x100)
+        }.flatMap(\.who)
     }
 
     /// `drawWriters` of every built level, once for both tests.
@@ -746,6 +1023,10 @@ final class DrawModeAuditTests: XCTestCase {
         let stale = Self.writers.filter { !found.contains("\($0.site) \($0.input.rawValue)") }
         XCTAssertTrue(stale.isEmpty, "rows whose line writes no such field (moved? re-scan):\n"
                       + stale.map { "  \($0.site) .\($0.input.rawValue)" }.joined(separator: "\n"))
+        // Every row's values are the source's (a changed constant fails here).
+        let mismatches = try Self.sourceMismatches()
+        XCTAssertTrue(mismatches.isEmpty, "rows whose values the source does not write:\n"
+                      + mismatches.map { "  " + $0 }.joined(separator: "\n"))
 
         let audits = try Self.audits.get()
         try check(.skippedOpsCannotThrow, audits)
@@ -759,13 +1040,20 @@ final class DrawModeAuditTests: XCTestCase {
             // Every row's values, under every transform the renderer builds for them.
             XCTAssertTrue(failures.isEmpty, "\(failures.count) refused:\n" + failures.prefix(20).joined(separator: "\n"))
 
-            // Every Setup's own draw (each placement once), drawn and erased; its values named by the table.
+            // Every Setup's own draw (each placement once), moved on screen at (100, 100) (at its level point it is
+            // culled before the mode is read), drawn and erased; its values named by the table. Each reaches its mode
+            // read (a non-empty window in view), proved by the control word's refusal.
             let modeRows = Self.writers.filter { $0.input == .mode }
             func named(_ w: UInt32) -> Bool { modeRows.contains { Self.writes($0.values, a.level, w) } }
             var pad = Pad(a.level.renderer)
             for e in a.setups {
-                guard let d = e.slot.draw else { continue }
-                if let error = pad.draw(d) { XCTFail("level \(n) Setup \(Self.hex(UInt32(UInt16(bitPattern: e.type)))): \(error)") }
+                guard var d = e.slot.draw else { continue }
+                d.x = 100
+                d.y = 100
+                let label = "level \(n) Setup \(Self.hex(UInt32(UInt16(bitPattern: e.type))))"
+                XCTAssertTrue(pad.reaches(d), "\(label): culled before the mode read")
+                XCTAssertTrue(pad.controlRefused(d), "\(label): the control draw was not refused")
+                if let error = pad.draw(d) { XCTFail("\(label): \(error)") }
                 XCTAssertTrue(named(d.mode),
                               "level \(n) type \(e.type): Setup word \(Self.hex(d.mode)) has no writer row")
             }
@@ -820,6 +1108,7 @@ final class DrawModeAuditTests: XCTestCase {
         case headerFlame, headerRipple, levelsLoad, lightSlotsFit, tintDraws510, attachedBeforeApply, levelClut
         case deathSteps, waterTilesInSheet, levelOpsRouted, skippedOpsCannotThrow, ripplePhaseHours
         case rotationRanges, notNamedByLevelFrame(String)
+        case headerCamera, coreNotNamed(String), callersTry([String])
     }
 
     struct Refusal {
@@ -938,10 +1227,61 @@ final class DrawModeAuditTests: XCTestCase {
           "face load"),
     ]
 
-    /// Every `throw <name>` in FerazelRender: (file, name) → count.
-    private static func scannedThrows() throws -> [String: Int] {
+    /// Every `throw` in `Sources/FerazelCore` — what `LevelRun.tick` (and `FrameRenderer`'s Core calls, the CLUT and
+    /// level loads) can propagate out of a level frame — with the reason it is not reached on a built level.
+    static let coreRefusals: [Refusal] = [
+        R("Camera/Camera.swift", "Error.arenaBound", 1, .headerZero, [.headerCamera],
+          "header `arenaBound` = 0 on every built level"),
+        R("Camera/Camera.swift", "Error.autoScroll", 1, .headerZero, [.headerCamera],
+          "header `autoScrollEnable` = 0 on every built level"),
+        R("Color/ColorLUT.swift", "ColorLUTError.truncated", 2, .loadsClean, [.levelsLoad, .levelClut],
+          "`FrameRenderer.init` loads the level CLUT and 801 for every built level; `.setScreenClut` reloads only the "
+          + "id its tables were built for (the `screenClut` refusal guards it first)"),
+        R("Color/ColorLUT.swift", "ColorLUTError.unexpectedFlags", 1, .loadsClean, [.levelsLoad, .levelClut],
+          "the same CLUT loads"),
+        R("Color/ColorLUT.swift", "ColorLUTError.missing", 1, .loadsClean, [.levelsLoad, .levelClut], "the same CLUT loads"),
+        R("Color/ColorLUT.swift", "ColorLUTError.entryCount", 1, .loadsClean, [.levelsLoad, .levelClut],
+          "the same CLUT loads"),
+        R("Data/FerazelData.swift", "FerazelDataError.missing", 5, .offLevelFrame, [.coreNotNamed("FerazelData")],
+          "opening the data folder (the shells, at launch)"),
+        R("Front/DialogResources.swift", "WorldDataError.missing", 1, .byConstruction,
+          [.callersTry(["DialogTemplate.load(", "DialogItemList.load(", "ControlTemplate.load(", "MenuTemplate.load(",
+                        "MenuBarTemplate.load("])],
+          "the shells' dialogs and menus; Core's one use (the save error's text) is a `try?`"),
+        R("Saves/SavedGameFile.swift", ".notASavedGame", 2, .offLevelFrame, [.coreNotNamed("SavedGameFile.read(")],
+          "opening a saved game file: the shells' Open (Core never calls it)"),
+        R("Session/FerazelSession.swift", "SessionError.noPlayerRecord", 1, .loadsClean, [.levelsLoad],
+          "the session is built at each level start, every built level's run included"),
+        R("Sprites/SetupFaces.swift", "Error.unmapped", 1, .loadsClean, [.levelsLoad],
+          "every active placement of every built level sets up (the audit runs each one, and the level start does)"),
+        R("Sprites/SetupFaces.swift", "Error.notTranscribed", 13, .loadsClean, [.levelsLoad], "the same Setups"),
+        R("Sprites/SetupFaces.swift", "Error.autoScrollSprites", 1, .headerZero, [.headerCamera],
+          "header `autoScrollEnable` = 0 on every built level"),
+        R("World/Movers/BonusSprite.swift", "SetupFaces.Error.notTranscribed", 2, .loadsClean,
+          [.levelsLoad, .callersTry(["BonusSprite.setup("])],
+          "placements set up clean; the in-play spawns (drops, chests, crates) call it with `try?` / `try!` for types "
+          + "it never refuses (0xc25, items past the table)"),
+        R("World/Conversation.swift", "WorldDataError.wrongLength", 1, .byConstruction,
+          [.callersTry(["Conversation.load("])], "the level's one loader (`ConversationRun`) is a `try?`"),
+        R("World/Conversation.swift", "WorldDataError.missing", 1, .byConstruction,
+          [.callersTry(["Conversation.load("])], "the same `try?`"),
+        R("World/LevelFile.swift", "WorldDataError.missing", 1, .loadsClean, [.levelsLoad],
+          "every built level's Mlvl loads; `.setTile` re-parses the same bytes with one FG cell changed"),
+        R("World/LevelFile.swift", "WorldDataError.wrongLength", 2, .loadsClean, [.levelsLoad], "the same Mlvl"),
+        R("World/LevelFile.swift", "WorldDataError.truncated", 1, .loadsClean, [.levelsLoad], "the same Mlvl"),
+        R("World/LevelFile.swift", "WorldDataError.badDimensions", 1, .loadsClean, [.levelsLoad], "the same Mlvl"),
+        R("World/StringList.swift", "WorldDataError.missing", 1, .loadsClean, [.levelsLoad],
+          "the session's STR# 500 (the signs) at level start"),
+        R("World/WorldFile.swift", "WorldDataError.missing", 1, .loadsClean, [.levelsLoad], "Mwld at level start"),
+        R("World/WorldFile.swift", "WorldDataError.wrongLength", 1, .loadsClean, [.levelsLoad], "Mwld at level start"),
+        R("World/WorldMap.swift", "WorldDataError.missing", 1, .loadsClean, [.levelsLoad], "the session's Mmap"),
+        R("World/WorldMap.swift", "WorldDataError.wrongLength", 1, .loadsClean, [.levelsLoad], "the session's Mmap"),
+    ]
+
+    /// Every `throw <name>` in `lines`: (file, name) → count.
+    private static func scannedThrows(_ lines: [SourceLine]) -> [String: Int] {
         var out: [String: Int] = [:]
-        for l in try renderLines.get() {
+        for l in lines {
             let c = Array(l.code)
             let pat = Array("throw ")
             var i = 0
@@ -959,18 +1299,23 @@ final class DrawModeAuditTests: XCTestCase {
     // MARK: - testEveryRefusalIsUnreachable
 
     func testEveryRefusalIsUnreachable() throws {
-        let scanned = try Self.scannedThrows()
-        let table = Dictionary(Self.refusals.map { ("\($0.file) \($0.thrown)", $0.count) }, uniquingKeysWith: +)
-        XCTAssertEqual(table.count, Self.refusals.count, "a refusal row twice")
-        for (key, n) in scanned.sorted(by: { $0.key < $1.key }) where table[key] != n {
-            XCTFail("throw \(key): \(n) in the source, \(table[key].map(String.init) ?? "no row") in the table")
+        for (module, lines, rows) in [("FerazelRender", try Self.renderLines.get(), Self.refusals),
+                                      ("FerazelCore", try Self.coreLines.get(), Self.coreRefusals)] {
+            let scanned = Self.scannedThrows(lines)
+            let table = Dictionary(rows.map { ("\($0.file) \($0.thrown)", $0.count) }, uniquingKeysWith: +)
+            XCTAssertEqual(table.count, rows.count, "\(module): a refusal row twice")
+            for (key, n) in scanned.sorted(by: { $0.key < $1.key }) where table[key] != n {
+                XCTFail("\(module) throw \(key): \(n) in the source, \(table[key].map(String.init) ?? "no row") in the table")
+            }
+            for key in table.keys.sorted() where scanned[key] == nil {
+                XCTFail("\(module) row \(key): no such throw in the source")
+            }
+            XCTAssertEqual(scanned.values.reduce(0, +), rows.map(\.count).reduce(0, +), module)
         }
-        for key in table.keys.sorted() where scanned[key] == nil { XCTFail("row \(key): no such throw in the source") }
-        XCTAssertEqual(scanned.values.reduce(0, +), Self.refusals.map(\.count).reduce(0, +))
 
         let audits = try Self.audits.get()
         var checks: [Check] = []
-        for r in Self.refusals { for c in r.checks where !checks.contains(c) { checks.append(c) } }
+        for r in Self.refusals + Self.coreRefusals { for c in r.checks where !checks.contains(c) { checks.append(c) } }
         for c in checks { try check(c, audits) }
     }
 
@@ -983,10 +1328,7 @@ final class DrawModeAuditTests: XCTestCase {
             for f in try Self.drawn.get() { XCTAssertTrue(f.isEmpty, "\(c): \(f.prefix(5))") }
         case .untransformableNotTransformed:
             // Modes the transformed blitters have no table for, on a sprite some rotation / scale row writes.
-            let transformed = Set(Self.writers.filter { w in
-                guard w.input == .rotation || w.input == .scale, case .range(let r) = w.values else { return false }
-                return r != (0...0) && r != (0x100...0x100)
-            }.flatMap(\.who))
+            let transformed = Set(Self.transformedSprites)
             for a in audits {
                 for w in Self.writers where w.input == .mode {
                     let modes = Set(Self.words(w.values, a.level).map(Self.modeOf))
@@ -1005,6 +1347,56 @@ final class DrawModeAuditTests: XCTestCase {
             }
             XCTAssertEqual(writes.sorted(), ["Shots/PlayerShot.swift s.stepX = sx",
                                              "World/Movers/BoxSprite.swift s.classWord160 &+= 1"], "\(c): +0x160 writers")
+            // The floe's 0xb word (`platform.floe`, PlatformSprite.swift:947) and the raft's tilt (:925) never meet: the
+            // tilt is written only for subtype 3 inside `tail`, the word only while `+0xa6` > 0; the raft's Setup arm
+            // (`case 3:`) sets `+0xa6 = 0`, and after Setup `tail` only counts it down and the hit callbacks set −5
+            // (subtype 3 runs no other Handle arm). The floe and ledge spawns set `+0xa6 = 0xb4` with subtype 4.
+            let plat = core.filter { $0.file == "World/Movers/PlatformSprite.swift" }
+            func at(_ lines: [SourceLine], _ code: String) -> [Int] { lines.indices.filter { Self.trim(lines[$0].code) == code } }
+            let tilt = at(plat, "c.rotation = r"), word = at(plat, "c.mode = parity ? 0xb0000 : 0")
+            XCTAssertEqual(tilt.count, 1, "\(c): the raft's tilt")
+            XCTAssertEqual(word.count, 1, "\(c): the floe's word")
+            for i in tilt { XCTAssertTrue(Self.enclosing(plat, i).contains("if mode == 3 {"), "\(c): tilt outside subtype 3") }
+            for i in word {
+                XCTAssertTrue(Self.enclosing(plat, i).contains("if let s = w.active.record(id: id), 0 < s.counterA6 {"),
+                              "\(c): the floe's word outside +0xa6 > 0")
+            }
+            let raftArm = at(plat, "s.counterA6 = 0").filter { Self.enclosing(plat, $0).first == "case 3:" }
+            XCTAssertEqual(raftArm.count, 1, "\(c): the raft's Setup arm sets +0xa6 = 0")
+            let tail = at(plat, "static func tail(_ w: SpriteWorld, id: Int, solver: TileSolver) {")
+            XCTAssertEqual(tail.count, 1, "\(c): `tail`")
+            let afterSetup = plat[(tail.first ?? plat.count)...].filter { !Self.assignedFields($0.code, ["counterA6"]).isEmpty }
+            XCTAssertEqual(afterSetup.map { Self.trim($0.code) },
+                           ["c.counterA6 -= 1", "x.counterA6 = -5", "w.active.update(id: o) { $0.counterA6 = -5 }",
+                            "w.active.update(id: id) { $0.counterA6 = -5 }"], "\(c): +0xa6 after Setup")
+            let shot = core.filter { $0.file == "Shots/PlayerShot.swift" }
+            for f in ["static func floe(_ w: SpriteWorld, x: Int, y: Int) {",
+                      "static func ledge(_ w: SpriteWorld, x: Int, y: Int, variant: Int32) {"] {
+                guard let i = at(shot, f).first else { XCTFail("\(c): \(f)"); continue }
+                let body = shot[i...].prefix(9).map { Self.trim($0.code) }
+                XCTAssertTrue(body.contains("p.counterA6 = 0xb4") && body.contains("p.subtype = 4"), "\(c): \(f)")
+            }
+            // The orb (`shot.orb`, modes 0xb at PlayerShot.swift:457–459) is never rotated: the shots' rotation writers
+            // are only a main shot's own (:313, inside `0 < s.gravity`) and its followers' copy of the main's angle
+            // (:342); the orb's Setup arm sets gravity 0, and every shot gravity write is in `PlayerShot.setup`.
+            let own = "w.active.update(id: id) { $0.rotation = Int16(dir * 10) }"
+            let copy = "for f in followers(s).compactMap({ $0 }) { w.active.update(id: f) { $0.rotation = angle } }"
+            let rotations = core.filter { $0.file.hasPrefix("Shots/") && !Self.assignedFields($0.code, ["rotation"]).isEmpty }
+            XCTAssertEqual(rotations.map { "\($0.file) \(Self.trim($0.code))" },
+                           ["Shots/PlayerShot.swift " + own, "Shots/PlayerShot.swift " + copy], "\(c): shot rotations")
+            for k in at(shot, own) {
+                XCTAssertTrue(Self.enclosing(shot, k).contains("if let s = w.active.record(id: id), 0 < s.gravity {"),
+                              "\(c): a shot rotation outside gravity > 0, line \(shot[k].line)")
+            }
+            for k in at(shot, copy) {
+                XCTAssertEqual(k > 0 ? Self.trim(shot[k - 1].code) : "", "let angle = s.rotation", "\(c): the copy")
+            }
+            XCTAssertEqual(at(shot, "s.gravity = 0").filter { Self.enclosing(shot, $0).first == "case orb:" }.count, 1,
+                           "\(c): the orb's gravity 0")
+            let setupFn = "static func setup(_ w: SpriteWorld, _ s: inout SpriteSlot) {"
+            for (k, l) in shot.enumerated() where !Self.assignedFields(l.code, ["gravity"]).isEmpty {
+                XCTAssertTrue(Self.enclosing(shot, k).contains(setupFn), "\(c): shot gravity written at line \(l.line)")
+            }
         case .gaugeNotMirrored:
             let mirrored = Set(Self.writers.filter { w in
                 guard w.input == .mirrored else { return false }
@@ -1030,6 +1422,7 @@ final class DrawModeAuditTests: XCTestCase {
                     if let f = e.slot.face { XCTAssertNotNil(faces.face(f), "\(c): level \(a.level.number) \(f)") }
                 }
                 XCTAssertTrue(a.seen.refusals.allSatisfy { !Self.has($0, "faceNotLoaded") })
+                for f in a.seen.faces { XCTAssertNotNil(faces.face(f), "\(c): level \(a.level.number) run face \(f)") }
             }
         case .facesNarrow:
             for a in audits {
@@ -1184,11 +1577,62 @@ final class DrawModeAuditTests: XCTestCase {
                                          faces: SpriteBlitter.Faces(sheets: [:])).ripplePhase, 0x200)
             let frames = (Int(Int32.max) - 0x200) / 0x100
             XCTAssertGreaterThanOrEqual(frames / 30 / 3600, 77)
+            // In code: the phase starts at 0x200, its only writes are + 0x100 in the `.wrapEraseSprites` arm and
+            // `setTile`'s hand-over to the rebuilt blitter; a renderer is built at each level start (`setupLevel`'s one
+            // `services.prepare`). In the run: one renderer per level start, its phase 0x200 + 0x100 per erase applied.
+            let blitter = render.filter { $0.file == "Frame/SpriteBlitter.swift" }
+            XCTAssertTrue(blitter.contains { Self.trim($0.code) == "public var ripplePhase: Int32 = 0x200" }, "\(c): start")
+            var writes: [String] = []
+            for (k, l) in render.enumerated() where !Self.assignedFields(l.code, ["ripplePhase"]).isEmpty {
+                writes.append("\(l.file) \(Self.trim(l.code))")
+                if Self.has(l.code, "&+= 0x100") {
+                    XCTAssertTrue(Self.enclosing(render, k).first.map { $0.hasPrefix("case .wrapEraseSprites(") } ?? false,
+                                  "\(c): the step outside the erase arm")
+                }
+            }
+            XCTAssertEqual(writes, ["Frame/FrameRenderer.swift sprites.ripplePhase &+= 0x100",
+                                    "Frame/FrameRenderer.swift blitter.ripplePhase = sprites.ripplePhase"], "\(c)")
+            let run = core.filter { $0.file == "Front/LevelRun.swift" }
+            let prepares = run.indices.filter { Self.has(run[$0].code, "services.prepare(level:") }
+            XCTAssertEqual(prepares.count, 1, "\(c): one level-start renderer")
+            for k in prepares {
+                XCTAssertTrue(Self.enclosing(run, k).contains { $0.hasPrefix("private func setupLevel(") }, "\(c)")
+            }
+            for a in audits {
+                let s = a.seen
+                XCTAssertEqual(s.prepares, s.restarts + 1, "\(c): level \(a.level.number) renderers")
+                XCTAssertGreaterThan(s.erasesSinceStart, 0, "\(c): level \(a.level.number)")
+                XCTAssertEqual(s.finalPhase, 0x200 &+ 0x100 &* Int32(s.erasesSinceStart), "\(c): level \(a.level.number)")
+            }
         case .rotationRanges:
             for w in Self.writers where w.input == .rotation {
                 guard case .range(let r) = w.values else { XCTFail("\(c): \(w.site)"); continue }
                 XCTAssertTrue(r.lowerBound >= 0 && r.upperBound <= 359, "\(c): \(w.site)")
             }
+        case .headerCamera:
+            for a in audits {
+                XCTAssertEqual(a.level.file.header.arenaBound, 0, "\(c): \(a.level.number)")
+                XCTAssertEqual(a.level.file.header.autoScrollEnable, 0, "\(c): \(a.level.number)")
+            }
+        case .coreNotNamed(let type):
+            // Only the type's own file names it in Core (and nothing on FerazelRender's level frame).
+            let named = core.filter { Self.has($0.code, type) }.map(\.file)
+            XCTAssertLessThanOrEqual(Set(named).count, 1, "\(c): named in \(Set(named).sorted())")
+            for l in render where ["Frame/", "Effects/", "Faces/", "Color/"].contains(where: { l.file.hasPrefix($0) }) {
+                XCTAssertFalse(Self.has(l.code, type), "\(c): \(l.file):\(l.line)")
+            }
+        case .callersTry(let calls):
+            // Every Core call (not a declaration) is `try?` / `try!`, or the placement Setup's own `try`.
+            var n = 0
+            for l in core {
+                for call in calls where Self.has(l.code, call) && !Self.has(l.code, "func ") {
+                    n += 1
+                    let ok = Self.has(l.code, "try?") || Self.has(l.code, "try!")
+                        || (l.file == "Sprites/SetupFaces.swift" && call == "BonusSprite.setup(")
+                    XCTAssertTrue(ok, "\(c): \(l.file):\(l.line)")
+                }
+            }
+            XCTAssertGreaterThan(n, 0, "\(c): no caller")
         case .notNamedByLevelFrame(let type):
             // The level frame's code — `FrameRenderer` and what it calls (Frame/, Effects/, Faces/, Color/) — never
             // names the type.
