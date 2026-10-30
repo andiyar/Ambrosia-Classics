@@ -443,6 +443,11 @@ records the summary line.
 - **Tests (WinKit 1):** `testSmokeReferencesInProcess`.
 - **Gate:** G2 502 / 1 skip, GW2 80 / 1 skip, GWB by day (expected **500 / 0 / 2 / 0 (of 502)**), the rest per
   legend. **Commit:** `Proof B accepts the opt-in visit sweep skip; the Windows smoke references pinned in-process`.
+- **As executed (fix round):** zsh's `unset -m 'FERAZEL_BOT_*'` returns 1 when nothing matches, so under `set -e` the
+  script exited silently in the usual case — now `|| true`. Files fence amended: the `--frames` loop moved from
+  `Ferazel/Windows/Sources/FerazelWin/main.swift` into `WinGame.runFrames(_:scripted:)`
+  (`Ferazel/Windows/Sources/FerazelWinKit/WinGame.swift`), called by both the exe and `WinReferenceFramesTests`
+  (behaviour unchanged). Known, left as is: `--class` mode's verdict does not check the opt-in skip.
 
 #### SP — minor — the sparkle: one scroll for Core's walk and the renderer; the bank's row guard; a teleporter through LevelRun (→ 505)
 - **Q15 items 1, 3, 4; gap ledger #2 (A22).** Today `FerazelSession.diffuseSeeds` walks mode-5 draws at the **camera**

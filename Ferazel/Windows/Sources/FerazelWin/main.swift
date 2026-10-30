@@ -324,11 +324,7 @@ startupLog?.write(sdl.gamepadsAvailable ? "gamepads: \(sdl.connectedGamepadCount
 
 if let frames = args.frames {
     print("FerazelWin: \(launchLine)")
-    for _ in 0..<frames where !game.finished {
-        game.step()
-        host.scripted?.advance()
-    }
-    let rgba = game.lastPresented ?? [UInt8](repeating: 0, count: WinCanvas.width * WinCanvas.height * 4)
+    let rgba = game.runFrames(frames, scripted: host.scripted)   // shared with WinReferenceFramesTests
     if let dumpPath = args.dumpPath {
         do {
             try Data(WinGame.ppm(rgba: rgba)).write(to: URL(fileURLWithPath: dumpPath))

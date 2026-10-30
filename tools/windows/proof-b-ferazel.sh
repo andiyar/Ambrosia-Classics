@@ -21,7 +21,7 @@ set -euo pipefail
 export HECTOR_SDL_AUDIO_DRIVER=dummy HECTOR_SDL_VIDEO_DRIVER=dummy
 # Proof B passes the caller's environment into Wine: the opt-in tests' switches are cleared, so they always skip there.
 unset WIN_SWIFT_FLAGS HECTORKIT_PATH FERAZEL_PNG_OUT FERAZEL_VISIT_SWEEP FERAZEL_BOT
-unset -m 'FERAZEL_BOT_*'
+unset -m 'FERAZEL_BOT_*' || true      # zsh: status 1 when nothing matches (the usual case)
 here="${0:A:h}"
 repo="${here:h:h}"
 

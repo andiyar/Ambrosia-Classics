@@ -13,7 +13,7 @@ import XCTest
     /// The smoke's `newgame_keys` (N held from the first tick after the main menu).
     static let newGameKeys = "# N held from the first tick after the main menu (WinGameTests test 18)\n1440 down n\n"
 
-    /// `main.swift`'s headless loop, in-process: the last presented frame's RGBA FNV (the exe's own `WinGame.fnv1a64`) and the flow steps made.
+    /// `main.swift`'s headless start (pre-boot poll, boot) and its shared loop `WinGame.runFrames`, in-process: the last presented frame's RGBA FNV (the exe's own `WinGame.fnv1a64`) and the flow steps made.
     static func framesRun(_ frames: Int, keys: String?) throws -> (fnv: UInt64, steps: Int) {
         let args = try WinArgs.parse(["--mute", "--frames", String(frames)], environment: [:])
         let host = WinScriptedHost(script: try WinKeyScript(text: keys ?? ""))
@@ -25,13 +25,11 @@ import XCTest
         game.step()                                           // the pre-boot poll (system events only)
         XCTAssertFalse(game.finished)
         try game.boot(dataDirectory: FerazelData.dataDirectory())
-        for _ in 0..<frames where !game.finished {
-            game.step()
-            host.advance()
-        }
+        let rgba = game.runFrames(frames, scripted: host)     // the exe's own `--frames` loop
         XCTAssertFalse(game.finished, "a --frames run ends by its count")
         XCTAssertEqual(host.wallClockReads, 0, "the host's wall clock is never read headless")
-        return (WinGame.fnv1a64(try XCTUnwrap(game.lastPresented)), game.flowSteps)
+        XCTAssertEqual(rgba, try XCTUnwrap(game.lastPresented), "the last presented frame, not the black stand-in")
+        return (WinGame.fnv1a64(rgba), game.flowSteps)
     }
 
     func testSmokeReferencesInProcess() throws {

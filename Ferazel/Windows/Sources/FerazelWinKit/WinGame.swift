@@ -433,6 +433,17 @@ public enum WinClock {
     /// `SysBeep` through the driver: nothing when muted (Ruling 20).
     public func beep() { driver.beep() }
 
+    /// The `--frames` loop (Ruling 20), shared by the executable and `WinReferenceFramesTests`: up to `frames` wakes
+    /// of one `step` then one scripted 1/240 s (`scripted` is nil only off the headless path), stopping early if the
+    /// game ends; returns the last presented frame's RGBA, or black when nothing was presented.
+    public func runFrames(_ frames: Int, scripted: WinScriptedHost?) -> [UInt8] {
+        for _ in 0..<frames where !finished {
+            step()
+            scripted?.advance()
+        }
+        return lastPresented ?? [UInt8](repeating: 0, count: WinCanvas.width * WinCanvas.height * 4)
+    }
+
     // MARK: The dump
 
     /// Binary PPM (P6) of a 640×480 RGBA frame — the `--dump` format (HectorSDL's smoke uses the same).
