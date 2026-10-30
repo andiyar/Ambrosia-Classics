@@ -769,6 +769,14 @@ final class GameFlowGameTests: XCTestCase {
         var ys = L1.placements.map(\.y)
         XCTAssertEqual([L1.placements[2].type, ys[2]], [0x537, 758])
         ys[2] = 757
+        // WK1 (◈): the Walkers the first iteration's idle window wakes — 1705 rec 18, 1700 rec 33, 1705 rec 37, 1760
+        // rec 73 — run their Handle's gravity tail (`.ApplyGravityAndSeparateFromTiles`) and settle; `.UpdateSprites`
+        // writes them back: 429 → 428, 1103 → 1098, 972 → 973, 29 → 27.
+        XCTAssertEqual([18, 33, 37, 73].map { L1.placements[$0].type }, [1705, 1700, 1705, 1760])
+        ys[18] = 428
+        ys[33] = 1098
+        ys[37] = 973
+        ys[73] = 27
         XCTAssertEqual(s.world.records.map(\.y), ys)
         XCTAssertTrue(flow.mapSprites.isEmpty, "`.InitGameGlobals`' `.InitPlayerMapData` (M l. 864) on Continue too")
         XCTAssertFalse(draws(entry).contains(.setScreenClut(id: 281)))

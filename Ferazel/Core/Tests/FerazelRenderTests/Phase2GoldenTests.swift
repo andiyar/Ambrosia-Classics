@@ -83,7 +83,7 @@ final class Phase2GoldenTests: XCTestCase {
         // lights are not in it. Iteration 2 is the first frame shown — measured 2026-10-14 (GD fix round, three runs);
         // a start x one px off moves it. No Setup light lies in level 2's opening view, so no light colour shows here.
         try r.apply(s.step(keys: KeyState()))
-        XCTAssertEqual(hex(fnv1a(r.screen.pixels)), "df22325e851e782d")
+        XCTAssertEqual(hex(fnv1a(r.screen.pixels)), "b310ef334de49c00")
     }
 
     func testLevel1JumpAndLandGolden() throws {

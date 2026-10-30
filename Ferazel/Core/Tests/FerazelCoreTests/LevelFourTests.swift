@@ -67,9 +67,11 @@ final class LevelFourTests: XCTestCase {
         XCTAssertEqual([e.slot.handler, e.sheet] as [AnyHashable?], [SpriteHandler.platform, set(1410, 7, 216, 200, 1)])
         e = try entry(119)
         XCTAssertEqual(L.placements[119].p1, 1)
-        XCTAssertEqual([e.slot.handler, e.slot.face, e.sheet] as [AnyHashable?], [SpriteHandler.inert, f(1760),
+        // WK1 (seat ruling): 1760 is a Walker type — `.walker`, and `.SetupWalkerSprite` installs its hit callback
+        // `+0x5c = .HitWalkerSprite` (M l. 56925–56929); its Handle's 1760 arm is WK2's (`// later: WK2`).
+        XCTAssertEqual([e.slot.handler, e.slot.face, e.sheet] as [AnyHashable?], [SpriteHandler.walker, f(1760),
                                                                                   set(1760, 9, 84, 92, 9)])
-        XCTAssertEqual([e.slot.countedInTotals, e.slot.hasHit], [true, false])
+        XCTAssertEqual([e.slot.countedInTotals, e.slot.hasHit], [true, true])
         XCTAssertEqual(e.source, .setupCached)
         // The chests' drops (Research note 3): rec 55 the Steel Key 3201, 112 ten 1305s, 179 twenty coins 1302; no
         // crate. None is a candelabra 0xc25 or an item past 0xc9a (the two `notTranscribed` Bonus arms).

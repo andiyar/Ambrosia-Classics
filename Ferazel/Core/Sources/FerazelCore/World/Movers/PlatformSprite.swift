@@ -416,9 +416,12 @@ public enum PlatformSprite {
         SetupFaces.sheet(pict: f.pict).map { $0.single ? 0x80 : $0.cellWidth } ?? 0x80
     }
 
-    /// The tile callback a platform's `+0x1f8` names (nil = 0).
+    /// The tile callback a platform's `+0x1f8` names (nil = 0): the Walker corpse raft keeps `.HitWalkerTileSprite`
+    /// (`walkerCallbacks`; enemies-ground-2 §1.1–§1.2: water reaches it through it → `.HandleUnderWater` →
+    /// `.HandleFlotation`; WK1).
     static func pass(_ s: SpriteSlot) -> TileHit? {
         guard s.hasTileHit else { return nil }
+        if s.walkerCallbacks { return Walker.pass(s) }
         return { solver, id, cell, kind, layer in hitTile(solver, id: id, pos: cell, kind: kind, layer: layer) }
     }
 

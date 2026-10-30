@@ -66,7 +66,7 @@ public enum EnemyCommon {
     public static func handle(world w: SpriteWorld, id: Int) {
         guard let s = w.active.record(id: id), !s.emerging else { return }   // `+0x1b2` → return
         switch s.handler {
-        case .walker: break                             // later: WK1 / WK2 — `.HandleWalkerSprite`
+        case .walker: break                             // the session dispatches `Walker.handle` (WK1)
         case .crawler, .roach: break                    // later: CR — `.HandleCrawlerSprite` / `.HandleRoachSprite`
         case .dillo: break                              // later: DL — `.HandleDilloSprite`
         case .bat, .swarmMember, .insectBody: break     // later: BA — the Bat class, the swarm members, the insect body
@@ -86,10 +86,10 @@ public enum EnemyCommon {
     /// it back first and re-reads after (`Burn.handle`).
     public static func killProc(_ w: SpriteWorld, id: Int) {
         guard var s = w.active.record(id: id) else { return }
-        switch s.handler {
+        switch s.walkerCallbacks ? SpriteHandler.walker : s.handler {     // WK1: the corpse raft keeps `.KillWalker`
         case .walker, .crawler, .roach, .dillo, .bat, .frog, .salamander, .blob, .warrior:
             w.enemies.kill(&s, globals: &w.globals, level: w.levelIndex, forGood: EnemyCounting.killsForGood(s.handler))
-            // later: WK1 / CR / DL / BA / FR / BL / LV5 — each Kill's own tail (score, sounds, children)
+            // `.KillWalker` is this alone (WK1). // later: CR / DL / BA / FR / BL / LV5 — each other Kill's own tail
         case .gremlin:
             guard s.killCount == 0 else { return }      // `+0xe9 ≠ 0` → return (M l. 69736–69738, raw 100810e0 bnelr)
             w.enemies.kill(&s, globals: &w.globals, level: w.levelIndex, forGood: true)

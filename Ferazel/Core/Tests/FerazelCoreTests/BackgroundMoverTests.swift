@@ -739,7 +739,9 @@ final class BackgroundMoverTests: XCTestCase {
         BackgroundSprite.handleCannoned(world: w2, id: walker, keys: [])
         let wq = try XCTUnwrap(w2.active.sprite(id: walker))
         XCTAssertEqual([Int(wq.reentry), Int(wq.vx), Int(wq.vy), Int(wq.y256 - wy)], [-0x23, 0, 4950, 9000])
-        XCTAssertEqual(wq.handler, .inert)
+        // WK1 (seat ruling): a Walker record is `.walker` now; `.HitBackgroundSprite` / `.TurnIntoCannoned` exclude no
+        // Walker Handle (M l. 49930–49974), so it is captured and the launch restores its saved Handle `.walker`.
+        XCTAssertEqual(wq.handler, .walker)
         XCTAssertNil(wq.face)
         XCTAssertFalse(w2.player.launched)
         XCTAssertEqual(w2.player.cues.map(\.snd), [484, 483])
@@ -776,7 +778,7 @@ final class BackgroundMoverTests: XCTestCase {
             XCTAssertTrue(refused(s), "type \(t)")
         }
         XCTAssertTrue(refused(SpriteSlot(type: 1320, x: 1000, y: 600)))  // a Button (inert)
-        XCTAssertFalse(refused(SpriteSlot(type: 0x6a4, x: 1000, y: 600)))  // a walker (inert): captured
+        XCTAssertFalse(refused(SpriteSlot(type: 0x6a4, x: 1000, y: 600)))  // a walker (`.walker`, WK1): captured
         XCTAssertTrue(refused(SpriteSlot(type: 0x6a4, x: 1000, y: 600)) { $0.reentry = -1 })
         // An idled record (`+0x4c` 0) is none of the excluded Handles: captured, its Handle 0 saved (and restored).
         let idledID = w3.active.insert(SpriteSlot(type: 1485, x: 1000, y: 600))

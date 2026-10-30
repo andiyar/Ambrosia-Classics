@@ -528,7 +528,14 @@ public final class FerazelSession {
             // prefs+6; the Chief boulder's hot rect reads the face bounds.
             EnemyShot.handle(world: world, id: id, solver: solver, lights: &self.lightTable, effects: effects,
                              faceWidth: { Self.frameRect($0, resources: res).right }, faceBounds: bounds)
-        case .walker, .crawler, .roach, .dillo, .bat, .swarmMember, .insectBody, .gremlin, .floater, .frog, .salamander,
+        case .walker:
+            // `.HandleWalkerSprite @ 100683b8` (WK1, `Walker.handle`): the shots' and the coins' Setups take
+            // `lightTable` and prefs+6; the coins' trigger row and origin read the face bounds.
+            ops.draws.append(contentsOf: Walker.handle(world: world, id: id, solver: solver, lights: &self.lightTable,
+                                                       effects: effects,
+                                                       faceWidth: { Self.frameRect($0, resources: res).right },
+                                                       faceBounds: bounds))
+        case .crawler, .roach, .dillo, .bat, .swarmMember, .insectBody, .gremlin, .floater, .frog, .salamander,
              .blob, .deadBlob, .crab, .crabSegment, .geyserSegment, .warrior:
             // EC: the enemy Handles — the `+0x1b2` early return, then each a named no-op until its task
             // (`EnemyCommon.handle`).
@@ -1102,7 +1109,8 @@ public final class FerazelSession {
     /// Effect class's `.HitEffectSprite` is empty; `.HitBackgroundSprite` (W2b: cannons, springs, wall tunnels);
     /// `.HitBonusSprite` (BN; its container arm SH); `.HitPlayerShotSprite` (SH); the Box class's `.HitBoxSprite` (SH:
     /// the stalactite's shot case; BX1 the rest; SW: a Statue's hit is the Box class's, `.TurnIntoStatue`);
-    /// `.HitButtonSprite` (BT); `.HitEnemyShotSprite` (ES). // later: Phase 5 (the enemy classes). The session's form:
+    /// `.HitButtonSprite` (BT); `.HitEnemyShotSprite` (ES); `.HitWalkerSprite` (WK1; also the corpse raft's, kept
+    /// under the Platform Handle). // later: Phase 5 (the other enemy classes). The session's form:
     /// `hitCallback` on `lightTable`.
     private func hit(_ w: SpriteWorld, _ a: Int, _ b: Int) {
         let res = resources
@@ -1124,7 +1132,13 @@ public final class FerazelSession {
                             faceBounds: (FaceRef) -> IdleSprites.Rect = PlayerShot.cellRect) {
         guard let s = w.active.record(id: a) else { return }
         switch s.handler {
+        case .platform where s.walkerCallbacks:                                         // the corpse raft (WK1)
+            Walker.hit(w, id: a, other: b, lights: &lights, effects: effects, faceWidth: faceWidth,
+                       faceBounds: faceBounds)
         case .platform: PlatformSprite.hit(w, id: a, other: b)
+        case .walker:                                                                   // `.HitWalkerSprite` (WK1)
+            Walker.hit(w, id: a, other: b, lights: &lights, effects: effects, faceWidth: faceWidth,
+                       faceBounds: faceBounds)
         case .background:                                                               // `.HitBackgroundSprite` (W2b)
             BackgroundSprite.hit(w, id: a, other: b, lights: &lights, effects: effects, faceWidth: faceWidth,
                                  faceBounds: faceBounds)

@@ -495,36 +495,18 @@ public enum SetupFaces {
             }
 
         case .walker:
-            s.layer = 4                                        // l. 56933
-            s.mirrored = t == 0x6e0
+            // `.SetupWalkerSprite @ 10067318` (M l. 56898–57100; WK1, `Walker.setup`): the class fields, the flip rule, the
+            // hot rect, the tier, the three draws and the counting window. The face: `+0xc0` = the single 0x6a4 for
+            // every type (M l. 56951), then 0x6a9's set cell 0 (M l. 56976), 0x6e0…0x6e9's (M l. 56988). The 1750
+            // types 0x6d6…0x6df (their face 0x6d6, their marks) are WK2's; the other types are placed nowhere
+            // (enemies-ground §1).
             switch t {
             case 0x6a4: face(0x6a4, 0, .setupCached)
             case 0x6a9: face(0x6a9, 0, .setupCached)
             case 0x6e0...0x6e9: face(0x6e0, 0, .setupCached)
-            default: throw Error.notTranscribed(type: p.type)
+            default: throw Error.notTranscribed(type: p.type)       // later: WK2 — 0x6d6…0x6df
             }
-            // `+0x17e` (l. 56965–57003): 0x6e0..0x6e9 when x + 0x32 < playerX, the others when playerX < x + 0x32.
-            if (0x6e0...0x6e9).contains(t) {
-                if s.x + 0x32 < c.playerX { s.mirrored = true }
-            } else if c.playerX < s.x + 0x32 {
-                s.mirrored = true
-            }
-            switch p.p3 {                                      // tiers (l. 57013–57078)
-            case 1: s.mode = 0x10010
-            case 2: s.mode = 0x10011
-            case 3: s.mode = 0x10012
-            case 4: s.mode = 0x10013
-            case 5: s.mode = 0x10014
-            case 6: s.mode = 0x10015
-            default: break
-            }
-            if p.p4 != 0 { s.margins = SpriteSlot.Margins(left: 0x5f4, right: 0x5f4, top: 0x5f4, bottom: 0x5f4) }
-            // The three unconditional draws, in this order (raw `1006740c`, `10067760`, `10067780`; l. 56959,
-            // 57079, 57082). The writes between them draw nothing, so taking them here keeps the stream order.
-            s.voicePitch = Int32(rng.next(0x5fff)) * 2 + 0xbfff     // `+0xf0` (`rlwinm 1; addis 1; subi 0x4001`)
-            s.classTimer = Int32(rng.next(0x46)) + 0x78            // `+0x14c`
-            s.classWord154 = Int32(rng.next(400)) + 1000           // `+0x154`
-            counting.countIfWindow(&s)                         // `+0x1b5 = 1`, live + 1 in the window (M l. 57091–57093)
+            Walker.setup(&s, record: p, playerX: c.playerX, rng: &rng, counting: &counting)
 
         case .crawler:
             s.layer = 0xb                                      // l. 56180

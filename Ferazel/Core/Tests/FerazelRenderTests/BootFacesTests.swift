@@ -23,7 +23,7 @@ final class BootFacesTests: XCTestCase {
         BonusSprite.sheets + PlayerShot.sheets + EnemyShot.sheets + HeldItem.sheets + ButtonSprite.sheets
             + SetupFaces.boxChildSheets
             + SetupFaces.platformSheets + SetupFaces.backgroundSheets + SetupFaces.backgroundW2bSheets
-            + Array(BoxSprite.spawnSheets) + Array(BonusSprite.dropSheets)
+            + Array(BoxSprite.spawnSheets) + Array(BonusSprite.dropSheets) + Walker.handleSheets
             + (FaceSheet.playerSheets + FaceSheet.gliderSheets).map(sheet)
     }
 
@@ -213,12 +213,14 @@ final class BootFacesTests: XCTestCase {
     /// (the tree before the boot faces, measured with this same row text, 2026-10-30, loop run 37). No row differs.
     func testHotRectsAndEmittersUnchangedByBootFaces() throws {
         let res = try Self.resources.get()
-        // (level, phase) → (rows, FNV-1a of the rows' text, one "\n" after each), measured at b535527^.
+        // (level, phase) → (rows, FNV-1a of the rows' text, one "\n" after each), measured at b535527^. WK1 (◈) re-pinned
+        // the FNVs (row counts unchanged): `.SetupWalkerSprite` now sets the Walkers' hot rects and the Walker Handle
+        // re-faces them; with the Walker's `forClass` row and Setup switched back off every b535527^ value returns.
         let pinned: [String: (rows: Int, fnv: UInt64)] = [
-            "L1 init": (190, 0x751bd6dbfdb2e980), "L1 f30": (240, 0x9acb42c53a6415c9), "L1 f120": (240, 0x4e37b80e62ab9159),
-            "L2 init": (229, 0xc7d7fdcd42a32ad0), "L2 f30": (278, 0x52fd30bccc663084), "L2 f120": (278, 0x210ff852c4656c3f),
-            "L3 init": (234, 0xff6fd93ee81bd1f2), "L3 f30": (310, 0x020acea1683777ce), "L3 f120": (310, 0x3e862456a54f52b0),
-            "L4 init": (264, 0x3e82d10297132cc4), "L4 f30": (342, 0x1cea1c7f9098c6f3), "L4 f120": (342, 0x7f2d8821c4f7816d),
+            "L1 init": (190, 0xf478cf71be64b444), "L1 f30": (240, 0xfd95d79c159b3841), "L1 f120": (240, 0x9a2c740b2d61f7a3),
+            "L2 init": (229, 0x8667712c97eea1fa), "L2 f30": (278, 0xd2ea580ff2c8d3ba), "L2 f120": (278, 0xcc76204bbc1385bd),
+            "L3 init": (234, 0x9d0811a45f709596), "L3 f30": (310, 0x9bcd46780b6ba8ea), "L3 f120": (310, 0x50bcf3ea0ff24018),
+            "L4 init": (264, 0xfec73bab774581f5), "L4 f30": (342, 0x9b87a71eafe9f70c), "L4 f120": (342, 0xd53bf909322b2ca4),
         ]
         func rect(_ x: IdleSprites.Rect) -> String { "(\(x.top),\(x.left),\(x.bottom),\(x.right))" }
         func emitter(_ f: ParticleFace?) -> String {

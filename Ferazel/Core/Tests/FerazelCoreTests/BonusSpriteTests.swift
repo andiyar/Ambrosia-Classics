@@ -415,13 +415,16 @@ final class BonusSpriteTests: XCTestCase {
         BackgroundSprite.turnIntoCannoned(w, captive: taken, cannon: cannonID, lights: &lights)
         XCTAssertEqual(w.active.sprite(id: kept)?.handler, .bonus, "p4 = 1: never cannoned")
         XCTAssertEqual(w.active.sprite(id: taken)?.handler, .cannoned)
-        // The handle pass runs the Bonus Handle only on the Bonus Handle's records: an enemy-class record (no Handle
-        // built yet, `.inert`) on the live list at the player record's position is untouched by it (no `+0xb0` count-down, no friction, no gravity).
+        // The handle pass runs the Bonus Handle only on the Bonus Handle's records: an enemy-class record on the live
+        // list at the player record's position is untouched by it (no Bonus `+0xb0` count-down, no friction). WK1 (seat
+        // ruling): the record is a Walker (`.walker`), so the Walker Handle runs on it instead — never set up, its HP is
+        // `.InitSprite`'s 0, so the tail's death entry takes it (`+0xb0 = 4`, M l. 58308–58312) and
+        // `.ApplyGravityAndSeparateFromTiles` adds its gravity 0x151 (vy 0 → 0x151, y256 + 0x151); vx keeps 0x40.
         let session = try FerazelSession(resources: try FerazelData.open(try FerazelData.dataDirectory()),
                                          prefs: FerazelPrefs(), level: 1, seed: 1)
         let pl = try XCTUnwrap(session.world.playerID.flatMap { session.world.active.sprite(id: $0) })
         var walker = SpriteSlot(type: 0x6a4, x: pl.x, y: pl.y)
-        XCTAssertEqual(walker.handler, .inert)
+        XCTAssertEqual(walker.handler, .walker)
         walker.pickupDelay = 5
         walker.vx = 0x40
         walker.friction = 0x10
@@ -433,8 +436,8 @@ final class BonusSpriteTests: XCTestCase {
         let walkerID = session.world.active.insert(walker)
         _ = session.step(keys: KeyState())
         let after = try XCTUnwrap(session.world.active.sprite(id: walkerID))
-        XCTAssertEqual([Int(after.pickupDelay), Int(after.vx), Int(after.vy)], [5, 0x40, 0])
-        XCTAssertEqual(after.y256, walker.y256)
+        XCTAssertEqual([Int(after.pickupDelay), Int(after.vx), Int(after.vy)], [4, 0x40, 0x151])
+        XCTAssertEqual(after.y256, walker.y256 + 0x151)
     }
 
     func testTileBounceFactors() throws {

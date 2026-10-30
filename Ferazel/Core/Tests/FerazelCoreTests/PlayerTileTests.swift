@@ -807,7 +807,9 @@ final class PlayerTileTests: XCTestCase {
         // player (torches, spheres, items around (3806, 1083)) — was 0 on every frame before BN.
         XCTAssertFalse(frames.contains { $0.draws.contains { if case .changeLightFace(24, _, _, _) = $0 { true } else { false } } })
         XCTAssertEqual(frames.map { $0.draws.filter { if case .changeLightFace = $0 { true } else { false } }.count },
-                       [3, 14, 12, 12, 10, 9, 4, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3])
+                       // WK1 (◈): the Walkers active on iterations 1–7 (their goblin cries' `FastRand`s) shift the
+                       // stream the torches' flicker draws from: frame 6 9 → 8, frame 15 3 → 4.
+                       [3, 14, 12, 12, 10, 8, 4, 4, 3, 3, 3, 3, 3, 3, 4, 3, 3])
         XCTAssertEqual(frames.prefix(16).map { $0.draws.filter { if case .setTile = $0 { true } else { false } }.count },
                        [Int](repeating: 0, count: 16))
         let draws = frames[16].draws

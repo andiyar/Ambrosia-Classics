@@ -110,6 +110,13 @@ public struct SpriteSlot: Equatable, Sendable {
     /// `+0x170` (i32): the Background radial bars / balls' harmful flag — `.HandleBackgroundSprite` writes it every
     /// frame (modes 10–14), the pendulum arm of `.HitPlayerSprite` hurts only when it is 1 (W2a).
     public var classWord170: Int32 = 0
+    /// WK1 (added, Invariant 9): `+0x100` (i32) — a Walker's tier-4 flag (`.SetupWalkerSprite` M l. 57014): the
+    /// Background traps / fire of `.HitWalkerSprite` (M l. 58597–58609) pass it by; the Ax goblin's flee test reads it
+    /// (WK2).
+    public var classWord100: Int32 = 0
+    /// WK1 (added, Invariant 9): `+0xb4` (i16) — a Walker's turn step (`.HandleWalkerSprite`'s first frame ±3; the
+    /// spear guard walks it toward ±3, M l. 57856–57926) and the 1760's blink counter (WK2).
+    public var classWordB4: Int16 = 0
     /// `+0xb0` (i16): a class's sub-type word — the Background's p1, a Platform's base type (0x58c = springboard,
     /// read through the ridden `+0xdc` by `.CheckGroundCeilingHitEffects` and `.HandleKeys`; W1 writes it).
     public var subtype: Int16 = 0
@@ -385,8 +392,14 @@ public struct SpriteSlot: Equatable, Sendable {
     public var counterA6: Int16 = 0
     /// `+0xb2` (i16): the platform sub-state (modes 50/51 10 / 0xb) and the radial "driver" flag (W1).
     public var subState: Int16 = 0
-    /// `+0x17c` (u8): the platform's first-frame `.DoSetupPlatformSprite` has run (W1).
+    /// `+0x17c` (u8): the platform's first-frame `.DoSetupPlatformSprite` has run (W1); a Walker's first Handle has
+    /// run (`.HandleWalkerSprite` M l. 57562–57570; WK1).
     public var setupDone = false
+    /// WK1 (added, Invariant 9): the Walker corpse raft (`.HandleWalkerSprite` M l. 57787–57801) keeps its hit
+    /// callback `+0x5c` (`.HitWalkerSprite`), its tile callback `+0x1f8` (`.HitWalkerTileSprite`) and its Kill proc
+    /// `+0x50` (`.KillWalker`) under the Platform Handle `+0x4c` (enemies-ground-2 §1.1): the callbacks are otherwise
+    /// the Handle's class's, so this marks the three as the Walker's while `handler` is `.platform`.
+    public var walkerCallbacks = false
     /// `+0x194` (i32): the jump bonus a rider's jump reads (`.HandleKeys`: J = ridden `+0x194`; W1 writes it).
     public var jumpBonus: Int32 = 0
     /// `+0x1f8` ≠ 0: the sprite has a tile callback (W1: platform modes 10/11 clear it; the handler picks the closure).
@@ -428,6 +441,9 @@ public struct SpriteSlot: Equatable, Sendable {
     /// `+0x12a` (i16): last frame's water kind (`+0x128` copied by `.WrapDrawSprites`' tail, l. 10391) — the kind of
     /// `.Splash(s, 4)`'s leaving particles (E1a).
     public var previousWaterKind: Int16 = 0
+    /// WK1 (added, Invariant 9): `+0x30` (i32) — vy at the last `.WrapDrawSprites` (`+0x30 ← +0x2c`, M l. 10383), read
+    /// by the Walker's landing thud (M l. 58407).
+    public var previousVY: Int32 = 0
     /// `+0x13e` (u8): the sprite splashes (`.Splash` returns at once when 0): `.InitSprite` 1 (l. 35648), the Effect
     /// Setup 0 (l. 53734) — no other writer (E1a).
     public var splashes = true
@@ -464,7 +480,8 @@ public struct SpriteSlot: Equatable, Sendable {
 
     /// `.WrapDrawSprites`' tail for every sprite on the list, drawn or not (`100149a4..10014a14`): `+0xc8 ← +0xc0`,
     /// `+0xc6`/`+0xc4 ← +0xc`/`+0xa`, `+0xbc ← +0xb8`, `+0x1ac ← +0x1aa`, `+0x1b0 ← +0x1ae`, `+0x124 ← +0x11c`,
-    /// `+0x17f ← +0x17e`, `+0x12a ← +0x128` (l. 10391; E1a) (the fixed-point and velocity copies are not kept).
+    /// `+0x17f ← +0x17e`, `+0x12a ← +0x128` (l. 10391; E1a), `+0x30 ← +0x2c` (WK1; the other fixed-point and velocity
+    /// copies are not kept).
     public mutating func recordDrawn() {
         previous = face == nil ? nil : makeDraw()
         drawnX = x
@@ -473,6 +490,7 @@ public struct SpriteSlot: Equatable, Sendable {
         previousScale = scale
         previousWaterRow = waterRow
         previousWaterKind = waterKind
+        previousVY = vy
     }
 
     /// What `.WrapDrawSprites` hands the blitters for this sprite: nil when `+0xe9` is set or `+0xc0` is 0 (step 1,
@@ -548,6 +566,7 @@ public enum SpriteHandler: Equatable, Hashable, Sendable {
         case .rope: return .rope
         case .bonus: return .bonus
         case .button: return .button
+        case .walker: return .walker        // WK1: the Walker class 1700…1709, 1750…1769 (1750 / 1760 arms WK2)
         default: return .inert
         }
     }
