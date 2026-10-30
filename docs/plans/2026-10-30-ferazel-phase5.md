@@ -639,8 +639,12 @@ records the summary line.
   **No golden moved** (swim `c1dd428a3f146d77` and every other value unchanged; the Windows references not moved).
   Switch-off check: with the row-41 tint branch disabled locally the FerazelRenderTests suite is also 0 failed, same
   values — on and off agree. Why nothing moved: (1) the swim route never enters the band — `+0x11c` is how far the top
-  of the hot rect is above the surface (`.HandleUnderWater`, clamped to 1 once submerged), so 1…9 means *under* the
-  surface and > 10 head out; the route swims at the surface (`+0x11c` 69 at its end) and a probe found no
+  of the hot rect is above the surface (`.HandleUnderWater` M l. 38169: surface y − (y + hot-rect top); l. 38179
+  clamps anything < 1 to 1; the kind-5 arm l. 38209–38212 the same from `+0x148`; held items copy it at M l. 43518–43521,
+  also clamped), so 1 means fully submerged (or the head top exactly 1 px above), 2…9 the head top 2–9 px above the
+  surface, and > 10 the head well out; 0 = not in liquid this frame (`.StandardSpriteHandles` zeroes it every frame,
+  M l. 32487, keeping the last value in `+0x120`, before `.HandleUnderWater` rewrites it; `.InitSprite` M l. 35669);
+  the route swims at the surface (`+0x11c` 69 at its end) and a probe found no
   `.screenGamma` op in any of its 397 iterations; (2) even when it fires, the golden hashes FrameRenderer's indexed
   pixels and the sound words, and FrameRenderer drops `.screenGamma` (the screen surface's gamma is not in the hash).
   Dump re-read (M l. 46449–46476, 31704–31727, 79455ff): agrees with the contract — tint branch calls `.TintScreen`

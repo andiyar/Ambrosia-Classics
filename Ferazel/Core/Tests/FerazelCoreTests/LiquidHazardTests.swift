@@ -713,6 +713,10 @@ final class LiquidHazardTests: XCTestCase {
         XCTAssertTrue(t.player.screenTinted)
         XCTAssertEqual(row41(t), [])
         XCTAssertTrue(t.player.screenTinted)
+        // The flag is a `.ClearPlayerVars` global (M l. 42631): setting the player up again (level load, restart, new
+        // game) clears it, so the next frame in the band tints afresh.
+        XCTAssertNotNil(Player.spawn(world: t, x: 100, y: 100))
+        XCTAssertFalse(t.player.screenTinted)
         // The other kinds (`+0x128`): 1 green, 2 red, ≥ 3 and < 0 black; the band 1…9 (0 and 10 do not tint).
         let cases: [(Int32, Int16, RGB16?)] = [(1, 1, RGB16(0, 64000, 0)), (9, 2, RGB16(64000, 0, 0)),
                                                (5, 3, RGB16(0, 0, 0)), (5, -1, RGB16(0, 0, 0)),

@@ -68,7 +68,7 @@ M0150	Player/HitPlayerSprite.swift:1159	a	HIGH	geysers 0x5a0–0x5a9 (head hurt,
 M0151	Player/Pentashield.swift:7	a	HIGH	enemy / enemy-shot arms (contact hurt, KillEnemyShot, Crawler shot-kill) Phase 5	HitPlayerSprite.swift:10; inert enemies fall to default return (orig. arms M l.49515–49910); no enemy shots exist until Phase 5
 M0152	Player/Player.swift:4	n	MED	history/doc wording; nothing refused	marker word only
 M0153	Player/Player.swift:162	d	HIGH	auto-scroll (hdr 0x272a) refused/not built	auto-scroll only on Mlvl 51 (world-data-format §3.2); L1–4 load with 0
-M0154	Player/Player.swift:360	a	HIGH	liquid screen tint (.TintScreen) not built	brief: underwater screen tint named for Phase 5; reachable in L1–4 water (visual omission)
+M0154	Player/Player.swift:360	n	HIGH	stale: liquid screen tint (.TintScreen) built (UT, c49bbd4: PlayerLiquids.deathAndRefill row 41, ScreenFade.tintScreen)	Phase 5 UT; the "later: no Phase-2 seam" label removed from Player.swift:360 and PlayerLiquids.swift
 M0155	Player/Player.swift:776	a	HIGH	bosses / rope bridge 1466 — Phase 6	design §8 Phase 6; 1466 placed on no shipped level
 M0156	Player/Player.swift:805	d	HIGH	auto-scroll (hdr 0x272a) refused/not built	auto-scroll only on Mlvl 51 (world-data-format §3.2); L1–4 load with 0
 M0157	Player/Player.swift:835	d	HIGH	auto-scroll (hdr 0x272a) refused/not built	auto-scroll only on Mlvl 51 (world-data-format §3.2); L1–4 load with 0
