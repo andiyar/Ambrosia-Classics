@@ -119,6 +119,8 @@ final class SweepShell: SweepGame {
     private var problems: [String] = []
     private var now: UInt32 = 1000
     private var saves = 0
+    /// The Caps Lock lock state the ticks poll (the random-play bot's pause latch; the sweep never sets it).
+    var capsLock = false
 
     /// The Sounds file's play lengths (`FerazelDriver.loadSounds`, every sound: the boot's F1 subset is a superset
     /// question only for the stage screens), decoded once per process.
@@ -172,7 +174,7 @@ final class SweepShell: SweepGame {
     // MARK: The tick (`FerazelDriver.tick` + the shell's request answers + `serviceLoad`)
 
     func tick(keys: [Int]) throws -> FrontOutput {
-        let out = flow.tick(now: now, input: FrontInput(keys: KeyState(pressed: keys)))
+        let out = flow.tick(now: now, input: FrontInput(keys: KeyState(pressed: keys), capsLock: capsLock))
         if let run = flow.levelRun, run !== configuredRun {
             configuredRun = run
             run.conversationText = conversationText

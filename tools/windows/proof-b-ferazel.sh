@@ -114,7 +114,8 @@ done >> "$verdicts"
 # tests, which skip everywhere unless their switch is set (cleared above). Any other skipped test, or one of these not
 # skipped while the rest pass, is not a pass.
 wine_skips=(FerazelRenderTests.CensusTests/testExitCodes)   # Process → advapi32 SaferiIsExecutableFileType (Wine lacks it)
-optin_skips=(FerazelRenderTests.VisitSweepTests/testVisitEveryObject)   # FERAZEL_VISIT_SWEEP=1 (Phase 5 PB)
+optin_skips=(FerazelRenderTests.VisitSweepTests/testVisitEveryObject    # FERAZEL_VISIT_SWEEP=1 (Phase 5 PB)
+             FerazelRenderTests.RandomPlayTests/testRandomPlay)       # FERAZEL_BOT=1 (Phase 5 RB)
 
 # verdict <verdicts file> <test count> <all|class> — prints the tally and the pass line; status 0 only for a pass.
 verdict() {
