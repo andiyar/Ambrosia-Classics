@@ -20,7 +20,8 @@ import XCTest
 ///
 /// Proof B runs this file under Wine: the source scan walks directories with `contentsOfDirectory` /
 /// `fileExists(atPath:isDirectory:)` and matches in pure Swift (as `BootFacesTests`) — no directory enumerator, no
-/// regex, no file attributes — and the class is not main-actor isolated. A missing data file is a FAILURE.
+/// regex, no file attributes, no Foundation substring search or trim (`contains(String)`, `trimmingCharacters` trap
+/// under Wine: `has` / `trim` below) — and the class is not main-actor isolated. A missing data file is a FAILURE.
 final class DrawModeAuditTests: XCTestCase {
     nonisolated(unsafe) private static let resources = Result { try FerazelData.open(try FerazelData.dataDirectory()) }
 
@@ -64,6 +65,27 @@ final class DrawModeAuditTests: XCTestCase {
     private static let renderLines = Result { try sources("FerazelRender") }
 
     private static func isWord(_ c: Character) -> Bool { c == "_" || c.isLetter || c.isNumber }
+
+    /// Whether `code` holds `sub`: a plain UTF-8 search (Foundation's `contains(String)` traps under Wine).
+    static func has(_ code: String, _ sub: String) -> Bool {
+        let c = Array(code.utf8), p = Array(sub.utf8)
+        guard !p.isEmpty else { return true }
+        guard c.count >= p.count else { return false }
+        for i in 0...(c.count - p.count) where c[i] == p[0] {
+            var k = 1
+            while k < p.count && c[i + k] == p[k] { k += 1 }
+            if k == p.count { return true }
+        }
+        return false
+    }
+
+    /// `code` without its leading and trailing spaces and tabs (no Foundation trim).
+    static func trim(_ code: String) -> String {
+        var s = Substring(code)
+        while let f = s.first, f == " " || f == "\t" { s.removeFirst() }
+        while let l = s.last, l == " " || l == "\t" { s.removeLast() }
+        return String(s)
+    }
 
     /// The fields of `code` assigned as `.<field> <op> ` (op `=`, `+=`, `-=`, `&+=`, `&-=`, `|=`, `&=`; not `==`).
     static func assignedFields(_ code: String, _ fields: [String]) -> [String] {
@@ -307,11 +329,11 @@ final class DrawModeAuditTests: XCTestCase {
         for l in try coreLines.get() where !l.file.hasPrefix("Seams/") {
             var found = assignedFields(l.code, fields)
             if l.file == "Sprites/SpriteSlot.swift",
-               l.code.trimmingCharacters(in: .whitespaces).hasPrefix("mode = ") { found.append("mode") }
+               Self.trim(l.code).hasPrefix("mode = ") { found.append("mode") }
             for f in found {
                 guard let input = Input(rawValue: f) else { continue }
                 if notDrawInputs.contains(where: { $0.file == l.file && $0.field == input }) { continue }
-                out.append(("\(l.file):\(l.line)", input, l.code.trimmingCharacters(in: .whitespaces)))
+                out.append(("\(l.file):\(l.line)", input, Self.trim(l.code)))
             }
         }
         return out
@@ -979,7 +1001,7 @@ final class DrawModeAuditTests: XCTestCase {
             // up only inside the hover branch itself (`BoxSprite.boulder`) — never made negative.
             var writes: [String] = []
             for l in core where !Self.assignedFields(l.code, ["classWord160", "stepX"]).isEmpty {
-                writes.append("\(l.file) \(l.code.trimmingCharacters(in: .whitespaces))")
+                writes.append("\(l.file) \(Self.trim(l.code))")
             }
             XCTAssertEqual(writes.sorted(), ["Shots/PlayerShot.swift s.stepX = sx",
                                              "World/Movers/BoxSprite.swift s.classWord160 &+= 1"], "\(c): +0x160 writers")
@@ -995,9 +1017,9 @@ final class DrawModeAuditTests: XCTestCase {
             }
         case .mode5Seeded:
             var built = 0
-            for l in core where l.code.contains(".wrapDrawSprites(") {
+            for l in core where Self.has(l.code, ".wrapDrawSprites(") {
                 built += 1
-                XCTAssertTrue(l.code.contains(".wrapDrawSprites(diffuseSeeds("), "\(c): \(l.file):\(l.line)")
+                XCTAssertTrue(Self.has(l.code, ".wrapDrawSprites(diffuseSeeds("), "\(c): \(l.file):\(l.line)")
             }
             XCTAssertGreaterThan(built, 0)
             for a in audits { XCTAssertEqual(a.seen.mode5Unseeded, 0, "\(c): level \(a.level.number)") }
@@ -1007,7 +1029,7 @@ final class DrawModeAuditTests: XCTestCase {
                 for e in a.setups {
                     if let f = e.slot.face { XCTAssertNotNil(faces.face(f), "\(c): level \(a.level.number) \(f)") }
                 }
-                XCTAssertTrue(a.seen.refusals.allSatisfy { !$0.contains("faceNotLoaded") })
+                XCTAssertTrue(a.seen.refusals.allSatisfy { !Self.has($0, "faceNotLoaded") })
             }
         case .facesNarrow:
             for a in audits {
@@ -1037,7 +1059,7 @@ final class DrawModeAuditTests: XCTestCase {
             }
         case .parallaxAttached:
             let lines = render.filter { $0.file == "Frame/FrameRenderer.swift" }
-            XCTAssertTrue(lines.contains { $0.code.contains("sprites.parallax = parallax") }, "\(c)")
+            XCTAssertTrue(lines.contains { Self.has($0.code, "sprites.parallax = parallax") }, "\(c)")
         case .pxBackSlotsLoaded:
             for a in audits {
                 let L = a.level.file, p = a.level.renderer.parallax
@@ -1096,7 +1118,7 @@ final class DrawModeAuditTests: XCTestCase {
         case .attachedBeforeApply:
             for a in audits {
                 XCTAssertTrue(a.level.renderer.tintTableBuilt, "\(c): level \(a.level.number)")
-                XCTAssertFalse(a.seen.refusals.contains { $0.contains("tintTableNotBuilt") })
+                XCTAssertFalse(a.seen.refusals.contains { Self.has($0, "tintTableNotBuilt") })
             }
         case .levelClut:
             for a in audits {
@@ -1106,12 +1128,12 @@ final class DrawModeAuditTests: XCTestCase {
             XCTAssertEqual(LevelRunOutput.target(of: .setScreenClut(id: 281), levelClut: 202, owner: .level), .screen)
         case .deathSteps:
             XCTAssertEqual(DeathEffect.steps, 50)
-            let lines = core.filter { $0.file == "Front/LevelRun.swift" && $0.code.contains("while deathStep < ") }
-            XCTAssertEqual(lines.map { $0.code.trimmingCharacters(in: .whitespaces) }, ["while deathStep < 50 {"])
+            let lines = core.filter { $0.file == "Front/LevelRun.swift" && Self.has($0.code, "while deathStep < ") }
+            XCTAssertEqual(lines.map { Self.trim($0.code) }, ["while deathStep < 50 {"])
             for a in audits { XCTAssertTrue(a.seen.deathSteps.allSatisfy { (0..<50).contains($0) }) }
         case .waterTilesInSheet:
             XCTAssertTrue(core.contains { $0.file == "Particles/WaterEffects.swift"
-                && $0.code.contains("if tile < 0x5f && e.isWater != 0") }, "\(c): the tile guard")
+                && Self.has($0.code, "if tile < 0x5f && e.isWater != 0") }, "\(c): the tile guard")
             for a in audits {
                 let n = a.level.renderer.grid.sets.fgWater.sheet.faces.count
                 XCTAssertGreaterThanOrEqual(n, 0x5f, "\(c): level \(a.level.number)")
@@ -1141,16 +1163,16 @@ final class DrawModeAuditTests: XCTestCase {
             for op in Self.skippedOps {
                 var arms = 0
                 for (i, l) in lines.enumerated() {
-                    let t = l.code.trimmingCharacters(in: .whitespaces)
+                    let t = Self.trim(l.code)
                     guard t.hasPrefix("case ." + op + "(") || t.hasPrefix("case ." + op + ":")
                             || t.hasPrefix("case ." + op + " ") || t.hasPrefix("case ." + op + ",") else { continue }
                     arms += 1
                     let d = indent(l.code)
-                    XCTAssertFalse(l.code.contains("try "), "\(c): \(op) at line \(l.line)")
+                    XCTAssertFalse(Self.has(l.code, "try "), "\(c): \(op) at line \(l.line)")
                     for m in lines[(i + 1)...] {
-                        let u = m.code.trimmingCharacters(in: .whitespaces)
+                        let u = Self.trim(m.code)
                         if !u.isEmpty && indent(m.code) <= d { break }
-                        XCTAssertFalse(m.code.contains("try "), "\(c): \(op)'s arm, line \(m.line)")
+                        XCTAssertFalse(Self.has(m.code, "try "), "\(c): \(op)'s arm, line \(m.line)")
                     }
                 }
                 XCTAssertGreaterThan(arms, 0, "\(c): no `case .\(op)` arm")
@@ -1171,7 +1193,7 @@ final class DrawModeAuditTests: XCTestCase {
             // The level frame's code — `FrameRenderer` and what it calls (Frame/, Effects/, Faces/, Color/) — never
             // names the type.
             for l in render where ["Frame/", "Effects/", "Faces/", "Color/"].contains(where: { l.file.hasPrefix($0) }) {
-                XCTAssertFalse(l.code.contains(type), "\(c): \(l.file):\(l.line)")
+                XCTAssertFalse(Self.has(l.code, type), "\(c): \(l.file):\(l.line)")
             }
         }
     }
