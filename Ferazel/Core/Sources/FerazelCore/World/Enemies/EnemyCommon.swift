@@ -86,9 +86,12 @@ public enum EnemyCommon {
     /// it back first and re-reads after (`Burn.handle`).
     public static func killProc(_ w: SpriteWorld, id: Int) {
         guard var s = w.active.record(id: id) else { return }
-        switch s.walkerCallbacks ? SpriteHandler.walker : s.handler {     // WK1: the corpse raft keeps `.KillWalker`
+        // The class whose Kill `+0x50` names: the corpse raft keeps `.KillWalker` under the Platform Handle (WK1) —
+        // `.KillWalker` (M l. 58624–58630) stores no `+0xea`, so `forGood` is read off the Kill proc, not the Handle.
+        let killer = s.walkerCallbacks ? SpriteHandler.walker : s.handler
+        switch killer {
         case .walker, .crawler, .roach, .dillo, .bat, .frog, .salamander, .blob, .warrior:
-            w.enemies.kill(&s, globals: &w.globals, level: w.levelIndex, forGood: EnemyCounting.killsForGood(s.handler))
+            w.enemies.kill(&s, globals: &w.globals, level: w.levelIndex, forGood: EnemyCounting.killsForGood(killer))
             // `.KillWalker` is this alone (WK1). // later: CR / DL / BA / FR / BL / LV5 — each other Kill's own tail
         case .gremlin:
             guard s.killCount == 0 else { return }      // `+0xe9 ≠ 0` → return (M l. 69736–69738, raw 100810e0 bnelr)

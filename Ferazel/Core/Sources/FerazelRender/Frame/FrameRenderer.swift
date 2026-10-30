@@ -201,9 +201,9 @@ public final class FrameRenderer {
     /// The sprite faces a level's renderer loads, in load order (first definition of a PICT wins): `BootFaces.sheets`
     /// whose PICT the data holds (on the chain the faces load from), then the level's caches — the Setup sheets of its
     /// active placements, the glider caches (`FaceSheet.gliderSheets`, `.InitPlayerSprite` M l. 42486–42489),
-    /// `SetupFaces.backgroundSheets` / `backgroundW2bSheets`, the Walker Handles' cache sets (`Walker.handleSheets`, WK1;
-    /// their Setups mark them, `CachedFaces.marks`), `BoxSprite.spawnSheets`, `BoxSprite.dropSheets` — less any
-    /// PICT already loaded at boot.
+    /// `SetupFaces.backgroundSheets` / `backgroundW2bSheets`, the cache faces the placements' Setups mark
+    /// (`CachedFaces.sheets(markedBy:)`; WK1: the Walker Handles' sets), `BoxSprite.spawnSheets`,
+    /// `BoxSprite.dropSheets` — less any PICT already loaded at boot.
     static func spriteSheets(level L: LevelFile, entries: [SetupFaces.Entry], resources: FerazelResources)
         -> [SetupFaces.Sheet] {
         let boot = BootFaces.sheets.filter { resources.resource(type: "PICT", id: $0.pict, chain: .frontEnd) != nil }
@@ -219,7 +219,7 @@ public final class FrameRenderer {
         var caches: [SetupFaces.Sheet] = []
         var seen = bootPicts
         for s in entries.compactMap(\.sheet) + gliders + SetupFaces.backgroundSheets + SetupFaces.backgroundW2bSheets
-            + Walker.handleSheets
+            + CachedFaces.sheets(markedBy: entries.map(\.type))
             + BoxSprite.spawnSheets.sorted(by: { $0.pict < $1.pict })
             + BoxSprite.dropSheets(L.placements).sorted(by: { $0.pict < $1.pict }) where !seen.contains(s.pict) {
             seen.insert(s.pict)

@@ -198,8 +198,8 @@ final class DrawModeAuditTests: XCTestCase {
         W("Particles/Burn.swift:60", .clipTop, .range(1...0x100), "any", at: ["45", "50"],
           pins: ["s.burnRow = top", "s.burnRow &+= 1"]),
         // EC: the ground enemies' liquid hurt flash (`EnemyCommon.liquids`: 0xc for the Walker in water, else 0x11).
-        W("World/Enemies/EnemyCommon.swift:228", .flash, .range(0xc...0x11), "walker", "crawler", "roach", "dillo",
-          at: ["214", "219", "220", "221"], pins: ["(0xc, 0x96, 0xc)", "(0x13, 100, 0x11)"]),
+        W("World/Enemies/EnemyCommon.swift:231", .flash, .range(0xc...0x11), "walker", "crawler", "roach", "dillo",
+          at: ["217", "222", "223", "224"], pins: ["(0xc, 0x96, 0xc)", "(0x13, 100, 0x11)"]),
         // ES: the enemy shots — the egg's random facing (`R(100) > 0x32`) and its flash every 45 frames, the Warrior
         // shot's facing by vx, the Wraith shot's tint by age (`.HandleEnemyShotSprite` M l. 51711–51723).
         W("World/Enemies/EnemyShot.swift:154", .mirrored, .flags([false, true]), "enemyShot.egg"),
@@ -209,21 +209,21 @@ final class DrawModeAuditTests: XCTestCase {
         // WK1: the Walker — `.SetupWalkerSprite`'s flip (0x6e0 always, the others by the player's x) and tier tint
         // (`+0xb8` 0x10010…0x10015 by record p3), the 1700's facing, the 1705's turn, the 1760 death entry's inverted
         // flip, and the damaging-surface flash 0x12.
-        W("World/Enemies/Walker.swift:100", .mirrored, .flags([false, true]), "walker"),
-        W("World/Enemies/Walker.swift:112", .mirrored, .flags([true]), "walker"),
-        W("World/Enemies/Walker.swift:115", .mirrored, .flags([true]), "walker"),
-        W("World/Enemies/Walker.swift:118", .mirrored, .flags([true]), "walker"),
-        W("World/Enemies/Walker.swift:126", .mode, .words([0x10010, 0x10011, 0x10012, 0x10013, 0x10014, 0x10015]),
-          "walker", at: ["69", "70", "71", "72", "73", "74"]),
-        W("World/Enemies/Walker.swift:311", .mirrored, .flags([false]), "walker"),
-        W("World/Enemies/Walker.swift:313", .mirrored, .flags([true]), "walker"),
-        W("World/Enemies/Walker.swift:437", .mirrored, .flags([false, true]), "walker"),
-        W("World/Enemies/Walker.swift:447", .mirrored, .flags([false]), "walker"),
-        W("World/Enemies/Walker.swift:451", .mirrored, .flags([false]), "walker"),
-        W("World/Enemies/Walker.swift:454", .mirrored, .flags([true]), "walker"),
-        W("World/Enemies/Walker.swift:459", .mirrored, .flags([true]), "walker"),
-        W("World/Enemies/Walker.swift:582", .mirrored, .flags([false, true]), "walker"),
-        W("World/Enemies/Walker.swift:617", .flash, .range(0x12...0x12), "walker"),
+        W("World/Enemies/Walker.swift:92", .mirrored, .flags([false, true]), "walker"),
+        W("World/Enemies/Walker.swift:104", .mirrored, .flags([true]), "walker"),
+        W("World/Enemies/Walker.swift:107", .mirrored, .flags([true]), "walker"),
+        W("World/Enemies/Walker.swift:110", .mirrored, .flags([true]), "walker"),
+        W("World/Enemies/Walker.swift:118", .mode, .words([0x10010, 0x10011, 0x10012, 0x10013, 0x10014, 0x10015]),
+          "walker", at: ["61", "62", "63", "64", "65", "66"]),
+        W("World/Enemies/Walker.swift:303", .mirrored, .flags([false]), "walker"),
+        W("World/Enemies/Walker.swift:305", .mirrored, .flags([true]), "walker"),
+        W("World/Enemies/Walker.swift:429", .mirrored, .flags([false, true]), "walker"),
+        W("World/Enemies/Walker.swift:439", .mirrored, .flags([false]), "walker"),
+        W("World/Enemies/Walker.swift:443", .mirrored, .flags([false]), "walker"),
+        W("World/Enemies/Walker.swift:446", .mirrored, .flags([true]), "walker"),
+        W("World/Enemies/Walker.swift:451", .mirrored, .flags([true]), "walker"),
+        W("World/Enemies/Walker.swift:574", .mirrored, .flags([false, true]), "walker"),
+        W("World/Enemies/Walker.swift:609", .flash, .range(0x12...0x12), "walker"),
         W("Physics/StandardSprite.swift:32", .flash, .range(0...0x1d), "any", pins: ["if s.flash > 0 { s.flash -= 1 }"]),
         // `.StandardSpriteHandles`' per-frame reset, then the occluder's clip, each edge clamped to 0…the face width
         // (the right edge 32000 when past it) on the next lines when the sprite has a face (no face, no draw).
@@ -252,8 +252,8 @@ final class DrawModeAuditTests: XCTestCase {
         W("Player/HitPlayerSprite.swift:911", .flash, .range(0x1e...0x1e), "player"),
         // `.HurtSprite`'s callers: the player's two (0xc) and, from WK1, the Walker's Hit and its `.HurtGoblin`s (8).
         W("Player/HitPlayerSprite.swift:1191", .flash, .range(8...0xc), "player", "walker",
-          at: ["1043", "1173", "World/Enemies/Walker.swift:760", "World/Enemies/Walker.swift:784",
-               "World/Enemies/Walker.swift:789"], pins: ["flash: 0xc", "flash: 8"]),
+          at: ["1043", "1173", "World/Enemies/Walker.swift:752", "World/Enemies/Walker.swift:776",
+               "World/Enemies/Walker.swift:781"], pins: ["flash: 0xc", "flash: 8"]),
         W("Player/Player.swift:126", .mirrored, .flags([false, true]), "player"),
         W("Player/Player.swift:332", .mirrored, .flags([false, true]), "player"),
         W("Player/Player.swift:873", .mode, .words([0x10008, 0x10009]), "player", at: ["872"]),

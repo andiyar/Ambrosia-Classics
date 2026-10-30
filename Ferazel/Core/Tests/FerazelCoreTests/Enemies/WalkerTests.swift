@@ -31,15 +31,15 @@ final class WalkerTests: XCTestCase {
     }
 
     /// A Walker of `type` placed (record 0) at (`x`, `y`) — `y` 330 stands the 1700's hot rect (bottom 70) on the floor —
-    /// set up by `.SetupWalkerSprite` inside the counting window.
+    /// set up by `.SetupWalkerSprite` inside the counting window (outside it when `counted` is false).
     private func walker(_ w: SpriteWorld, type: Int16 = 0x6a4, x: Int = 100, y: Int = 330, p1: Int16 = 0,
-                        p2: Int16 = 0, p3: Int16 = 0) throws -> Int {
-        let p = Placement(index: 0, flag: 1, byte1: 0, type: type, p1: p1, p2: p2, p3: p3, p4: 0, y: Int16(y),
+                        p2: Int16 = 0, p3: Int16 = 0, p4: Int16 = 0, counted: Bool = true) throws -> Int {
+        let p = Placement(index: 0, flag: 1, byte1: 0, type: type, p1: p1, p2: p2, p3: p3, p4: p4, y: Int16(y),
                           x: Int16(x))
         w.records = [p]
         let c = SetupFaces.Context(level: w.level, playerX: Int(w.player.centreX), records: w.records)
         var lights = LightTable()
-        w.enemies.window = true
+        w.enemies.window = counted
         let e = try SetupFaces.setup(p, context: c, lights: &lights, counting: &w.enemies, rng: &w.rng)
         w.enemies.window = false
         return w.active.insert(e.slot)
@@ -110,6 +110,10 @@ final class WalkerTests: XCTestCase {
         XCTAssertEqual(a.hotRect, IdleSprites.Rect(top: 10, left: 0x28, bottom: 0x46, right: 0x3c))
         XCTAssertEqual(a.face, FaceRef(pict: 0x6a4, index: 0, set: .encoded))
         XCTAssertEqual(w.enemies.live, 1)
+        // Record p4 ≠ 0: the four idle margins `+0x1c8`…`+0x1ce` = 0x5f4 (M l. 57084–57089); p4 0 leaves them.
+        let m4 = try slot(w, try walker(w, x: 100, p4: 1)).margins
+        XCTAssertEqual([m4.left, m4.right, m4.top, m4.bottom], [0x5f4, 0x5f4, 0x5f4, 0x5f4])
+        XCTAssertEqual(a.margins, SpriteSlot(type: 0x6a4, x: 0, y: 0).margins)
         // 1705, the player left of `+0xc + 0x32`: flip 1, state 5, tier 3; 0x6e0 is flipped whatever the player (M l.
         // 56945–56950), its range 0x6e1… only with the player right of `+0xc + 0x32`.
         let g = try slot(w, try walker(w, type: 0x6a9, x: 600, p3: 3))
@@ -193,6 +197,31 @@ final class WalkerTests: XCTestCase {
             XCTAssertEqual([Int(t.vx), Int(t.phase)], [Int(vx), 4 + step], "px \(px)")
             XCTAssertTrue(t.mirrored)
         }
+        // The walk's edges (M l. 57592–57633): the player left (target = P.x + d), the centre at target − 25 is inside
+        // (vx kept, the counter by vx: vx < 0 → +1, else −1), at target − 26 it walks right (1000, −1); the player right
+        // (target = P.x − d), inside: vx < 1 → −1, else +1.
+        for (left, off, vx0, vx, step) in [(true, 25, 0, 0, -1), (true, 26, 0, 1000, -1), (true, 25, -1, -1, 1),
+                                           (false, 0, 0, 0, -1), (false, 0, 1, 1, 1)] as [(Bool, Int, Int32, Int32, Int)] {
+            let we = try world(px: 900)
+            let se = TileSolver(world: we)
+            let ie = try walker(we, x: 400, p1: 1)
+            for _ in 0..<3 { frame(we, ie, se) }
+            let c = try slot(we, ie)
+            let d = Int(c.classTimer)
+            we.player.centreX = Int16(left ? c.centre.x + off - d : c.centre.x + d)     // target = cx + off / cx
+            we.active.update(id: ie) { $0.subtype = 1; $0.phase = 4; $0.vx = vx0 }
+            frame(we, ie, se)
+            let t = try slot(we, ie)
+            XCTAssertEqual([Int(t.vx), Int(t.phase)], [Int(vx), 4 + step], "left \(left) off \(off) vx \(vx0)")
+        }
+        // `.SetSpriteSpeed` (M l. 32815–32830): in water (`+0x11c ≠ 0`) both × 0.8, truncated; dry as given.
+        var sp = SpriteSlot(type: 0x6a4, x: 0, y: 0)
+        sp.waterRow = 1
+        Walker.setSpriteSpeed(&sp, -1000, 0x200)
+        XCTAssertEqual([sp.vx, sp.vy], [-800, 409])
+        sp.waterRow = 0
+        Walker.setSpriteSpeed(&sp, 1000, 0x200)
+        XCTAssertEqual([sp.vx, sp.vy], [1000, 0x200])
     }
 
     func testThrowerNeverWalksP1() throws {
@@ -230,6 +259,31 @@ final class WalkerTests: XCTestCase {
         let ida = try walker(wa, x: 200, p1: 1)
         frame(wa, ida, TileSolver(world: wa))
         XCTAssertEqual(try slot(wa, ida).face, FaceRef(pict: 0x6a5, index: 6, set: .encoded))
+        // Airborne, the walk face is the 1700's alone: the 1705 keeps its own (M l. 58464–58467, `+4 == 0x6a4`).
+        let wg = try world(px: 900, floor: false)
+        let ig = try walker(wg, type: 0x6a9, x: 200)
+        frame(wg, ig, TileSolver(world: wg))
+        XCTAssertEqual(try slot(wg, ig).face?.pict, 0x6a9)
+        // The prologue (M l. 57562–57575): the first Handle sets `+0xb4` = flip ? −3 : 3 (once); layer 0xb every frame;
+        // `+0x170 > 0` → `+0x16c = 0`, `+0x170` − 1. State 2 rewrites gravity 0x151 (M l. 57640); the tail zeroes
+        // `+0x16c` before the separation (M l. 58410) — standing on kind 3 (no wall kind) leaves it 0.
+        for flip in [false, true] {
+            let wp = try world(px: flip ? 0 : 900)
+            let sp = TileSolver(world: wp)
+            let ip = try walker(wp, x: 200, p1: 1)
+            XCTAssertEqual(try slot(wp, ip).mirrored, flip)
+            wp.active.update(id: ip) { $0.layer = 4; $0.classWord170 = 3; $0.classWord16c = 7; $0.gravity = 0 }
+            frame(wp, ip, sp)
+            var q = try slot(wp, ip)
+            XCTAssertEqual([Int(q.classWordB4), Int(q.layer), Int(q.classWord170), Int(q.classWord16c), Int(q.gravity)],
+                           [flip ? -3 : 3, 0xb, 2, 0, 0x151], "flip \(flip)")
+            wp.active.update(id: ip) { $0.classWordB4 = 1; $0.layer = 4; $0.classWord170 = 0; $0.classWord16c = 7; $0.gravity = 0 }
+            frame(wp, ip, sp)
+            q = try slot(wp, ip)
+            XCTAssertNotEqual(q.groundKind, 0, "flip \(flip): standing")
+            XCTAssertEqual([Int(q.classWordB4), Int(q.layer), Int(q.classWord170), Int(q.classWord16c), Int(q.gravity)],
+                           [1, 0xb, 0, 0, 0x151], "flip \(flip): the second Handle")
+        }
     }
 
     func testThrowerThrowsAtStep8() throws {
@@ -298,6 +352,22 @@ final class WalkerTests: XCTestCase {
         frame(w, id, solver)
         let extra = try XCTUnwrap(shots(w).last)
         XCTAssertEqual([extra.vx, extra.vy], [ex + ax, ey - ay])
+        // R(100) = 0x5a (not past it): no extra pair — the stream ends at R(100).
+        w.active.update(id: id) { $0.phase = 7; $0.counterA6 = 0 }
+        w.rng = FastRand(seed: seed { r in
+            cry(&r)
+            _ = r.next(0x1a); _ = r.next(5); _ = r.next(0x1c2); _ = r.next(0x1c2)
+            return r.next(100) == 0x5a
+        })
+        r = w.rng
+        cry(&r)
+        _ = r.next(0x1a); _ = r.next(5)
+        let px0 = Int32(r.next(0x1c2)) + 0x618, py0 = -0x334 - Int32(r.next(0x1c2))
+        _ = r.next(100)
+        frame(w, id, solver)
+        XCTAssertEqual(w.rng.seed, r.seed, "no R(0x578) pair")
+        let plain = try XCTUnwrap(shots(w).last)
+        XCTAssertEqual([plain.vx, plain.vy], [px0, py0])
         // Facing the player left: type 1 from x + 10, vx negative.
         let w2 = try world(px: 0)
         let s2 = TileSolver(world: w2)
@@ -390,6 +460,42 @@ final class WalkerTests: XCTestCase {
             frame(w, id, solver)
             XCTAssertEqual(Int(try slot(w, id).subState), back)
             XCTAssertEqual(try slot(w, id).face, FaceRef(pict: 0x6a9, index: 1, set: .encoded))
+        }
+        // The friction's edge (M l. 57756–57764): |vx| ≤ 0x80 → 0, else (int)(vx · f) toward zero.
+        for (v, f, want) in [(0x80, 9, 0), (0x81, 9, 116), (-0x80, 9, 0), (-0x81, 9, -116), (0x81, 7, 90)]
+            as [(Int32, Int, Int32)] {
+            var fs = SpriteSlot(type: 0x6a9, x: 0, y: 0)
+            fs.vx = v
+            Walker.friction(&fs, f == 9 ? Walker.friction9 : Walker.friction7)
+            XCTAssertEqual(fs.vx, want, "vx \(v) × 0.\(f)")
+        }
+        // The turn's edges (M l. 57856–57926): turning right from −1, `+0xb4` 0 is skipped to 1 (face 0x6aa[0]); a turn
+        // face flips by the idle counter `+0xb2` < 0 after its + 1 (−2 → −1 flips, −1 → 0 does not).
+        for (b2, flip) in [(-2, true), (-1, false)] as [(Int16, Bool)] {
+            let wt = try world(px: 2000)
+            let st = TileSolver(world: wt)
+            let it = try walker(wt, type: 0x6a9, x: 300)
+            for _ in 0..<3 { frame(wt, it, st) }
+            wt.active.update(id: it) { $0.classWordB4 = -1; $0.subState = b2 }
+            frame(wt, it, st)
+            let t = try slot(wt, it)
+            XCTAssertEqual([Int(t.classWordB4), Int(t.subState)], [1, Int(b2) + 1], "b2 \(b2)")
+            XCTAssertEqual(t.face, FaceRef(pict: 0x6aa, index: 0, set: .encoded), "b2 \(b2)")
+            XCTAssertEqual(t.mirrored, flip, "b2 \(b2)")
+        }
+        // The trigger's edges (M l. 57927–57940): |cx − P.x| < 0x78 and |P.y − cy| < 100, the player in front at ±3.
+        for (dx, dy, fires) in [(0x77, 0, true), (0x78, 0, false), (0x10, 99, true), (0x10, 100, false),
+                                (0x10, -99, true), (0x10, -100, false)] {
+            let wt = try world(px: 2000)
+            let st = TileSolver(world: wt)
+            let it = try walker(wt, type: 0x6a9, x: 300)
+            for _ in 0..<3 { frame(wt, it, st) }
+            let c = try slot(wt, it)
+            XCTAssertEqual([Int(c.classWordB4), Int(c.subtype)], [3, 5])
+            wt.player.centreX = Int16(c.centre.x + dx)
+            wt.player.centreY = Int16(c.centre.y + dy)
+            frame(wt, it, st)
+            XCTAssertEqual(Int(try slot(wt, it).subtype), fires ? 2 : 5, "dx \(dx) dy \(dy)")
         }
 
         // The player left, close: flip 1, `+0xb4` −3 from the first Handle → state 2. b2 6 snd 304, b2 16 the swing 0x6a9
@@ -491,6 +597,148 @@ final class WalkerTests: XCTestCase {
             let cue = wl.player.cues.first { $0.snd == 601 }
             XCTAssertEqual(cue.map { Int($0.rate ?? 0) }, fast > 2000 ? Int(l.voicePitch + land - 0xffff) : nil)
         }
+        // n = max(1, dmg / 100) (M l. 58555–58560): a 50 is n 1 — 40 blood particles. The 1750's knockback is / 3 again
+        // (M l. 58548–58550): −3001 / 3 = −1000, / 3 = −333.
+        for (type, dmg, vx, blood) in [(Int16(0x6a4), Int16(50), Int32(-1000), 40), (0x6d6, 250, -333, 80)] {
+            let wn = try world()
+            let nid = try walker(wn, x: 200)
+            wn.active.update(id: nid) { $0.type = type }
+            let ns = try XCTUnwrap(wn.newSprite(type: 2, x: 250, y: 330, layer: 0xb, handler: .playerShot) { s in
+                s.x = 250
+                s.y = 330
+                s.hotRect = IdleSprites.Rect(top: 0, left: 0, bottom: 20, right: 20)
+                s.hp = dmg
+                s.vx = -3001
+            })
+            var nl = LightTable()
+            Walker.hit(wn, id: nid, other: ns, lights: &nl)
+            let n = try slot(wn, nid)
+            XCTAssertEqual([Int(n.hp), Int(n.vx)], [500 - Int(dmg), Int(vx)], "type \(type)")
+            XCTAssertEqual(wn.particles.records.filter(\.alive).count, blood, "type \(type)")
+        }
+        // `.WrapDrawSprites`' tail keeps vy as `+0x30` (M l. 10383) — the landing thud's test.
+        var drawn = SpriteSlot(type: 0x6a4, x: 0, y: 0)
+        drawn.vy = 2001
+        drawn.recordDrawn()
+        XCTAssertEqual(drawn.previousVY, 2001)
+        // The other arms of `.HitWalkerSprite` (M l. 58590–58609): a Smite explosion 0x4b7 at `+0x46 < 8` or a geyser
+        // 0x5a0 at `+0x14c` 1 / 2 → `.HurtGoblin(s, o, 100, 0, −1000, 4, 8)`; a Background 0x4b8, 0x5c8…0x5d1 with
+        // `+0x170 == 1`, or 0x730…0x735 (0x113) — only with our `+0x100 == 0` (tier 4 passes them by).
+        let wh = try world(floor: false)
+        let hid = try walker(wh, x: 200)
+        var hl = LightTable()
+        func hurt(_ type: Int16, _ handler: SpriteHandler, immune: Int32 = 0, phase: Int16 = 0, timer: Int32 = 0,
+                  harmful: Int32 = 0) throws -> Int {
+            wh.active.update(id: hid) { $0.hp = 500; $0.invulnerable = 0; $0.vx = 0; $0.vy = 0; $0.classWord100 = immune }
+            let o = try XCTUnwrap(wh.newSprite(type: type, x: 200, y: 330, layer: 1, handler: handler) { o in
+                o.phase = phase
+                o.classTimer = timer
+                o.classWord170 = harmful
+            })
+            Walker.hit(wh, id: hid, other: o, lights: &hl)
+            return Int(try slot(wh, hid).hp)
+        }
+        XCTAssertEqual(try hurt(0x4b7, .effect, phase: 7), 400, "Smite")
+        let sm = try slot(wh, hid)
+        XCTAssertEqual([Int(sm.vx), Int(sm.vy), Int(sm.invulnerable), Int(sm.flash)], [0, -1000, 4, 8])
+        XCTAssertEqual(try hurt(0x4b7, .effect, phase: 8), 500)
+        XCTAssertEqual(try hurt(0x5a0, .background, timer: 2), 400, "geyser")
+        XCTAssertEqual(try hurt(0x5a0, .background, timer: 0), 500)
+        XCTAssertEqual(try hurt(0x4b8, .background), 400)
+        XCTAssertEqual(try hurt(0x5c8, .background, harmful: 1), 400)
+        XCTAssertEqual(try hurt(0x5d1, .background, harmful: 1), 400)
+        XCTAssertEqual(try hurt(0x5c8, .background, harmful: 0), 500)
+        XCTAssertEqual(try hurt(0x730, .background), 500 - 0x113)
+        XCTAssertEqual(try hurt(0x735, .background), 500 - 0x113)
+        XCTAssertEqual(try hurt(0x72f, .background), 500)
+        XCTAssertEqual(try hurt(0x736, .background), 500)
+        XCTAssertEqual(try hurt(0x4b8, .background, immune: 1), 500, "tier 4")
+        XCTAssertEqual(try hurt(0x730, .background, immune: 1), 500, "tier 4")
+        XCTAssertEqual(try hurt(0x4b8, .inert), 500, "only under the Background Handle")
+        // The crush (M l. 58578–58589): the walker rising into a Statue / Box / Platform solid's underside —
+        // `.PlatformBounce` 2, measured on a twin world — → HP 0; not a one-way solid, not a pipe 0x5d2…0x5d6, not dying.
+        func crush(_ handler: SpriteHandler, type: Int16 = 0xc12, oneWay: Bool = false,
+                   dying: Bool = false) throws -> (bounce: Int16, hp: Int16) {
+            func make() throws -> (SpriteWorld, Int, Int) {
+                let wc = try world(floor: false)
+                let c = try walker(wc, x: 200)
+                wc.active.update(id: c) { $0.vy = -0x400; if dying { $0.subtype = 4 } }
+                let box = try XCTUnwrap(wc.newSprite(type: type, x: 220, y: 310, layer: 2, handler: handler) { b in
+                    b.x = 220
+                    b.y = 310
+                    b.hotRect = IdleSprites.Rect(top: 0, left: 0, bottom: 0x20, right: 0x40)
+                    b.oneWay = oneWay
+                })
+                return (wc, c, box)
+            }
+            let (wa, ca, ba) = try make()
+            let r = try slot(wa, ca).hotRect
+            let centre = SpriteSlot.Point(x: r.left + ((r.right - r.left) >> 1), y: r.top + ((r.bottom - r.top) >> 1))
+            let b = wa.platformBounce(mover: ca, solid: ba, centre: centre, factor: 0, rect: r, bounce: false)
+            let (wb, cb, bb) = try make()
+            Walker.hit(wb, id: cb, other: bb, lights: &hl)
+            return (b, try slot(wb, cb).hp)
+        }
+        for h in [SpriteHandler.box, .platform, .statue] {
+            let c = try crush(h)
+            XCTAssertEqual([Int(c.bounce), Int(c.hp)], [2, 0], "\(h)")
+        }
+        XCTAssertEqual(try crush(.box, type: 0x5d4).hp, 500, "a pipe")
+        XCTAssertEqual(try crush(.box, oneWay: true).hp, 500, "one-way")
+        XCTAssertEqual(try crush(.box, dying: true).hp, 500, "dying")
+        // `.HitWalkerTileSprite` (M l. 58650–58696): an FG hit `.WallBounce` reports (measured on a twin world; every
+        // case below hits) counts `+0x16c` + 1 for kinds 0…2, 0x20…0x23, and by the facing 4 / 9 / 0x1b / 0x14 (flip 0),
+        // 10 / 0x1c / 0x13 (flip 1), 7 (flip 1, or flip 0 with cx < pos.x + 16), 5 (flip 1 with pos.x + 16 < cx) — only
+        // with `+0x170 == 0`.
+        func wallHit(kind k: Int, flip: Bool, centreX: Int? = nil, lockout: Int32 = 0) throws -> (hit: Bool, count: Int32) {
+            func make() throws -> (SpriteWorld, Int) {
+                let wt = try world(floor: false)
+                let it = try walker(wt, x: 200)
+                wt.standardSpriteCleanup(it, faceWidth: { _ in 100 })           // the centre from the hot rect
+                wt.active.update(id: it) { t in
+                    t.mirrored = flip
+                    t.classWord170 = lockout
+                    if let centreX { t.centre.x = centreX }                     // `+0x10` from the last Cleanup
+                }
+                return (wt, it)
+            }
+            let (wa, ia) = try make()
+            let r = try slot(wa, ia).hotRect
+            var pos = TilePos(x: 240, y: 352)
+            let hit = TileSolver(world: wa).wallBounce(ia, kind: k, tile: &pos, vCentre: r.top + ((r.bottom - r.top) >> 1),
+                                                       factor: 0, rect: r, bounce: false)
+            let (wb, ib) = try make()
+            Walker.hitTile(TileSolver(world: wb), id: ib, pos: TilePos(x: 240, y: 352), kind: k, layer: .foreground)
+            return (hit, try slot(wb, ib).classWord16c)
+        }
+        // At x 200 the centre is 250, left of pos.x + 16 = 256.
+        let counts: [(Int, Int32, Int32)] = [(0, 1, 1), (1, 1, 1), (2, 1, 1), (3, 0, 0), (4, 1, 0), (5, 0, 0), (7, 1, 1),
+                                             (9, 1, 0), (10, 0, 1), (0x13, 0, 1), (0x14, 1, 0), (0x1b, 1, 0), (0x1c, 0, 1),
+                                             (0x1f, 0, 0), (0x20, 1, 1), (0x23, 1, 1), (0x24, 0, 0)]
+        for (k, flip0, flip1) in counts {
+            for (flip, want) in [(false, flip0), (true, flip1)] {
+                let h = try wallHit(kind: k, flip: flip)
+                XCTAssertTrue(h.hit, "kind \(k) flip \(flip): a hit")
+                XCTAssertEqual(h.count, want, "kind \(k) flip \(flip)")
+            }
+        }
+        // With the centre `+0x10` at 260 (moved since the last Cleanup), right of 256: 5 counts flipped, 7 no longer
+        // unflipped.
+        for (k, flip, want) in [(5, true, 1), (5, false, 0), (7, false, 0), (7, true, 1)] as [(Int, Bool, Int32)] {
+            let h = try wallHit(kind: k, flip: flip, centreX: 260)
+            XCTAssertTrue(h.hit, "cx 260 kind \(k) flip \(flip): a hit")
+            XCTAssertEqual(h.count, want, "cx 260 kind \(k) flip \(flip)")
+        }
+        XCTAssertEqual(try wallHit(kind: 1, flip: false, lockout: 1).count, 0, "the lockout")
+        // BG water (kind 200…209) → `.HandleUnderWater` (S 256 − y 300 → 1, kind 0, `+0x140` 1) unless `+0x140` is set.
+        for done in [false, true] {
+            let wu = try world(waterRow: 8, floor: false)
+            let iu = try walker(wu, x: 200, y: 300)
+            wu.active.update(id: iu) { $0.underwaterDone = done }
+            Walker.hitTile(TileSolver(world: wu), id: iu, pos: TilePos(x: 224, y: 320), kind: 200, layer: .background)
+            let u = try slot(wu, iu)
+            XCTAssertEqual([Int(u.waterRow), u.underwaterDone ? 1 : 0], done ? [0, 1] : [1, 1], "+0x140 \(done)")
+        }
         // Dying (state 4): no hurt.
         let w = try world()
         let id = try walker(w, x: 200)
@@ -589,6 +837,72 @@ final class WalkerTests: XCTestCase {
                 XCTAssertEqual(wc.active.sprites.filter { $0.handler == .bonus }.map(\.type), want, "p3 \(p3) seed \(sd)")
             }
         }
+        // The drops' origin (M l. 57360–57376): the centre of the face's opaque bounds — `.FlipHRect` by the face width
+        // when flipped — at (`+0xc`, `+0xa`); one stream, no tiles in reach, so a drop moves one for one with it.
+        func dropXY(x: Int, flip: Bool, b: IdleSprites.Rect) throws -> [Int] {
+            let wd = try world(px: 300, floor: false)
+            let did = try walker(wd, x: x, p3: 4)
+            wd.active.update(id: did) { $0.face = FaceRef(pict: 0x6a8, index: 3, set: .encoded); $0.mirrored = flip }
+            wd.rng = FastRand(seed: 7)
+            var dl = LightTable()
+            _ = Walker.popupCoins(wd, id: did, solver: TileSolver(world: wd), lights: &dl, effects: 1,
+                                  faceWidth: { _ in 0x5e }, faceBounds: { _ in b })
+            return wd.active.sprites.filter { $0.handler == .bonus }.flatMap { [$0.x, $0.y] }
+        }
+        let base = try dropXY(x: 200, flip: false, b: bounds)
+        XCTAssertFalse(base.isEmpty)
+        func moved(_ dx: Int, _ dy: Int) -> [Int] { base.enumerated().map { $0.element + ($0.offset % 2 == 0 ? dx : dy) } }
+        XCTAssertEqual(try dropXY(x: 207, flip: false, b: bounds), moved(7, 0), "+0xc")
+        var wider = bounds
+        wider.right += 20
+        wider.bottom += 20
+        XCTAssertEqual(try dropXY(x: 200, flip: false, b: wider), moved(10, 10), "the bounds' centre")
+        // Flipped by 0x5e: (34, 84) — centre 59 against 35.
+        XCTAssertEqual(try dropXY(x: 200, flip: true, b: bounds), moved(24, 0), "flipped")
+        // The dry corpse's Kill distance (M l. 57775–57785): the player's centre within 450 px across and 350 px down /
+        // up keeps it; 451 / 351 → `.KillWalker`.
+        for (dx, dy, kills) in [(0x1c2, 0, false), (0x1c3, 0, true), (-0x1c3, 0, true), (0, 0x15e, false),
+                                (0, 0x15f, true), (0, -0x15f, true), (-0x1c2, -0x15e, false)] {
+            let wk = try world()
+            let sk = TileSolver(world: wk)
+            let ik = try walker(wk, x: 200)
+            for _ in 0..<2 { frame(wk, ik, sk) }
+            let c = try slot(wk, ik)
+            wk.player.centreX = Int16(c.centre.x + dx)
+            wk.player.centreY = Int16(c.centre.y + dy)
+            wk.active.update(id: ik) { $0.hp = 0; $0.subtype = 4; $0.subState = 0x32 }
+            frame(wk, ik, sk)
+            XCTAssertEqual(try slot(wk, ik).dead, kills, "dx \(dx) dy \(dy)")
+        }
+        // The death entry's flipped arm and the 1760's (M l. 58307–58408), each against a twin that stays alive (free
+        // fall, no tiles): 1700 flip 1 → right + 16, x + 24; 0x6e0 → the rect, top + 0x2a, type 0x6a4, flip inverted,
+        // y + 20, x + 15 (new flip 1) or − 25, face 0x6a8[0], score + 400. Dying, the airborne walk face is not taken;
+        // the alive 0x6e0 keeps its own face.
+        for (type, flip) in [(Int16(0x6a4), true), (0x6e0, true), (0x6e0, false)] {
+            func run(_ hp: Int16) throws -> (SpriteSlot, Int32) {
+                let wf = try world(px: 0, floor: false)
+                let fid = try walker(wf, type: type, x: 200)
+                wf.active.update(id: fid) { $0.mirrored = flip; $0.hp = hp }
+                frame(wf, fid, TileSolver(world: wf))
+                return (try slot(wf, fid), wf.globals.score)
+            }
+            let (alive, _) = try run(500)
+            let (dead, score) = try run(0)
+            XCTAssertEqual([Int(dead.type), Int(dead.subtype)], [0x6a4, 4], "\(type) flip \(flip)")
+            XCTAssertEqual(dead.face, FaceRef(pict: 0x6a8, index: 0, set: .encoded), "\(type) flip \(flip)")
+            if type == 0x6a4 {
+                XCTAssertTrue(dead.mirrored)
+                XCTAssertEqual(dead.hotRect, IdleSprites.Rect(top: 0x32, left: 0x28, bottom: 0x46, right: 0x4c))
+                XCTAssertEqual([dead.x256 - alive.x256, dead.y256 - alive.y256, score], [0x1800, 0, 500])
+                XCTAssertEqual(alive.face, FaceRef(pict: 0x6a5, index: 6, set: .encoded))
+            } else {
+                XCTAssertEqual(dead.mirrored, !flip)
+                XCTAssertEqual(dead.hotRect, IdleSprites.Rect(top: 0x34, left: 0x28, bottom: 0x46, right: 0x3c))
+                XCTAssertEqual([dead.x256 - alive.x256, dead.y256 - alive.y256, score],
+                               [flip ? -0x1900 : 0xf00, 0x1400, 400], "0x6e0 flip \(flip)")
+                XCTAssertEqual(alive.face?.pict, 0x6e0)
+            }
+        }
         // 1705: type 0x6a4, score + 600, x + 35 (flip 0); the player far: the Kill (counted once).
         let w2 = try world(px: 3000, py: 340)
         let s2 = TileSolver(world: w2)
@@ -622,6 +936,7 @@ final class WalkerTests: XCTestCase {
             s.subtype = 4
             s.subState = 0x32
             s.waterRow = 1
+            s.invulnerable = 5
         }
         let live = w.enemies.live
         frame(w, id, solver)
@@ -633,6 +948,19 @@ final class WalkerTests: XCTestCase {
         XCTAssertEqual([s.oneWay, s.setupDone, s.dead], [true, true, false])
         XCTAssertEqual(w.enemies.live, live - 1)
         XCTAssertEqual(w.globals.achieved[0][1], 1)
+        // `+0x116 = 0` at the change, so the tail's liquids row hurts it at once (kind 0: `+0x116` 0xc, HP − 0x96, `+0xaa`
+        // 0xc, M l. 58426–58443 — the invulnerability preset above would have blocked it).
+        XCTAssertEqual([Int(s.invulnerable), Int(s.hp), Int(s.flash), Int(s.waterKind)], [0xc, -0x96, 0xc, 0])
+        // Not counted (set up outside the window): no tally at the change.
+        let wn = try world(px: 300, waterRow: 8)
+        wn.levelIndex = 1
+        let nid = try walker(wn, x: 200, y: 300, counted: false)
+        wn.active.update(id: nid) { $0.hp = 0; $0.subtype = 4; $0.subState = 0x32; $0.waterRow = 1 }
+        let nlive = wn.enemies.live
+        frame(wn, nid, TileSolver(world: wn))
+        XCTAssertEqual(try slot(wn, nid).handler, .platform)
+        XCTAssertEqual(wn.enemies.live, nlive)
+        XCTAssertEqual(wn.globals.achieved[0][1], 0)
         var top: Int16 = 0
         for n in 0..<900 {
             let b0 = try slot(w, id).buoyancy
@@ -646,5 +974,28 @@ final class WalkerTests: XCTestCase {
         XCTAssertEqual(top, 0x50)
         XCTAssertEqual([s.y, Int(s.vy)], [256 - 68, 0], "rides at surface − 68")
         XCTAssertEqual(w.enemies.live, live - 1, "counted once")
+        // The raft's tile callback is `.HitWalkerTileSprite` (`PlatformSprite.pass`): an FG kind-1 hit counts a wall hit.
+        let pass = try XCTUnwrap(PlatformSprite.pass(s))
+        w.active.update(id: id) { $0.classWord16c = 0; $0.classWord170 = 0 }
+        pass(solver, id, TilePos(x: s.x + 0x10, y: s.y + 0x30), 1, .foreground)
+        XCTAssertEqual(try slot(w, id).classWord16c, 1)
+        // Its hit callback is `.HitWalkerSprite` (the session's dispatch): a type-1 player shot turns it to stone and is
+        // killed by `.KillPlayerShot(o, 1, 1)` (M l. 58526) — its sound flag plays snd 301 (the Platform's hit plays none).
+        let wh = try world(px: 300, waterRow: 8)
+        let hid = try walker(wh, x: 200, y: 300)
+        wh.active.update(id: hid) { $0.hp = 0; $0.subtype = 4; $0.subState = 0x32; $0.waterRow = 1 }
+        frame(wh, hid, TileSolver(world: wh))
+        XCTAssertEqual(try slot(wh, hid).handler, .platform)
+        let stun = try XCTUnwrap(wh.newSprite(type: 1, x: 250, y: 330, layer: 0xb, handler: .playerShot) { $0.hp = 100 })
+        wh.player.cues = []
+        FerazelSession.hitCallback(wh, hid, stun)
+        XCTAssertEqual(try slot(wh, hid).handler, .statue)
+        XCTAssertTrue(wh.player.cues.contains { $0.snd == 301 }, "`.KillPlayerShot(o, 1, 1)`")
+        // Its Kill proc is `.KillWalker` (M l. 58624–58630): `+0xe9 == 0 ∧ +0x1b5 ≠ 0` → counted again (as written),
+        // `+0xe9 = 1`, no `+0xea` store.
+        EnemyCommon.killProc(w, id: id)
+        XCTAssertEqual(try slot(w, id).killCount, 1)
+        XCTAssertEqual(w.enemies.live, live - 2)
+        XCTAssertEqual(w.globals.achieved[0][1], 2)
     }
 }

@@ -23,7 +23,7 @@ final class BootFacesTests: XCTestCase {
         BonusSprite.sheets + PlayerShot.sheets + EnemyShot.sheets + HeldItem.sheets + ButtonSprite.sheets
             + SetupFaces.boxChildSheets
             + SetupFaces.platformSheets + SetupFaces.backgroundSheets + SetupFaces.backgroundW2bSheets
-            + Array(BoxSprite.spawnSheets) + Array(BonusSprite.dropSheets) + Walker.handleSheets
+            + Array(BoxSprite.spawnSheets) + Array(BonusSprite.dropSheets)
             + (FaceSheet.playerSheets + FaceSheet.gliderSheets).map(sheet)
     }
 
@@ -142,6 +142,13 @@ final class BootFacesTests: XCTestCase {
         // ES: every enemy-shot boot set is a boot face; its level-load caches (0x46a, 0x77b) are not.
         for s in EnemyShot.sheets { XCTAssertEqual(boot[s.pict], s, "enemy shot PICT \(s.pict)") }
         for s in EnemyShot.cachedSheets { XCTAssertNil(boot[s.pict], "cache PICT \(s.pict)") }
+        // WK1: the Walker Handles' four sets are level-load caches (`.CacheEncFaceSetFromPICT`, M l. 56757–56758,
+        // 56762–56763), not boot faces, and no Setup-face table entry defines them otherwise.
+        XCTAssertEqual(CachedFaces.handleSets.map(\.pict), [0x6a5, 0x6a6, 0x6aa, 0x6ab])
+        for s in CachedFaces.handleSets {
+            XCTAssertNil(boot[s.pict], "cache PICT \(s.pict)")
+            XCTAssertNil(SetupFaces.sheet(pict: s.pict), "cache PICT \(s.pict) in the Setup-face table")
+        }
     }
 
     /// Levels 1–4: every boot face the data holds, every class sheet Core declares and every Setup sheet of the level's
@@ -163,6 +170,27 @@ final class BootFacesTests: XCTestCase {
             let loaded = r.sprites.faces.sheets
             for p in always.union(Self.setupSheets(r.level).map(\.pict)).sorted() where present(p) {
                 XCTAssertNotNil(loaded[p], "level \(level): PICT \(p) (0x\(String(p, radix: 16))) not loaded")
+            }
+            // WK1: every cache face the level's Setups mark (`.LoadCachedSpriteFaces`) is loaded — the Walker Handles
+            // face from the marked 0x6a5 / 0x6a6 (the 1700's, M l. 56966–56969) and 0x6aa / 0x6ab (the 1705's, M l.
+            // 56977–56980), which no Setup sheet carries.
+            let marked = CachedFaces.sheets(markedBy: r.level.activePlacements.map(\.type))
+            let types = Set(r.level.activePlacements.map(\.type))
+            if types.contains(Walker.thrower) {
+                XCTAssertTrue(marked.contains(CachedFaces.handleSets[0]) && marked.contains(CachedFaces.handleSets[1]),
+                              "level \(level): the 1700's walk / throw sets marked")
+            }
+            if types.contains(Walker.spearGuard) {
+                XCTAssertTrue(marked.contains(CachedFaces.handleSets[2]) && marked.contains(CachedFaces.handleSets[3]),
+                              "level \(level): the 1705's turn / thrust sets marked")
+            }
+            for sh in marked where present(sh.pict) {
+                let a = loaded[sh.pict]?.arguments
+                XCTAssertEqual(a.map { [$0.count, $0.cellWidth, $0.cellHeight, $0.columns] },
+                               sh.single ? a.map { [$0.count, $0.cellWidth, $0.cellHeight, $0.columns] }
+                                         : [sh.count, sh.cellWidth, sh.cellHeight, sh.columns],
+                               "level \(level): marked cache PICT \(sh.pict) not loaded as marked")
+                XCTAssertNotNil(a, "level \(level): marked cache PICT \(sh.pict) not loaded")
             }
             let s = try FerazelSession(resources: res, prefs: FerazelPrefs(), level: level, seed: 1,
                                        faceBounds: r.faceBounds)

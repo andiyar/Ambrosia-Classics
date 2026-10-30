@@ -24,18 +24,10 @@ public enum Walker {
     /// The sheets (`.InitWalkerSprite`, M l. 56755–56770): the singles 0x6a4 (1700) and 0x6d6 (1750, WK2) and the cache
     /// sets 0x6a5 walk (8 × 100×0x50, 4 a row), 0x6a6 throw (6 × 100×0x50), 0x6a9 guard (3 × 0xcc×0x59, one a row),
     /// 0x6aa turn (2), 0x6ab thrust (9), 0x6d7…0x6da (1750, WK2), 0x6e0 (1760, 9 × 0x54×0x5c); the boot set 0x6a8 the
-    /// death (8 × 0x5e×0x50, `BootFaces`).
+    /// death (8 × 0x5e×0x50, `BootFaces`). The renderer loads the cache sets the Setups mark
+    /// (`CachedFaces.sheets(markedBy:)`; the Handles' four in `CachedFaces.handleSets`).
     public static let walkSet: Int16 = 0x6a5, throwSet: Int16 = 0x6a6, deathSet: Int16 = 0x6a8, turnSet: Int16 = 0x6aa,
                       thrustSet: Int16 = 0x6ab, axDeathSet: Int16 = 0x6da
-
-    /// The cache sets the 1700 / 1705 Handles face from (their Setups mark them, `CachedFaces.marks`): the renderer
-    /// loads them with the level's caches (`FrameRenderer.spriteSheets`).
-    public static let handleSheets: [SetupFaces.Sheet] = [
-        SetupFaces.Sheet(pict: walkSet, count: 8, cellWidth: 100, cellHeight: 0x50, columns: 4, clut: 200),
-        SetupFaces.Sheet(pict: throwSet, count: 6, cellWidth: 100, cellHeight: 0x50, columns: 6, clut: 200),
-        SetupFaces.Sheet(pict: turnSet, count: 2, cellWidth: 0xcc, cellHeight: 0x59, columns: 1, clut: 200),
-        SetupFaces.Sheet(pict: thrustSet, count: 9, cellWidth: 0xcc, cellHeight: 0x59, columns: 1, clut: 200),
-    ]
 
     /// The snd slots (`SoundSlots`): `*_DAT_100a0268` 704 'throw', `*_DAT_100a0418` 304 'swoosh big', `*_DAT_100a041c`
     /// 303 'metal hit', `*_DAT_100a026c` 703 'crawler death', `*_DAT_100a0284` 601 'hit ground soft', `*_DAT_100a0340`

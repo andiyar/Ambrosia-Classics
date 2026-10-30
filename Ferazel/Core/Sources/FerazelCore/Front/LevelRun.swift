@@ -1154,6 +1154,30 @@ public struct CachedFaces: Equatable, Sendable {
         }
     }
 
+    /// The cache sets' geometry the Setup-face table (`SetupFaces.sheet(pict:)`) does not hold — the sets only a Handle
+    /// faces from: `.InitWalkerSprite`'s 0x6a5 walk (8 × 100×0x50, 4 a row), 0x6a6 throw (6 × 100×0x50, 6 a row), 0x6aa
+    /// turn (2 × 0xcc×0x59) and 0x6ab thrust (9 × 0xcc×0x59, one a row) (`.CacheEncFaceSetFromPICT`, M l. 56757–56758,
+    /// 56762–56763; flag 0 → clut 200), marked by the 1700 / 1705 Setups (M l. 56966–56969, 56977–56980; WK1).
+    public static let handleSets: [SetupFaces.Sheet] = [
+        SetupFaces.Sheet(pict: 0x6a5, count: 8, cellWidth: 100, cellHeight: 0x50, columns: 4, clut: 200),
+        SetupFaces.Sheet(pict: 0x6a6, count: 6, cellWidth: 100, cellHeight: 0x50, columns: 6, clut: 200),
+        SetupFaces.Sheet(pict: 0x6aa, count: 2, cellWidth: 0xcc, cellHeight: 0x59, columns: 1, clut: 200),
+        SetupFaces.Sheet(pict: 0x6ab, count: 9, cellWidth: 0xcc, cellHeight: 0x59, columns: 1, clut: 200),
+    ]
+
+    /// The level-load cache faces the Setups of `types` mark (`marks`), as sheets, in mark order — what
+    /// `.LoadCachedSpriteFaces` loads for those placements, for the renderer: each marked set / single whose geometry
+    /// the Setup-face table or `handleSets` holds (a PICT neither holds is skipped; a placed type's own Setup sheet is
+    /// the table's, so it comes out the same).
+    public static func sheets<S: Sequence>(markedBy types: S) -> [SetupFaces.Sheet] where S.Element == Int16 {
+        types.flatMap { t -> [SetupFaces.Sheet] in
+            let m = marks(type: t)
+            return (m.sets + m.singles).compactMap { p in
+                SetupFaces.sheet(pict: p) ?? handleSets.first(where: { $0.pict == p })
+            }
+        }
+    }
+
     /// The marks of every record `.SetupLevelSprites` ran a Setup for (the session's live records, spawn order).
     public static func needed(by s: FerazelSession) -> Needed {
         var n = Needed()
