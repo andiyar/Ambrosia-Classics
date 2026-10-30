@@ -317,6 +317,70 @@ final class StatusBarTests: XCTestCase {
         XCTAssertEqual(big.map { bar.port[$0] }, beforeBig)
     }
 
+    /// Gap ledger #3 (RV): with the selection `G+0x172 = −1` (the empty inventory) `.UpdateItemStat` reads "slot −1" —
+    /// the icon `*(short*)(G + 0x1a)`, the sheet choice `*(char*)(G + 0x22) == 1`, the count `*(short*)(G + 0x1c)` (M l.
+    /// 4708–4745) — and draws it as any selection: G+0x1a = 2, G+0x1c = 3 → item icon cell 2 of 702 and "x3"; G+0x22 = 1
+    /// → the spell sheet 700; all zero (what the replica's G image holds: never-written bytes are 0) → cell 0, no count
+    /// (`1 < count`, M l. 4720). `GameGlobals.statusBar` hands the renderer exactly those G image bytes.
+    func testEmptyInventoryReadsTheGap() throws {
+        let f = try fixture()
+        let c200 = try ColorLUT.load(id: 200, from: f.r, chain: .level)
+        func picture(_ id: Int16) throws -> ConvertedPicture {
+            try ConvertedPicture(source: try PictureSource.load(id: id, from: f.r, chain: .frontEnd), clut: c200,
+                                 search: f.search)
+        }
+        let itemBig = try picture(702), spellBig = try picture(700)
+        func draw(_ gap: InventorySlot) throws -> (port: [UInt8], calls: [String]) {
+            let text = BoxRasterizer()
+            var bar = try StatusBar(resources: f.r, screenClut: f.c202, search: f.search, text: text)
+            var s = f.start
+            s.inventory = Array(repeating: .empty, count: GameGlobals.inventorySlots)
+            s.selectedSlot = -1
+            s.gapSlot = gap
+            var screen = IndexedFrame(fill: 0)
+            bar.update(s, screen: &screen)
+            return (bar.port, Array(text.calls.dropFirst(3)))
+        }
+        // The big icon's port rect (0xd7, 0x1e)–(0x103, 0x4d) less the count's glyph boxes (pens (0xf5 / 0xfb, 0x3e)).
+        let glyphs = Set([0xf5, 0xfb].flatMap { x in (0x3e - 7..<0x3e).flatMap { y in (x..<x + 5).map { y * 640 + $0 } } })
+        func expectIcon(_ port: [UInt8], _ p: ConvertedPicture, cell: Int, _ what: String) {
+            var differs = false
+            for y in 0..<0x2f {
+                for x in 0..<0x2c where !glyphs.contains((0x1e + y) * 640 + 0xd7 + x) {
+                    let want = f.translate[Int(p.pixels[y * p.width + cell * 0x2d + x])]
+                    XCTAssertEqual(port[(0x1e + y) * 640 + 0xd7 + x], want, "\(what): (\(x), \(y))")
+                    if f.translate[Int(p.pixels[y * p.width + x])] != want { differs = true }
+                }
+            }
+            if cell != 0 { XCTAssertTrue(differs, "\(what): cell \(cell) differs from cell 0") }
+        }
+        let two = try draw(InventorySlot(id: 2, count: 3, field4: 0, field6: 0, isSpell: 0))
+        expectIcon(two.port, itemBig, cell: 2, "G+0x1a = 2")
+        XCTAssertEqual(two.calls, ["x|3|9|0", "3|3|9|0"], "the count drawn as \"x3\"")
+        for i in glyphs { XCTAssertEqual(two.port[i], f.white, "count glyph pixel \(i % 640), \(i / 640)") }
+        let spell = try draw(InventorySlot(id: 2, count: 1, field4: 0, field6: 0, isSpell: 1))
+        expectIcon(spell.port, spellBig, cell: 2, "G+0x22 = 1")
+        XCTAssertEqual(spell.calls, [], "count 1: none drawn")
+        let zero = try draw(InventorySlot(id: 0, count: 0, field4: 0, field6: 0, isSpell: 0))
+        expectIcon(zero.port, itemBig, cell: 0, "all zero")
+        XCTAssertEqual(zero.calls, [], "count 0: none drawn")
+        // Core's side: the slot handed over is G's image at +0x1a…+0x23 (+0x20 the darkness override, +0x22 the high
+        // byte of the saved darkness — real fields — the rest never-written 0).
+        var g = GameGlobals(header: try LevelFile.load(from: f.r, level: 1).header)
+        g.selectedSlot = -1
+        for (override, saved) in [(UInt8(0), Int16(0)), (UInt8(3), Int16(0x0105)), (UInt8(0xff), Int16(7))] {
+            g.darknessOverride = override
+            g.savedDarkness = saved
+            let b = [UInt8](g.image()[0x1a..<0x24])
+            func i16(_ o: Int) -> Int16 { Int16(bitPattern: UInt16(b[o]) << 8 | UInt16(b[o + 1])) }
+            XCTAssertEqual(g.statusBar(levelName: "").gapSlot,
+                           InventorySlot(id: i16(0), count: i16(2), field4: i16(4), field6: i16(6), isSpell: b[8]),
+                           "override \(override), saved darkness \(saved)")
+        }
+        XCTAssertEqual(GameGlobals(header: try LevelFile.load(from: f.r, level: 1).header).statusBar(levelName: "")
+                        .gapSlot, InventorySlot(id: 0, count: 0, field4: 0, field6: 0, isSpell: 0))
+    }
+
     /// `.UpdateHealthMagic` reads G's maxima (M l. 4442–4455, 4535–4542): max health 0x2a0 (>> 3 = 0x54) → the empty
     /// segment runs from the health (0x230 >> 3 = 0x46) to 0x54 and the past-max segment starts at x 0xd6 + 0x54 =
     /// 0x12a, not 0x11c; max magic 0x2a0 → its past-max segment at 0x1ab − 8 + 0x54.

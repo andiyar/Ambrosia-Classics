@@ -551,6 +551,28 @@ records the summary line.
   emitter's source face, with the boot faces loaded, equals a table pinned from `b535527^` (the tree before the boot faces landed) — derived by
   the implementer from that commit's code, re-derived by the reviewer; any differing row is listed with its cause).
 - **Gate:** G2 508. **Commit:** `Ferazel: computed face ids in the boot-face scan, the empty-inventory box as the binary reads it, hot rects and emitters pinned across the boot faces, LightFaces comment; 3 tests`.
+- **As executed (loop run 37):** ladder 506 → **509** (Ben's 3cf72df, one higher than planned). **Dump re-read:**
+  `.UpdateItemStat` M l. 4674–4841 agrees with the contract (sel −1: icon G+0x1a, sheet byte G+0x22, count G+0x1c; a
+  count is drawn only when `1 < count`, M l. 4720, so 0 and 1 draw none); `.InitSprites` M l. 103–147 calls every
+  `.Init*Sprite` that loads a light face (`.Load1LightFaceFromPICT` callers M l. 50257–56147) — boot, as the
+  comment now says. **Gap #3:** the selection −1 case moved from `StatusBar.swift:188` to `:207` (3cf72df); the empty
+  box is gone. Files fence amended: `Sources/FerazelCore/Seams/StatusBarState.swift` (a field added, S3:
+  `gapSlot`, "slot −1" = G's bytes +0x1a…+0x23) and `Sources/FerazelCore/Session/GameGlobals.swift` (`gapSlot`
+  as `image()` writes those bytes — +0x20 the darkness override byte, +0x22 the saved darkness's high byte, the rest
+  0 — and `statusBar(levelName:)` hands it over) — the renderer has no G, so the read needs the seam. In practice the
+  replica draws item cell 0 of 702 with no count. No golden or count moved (no golden has an empty inventory).
+  **Computed face ids found** (Core's sources, the same Wine-safe walk; the literal matcher now also reports
+  `<lit> + …` / `<lit> &+ …`): `0xc80 &+ k` (the thought balloon's key icon, keys 1…26 → 3201…3226) and `750 + item`
+  (the held item → `HeldItem.sheets` 750, 756, 768, 771); both boot faces, loaded on levels 1–4. The plan's boulder
+  `0x6e1 + p1` is not in the tree yet (the spouts' spawn is ◇, AxGoblin is WK1's) — the test's "every form has a
+  declared range" assert will make that task add its row. **Hot rects and emitters:** measured at `b535527^` and at
+  HEAD with the same row text (git archive into a temp dir, a scratch test, not committed): levels 1–4 at the start
+  and after 30 and 120 idle frames, 3,257 rows (every active sprite and idle entry: type, record, hot rect, idle face
+  rect, face, `faceBounds`, `particleFaces.sprite` digest) — **no row differs**; every faced row's face was loaded
+  before the boot faces too. Pinned as 12 (count, FNV-1a) pairs. Mutation check (not committed): `faceBounds` top + 1
+  fails it. The gap ledger tracks no per-item status line, so it is untouched. Extra doc item (SP review, fence
+  amended): `draw-effects.md` §2.6 BC51 — the row counter starts at 0 (`li r30,0x0`, raw 10027328), not at the first
+  source row, as `SpriteBlitter.squashWalk` has it.
 
 #### DK — minor — the lit sprite at full darkness under the brightest light (ledger A13) (→ 510)
 - **Why now:** A13 is a latent quit: a `+0x89` dynamic-lit sprite on a light-15 cell under a colour-99 light. Phase 5

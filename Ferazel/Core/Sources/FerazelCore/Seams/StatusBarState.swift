@@ -30,6 +30,10 @@ public struct StatusBarState: Equatable, Sendable {
     public var itemFlashMode: Int
     /// The call that made this op.
     public var call: StatusBarCall
+    /// RV (gap ledger #3): "slot −1" — G's bytes `+0x1a…+0x23` read as a slot (id `+0x1a`, count `+0x1c`, `+4` `+0x1e`,
+    /// `+6` `+0x20`, `+8` `+0x22`), what `.UpdateItemStat` draws as the selection when `G+0x172 = −1` (the empty
+    /// inventory; M l. 4708–4745). Added after HU (S3: fields added only); default the all-zero bytes.
+    public var gapSlot = InventorySlot(id: 0, count: 0, field4: 0, field6: 0, isSpell: 0)
 
     /// `.InitGameGlobals`' 27 slots (M l. 616–677): spell 0, item 0, then 25 empty.
     public static let newGameInventory: [InventorySlot] = GameGlobals.initGameGlobals(previous: nil).inventory

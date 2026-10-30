@@ -185,8 +185,9 @@ and the image is about `2 + ⌊(h−1)·q/256⌋` rows tall, top-anchored. The s
 read an undefined table — no flipped gauge is known.]
 
 > ⚑ planner note (Phase 5 SP, loop run 37, 2026-10-30) (BC51; Q15 item 3; raw `10027508 cmplw r30,r4; bge 10027598`):
-> the colour pass has a **row guard** the text above leaves out. The row counter starts at the first source row and
-> goes +1 per skipped top-clipped row and +1 per advance; a copy run is drawn only while the counter is below the
+> the colour pass has a **row guard** the text above leaves out. The row counter starts at 0 (`li r30,0x0`, raw
+> `10027328`; corrected RV, loop run 37 — not "at the first source row") and goes +1 per skipped top-clipped row and
+> +1 per advance; a copy run is drawn only while the counter is below the
 > walk's end `(sv + h) & 0xffff` — the advance for source row j has already been made when its pixels are copied, so
 > the counter then reads a(j) = 1 + ⌊(j + 1)·q/256⌋, and row j is drawn in colour only while a(j) < h. The walk ends at
 > the row token after the counter passes the end. The squashed mask (`.BlitEncBoolFaceClip @ 10023574` with q ≠ 0)

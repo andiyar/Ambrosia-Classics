@@ -66,8 +66,9 @@ public struct LightFace: Sendable, Equatable {
     /// The pixel at (row, col), both inside the face.
     @inline(__always) func pixel(row: Int, col: Int) -> UInt8 { pixels[row * width + col] }
 
-    /// `.Load1LightFaceFromPICT(pict, width, height)`: the PICT (level chain — the Init*Sprite callers run during
-    /// level setup) converted under clut 801.
+    /// `.Load1LightFaceFromPICT(pict, width, height)`: the PICT converted under clut 801. The original loads the light
+    /// faces at boot, not at level setup: its callers are `.Init*Sprite` routines of `.InitSprites`' list (M l.
+    /// 103–147); the port loads each when a level's renderer first asks for it, from the level chain.
     /// A frame other than `width × height` is stretched into the port (nearest row / column, above).
     /// - Throws: `LightFaceError.scaled` when that frame belongs to a DirectBits picture.
     public static func load(pict: Int16, width: Int, height: Int, from resources: FerazelResources,

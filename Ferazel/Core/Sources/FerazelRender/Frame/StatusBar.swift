@@ -204,10 +204,12 @@ public struct StatusBar {
     /// - status x 0xd7…0x10b and 0x108…0x268, y 0x1e…0x4c → the screen (M l. 4831–4838).
     mutating func updateItemStat(_ s: StatusBarState, screen: inout IndexedFrame) {
         let inventory = s.inventory, selected = s.selectedSlot
-        // An empty selected slot (id −1) gives the rect (0, −45)–(47, −1): clipped away, nothing drawn. A selection
-        // outside 0…26 (−1: the empty inventory) would read G+0x1a…+0x23 (the gap, Phase 3 Invariant 7) — not
-        // modelled: nothing drawn [LOW].
-        let sel = inventory.indices.contains(selected) ? inventory[selected] : InventorySlot.empty
+        // An empty selected slot (id −1) gives the rect (0, −45)–(47, −1): clipped away, nothing drawn. The selection
+        // −1 (the empty inventory) reads "slot −1", G+0x1a…+0x23 (`StatusBarState.gapSlot`: icon +0x1a, count +0x1c,
+        // sheet +0x22) and draws it as any selection (RV, gap ledger #3; the replica's never-written bytes are 0 →
+        // cell 0 of 702, no count). The selection never leaves −1…26 (`Inventory.swift`); any other value draws nothing.
+        let sel = inventory.indices.contains(selected) ? inventory[selected]
+            : selected == -1 ? s.gapSlot : InventorySlot.empty
         let selId = Int(sel.id)
         blit(sel.isSpell == 1 ? spellBig : itemBig, top: 0, left: selId * 0x2d, bottom: 0x2f,
              right: selId * 0x2d + 0x2c, x: 0xd7, y: 0x1e)

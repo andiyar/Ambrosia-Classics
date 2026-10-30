@@ -279,8 +279,19 @@ public struct GameGlobals: Equatable, Sendable {
     /// What `.UpdateStatusBar` draws from G (HU: the inventory, maxima and suffocation too). The flashes and the call
     /// are `StatusBarCalls`' (defaults here: no flash, the full call (0, 0, 0)).
     public func statusBar(levelName: String) -> StatusBarState {
-        StatusBarState(score: Int(score), coins: Int(coins), health: Int(health), breath: Int(breath),
-                       magic: Int(magic), levelName: levelName, selectedSlot: Int(selectedSlot), inventory: inventory,
-                       maxHealth: Int(maxHealth), maxMagic: Int(maxMagic), suffocation: Int(suffocation))
+        var s = StatusBarState(score: Int(score), coins: Int(coins), health: Int(health), breath: Int(breath),
+                               magic: Int(magic), levelName: levelName, selectedSlot: Int(selectedSlot),
+                               inventory: inventory, maxHealth: Int(maxHealth), maxMagic: Int(maxMagic),
+                               suffocation: Int(suffocation))
+        s.gapSlot = gapSlot
+        return s
+    }
+
+    /// RV (gap ledger #3): "slot −1", the 10 bytes `+0x1a…+0x23` as `image()` writes them — id `+0x1a`, count `+0x1c`,
+    /// `+4` `+0x1e` (gaps: 0), `+6` the i16 at `+0x20` (the darkness override byte, then the gap `+0x21`: 0), `+8` the
+    /// byte `+0x22` (the saved darkness's high byte, big-endian) — what `.UpdateItemStat` reads with the selection −1.
+    public var gapSlot: InventorySlot {
+        InventorySlot(id: 0, count: 0, field4: 0, field6: Int16(bitPattern: UInt16(darknessOverride) << 8),
+                      isSpell: UInt8(truncatingIfNeeded: UInt16(bitPattern: savedDarkness) >> 8))
     }
 }

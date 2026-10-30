@@ -59,9 +59,11 @@ final class BootFacesTests: XCTestCase {
         return (files, lines)
     }
 
-    /// Every `Face(pict: <lit>,` / `FaceRef(pict: <lit>,` in `code` — `<lit>` one `0x…` hex or decimal literal, then
-    /// optional whitespace and a comma, `Face` not preceded by a word character. Pure Swift over UTF-8 bytes.
-    private static func facePictLiterals(in code: String) -> [Int16] {
+    /// Every `Face(pict: <lit>` / `FaceRef(pict: <lit>` in `code` — `<lit>` one `0x…` hex or decimal literal, `Face`
+    /// not preceded by a word character — followed (after optional whitespace) by a comma (a literal PICT, `computed`
+    /// false) or by `+` / `&+` (a computed id `<lit> + <expr>`, `computed` true: `pict` is the base). Pure Swift over
+    /// UTF-8 bytes.
+    private static func facePictMatches(in code: String) -> [(pict: Int16, computed: Bool)] {
         let b = Array(code.utf8)
         func at(_ i: Int, _ s: String) -> Bool {
             let t = Array(s.utf8)
@@ -77,7 +79,7 @@ final class BootFacesTests: XCTestCase {
         }
         let isDec: (UInt8) -> Bool = { $0 >= 0x30 && $0 <= 0x39 }
         let isHex: (UInt8) -> Bool = { isDec($0) || (($0 | 0x20) >= 0x61 && ($0 | 0x20) <= 0x66) }
-        var out: [Int16] = [], i = 0
+        var out: [(pict: Int16, computed: Bool)] = [], i = 0
         while i < b.count {
             defer { i += 1 }
             guard at(i, "Face"), i == 0 || !isWord(b[i - 1]) else { continue }
@@ -95,8 +97,14 @@ final class BootFacesTests: XCTestCase {
             }
             var k = end
             while k < b.count && (b[k] == 0x20 || b[k] == 0x09) { k += 1 }
-            guard let value, k < b.count, b[k] == 0x2c else { continue }
-            out.append(Int16(value))
+            guard let value, k < b.count else { continue }
+            if b[k] == 0x2c {
+                out.append((Int16(value), false))
+            } else if at(k, "+") || at(k, "&+") {
+                out.append((Int16(value), true))
+            } else {
+                continue
+            }
             i = k
         }
         return out
@@ -104,8 +112,22 @@ final class BootFacesTests: XCTestCase {
 
     /// The literal PICTs Core's sources face sprites with at run time (`FaceRef(pict: 0x…` / `Face(pict: 0x…`).
     private static func literalFacePicts() throws -> Set<Int16> {
-        Set(try coreSources.get().lines.flatMap(facePictLiterals))
+        Set(try coreSources.get().lines.flatMap(facePictMatches).filter { !$0.computed }.map(\.pict))
     }
+
+    /// The bases of the computed face ids Core's sources write (`FaceRef(pict: 0xc80 &+ k` / `Face(pict: 750 + item`).
+    private static func computedFacePictBases() throws -> Set<Int16> {
+        Set(try coreSources.get().lines.flatMap(facePictMatches).filter(\.computed).map(\.pict))
+    }
+
+    /// Every computed face id form `<base> + <expr>` Core writes, with the ids its class declares the expression takes.
+    private static let computedFaceIds: [Int16: (what: String, picts: [Int16])] = [
+        // `BoxSprite.createBalloon` (`.CreateBalloonSprite` M l. 59921–59966): the key's item icon 3200 + key, only for
+        // keys 1…26 (its `0 < k && k < 0x1b` guard).
+        0xc80: ("the thought balloon's key icon", (1...26).map { 0xc80 + Int16($0) }),
+        // `HeldItem.face(item:)`: 750 + item, only where `HeldItem.facePicts` holds it (the singles `HeldItem.sheets`).
+        750: ("the held item", HeldItem.sheets.map(\.pict)),
+    ]
 
     /// `BootFaces` matches every other definition Core makes of the same PICT (cells, columns, CLUT), so the first
     /// definition the renderer loads is the one every reader expects.
@@ -145,6 +167,95 @@ final class BootFacesTests: XCTestCase {
         }
         for p in literals.subtracting(always).sorted() {
             XCTAssertTrue(cachedSomewhere.contains(p), "PICT \(p) (0x\(String(p, radix: 16))): a literal face no loader knows")
+        }
+    }
+
+    /// RV (Q15 item 6): the computed face ids — every `<base> + <expr>` form Core's sources face a sprite with — each
+    /// resolved by the ids its class declares (`computedFaceIds`), and on levels 1–4 every one the data holds is loaded.
+    /// The same Wine-safe source walk and matcher as the literal scan.
+    func testComputedFacePictsAreLoaded() throws {
+        let res = try Self.resources.get()
+        let bases = try Self.computedFacePictBases()
+        XCTAssertGreaterThanOrEqual(try Self.coreSources.get().files, 100, "Core .swift files scanned")
+        XCTAssertEqual(bases.sorted(), Self.computedFaceIds.keys.sorted(),
+                       "every computed face id form in Core has its declared range, and every declared one is found")
+        let present: (Int16) -> Bool = { res.resource(type: "PICT", id: $0, chain: .frontEnd) != nil }
+        for (base, form) in Self.computedFaceIds {
+            XCTAssertTrue(form.picts.contains(where: present), "\(form.what) (\(base) + …): the data holds none")
+        }
+        for level in BuiltLevels.range {
+            let r = try FrameRenderer(resources: res, level: level, search: ColorSearch(model: .ruled, tieBreak: .lowest),
+                                      dither: .errorDiffusion, text: StatusBarTests.BoxRasterizer(), prefs: FerazelPrefs())
+            let loaded = r.sprites.faces.sheets
+            for (base, form) in Self.computedFaceIds.sorted(by: { $0.key < $1.key }) {
+                for p in form.picts where present(p) {
+                    XCTAssertNotNil(loaded[p], "level \(level): \(form.what) PICT \(p) (\(base) + \(p - base)) not loaded")
+                }
+            }
+        }
+    }
+
+    private static func fnv(_ bytes: some Sequence<UInt8>, _ h0: UInt64 = 0xcbf29ce484222325) -> UInt64 {
+        var h = h0
+        for b in bytes { h = (h ^ UInt64(b)) &* 0x100000001b3 }
+        return h
+    }
+
+    /// RV (Q15 item 6): loading every boot face (b535527) moved no hot rect and no particle emitter's source face. Each
+    /// level 1–4 session (the renderer's `faceBounds` and `particleFaces`, as the apps build it) at its start and after
+    /// 30 and 120 idle frames: one row per active sprite (list order) and per idle entry — type, record, hot rect, the
+    /// idle entry's face rect (`.ActiveToIdleSprite`), the face, its bounds (`faceBounds`) and its emitter face
+    /// (`particleFaces.sprite`: frame, bounds, tokens, FNV-1a). The rows' count and FNV-1a are pinned from `b535527^`
+    /// (the tree before the boot faces, measured with this same row text, 2026-10-30, loop run 37). No row differs.
+    func testHotRectsAndEmittersUnchangedByBootFaces() throws {
+        let res = try Self.resources.get()
+        // (level, phase) → (rows, FNV-1a of the rows' text, one "\n" after each), measured at b535527^.
+        let pinned: [String: (rows: Int, fnv: UInt64)] = [
+            "L1 init": (190, 0x751bd6dbfdb2e980), "L1 f30": (240, 0x9acb42c53a6415c9), "L1 f120": (240, 0x4e37b80e62ab9159),
+            "L2 init": (229, 0xc7d7fdcd42a32ad0), "L2 f30": (278, 0x52fd30bccc663084), "L2 f120": (278, 0x210ff852c4656c3f),
+            "L3 init": (234, 0xff6fd93ee81bd1f2), "L3 f30": (310, 0x020acea1683777ce), "L3 f120": (310, 0x3e862456a54f52b0),
+            "L4 init": (264, 0x3e82d10297132cc4), "L4 f30": (342, 0x1cea1c7f9098c6f3), "L4 f120": (342, 0x7f2d8821c4f7816d),
+        ]
+        func rect(_ x: IdleSprites.Rect) -> String { "(\(x.top),\(x.left),\(x.bottom),\(x.right))" }
+        func emitter(_ f: ParticleFace?) -> String {
+            guard let f else { return "nil" }
+            let words = (f.frame + f.bounds).flatMap { [UInt8(truncatingIfNeeded: $0 >> 8), UInt8(truncatingIfNeeded: $0)] }
+            return String(Self.fnv(words + f.tokens), radix: 16)
+        }
+        var measured: [String: (rows: Int, fnv: UInt64)] = [:]
+        for level in 1...4 {
+            let r = try FrameRenderer(resources: res, level: level, search: ColorSearch(model: .ruled, tieBreak: .lowest),
+                                      dither: .errorDiffusion, text: StatusBarTests.BoxRasterizer(), prefs: FerazelPrefs())
+            let faces = r.particleFaces
+            let s = try FerazelSession(resources: res, prefs: FerazelPrefs(), level: level, seed: 1,
+                                       faceBounds: r.faceBounds, particleFaces: faces)
+            func face(_ ref: FaceRef?) -> String {
+                ref.map { "\($0.pict):\($0.index) fb\(rect(r.faceBounds($0))) pf\(emitter(faces.sprite($0)))" } ?? "-"
+            }
+            func rows(_ phase: String) {
+                let tag = "L\(level) \(phase)"
+                var lines: [String] = []
+                for (i, a) in s.world.active.sprites.enumerated() {
+                    lines.append("\(tag) A\(i) t\(a.type) rec\(a.recordIndex) hot\(rect(a.hotRect)) \(face(a.face))")
+                }
+                for (e, x) in s.world.idle.entries.enumerated() {
+                    guard let x else { continue }
+                    let a = x.saved
+                    lines.append("\(tag) I\(e) t\(a.type) rec\(a.recordIndex) hot\(rect(a.hotRect)) face\(rect(x.faceRect)) "
+                                 + face(a.face))
+                }
+                measured[tag] = (lines.count, Self.fnv(lines.flatMap { Array(($0 + "\n").utf8) }))
+            }
+            rows("init")
+            for f in 1...120 {
+                _ = s.step(keys: KeyState())
+                if f == 30 || f == 120 { rows("f\(f)") }
+            }
+        }
+        XCTAssertEqual(measured.keys.sorted(), pinned.keys.sorted())
+        for (k, want) in pinned.sorted(by: { $0.key < $1.key }) {
+            XCTAssertEqual(measured[k]?.rows, want.rows, "\(k): rows")
+            XCTAssertEqual(measured[k]?.fnv, want.fnv, "\(k): rows' FNV-1a (0x\(String(measured[k]?.fnv ?? 0, radix: 16)))")
         }
     }
 }
