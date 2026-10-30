@@ -33,24 +33,78 @@ final class BootFacesTests: XCTestCase {
             + Array(BoxSprite.dropSheets(L.placements))
     }
 
-    /// The literal PICTs Core's sources face sprites with at run time (`FaceRef(pict: 0x…` / `Face(pict: 0x…`).
-    private static func literalFacePicts() throws -> Set<Int16> {
-        let core = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
-            .deletingLastPathComponent().appendingPathComponent("Sources/FerazelCore")
-        let files = try XCTUnwrap(FileManager.default.enumerator(at: core, includingPropertiesForKeys: nil))
-        let pattern = try NSRegularExpression(pattern: #"\bFace(?:Ref)?\(pict: (0x[0-9a-fA-F]+|[0-9]+)\s*,"#)
-        var out = Set<Int16>()
-        for case let url as URL in files where url.pathExtension == "swift" {
-            for line in try String(contentsOf: url, encoding: .utf8).split(separator: "\n") {
-                let code = String(line.split(separator: "//", maxSplits: 1, omittingEmptySubsequences: false).first ?? "")
-                let ns = code as NSString
-                for m in pattern.matches(in: code, range: NSRange(location: 0, length: ns.length)) {
-                    let lit = ns.substring(with: m.range(at: 1))
-                    out.insert(Int16(lit.hasPrefix("0x") ? Int(lit.dropFirst(2), radix: 16)! : Int(lit)!))
+    /// Core's `.swift` sources, read once: the number of files and every line with its `//` comment cut off. One code
+    /// path on every platform, with no Foundation call Wine lacks (PB fix round 3): no directory enumerator (it reads
+    /// file attributes — advapi32 under Wine), no regex (ICU) — only `contentsOfDirectory(atPath:)`,
+    /// `fileExists(atPath:isDirectory:)` and `String(contentsOf:)`, which run green in Proof B elsewhere.
+    private static let coreSources = Result { () throws -> (files: Int, lines: [String]) in
+        let core = URL(fileURLWithPath: #filePath).resolvingSymlinksInPath().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Sources/FerazelCore")
+        let fm = FileManager.default
+        var files = 0, lines: [String] = [], folders = [core]
+        while let dir = folders.popLast() {
+            for name in try fm.contentsOfDirectory(atPath: dir.path).sorted() where !name.hasPrefix(".") {
+                let url = dir.appendingPathComponent(name)
+                var isDir: ObjCBool = false
+                guard fm.fileExists(atPath: url.path, isDirectory: &isDir) else { continue }
+                if isDir.boolValue { folders.append(url); continue }
+                guard name.hasSuffix(".swift") else { continue }
+                files += 1
+                for line in try String(contentsOf: url, encoding: .utf8).split(separator: "\n") {
+                    lines.append(String(line.split(separator: "//", maxSplits: 1, omittingEmptySubsequences: false)
+                        .first ?? ""))
                 }
             }
         }
+        return (files, lines)
+    }
+
+    /// Every `Face(pict: <lit>,` / `FaceRef(pict: <lit>,` in `code` — `<lit>` one `0x…` hex or decimal literal, then
+    /// optional whitespace and a comma, `Face` not preceded by a word character. Pure Swift over UTF-8 bytes.
+    private static func facePictLiterals(in code: String) -> [Int16] {
+        let b = Array(code.utf8)
+        func at(_ i: Int, _ s: String) -> Bool {
+            let t = Array(s.utf8)
+            return i + t.count <= b.count && b[i..<(i + t.count)].elementsEqual(t)
+        }
+        func isWord(_ c: UInt8) -> Bool {
+            c >= 0x80 || c == 0x5f || (c >= 0x30 && c <= 0x39) || ((c | 0x20) >= 0x61 && (c | 0x20) <= 0x7a)
+        }
+        func digits(from i: Int, _ ok: (UInt8) -> Bool) -> Int {
+            var j = i
+            while j < b.count && ok(b[j]) { j += 1 }
+            return j
+        }
+        let isDec: (UInt8) -> Bool = { $0 >= 0x30 && $0 <= 0x39 }
+        let isHex: (UInt8) -> Bool = { isDec($0) || (($0 | 0x20) >= 0x61 && ($0 | 0x20) <= 0x66) }
+        var out: [Int16] = [], i = 0
+        while i < b.count {
+            defer { i += 1 }
+            guard at(i, "Face"), i == 0 || !isWord(b[i - 1]) else { continue }
+            var j = i + 4
+            if at(j, "Ref") { j += 3 }
+            guard at(j, "(pict: ") else { continue }
+            j += 7
+            let value: Int?, end: Int
+            if at(j, "0x"), digits(from: j + 2, isHex) > j + 2 {
+                end = digits(from: j + 2, isHex)
+                value = Int(String(decoding: b[(j + 2)..<end], as: UTF8.self), radix: 16)
+            } else {
+                end = digits(from: j, isDec)
+                value = end > j ? Int(String(decoding: b[j..<end], as: UTF8.self)) : nil
+            }
+            var k = end
+            while k < b.count && (b[k] == 0x20 || b[k] == 0x09) { k += 1 }
+            guard let value, k < b.count, b[k] == 0x2c else { continue }
+            out.append(Int16(value))
+            i = k
+        }
         return out
+    }
+
+    /// The literal PICTs Core's sources face sprites with at run time (`FaceRef(pict: 0x…` / `Face(pict: 0x…`).
+    private static func literalFacePicts() throws -> Set<Int16> {
+        Set(try coreSources.get().lines.flatMap(facePictLiterals))
     }
 
     /// `BootFaces` matches every other definition Core makes of the same PICT (cells, columns, CLUT), so the first
@@ -71,7 +125,9 @@ final class BootFacesTests: XCTestCase {
     func testEveryReferencedFaceIsLoaded() throws {
         let res = try Self.resources.get()
         let literals = try Self.literalFacePicts()
-        XCTAssertGreaterThanOrEqual(literals.count, 15)
+        let scanned = try Self.coreSources.get().files
+        XCTAssertGreaterThanOrEqual(scanned, 100, "Core .swift files scanned (0 = the source walk found nothing)")
+        XCTAssertGreaterThanOrEqual(literals.count, 15, "literal face PICTs in \(scanned) Core .swift files")
         let present: (Int16) -> Bool = { res.resource(type: "PICT", id: $0, chain: .frontEnd) != nil }
         let always = Set(BootFaces.sheets.map(\.pict) + Self.classSheets.map(\.pict))
         var cachedSomewhere = Set<Int16>()

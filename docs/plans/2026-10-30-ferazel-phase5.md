@@ -456,6 +456,13 @@ records the summary line.
   unchanged, so `optin_skips` still matches. Files fence amended: `Ferazel/Core/Tests/FerazelRenderTests/VisitSweepTests.swift`.
   It was the only global-actor-isolated or async test in Ferazel/Core/Tests. The FerazelWinKit test classes are all
   `@MainActor` too, but they run macOS-hosted only (GW2) and are not in GW1's Windows test exe — left as is.
+- **As executed (fix round 3):** Proof B then measured 499 / 1 / 2 / 0: under Wine `BootFacesTests`' scan of Core's
+  sources found zero literal face PICTs (its directory enumerator reads file attributes, its matcher was an ICU regex).
+  The scan is now one code path on every platform: a recursive `contentsOfDirectory(atPath:)` +
+  `fileExists(atPath:isDirectory:)` walk (both already green in Proof B) read once into comment-stripped lines, and a
+  pure-Swift matcher with the regex's semantics — a reusable helper RV's computed-id scan can share. The test also
+  asserts ≥ 100 Core `.swift` files scanned, so an empty walk is told apart from no matches. Mac: the same 20 PICTs
+  before and after. Files fence amended: `Ferazel/Core/Tests/FerazelRenderTests/BootFacesTests.swift`.
 
 #### SP — minor — the sparkle: one scroll for Core's walk and the renderer; the bank's row guard; a teleporter through LevelRun (→ 505)
 - **Q15 items 1, 3, 4; gap ledger #2 (A22).** Today `FerazelSession.diffuseSeeds` walks mode-5 draws at the **camera**
