@@ -1852,3 +1852,25 @@ wrapper, hazards and liquids, `Burn` from `.StandardSpriteCleanup`, Smite at the
 M l. 69736–69738) and the burn's Kill on a held slot copy (landmine (o)) — fixed; 38 surviving mutations now fail.
 BC52: enemies drop only 0x50d / 0x50c / 0x516. The Ring of Smiting hits nothing on levels 1–4 until each class task maps
 its handler (plan-mandated). Carried [LOW]: Dillo coin count asserted as a range; the bot reaches a save once per 16 runs.
+
+**As built — loop run 40 (2026-10-31, 02:22 → day), ES ⚑ + WK1 ⚑◈.** Ladder (+1 vs the plan): ES **537** / 2 opt-in
+skips, WK1 **546** / 2; FerazelWinKit **81** / 2 skips; census 1,108/0 (wave 5.1 end). (a) **ES** (067d570 + 8bc8cf7; two
+Opus legs MERGEABLE, tests-and-as-read fix round seat-read): `World/Enemies/EnemyShot.swift` — every §1.2 type (boss
+arms built as read), the step-7 enemy-shot rows, `.ShieldBlock` (enemy shots only; the dart / spine reflection, the
+Wraith shot reflected once with the Magical Shield), the Magical Shield crouch face, boulder spouts fire on level 4,
+orbs / Buttons vs enemy shots, the dart traps 0x76c…0x76f built as read (first placed on level 22). **Dump over plan:**
+cannons never capture an enemy shot (M l. 63684); Wraith homing 19 frames not 20; the Warrior shot mirrors when vx > 0
+(bank §1.2 corrected); spout speed draws only with a record, layer 9. Seat ruling in advance applied to
+`ButtonGateTests`' spout row (the shot Setup's draws enter the stream; count +1 per firing). 0x46a ×3 / 0x77b in
+`CachedFaces` (`.InitEnemyShotSprite`; marked only by Phase 6's bosses). (b) **WK1** (0efe8e2 + b8d56c5; two Opus legs
+MERGEABLE, tests-and-faces fix round seat-read): `World/Enemies/Walker.swift` — Setup by tier, the 1700 thrower and
+1705 spear guard, hits / knockback, death, coins (`.PopupGoblinCoins`, each drop's Handle run at once, M l. 57498),
+score, the corpse raft under the Platform Handle keeping the Walker's callbacks; `forClass` → `.walker` (1750 / 1760 arms
+`// later: WK2`); Walker sheets loaded as the original's level cache (`CachedFaces.handleSets` +
+`sheets(markedBy:)`, M l. 56757–56763). **◈ — one golden moved:** Phase 2 level-2 iteration-2 frame
+`df22325e851e782d` → `b310ef334de49c00` (the 1705 at record 12 wakes and settles); every level-1 golden stays — **no
+Walker is awake on any level-1 golden route** (leg 1 logged all 1,037 steps; the plan's "every level-1/2 golden moves"
+was wrong); Windows references unchanged; BootFaces hot-rect FNVs, four continue write-backs and two crunch light counts
+moved for the same cause; switch-off check done by the implementer and independently by leg 1 — every old value
+returns. Stub-pinning retargets (seat ruling in advance): BonusSprite 0x6a4 row, the cannoned walker → `.walker`,
+level-4 record 119 → `.walker`. **Launch gates by day (09:00, after the merge, muted):** Proof B **543 / 0 / 3 / 0 (of 546)** at b8d56c5 — the run-39 owed check is closed too; GW4R main menu identical.

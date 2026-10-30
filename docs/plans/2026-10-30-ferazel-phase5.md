@@ -899,6 +899,30 @@ records the summary line.
   0x6e1 + p4 at own x,y with the arm's velocities; re-arm R(30) + 50) · `testMagicalShieldCrouchFace`.
 - **Gate:** G2 536. Wave 5.1 end: G3, GWB by day. **Commit:** `FerazelCore: the EnemyShot class, the shield block and reflection, the Magical Shield crouch, boulder spouts fire; 11 tests`.
 
+- **As executed (2026-10-31, loop run 40):** 067d570 + fix round 8bc8cf7, merged to main 8bc8cf7. Seat gates at
+  8bc8cf7: G2 **537** / 0 failed / 2 opt-in skips (ladder +1 as recorded); G3 1,108/0 (wave 5.1 end); GW1 0/2, GW2
+  **81**/0/2, GW3 0/1, GW4, G5, G7, G7W, GW-symlinks, G-MUTE 1/1 all as expected; GWB not run at 8bc8cf7 (night); run at b8d56c5 by day: 543/0/3/0 of 546. No golden moved (no golden is on level 4). **Dump vs plan:** cannons
+  never capture an enemy shot (M l. 63684 — the plan said they do); the spout's speed draws are made only when a record
+  was made (raw `1006e9a8`) and its shot sits on the spout's layer − 1 (9, `subi` at `1006e99c`); the Wraith shot homes
+  **19** frames, not 20 (age incremented before the `< 0x14` test); the Warrior shot 0x71f mirrors when vx **> 0**
+  (raw `1005c408..28`; bank §1.2 said ≤ 0 — bank note appended); the egg's facing flag is set when its draw > 0x32; a
+  reflected dart's burn ends `+0xe9 = 1` (its Setup never stores a Kill proc `+0x50`). **`ButtonGateTests` spout row
+  (seat ruling in advance):** each firing now makes the shot Setup's draws R(5), R(2), R(100) and R(5) when the third
+  > 0x56, then the speed draws, then R(30) + 50; the sprite count rises by one per firing (four in the test) instead of
+  staying flat. **Faces:** 0x46a ×3 and 0x77b added to `CachedFaces.sets` after the Background's records
+  (`.InitEnemyShotSprite` M l. 51434–51437); only the boss Setups mark them, so nothing loads them before Phase 6;
+  `loadedSets` keys by PICT, so the three 0x46a records count as one [LOW, latent until Phase 6]. Outside Files:
+  `DrawModeAuditTests.swift` (rows re-pointed for shifted lines, five new draw rows, EnemyShot added to the `+0x160`
+  writer list — both legs judged it right), `EnemyCommon.swift` (two labels), `SetupFaces.swift` + `LevelRun.swift`
+  (the dart traps' Setup arm and cache marks, fix round). **Fix round (both legs MERGEABLE; leg 2's 90 mutations left
+  33 survivors):** `.ShieldBlock`'s non-shot arm (M l. 48430–48435) and the dart traps' Setup arm (M l. 62495–62520)
+  built as read (traps placed only on Mlvl 22, 30, 31, 45, 62 — unreachable on 1–5); asserts added inside the existing
+  tests for the side test's speed term and left edge, the bounce-gate countdown through real frames, the spout speeds,
+  Hit's exclusions and boundaries, kill-path particles, the orb arm; 82 of 86 hand mutations now fail a test, the 4
+  survivors are equivalent (type 1 covered twice; the spit effect's layer rewritten by the Effect Setup; the orb's
+  effect flag never read; the orb arm's `return`). Carried [LOW]: the egg's 0.9 and the −0.15 constants were not
+  re-checked against the data section (compressed).
+
 ### Wave 5.2 — ground enemies (levels 1–4 come alive)
 
 #### WK1 — ⚑ MAJOR ◈ — Walker: Setup by tier, the frame, the thrower 1700, the spear guard 1705, hits, death, coins, the corpse raft (→ 545)
@@ -933,6 +957,35 @@ records the summary line.
   `testSpearGuardBlocksShot` (snd 303) · `testSpearGuardThrust` (0x6a9 at counter 0x10, ±3000) · `testWalkerKnockbackP2`
   · `testWalkerDeathCoinsAndScore` (1700 +500; coins per tier) · `testCorpseFloats` (buoyancy ramp 0 → 0x50, §1.3).
 - **Gate:** G2 545 + ◈. Quick bot on levels 1–2. **Commit:** `FerazelCore: Walkers 1700/1705 — tiers, throwing, spear guard, hits, death, coins, the corpse raft; goldens moved as recorded; 9 tests`.
+
+- **As executed (2026-10-31, loop run 40):** 0efe8e2 + fix round b8d56c5. Seat gates at b8d56c5: G2 **546** / 0 failed /
+  2 opt-in skips (ladder +1); GW2 **81**/0/2; GW1, GW3, GW4, G5, G7, G7W, GW-symlinks, G-MUTE as expected. Quick bot
+  (levels 1–2, 1 min): `== core: random play — levels 2, seeds 4, steps 14400, deaths 1, exits 1, conversations 5,
+  saves 0, failures 0`. **◈ goldens:** only the Phase 2 level-2 iteration-2 frame moved, `df22325e851e782d` →
+  `b310ef334de49c00` (the 1705 at record 12 wakes on iterations 1–2 and settles onto the ground — a 16 px drop, y 119 →
+  135, not the commit body's "2 px"); **every level-1 golden is unchanged because no Walker is awake on any level-1 golden
+  route** (leg 1 logged all 1,037 steps of the jump / swim / 600-frame routes) — the plan's "every level-1/level-2
+  golden" prediction was wrong; Windows references (menu, new game, text) unchanged. Also moved for the same cause:
+  `BootFacesTests`' twelve hot-rect FNVs (counts unchanged — the Walker Setup now sets hot rects), `GameFlowGameTests`
+  continue write-backs (walker records' y 429→428, 1103→1098, 972→973, 29→27), `PlayerTileTests` crunch light counts
+  (frame 6 9→8, frame 15 3→4 — walker cry draws). Switch-off (row `.inert`, Setup stub): every old value returns —
+  implementer and leg 1 independently. **Stub retargets (seat ruling in advance):** `BonusSpriteTests` 0x6a4 row `[5,
+  0x40, 0]` → `[4, 0x40, 0x151]` (a never-set-up Walker has HP 0 → the death entry, then gravity); the cannoned walker
+  returns `.walker`; level-4 record 119 → `.walker`, `hasHit` true. **Dump vs plan:** setting speed also writes vy
+  (M l. 32815); the death thud 703 plays at counter 0 (M l. 57757); each dropped coin's Handle runs at once (M l.
+  57498); 0x6e0 is always flipped (M l. 56945); the cache marks for 1701…1707 already existed (`LevelRun.swift`
+  unchanged by the first commit). The implementer's "corpse landing sound not built" was wrong — `Player.swift:376`
+  (M l. 44545) already builds it. **Fix round (both legs MERGEABLE; leg 2: 42 of 70 mutations survived):** the Walker
+  sheets moved from a third renderer list to the original's level cache (`CachedFaces.handleSets` +
+  `sheets(markedBy:)`, `.InitWalkerSprite` M l. 56757–56763, marked by the 1700 / 1705 Setups M l. 56966–56980);
+  `killProc` reads `forGood` off the Kill proc (M l. 58624–58630); ~360 lines of asserts inside the nine tests (hazards,
+  crush, traps, wall hits, the corpse wiring, the 1760 death entry, fields, boundaries) — all leg-2 survivors killed
+  except four equivalents (`:185` cleared by the tail; `:382`'s first check behind the Handle's dead return; `:762` as
+  `n < 1`; coins make no light ops). Outside Files: `FerazelSession.swift`, `EnemyCommon.swift`, `FrameRenderer.swift`,
+  `GameFlowGameTests.swift`, `PlayerTileTests.swift`, `BootFacesTests.swift`, `DrawModeAuditTests.swift` (rows
+  re-pointed, Walker rows added, the HurtSprite flash row 0xc → 8…0xc). Carried [LOW]: the Setup-face fallback width
+  without a renderer measures the whole 0x6a5 / 0x6a6 pictures, not one cell; the airborne face's `onSprite` term
+  unpinned (rewritten each frame by the separation).
 
 #### CR — ⚑ MAJOR ◈ — Crawler and Roach (→ 553)
 - **Files:** `Sources/FerazelCore/World/Enemies/CrawlerRoach.swift` (new), `Sources/FerazelCore/Sprites/SetupFaces.swift`
