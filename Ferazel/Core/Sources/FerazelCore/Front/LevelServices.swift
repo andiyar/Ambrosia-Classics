@@ -7,20 +7,31 @@ import Foundation
 /// draw walks.
 public typealias DiffuseRandoms = @Sendable (_ draw: SpriteDraw, _ h: Int, _ v: Int, _ rng: inout FastRand) -> Void
 
+/// SP: the same walk at the renderer's own state for that `.WrapDrawSprites` — the scroll point (h, v) its blits clip
+/// and wrap at (`.WrapDrawFace` reads `PTR_DAT_1009fe78`, M l. 10641–10664) and the grid's drawn location (drawnH,
+/// drawnV) its cull offsets by (`_DAT_1009fe74/fe70`, `.WrapDrawSprites` M l. 10255–10256, 10259–10264), exactly as
+/// the renderer holds them when it draws the op (`FerazelSession` tracks them from the scroll ops it emits). A session
+/// given this uses it and ignores `DiffuseRandoms` (plan S3: added, not retyped).
+public typealias DiffuseRandomsAt = @Sendable (_ draw: SpriteDraw, _ h: Int, _ v: Int, _ drawnH: Int, _ drawnV: Int,
+                                               _ rng: inout FastRand) -> Void
+
 /// What a session takes from the renderer side when a level opens (plan S2, L1): a face's opaque bounds (`face +8`,
-/// `.ActiveToIdleSprite`), the face pixels the particle emitters walk, and the mode-5 draw walk (`DiffuseRandoms`).
-/// Nil bounds / empty faces / no walk = the session's defaults (each face's frame rect; no particles; mode-5 draws
-/// take no randoms) — what Core tests use.
+/// `.ActiveToIdleSprite`), the face pixels the particle emitters walk, and the mode-5 draw walk (`DiffuseRandoms`;
+/// SP: `DiffuseRandomsAt`, preferred when set). Nil bounds / empty faces / no walk = the session's defaults (each
+/// face's frame rect; no particles; mode-5 draws take no randoms) — what Core tests use.
 public struct LevelFaces {
     public var faceBounds: ((FaceRef) -> IdleSprites.Rect)?
     public var particleFaces: ParticleFaces
     public var diffuseRandoms: DiffuseRandoms?
+    /// SP: the walk at the renderer's scroll point and drawn pair (`FrameRenderer.diffuseRandomsAt`).
+    public var diffuseRandomsAt: DiffuseRandomsAt?
 
     public init(faceBounds: ((FaceRef) -> IdleSprites.Rect)? = nil, particleFaces: ParticleFaces = ParticleFaces(),
-                diffuseRandoms: DiffuseRandoms? = nil) {
+                diffuseRandoms: DiffuseRandoms? = nil, diffuseRandomsAt: DiffuseRandomsAt? = nil) {
         self.faceBounds = faceBounds
         self.particleFaces = particleFaces
         self.diffuseRandoms = diffuseRandoms
+        self.diffuseRandomsAt = diffuseRandomsAt
     }
 }
 

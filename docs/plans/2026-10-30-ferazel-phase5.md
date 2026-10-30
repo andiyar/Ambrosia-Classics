@@ -508,6 +508,27 @@ records the summary line.
   `HitPlayerSprite.swift:~456`'s site) · `testPassageJumpSparkleSeed` (a passage jump frame with a sparkle: the stream
   after the frame equals the renderer-consistent count). Plus the WinKit assert above (no new WinKit test).
 - **Gate:** G2 505. **Commit:** `Ferazel: the sparkle's random walk at the renderer's own scroll; draw-effects row guard; teleporter through LevelRun; 3 tests`.
+- **As executed (loop run 37):** ladder 503 → **506** (Ben's 3cf72df added one Core test before SP). **Where the
+  blit's scroll comes from (dump):** `.WrapDrawSprites` reads only the drawn pair `_DAT_1009fe74/fe70` (M l.
+  10255–10256), for its cull — which offsets the face rect and the window by the same pair, so it never culls (R4
+  correction 1); the scroll the blits clip and wrap at is `PTR_DAT_1009fe78`, read **live inside `.WrapDrawFace`**
+  (M l. 10641–10664) — the camera point `.FindUpperLeftCorner` and the re-seats write (the passage/teleport arms set it
+  before their 90/120 passes, M l. 49444–49449 / 49659–49664, then copy it into fe74/fe70). The port's renderer
+  models it as the last `.redrawScrollGrid` / `.redrawEntireScrollGrid` op's (h, v). **Finding:** at every
+  `.WrapDrawSprites` the session reaches today (the frame pass, the passage's, the teleport's stage-2 pass, both
+  mosaic preludes) Core has just emitted a scroll op at the camera, so the renderer's pair already equalled the
+  camera — the A22 drift is not reachable at this head (the re-seat fix 78e81c3 and the existing snap
+  `.redrawEntireScrollGrid` close it); SP makes the agreement hold by construction. **How:** `FerazelSession` notes
+  each scroll op it emits (`RendererScroll`: `.redrawScrollGrid` → scroll (h, v) + drawn = `.SetScrollLocation`'s
+  clamp, M l. 9488–9499 / 9532–9533; `.redrawEntireScrollGrid` → scroll; `.setDrawnScroll` → drawn) and asks
+  `DiffuseRandomsAt` at that state; the old closure path keeps the camera pair exactly. Scroll ops made outside the
+  session (`Pause` / `SaveGame` / `LevelRun`'s `(0, 0)` grid) are not noted: each is at the camera or before the
+  level's first frame, and the frame pass's own `.redrawScrollGrid` resets both pairs before its sprites.
+  `testDiffuseWalkUsesDrawnScroll` therefore builds the camera ≠ renderer case by hand (a `.redrawScrollGrid` at
+  sparkle x + 50 handed to both, `noteRendererScroll`); `testPassageJumpSparkleSeed` runs level 2's passage 43 → 44
+  with the charge held at −40 (no level has a passage on a sparkle frame by itself). Mutation checks (not committed):
+  walking at the camera pair fails `testDiffuseWalkUsesDrawnScroll`; `LevelRun` not passing the closure fails
+  `testTeleportThroughLevelRun`. No golden or count moved.
 
 #### RV — minor — reviewer open items (Q15 item 6) and the empty-inventory box (gap ledger #3) (→ 508)
 - **Files:** `Sources/FerazelRender/Faces/LightFaces.swift` (`:69` comment: light faces load at boot from

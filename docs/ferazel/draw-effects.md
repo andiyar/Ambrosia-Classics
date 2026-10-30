@@ -184,6 +184,16 @@ and the image is about `2 + ⌊(h−1)·q/256⌋` rows tall, top-anchored. The s
 (platforms-ropes-radial §2.8). [MED: the flip twins have no mode-10 arm, so a flipped gauge would
 read an undefined table — no flipped gauge is known.]
 
+> ⚑ planner note (Phase 5 SP, loop run 37, 2026-10-30) (BC51; Q15 item 3; raw `10027508 cmplw r30,r4; bge 10027598`):
+> the colour pass has a **row guard** the text above leaves out. The row counter starts at the first source row and
+> goes +1 per skipped top-clipped row and +1 per advance; a copy run is drawn only while the counter is below the
+> walk's end `(sv + h) & 0xffff` — the advance for source row j has already been made when its pixels are copied, so
+> the counter then reads a(j) = 1 + ⌊(j + 1)·q/256⌋, and row j is drawn in colour only while a(j) < h. The walk ends at
+> the row token after the counter passes the end. The squashed mask (`.BlitEncBoolFaceClip @ 10023574` with q ≠ 0)
+> has no such test, so a last source row with a(j) = h zeroes its mask bytes but draws no colour (e.g. h = 6, q =
+> 0xfa: row 5 lands on destination row 5 in the mask only). The port follows this (`SpriteBlitter.squashWalk`,
+> `DiffuseSquashTests.testSquashGeometryAndMask`).
+
 ### 2.7 Mode 0xb — translucency (`.BlitEncFaceTransClip @ 10027d04`)  [HIGH]
 At entry `li r15,0xd` (`10027d0c`) and `stb r15,0(r7)` (`10027d74`) store 0x0d into the 512-byte
 buffer at `0x100a39b6` (meaning: lighting-tables §6.2 / NR 5) ⚑ corrected (review 2a, 2026-10-04) #5.

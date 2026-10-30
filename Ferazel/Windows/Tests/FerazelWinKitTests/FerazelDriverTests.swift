@@ -120,6 +120,7 @@ import XCTest
         XCTAssertThrowsError(try services.deathEffectStep(0))
         let faces = try services.prepare(level: 1)
         XCTAssertNotNil(faces.faceBounds)
+        XCTAssertNotNil(faces.diffuseRandomsAt)        // SP: the shared driver hands the session the renderer's walk
         XCTAssertNotNil(rig.driver.levelRenderer)
         XCTAssertNotNil(rig.driver.conversationRenderer)
         XCTAssertThrowsError(try services.attach(lights: [], tintTableDraws: []))   // 510 draws or nothing

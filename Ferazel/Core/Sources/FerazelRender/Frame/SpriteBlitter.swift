@@ -145,13 +145,14 @@ public struct SpriteBlitter: Sendable {
     // MARK: - `.WrapDrawSprites`
 
     /// `DiffuseRandoms` (Core's question at `.WrapDrawSprites` time): advances `rng` by exactly the randoms
-    /// `wrapDrawSprites([d], h:, v:)` draws for `d` — the same cull, `faceCalls`, `.Wrap*Face` ring copies, entry test
-    /// and `diffuseWalk`, for every untransformed mode-5 call; nothing for any other draw (a transformed mode-5 draw is
-    /// refused at the draw). The cull's grid pair cancels out (see `wrapDrawSprites`), so (h, v) serves for both.
-    public func diffuseRandoms(_ d: SpriteDraw, h: Int, v: Int, rng: inout FastRand) {
+    /// `wrapDrawSprites([d], h:, v:, drawn:)` draws for `d` — the same cull (at the grid's drawn pair, as the draw's),
+    /// `faceCalls`, `.Wrap*Face` ring copies at the scroll point (h, v), entry test and `diffuseWalk`, for every
+    /// untransformed mode-5 call; nothing for any other draw (a transformed mode-5 draw is refused at the draw).
+    /// SP: `DiffuseRandomsAt` asks at the renderer's own (h, v, drawn) for that op (`FrameRenderer.diffuseRandomsAt`).
+    public func diffuseRandoms(_ d: SpriteDraw, h: Int, v: Int, drawn: (h: Int, v: Int), rng: inout FastRand) {
         guard d.rotation == 0 && d.scale == 0x100, let face = faces.face(d.face) else { return }
-        let view = Rect(top: v, left: h, bottom: v + 0x180, right: h + 0x260)
-        guard Rect(face.bounds).offset(dh: h, dv: v).intersects(view) else { return }
+        let view = Rect(top: drawn.v, left: drawn.h, bottom: drawn.v + 0x180, right: drawn.h + 0x260)
+        guard Rect(face.bounds).offset(dh: drawn.h, dv: drawn.v).intersects(view) else { return }
         for c in Self.faceCalls(d, face: face).calls where Int32(bitPattern: c.word) >> 16 == 5 {
             let n = Int16(truncatingIfNeeded: c.word & 0xffff)
             Self.wrap(src: (c.srcV, c.srcH), dst: (c.dstV, c.dstH), w: c.w, h: c.h, h0: h, v0: v) { s, t, w, hh in
@@ -159,6 +160,11 @@ public struct SpriteBlitter: Sendable {
                                  random: { rng.next($0) }) { _, _ in }
             }
         }
+    }
+
+    /// The walk with the drawn pair at the scroll point (h, v) (`DiffuseRandoms`, before SP).
+    public func diffuseRandoms(_ d: SpriteDraw, h: Int, v: Int, rng: inout FastRand) {
+        diffuseRandoms(d, h: h, v: v, drawn: (h, v), rng: &rng)
     }
 
     /// The ripple phase `*_DAT_1009fd74` (0x200 at level start, `.GameLoop` l. 5217; += 0x100 after every

@@ -121,6 +121,11 @@ public final class FerazelSession {
     private let faceBounds: (FaceRef) -> IdleSprites.Rect
     /// The renderer's mode-5 walk (`DiffuseRandoms`); nil takes no draw-time randoms.
     private let diffuseRandoms: DiffuseRandoms?
+    /// SP: the walk at the renderer's scroll point and drawn pair (`DiffuseRandomsAt`); when set, used instead.
+    private let diffuseRandomsAt: DiffuseRandomsAt?
+    /// SP: the scroll point and drawn pair the renderer holds, from the scroll ops this session emitted
+    /// (`noteRendererScroll`).
+    private(set) var rendererScroll = RendererScroll()
     /// The tile solver over `world` (one per level).
     private let solver: TileSolver
     /// - Parameter seed: the `FastRand` seed (tests fix it; the app seeds from the clock like `.InitAppGlobals`).
@@ -132,6 +137,8 @@ public final class FerazelSession {
     ///   `.ParticleGlow`) — FerazelRender's (`FrameRenderer.particleFaces`); none by default (no particles, no draws).
     /// - Parameter diffuseRandoms: the mode-5 draw walk (`FrameRenderer.diffuseRandoms`): each mode-5 draw of
     ///   `.WrapDrawSprites` takes its randoms from `rng` at its list place (`diffuseSeeds`); nil → none (Core tests).
+    /// - Parameter diffuseRandomsAt: SP — the same walk asked at the renderer's scroll point and drawn pair for that
+    ///   op (`FrameRenderer.diffuseRandomsAt`); when set, `diffuseRandoms` is not called. Nil → exactly the above.
     /// - Parameter start: `.GameLoop`'s (x, y) (`param_1`, `param_2`); nil → hdr+0x2848 − 0x20, hdr+0x2846 − 0x20, as
     ///   `.NewGame` passes (M l. 5823). Continue passes save +0xc / +0x10 (M l. 7044–7064; F1b).
     /// - Parameter refreshFacing: on a carried G, `+0x16 ← hdr+0x26c8` (`.NewGame`'s next-level loop, M l. 5821; W4);
@@ -144,7 +151,7 @@ public final class FerazelSession {
     public init(resources: FerazelResources, prefs: FerazelPrefs, level: Int, seed: Int32 = 1,
                 carry: LevelCarry = LevelCarry(), faceBounds: ((FaceRef) -> IdleSprites.Rect)? = nil,
                 particleFaces: ParticleFaces = ParticleFaces(), diffuseRandoms: DiffuseRandoms? = nil,
-                start: (x: Int, y: Int)? = nil,
+                diffuseRandomsAt: DiffuseRandomsAt? = nil, start: (x: Int, y: Int)? = nil,
                 refreshFacing: Bool = true, records: [Placement]? = nil, hostedByLevelRun: Bool = false) throws {
         self.resources = resources
         self.prefs = prefs
@@ -177,6 +184,7 @@ public final class FerazelSession {
         let bounds = faceBounds ?? { Self.frameRect($0, resources: resources) }
         self.faceBounds = bounds
         self.diffuseRandoms = diffuseRandoms
+        self.diffuseRandomsAt = diffuseRandomsAt
         // `.GameLoop(hdr+0x2848 − 0x20, hdr+0x2846 − 0x20, 0, 1)` (`.NewGame` l. 5823), or the caller's `start` (L1).
         let px = start?.x ?? Int(L.header.startX) - 0x20, py = start?.y ?? Int(L.header.startY) - 0x20
         startX = px
@@ -271,8 +279,8 @@ public final class FerazelSession {
     public func startOps(keys: KeyState = KeyState()) -> FrontOutput {
         findUpperLeftCorner(graphics: prefs.graphics)
         var out = updateStatusBar(.levelStart, keys: keys)
-        out.draws = [.redrawScrollGrid(h: camera.scrollH, v: camera.scrollV),
-                     .redrawEntireScrollGrid(h: camera.scrollH, v: camera.scrollV)] + out.draws
+        out.draws = [scrollOp(.redrawScrollGrid(h: camera.scrollH, v: camera.scrollV)),
+                     scrollOp(.redrawEntireScrollGrid(h: camera.scrollH, v: camera.scrollV))] + out.draws
         return out
     }
 
@@ -371,12 +379,12 @@ public final class FerazelSession {
         if iterations == 0 && !hostedByLevelRun {
             ops.draws.append(.setScreenClut(id: ColorLUT.screenClutId(level.header)))
             ops.draws.append(.drawPicture(id: 129, chain: .frontEnd, h: 0, v: 0))
-            ops.draws.append(.redrawEntireScrollGrid(h: 0, v: 0))
+            ops.draws.append(scrollOp(.redrawEntireScrollGrid(h: 0, v: 0)))
             ops.requests.append(.hideMenuBar)
             ops.requests.append(.hideCursor)
             findUpperLeftCorner(graphics: graphics)
-            ops.draws.append(.redrawScrollGrid(h: camera.scrollH, v: camera.scrollV))
-            ops.draws.append(.redrawEntireScrollGrid(h: camera.scrollH, v: camera.scrollV))
+            ops.draws.append(scrollOp(.redrawScrollGrid(h: camera.scrollH, v: camera.scrollV)))
+            ops.draws.append(scrollOp(.redrawEntireScrollGrid(h: camera.scrollH, v: camera.scrollV)))
             ops.draws.append(statusBarInFrame(.levelStart, keys: keys))
             ops.music.append(.play(track: Int(level.header.music)))
         }
@@ -426,7 +434,7 @@ public final class FerazelSession {
         // LT: the table as `.SetScrollLocation`'s strip redraw and `.DrawLightsOntoTiles` read it (before
         // `.HandleLights`, M l. 9200–9205), handed over right before the strip; also when Effects == 3 skips the latter.
         ops.draws.append(.lightTable(lightTable))
-        ops.draws.append(.redrawScrollGrid(h: h, v: v))
+        ops.draws.append(scrollOp(.redrawScrollGrid(h: h, v: v)))
         if prefs.effects != 3 { ops.draws.append(.drawLightsOntoTiles) }
         // `.HandleLights` (M l. 9205): after `.DrawLightsOntoTiles` and before `.WrapDrawWaterEffects`, unconditional.
         lightTable.handleLights()
@@ -647,7 +655,7 @@ public final class FerazelSession {
             frameKeys = keys
             frameCapsLock = capsLock
             frameActions = InputActions(keys: keys, prefs: prefs)
-            world.player.passDraws.append(.redrawEntireScrollGrid(h: camera.scrollH, v: camera.scrollV))
+            world.player.passDraws.append(scrollOp(.redrawEntireScrollGrid(h: camera.scrollH, v: camera.scrollV)))
             HitPlayerSprite.teleportDone(world)
         case (.savePoint, _), (.gameLoopKeys, _), (.conversation, _), (.sign, _), (.upgrade, _), (.hint, _),
              (.teleport, _):
@@ -750,19 +758,19 @@ public final class FerazelSession {
         case (.confirmQuit, .confirm(ok: true)), (.confirmAbort, .confirm(ok: true)):
             return nestedPaintFrameWrap(then: .confirmOK(event), ops)
         case (.confirmQuit, .confirm(ok: false)), (.confirmAbort(escape: false), .confirm(ok: false)):
-            ops.draws.append(.redrawEntireScrollGrid(h: h, v: v))
+            ops.draws.append(scrollOp(.redrawEntireScrollGrid(h: h, v: v)))
             drawBlackLines(&ops)
             ops.draws.append(statusBarInFrame(.confirmCancel, keys: frameKeys))      // M l. 3977, 4002
             return keysCounters(ops)
         case (.confirmAbort(escape: true), .confirm(ok: false)):
-            ops.draws.append(.redrawEntireScrollGrid(h: h, v: v))
+            ops.draws.append(scrollOp(.redrawEntireScrollGrid(h: h, v: v)))
             drawBlackLines(&ops)
             return nestedPaintFrameWrap(then: .escapeCancel, ops)
         case (.options, .optionsClosed):
             // `.SetScrollLocation`, `.RedrawEntireScrollGrid`, `.UpdateStatusBar(0, 0, 0)`, `fe0c = 1`, `511e = 1` (no
             // Core reader), `DrawBlackLines` (mode 3).
-            ops.draws.append(.redrawScrollGrid(h: h, v: v))
-            ops.draws.append(.redrawEntireScrollGrid(h: h, v: v))
+            ops.draws.append(scrollOp(.redrawScrollGrid(h: h, v: v)))
+            ops.draws.append(scrollOp(.redrawEntireScrollGrid(h: h, v: v)))
             ops.draws.append(statusBarInFrame(.optionsClosed, keys: frameKeys))      // M l. 3956
             drawBlackLines(&ops)
             return keysCounters(ops)
@@ -973,8 +981,8 @@ public final class FerazelSession {
         for _ in 0..<passes { findUpperLeftCorner(graphics: prefs.graphics) }
         // `*piVar17 = scroll h; *piVar47 = scroll v` (`_DAT_1009fe74/fe70`, the grid's drawn location): the
         // `.RedrawEntireScrollGrid` after it redraws the window at the new view, not at the last strip redraw's.
-        world.player.passDraws.append(.setDrawnScroll(h: camera.scrollH, v: camera.scrollV))
-        world.player.passDraws.append(.redrawEntireScrollGrid(h: camera.scrollH, v: camera.scrollV))
+        world.player.passDraws.append(scrollOp(.setDrawnScroll(h: camera.scrollH, v: camera.scrollV)))
+        world.player.passDraws.append(scrollOp(.redrawEntireScrollGrid(h: camera.scrollH, v: camera.scrollV)))
     }
 
     /// The passage jump's `.FindUpperLeftCorner` passes (`sVar36 < 0x5a`, l. 49666).
@@ -986,7 +994,7 @@ public final class FerazelSession {
     /// `.WrapDrawSprites`, `.RedrawEntireScrollGrid`.
     private func passageRedraw() {
         idleAndSprites()
-        world.player.passDraws.append(.redrawEntireScrollGrid(h: camera.scrollH, v: camera.scrollV))
+        world.player.passDraws.append(scrollOp(.redrawEntireScrollGrid(h: camera.scrollH, v: camera.scrollV)))
     }
 
     /// `.HandleIdleSprites` at the current view (the live player's rect) and `.WrapDrawSprites` into the pass's draws —
@@ -1013,17 +1021,67 @@ public final class FerazelSession {
     /// Mode 5's draw-time randoms (draw-effects §2.3): `.BlitEncFaceDiffuse` calls `.FastRand` per drawn pixel inside
     /// `.WrapDrawSprites`, between the frame's logic before it and the Handles after it, in list order. Each mode-5
     /// draw takes the stream's seed at its place (`SpriteDraw.randomSeed`, which the renderer replays) and the stream
-    /// moves on by the renderer's walk of that draw at the scroll point (h, v) (`diffuseRandoms`). Nothing else in
-    /// `.WrapDrawSprites` draws a random, so seeding after the Core pass keeps the binary's order.
+    /// moves on by the renderer's walk of that draw. Nothing else in `.WrapDrawSprites` draws a random, so seeding
+    /// after the Core pass keeps the binary's order.
+    /// SP: with `diffuseRandomsAt` the walk is asked at the renderer's own scroll point and drawn pair for this op
+    /// (`rendererScroll`, from the scroll ops emitted so far — the op is drawn right after them), so the two take the
+    /// same count by construction; without it, `diffuseRandoms` at (h, v), the caller's camera pair (before SP).
     private func diffuseSeeds(_ draws: [SpriteDraw], h: Int, v: Int) -> [SpriteDraw] {
-        draws.map { d in
+        let at = rendererScroll
+        return draws.map { d in
             guard d.mode >> 16 == 5 else { return d }
             var d = d
             d.randomSeed = world.rng.seed
-            diffuseRandoms?(d, h, v, &world.rng)
+            if let walk = diffuseRandomsAt {
+                walk(d, at.h, at.v, at.drawnH, at.drawnV, &world.rng)
+            } else {
+                diffuseRandoms?(d, h, v, &world.rng)
+            }
             return d
         }
     }
+
+    /// SP: what the renderer's scroll state becomes after `op` (`FrameRenderer.apply`): `.redrawScrollGrid` → the
+    /// scroll point (h, v) as passed and the drawn pair `.SetScrollLocation`'s clamp of it (M l. 9488–9499:
+    /// negative → 0, `(h + 0x280) >> 5 > 0x200` → 0x3da0, `(v + 0x1a0) >> 5 > 0x200` → 16000; then
+    /// `*_DAT_1009fe74/fe70` = the clamped pair, M l. 9532–9533; `TileGridRenderer.setScrollLocation`); `.redrawEntireScrollGrid` → the scroll point only;
+    /// `.setDrawnScroll` → the drawn pair only (the re-seat, M l. 49453–49456 / 49669–49671). Both start at (0, 0), as
+    /// the renderer's do. The binary's blits read the live scroll point `PTR_DAT_1009fe78` (the camera,
+    /// `.FindUpperLeftCorner`'s); the session emits every scroll op at the camera before any `.WrapDrawSprites` reads
+    /// it, so this equals the camera at every site the session reaches today.
+    struct RendererScroll: Equatable {
+        var h = 0, v = 0, drawnH = 0, drawnV = 0
+
+        mutating func note(_ op: DrawOp) {
+            switch op {
+            case .redrawScrollGrid(let h, let v):
+                self.h = h
+                self.v = v
+                var ch = max(h, 0), cv = max(v, 0)
+                if (ch + 0x280) >> 5 > 0x200 { ch = 0x3da0 }
+                if (cv + 0x1a0) >> 5 > 0x200 { cv = 16000 }
+                drawnH = ch
+                drawnV = cv
+            case .redrawEntireScrollGrid(let h, let v):
+                self.h = h
+                self.v = v
+            case .setDrawnScroll(let h, let v):
+                drawnH = h
+                drawnV = v
+            default:
+                break
+            }
+        }
+    }
+
+    /// SP: a scroll op this session emits, noted (`rendererScroll`) as it is made.
+    private func scrollOp(_ op: DrawOp) -> DrawOp {
+        noteRendererScroll(op)
+        return op
+    }
+
+    /// SP: the renderer's scroll state follows `op` (the session's own scroll ops come through here).
+    func noteRendererScroll(_ op: DrawOp) { rendererScroll.note(op) }
 
     /// A sprite's hit callback `+0x5c` (`SpriteWorld` calls it only when `hasHit`): `.HitPlatformSprite` (W1); the
     /// Effect class's `.HitEffectSprite` is empty; `.HitBackgroundSprite` (W2b: cannons, springs, wall tunnels);

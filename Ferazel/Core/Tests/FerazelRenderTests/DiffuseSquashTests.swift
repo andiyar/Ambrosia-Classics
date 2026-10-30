@@ -1,5 +1,5 @@
 import XCTest
-import FerazelCore
+@testable import FerazelCore
 @testable import FerazelRender
 
 /// Draw modes 5 and 0xa (draw-effects §2.3, §2.6): `.BlitEncFaceDiffuse @ 10029988` / `.BlitEncFaceFlipDiffuse @
@@ -208,7 +208,8 @@ final class DiffuseSquashTests: XCTestCase {
                          attach: Bool = true) throws -> FerazelSession {
         let s = try FerazelSession(resources: try Self.resources.get(), prefs: FerazelPrefs(), level: level, seed: 1,
                                    faceBounds: r.faceBounds, particleFaces: r.particleFaces,
-                                   diffuseRandoms: diffuse ? r.diffuseRandoms : nil, start: start)
+                                   diffuseRandoms: diffuse ? r.diffuseRandoms : nil,
+                                   diffuseRandomsAt: diffuse ? r.diffuseRandomsAt : nil, start: start)
         if attach {
             try r.addLights(s.lights)
             try r.buildTintTable(s.tintTableDraws)
@@ -260,6 +261,88 @@ final class DiffuseSquashTests: XCTestCase {
             XCTAssertNoThrow(try r.apply(ops), "frame \(k)")
             if ops.suspension != nil { break }
         }
+    }
+
+    /// SP: Core's mode-5 walk follows the renderer's scroll point and drawn pair, not the camera. Level 1 charging on
+    /// the urn 148 until the sparkle draws; then a `.redrawScrollGrid` at a point the camera is not at (H = the
+    /// sparkle draw's x + 50, through the player's face; the shells never make one between a grid redraw and the
+    /// sprites — the case is built here to pin the cause) reaches both the renderer and the session, and the
+    /// session's `.WrapDrawSprites` (`wrapDrawSpritesOp`) moves the stream by exactly the renderer's replay at that
+    /// pair; the walk at the camera pair would have taken a different count.
+    func testDiffuseWalkUsesDrawnScroll() throws {
+        let res = try Self.resources.get()
+        let L = try LevelFile.load(from: res, level: 1)
+        let p = L.placements[148]
+        let r = try renderer(level: 1)
+        let s = try session(r, level: 1, start: (x: Int(p.x) + 0x10 - 50, y: Int(p.y) - 4 - 85 + 1))
+        var sparkle: SpriteDraw?
+        for k in 0..<200 where sparkle == nil {
+            let ops = s.step(keys: KeyState())
+            XCTAssertNoThrow(try r.apply(ops), "frame \(k)")
+            sparkle = spriteDraws(ops).first { $0.mode >> 16 == 5 }
+            XCTAssertNil(ops.suspension, "frame \(k)")
+        }
+        let d0 = try XCTUnwrap(sparkle, "the charge reached the sparkle")
+        let cam = (h: s.camera.scrollH, v: s.camera.scrollV)
+        XCTAssertEqual([r.scroll.h, r.scroll.v], [cam.h, cam.v], "the frame's grid redraw is at the camera")
+        let moved = DrawOp.redrawScrollGrid(h: d0.x + 50, v: cam.v)
+        try r.apply(FrameOps(draws: [moved]))
+        s.noteRendererScroll(moved)
+        XCTAssertNotEqual(r.scroll.h, cam.h)
+        XCTAssertEqual([s.camera.scrollH, s.camera.scrollV], [cam.h, cam.v])
+        let seed0 = s.rngSeed
+        let op = s.wrapDrawSpritesOp()
+        let seed1 = s.rngSeed
+        guard case .wrapDrawSprites(let draws) = op else { return XCTFail("not a sprite pass: \(op)") }
+        let diffuse = draws.filter { $0.mode >> 16 == 5 }
+        XCTAssertEqual(diffuse.count, 1)
+        var atRenderer = FastRand(seed: seed0), atCamera = FastRand(seed: seed0)
+        for d in diffuse {
+            XCTAssertEqual(d.randomSeed, atRenderer.seed)
+            r.sprites.diffuseRandoms(d, h: r.scroll.h, v: r.scroll.v, drawn: (r.grid.drawnH, r.grid.drawnV),
+                                     rng: &atRenderer)
+            r.sprites.diffuseRandoms(d, h: cam.h, v: cam.v, rng: &atCamera)
+        }
+        XCTAssertEqual(seed1, atRenderer.seed, "Core walked at the renderer's pair")
+        XCTAssertNotEqual(atRenderer.seed, atCamera.seed, "the camera pair walks a different count")
+        XCTAssertNotEqual(seed1, seed0)
+        XCTAssertNoThrow(try r.apply(FrameOps(draws: [op])))
+    }
+
+    /// SP: a passage jump on a sparkle frame (level 2, passage record 43 → 44, `.HitPlayerSprite` M l. 49590–49685;
+    /// the charge held in the sparkle's range, −40, as after a teleport): the frame's own `.WrapDrawSprites` at the old
+    /// view and the passage's at the re-seated one (after its `.setDrawnScroll` / `.RedrawEntireScrollGrid`) each walk
+    /// at the pair the renderer draws them at, and the stream after the frame is the renderer-consistent one.
+    func testPassageJumpSparkleSeed() throws {
+        let res = try Self.resources.get()
+        let r = try renderer(level: 2)
+        let log = TeleportLevelRunTests.WalkLog()
+        let s = try FerazelSession(resources: res, prefs: FerazelPrefs(), level: 2, seed: 1,
+                                   faceBounds: r.faceBounds, particleFaces: r.particleFaces,
+                                   diffuseRandoms: r.diffuseRandoms, diffuseRandomsAt: log.walk(r),
+                                   start: (x: 4882, y: 242))
+        try r.addLights(s.lights)
+        try r.buildTintTable(s.tintTableDraws)
+        var next = 0, jumped = false
+        for k in 0..<120 where !jumped {
+            s.world.player.teleporterCharge = -40
+            var keys = KeyState()
+            if k < 4 { keys.press(Int(FerazelPrefs.defaultKeys[2])) }       // UP (keypad 8)
+            let ops = s.step(keys: keys)
+            XCTAssertNil(ops.suspension, "frame \(k)")
+            jumped = ops.draws.contains { if case .setDrawnScroll = $0 { true } else { false } }
+            let wraps = ops.draws.filter { if case .wrapDrawSprites = $0 { true } else { false } }
+            let n = try TeleportLevelRunTests.apply(ops.draws, to: r, log: log, next: &next, "frame \(k)")
+            if jumped {
+                XCTAssertEqual(wraps.count, 2, "the frame's sprite pass and the passage's")
+                XCTAssertEqual(n, 2, "both draw the sparkle")
+                let pairs = log.calls.suffix(2).map { [$0.h, $0.v] }
+                XCTAssertNotEqual(pairs[0], pairs[1], "the passage's pass is at the re-seated view")
+                XCTAssertEqual(pairs[1], [s.camera.scrollH, s.camera.scrollV])
+            }
+        }
+        XCTAssertTrue(jumped, "the passage jump happened")
+        XCTAssertEqual(next, log.calls.count)
     }
 
     /// Level 3's springboard: its gauge draws `0xa0000 + q` (q 11 … 0xfa) through the real renderer with no refusal.

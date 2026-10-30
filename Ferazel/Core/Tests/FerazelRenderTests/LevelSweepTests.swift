@@ -22,7 +22,8 @@ final class LevelSweepTests: XCTestCase {
         let r = try renderer(level: level)
         let s = try FerazelSession(resources: try Self.resources.get(), prefs: FerazelPrefs(), level: level, seed: 1,
                                    faceBounds: r.faceBounds, particleFaces: r.particleFaces,
-                                   diffuseRandoms: r.diffuseRandoms, start: start)
+                                   diffuseRandoms: r.diffuseRandoms, diffuseRandomsAt: r.diffuseRandomsAt,
+                                   start: start)
         try r.addLights(s.lights)
         try r.buildTintTable(s.tintTableDraws)
         var rng = FastRand(seed: 8)
@@ -60,7 +61,7 @@ final class LevelSweepTests: XCTestCase {
             let r = try renderer(level: level)
             let s = try FerazelSession(resources: res, prefs: FerazelPrefs(), level: level, seed: 1,
                                        faceBounds: r.faceBounds, particleFaces: r.particleFaces,
-                                       diffuseRandoms: r.diffuseRandoms)
+                                       diffuseRandoms: r.diffuseRandoms, diffuseRandomsAt: r.diffuseRandomsAt)
             XCTAssertNoThrow(try r.addLights(s.lights), "level \(level)")
             XCTAssertNoThrow(try r.buildTintTable(s.tintTableDraws), "level \(level)")
         }

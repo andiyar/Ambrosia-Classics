@@ -318,6 +318,15 @@ public final class FrameRenderer {
         return { d, h, v, rng in s.diffuseRandoms(d, h: h, v: v, rng: &rng) }
     }
 
+    /// SP: the same walk asked at the scroll point and drawn pair this renderer holds when it draws the op —
+    /// `scroll` (the last `.redrawScrollGrid` / `.redrawEntireScrollGrid`) and `grid.drawnH/V` (the last
+    /// `.redrawScrollGrid`'s clamp or `.setDrawnScroll`), which `apply`'s `.wrapDrawSprites` passes
+    /// (`FerazelSession(…diffuseRandomsAt:)`, preferred over `diffuseRandoms`).
+    public var diffuseRandomsAt: DiffuseRandomsAt {
+        let s = sprites
+        return { d, h, v, dh, dv, rng in s.diffuseRandoms(d, h: h, v: v, drawn: (dh, dv), rng: &rng) }
+    }
+
     /// The face pixels for Core's face emitters (`FerazelSession(…particleFaces:)`, E1a): a loaded sprite face, and
     /// FG tile t of the level's FG set (`*_DAT_1009ff88`, `TileSets.fg`).
     public var particleFaces: ParticleFaces {

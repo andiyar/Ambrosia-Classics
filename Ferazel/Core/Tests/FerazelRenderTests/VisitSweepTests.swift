@@ -272,7 +272,8 @@ final class SweepShell: SweepGame {
             levelRenderer = r
             conversationRenderer = ConversationRenderer(frame: r, text: text, prefs: flow.toggles.live)
             conversationRun = flow.levelRun
-            return LevelFaces(faceBounds: r.faceBounds, particleFaces: r.particleFaces, diffuseRandoms: r.diffuseRandoms)
+            return LevelFaces(faceBounds: r.faceBounds, particleFaces: r.particleFaces, diffuseRandoms: r.diffuseRandoms,
+                              diffuseRandomsAt: r.diffuseRandomsAt)
         } catch {
             problems.append("prepare(level: \(level)): \(error)")
             throw error
