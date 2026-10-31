@@ -1052,7 +1052,9 @@ public struct CachedFaces: Equatable, Sendable {
     /// (Crawler M l. 56142–56144, Roach 64893–64894, Walker 56757–56768 (WK2: the 1750's four, 56764–56767), Box
     /// 58785–58786 (LV3: the mine cart's 0xb72 /
     /// 0xb73) and 58806, Background 61864 (LV3: the wall spikes' 0x730) and 61875, Bat 68099, Blob 67666 (LV3), Frog
-    /// 70116). ES: the dart traps' three (Background M l. 61886–61888, after 0x442; marked only from level 22 on);
+    /// 70116). BA: `.InitBatSprite`'s five in its order — 0x6cc (11), 0x744 (9), 0x74d (8), 0x73a (12), 0x73b (12)
+    /// (M l. 68099–68103, flag 0). ES: the dart traps' three (Background M l. 61886–61888, after 0x442; marked only
+    /// from level 22 on);
     /// `.InitEnemyShotSprite`'s four (M l. 51434–51437, after the Background's, flag 0 — `.InitBackgroundSprite`
     /// leaves `*_DAT_100a0a48` 0, M l. 61912): 0x46a three times (6 × 48×48, then 6 × 64×64 twice) and 0x77b (16 faces);
     /// only the boss Setups mark them (`EnemyShot.cachedSheets`). One PICT in three records: `loadedSets` keys by PICT,
@@ -1075,7 +1077,9 @@ public struct CachedFaces: Equatable, Sendable {
         Record(pict: 0x76f, faces: 6, flag: 0),
         Record(pict: 0x46a, faces: 6, flag: 0), Record(pict: 0x46a, faces: 6, flag: 0),
         Record(pict: 0x46a, faces: 6, flag: 0), Record(pict: 0x77b, faces: 16, flag: 0),
-        Record(pict: 0x6cc, faces: 11, flag: 0), Record(pict: 0x6c2, faces: 16, flag: 0),
+        Record(pict: 0x6cc, faces: 11, flag: 0), Record(pict: 0x744, faces: 9, flag: 0),
+        Record(pict: 0x74d, faces: 8, flag: 0), Record(pict: 0x73a, faces: 12, flag: 0),
+        Record(pict: 0x73b, faces: 12, flag: 0), Record(pict: 0x6c2, faces: 16, flag: 0),
         Record(pict: 0x708, faces: 8, flag: 0),
     ]
 
@@ -1125,8 +1129,10 @@ public struct CachedFaces: Equatable, Sendable {
     /// 0x6b8, 0x6b9 (64931–64932);
     /// Background 0x442 → set 0x442 (62061), 0x5c8+i → single 0x5c8+i (≈ 62320), 0xa8c+i / 3000+i → their singles,
     /// 0xb54 (62434); Box 0x5b8 (59213), 0x5b5 / 0x5b6 → 0x5b5 (59200 / 59204), 0x5be → set 0x5be (59260), the
-    /// decoration, outcrop, mushroom, furniture and NPC singles of the same id; Bat 0x6cc → set 0x6cc (68286); Frog
-    /// 0x708 → set 0x708 (70211). LV3: Bat 0x6cd → set 0x6cc (the same arm, 68286); Blob 0x6c2 → set 0x6c2 (67726);
+    /// decoration, outcrop, mushroom, furniture and NPC singles of the same id; BA: every Bat type 0x6cc…0x6d5 → set
+    /// 0x6cc (`PTR_DAT_100a0c90[1] = 1`, M l. 68286 — the whole arm), 0x73a…0x73e → set 0x73a (M l. 68241) and with
+    /// record p1 < 0 also 0x73b (M l. 68267; `p1`), 0x74d → set 0x74d (M l. 68158), 0x744…0x74c → set 0x744 (M l.
+    /// 68218); Frog 0x708 → set 0x708 (70211). LV3: Blob 0x6c2 → set 0x6c2 (67726);
     /// the spikes 0x730 / 0x731 → set 0x730 (61984, 62281), 0x732 / 0x733 → **both** singles 0x732 and 0x733 (62460–
     /// 62461); the mine cart 0xb72 / 0xb73 with a record → sets 0xb72, 0xb73 (59434–59435); the level-3 decoration,
     /// outcrop and mushroom singles of the same id (59647, 59699, 59709). ES (unplaced before level 22): the dart traps
@@ -1135,7 +1141,7 @@ public struct CachedFaces: Equatable, Sendable {
     /// 59581–59597), the Buttons, the Platform 1410 and the Bonus 1331 / 1334 / 1340 / 3216 Setups store no mark.
     /// Every other level-1–4 type marks nothing.
     /// // later: Phase 5–6 — the other types'.
-    static func marks(type t: Int16) -> (sets: [Int16], singles: [Int16]) {
+    static func marks(type t: Int16, p1: Int16 = 0) -> (sets: [Int16], singles: [Int16]) {
         switch t {
         case 0x6a4: return ([0x6a5, 0x6a6], [0x6a4])
         case 0x6a9: return ([0x6a9, 0x6aa, 0x6ab], [])
@@ -1145,7 +1151,10 @@ public struct CachedFaces: Equatable, Sendable {
         case 0x6b8: return ([0x6b8, 0x6b9], [])
         case 0x442: return ([0x442], [])
         case 0x5be: return ([0x5be], [])
-        case 0x6cc, 0x6cd: return ([0x6cc], [])
+        case 0x6cc...0x6d5: return ([0x6cc], [])
+        case 0x73a...0x73e: return (p1 < 0 ? [0x73a, 0x73b] : [0x73a], [])
+        case 0x74d: return ([0x74d], [])
+        case 0x744...0x74c: return ([0x744], [])
         case 0x6c2: return ([0x6c2], [])
         case 0x730, 0x731: return ([0x730], [])
         case 0x76c, 0x76d: return ([0x76c], [])
@@ -1205,7 +1214,7 @@ public struct CachedFaces: Equatable, Sendable {
     public static func needed(by s: FerazelSession) -> Needed {
         var n = Needed()
         for p in SetupFaces.spawnOrder(s.world.records) {
-            let m = marks(type: p.type)
+            let m = marks(type: p.type, p1: p.p1)
             n.sets.formUnion(m.sets)
             n.singles.formUnion(m.singles)
         }

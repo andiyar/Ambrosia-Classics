@@ -109,14 +109,18 @@ final class LevelFlowTests: XCTestCase {
         XCTAssertEqual([e.slot.face], [f(0xc85)])
         XCTAssertEqual(e.source, .setup)
         // 1740 (rec 186, bat): no draw; layer 0xb, HP 500, rect, Handle face set 0x6cc (11 × 0x38×0x34, clut 200).
+        // BA: the Bat class's own Handle (`.HandleBatSprite`), hit and tile callbacks (`.SetupBatSprite` M l.
+        // 68135–68140); asleep (`+0xa6 = 0`, M l. 68296), `+0x15c = 0`, no `+0x188` (the 0x6cc arm stores none).
         (e, rng) = try setup(186)
         XCTAssertEqual(rng.seed, 1)
         XCTAssertEqual([Int(e.slot.layer), Int(e.slot.hp), Int(e.slot.classWord150), Int(e.slot.classWord158)],
                        [0xb, 500, -1, 0x1e])
         XCTAssertEqual([Int(e.slot.subtype), Int(e.slot.gravity)], [7, 0])           // `+0xb0 = 7` (M l. 68310)
+        XCTAssertEqual([Int(e.slot.counterA6), Int(e.slot.classWord15c)], [0, 0])
         XCTAssertEqual(e.slot.hotRect, rect(0xc, 0xf, 0x2b, 0x2f))
         XCTAssertEqual([e.slot.face], [f(0x6cc)])
-        XCTAssertEqual([e.source == .handle, e.slot.handler == .inert], [true, true])
+        XCTAssertEqual([e.source == .handle, e.slot.handler == .bat], [true, true])
+        XCTAssertEqual([e.slot.hasHit, e.slot.hasTileHit, e.slot.keepRecord], [true, true, false])
         XCTAssertEqual([e.sheet?.count, e.sheet?.cellWidth, e.sheet?.cellHeight, Int(e.sheet?.clut ?? 0)],
                        [0xb, 0x38, 0x34, 200])
         // 1800 (rec 173, frog): R(0x1e) → +0x14c = −0x14 − r, then R(0x5fff) → +0xf0; p1 0 → HP 0x15e, `+0xb8` 0.

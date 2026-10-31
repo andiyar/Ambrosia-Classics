@@ -586,6 +586,18 @@ final class FaceTests: XCTestCase {
             XCTAssertNil(one.sprites.faces.face(FaceRef(pict: sh.pict, index: 0, set: .encoded)),
                          "1750 PICT \(sh.pict) unmarked on level 1")
         }
+        // BA: the Bat Handle faces the 1740 family from the cache set 0x6cc (11 cells) on levels 2–4 (below, each places
+        // 1740s); the insect, swarm-member and 1850-family sets 0x744 / 0x74d / 0x73a / 0x73b load only where their Setups
+        // mark them — first placed on levels 10, 11, 21, 22, 31: the data holds them, no level-1 renderer loads them. The
+        // spit 0x712's faces 0x456 / 0x457 are enemy-shot boot sets (above), the coins the hurt coin 0x516 (above).
+        for p: Int16 in [0x744, 0x74d, 0x73a, 0x73b] {
+            let sh = try XCTUnwrap(SetupFaces.sheet(pict: p))
+            XCTAssertNotNil(r.resource(type: "PICT", id: p, chain: .frontEnd), "Bat PICT \(p)")
+            XCTAssertEqual([sh.count], [p == 0x744 ? 9 : p == 0x74d ? 8 : 12], "Bat PICT \(p) cells")
+            XCTAssertNil(one.sprites.faces.face(FaceRef(pict: p, index: 0, set: .encoded)),
+                         "Bat PICT \(p) unmarked on level 1")
+        }
+        XCTAssertNil(one.sprites.faces.face(FaceRef(pict: 0x6cc, index: 0, set: .encoded)), "level 1 places no bat")
         // The drops of every chest and crate on levels 1–4 and the key faces their locks show — each in its own
         // level's renderer. The original loads every Bonus face at boot (`.InitBonusSprite` M l. 52261–52337); the
         // replica's per-level load (`BoxSprite.dropSheets`) is a seam, so the faces are named here, not derived from it.
@@ -602,6 +614,7 @@ final class FaceTests: XCTestCase {
         for n in 1...4 {
             let frame = n == 1 ? one : try renderer(n)
             want("level \(n) balloon", BoxSprite.balloon, in: frame)
+            if 1 < n { want("level \(n) bat set", Bat.batSet, cells: 11, in: frame) }
             for k in keys[n]! { want("level \(n) key face", k, in: frame) }
             for (pict, cells) in drops[n]! { want("level \(n) drop", pict, cells: cells, in: frame) }
             for sh in BoxSprite.dropSheets(frame.level.placements) {

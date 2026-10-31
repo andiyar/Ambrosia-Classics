@@ -1164,8 +1164,10 @@ public enum BoxSprite {
 
     /// `.GenerateSprite(x, y, type, 0x200, now, layer) @ 10003478` (M l. 1691–1936) as `.KillCrate` calls it: the
     /// class Setup by `SpriteClassTable`, `MTNewSprite(type, x, y, layer (−1 → 0), 0x200, setup)` and `+0x48 = 0x200`.
-    /// Built for the Bonus class (every crate drop on levels 1–4: the item 3219); // later: Phase 5 — the other classes'
-    /// run-time Setups (the census's crate drops: the Blob 1731 ×8 on level 31) make nothing here.
+    /// Built for the Bonus class (every crate drop on levels 1–4: the item 3219) and the Bat class (BA: `.SetupBatSprite`
+    /// with record 0x200 — past the 511 records, read as zeros, `Bat.record`; no shipped crate drops a Bat, so the
+    /// `.KillCrate` 0x6cc arm, M l. 61312–61320, is reached by synthetic placements only); // later: Phase 5 — the other
+    /// classes' run-time Setups (the census's crate drops: the Blob 1731 ×8 on level 31) make nothing here.
     static func generate(_ w: SpriteWorld, type: Int16, x: Int, y: Int, layer: Int32, lights: inout LightTable,
                          effects: Int16) -> Int? {
         guard let (cls, _) = SpriteClassTable.classify(type: type, p1Negative: false) else { return nil }
@@ -1179,6 +1181,14 @@ public enum BoxSprite {
                                            lightCount: lights.count, counting: false, rng: &w.rng) { f, lh, lv, col in
                     lights.add(face: f, x: Int16(truncatingIfNeeded: lh), y: Int16(truncatingIfNeeded: lv), vx: 0, vy: 0,
                                accelY: 0, colour: col)
+                }
+            }
+        case .bat:
+            return w.newSprite(type: type, x: x, y: y, layer: l, handler: .bat, record: 0x200) { c in
+                Bat.setup(&c, record: Bat.record(w.records, index: 0x200), rng: &w.rng, counting: &w.enemies) {
+                    t, cx, cy, layer, handler, setup in
+                    w.newSprite(type: t, x: cx, y: cy, layer: Int16(truncatingIfNeeded: layer), handler: handler,
+                                record: 0x200, setup: setup)
                 }
             }
         default:

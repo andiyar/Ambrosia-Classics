@@ -55,6 +55,20 @@ public struct SpriteSlot: Equatable, Sendable {
         }
     }
 
+    /// BA: the swarm centre's 0x54-byte block (`+0x9c`, `.SetupBatSprite` M l. 68160–68207): the member pointers at
+    /// `+0` (`ActiveList` ids; nil = 0), the alive count `+0x50` and the total `+0x52` (both i16, the record's p2, 0 →
+    /// 8). The block holds 20 pointers and the Setup writes `count` of them with no bound — a count above 20 runs into
+    /// the two counts [LOW: no shipped swarm has more than 12; `members` simply grows].
+    public struct SwarmBlock: Equatable, Sendable {
+        public var members: [Int?]
+        public var alive: Int16
+        public var total: Int16
+
+        public init(members: [Int?], alive: Int16, total: Int16) {
+            self.members = members; self.alive = alive; self.total = total
+        }
+    }
+
     /// Identity in the `ActiveList` (the original's record pointer); assigned by `ActiveList.insert`.
     public internal(set) var id: Int = 0
     /// `+0x04`.
@@ -123,6 +137,33 @@ public struct SpriteSlot: Equatable, Sendable {
     /// WK2 (added, Invariant 9): `+0x174` (i32) — the Ax goblin's flee lockout (`.AxGoblinCoreLogic`: < 0 counts up;
     /// the flee retreat stores −120 − R(60), M l. 57295; a chasing call stores 0, M l. 57143).
     public var classWord174: Int32 = 0
+    /// BA (added, Invariant 9): `+0xf0` (i32) — the programmed path's mode (`.SetupProgrammedPath` M l. 39301–39310:
+    /// |record p1|, 100…199 → − 100; `.HandleProgrammedPath` M l. 39390 dispatches on it; the Bat Handle's path arm
+    /// reads 2, M l. 68733). The same offset is the Walker's / Frog's voice pitch `voicePitch` — a different class's
+    /// meaning, kept apart (plan BA: the Bat's path mode moves out of the `voicePitch` slot).
+    public var pathMode: Int32 = 0
+    /// BA (added, Invariant 9): `+0xf8` (i32) — the path's direction (`.SetupProgrammedPath` 1, mode 3 / 10 / 11 0;
+    /// `.HandleProgrammedPath` turns it ±1 at the bounds, M l. 39391–39445).
+    public var pathDirection: Int32 = 0
+    /// BA (added, Invariant 9): `+0xfc` (i32) — the path's speed = record p3 (`.SetupProgrammedPath` M l. 39311–39314).
+    public var pathSpeed: Int32 = 0
+    /// BA (added, Invariant 9): `+0x104` (i32) — the path's far bound in 24.8 (`.SetupProgrammedPath` modes 1 / 2: the
+    /// start + p2·256 − p3·8, M l. 39328–39331 / 39340–39343).
+    public var pathHigh: Int32 = 0
+    /// BA: `+0x100` the path's near bound in 24.8 (the start + p3·8) = `classWord100` (one storage per offset).
+    public var pathLow: Int32 {
+        get { classWord100 }
+        set { classWord100 = newValue }
+    }
+    /// BA: `+0x164` the Bat 0x73a family's surface line (`.HandleBatSprite` M l. 68869–68876: y while not fully under,
+    /// the floor it cannot rise above while under) = `launchSpeed` (one storage per offset).
+    public var surfaceLine: Int32 {
+        get { launchSpeed }
+        set { launchSpeed = newValue }
+    }
+    /// BA (added, Invariant 9): `+0x9c` the swarm centre's member block (`.SetupBatSprite` 0x74d, `AllocateGameMem(0x54)`,
+    /// M l. 68160–68207): nil = 0.
+    public var swarm: SwarmBlock?
     /// `+0xb0` (i16): a class's sub-type word — the Background's p1, a Platform's base type (0x58c = springboard,
     /// read through the ridden `+0xdc` by `.CheckGroundCeilingHitEffects` and `.HandleKeys`; W1 writes it).
     public var subtype: Int16 = 0
@@ -575,6 +616,7 @@ public enum SpriteHandler: Equatable, Hashable, Sendable {
         case .walker: return .walker        // WK1: the Walker class 1700…1709, 1750…1769 (1750 / 1760 arms WK2)
         case .crawler: return .crawler      // CR: the Crawler 1712
         case .roach: return .roach          // CR: the Roach 1720
+        case .bat: return .bat              // BA: the Bat class 1740…1749, 1850…1854, 1860…1869
         default: return .inert
         }
     }

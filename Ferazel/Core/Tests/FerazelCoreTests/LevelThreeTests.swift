@@ -106,11 +106,13 @@ final class LevelThreeTests: XCTestCase {
         XCTAssertEqual(e.sheet, SetupFaces.Sheet(pict: 0x6c2, count: 16, cellWidth: 0x40, cellHeight: 0x2c, columns: 16,
                                                  clut: 200))
         // Bat 1741 (rec 189: p1 2, p2 340, p3 800): the 0x6cc… arm plus `+0x188`, `+0xa6 = 1`, gravity 0 and the
-        // programmed path's mode 2 (`+0xf0` = 2, vx = p3); no draw.
+        // programmed path's mode 2 (`+0xf0` = 2 — BA: the path mode's own field, `pathMode`, no longer the Walker's
+        // `voicePitch` —, vx = p3); the Bat hit callback (BA, M l. 68137); no draw.
         e = try entry(189)
-        XCTAssertEqual([e.slot.keepRecord, e.slot.hasHit], [true, false])
-        XCTAssertEqual([Int32(e.slot.counterA6), Int32(e.slot.gravity), e.slot.voicePitch, e.slot.vx, e.slot.vy,
+        XCTAssertEqual([e.slot.keepRecord, e.slot.hasHit], [true, true])
+        XCTAssertEqual([Int32(e.slot.counterA6), Int32(e.slot.gravity), e.slot.pathMode, e.slot.vx, e.slot.vy,
                         Int32(e.slot.hp), Int32(e.slot.subtype), e.slot.layer], [1, 0, 2, 800, 0, 500, 7, 0xb])
+        XCTAssertEqual(e.slot.voicePitch, 0)
         XCTAssertEqual(e.slot.face, f(0x6cc))
         XCTAssertEqual(e.source, .handle)
         // Decorations (pickups-boxes-2 §9): Red Ruins 2 (rec 154: p1 1 mirrored, p2 11 → `+0xb8 = 0x1000b`, p3 1 →

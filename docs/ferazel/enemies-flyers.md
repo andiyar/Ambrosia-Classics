@@ -584,3 +584,27 @@ Wave 2 (2026-10-04) corrections:
 | W4 | coverage.md row `.STPlay3DSoundRand` / `.STPlay3DSoundPitched` (open: "pitch randomisation / rate units") | open | answered: enemies-flyers §7.2 | §7.2 |
 | W5 | INDEX.md item 17 | open | closed: `+0x84/+0x86` §7.1, Rand pitch §7.2, `+0xa6 += 0x45` §7.3, `+0x1b2` §7.4, idle children §7.5 | this file |
 | W6 | enemies-flyers.md §3.6 (own file, applied in place) | "placeholder face of PICT 151" | PICT 151 = out-of-range frame filler; PICT 150 = unloaded placeholder | §7.3; m. l. 73903–73928 |
+
+⚑ BA (2026-10-31, loop run 42; the committed dump `ghidra/ferazel/Ferazel_pef.decompiled.c`, M l. N) — read while
+building the Bat class (`World/Enemies/Bat.swift`); the handler-dump lines cited above are superseded by these:
+1. §3.4 "the centre runs `.StandardSpriteHandles` twice … [MED]": established — the swarm arm (M l. 68685–68686) calls it
+   again after the shared call at M l. 68505, so a swarm centre's `+0x116` / `+0xaa` count down (and a negative `+0x130`
+   up) two a frame.
+2. §3.4 members: the pull's target is the word at `0x100a1b80` (= 0: the centre itself, the member's position being made
+   relative to `+0x14c` / `+0x150` first), its source is the member's top-left + (12, 12), and the "within 8 px of the
+   centre" test reads the top-left `+0xc` / `+0xa`, not a centre (M l. 68343–68420). `.SetupSwarmMemberSprite` stores no
+   position, so a member's first Handle reads `.MTNewSprite`'s pixel copies (`+0xc` = y, `+0xa` = 0). The dead member's
+   tile callback is stored but never called (the member runs no tile routine).
+3. §3.6 member hit: `.HitSwarmMemberSprite` (M l. 68985–69015) does not test the shot's `+0xa6` (the Bat's does).
+4. §3.6 death: the dying frame does not end the Handle — the animation that follows re-faces a 1740-family bat (M l.
+   68826–68832) and the integration and Cleanup run; it is not drawn (`+0xe9`). The R(3) is drawn before the sound.
+5. The shared spit tail (M l. 68756–68781) runs for every Bat type: the swarm centre's radius `+0x154` counts down one a
+   frame to 0 (no reader after the Setup). The swarm centre's `+0x40` lives in the pixel copies only and is lost at its
+   first integration (`.ApplyGravityAndSeparateFromTiles` re-derives them from the 24.8 spawn point).
+6. §3.5: the head's first body copy (M l. 68478–68496) runs before the `+0xe9` / `+0x1b2` returns — a dead or emerging
+   insect still moves its body.
+7. `.HitBatSprite` has no Effect 0x4b7 or geyser arm (M l. 68930–68982): the Ring of Smiting reaches a Bat only through
+   the seeds it plants (player shots). No Bat Setup stores a Kill proc `+0x50`, an idle margin, `+0x189`, `+0x18a` or
+   `+0x18b`.
+8. §2 census: 1740 is placed on levels 2–4 (not 1); no shipped crate drops a Bat, so `.KillCrate`'s 0x6cc arm (M l.
+   61312–61320) is reachable only from synthetic placements.

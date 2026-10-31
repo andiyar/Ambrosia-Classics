@@ -104,6 +104,10 @@ public enum SetupFaces {
         /// 0x8c, p3 0 → 0x1e; the Roach's p3 0 → 0xaa, M l. 64940–64944) change it; every other Setup leaves the record
         /// it read.
         public let record: Placement
+        /// BA: the sprites the Setup made with its own `.MTNewSprite`s, in call order (the swarm's members, the insect's
+        /// body) — each already set up, inserted by the spawn before the parent (`spawnLevelSprites`). The parent's
+        /// links to them (`swarm.members`, `siblings.first`) hold indices into this list until then.
+        public var children: [SpriteSlot] = []
     }
 
     /// The state a Setup reads besides its record.
@@ -206,6 +210,10 @@ public enum SetupFaces {
         // ES: the dart traps' cache sets 0x76c, 0x76e, 0x76f (`.InitBackgroundSprite` M l. 61886–61888: 6 × 0x5c×0x5c,
         // 6 per row, flag 0).
         all += [set(0x76c, 6, 0x5c, 0x5c, 6), set(0x76e, 6, 0x5c, 0x5c, 6), set(0x76f, 6, 0x5c, 0x5c, 6)]
+        // BA: `.InitBatSprite`'s other four cache sets (M l. 68100–68103, flag 0, one row each): the insects 0x744 (9 ×
+        // 0x30×0x2c), the swarm members 0x74d (8 × 0x18×0x16), the 1850 family 0x73a / 0x73b (12 × 0x40×0x50).
+        all += [set(0x744, 9, 0x30, 0x2c, 9), set(0x74d, 8, 0x18, 0x16, 8), set(0x73a, 0xc, 0x40, 0x50, 0xc),
+                set(0x73b, 0xc, 0x40, 0x50, 0xc)]
         all.append(one(placeholderPict))
         // BN: every face `.InitBonusSprite` loads (`BonusSprite.sheets`; the level-1/2 entries above are the same sheets).
         var table = Dictionary(uniqueKeysWithValues: all)
@@ -307,6 +315,7 @@ public enum SetupFaces {
         let t = Int(p.type)
         var sheet: Sheet?, index = 0, source = FaceSource.none, light: Light?
         var record = p
+        var children: [SpriteSlot] = []
         /// `.AddLight(face, (y + dy, x + dx), 0, 0, 0, colour)` with one of `.InitBonusSprite`'s / `.InitPlayerShotSprite`'s
         /// / `.InitEffectSprite`'s light faces.
         /// The slot `.AddLight` returns — the first free one, = the lights added so far — goes to `+0x9a` (every
@@ -526,38 +535,31 @@ public enum SetupFaces {
             record = CrawlerRoach.setupRoach(&s, record: p, counting: &counting)
 
         case .bat:
-            // `.SetupBatSprite @ 1007dc30` (M l. 68108–68316; W4, inert): layer 0xb, `+0xc0 = 0`, `+0x150 = −1`; the
-            // 0x6cc…0x6d5 arm (l. 68279–68310): HP 500, SetRect(0xc, 0xf, 0x2b, 0x2f), `+0x158 = 0x1e`, `+0x15c = 0`,
-            // `+0xb0 = 7`, no draw. 1740 (0x6cc) is placed on levels 1–4; LV3: 1741 (0x6cd, level 3 record 189) — `+0x188 =
-            // 1`, `+0xa6 = 1`, gravity 0 and `.SetupProgrammedPath(s, −1, 0)` (M l. 68299–68303; `.SetupProgrammedPath` M l. 39288ff: no draw —
-            // for p1 2, `+0xf0` = |p1|, `+0xfc` = p3, `+0xf8 = 1`, the bounds `+0x100` / `+0x104` = x·256 ± …, vx =
-            // `+0xfc`, vy 0). Not transcribed: 0x6ce (→ 0x6cd with R(0x50)), 0x6d1, the swarms and 0x73a… (none placed on
-            // levels 1–4). // later: Phase 5 (the bat Handle, the path fields it reads).
-            guard t == 0x6cc || t == 0x6cd else { throw Error.notTranscribed(type: p.type) }
-            s.layer = 0xb
-            s.classWord150 = -1
-            s.hp = 500
-            s.hotRect = IdleSprites.Rect(top: 0xf, left: 0xc, bottom: 0x2f, right: 0x2b)
-            counting.countIfWindow(&s)                         // `+0x1b5 = 1`, live + 1 in the window (M l. 68282–68285)
-            if t == 0x6cd {
-                s.keepRecord = true                            // `+0x188 = 1` (M l. 68300)
-                s.counterA6 = 1                                // `+0xa6 = 1`
-                s.gravity = 0                                  // `+0x110 = 0`
-                // `.SetupProgrammedPath(s, −1, 0)` (M l. 39304–39340): mode `+0xf0` = |p1| (2 on record 189: the
-                // horizontal path), vx = `+0xfc` = p3. // later: Phase 5 — `+0xf8`, `+0xfc`, `+0x100`, `+0x104` (no field
-                // until the bat Handle reads them).
-                // Only modes 1 and 2 (a vertical / horizontal run) are transcribed; the others (3: the hopping rect and
-                // gravity, 10 / 11: `.MakeRadial`, 100…199) are placed on no level 1–4 bat.
-                let mode = Int32(p.p1 < 1 ? -p.p1 : p.p1)
-                guard mode == 1 || mode == 2 else { throw Error.notTranscribed(type: p.type) }
-                // `voicePitch` is the slot at `+0xf0` (the Walker's name for it; seams locked): here the path mode.
-                s.voicePitch = mode
-                if mode == 1 { s.vy = Int32(p.p3) } else { s.vx = Int32(p.p3) }
+            // `.SetupBatSprite @ 1007dc30` (M l. 68108–68316; BA, `Bat.setup`) by sub-range: the 0x6cc… arm (HP 500, the
+            // path bats 0x6cd / 0x6ce), the 0x73a… arm (HP 100, `+0x188`, the sheet by the record p1 sign), the swarm
+            // 0x74d (its members made here, `Entry.children`) and the insects 0x744…0x74c (the body). The Setup leaves
+            // `+0xc0 = 0` but for the insects (cache 0x744 cell 3, M l. 68219): the Handle faces the bats from the cache
+            // set 0x6cc / 0x73a / 0x73b; the swarm centre has no face. The path modes 10 / 11 (`.MakeRadial`) are placed
+            // on no Bat: refused.
+            if [0x6cd, 0x6ce, 0x73b, 0x73c].contains(t) {
+                var m = Int(p.p1 < 1 ? -p.p1 : p.p1)
+                if 99 < m && m < 200 { m -= 100 }
+                if 9 < m && m < 0xc { throw Error.notTranscribed(type: p.type) }
             }
-            s.classWord158 = 0x1e
-            s.classWord15c = 0
-            s.subtype = 7                                      // `+0xb0 = 7` (l. 68310)
-            face(0x6cc, 0, .handle)                            // the Handle faces it from the cache set 0x6cc
+            s.oldPosition = SpriteSlot.Point(x: s.x, y: s.y)           // `.MTNewSprite`'s `+8` / `+6`
+            var kids: [SpriteSlot] = []
+            Bat.setup(&s, record: p, rng: &rng, counting: &counting) { type, x, y, layer, handler, setup in
+                kids.append(SpriteWorld.newRecord(type: type, x: x, y: y, layer: Int16(truncatingIfNeeded: layer),
+                                                  handler: handler, record: 0x200, setup: setup))
+                return kids.count - 1
+            }
+            children = kids
+            switch t {
+            case 0x6cc...0x6d5: face(Bat.batSet, 0, .handle)
+            case 0x73a...0x743: face(p.p1 < 0 ? Bat.familyBackSet : Bat.familySet, 0, .handle)
+            case 0x744...0x74c: face(Bat.insectSet, 3, .setupCached)
+            default: break                                             // the swarm centre 0x74d: no face
+            }
 
         case .blob:
             // LV3 — `.SetupBlobSprite @ 1007cdb0` (M l. 67671–67736), the Phase-1 ◇ shape (inert, no Handle, no hit
@@ -612,7 +614,7 @@ public enum SetupFaces {
             s.face = FaceRef(pict: sh.pict, index: index, set: .encoded)
         }
         return Entry(type: p.type, spriteClass: cls, spawn: spawn, sheet: source == .none ? nil : sheet,
-                     faceIndex: index, source: source, slot: s, light: light, record: record)
+                     faceIndex: index, source: source, slot: s, light: light, record: record, children: children)
     }
 
     // MARK: - the level spawn
@@ -641,7 +643,8 @@ public enum SetupFaces {
     /// sprite's `+0x1b5` and adds 1 only while `*_DAT_1009fe8c` ≠ 0 (L1, transcribed for the classes levels 1–2
     /// place): `.SetupBonusSprite` 0x423 → secrets (M l. 52410–52414), 0x41f / 0x420 → Xichrons (M l. 52463–52467);
     /// enemies: `.SetupCrawlerSprite` (M l. 56236–56240), `.SetupWalkerSprite` (M l. 57090–57094), `.SetupRoachSprite`
-    /// (M l. 64947–64951) at their ends (no early return), `.SetupBatSprite`'s 0x6cc… arm (M l. 68282–68285),
+    /// (M l. 64947–64951) at their ends (no early return), `.SetupBatSprite`'s arms (M l. 68210–68213, 68234–68237,
+    /// 68270–68273, 68282–68285; BA),
     /// `.SetupFrogSprite` at its end (M l. 70211–70215), `.SetupBlobSprite` at its end for every type (M l.
     /// 67728–67730; LV3). // later: Phase 5–6 — the other enemy classes' sites (Gremlin 69229, Floater 69899,
     /// Salamander 70697, Dillo 72370, Warrior 73069, Demon 74493, Chief 75110, Wizard 75676, Xichra 76435), some
@@ -745,6 +748,20 @@ public enum SetupFaces {
                 k.face = FaceRef(pict: boxChildSheets[0].pict, index: Int(p.p1), set: .encoded)
                 var parent = e.slot
                 parent.siblings.first = out.active.insert(k)
+                e = Entry(type: e.type, spriteClass: e.spriteClass, spawn: e.spawn, sheet: e.sheet,
+                          faceIndex: e.faceIndex, source: e.source, slot: parent, light: e.light, record: e.record)
+            }
+            if !e.children.isEmpty {
+                // BA: the Bat Setup's own `.MTNewSprite`s (M l. 68186–68196, 68228–68233) — the swarm's members and the
+                // insect's body, record 0x200 — are inserted before the parent is inserted or idled; they stay active
+                // whether the parent spawns or idles (enemies-flyers §7.5). The parent's links become their ids.
+                let ids = e.children.map { out.active.insert($0) }
+                var parent = e.slot
+                if let f = parent.siblings.first { parent.siblings.first = ids[f] }
+                if var block = parent.swarm {
+                    block.members = block.members.map { $0.map { ids[$0] } }
+                    parent.swarm = block
+                }
                 e = Entry(type: e.type, spriteClass: e.spriteClass, spawn: e.spawn, sheet: e.sheet,
                           faceIndex: e.faceIndex, source: e.source, slot: parent, light: e.light, record: e.record)
             }

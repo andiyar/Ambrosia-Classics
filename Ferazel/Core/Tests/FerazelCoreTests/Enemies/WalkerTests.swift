@@ -1916,7 +1916,8 @@ final class WalkerTests: XCTestCase {
             XCTAssertEqual(CachedFaces.marks(type: t).sets, [0x6d7, 0x6d8, 0x6d9, 0x6da], "type \(t)")
             XCTAssertEqual(CachedFaces.marks(type: t).singles, [0x6d6], "type \(t)")
         }
-        XCTAssertEqual(CachedFaces.marks(type: 0x6d5).sets, [])
+        // 0x6d5 is the Bat class's last 1740 type: its Setup marks the bat set (M l. 68286; BA), not the 1750's.
+        XCTAssertEqual(CachedFaces.marks(type: 0x6d5).sets, [0x6cc])
         func set(_ pict: Int16, _ n: Int) -> SetupFaces.Sheet {
             SetupFaces.Sheet(pict: pict, count: n, cellWidth: 0xd8, cellHeight: 0x6e, columns: 1, clut: 200)
         }

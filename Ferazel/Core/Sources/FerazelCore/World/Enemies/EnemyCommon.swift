@@ -69,7 +69,7 @@ public enum EnemyCommon {
         case .walker: break                             // the session dispatches `Walker.handle` (WK1)
         case .crawler, .roach: break                    // the session dispatches `CrawlerRoach` (CR)
         case .dillo: break                              // later: DL — `.HandleDilloSprite`
-        case .bat, .swarmMember, .insectBody: break     // later: BA — the Bat class, the swarm members, the insect body
+        case .bat, .swarmMember, .insectBody: break     // the session dispatches `Bat` (BA)
         case .gremlin, .floater: break                  // later: GF — `.HandleGremlinSprite` / `.HandleFloaterSprite`
         case .frog, .salamander: break                  // later: FR — `.HandleFrogSprite` / `.HandleSalamanderSprite`
         case .blob, .deadBlob, .crab, .crabSegment: break   // later: BL — the Blob, the dead Blob, the Crab, its segments

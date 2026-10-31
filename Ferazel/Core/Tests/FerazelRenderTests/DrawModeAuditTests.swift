@@ -202,6 +202,25 @@ final class DrawModeAuditTests: XCTestCase {
           at: ["217", "222", "223", "224"], pins: ["(0xc, 0x96, 0xc)", "(0x13, 100, 0x11)"]),
         // ES: the enemy shots — the egg's random facing (`R(100) > 0x32`) and its flash every 45 frames, the Warrior
         // shot's facing by vx, the Wraith shot's tint by age (`.HandleEnemyShotSprite` M l. 51711–51723).
+        // BA: the Bat class — the spitters' tint 0x1000c (0x6ce / 0x73c retyped), the insects' 0xb0004, the swarm
+        // centre's 0x10009 (it has no face), the chasers' facing and the path bats' (by vx in mode 2, else the player's
+        // side), the members' facing by the player's side, the insect body's copies of its head's flip and bottom clip,
+        // the liquid hurt flash 0x11 (`.HandleBatSprite` M l. 68527–68540).
+        W("World/Enemies/Bat.swift:116", .mode, .words([0x1000c]), "bat"),
+        W("World/Enemies/Bat.swift:140", .mode, .words([0x1000c]), "bat"),
+        W("World/Enemies/Bat.swift:197", .mode, .words([0xb0004]), "bat.insect"),
+        W("World/Enemies/Bat.swift:351", .mode, .words([0x10009]), "bat.swarm"),
+        W("World/Enemies/Bat.swift:255", .mirrored, .copy, "bat.insectBody"),
+        // The head's bottom clip is `.StandardSpriteHandles`' 32000 (no Bat routine or pipe child writes another yet).
+        W("World/Enemies/Bat.swift:256", .clipBottom, .range(32000...32000), "bat.insectBody",
+          at: ["Physics/StandardSprite.swift:36"]),
+        W("World/Enemies/Bat.swift:303", .mirrored, .flags([true]), "bat"),
+        W("World/Enemies/Bat.swift:305", .mirrored, .flags([false]), "bat"),
+        W("World/Enemies/Bat.swift:314", .mirrored, .flags([true]), "bat"),
+        W("World/Enemies/Bat.swift:317", .mirrored, .flags([false]), "bat"),
+        W("World/Enemies/Bat.swift:327", .flash, .range(0x11...0x11), "bat"),
+        W("World/Enemies/Bat.swift:381", .mirrored, .flags([false, true]), "bat"),
+        W("World/Enemies/Bat.swift:618", .mirrored, .flags([false, true]), "bat.swarmMember"),
         W("World/Enemies/EnemyShot.swift:154", .mirrored, .flags([false, true]), "enemyShot.egg"),
         W("World/Enemies/EnemyShot.swift:314", .mode, .words([0xb0002, 0xb0000, 0xb0001, 0]), "enemyShot.wraith"),
         W("World/Enemies/EnemyShot.swift:339", .mirrored, .flags([false, true]), "enemyShot.warrior"),
@@ -267,11 +286,13 @@ final class DrawModeAuditTests: XCTestCase {
         W("Player/HitPlayerSprite.swift:96", .flash, .range(0xc...0xc), "player"),
         W("Player/HitPlayerSprite.swift:911", .flash, .range(0x1e...0x1e), "player"),
         // `.HurtSprite`'s callers: the player's two (0xc) and, from WK1, the Walker's Hit and its `.HurtGoblin`s (8).
-        W("Player/HitPlayerSprite.swift:1191", .flash, .range(8...0xc), "player", "walker", "crawler", "roach",
+        W("Player/HitPlayerSprite.swift:1191", .flash, .range(8...0xc), "player", "walker", "crawler", "roach", "bat",
+          "bat.swarmMember",
           at: ["1043", "1173", "World/Enemies/Walker.swift:827", "World/Enemies/Walker.swift:851",
                "World/Enemies/Walker.swift:856", "World/Enemies/CrawlerRoach.swift:453",
                "World/Enemies/CrawlerRoach.swift:459", "World/Enemies/CrawlerRoach.swift:480",
-               "World/Enemies/CrawlerRoach.swift:486"], pins: ["flash: 0xc", "flash: 8", "flash: 10"]),
+               "World/Enemies/CrawlerRoach.swift:486", "World/Enemies/Bat.swift:657", "World/Enemies/Bat.swift:694"],
+          pins: ["flash: 0xc", "flash: 8", "flash: 10"]),
         W("Player/Player.swift:126", .mirrored, .flags([false, true]), "player"),
         W("Player/Player.swift:332", .mirrored, .flags([false, true]), "player"),
         W("Player/Player.swift:873", .mode, .words([0x10008, 0x10009]), "player", at: ["872"]),
@@ -314,20 +335,20 @@ final class DrawModeAuditTests: XCTestCase {
         W("Shots/PlayerShot.swift:474", .mode, .words([0x10004]), "shot.gravity"),        // the seed (gravity 0xfa)
         W("Shots/PlayerShotHits.swift:109", .mode, .words([0x10004]), "shot.gravity"),    // the seed
         W("Shots/PlayerShotHits.swift:221", .flash, .range(10...10), "box"),
-        W("Sprites/SetupFaces.swift:369", .mirrored, .flags([true]), "background.plant"),
-        W("Sprites/SetupFaces.swift:370", .mode, .placedTint(0xa8c...0xaef), "background.plant",
+        W("Sprites/SetupFaces.swift:378", .mirrored, .flags([true]), "background.plant"),
+        W("Sprites/SetupFaces.swift:379", .mode, .placedTint(0xa8c...0xaef), "background.plant",
           pins: ["if p.p2 != 0 { s.mode = UInt32(truncatingIfNeeded: Int(p.p2) + 0x10000) }"]),
-        W("Sprites/SetupFaces.swift:421", .mode, .words([0x90000]), "box.teleporter"),
-        W("Sprites/SetupFaces.swift:439", .mode, .words([0x90000]), "box.chest"),
-        W("Sprites/SetupFaces.swift:572", .mode, .words([0]), "blob"),
-        W("Sprites/SetupFaces.swift:596", .mode, .words([0]), "frog"),
-        W("Sprites/SetupFaces.swift:597", .mode, .words([0x1000c]), "frog"),
-        W("Sprites/SetupFaces.swift:598", .mode, .words([0x10017]), "frog"),
-        W("Sprites/SetupFaces.swift:599", .mode, .words([0x1000f]), "frog"),
-        W("Sprites/SetupFaces.swift:600", .mode, .words([0x1000b]), "frog"),
-        W("Sprites/SpriteSlot.swift:480", .mode, .words([0]), "platform.raft", "box.boulder", "background.maceBall",
+        W("Sprites/SetupFaces.swift:430", .mode, .words([0x90000]), "box.teleporter"),
+        W("Sprites/SetupFaces.swift:448", .mode, .words([0x90000]), "box.chest"),
+        W("Sprites/SetupFaces.swift:574", .mode, .words([0]), "blob"),
+        W("Sprites/SetupFaces.swift:598", .mode, .words([0]), "frog"),
+        W("Sprites/SetupFaces.swift:599", .mode, .words([0x1000c]), "frog"),
+        W("Sprites/SetupFaces.swift:600", .mode, .words([0x10017]), "frog"),
+        W("Sprites/SetupFaces.swift:601", .mode, .words([0x1000f]), "frog"),
+        W("Sprites/SetupFaces.swift:602", .mode, .words([0x1000b]), "frog"),
+        W("Sprites/SpriteSlot.swift:521", .mode, .words([0]), "platform.raft", "box.boulder", "background.maceBall",
           "chain.maceChain"),
-        W("Sprites/SpriteSlot.swift:482", .mode, .levelLight, "platform.raft", "box.boulder", "background.maceBall",
+        W("Sprites/SpriteSlot.swift:523", .mode, .levelLight, "platform.raft", "box.boulder", "background.maceBall",
           "chain.maceChain", pins: ["mode = UInt32(truncatingIfNeeded: L * 0x100 + 0xc0000 + F)"]),
         // (angle >> 8) + 0x5a with the angle wrapped into 0…0x167ff (`RadialMotion.updatePosition`), − 360 once.
         W("World/Movers/BackgroundSprite.swift:194", .rotation, .range(0...359), "background.maceBall", at: ["192", "193"],
@@ -1295,7 +1316,7 @@ final class DrawModeAuditTests: XCTestCase {
           "the session is built at each level start, every built level's run included"),
         R("Sprites/SetupFaces.swift", "Error.unmapped", 1, .loadsClean, [.levelsLoad],
           "every active placement of every built level sets up (the audit runs each one, and the level start does)"),
-        R("Sprites/SetupFaces.swift", "Error.notTranscribed", 12, .loadsClean, [.levelsLoad], "the same Setups"),
+        R("Sprites/SetupFaces.swift", "Error.notTranscribed", 11, .loadsClean, [.levelsLoad], "the same Setups"),
         R("Sprites/SetupFaces.swift", "Error.autoScrollSprites", 1, .headerZero, [.headerCamera],
           "header `autoScrollEnable` = 0 on every built level"),
         R("World/Movers/BonusSprite.swift", "SetupFaces.Error.notTranscribed", 2, .loadsClean,
@@ -1389,8 +1410,12 @@ final class DrawModeAuditTests: XCTestCase {
             }
             // WK2: the Ax goblin's jump budget (`.AxGoblinCoreLogic`, made negative by its retreats) — written only on the
             // sprite `AxGoblin.arm` runs for, a Walker 0x6d6 (`Walker.handle`'s exact-type arm), never on a Box.
+            // BA: the 1850 family's background flag (`.SetupBatSprite` 0 / 1 by the record p1 sign, M l. 68263–68275) —
+            // on Bat sprites only, never negative.
             XCTAssertEqual(writes.filter { !$0.hasPrefix("World/Enemies/AxGoblin.swift ") }.sorted(),
                            ["Shots/PlayerShot.swift s.stepX = sx",
+                            "World/Enemies/Bat.swift s.classWord160 = 0",
+                            "World/Enemies/Bat.swift s.classWord160 = 1",
                             "World/Enemies/EnemyShot.swift u.classWord160 = 1",
                             "World/Movers/BoxSprite.swift s.classWord160 &+= 1"], "\(c): +0x160 writers")
             let axCallers = core.filter { Self.has($0.code, "AxGoblin.") }.map { "\($0.file) \(Self.trim($0.code))" }

@@ -155,6 +155,17 @@ final class BootFacesTests: XCTestCase {
             XCTAssertNil(boot[s.pict], "cache PICT \(s.pict)")
             XCTAssertNil(SetupFaces.sheet(pict: s.pict), "cache PICT \(s.pict) in the Setup-face table")
         }
+        // BA: `.InitBatSprite`'s five sets (M l. 68099–68103) are level-load caches, defined once — in the Setup-face
+        // table, from which `CachedFaces.sheets(markedBy:)` takes their geometry; the spit 0x712 faces from the boot
+        // singles 0x456 / 0x457 (the enemy-shot boot sets above), the coins from the boot set 0x516.
+        for p: Int16 in [0x6cc, 0x744, 0x74d, 0x73a, 0x73b] {
+            XCTAssertNil(boot[p], "Bat cache PICT \(p)")
+            XCTAssertNotNil(SetupFaces.sheet(pict: p), "Bat cache PICT \(p) geometry")
+            XCTAssertFalse(CachedFaces.handleSets.contains { $0.pict == p }, "Bat cache PICT \(p) defined twice")
+        }
+        XCTAssertNotNil(boot[0x456])
+        XCTAssertNotNil(boot[0x457])
+        XCTAssertNotNil(boot[0x516])
     }
 
     /// Levels 1–4: every boot face the data holds, every class sheet Core declares and every Setup sheet of the level's
@@ -199,6 +210,11 @@ final class BootFacesTests: XCTestCase {
             if types.contains(CrawlerRoach.roach) {
                 XCTAssertTrue(marked.contains(CachedFaces.handleSets[7]), "level \(level): the Roach's death set")
                 XCTAssertNotNil(loaded[CrawlerRoach.roachWalk], "level \(level): the Roach's walk set")
+            }
+            // BA: the Bat Handle faces every 1740-family type from the 0x6cc set its Setup marks (M l. 68286).
+            if types.contains(where: { (0x6cc...0x6d5).contains($0) }) {
+                XCTAssertTrue(marked.contains { $0.pict == Bat.batSet }, "level \(level): the bat set marked")
+                XCTAssertEqual(loaded[Bat.batSet]?.arguments.count, 0xb, "level \(level): the bat set's 11 cells")
             }
             for sh in marked where present(sh.pict) {
                 let a = loaded[sh.pict]?.arguments
@@ -264,11 +280,15 @@ final class BootFacesTests: XCTestCase {
         // 0xc, 0x2c, 0x21) / (0x23, 0x1b, 0x44, 0x2d) and their Handles re-face them; with the two `forClass` rows and the
         // Setups switched back off the WK1 values return (was L1 f478cf71be64b444 / fd95d79c159b3841 / 9a2c740b2d61f7a3,
         // L2 8667712c97eea1fa / d2ea580ff2c8d3ba / cc76204bbc1385bd, L3 9d0811a45f709596 / 9bcd46780b6ba8ea /
-        // 50bcf3ea0ff24018, L4 fec73bab774581f5 / 9b87a71eafe9f70c / d53bf909322b2ca4).
+        // 50bcf3ea0ff24018, L4 fec73bab774581f5 / 9b87a71eafe9f70c / d53bf909322b2ca4). BA (◈) re-pinned L3 f30 / f120
+        // (counts unchanged): level 3's path bat 1741 (rec 189) runs one Handle at frame 1 before it idles — its
+        // animation takes `+0xa6` 1 → 2, face 0x6cc cell 0 → 1 (M l. 68826–68832), which its idle entry keeps; with that
+        // one type's Handle switched back off (every other Bat's left on) the CR values return (was 0xd4f7e113045d39a2 /
+        // 0x5a2e3d4e64f7c1ee).
         let pinned: [String: (rows: Int, fnv: UInt64)] = [
             "L1 init": (190, 0x157d6742ce800e1f), "L1 f30": (240, 0x8190d7eb68896260), "L1 f120": (240, 0xcda33ae9706a4618),
             "L2 init": (229, 0x8fb8d314f8d35783), "L2 f30": (278, 0x7e9c0511f07e745d), "L2 f120": (278, 0x35c9c2eb3280e4b0),
-            "L3 init": (234, 0x9ee49e49aaa668a4), "L3 f30": (310, 0xd4f7e113045d39a2), "L3 f120": (310, 0x5a2e3d4e64f7c1ee),
+            "L3 init": (234, 0x9ee49e49aaa668a4), "L3 f30": (310, 0x07212368c70e3f4a), "L3 f120": (310, 0x521fd141e046a4d6),
             "L4 init": (264, 0x1d9360dec485c68b), "L4 f30": (342, 0x96ede8588083992a), "L4 f120": (342, 0xc6e32956a351c41f),
         ]
         func rect(_ x: IdleSprites.Rect) -> String { "(\(x.top),\(x.left),\(x.bottom),\(x.right))" }

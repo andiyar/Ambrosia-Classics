@@ -544,7 +544,18 @@ public final class FerazelSession {
             // `.HandleRoachSprite @ 10077a88` (CR, `CrawlerRoach.handleRoach`).
             CrawlerRoach.handleRoach(world: world, id: id, solver: solver, lights: &self.lightTable, effects: effects,
                                      faceWidth: { Self.frameRect($0, resources: res).right })
-        case .dillo, .bat, .swarmMember, .insectBody, .gremlin, .floater, .frog, .salamander,
+        case .bat:
+            // `.HandleBatSprite @ 1007e6b0` (BA, `Bat.handle`): the coins' and the spit's Setups take `lightTable` and
+            // prefs+6.
+            Bat.handle(world: world, id: id, solver: solver, lights: &self.lightTable, effects: effects,
+                       faceWidth: { Self.frameRect($0, resources: res).right })
+        case .swarmMember:
+            // `.HandleSwarmMemberSprite @ 1007e2c8` (BA).
+            Bat.handleSwarmMember(world: world, id: id) { Self.frameRect($0, resources: res).right }
+        case .insectBody:
+            // `.HandleInsectBodySprite @ 1007f4a0` (BA).
+            Bat.handleInsectBody(world: world, id: id) { Self.frameRect($0, resources: res).right }
+        case .dillo, .gremlin, .floater, .frog, .salamander,
              .blob, .deadBlob, .crab, .crabSegment, .geyserSegment, .warrior:
             // EC: the enemy Handles — the `+0x1b2` early return, then each a named no-op until its task
             // (`EnemyCommon.handle`).
@@ -1119,8 +1130,8 @@ public final class FerazelSession {
     /// `.HitBonusSprite` (BN; its container arm SH); `.HitPlayerShotSprite` (SH); the Box class's `.HitBoxSprite` (SH:
     /// the stalactite's shot case; BX1 the rest; SW: a Statue's hit is the Box class's, `.TurnIntoStatue`);
     /// `.HitButtonSprite` (BT); `.HitEnemyShotSprite` (ES); `.HitWalkerSprite` (WK1; also the corpse raft's, kept
-    /// under the Platform Handle); `.HitCrawlerSprite` / `.HitRoachSprite` (CR). // later: Phase 5 (the other enemy
-    /// classes). The session's form:
+    /// under the Platform Handle); `.HitCrawlerSprite` / `.HitRoachSprite` (CR); `.HitBatSprite` /
+    /// `.HitSwarmMemberSprite` (BA). // later: Phase 5 (the other enemy classes). The session's form:
     /// `hitCallback` on `lightTable`.
     private func hit(_ w: SpriteWorld, _ a: Int, _ b: Int) {
         let res = resources
@@ -1155,6 +1166,11 @@ public final class FerazelSession {
         case .roach:                                                                    // `.HitRoachSprite` (CR)
             CrawlerRoach.hitRoach(w, id: a, other: b, lights: &lights, effects: effects, faceWidth: faceWidth,
                                   faceBounds: faceBounds)
+        case .bat:                                                                      // `.HitBatSprite` (BA)
+            Bat.hit(w, id: a, other: b, lights: &lights, effects: effects, faceWidth: faceWidth, faceBounds: faceBounds)
+        case .swarmMember:                                                              // `.HitSwarmMemberSprite` (BA)
+            Bat.hitSwarmMember(w, id: a, other: b, lights: &lights, effects: effects, faceWidth: faceWidth,
+                               faceBounds: faceBounds)
         case .background:                                                               // `.HitBackgroundSprite` (W2b)
             BackgroundSprite.hit(w, id: a, other: b, lights: &lights, effects: effects, faceWidth: faceWidth,
                                  faceBounds: faceBounds)
