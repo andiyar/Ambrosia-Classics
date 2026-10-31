@@ -1394,6 +1394,27 @@ final class WalkerTests: XCTestCase {
         s = try slot(w2, gid)
         XCTAssertEqual([Int(s.phase), Int(s.counterA6)], [2, 4])
         XCTAssertEqual(s.face, FaceRef(pict: 0x6d8, index: 0, set: .encoded))
+        // Past 14 under a running cooldown (M l. 58185–58190): `+0x46` 0, then `.AxGoblinCoreLogic` — the player far
+        // right, no wall: `+0x160` −5 → −4, `+0x164` 1 → 0 → advance (state 1, `+0xb2` 1), `+0x46` left at the arm's 0;
+        // then the facing (state 1 now): the player right, `+0xb2` ≠ 2 → unflipped.
+        let gc = try slot(w2, gid).centre
+        w2.player.centreX = Int16(gc.x + 400)
+        w2.player.centreY = Int16(gc.y)
+        w2.active.update(id: gid) { g in
+            g.subtype = 2
+            g.phase = 14
+            g.counterA6 = 3
+            g.launchSpeed = 1
+            g.classWord160 = -5
+            g.subState = 2
+            g.classWord16c = 0
+            g.mirrored = true
+        }
+        frame(w2, gid, gs)
+        s = try slot(w2, gid)
+        XCTAssertEqual([Int(s.subtype), Int(s.subState), Int(s.phase), Int(s.counterA6), Int(s.launchSpeed),
+                        Int(s.classWord160)], [1, 1, 0, 2, 0, -4], "the swing's end hands back to the core logic")
+        XCTAssertFalse(s.mirrored)
         // States 0, 3 and 5 are `.ReportError("Ax goblin error!")` (M l. 58083–58085): nothing but the facing and the tail.
         for state: Int16 in [0, 3, 5] {
             w2.active.update(id: gid) { $0.subtype = state; $0.phase = 3; $0.counterA6 = 4; $0.vx = 0 }
@@ -1403,6 +1424,22 @@ final class WalkerTests: XCTestCase {
             XCTAssertEqual(w2.rng.seed, r.seed)
             s = try slot(w2, gid)
             XCTAssertEqual([Int(s.subtype), Int(s.phase), Int(s.counterA6)], [Int(state), 3, 4], "state \(state)")
+        }
+        // The facing's edges (M l. 58297–58302), the arm alone in state 5 (nothing moves it): P.x == cx keeps the flip;
+        // one px right → flip = (`+0xb2` == 2); one px left → flip = (`+0xb2` ≠ 2).
+        for (dx, b2, before, want) in [(0, Int16(0), true, true), (0, 0, false, false), (0, 2, true, true),
+                                       (0, 2, false, false), (1, 0, true, false), (1, 2, false, true),
+                                       (-1, 0, false, true), (-1, 2, true, false)] {
+            w2.active.update(id: gid) { g in
+                g.subtype = 5
+                g.subState = b2
+                g.classWordB6 = 0
+                g.centre = SpriteSlot.Point(x: 400, y: 300)
+                g.mirrored = before
+            }
+            w2.player.centreX = Int16(400 + dx)
+            AxGoblin.arm(w2, id: gid)
+            XCTAssertEqual(try slot(w2, gid).mirrored, want, "dx \(dx) b2 \(b2) flip \(before)")
         }
     }
 
@@ -1415,7 +1452,13 @@ final class WalkerTests: XCTestCase {
         let w = try world()
         let (id, solver) = try axGoblin(w)
         for (gate, cry610) in [(Int16(0x50), false), (0x51, true)] {
-            w.rng = FastRand(seed: seed { r in _ = r.next(4000); return r.next(100) == gate })
+            w.rng = FastRand(seed: seed { r in
+                _ = r.next(4000)
+                guard r.next(100) == gate else { return false }
+                var a = r, b = r                                        // the cry's R(4000) ≠ R(3999), R(4001)
+                let v = r.next(4000)
+                return !cry610 || (v != a.next(3999) && v != b.next(4001))
+            })
             var r = w.rng
             let p414 = Int32(r.next(4000))
             _ = r.next(100)
@@ -1485,6 +1528,30 @@ final class WalkerTests: XCTestCase {
         let plain = try logic(w, id, cx: 191, cy: 300, px: 300, py: 250) { $0.classWord16c = 1 }
         XCTAssertEqual(w.rng.seed, r.seed)
         XCTAssertEqual(Int(plain.vy), -4800, "−2500 − R(600) \(pv) clamped")
+        // The vy floor −6250 (M l. 57241–57243), each side: d 124 with R(600) 49 / 50 → −6249 / −6250; d 125 with 0 / 1
+        // → −6250 / −6251 → −6250.
+        for (d, rv, wantVY) in [(124, Int16(49), -6249), (124, 50, -6250), (125, 0, -6250), (125, 1, -6250)] {
+            w.rng = FastRand(seed: seed { r in
+                _ = r.next(4000)
+                if 0x50 < r.next(100) { _ = r.next(4000) }
+                return r.next(600) == rv
+            })
+            let t = try logic(w, id, cx: 290, cy: 200 + d, px: 300, py: 200)
+            XCTAssertEqual([Int(t.subtype), Int(t.vy)], [6, wantVY], "d \(d) R(600) \(rv)")
+        }
+        // The ±4200 clamps of vx and `+0x168` (M l. 57263–57278), each side: d 400, T.x − cx ±105 → 40·(±105) + R(400)
+        // − 200 with R 199 / 200 / 201 → 4199 / 4200 / 4201 → 4200 and −4201 → −4200 / −4200 / −4199.
+        for (side, rx, want) in [(1, Int16(199), 4199), (1, 200, 4200), (1, 201, 4200), (-1, 199, -4200),
+                                 (-1, 200, -4200), (-1, 201, -4199)] {
+            w.rng = FastRand(seed: seed { r in
+                _ = r.next(4000)
+                if 0x50 < r.next(100) { _ = r.next(4000) }
+                _ = r.next(600)
+                return r.next(400) == rx
+            })
+            let t = try logic(w, id, cx: 300 - side * 105, cy: 600, px: 300, py: 200)
+            XCTAssertEqual([Int(t.subtype), Int(t.vx), Int(t.bonusP4)], [6, want, want], "side \(side) R(400) \(rx)")
+        }
         // The budget: 2 → jumps (→ 3); 3 → the retreat (state 1, `+0xb2` 2, `+0x164` 30, `+0x160` −30 − R(20)); −2 →
         // −1, nothing; −1 → 0 and the jump.
         XCTAssertEqual(try logic(w, id, cx: 250, cy: 300, px: 300, py: 200) { $0.classWord160 = 2 }.classWord160, 3)
@@ -1501,7 +1568,16 @@ final class WalkerTests: XCTestCase {
         XCTAssertEqual(w.rng.seed, seed0)
         XCTAssertEqual(try logic(w, id, cx: 250, cy: 300, px: 300, py: 200) { $0.classWord160 = -1 }.subtype, 6)
         // Fleeing (HP ≤ 200 within 600 px; T = (±32000, ±32000) away from the player, `+0xb6` 3) with a wall hit: the
-        // wall jump away; at budget 3 the flee retreat — `+0x164` 70, `+0x160` −70 − R(20), `+0x174` −120 − R(60).
+        // wall jump away; at budget 3 the flee retreat — `+0x164` 70, `+0x160` −70 − R(20), `+0x174` −120 − R(60) (on a
+        // stream where R(20) ≠ R(19), R(21) and R(60) ≠ R(59), R(61)).
+        w.rng = FastRand(seed: seed { r in
+            var a = r, b = r
+            let v = r.next(0x14)
+            guard v != a.next(0x13) && v != b.next(0x15) else { return false }
+            var c = r, d = r
+            let u = r.next(0x3c)
+            return u != c.next(0x3b) && u != d.next(0x3d)
+        })
         r = w.rng
         let f160 = -70 - Int(r.next(0x14)), f174 = -120 - Int(r.next(0x3c))
         s = try logic(w, id, cx: 400, cy: 300, px: 350, py: 300) { $0.hp = 200; $0.classWord16c = 1; $0.classWord160 = 3 }
@@ -1512,6 +1588,52 @@ final class WalkerTests: XCTestCase {
         XCTAssertEqual([Int(s.subtype), Int(s.classWordB6)], [6, 3])
         XCTAssertGreaterThan(s.vx, 0, "away from the player (T.x 32000)")
         XCTAssertTrue(s.mirrored)
+        // The flee T.y (M l. 57156–57161: P.y < cy → 32000, else −32000) reaches the arms when T.x lands within 110 px of
+        // cx — a centre near x 32000 (cx 31950, P.x 31900 → T.x 32000, dx 50, no wall). P.y one above cy → T.y 32000:
+        // the target-below arm (R(100) 99 → state 1, `+0xb2` 2, the second R(20)); P.y == cy → T.y −32000: the jump,
+        // d = (short)(300 + 32000) = 32300 → vy −6250, vx 3230·50 + R(400) − 200 → 4200, flip (T.x ≥ cx).
+        w.rng = FastRand(seed: seed { r in r.next(100) == 99 })
+        r = w.rng
+        _ = r.next(100)
+        _ = r.next(0x14)
+        let fj = -30 - Int(r.next(0x14))
+        s = try logic(w, id, cx: 31950, cy: 300, px: 31900, py: 299) { $0.hp = 200 }
+        XCTAssertEqual(w.rng.seed, r.seed)
+        XCTAssertEqual([Int(s.subtype), Int(s.subState), Int(s.launchSpeed), Int(s.classWord160), Int(s.classWordB6)],
+                       [1, 2, 30, fj, 3], "P.y < cy: T.y 32000, below")
+        XCTAssertTrue(w.player.cues.isEmpty)
+        r = w.rng
+        _ = r.next(4000)
+        if 0x50 < r.next(100) { _ = r.next(4000) }
+        _ = r.next(600)
+        _ = r.next(400)
+        s = try logic(w, id, cx: 31950, cy: 300, px: 31900, py: 300) { $0.hp = 200 }
+        XCTAssertEqual(w.rng.seed, r.seed)
+        XCTAssertEqual([Int(s.subtype), Int(s.subState), Int(s.phase), Int(s.classWord160), Int(s.classWordB6),
+                        Int(s.vy), Int(s.vx), Int(s.bonusP4)], [6, 1, 0, 1, 3, -6250, 4200, 4200], "P.y == cy: T.y −32000")
+        XCTAssertTrue(s.mirrored)
+        XCTAssertEqual(w.player.cues.first?.snd, 414)
+        // T.y < cy + 25 (M l. 57208) at its edge, fleeing (no swing): cy 31975 → T.y 32000 = cy + 25, below (R(100) 99);
+        // cy 31976 → the jump, d = (short)(31976 − 32000) = −24: vy 1200 − R(600) → −4800, vx (−24 / 10 = −2)·50 + R(400)
+        // − 200.
+        w.rng = FastRand(seed: seed { r in r.next(100) == 99 })
+        r = w.rng
+        _ = r.next(100)
+        _ = r.next(0x14)
+        let ej = -30 - Int(r.next(0x14))
+        s = try logic(w, id, cx: 31950, cy: 31975, px: 31900, py: 31875) { $0.hp = 200 }
+        XCTAssertEqual(w.rng.seed, r.seed)
+        XCTAssertEqual([Int(s.subtype), Int(s.subState), Int(s.launchSpeed), Int(s.classWord160)], [1, 2, 30, ej],
+                       "T.y == cy + 25: below")
+        r = w.rng
+        _ = r.next(4000)
+        if 0x50 < r.next(100) { _ = r.next(4000) }
+        _ = r.next(600)
+        let ex = -300 + Int(r.next(400))
+        s = try logic(w, id, cx: 31950, cy: 31976, px: 31900, py: 31876) { $0.hp = 200 }
+        XCTAssertEqual(w.rng.seed, r.seed)
+        XCTAssertEqual([Int(s.subtype), Int(s.subState), Int(s.classWord160), Int(s.vy), Int(s.vx), Int(s.bonusP4)],
+                       [6, 1, 1, -4800, ex, ex], "T.y == cy + 24: the jump")
         // The target choice (M l. 57126–57162): flee while HP < 0xc9 ∧ `+0x174` == 0 (after its step) ∧ `+0x100` == 0 ∧
         // |cx − P.x| < 600, or while the player's health `G+4` ≤ 0; else chase, which stores `+0x174 = 0`.
         for (hp, l174, imm, px, health, flees) in [(200, 0, 0, 999, 100, true), (201, 0, 0, 999, 100, false),
@@ -1541,7 +1663,16 @@ final class WalkerTests: XCTestCase {
         // → state 1, `+0xb2` 1; else `+0xb2` 2 — both with a second `+0x160` −30 − R(20).
         for (pick, hop, b2) in [(Int16(10), true, 2), (11, true, 1), (20, true, 1), (21, false, 1), (60, false, 1),
                                 (61, false, 2), (0, true, 2), (99, false, 2)] {
-            w.rng = FastRand(seed: seed { r in r.next(100) == pick })
+            // R(100), not R(99) / R(101): above each edge R(99) falls below it, below each edge R(101) reaches it.
+            w.rng = FastRand(seed: seed { r in
+                var a = r, b = r
+                guard r.next(100) == pick else { return false }
+                switch pick {
+                case 11, 21, 61: return a.next(99) == pick - 1
+                case 10, 20, 60: return b.next(101) == pick + 1
+                default: return true
+                }
+            })
             r = w.rng
             _ = r.next(100)
             var j = -30 - Int(r.next(0x14))
@@ -1582,7 +1713,8 @@ final class WalkerTests: XCTestCase {
             frame(wa, aid, sa)
             return try slot(wa, aid)
         }
-        for (p, vy, want) in [(Int16(7), Int32(-1), 8), (8, -1, 8), (0, -1, 1), (5, 0, 5), (5, 2000, 5), (5, 2001, 4),
+        for (p, vy, want) in [(Int16(7), Int32(-1), 8), (8, -1, 8), (0, -1, 1), (0, 100, 0), (5, 0, 5), (5, 2000, 5),
+                              (5, 2001, 4),
                               (2, 2001, 1), (1, 2001, 1), (-3, 2001, -2)] {
             let s = try air(phase: p, vy: vy)
             XCTAssertEqual(Int(s.phase), want, "phase \(p) vy \(vy)")
@@ -1668,11 +1800,13 @@ final class WalkerTests: XCTestCase {
             frame(wl, lid, sl)
             t = try slot(wl, lid)
             XCTAssertEqual([Int(t.subtype), Int(t.subState)], [1, 1], "R(4) \(r4): `.AxGoblinCoreLogic`")
+            XCTAssertEqual(t.face, FaceRef(pict: 0x6d6, index: 0, set: .encoded), "the landed face (M l. 58277)")
             // `+0x46` below 0 on the ground with `+0xa6` 0: no `.AxGoblinCoreLogic` (it steps toward 0 instead).
             wl.active.update(id: lid) { $0.subtype = 6; $0.phase = -3; $0.counterA6 = 0; $0.subState = 2 }
             frame(wl, lid, sl)
             t = try slot(wl, lid)
             XCTAssertEqual([Int(t.subtype), Int(t.phase), Int(t.subState)], [6, -2, 2])
+            XCTAssertEqual(t.face, FaceRef(pict: 0x6d6, index: 0, set: .encoded), "the landed face over 0x6d9[0]")
         }
         // The walk (state 1 on the ground, M l. 58089–58114): right iff P.x < cx, inverted at `+0xb2` 1 and again while
         // fleeing (`+0xb6` 3 ∧ `+0x174` 0); `.SetSpriteSpeed(±1400, 0x200)`; `+0x46` + 1 wrapped 0…15; face 0x6d7[`+0x46 >>
@@ -1708,8 +1842,27 @@ final class WalkerTests: XCTestCase {
             XCTAssertEqual(t.face, FaceRef(pict: 0x6d7, index: 0, set: .encoded))
             if pxSide != 0 { XCTAssertEqual(t.mirrored, flip, "side \(pxSide) b2 \(b2) b6 \(b6) 174 \(l174)") }
         }
-        // The walk face is 0x6d7[`+0x46 >> 1`]: 4 → 5 → [2]; below 0 it wraps to 15 → [7].
-        for (p, want, cell) in [(Int16(4), 5, 2), (-2, 15, 7)] {
+        // The walk's direction at P.x == cx (M l. 58088–58089, signed P.x < cx): left (−1400); one px left of cx: right.
+        // The arm alone (nothing moves the centre first).
+        for (dx, vx) in [(0, -1400), (-1, 1400)] {
+            ww.active.update(id: wid) { s in
+                s.subtype = 1
+                s.groundKind = 3
+                s.subState = 0
+                s.classWordB6 = 0
+                s.classWord174 = 0
+                s.phase = 0
+                s.launchSpeed = 50
+                s.hp = 500
+                s.centre = SpriteSlot.Point(x: 400, y: 300)
+            }
+            ww.player.centreX = Int16(400 + dx)
+            ww.player.centreY = 300
+            AxGoblin.arm(ww, id: wid)
+            XCTAssertEqual(Int(try slot(ww, wid).vx), vx, "P.x − cx \(dx)")
+        }
+        // The walk face is 0x6d7[`+0x46 >> 1`]: 4 → 5 → [2]; 14 → 15 → [7] (no wrap at 15); below 0 it wraps to 15 → [7].
+        for (p, want, cell) in [(Int16(4), 5, 2), (14, 15, 7), (-2, 15, 7)] {
             ww.player.centreX = Int16(wc.x + 2000)
             ww.active.update(id: wid) { $0.subtype = 1; $0.subState = 0; $0.phase = p; $0.launchSpeed = 50; $0.hp = 500 }
             frame(ww, wid, sw)
@@ -1769,6 +1922,17 @@ final class WalkerTests: XCTestCase {
         }
         XCTAssertEqual(CachedFaces.sheets(markedBy: [Int16(0x6d6)]),
                        [set(0x6d7, 8), set(0x6d8, 6), set(0x6d9, 3), set(0x6da, 6), .single(0x6d6)])
+        // `.LoadCachedSpriteFaces` over the registration rows (`.InitWalkerSprite` M l. 56755–56768: singles 0x6a4,
+        // 0x6d6; sets 0x6ab 9, 0x6d7 8, 0x6d8 6, 0x6d9 3, 0x6da 6, 0x6e0 9; flag 0): n 43, q 86 → p 52, 60, 66, 69, 75,
+        // 84, then 85, 86. A CLUT change reloads none of them (flag 0).
+        var cache = CachedFaces()
+        let need = CachedFaces.Needed(sets: [0x6ab, 0x6d7, 0x6d8, 0x6d9, 0x6da, 0x6e0], singles: [0x6a4, 0x6d6])
+        XCTAssertEqual(cache.load(needed: need).map { [Int($0.0), Int($0.1)] },
+                       [[52, 86], [60, 86], [66, 86], [69, 86], [75, 86], [84, 86], [85, 86], [86, 86]])
+        XCTAssertEqual([cache.loadedSets, cache.loadedSingles], [need.sets, need.singles])
+        cache.enterLevel(screenClut: 7)
+        cache.enterLevel(screenClut: 9)
+        XCTAssertTrue(cache.load(needed: need).isEmpty, "flag 0: kept across a CLUT change")
         // The death (the tail's 0x6d6 entry, then the 1750 path of state 4, M l. 58198–58241): `+0xb2` 0, state 4,
         // `+0x15c` 0, face 0x6da[0], the death cry, score + 800; then face 0x6da[min(`+0xb2` / 4, 5)], snd 703 at 0,
         // vy − 800 at `+0xb2` 20, layer 1, the ×0.9 friction, no `+0xea`; past 60: `+0x15c` + 1 (the burn past 2),
@@ -1790,13 +1954,19 @@ final class WalkerTests: XCTestCase {
         var fall: Int32?
         for b2 in 0...60 {
             w.player.cues = []
-            w.active.update(id: id) { $0.vy = 0 }
+            // The player 100 px right and the flip set: a dying goblin never turns to face (M l. 58295).
+            let c0 = s.centre
+            w.player.centreX = Int16(c0.x + 100)
+            w.active.update(id: id) { $0.vy = 0; $0.mirrored = true }
             frame(w, id, solver)
             s = try slot(w, id)
+            XCTAssertTrue(s.mirrored, "b2 \(b2): no facing while dying")
             XCTAssertEqual(s.face, FaceRef(pict: 0x6da, index: min(b2 / 4, 5), set: .encoded), "b2 \(b2)")
             XCTAssertEqual([Int(s.layer), Int(s.subState), Int(s.subtype)], [1, b2 + 1, 4], "b2 \(b2)")
             XCTAssertFalse(s.killedForGood, "b2 \(b2): no `+0xea` on the 1750 path")
-            XCTAssertEqual(w.player.cues.contains { $0.snd == 703 && $0.volume == 0x100 }, b2 == 0, "b2 \(b2)")
+            XCTAssertEqual(w.player.cues.contains {
+                $0.snd == 703 && $0.volume == 0x100 && $0.priority == 1 && $0.call == .threeD && $0.position == c0
+            }, b2 == 0, "b2 \(b2): `.STPlay3DSound(703, 1, 0x100, centre)` (M l. 58203)")
             if fall == nil { fall = s.vy }
             XCTAssertEqual(s.vy, try XCTUnwrap(fall) - (b2 == 20 ? 800 : 0), "b2 \(b2): from vy 0, − 800 at 20")
             if b2 == 0 { XCTAssertEqual(s.vx, 900) }

@@ -117,7 +117,7 @@ public struct SpriteSlot: Equatable, Sendable {
     /// WK1 (added, Invariant 9): `+0xb4` (i16) — a Walker's turn step (`.HandleWalkerSprite`'s first frame ±3; the
     /// spear guard walks it toward ±3, M l. 57856–57926) and the 1760's blink counter (WK2).
     public var classWordB4: Int16 = 0
-    /// WK2 (added, Invariant 9): `+0xb6` (i16) — the Ax goblin's flee flag (`.AxGoblinCoreLogic` M l. 57145 / 57162: 0
+    /// WK2 (added, Invariant 9): `+0xb6` (i16) — the Ax goblin's flee flag (`.AxGoblinCoreLogic` M l. 57146 / 57162: 0
     /// chasing, 3 fleeing; the Handle's walk and facing invert while it is 3 and `+0x174` is 0).
     public var classWordB6: Int16 = 0
     /// WK2 (added, Invariant 9): `+0x174` (i32) — the Ax goblin's flee lockout (`.AxGoblinCoreLogic`: < 0 counts up;

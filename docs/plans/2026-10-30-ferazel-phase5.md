@@ -1062,6 +1062,10 @@ records the summary line.
   golden test class run alone): **no 1760 or 1750 Handle on any golden route**; level 1's 1760 (rec 73) runs exactly one
   Handle per session start in `GameFlowGameTests` (16 over its 9 tests, each state 5, `+0xb2` 0, before it idles again
   — its first Handle reads the centre 0, so it never attacks there), and those tests' pins (rec 73 y 29 → 27) hold.
+  **Correction (review leg 1):** not only there — rec 73 also wakes (state 5, three Handles each drawing R(25)) in 11
+  other Core test classes (e.g. `BackgroundMoverTests testCannonP0LaunchUp`, `DiffuseSquashTests` ×2,
+  `TeleportLevelRunTests`), and records 27, 118 and 119 wake in `testLevel1ToMapToLevel2` and `testBuiltLevelsFour`;
+  none of them is a golden. The Files line's "1750–1754 marks" is the dump's 0x6d6…0x6df (types 1750–1759).
   **Switch-off** (both arms back to `break`, local only): goldens, `GameFlowGameTests`, `LevelFourTests`,
   `PlayerTileTests`, the BootFaces hot rects all pass on the old values; only the six new tests fail. **LevelFourTests
   rec 119:** no value changed (the test pins its Setup entry, which WK1 built); its stale `later: WK2` comment now names
@@ -1086,7 +1090,17 @@ records the summary line.
   logic, the Setup arm and the throws; 113 killed after one round of added asserts; 4 equivalent (the landed
   cooldown's `+0x16c = 0`, re-zeroed by the tail before anything reads it; the flee T.y tie, reachable only through a
   wall jump that reads no T.y; the swing's inner `dx < 110`, implied by "not a wall jump"; the wall jump's `T.x < cx`
-  tie, impossible at dx ≥ 110).
+  tie, impossible at dx ≥ 110). **Fix round (both legs found the code exact to the dump; leg 2's 271 mutations left
+  22 real survivors; tests only, ladder stays 560):** asserts added inside the six tests for the swing's hand-back to the core logic and
+  its `+0x46` 0, the flee T.y sign and its P.y == cy edge (reached with a centre near x 32000 — the run's "equivalent"
+  tie was not), the T.y < cy + 25 edge, the dying goblin's frozen flip, the facing's P.x == cx edges, the walk's
+  direction at P.x == cx, its 8th face (14 → 15), the death thud's priority and position, the landed face, `+0x46` 0
+  with vy ≥ 0, the −6250 floor and the ±4200 clamps each side, and R(4000) / R(20) / R(60) / R(100) told from their
+  neighbours; the 1750's cache rows loaded through `CachedFaces.load` (bars and the flag-0 CLUT keep). Every survivor
+  re-run as a mutant: killed. Equivalent: the clamps' `<` → `≤` (they store the edge value) and the floor's
+  compare-only −6249; leg 2's `AxGoblin.swift` :83, :87, :120, :143, :163, :180, :197, :337 ×2. Cites: `SpriteSlot`
+  `+0xb6` → M l. 57146; the `sheets(markedBy:)` doc now says `marks` order (the 1750's store order is 0x6d6, 0x6d7,
+  0x6d9, 0x6d8, 0x6da).
 
 ### Wave 5.3 — flyers, water and cave
 
