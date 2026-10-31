@@ -169,6 +169,24 @@ final class CrawlerRoachTests: XCTestCase {
             XCTAssertEqual([te.classTimer, te.vx], [-e2 - 0x4b0, -e2 - 0x4b0], "flip \(flip)")
             XCTAssertEqual(te.mirrored, flip)
         }
+        // The leap's cap 2·`+0x158` (M l. 56309–56310): `.SetSpriteSpeed` zeroes vx first, so it bites only when R(500)
+        // passes `+0x158` — below every tier's cap; a `+0x158` of 200 written in, seed 3 (Park–Miller by hand: R(1000)
+        // 769, R(500) 345, R(10) 0): −345 − 200 = −545 is held at −400; the player 30 left, not negated; vy −2000 − 769
+        // + 0x151; `+0xa6` 10 + 0, counted once on ground.
+        do {
+            let wq = try world()
+            let sq = TileSolver(world: wq)
+            let iq = try crawler(wq)
+            frame(wq, iq, sq)
+            wq.player.centreX = Int16(try slot(wq, iq).centre.x - 30)
+            wq.player.centreY = Int16(try slot(wq, iq).centre.y)
+            wq.active.update(id: iq) { $0.subState = 1; $0.vx = 0; $0.classWord158 = 200 }
+            wq.rng = FastRand(seed: 3)
+            frame(wq, iq, sq)
+            let tq = try slot(wq, iq)
+            XCTAssertEqual([tq.classTimer, tq.vx, tq.vy], [-400, -400, -2432])
+            XCTAssertEqual(tq.counterA6, 9)
+        }
         // On ground with the player beyond ±60 of the centre: `.AccelerateBasedOnSlope(±250, cap)`; within: none; the
         // cooldown counts down only on ground; out of range (|dx| ≥ 70 or |dy| ≥ 100) no wind-up.
         for (dx, dy, dvx, armed) in [(61, 0, 250, true), (-61, 0, -250, true), (60, 0, 0, true), (-60, 0, 0, true),
@@ -195,8 +213,9 @@ final class CrawlerRoachTests: XCTestCase {
         wc.active.update(id: ic) { $0.vx = 1100 }
         frame(wc, ic, sc)
         XCTAssertEqual(try slot(wc, ic).vx, 0x4b0)
-        // HP ≤ `+0x15c` (300) with `+0xb2 == −1` → state 3 (the flee); winding up it waits; above it stays.
-        for (hp, b2, state) in [(Int16(300), Int16(-1), Int16(3)), (301, -1, 2), (300, 3, 2)] {
+        // HP ≤ `+0x15c` (300) with `+0xb2 == −1` → state 3 (the flee); winding up it waits; above it stays. The death
+        // edge `+0xa4 < 1` (M l. 56435): HP 1 lives on (winding up: state 2), HP 0 → state 4.
+        for (hp, b2, state) in [(Int16(300), Int16(-1), Int16(3)), (301, -1, 2), (300, 3, 2), (1, 3, 2), (0, 3, 4)] {
             let wf = try world()
             let sf = TileSolver(world: wf)
             let i = try crawler(wf)
@@ -264,6 +283,32 @@ final class CrawlerRoachTests: XCTestCase {
             let t = try slot(wh, ih)
             XCTAssertEqual([t.vx, t.x256 - x0, Int32(t.counterA6)], [out, out, Int32(a6)], "left \(left) vx \(vx)")
         }
+        // The player at the crawler's own x (M l. 56377–56386: both tests strict): no halving either way, `+0xa6` − 1.
+        for vx in [Int32(-301), -1, 301, 400] {
+            let wh = try world()
+            let sh = TileSolver(world: wh)
+            let ih = try crawler(wh)
+            frame(wh, ih, sh)
+            wh.player.centreX = Int16(try slot(wh, ih).centre.x)
+            wh.active.update(id: ih) { $0.subtype = 3; $0.counterA6 = 4; $0.hp = 200; $0.vx = vx }
+            frame(wh, ih, sh)
+            XCTAssertEqual([try slot(wh, ih).vx, Int32(try slot(wh, ih).counterA6)], [vx, 3], "level vx \(vx)")
+        }
+        // The hop's draws pinned on seed 10 (Park–Miller by hand: R(400) 225, R(800) 241, R(30) 22 — R(31) would be
+        // 23, R(29) 21): the player 100 right, not negated; vx −0x6a4 − 241 = −1941, halved on ground (−970); `+0xa6`
+        // 20 + 22; vy −900 − 225 + 0x151.
+        do {
+            let wh = try world()
+            let sh = TileSolver(world: wh)
+            let ih = try crawler(wh)
+            frame(wh, ih, sh)
+            wh.player.centreX = Int16(try slot(wh, ih).centre.x + 100)
+            wh.active.update(id: ih) { $0.subtype = 3; $0.counterA6 = 0; $0.hp = 200; $0.vx = 0 }
+            wh.rng = FastRand(seed: 10)
+            frame(wh, ih, sh)
+            let t = try slot(wh, ih)
+            XCTAssertEqual([t.classTimer, t.vx, t.vy, Int32(t.counterA6)], [-1941, -970, -788, 42])
+        }
         // The flee's `+0xa6` count-down has no floor; HP ≥ 300 on ground leaves state 3 alone (no way back).
         let wn = try world()
         let sn = TileSolver(world: wn)
@@ -295,6 +340,16 @@ final class CrawlerRoachTests: XCTestCase {
             XCTAssertEqual(z.gravity, -0x151)
             XCTAssertEqual(z.vy, -0x151, "held against the ceiling")
             XCTAssertEqual(wz.records[0].p1, 0)
+        }
+        // The ceiling's halving at its edges (M l. 56426–56433: |vx| > 0, then `srawi 1; addze`): ±1 → 0, ±2 → ±1, 0
+        // holds.
+        for (vx, out) in [(Int32(1), Int32(0)), (-1, 0), (2, 1), (-2, -1), (0, 0)] {
+            let wz = try world(floor: false)
+            let iz = try crawler(wz, y: 100, p1: 0)
+            wz.player.centreX = Int16(try slot(wz, iz).centre.x + 500)
+            wz.active.update(id: iz) { $0.vx = vx }
+            frame(wz, iz, TileSolver(world: wz))
+            XCTAssertEqual([Int(try slot(wz, iz).subtype), Int(try slot(wz, iz).vx)], [0, Int(out)], "vx \(vx)")
         }
         // Falling (state 1): record p1 := 1 in the live record (a reload makes a floor crawler), gravity 0x151, the face
         // left as it was; on ground → state 2.
@@ -336,6 +391,9 @@ final class CrawlerRoachTests: XCTestCase {
         wd.active.update(id: iD) { $0.subtype = 5; $0.gravity = 7 }
         frame(wd, iD, sd)
         XCTAssertEqual(try slot(wd, iD).gravity, 7)
+        wd.active.update(id: iD) { $0.subtype = 4; $0.gravity = 7; $0.hp = 1 }
+        frame(wd, iD, sd)
+        XCTAssertEqual(try slot(wd, iD).gravity, 0x151, "M l. 56355: state 4 stores 0x151")
     }
 
     func testCrawlerCooldownStartsAt3() throws {
@@ -638,6 +696,10 @@ final class CrawlerRoachTests: XCTestCase {
         wh.active.update(id: ih) { $0.hp = 2 }
         frame(wh, ih, sh)
         XCTAssertEqual(try slot(wh, ih).subtype, 2)
+        // The death edge `+0xa4 < 1` (M l. 65062): HP 1 lives on (HP 0 → state 4: testKillScores).
+        wh.active.update(id: ih) { $0.hp = 1 }
+        frame(wh, ih, sh)
+        XCTAssertEqual(try slot(wh, ih).subtype, 2)
         wh.player.centreX = Int16(try slot(wh, ih).centre.x + 100)
         wh.active.update(id: ih) { $0.subtype = 3; $0.counterA6 = 0; $0.vx = 0 }
         var rh = wh.rng
@@ -695,17 +757,23 @@ final class CrawlerRoachTests: XCTestCase {
         // The crush (Crawler M l. 56620–56634, Roach 65136–65151): a Statue or Box whose `.PlatformBounce` against the
         // enemy is 2 (contact from below — measured on a twin world), with the solid falling (vy > 0) or the enemy on
         // ground → HP 0, `+0x150 = 0x16`; one-way solids too; a Platform: nothing.
-        func crush(_ type: Int16, _ handler: SpriteHandler, solidVY: Int32, grounded: Bool,
-                   oneWay: Bool = false) throws -> (bounce: Int16, hp: Int16, w150: Int32) {
+        func crush(_ type: Int16, _ handler: SpriteHandler, solidVY: Int32, grounded: Bool, oneWay: Bool = false,
+                   place: (x: Int, top: Int, width: Int)? = nil) throws -> (bounce: Int16, hp: Int16, w150: Int32) {
             func make() throws -> (SpriteWorld, Int, Int) {
                 let wc = try world(floor: false)
                 let c = type == CrawlerRoach.roach ? try roach(wc) : try crawler(wc)
-                wc.active.update(id: c) { $0.vy = -0x400; $0.groundKind = grounded ? 3 : 0 }
-                let top = try self.slot(wc, c).hotRect.top + 367 - (type == CrawlerRoach.roach ? 12 : 0) - 30
-                let box = try XCTUnwrap(wc.newSprite(type: 0xc12, x: 220, y: top, layer: 2, handler: handler) { b in
-                    b.x = 220
+                wc.active.update(id: c) { m in
+                    m.vy = place == nil ? -0x400 : 0
+                    if place != nil { m.vx = 0 }
+                    m.groundKind = grounded ? 3 : 0
+                }
+                let top = try place?.top
+                    ?? self.slot(wc, c).hotRect.top + 367 - (type == CrawlerRoach.roach ? 12 : 0) - 30
+                let bx = place?.x ?? 220
+                let box = try XCTUnwrap(wc.newSprite(type: 0xc12, x: bx, y: top, layer: 2, handler: handler) { b in
+                    b.x = bx
                     b.y = top
-                    b.hotRect = IdleSprites.Rect(top: 0, left: 0, bottom: 0x20, right: 0x40)
+                    b.hotRect = IdleSprites.Rect(top: 0, left: 0, bottom: 0x20, right: place?.width ?? 0x40)
                     b.vy = solidVY
                     b.oneWay = oneWay
                 })
@@ -713,7 +781,13 @@ final class CrawlerRoachTests: XCTestCase {
             }
             let (wa, ca, ba) = try make()
             let r = try slot(wa, ca).hotRect
-            let centre = SpriteSlot.Point(x: r.left + ((r.right - r.left) >> 1), y: r.top + ((r.bottom - r.top) >> 1))
+            // The centre worked by hand from M l. 56626–56629 (h = left + (right − left) >> 1, v = top + (bottom − top)
+            // >> 1): the Crawler's rect (0xc, 0x14, 0x21, 0x2c) → (h 32, v 22), the Roach's (0x1b, 0x23, 0x2d, 0x44) →
+            // (51, 36); factor 0, the rect `+0x34`, no bounce flag.
+            let roachy = type == CrawlerRoach.roach
+            XCTAssertEqual(r, roachy ? IdleSprites.Rect(top: 0x1b, left: 0x23, bottom: 0x2d, right: 0x44)
+                                     : IdleSprites.Rect(top: 0xc, left: 0x14, bottom: 0x21, right: 0x2c))
+            let centre = roachy ? SpriteSlot.Point(x: 51, y: 36) : SpriteSlot.Point(x: 32, y: 22)
             let b = wa.platformBounce(mover: ca, solid: ba, centre: centre, factor: 0, rect: r, bounce: false)
             let (wb, cb, bb) = try make()
             var l = LightTable()
@@ -740,6 +814,17 @@ final class CrawlerRoachTests: XCTestCase {
             XCTAssertEqual([Int(ow.bounce == 2 ? 1 : 0), Int(ow.hp)], [0, Int(hp)], "one-way: no contact from below")
             XCTAssertEqual(try crush(type, .platform, solidVY: 1, grounded: true).hp, hp, "a Platform: nothing")
             XCTAssertEqual(try crush(type, .inert, solidVY: 1, grounded: true).hp, hp)
+            // Where the centre decides (`.RectBounce` picks the side by the mover's centre against the solid's middle;
+            // the enemy at rest at (200, 367) / (200, 355), the solid falling): a 4-wide solid whose middle lies 2 / 3
+            // px left of the centre's h — contact from the right, no crush (an h of `(right − left) >> 2` would see it
+            // from below); a 0x40-wide one whose middle lies 3 px above the centre's v — from below, crushed (a v of
+            // `(bottom − top) >> 2` would see it from above).
+            let side = try crush(type, .box, solidVY: 1, grounded: false,
+                                 place: type == CrawlerRoach.roach ? (246, 370, 4) : (228, 362, 4))
+            XCTAssertEqual([Int(side.bounce), Int(side.hp)], [0, Int(hp)], "\(type) side")
+            let under = try crush(type, .box, solidVY: 1, grounded: false,
+                                  place: type == CrawlerRoach.roach ? (219, 372, 0x40) : (200, 370, 0x40))
+            XCTAssertEqual([Int(under.bounce), Int(under.hp)], [2, 0], "\(type) under")
         }
         // Crushed, the next Handle dies at once: state 4, `+0x150` 0x16 → 0x17 past 21 — snd 703, face 0, the Kill,
         // the score, the coins; hit callback off.
@@ -797,9 +882,12 @@ final class CrawlerRoachTests: XCTestCase {
             XCTAssertEqual(Int(try slot(wu, iu).waterRow), done ? 0 : 1, "+0x140 \(done)")
         }
         // FG 150 and BG 100 are where the two routines' answers differ (the others act alike here).
-        for (kind, layer, bg) in [(1, TileLayer.foreground, false), (150, .foreground, false), (1, .background, false),
-                                  (99, .background, false), (100, .background, true), (101, .background, true),
-                                  (199, .background, true)] {
+        // The literals by hand from M l. 56718–56734: the Roach's v centre 0x1b + (0x2d − 0x1b) >> 1 = 36, the BG
+        // routine's kind `param_3 − 100` per row.
+        for (kind, layer, bg, bgKind) in [(1, TileLayer.foreground, false, -99), (150, .foreground, false, 50),
+                                          (1, .background, false, -99), (99, .background, false, -1),
+                                          (100, .background, true, 0), (101, .background, true, 1),
+                                          (199, .background, true, 99)] {
             func make() throws -> (SpriteWorld, Int) {
                 let wt = try world(floor: false)
                 let it = try roach(wt, x: 200, y: 330)
@@ -810,11 +898,12 @@ final class CrawlerRoachTests: XCTestCase {
             func by(_ useBG: Bool) throws -> SpriteSlot {
                 let (wa, ia) = try make()
                 let r = try slot(wa, ia).hotRect
+                XCTAssertEqual(r, IdleSprites.Rect(top: 0x1b, left: 0x23, bottom: 0x2d, right: 0x44))
                 var pos = TilePos(x: 256, y: 352)
                 let solver = TileSolver(world: wa)
-                let vc = r.top + ((r.bottom - r.top) >> 1)
+                let vc = 36
                 if useBG {
-                    solver.wallBounceBG(ia, kind: kind - 100, tile: &pos, vCentre: vc, factor: 0, rect: r, bounce: false)
+                    solver.wallBounceBG(ia, kind: bgKind, tile: &pos, vCentre: vc, factor: 0, rect: r, bounce: false)
                 } else {
                     solver.wallBounce(ia, kind: kind, tile: &pos, vCentre: vc, factor: 0, rect: r, bounce: false)
                 }
@@ -827,6 +916,47 @@ final class CrawlerRoachTests: XCTestCase {
             if kind == 150 || kind == 100 { XCTAssertNotEqual(try by(!bg), try by(bg), "kind \(kind): the routines differ") }
             if kind == 150 { XCTAssertNotEqual(try slot(wb, ib), untouched) }
         }
+        // The BG kind is `param_3 − 100` (M l. 56734): a Roach at (200, 325) falling onto the tile at (224, 352) — BG
+        // 103 → kind 3, a floor: it lands (y 352 + 16 − 0x2d); BG 102 → kind 2: nothing.
+        for (kind, bgKind, lands) in [(103, 3, true), (102, 2, false)] {
+            func make() throws -> (SpriteWorld, Int) {
+                let wt = try world(floor: false)
+                let it = try roach(wt, x: 200, y: 325)
+                wt.active.update(id: it) { $0.vx = 0; $0.vy = 700 }
+                return (wt, it)
+            }
+            let (wa, ia) = try make()
+            var pos = TilePos(x: 224, y: 352)
+            TileSolver(world: wa).wallBounceBG(ia, kind: bgKind, tile: &pos, vCentre: 36, factor: 0,
+                                               rect: try slot(wa, ia).hotRect, bounce: false)
+            let (wb, ib) = try make()
+            CrawlerRoach.hitTile(TileSolver(world: wb), id: ib, pos: TilePos(x: 224, y: 352), kind: kind,
+                                 layer: .background)
+            let t = try slot(wb, ib)
+            XCTAssertEqual(t, try slot(wa, ia), "BG \(kind)")
+            XCTAssertEqual([t.y, Int(t.groundKind), Int(t.vy)], lands ? [323, 3, 0] : [325, 0, 700], "BG \(kind)")
+        }
+        // The v centre is read only by FG kind 0x13 (`0x10 < (short)(y + vCentre) + bottom`, M l. 33621): a Roach at y
+        // −64 against the tile at (224, −32): −64 + 36 + 0x2d = 17 > 16 → kind 0xf lands it (a v centre of 31 would not).
+        do {
+            func make() throws -> (SpriteWorld, Int) {
+                let wt = try world(floor: false)
+                let it = try roach(wt, x: 200, y: -64)
+                wt.active.update(id: it) { $0.vx = 0; $0.vy = 700 }
+                return (wt, it)
+            }
+            let (wa, ia) = try make()
+            var pos = TilePos(x: 224, y: -32)
+            TileSolver(world: wa).wallBounce(ia, kind: 0x13, tile: &pos, vCentre: 36, factor: 0,
+                                             rect: try slot(wa, ia).hotRect, bounce: false)
+            let (wb, ib) = try make()
+            let untouched = try slot(wb, ib)
+            CrawlerRoach.hitTile(TileSolver(world: wb), id: ib, pos: TilePos(x: 224, y: -32), kind: 0x13,
+                                 layer: .foreground)
+            XCTAssertEqual(try slot(wb, ib), try slot(wa, ia))
+            XCTAssertNotEqual(try slot(wb, ib), untouched)
+            XCTAssertEqual([try slot(wb, ib).y, Int(try slot(wb, ib).groundKind)], [-73, 0xf])
+        }
         let wp = try world()
         XCTAssertNotNil(CrawlerRoach.pass(try slot(wp, try crawler(wp))))
         var noTile = SpriteSlot(type: 0x6b0, x: 0, y: 0)
@@ -837,11 +967,11 @@ final class CrawlerRoachTests: XCTestCase {
         // 100, knock(o.vx), −1000, 4, flash)` (Crawler (int)(0.65 · vx) / 10, Roach vx >> 1 / 8), blood, the cry.
         for type in [CrawlerRoach.crawler, CrawlerRoach.roach] {
             let roachy = type == CrawlerRoach.roach
-            func hurt(_ t: Int16, _ handler: SpriteHandler, phase: Int16 = 0, timer: Int32 = 0, w150: Int32 = 0,
-                      cleared: Bool = false) throws -> [Int] {
+            func scene(_ t: Int16, _ handler: SpriteHandler, phase: Int16 = 0, timer: Int32 = 0, w150: Int32 = 0,
+                       cleared: Bool = false, hp: Int16 = 300) throws -> (SpriteWorld, Int, Int) {
                 let w = try world()
                 let id = roachy ? try roach(w) : try crawler(w)
-                w.active.update(id: id) { $0.hp = 300; $0.vx = 0 }
+                w.active.update(id: id) { $0.hp = hp; $0.vx = 0 }
                 let o = try XCTUnwrap(w.newSprite(type: t, x: 230, y: 382, layer: 1, handler: handler) { o in
                     o.x = 230
                     o.y = 382
@@ -853,16 +983,42 @@ final class CrawlerRoachTests: XCTestCase {
                     o.handleCleared = cleared
                 })
                 w.player.cues = []
+                return (w, id, o)
+            }
+            func strike(_ w: SpriteWorld, _ id: Int, _ o: Int) {
                 var l = LightTable()
                 if roachy { CrawlerRoach.hitRoach(w, id: id, other: o, lights: &l) } else {
                     CrawlerRoach.hitCrawler(w, id: id, other: o, lights: &l)
                 }
+            }
+            func hurt(_ t: Int16, _ handler: SpriteHandler, phase: Int16 = 0, timer: Int32 = 0, w150: Int32 = 0,
+                      cleared: Bool = false, hp: Int16 = 300) throws -> [Int] {
+                let (w, id, o) = try scene(t, handler, phase: phase, timer: timer, w150: w150, cleared: cleared, hp: hp)
+                strike(w, id, o)
                 let s = try slot(w, id)
                 return [Int(s.hp), Int(s.vx), Int(s.vy), Int(s.flash), w.player.cues.count,
-                        w.particles.records.filter(\.alive).count]
+                        w.particles.records.filter(\.alive).count] + w.player.cues.map { Int($0.snd) }
             }
-            let hit = [200, roachy ? 500 : 650, -1000, roachy ? 8 : 10, 1, 40]
+            // HP 300 − 100 = 200: the Crawler's cry 702 (below 0xc9), the Roach's 701 (not below 3).
+            let hit = [200, roachy ? 500 : 650, -1000, roachy ? 8 : 10, 1, 40, roachy ? 701 : 702]
             let none = [300, 0, 0, 0, 0, 0]
+            // The cry's edges (M l. 56671 `< 0xc9`, 65165 `< 3`): HP left 0xc9 / 3 → 701 'Crawler Ouch', one less →
+            // 702 'Crawler uh oh'.
+            let edge: (Int16, Int16) = roachy ? (103, 102) : (301, 300)
+            XCTAssertEqual(try hurt(0x4b7, .effect, phase: 7, hp: edge.0).last, 701, "\(type) HP left \(edge.0 - 100)")
+            XCTAssertEqual(try hurt(0x4b7, .effect, phase: 7, hp: edge.1).last, 702, "\(type) HP left \(edge.1 - 100)")
+            // The blood (M l. 56670, 65164): `.BloodSpray(s, o, 0x28, 400, 0x96, 2)` — the pool equals a twin's direct
+            // call with those literals on the same stream.
+            do {
+                let (wa, ia, oa) = try scene(0x4b7, .effect, phase: 7)
+                let (wb, ib, ob) = try scene(0x4b7, .effect, phase: 7)
+                wb.rng = wa.rng
+                strike(wa, ia, oa)
+                BloodSpray.spray(wb, victim: ib, attacker: ob, count: 0x28, speed: 400, spread: 0x96, kind: 2)
+                XCTAssertEqual(wb.particles.records.filter(\.alive).count, 40)
+                XCTAssertEqual(wa.particles, wb.particles, "\(type) blood")
+                XCTAssertEqual(wa.rng.seed, wb.rng.seed)
+            }
             XCTAssertEqual(try hurt(0x4b7, .effect, phase: 7), hit, "\(type) Smite")
             XCTAssertEqual(try hurt(0x4b7, .effect, phase: 8), none, "\(type)")
             XCTAssertEqual(try hurt(0x4b7, .effect, phase: 7, cleared: true), none, "\(type) idled")
@@ -911,6 +1067,8 @@ final class CrawlerRoachTests: XCTestCase {
                 XCTAssertEqual(s.vx, vx, "\(type) frame \(k)")
             }
             XCTAssertEqual(w.globals.score, 0)
+            // The last frame on seed 3 (Park–Miller by hand: the first draw's R(3) is 2 — R(4) would be 3): 4 coins.
+            w.rng = FastRand(seed: 3)
             var r = w.rng
             let n = Int(r.next(3)) + 2
             vx = roachy ? vx : TileSolver.fctiwz(Double(vx) * Double(bitPattern: 0x3fef_0a3d_70a3_d70a))
@@ -926,7 +1084,7 @@ final class CrawlerRoachTests: XCTestCase {
             XCTAssertEqual(w.globals.achieved[0][1], 1)
             XCTAssertEqual(w.player.cues.map { [Int($0.snd), Int($0.volume)] }, [[703, 0x100]])
             let coins = w.active.sprites.filter { !before.contains($0.id) }
-            XCTAssertEqual(coins.count, n, "\(type)")
+            XCTAssertEqual([coins.count, n], [4, 4], "\(type)")
             // Each coin: its Setup's draws (replayed on a scratch slot), then vy −1400 − R(1600), vx R(1000) − 500.
             var rc = r
             for coin in coins.sorted(by: { $0.id < $1.id }) {

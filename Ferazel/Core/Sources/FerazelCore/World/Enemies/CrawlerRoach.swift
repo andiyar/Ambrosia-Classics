@@ -146,10 +146,10 @@ public enum CrawlerRoach {
     ///    − 1; `+0xa6 == 0` and `+0xb2 == −1` with |c.x − P.x| < 70 and |c.y − P.y| < 100 → `+0xb2 = 5`; HP ≤ `+0x15c`
     ///    with `+0xb2 == −1` → state 3. 3 (flee): gravity 0x151; `+0xa6 == 0` on ground → the hop (`.SetSpriteSpeed(0,
     ///    −900 − R(400))`, `.AccelerateBasedOnSlope(−0x6a4 − R(800), 2000)`, `+0x14c` = vx, negated with vx when P.x <
-    ///    c.x, `+0xa6 = 20 + R(30)`); airborne → vx = `+0x14c`; on ground → vx halved while moving toward P (vx < 0 with
-    ///    P right, vx > 300 with P left), else `+0xa6` − 1 (no floor); HP < 300 → state 3. 4: gravity 0x151. 1 (falling):
-    ///    record p1 := 1, gravity 0x151, on ground → state 2. 0 (ceiling): gravity −0x151; |c.x − P.x| < 140 with P
-    ///    below by ≤ 219, or HP ≤ `+0x154` − 100 → state 1; vx halved;
+    ///    c.x, `+0xa6 = 20 + R(30)`); airborne → vx = `+0x14c`; on ground → vx halved while moving away from P (vx <
+    ///    0 with P right, vx > 300 with P left), else `+0xa6` − 1 (no floor); HP < 300 → state 3. 4: gravity 0x151. 1
+    ///    (falling): record p1 := 1, gravity 0x151, on ground → state 2. 0 (ceiling): gravity −0x151; |c.x − P.x| < 140
+    ///    with P below by ≤ 219, or HP ≤ `+0x154` − 100 → state 1; vx halved;
     /// 3. HP < 1 → state 4; state 0 → `+0x46` + 1 (wrapped past 1), face 0x6b0; state 4 → `dying`;
     /// 4. the facing: c.x < P.x → flip 1, P.x < c.x → flip 0;
     /// 5. winding up (state 2, `+0xb2 ≥ 0`): vx kept aside (as an i16) and 0 through `.ApplyGravityAndSeparateFromTiles`
@@ -266,7 +266,7 @@ public enum CrawlerRoach {
 
     /// The hop-flee arm (state 3) both Handles share (Crawler M l. 56351–56389, Roach 64986–65023): gravity 0x151;
     /// `+0xa6 == 0` on ground → the hop; airborne → vx = `+0x14c`; on ground → vx halved toward zero while moving
-    /// toward P, else `+0xa6` − 1. The caller's HP test (Crawler < 300, Roach < 3) follows on ground.
+    /// away from P, else `+0xa6` − 1. The caller's HP test (Crawler < 300, Roach < 3) follows on ground.
     static func flee(_ w: SpriteWorld, _ s: inout SpriteSlot, px: Int, cx: Int) {
         s.gravity = 0x151
         if s.counterA6 == 0 && s.groundKind != 0 {

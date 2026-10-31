@@ -1038,6 +1038,7 @@ records the summary line.
   the 9 survivors are equivalent or unreachable (the wind-up face clamp at 4; the two state-3 self-stores; `+0xb2 == 0`
   at the hold test; +100 at the Roach's cap; the `HP > 0` cry branch behind `HP < 3`; tile kinds 99 / 199 that neither
   bounce routine acts on).
+- **Fix round:** tests only (still 8 functions, ladder 554), every expected value worked by hand from the dump and the random draws from Park–Miller by hand (seeds 3 / 10 / 3); doc comments now say the hop halves vx moving *away* from the player. Closed, each by its mutant now failing: the leap cap (`<< 1` → `<< 2` / none — bites only with a `+0x158` below 500, written in), the dying gravity (0x151 → 0x150), both death edges (`< 1` → `< 2` / `< 0`), the ceiling halving at ±1 / ±2 (`1 <` / `>> 1`), the flee level with the player (`<=` either side), the draws R(30) → R(31) and R(3) → R(4), the hazard cries' ids and edges (0xc9 / 3 ± 1), the blood spray's speed / spread / kind (pool equals a twin's literal call), and the crush / tile literals (centre h and v by geometries where the centre picks the side; the v centre by FG kind 0x13 at y −64; `kind − 100` by BG 102 / 103). Equivalent: the `factor: 0` arguments to `.PlatformBounce` / `.WallBounce` / `.WallBounceBG` (read only under the bounce flag, which is 0 in every call, as the dump passes).
 
 #### WK2 — ⚑ MAJOR ◈ — Walker 1760 boulder thrower and 1750 Ax goblin (→ 559)
 - **Files:** `Sources/FerazelCore/World/Enemies/Walker.swift`, `Sources/FerazelCore/World/Enemies/AxGoblin.swift` (new),
