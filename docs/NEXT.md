@@ -82,13 +82,31 @@ CLOSE. Partial progress is progress: merge what is green, say what is not.
    main that a previous run or Ben recorded in STATE); a dirty HectorKit checkout is Ben's — do not touch it; use an HK
    worktree.
 
-## STATE (live, 2026-10-31, written by loop run 40 at its close; head of `main` = run 40's docs-close commit on top of b8d56c5 — read `git log -12 main`)
-- **Current numbers (supersede every older count below):** Ferazel/Core **546 test cases = 544 passed + 2 skipped** (the
+## STATE (live, 2026-10-31, written by loop run 41 at its close; head of `main` = run 41's docs-close commit on top of 891811e — read `git log -12 main`)
+- **Current numbers (supersede every older count below):** Ferazel/Core **560 test cases = 558 passed + 2 skipped** (the
   opt-in `FerazelRenderTests.VisitSweepTests.testVisitEveryObject` and `FerazelRenderTests.RandomPlayTests.testRandomPlay`);
   census 1,108/0; FerazelWinKit **81 = 79 passed + 2 opt-in skips** (`WinVisitSweepTests`, `WinRandomPlayTests`);
-  **Proof B (run 40, by day, at b8d56c5): 543 passed / 0 failed / 3 skipped / 0 crashed (of 546)** (~7 min, 09:00)**; GW4R main menu identical (`0xae2b1ee08c089b2a`, `video=dummy audio=none`, 09:08); HectorKit 35a85ba clean, floor 361.
-  Quick bot after WK1 (levels 1–2, 1 min): levels 2, seeds 4, steps 14,400, deaths 1, exits 1, conversations 5, saves 0,
-  failures 0.
+  **wave 5.2 end gates (run 41, seat, at 891811e): visit sweep `core` 3,360 visits / 0 rows (706 s), random-play bot `core`
+  levels 1–4 86,400 steps / 0 failures, Proof B 557 / 0 / 3 / 0 of 560 (16:xx, muted), GW4R main menu identical** —
+  no launch gate is owed; HectorKit 35a85ba clean, floor 361.
+- **Loop run 41 built CR ⚑◈ + WK2 ⚑◈** (D44 "As built — run 41"; plan "As executed" under each task; merged a0b0401 +
+  7c2b880 CR, 2627d80 + 891811e WK2): `World/Enemies/CrawlerRoach.swift` (both classes complete; the run-29 Roach carry
+  closed) and `World/Enemies/AxGoblin.swift` + the 1750 / 1760 arms in `Walker.swift` (no `// later: WK2` left). **◈:**
+  CR moved two level-1 goldens — swim `[67, 321]` / `c1dd428a3f146d77` → **`[67, 322]` / `3e99f74fa10e87e2`**; 600-frame
+  `a8dda9cf3e448016` / 3114 / `28a48762cfff1b2b` / seed 1574122804 / 156 → **`0cce4b0446e2a48e` / 3160 /
+  `1b06b8a4117cf9dc` / 1361095401 / 150** (Crawler records 39 and 9 wake; no Roach on any golden route; nothing on
+  level 2); WK2 moved none. Windows references unchanged. Both tasks: two Opus legs MERGEABLE (leg 1) / WITH FIXES (leg
+  2's mutation tables: CR ~21, WK2 22 real survivors — the implementers had claimed ≤ 9) → tests-only fix rounds,
+  seat-read. Carried [LOW]: `EnemyCommon.killProc`'s Crawler / Roach arm is unreachable (no Kill proc stored by the
+  dump's Setups); the ceiling Crawler keeps the stand-in face 0x6b0 from Setup (idled at spawn, never drawn before its
+  Handle); the shot-kill light slot read before `.KillPlayerShot`'s cleanup in both CR Hits; the `+0x160` audit row
+  excludes `AxGoblin.swift` by file; the Walker Hit's shot-kill light recolour may belong to the Walker's own light
+  (CR implementer, low confidence, pre-existing).
+- **Run 41 process notes:** the CR implementer ended its turn "holding for a monitor" with its work uncommitted — a
+  SendMessage resume finished it in 9 min (resumes run in the background: the seat waited with a foreground `until`
+  loop on `git rev-list --count`); the seat ran every non-launch gate through `/tmp`-style `git archive` copies
+  (`seatgates.sh` pattern: HectorKit symlinked at `$T/HectorKit`, own `WIN_BUILD_ROOT`) beside one implementer —
+  memory fine.
 - **⚠ The Core suite now takes ~15 min (cold build ~25):** a foreground Bash call is capped at 10 min. The seat runs G2
   in a background Bash with a long timeout (or the `git archive` gate-script pattern below); **every brief must tell
   subagents to batch the suite by `--filter` (covering every class — check against `swift test list`) and never to end
@@ -135,7 +153,7 @@ CLOSE. Partial progress is progress: merge what is green, say what is not.
   ids checked; hot rects/emitters pinned across the boot faces.
 - **⚠ Ladder +1 vs the plan's table:** Ben's attended commit 3cf72df (world-map status bar in clut 700, 2026-10-30 12:28)
   added one Core test mid-run. Every later Core total = the plan's + 1: **DK 511, UT 514, DA 516, RB 518, EC 526, ES 537,
-  WK1 546, CR 554, WK2 560, BA 569, FR 577, BL 584, GF 591, DL 596, GY 603, PI 607, OX 612, LV5 618, A5 618**; Proof B at
+  WK1 546, CR 554, WK2 560 (both reached, run 41), BA 569, FR 577, BL 584, GF 591, DL 596, GY 603, PI 607, OX 612, LV5 618, A5 618**; Proof B at
   the phase end 615/0/3/0 of 618. WinKit unchanged (80, RB → 81). Ben may land more — re-derive at reconcile (G2).
 - **Ben's Q15 item 7:** carried by run 38 (D44 seat ruling): comment verified + independent map pins in DA; the
   map-text clut-700 colours and the Let's-Play comparison idea stay with Ben (Q15), no task.
@@ -204,10 +222,10 @@ CLOSE. Partial progress is progress: merge what is green, say what is not.
   HectorKit `~/Developer/HectorKit` main **35a85ba**, clean, floor **361** — Phase W changes no HectorKit (Ruling 17).
 - Worktrees: `inspiring-cannon-e97ccd` (deimos-phase2) and `~/Developer/gamepad-wt/Ambrosia-Classics` (branch
   `gamepad`, merged) are Ben's — never touch. Earlier runs' worktrees are the looper's to remove.
-- **Goldens (current, after run 40 — runs 31–39 moved none; run 40's WK1 moved L2 `df22325e851e782d` → `b310ef334de49c00`):** Phase 1 `9db8f32f7e3d88b4` / `b80b0efd384ffdb9` / pan 30 `b1f4efcf3c34735f` / pan 60
+- **Goldens (current, after run 41 — run 40's WK1 moved L2 `df22325e851e782d` → `b310ef334de49c00`; run 41's CR moved swim and 600-frame, below):** Phase 1 `9db8f32f7e3d88b4` / `b80b0efd384ffdb9` / pan 30 `b1f4efcf3c34735f` / pan 60
   `80d88efdc8fac27c` / chain `aaab15c0710cbcf7`; Phase 2 L2 `565e867a02736c18` / `b310ef334de49c00` (was `df22325e851e782d` before WK1), jump `deb577ecdeb64c58`,
-  swim `c1dd428a3f146d77` (particles [67,321]), 600-frame `a8dda9cf3e448016` / cues `28a48762cfff1b2b` (cue words 3114, seed
-  1574122804, particles 156); Phase 3 FE0 `ed142fed9e3bdce7`, map first frame `38563faaa2276f05`, map RNG `0x7b052a62`, sign
+  swim `3e99f74fa10e87e2` (particles [67,322]; was `c1dd428a3f146d77` / [67,321] before CR), 600-frame `0cce4b0446e2a48e` / cues `1b06b8a4117cf9dc` (cue words 3160, seed
+  1361095401, particles 150; was `a8dda9cf3e448016` / `28a48762cfff1b2b` / 3114 / 1574122804 / 156 before CR); Phase 3 FE0 `ed142fed9e3bdce7`, map first frame `38563faaa2276f05`, map RNG `0x7b052a62`, sign
   frame `c8e41941c1e4d6da`. A ◈ task may move a golden only for its class turning on, with the switch-off check; any other moved Core value is Invariant 10 — STOP, reconcile, record.
 - **Run 31 notes:** Ben amended Q12 twice while the planner worked (first "never launch", then "muted only", then the night
   rule) — the plan follows the final form; a reviewer measured the BTX game cross-build at ~10 s and GW1 at ~19–24 s; brew
@@ -294,33 +312,39 @@ CLOSE. Partial progress is progress: merge what is green, say what is not.
   build the routine faithfully now and tell the owning task; run the wave-end gates in a background Bash while a
   foreground reviewer works.** (23) **run 25: when an implementer STOPS on an existing test the dump contradicts, read the cited M lines yourself, then rule and record it in the commit body + D38 (it took one SendMessage); a new suspension case can break the app's exhaustive switches — run G5 before merging even a Core-only task that touches `FrameSuspension`; Ben's attended session may commit to main mid-run (Q9) — rebase before the merge.** (24) **run 26: an implementer that STOPS on an old test pinning a named stub ("pushing is the Phase-4 tail") gets the seat ruling by SendMessage with a condition — re-derive the new value from the dump and explain every pixel, else STOP again; both review legs then re-derive it. A ◈ task may legitimately move no golden — have a reviewer probe why (which sprites wake on the golden routes).** (22) **run 24: a test that pinned a named stub's placeholder (GL's steering row) may take the dump's value by seat ruling, recorded in the commit body + D-number; the implementer must STOP and report first (it did); mislabelled `// later:` owners are worth a check (the Statue arm is SW's, not Phase 5).** (25) **run 27: Ben may commit to main mid-run (Q10 arrived during QT) — `merge --ff-only` fails, rebase, re-run G2, merge; a reviewer's mutation that survives on a fallback line is worth a seat ruling when it exposes a hole in Ben's intent (a Dock Quit lost during the opening screens); an implementer's "plan says one press, dump says two" claim gets its reviewer pointed at both call sites.** (26) **run 28: implementers and resumed agents always run in the background here — wait with a `stat -L` mtime loop on the task output (idle > 500 s, or the notification); reviewers' mutation tables keep finding arms the whole suite does not pin (TP: unpinned centre/scroll; SW: four Statue arms) — a tests-only round inside existing functions, seat-read, is the standard fix; an agent made the HK self-link again (removed at close).** (27) **run 29: a level's "enterable" task also owns its level-load picture cache (`CachedFaces` in `Front/LevelRun.swift`) — every Setup's cache marks, pinned by the bar step count; a reviewer leg that runs the real level load finds it; the census test's "nothing refused" is not the whole job.** (29) **run 32: a run that spans 21:00 skips its launch gates — the owed gate goes FIRST in the next daytime run; the review legs' sharpest find was a plan-internal conflict (mute vs Ruling 20's silent mixer) — ask legs to read rulings against each other; a resumed implementer's fix round runs ~10–50 min — wait with a `git rev-list --count` loop on the branch.** (30) **run 33: a reference frame must be checked for what it shows — WF1's two pinned frames drew no text, so a reviewer's recording rasterizer found the first text-bearing frame (+414) for WF3; a log line that prints a constant proves nothing — ask legs to probe each gate's line for whether it can fail; implementers and resumed agents ran ~25–45 min each, GW2 now ~9 min.** (31) **run 34: the first daytime Proof B crashed after 3 tests on a Wine gap — run the owed launch gates the moment the guard opens (a timer job waiting for 09:00 worked), and expect CrossOver-only gaps; a fix that changes a gate's bar is a named small task (WF0b) with its own leg; reviewers that background their mutation loops stall — tell legs "foreground only"; a reviewer copy at `$T/repo` + `ln -s ~/Developer/HectorKit $T/HectorKit` satisfies `../../../HectorKit`.** (32) **run 35: a reference frame must be checked for what it shows (again) — the "first text frame" was the first fade-in step, nearly black; the Fable leg caught it by counting colours; implementers and legs ran 11–30 min each; the stage script's fixed folders mean stages never run side by side.** (33) **run 36: Ben's attended sessions can land many commits between runs (19 here) — re-derive counts by running G2/GW2 at reconcile, not from this file; an opt-in test that skips by design changes every "0 skipped" bar (G2, GW2, Proof B) — rule the named-skip bar in the plan; a resumed subagent runs in the background, so a fresh foreground implementer with the findings verbatim is the safer fix round in this headless loop; check a fix round's "partly rejected" item against the dump yourself (it was right: shake, not music).** (34) **run 37: the first real Proof B after Ben's attended tests found two Wine gaps no Mac gate can see (a `@MainActor` XCTestCase crashes Windows XCTest's listing; `FileManager.enumerator`/`NSRegularExpression` find nothing under Wine) — run GWB early in a run that touches tests, and tell implementers a Proof-B test must avoid Foundation's enumerator, regex and attribute calls and actor isolation; reviewers who export a variable before testing an `unset` miss the empty case — the seat runs the real script; Ben landed a test mid-run → the ladder shifts +1, merge each task by SHA (`merge --ff-only <sha>`) while the next task's implementer works on the branch.** (35) **run 38: the seat's Proof B is the only gate that sees Wine traps — a new audit test crashed the whole Windows test process (Foundation's `String.contains(String)`), found by symbolizing the crash and a `--class` re-run in a scratch archive; a reviewer's mutation found the audit's draw check empty (culled coordinates, zero clip) — ask audit legs to break the thing under test and confirm the check fails; a ◈ task may move nothing — have the leg probe the band (UT: no golden route goes fully under).** (36) **run 40: the Core suite outgrew a 10-min foreground call — background the seat's G2 and tell agents to batch by `--filter`; a seat gate script running every non-launch gate in a `git archive` copy (HectorKit symlinked at `$T/HectorKit`, its own `WIN_BUILD_ROOT`) let the next implementer work at the same time; for a ◈ task, ask a leg to log which enemies are awake on each golden route — the plan's "every golden moves" was wrong because no Walker wakes on level 1's routes.** (28) **run 31: when Ben changes a ruling while a subagent works, record it, then tell the next legs "known pending change — not a finding, say what it needs" and fold it into the one fix round; Ben's rulings can arrive as commits to `main` minutes apart — re-read QUESTIONS before writing D-numbers.**
 
-## THIS RUN'S JOB — loop run 41: **Phase 5 run 5 of the plan's Execution order: CR ⚑◈ → WK2 ⚑◈ (wave 5.2 end)** (two ⚑ MAJOR tasks; cap rule allows 2)
+## THIS RUN'S JOB — loop run 42: **Phase 5 run 6 of the plan's Execution order: BA ⚑◈ → FR ⚑◈** (wave 5.3; two ⚑ MAJOR tasks; cap rule allows 2)
 - First, if Ben wrote an answer under **Q16, Q15, Q14, Q11** or **Q13**: act on it first (READ FIRST 1). Next free D-number **D45**.
-- **No launch gate is owed** (run 40 ran Proof B and GW4R by day at b8d56c5). If this run spans 21:00–09:00, the wave-end GWB is owed to run 42 — say so.
-- **CR ⚑◈** (plan "#### CR", search the heading; → plan 553, **+1 ladder → Core 554**): Crawler and Roach — their
-  `forClass` rows → `.crawler` / `.roach` turn on their Handles, contact damage and Smite on the levels that place them,
-  so goldens may move **only for that cause** — the switch-off check (rows back to `.inert`, Setups back to the stubs →
-  every old value returns), implementer and a leg independently; ask a leg to log which Crawlers/Roaches are awake on
-  each golden route (WK1 lesson). The run-29 Roach carries (`+0x154 = x`, speed 0x4b0, M l. 64945–64946) are CR's. The
-  "Every class task also" list (plan l. ~410–421) and the quick bot on the levels it brings to life.
-- **WK2 ⚑◈** (plan "#### WK2"; → plan 559, **+1 → Core 560**): the Walker 1760 boulder thrower (level 4) and the 1750 Ax
-  goblin (`AxGoblin.swift`, new) — replace the `// later: WK2` arms in `Walker.swift`; `LevelFourTests.swift` record 119
-  (the 1760) moves by design. Wave 5.2 ends here: G3, **GE on levels 1–4 `core`** (visit sweep `core` + random-play
-  `core`, exit 0 — the plan's Verification model; one heavy process at a time), GWB by day (expected **557 / 0 / 3 / 0 of 560**).
+- **No launch gate is owed** (run 41 ran Proof B and GW4R by day at 891811e). If this run spans 21:00–09:00, GW4R after
+  a ◈ that moves a Windows reference is owed to run 43 — say so.
+- **BA ⚑◈** (plan "#### BA", search the heading; → plan 568, **+1 ladder → Core 569**): the Bat class — chasers
+  0x6cc/0x6d1, 0x73a, 0x744; path bats 1741/1742 and their spit 0x712; swarm 1869 + members (idle children, record
+  0x200, never counted); insect 1860 + body; death coins `R(3) + 1` × 0x516, blood, scores. New `World/Enemies/Bat.swift`;
+  the Bat's path mode moves out of the `voicePitch` slot into its own field (run 29 note); `.KillCrate`'s Bat 0x6cc drop
+  arm (`BoxSprite.swift:~1148`, M l. 61312–61320) now reachable; `CachedFaces` caches the five sets of `.InitBatSprite`
+  (M l. 68092–68107) and every Bat type's Setup marks its set (run 29 carry); `LevelFlowTests.swift:~119` pins the level-2
+  Bat as `.inert` → retarget by the seat ruling in advance. ◈: level-2 Bat 1740 goldens only if awake — **ask a leg to
+  log which Bats wake on each golden route** (WK1 + CR lesson: the plan's golden predictions were wrong twice). The
+  "Every class task also" list (plan l. ~410–421); quick bot levels 2–4.
+- **FR ⚑◈** (plan "#### FR"; → plan 576, **+1 → Core 577**): Frog and Salamander — new `World/Enemies/FrogSalamander.swift`;
+  Frog variants by p1, spit 0x709 at attack step 6, the death dissolve via EC's burn, dead-water blocks stay dead;
+  Salamander (first placed on level 50 — synthetic tests) fireball 0x712 at step 0xc. ◈: level-2 Frogs ×2 if awake.
+  **Wave 5.3 = BA, FR, BL** — its end (G3, GE levels 1–4 `core`, GWB by day) falls in run 43 after BL, not this run.
 - **Two Opus review legs per task** (⚑), in parallel, in `git archive` temp copies; no Fable leg. Merge each green task to
   main by SHA before the next. Every brief: re-read each cited M line in the committed dump first (the dump wins; the
-  task's "As executed" note records it); "foreground only — no background shells or agents, never `run_in_background`,
-  never end your turn while anything runs; batch the full suite by `--filter`"; a test that Proof B runs must avoid
-  `FileManager.enumerator`, `NSRegularExpression`, file-attribute calls, actor isolation **and Foundation string
-  search/trim** (`contains(String)`, `range(of:)`, `components(separatedBy:)`, `trimmingCharacters`, CharacterSet);
-  nobody launches anything except the seat's own launch gates by day, muted. Tell implementers to write tests first, see
-  them fail, and mutation-check their own asserts — every ⚑ task so far still left 30–40 survivors for the legs; plan one
-  tests-only fix round per task inside the existing test functions (ladder holds), seat-read.
+  task's "As executed" note records it); "foreground only — no background shells, no Monitor, no agents, never
+  `run_in_background`, never end your turn while anything runs; batch the full suite by `--filter`, each call under 10
+  min"; a test that Proof B runs must avoid `FileManager.enumerator`, `NSRegularExpression`, file-attribute calls, actor
+  isolation **and Foundation string search/trim** (`contains(String)`, `range(of:)`, `components(separatedBy:)`,
+  `trimmingCharacters`, CharacterSet); nobody launches anything except the seat's own launch gates by day, muted. Tell
+  implementers to **write tests first and see them fail**, derive every expected value literally from the dump (never
+  the code's own formula), test both sides of each threshold, pin random ranges with samples that tell R(n) from
+  R(n±1), and check sound ids not counts — run 41's legs still found ~20 real survivors per task. Plan one tests-only fix
+  round per task inside the existing test functions (ladder holds), seat-read.
 - **Memory:** never run the Core suite, the WinKit suite and a sweep/bot at the same time in the seat (Ben's RAM panic,
-  8f7746f); one seat gate run in a `git archive` copy beside one working implementer was fine in runs 39–40.
+  8f7746f); one seat gate run in a `git archive` copy beside one working implementer, or two review legs alone, was fine
+  in runs 39–41.
 - Gates per task: the plan's Verification model (G1, G2 with the two opt-in skips, G5, G6, G7, G10, GW1, GW2, GW3, GW4,
-  GW-symlinks, G-MUTE, G7W) with the **+1 ladder**; G3 + GE at WK2 (wave end); GWB by day at the run's end; GW4R by day
-  after any ◈ that might move a Windows reference.
+  GW-symlinks, G-MUTE, G7W) with the **+1 ladder**; GW4R by day after any ◈ that might move a Windows reference.
 
 ## GATES (**superseded where they differ by the Phase 5 plan's "Verification model" — copy that one literally**; the old block: G2 490/0, G3 1,108/0, G5, GW1 0/2, GW2 77/0, GW3 0/1, GW4, GW5, GW6, GWB 489/0/1/0, G9M and G1 verified by run 35 on 2026-10-27; the full Windows gate list with every command is the plan's "Gates" section — copy it literally; `$WT` = your worktree)
 ```sh
@@ -329,7 +353,7 @@ WT=$PWD; SCRATCH=$(mktemp -d)
 h=$(date +%H); (( 10#$h >= 9 && 10#$h <= 20 )) && echo "launch ok ($h)" || echo "boot check owed (night rule) ($h)"
 # G1 HectorKit untouched (Phase W changes none — Ruling 17)
 git -C ~/Developer/HectorKit status --porcelain; git -C ~/Developer/HectorKit log --oneline -1      # empty; 35a85ba
-# G2 suite (OLD bar — now: total = ladder, 0 failed, skipped = exactly the opt-in list; see the plan): 546 total now, 2 named skips; +1 vs the plan's table (CR 554, WK2 560); ~15 min — background it
+# G2 suite (total = ladder, 0 failed, skipped = exactly the opt-in list; see the plan): 560 total now, 2 named skips; +1 vs the plan's table (BA 569, FR 577); ~15 min — background it
 cd "$WT/Ferazel/Core" && swift test > "$SCRATCH/fz.log" 2>&1; grep -cE "^Test Case '.*' (passed|failed|skipped) \(" "$SCRATCH/fz.log"; grep -cE "^Test Case '.*' (failed|skipped) \(" "$SCRATCH/fz.log"
 # G3 census (WF0 edits it; every wave end): 0 and the Totals line
 cd "$WT/Ferazel/Core" && swift build -c release --product ferazel-census > /dev/null && "$(swift build -c release --show-bin-path)/ferazel-census" "$WT/Resources/Ferazel" > "$SCRATCH/census.md"; echo $?; tail -n 1 "$SCRATCH/census.md"   # 0 / Totals: items 1,108 decoded, failures 0
@@ -355,7 +379,7 @@ grep -cE '/FerazelWin\.exe$' "$SCRATCH/gw3.log"
 cd "$WT/Ferazel/Windows" && swift build --product FerazelWin 2>&1 | tail -n 1
 # GW4R — LAUNCH, by day only, after the LAUNCH GUARD: exit 0; a line ending "video=dummy audio=none"; dump FNV 0xae2b1ee08c089b2a
 "$WT/tools/windows/smoke-ferazel-win.sh" --mac-only
-# GWB Proof B — LAUNCH: only after the LAUNCH GUARD says ok; muted by the script itself. Expected after WK2: 557 passed / 0 failed / 3 skipped / 0 crashed (of 560)
+# GWB Proof B — LAUNCH: only after the LAUNCH GUARD says ok; muted by the script itself. Expected at 891811e: 557 / 0 / 3 / 0 (of 560); after FR: 574 / 0 / 3 / 0 (of 577)
 "$WT/tools/windows/proof-b-ferazel.sh"
 ```
 Phase-end gates (WF6 added them; the Windows plan's Gates section has the literal commands): **GW5** `"$WT/tools/windows/stage-ferazel-win.sh" --no-desktop` exit 0,

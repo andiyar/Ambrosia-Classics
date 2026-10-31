@@ -1102,6 +1102,13 @@ records the summary line.
   `+0xb6` → M l. 57146; the `sheets(markedBy:)` doc now says `marks` order (the 1750's store order is 0x6d6, 0x6d7,
   0x6d9, 0x6d8, 0x6da).
 
+- **Wave 5.2 end (2026-10-31, loop run 41, seat, at 891811e):** G2 **560** / 0 failed / 2 opt-in skips; G3 0 /
+  `Totals: items 1,108 decoded, failures 0`; GW1 0 / 2; GW2 81 / 0 / 2; GW3 0 / 1; GW4 complete; G5 BUILD SUCCEEDED;
+  G7 / G7b / G7W / GW-symlinks empty; G-MUTE 1 / 1. GE levels 1–4 `core`: `== core: 3360 visits in 706 s (build
+  included); … rows 0` (exit 0, JOBS 4); `== core: random play — levels 4, seeds 4, steps 86400, deaths 11, exits 52,
+  conversations 22, saves 1, failures 0 in 44 s` (exit 0). Launch gates by day (16:xx, muted): Proof B **557 / 0 / 3 /
+  0 (of 560)** (507 s); GW4R main menu identical (`0xae2b1ee08c089b2a`, `video=dummy audio=none`).
+
 ### Wave 5.3 — flyers, water and cave
 
 #### BA — ⚑ MAJOR ◈ — the Bat class: chasers, path bats and their spit, swarms, insects (→ 568)

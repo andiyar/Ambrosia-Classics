@@ -1874,3 +1874,27 @@ was wrong); Windows references unchanged; BootFaces hot-rect FNVs, four continue
 moved for the same cause; switch-off check done by the implementer and independently by leg 1 — every old value
 returns. Stub-pinning retargets (seat ruling in advance): BonusSprite 0x6a4 row, the cannoned walker → `.walker`,
 level-4 record 119 → `.walker`. **Launch gates by day (09:00, after the merge, muted):** Proof B **543 / 0 / 3 / 0 (of 546)** at b8d56c5 — the run-39 owed check is closed too; GW4R main menu identical.
+
+**As built — loop run 41 (2026-10-31, 09:09 → day), CR ⚑◈ + WK2 ⚑◈ (wave 5.2 end).** Ladder (+1 vs the plan): CR
+**554** / 2 opt-in skips, WK2 **560** / 2; FerazelWinKit **81** / 2 skips (unchanged). (a) **CR** (a0b0401 + fix round
+7c2b880; two Opus legs MERGEABLE / MERGEABLE WITH FIXES, tests-only fix round seat-read): `World/Enemies/CrawlerRoach.swift`
+— both Setups (the Roach's `+0x154 = x`, speed 0x4b0 — the run-29 carry), both Handles (the Crawler's ceiling, drop,
+wind-up and leap with the live `+0xa6` cooldown from 3, the shared hop-flee, death), both Hits (shot arm, Statue, crush
+`+0x150 = 0x16`, Smite / geyser hazards as read), both Kills (`+0xea`; Crawler 500, Roach 600), the tile callback;
+`forClass` → `.crawler` / `.roach`; the player shot's Crawler arm. **Dump over plan / bank** (enemies-ground
+Corrections #10): no Kill proc stored at `+0x50` by either Setup (`EnemyCommon.killProc`'s Crawler / Roach arm is
+unreachable, left as EC built it); the Roach's death has no × 0.97 friction; the stale r29 in both Hit routines is the
+shot itself; neither class stores `+0x188…+0x18b`. **◈:** only the two level-1 routes on which a Crawler wakes moved —
+swim `[67, 321]` / `c1dd428a3f146d77` → `[67, 322]` / `3e99f74fa10e87e2`; 600-frame `a8dda9cf3e448016` / 3114 /
+`28a48762cfff1b2b` / seed 1574122804 / 156 → `0cce4b0446e2a48e` / 3160 / `1b06b8a4117cf9dc` / 1361095401 / 150
+(Crawler records 39 and 9; **no Roach wakes on any golden route, nothing on level 2's** — the plan's "level 1 and 2
+goldens move" was wrong, as WK1's); BootFaces hot-rect FNVs, two continue write-backs and the crunch Roach positions
+moved for the same cause; Windows references unchanged; switch-off check by the implementer and independently by leg 1
+— every old value returns. (b) **WK2** (2627d80 + fix round 891811e; two Opus legs MERGEABLE / MERGEABLE WITH FIXES,
+tests-only fix round seat-read): `World/Enemies/AxGoblin.swift` (`.AxGoblinCoreLogic`) and the 1750 / 1760 arms of
+`Walker.swift` (no `// later: WK2` left), the 1750 Setup (was still `notTranscribed`), 1750's cache rows (the dump's
+0x6d6…0x6df, not the plan's "1750–1754"). **Dump over bank** (Corrections #11): any chasing call clears the flee
+lockout; a second R(20) and the jump cry's own R(4000); no draw during the blink. **◈ — no golden moved** (neither type
+wakes on any golden route; level 1's 1760, record 73, wakes only in non-golden tests, state 5); switch-off check by the
+implementer and leg 1. Leg 2's mutation tables (CR 174 mutants / ~21 real survivors; WK2 271 / 22) drove the two
+tests-only rounds; the implementers' own "≤ 9 survivors" counts were overstated both times.
