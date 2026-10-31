@@ -596,3 +596,13 @@ sprites. 1751..1759 additionally get the 1750 sheets/rect and state 1. Dillo 187
     `.SetupBonusSprite` draws, R(1600), R(1000), then 100 × (R(700), R(600)); (f) §5's hazard "Box 0x5a0" is a type test
     only (no Handle test), as the Crawler's; (g) the Roach's patrol band half-width is `p3 / 2` toward zero (`srawi 1;
     addze`, M l. 65034–65035).
+11. ⚑ WK2 (2026-10-31, loop run 41; the committed dump, M l. N) — read while building the 1760 and the 1750:
+    (a) §3.6 "flee suppressed for 120..179 frames": every core-logic call that chases stores `+0x174 = 0` (LAB_100678e8,
+    M l. 57141–57147), so the retreat's −120 − R(60) only makes the next call chase (which clears it); (b) §3.6 1c: the
+    21…60 and ≥ 61 arms store `+0x164 = 30` and draw a second `+0x160 = −30 − R(20)` (M l. 57326–57336); (c) §3.6 1b: the
+    jump cry 610 draws its own pitch R(4000) after the R(100) (M l. 57222–57226); the hop's −6000 clamp is unreachable
+    (−2500 − R(3000) ≥ −5499); (d) §3.6 state 6 on ground with `+0xa6 > 0` also stores `+0x16c = 0` (M l. 58288); (e) §3.5:
+    the blink frames (`+0xb4 < −20`) draw nothing — R(25) is drawn only on the other frames (M l. 58010–58023); the
+    re-arm's `−(40 + R(80))` is then stepped once (stored −39 − R(80), M l. 58073–58077); (f) neither arm nor the 1750
+    death path stores `+0x188…+0x18b` or `+0xea`.
+

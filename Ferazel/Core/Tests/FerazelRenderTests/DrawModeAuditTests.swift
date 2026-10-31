@@ -217,21 +217,29 @@ final class DrawModeAuditTests: XCTestCase {
         W("World/Enemies/CrawlerRoach.swift:250", .mirrored, .flags([false]), "crawler"),
         W("World/Enemies/CrawlerRoach.swift:401", .mirrored, .flags([true]), "roach"),
         W("World/Enemies/CrawlerRoach.swift:405", .mirrored, .flags([false]), "roach"),
-        W("World/Enemies/Walker.swift:92", .mirrored, .flags([false, true]), "walker"),
-        W("World/Enemies/Walker.swift:104", .mirrored, .flags([true]), "walker"),
-        W("World/Enemies/Walker.swift:107", .mirrored, .flags([true]), "walker"),
-        W("World/Enemies/Walker.swift:110", .mirrored, .flags([true]), "walker"),
-        W("World/Enemies/Walker.swift:118", .mode, .words([0x10010, 0x10011, 0x10012, 0x10013, 0x10014, 0x10015]),
+        W("World/Enemies/Walker.swift:93", .mirrored, .flags([false, true]), "walker"),
+        W("World/Enemies/Walker.swift:105", .mirrored, .flags([true]), "walker"),
+        W("World/Enemies/Walker.swift:108", .mirrored, .flags([true]), "walker"),
+        W("World/Enemies/Walker.swift:111", .mirrored, .flags([true]), "walker"),
+        // WK2: the 1750 Setup's flip (M l. 57008–57010), the 1760's facing (M l. 58024–58029), the Ax goblin's facing
+        // (M l. 58295–58306) and its jump's flip (M l. 57213–57218) — the same unflipped / flipped sheet cells.
+        W("World/Enemies/Walker.swift:115", .mirrored, .flags([true]), "walker"),
+        W("World/Enemies/Walker.swift:518", .mirrored, .flags([false, true]), "walker"),
+        W("World/Enemies/AxGoblin.swift:157", .mirrored, .flags([false, true]), "walker"),
+        W("World/Enemies/AxGoblin.swift:159", .mirrored, .flags([false, true]), "walker"),
+        W("World/Enemies/AxGoblin.swift:161", .mirrored, .flags([false, true]), "walker"),
+        W("World/Enemies/AxGoblin.swift:280", .mirrored, .flags([false, true]), "walker"),
+        W("World/Enemies/Walker.swift:123", .mode, .words([0x10010, 0x10011, 0x10012, 0x10013, 0x10014, 0x10015]),
           "walker", at: ["61", "62", "63", "64", "65", "66"]),
-        W("World/Enemies/Walker.swift:303", .mirrored, .flags([false]), "walker"),
-        W("World/Enemies/Walker.swift:305", .mirrored, .flags([true]), "walker"),
-        W("World/Enemies/Walker.swift:429", .mirrored, .flags([false, true]), "walker"),
-        W("World/Enemies/Walker.swift:439", .mirrored, .flags([false]), "walker"),
-        W("World/Enemies/Walker.swift:443", .mirrored, .flags([false]), "walker"),
-        W("World/Enemies/Walker.swift:446", .mirrored, .flags([true]), "walker"),
-        W("World/Enemies/Walker.swift:451", .mirrored, .flags([true]), "walker"),
-        W("World/Enemies/Walker.swift:574", .mirrored, .flags([false, true]), "walker"),
-        W("World/Enemies/Walker.swift:609", .flash, .range(0x12...0x12), "walker"),
+        W("World/Enemies/Walker.swift:309", .mirrored, .flags([false]), "walker"),
+        W("World/Enemies/Walker.swift:311", .mirrored, .flags([true]), "walker"),
+        W("World/Enemies/Walker.swift:435", .mirrored, .flags([false, true]), "walker"),
+        W("World/Enemies/Walker.swift:445", .mirrored, .flags([false]), "walker"),
+        W("World/Enemies/Walker.swift:449", .mirrored, .flags([false]), "walker"),
+        W("World/Enemies/Walker.swift:452", .mirrored, .flags([true]), "walker"),
+        W("World/Enemies/Walker.swift:457", .mirrored, .flags([true]), "walker"),
+        W("World/Enemies/Walker.swift:649", .mirrored, .flags([false, true]), "walker"),
+        W("World/Enemies/Walker.swift:684", .flash, .range(0x12...0x12), "walker"),
         W("Physics/StandardSprite.swift:32", .flash, .range(0...0x1d), "any", pins: ["if s.flash > 0 { s.flash -= 1 }"]),
         // `.StandardSpriteHandles`' per-frame reset, then the occluder's clip, each edge clamped to 0…the face width
         // (the right edge 32000 when past it) on the next lines when the sprite has a face (no face, no draw).
@@ -260,8 +268,8 @@ final class DrawModeAuditTests: XCTestCase {
         W("Player/HitPlayerSprite.swift:911", .flash, .range(0x1e...0x1e), "player"),
         // `.HurtSprite`'s callers: the player's two (0xc) and, from WK1, the Walker's Hit and its `.HurtGoblin`s (8).
         W("Player/HitPlayerSprite.swift:1191", .flash, .range(8...0xc), "player", "walker", "crawler", "roach",
-          at: ["1043", "1173", "World/Enemies/Walker.swift:752", "World/Enemies/Walker.swift:776",
-               "World/Enemies/Walker.swift:781", "World/Enemies/CrawlerRoach.swift:453",
+          at: ["1043", "1173", "World/Enemies/Walker.swift:827", "World/Enemies/Walker.swift:851",
+               "World/Enemies/Walker.swift:856", "World/Enemies/CrawlerRoach.swift:453",
                "World/Enemies/CrawlerRoach.swift:459", "World/Enemies/CrawlerRoach.swift:480",
                "World/Enemies/CrawlerRoach.swift:486"], pins: ["flash: 0xc", "flash: 8", "flash: 10"]),
         W("Player/Player.swift:126", .mirrored, .flags([false, true]), "player"),
@@ -311,15 +319,15 @@ final class DrawModeAuditTests: XCTestCase {
           pins: ["if p.p2 != 0 { s.mode = UInt32(truncatingIfNeeded: Int(p.p2) + 0x10000) }"]),
         W("Sprites/SetupFaces.swift:421", .mode, .words([0x90000]), "box.teleporter"),
         W("Sprites/SetupFaces.swift:439", .mode, .words([0x90000]), "box.chest"),
-        W("Sprites/SetupFaces.swift:571", .mode, .words([0]), "blob"),
-        W("Sprites/SetupFaces.swift:595", .mode, .words([0]), "frog"),
-        W("Sprites/SetupFaces.swift:596", .mode, .words([0x1000c]), "frog"),
-        W("Sprites/SetupFaces.swift:597", .mode, .words([0x10017]), "frog"),
-        W("Sprites/SetupFaces.swift:598", .mode, .words([0x1000f]), "frog"),
-        W("Sprites/SetupFaces.swift:599", .mode, .words([0x1000b]), "frog"),
-        W("Sprites/SpriteSlot.swift:474", .mode, .words([0]), "platform.raft", "box.boulder", "background.maceBall",
+        W("Sprites/SetupFaces.swift:572", .mode, .words([0]), "blob"),
+        W("Sprites/SetupFaces.swift:596", .mode, .words([0]), "frog"),
+        W("Sprites/SetupFaces.swift:597", .mode, .words([0x1000c]), "frog"),
+        W("Sprites/SetupFaces.swift:598", .mode, .words([0x10017]), "frog"),
+        W("Sprites/SetupFaces.swift:599", .mode, .words([0x1000f]), "frog"),
+        W("Sprites/SetupFaces.swift:600", .mode, .words([0x1000b]), "frog"),
+        W("Sprites/SpriteSlot.swift:480", .mode, .words([0]), "platform.raft", "box.boulder", "background.maceBall",
           "chain.maceChain"),
-        W("Sprites/SpriteSlot.swift:476", .mode, .levelLight, "platform.raft", "box.boulder", "background.maceBall",
+        W("Sprites/SpriteSlot.swift:482", .mode, .levelLight, "platform.raft", "box.boulder", "background.maceBall",
           "chain.maceChain", pins: ["mode = UInt32(truncatingIfNeeded: L * 0x100 + 0xc0000 + F)"]),
         // (angle >> 8) + 0x5a with the angle wrapped into 0…0x167ff (`RadialMotion.updatePosition`), − 360 once.
         W("World/Movers/BackgroundSprite.swift:194", .rotation, .range(0...359), "background.maceBall", at: ["192", "193"],
@@ -1379,9 +1387,15 @@ final class DrawModeAuditTests: XCTestCase {
             for l in core where !Self.assignedFields(l.code, ["classWord160", "stepX"]).isEmpty {
                 writes.append("\(l.file) \(Self.trim(l.code))")
             }
-            XCTAssertEqual(writes.sorted(), ["Shots/PlayerShot.swift s.stepX = sx",
-                                             "World/Enemies/EnemyShot.swift u.classWord160 = 1",
-                                             "World/Movers/BoxSprite.swift s.classWord160 &+= 1"], "\(c): +0x160 writers")
+            // WK2: the Ax goblin's jump budget (`.AxGoblinCoreLogic`, made negative by its retreats) — written only on the
+            // sprite `AxGoblin.arm` runs for, a Walker 0x6d6 (`Walker.handle`'s exact-type arm), never on a Box.
+            XCTAssertEqual(writes.filter { !$0.hasPrefix("World/Enemies/AxGoblin.swift ") }.sorted(),
+                           ["Shots/PlayerShot.swift s.stepX = sx",
+                            "World/Enemies/EnemyShot.swift u.classWord160 = 1",
+                            "World/Movers/BoxSprite.swift s.classWord160 &+= 1"], "\(c): +0x160 writers")
+            let axCallers = core.filter { Self.has($0.code, "AxGoblin.") }.map { "\($0.file) \(Self.trim($0.code))" }
+            XCTAssertEqual(axCallers, ["World/Enemies/Walker.swift case axGoblin: AxGoblin.arm(w, id: id)"],
+                           "\(c): the Ax goblin's code runs only from the Walker Handle's 0x6d6 arm")
             // The floe's 0xb word (`platform.floe`, PlatformSprite.swift:950) and the raft's tilt (:928) never meet: the
             // tilt is written only for subtype 3 inside `tail`, the word only while `+0xa6` > 0; the raft's Setup arm
             // (`case 3:`) sets `+0xa6 = 0`, and after Setup `tail` only counts it down and the hit callbacks set −5

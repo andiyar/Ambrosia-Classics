@@ -68,7 +68,8 @@ final class LevelFourTests: XCTestCase {
         e = try entry(119)
         XCTAssertEqual(L.placements[119].p1, 1)
         // WK1 (seat ruling): 1760 is a Walker type — `.walker`, and `.SetupWalkerSprite` installs its hit callback
-        // `+0x5c = .HitWalkerSprite` (M l. 56925–56929); its Handle's 1760 arm is WK2's (`// later: WK2`).
+        // `+0x5c = .HitWalkerSprite` (M l. 56925–56929). WK2: its Handle's 1760 arm (`Walker.boulderArm`) throws
+        // 0x6e1 + p1 = 0x6e2, the bomb boulder (M l. 58049–58053) — its Setup entry is unchanged.
         XCTAssertEqual([e.slot.handler, e.slot.face, e.sheet] as [AnyHashable?], [SpriteHandler.walker, f(1760),
                                                                                   set(1760, 9, 84, 92, 9)])
         XCTAssertEqual([e.slot.countedInTotals, e.slot.hasHit], [true, true])

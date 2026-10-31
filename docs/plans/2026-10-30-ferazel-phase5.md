@@ -1054,6 +1054,40 @@ records the summary line.
 - **Gate:** G2 559 + ◈ (or "no golden moved" with the probe). Wave 5.2 end: G3, GWB by day, `tools/ferazel-random-play.sh
   core` + `tools/ferazel-visit-sweep.sh core` on levels 1–4 (exit 0). **Commit:** `FerazelCore: Walker 1760 boulder thrower and 1750 Ax goblin; 6 tests`.
 
+- **As executed (2026-10-31, loop run 41, implementer):** G2 **560** / 0 failed / the 2 opt-in skips (ladder +1, the
+  attended commit), run in class batches (432 Core + 128 Render); GW1 exit 0, 2; G5 BUILD SUCCEEDED; G7 / G7b empty.
+  Quick bot (levels 1 and 4, 1 min): `== core: random play — levels 2, seeds 4, steps 14400, deaths 0, exits 4,
+  conversations 5, saves 0, failures 0`. **◈ goldens: none moved** (Phase 1, pans, chain, L2 both frames, jump, swim,
+  600-frame, FE0, map) and the Windows references are untouched. **Awake log** (a temporary print in both arms, every
+  golden test class run alone): **no 1760 or 1750 Handle on any golden route**; level 1's 1760 (rec 73) runs exactly one
+  Handle per session start in `GameFlowGameTests` (16 over its 9 tests, each state 5, `+0xb2` 0, before it idles again
+  — its first Handle reads the centre 0, so it never attacks there), and those tests' pins (rec 73 y 29 → 27) hold.
+  **Switch-off** (both arms back to `break`, local only): goldens, `GameFlowGameTests`, `LevelFourTests`,
+  `PlayerTileTests`, the BootFaces hot rects all pass on the old values; only the six new tests fail. **LevelFourTests
+  rec 119:** no value changed (the test pins its Setup entry, which WK1 built); its stale `later: WK2` comment now names
+  the bomb 0x6e2 it throws. **Stub retargets (WK1 tests):** `testWalkerTierTable`'s "1750's Setup throws" row → state 1;
+  `testWalkerDeathCoinsAndScore`'s 1760 death rows now place the player so the arm's own facing (cx < P.x, cx 0 at the
+  first Handle) gives the row's flip before the death entry inverts it (values unchanged). **Dump vs plan / bank**
+  (⚑ enemies-ground Corrections #11): a chasing core-logic call stores `+0x174 = 0` (M l. 57143), so the flee
+  retreat's lockout only spares the next call; the target-below arms 21…60 / ≥ 61 draw a second R(20) for `+0x160`; the
+  jump cry 610 draws its own R(4000); the hop's −6000 clamp is unreachable; the landed cooldown also zeroes `+0x16c`
+  (masked by the tail's zero); the 1760 blink draws R(25) only outside the blink, and its re-arm stores −(R(0x50) +
+  0x28) + 1; states 0 / 3 / 5 `.ReportError` are a no-op here (no writer); no save write-back flag and no `+0xea` on
+  either arm or the 1750 death path (`+0xea` stays the 1700 path's). The 1750 Setup was a `notTranscribed` throw in
+  `SetupFaces` (WK1 left it) — built here with its face and sheet. **Faces:** the 1750's single 0x6d6 joins the Setup
+  table and the cache singles; 0x6d7…0x6da join the cache sets (registration order, after 0x6ab) and
+  `CachedFaces.handleSets`; marks for 0x6d6…0x6df; the 1760's nine 0x6e0 cells were already loaded (asserts in
+  `FaceTests.testEverySpawnableTypeHasSheet`, `BootFacesTests`). **Invariant 8:** six `.mirrored` writer rows
+  (`Walker.swift:115`, `:518`, `AxGoblin.swift:157/159/161/280`), the Walker / SetupFaces / SpriteSlot rows re-pointed,
+  and the hovering rock's `+0x160` reason extended (the Ax goblin's negative jump budget is written only from
+  `Walker.handle`'s 0x6d6 arm). **Outside Files:** `SetupFaces.swift`, `SpriteSlot.swift` (`+0xb6` `classWordB6`,
+  `+0x174` `classWord174`), `LevelFourTests.swift` (comment), `DrawModeAuditTests.swift`, `BootFacesTests.swift`,
+  `FaceTests.swift`, `docs/ferazel/enemies-ground.md` (#11). **Self-mutation:** 117 mutants of both arms, the core
+  logic, the Setup arm and the throws; 113 killed after one round of added asserts; 4 equivalent (the landed
+  cooldown's `+0x16c = 0`, re-zeroed by the tail before anything reads it; the flee T.y tie, reachable only through a
+  wall jump that reads no T.y; the swing's inner `dx < 110`, implied by "not a wall jump"; the wall jump's `T.x < cx`
+  tie, impossible at dx ≥ 110).
+
 ### Wave 5.3 — flyers, water and cave
 
 #### BA — ⚑ MAJOR ◈ — the Bat class: chasers, path bats and their spit, swarms, insects (→ 568)

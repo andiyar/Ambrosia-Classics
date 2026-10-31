@@ -575,6 +575,17 @@ final class FaceTests: XCTestCase {
             XCTAssertNil(one.sprites.faces.face(FaceRef(pict: sh.pict, index: 0, set: .encoded)),
                          "cache PICT \(sh.pict) unmarked on level 1")
         }
+        // WK2: the 1760's Handle faces its Setup set 0x6e0 cells 0…8 (the throw and the blink, M l. 58010–58072) on
+        // levels 1 and 4 (each places one); the boulders it throws are the boot sets above. The 1750's five faces (the
+        // single 0x6d6 and the cache sets 0x6d7…0x6da) load only where its Setup marks them — first placed on level 10:
+        // the data holds them, no level-1 renderer loads them.
+        want("1760 sheet", 0x6e0, cells: 9)
+        want("1760 sheet, level 4", 0x6e0, cells: 9, in: try renderer(4))
+        for sh in CachedFaces.sheets(markedBy: [Int16(0x6d6)]) {
+            XCTAssertNotNil(r.resource(type: "PICT", id: sh.pict, chain: .frontEnd), "1750 PICT \(sh.pict)")
+            XCTAssertNil(one.sprites.faces.face(FaceRef(pict: sh.pict, index: 0, set: .encoded)),
+                         "1750 PICT \(sh.pict) unmarked on level 1")
+        }
         // The drops of every chest and crate on levels 1–4 and the key faces their locks show — each in its own
         // level's renderer. The original loads every Bonus face at boot (`.InitBonusSprite` M l. 52261–52337); the
         // replica's per-level load (`BoxSprite.dropSheets`) is a seam, so the faces are named here, not derived from it.

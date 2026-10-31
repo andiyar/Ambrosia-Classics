@@ -5,8 +5,8 @@ import Foundation
 /// `.HandleWalkerSprite @ 100683b8` (M l. 57507–58471, `handle`), `.PopupGoblinCoins @ 10067edc` (M l. 57348–57506,
 /// `popupCoins`), `.HitWalkerSprite @ 1006a260` (M l. 58506–58611, `hit`), `.KillWalker @ 1006a6cc` (M l. 58612–58633,
 /// `EnemyCommon.killProc`), `.HitWalkerTileSprite @ 1006a740` (M l. 58634–58696, `hitTile`). The Handle dispatches on
-/// the **exact** types 1700 (the thrower) and 1705 (the spear guard) here; 1750 (the Ax goblin) and 1760 (the boulder
-/// thrower) are WK2's arms (`// later: WK2`) and keep the shared prologue and tail; every other Walker type only falls
+/// the **exact** types 1700 (the thrower), 1705 (the spear guard), 1760 (the boulder thrower, `boulderArm`; WK2) and
+/// 1750 (the Ax goblin, `AxGoblin`; WK2), each inside the shared prologue and tail; every other Walker type only falls
 /// and takes hazards and never dies (no arm, no death entry — transcribed, not fixed).
 ///
 /// Fields (`SpriteSlot`): `+0xb0` the state `subtype` (1 walk, 2 stand / throw / thrust, 4 dying, 5 guard); `+0xb2`
@@ -21,9 +21,9 @@ public enum Walker {
     public static let thrower: Int16 = 0x6a4, spearGuard: Int16 = 0x6a9, axGoblin: Int16 = 0x6d6,
                       boulderThrower: Int16 = 0x6e0
 
-    /// The sheets (`.InitWalkerSprite`, M l. 56755–56770): the singles 0x6a4 (1700) and 0x6d6 (1750, WK2) and the cache
+    /// The sheets (`.InitWalkerSprite`, M l. 56755–56770): the singles 0x6a4 (1700) and 0x6d6 (1750) and the cache
     /// sets 0x6a5 walk (8 × 100×0x50, 4 a row), 0x6a6 throw (6 × 100×0x50), 0x6a9 guard (3 × 0xcc×0x59, one a row),
-    /// 0x6aa turn (2), 0x6ab thrust (9), 0x6d7…0x6da (1750, WK2), 0x6e0 (1760, 9 × 0x54×0x5c); the boot set 0x6a8 the
+    /// 0x6aa turn (2), 0x6ab thrust (9), 0x6d7…0x6da (1750, `AxGoblin`), 0x6e0 (1760, 9 × 0x54×0x5c); the boot set 0x6a8 the
     /// death (8 × 0x5e×0x50, `BootFaces`). The renderer loads the cache sets the Setups mark
     /// (`CachedFaces.sheets(markedBy:)`; the Handles' four in `CachedFaces.handleSets`).
     public static let walkSet: Int16 = 0x6a5, throwSet: Int16 = 0x6a6, deathSet: Int16 = 0x6a8, turnSet: Int16 = 0x6aa,
@@ -68,12 +68,13 @@ public enum Walker {
         }
     }
 
-    /// `.SetupWalkerSprite(s)` (M l. 56898–57100) for the types levels 1–5 place (0x6a4, 0x6a9, 0x6e0…0x6e9; the
-    /// caller picks the face): `.InitSprite`; `+0x84`/`+0x86` 0; layer 4; the Walker Handle, hit, tile callback and
-    /// Kill proc; `+0xa6` 0; `+0x158` 8; state 2 (0x6a4, 0x6d6) or 5; flip 1 for 0x6e0 only; `+0x17c` 0; gravity
-    /// 0x151; HP 500; `+0xc ← +8`, `+0xa ← +6`; `+0xf0 = 2·R(0x5fff) + 0xbfff`; by type the flip rule (0x6e0…0x6e9:
-    /// `+0xc + 0x32 <` playerX; the others: playerX `< +0xc + 0x32`) and the hot rect (0x6a4 (0x28, 10, 0x3c, 0x46),
-    /// 0x6a9 (0x4c, 10, 0x7c, 0x47), 0x6e0… (0x17, 0x1e, 0x38, 0x55) — `SetRect(l, t, r, b)`); the tier (`tier`); `+0x14c
+    /// `.SetupWalkerSprite(s)` (M l. 56898–57100) for the types levels 1–5 place (0x6a4, 0x6a9, 0x6e0…0x6e9) and the
+    /// 1750 range 0x6d6…0x6df (WK2; first placed on level 10 — the caller picks the face): `.InitSprite`; `+0x84`/`+0x86`
+    /// 0; layer 4; the Walker Handle, hit, tile callback and Kill proc; `+0xa6` 0; `+0x158` 8; state 2 (0x6a4, 0x6d6) or
+    /// 5; flip 1 for 0x6e0 only; `+0x17c` 0; gravity 0x151; HP 500; `+0xc ← +8`, `+0xa ← +6`; `+0xf0 = 2·R(0x5fff) +
+    /// 0xbfff`; by type the flip rule (0x6e0…0x6e9: `+0xc + 0x32 <` playerX; the others: playerX `< +0xc + 0x32`), the
+    /// hot rect (0x6a4 (0x28, 10, 0x3c, 0x46), 0x6a9 (0x4c, 10, 0x7c, 0x47), 0x6d6… (0x5e, 0x23, 0x7f, 0x5c) with state
+    /// 1 (M l. 56997–57011), 0x6e0… (0x17, 0x1e, 0x38, 0x55) — `SetRect(l, t, r, b)`); the tier (`tier`); `+0x14c
     /// = 120 + R(0x46)`, `+0x150` −1, `+0x154 = 1000 + R(400)`; p4 ≠ 0 → the idle margins 0x5f4; the counting window
     /// (`EnemyCounting.countIfWindow`); the 24.8 position from `+8`/`+6`. No `+0x188`…`+0x18b` / `+0xea` store.
     /// - Parameter playerX: `*_DAT_1009fd94` at the call.
@@ -109,8 +110,12 @@ public enum Walker {
         case 0x6e0...0x6e9:
             if h16(s.x) + 0x32 < px { s.mirrored = true }
             rect(0x17, 0x1e, 0x38, 0x55)
+        case 0x6d6...0x6df:
+            s.subtype = 1
+            if px < h16(s.x) + 0x32 { s.mirrored = true }
+            rect(0x5e, 0x23, 0x7f, 0x5c)
         default:
-            break                                                       // later: WK2 — the 1750 arm (state 1, its rect)
+            break                                                       // 0x6a5…0x6a8, 0x6aa…0x6d5: no arm (none placed)
         }
         if let k = tier(p3: p.p3, type: t) {
             s.classWord158 = k.cooldown
@@ -156,7 +161,8 @@ public enum Walker {
     /// `.HandleWalkerSprite(s)` (M l. 57507–58471), unless `+0xe9` or `+0x1b2`:
     /// 1. `.StandardSpriteHandles`; the first Handle (`+0x17c == 0`): `+0x17c = 1`, `+0xb4` = flip ? −3 : 3; layer
     ///    `+0x80` = 0xb; `+0x170 > 0` → `+0x16c = 0`, `+0x170` − 1; not dying → `.GoblinRandomCry`;
-    /// 2. the exact-type arm: 1700 (`thrower`), 1705 (`spearGuard`), 1750 / 1760 // later: WK2, others none;
+    /// 2. the exact-type arm: 1700 (`throwerArm`), 1705 (`spearGuardArm`), 1750 (`AxGoblin.arm`), 1760 (`boulderArm`),
+    ///    others none;
     /// 3. the tail (`tail`).
     /// Returns the `.ChangeLightFace` ops the coins' Handles made (`popupCoins`; none for coins and bags).
     /// - Parameters: `faceWidth` (the Cleanups' face `+6`) and `faceBounds` (face `+8`: the coins' trigger row and
@@ -183,8 +189,8 @@ public enum Walker {
         switch s1.type {
         case thrower: throwerArm(w, id: id)
         case spearGuard: spearGuardArm(w, id: id)
-        case axGoblin: break                                // later: WK2 — the 1750 arm (`.AxGoblinCoreLogic`, its facing)
-        case boulderThrower: break                          // later: WK2 — the 1760 arm (friction, blink, the boulder)
+        case axGoblin: AxGoblin.arm(w, id: id)
+        case boulderThrower: boulderArm(w, id: id)
         default: break                                      // other Walker types: no arm (enemies-ground §3.2)
         }
         return tail(w, id: id, solver: solver, lights: &lights, effects: effects, faceWidth: faceWidth,
@@ -487,6 +493,75 @@ public enum Walker {
         }
     }
 
+    /// The 1760 arm (M l. 57995–58079): the friction (|vx| ≤ 0x80 → 0, else × 0.7, as the 1705's p3 ≥ 3); by state —
+    /// - 5: `+0xb2` + 1; the blink: `+0xb4 < −20` → + 1, face 0x6e0[8]; else + 1, R(25) == 1 with the stepped `+0xb4 ≥ 0`
+    ///   → `+0xb4 = −28`, face 0x6e0[0]; flip = (cx < P.x); |cx − P.x| < 500 with `+0xb2 ≥ 0` → state 2, `+0xb2 = 0` (no
+    ///   vertical test);
+    /// - 2: i = `+0xb2 >> 1`; i < 9: `+0xb2 == 6` snd 304, `+0xb2 == 8` the boulder (`throwBoulder`), face 0x6e0[i];
+    ///   else state 5, `+0xb2 = −(R(0x50) + 0x28)`; then `+0xb2` + 1.
+    static func boulderArm(_ w: SpriteWorld, id: Int) {
+        guard let s0 = w.active.record(id: id) else { return }
+        let px = w.player.centreX
+        w.active.update(id: id) { friction(&$0, friction7) }
+        if s0.subtype == 5 {
+            guard var s = w.active.record(id: id) else { return }
+            s.subState &+= 1
+            if s.classWordB4 < -0x14 {
+                s.classWordB4 &+= 1
+                s.face = face(boulderThrower, 8)
+            } else {
+                s.classWordB4 &+= 1
+                if w.rng.next(0x19) == 1 && -1 < s.classWordB4 { s.classWordB4 = -0x1c }
+                s.face = face(boulderThrower, 0)
+            }
+            let cx = Int16(truncatingIfNeeded: s.centre.x)
+            s.mirrored = cx < px
+            if abs(Int(cx) - Int(px)) < 500 && -1 < s.subState {
+                s.subtype = 2
+                s.subState = 0
+            }
+            w.active.update(id: id) { $0 = s }
+        } else if s0.subtype == 2 {
+            let i = Int(s0.subState >> 1)
+            if i < 9 {
+                if s0.subState == 6 {
+                    w.player.cue(PlayerCue(call: .threeD, snd: thrustSound, priority: 1, volume: 0x100, position: s0.centre))
+                }
+                if s0.subState == 8 { throwBoulder(w, id: id) }
+                w.active.update(id: id) { $0.face = face(boulderThrower, i) }
+            } else {
+                let r = w.rng.next(0x50)
+                w.active.update(id: id) { t in
+                    t.subtype = 5
+                    t.subState = 0 &- (r &+ 0x28)
+                }
+            }
+            w.active.update(id: id) { $0.subState &+= 1 }
+        }
+    }
+
+    /// The 1760's boulder at `+0xb2 == 8` (M l. 58046–58066): `MTNewSprite(0x6e1 + record p1, cx + (flip ? 0x1c : −0x1c)
+    /// − 0x10, cy − 0x26, layer + 1, −1, .SetupEnemyShotSprite)` (`EnemyShot`; 0x6e1 'goblin boulders', 0x6e2 'bomb
+    /// boulder'); its `+0xa6 = −30`, vy = −0x6a4 − R(0x28a), then vx = −0x514 − R(0x28a), negated when flipped. No free
+    /// record (Ruling 16): no Setup, the stores dropped, the two speed draws still made.
+    static func throwBoulder(_ w: SpriteWorld, id: Int) {
+        guard let s = w.active.record(id: id) else { return }
+        let p1 = Int(record(w, s)?.p1 ?? 0)
+        let flip = s.mirrored
+        let x = h16(h16(s.centre.x) + (flip ? 0x1c : -0x1c) - 0x10), y = h16(h16(s.centre.y) - 0x26)
+        let shot = EnemyShot.spawn(w, type: Int16(truncatingIfNeeded: p1 + 0x6e1), x: x, y: y,
+                                   layer: Int16(truncatingIfNeeded: s.layer &+ 1))
+        let vy = -0x6a4 - Int32(w.rng.next(0x28a))
+        var vx = -0x514 - Int32(w.rng.next(0x28a))
+        if flip { vx = 0 &- vx }
+        guard let shot else { return }
+        w.active.update(id: shot) { t in
+            t.counterA6 = -0x1e
+            t.vy = vy
+            t.vx = vx
+        }
+    }
+
     /// The death cry of the death entry (M l. 58312–58325): R(100) < 0x33 → 469 at R(10000) + 55000, else 465 at
     /// R(10000) + 50000 (`.STPlay3DSoundPitchedGob`, prio 1, vol 0xab).
     static func deathCry(_ w: SpriteWorld, id: Int) {
@@ -558,7 +633,7 @@ public enum Walker {
                 w.active.update(id: id) { t in
                     t.subtype = 4
                     t.classWord15c = 0
-                    t.face = face(axDeathSet, 0)                       // 1750: not placed on levels 1–5 (WK2)
+                    t.face = face(axDeathSet, 0)
                 }
                 deathCry(w, id: id)
                 w.globals.score &+= 800

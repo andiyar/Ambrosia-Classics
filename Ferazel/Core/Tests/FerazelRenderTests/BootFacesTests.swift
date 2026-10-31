@@ -144,8 +144,13 @@ final class BootFacesTests: XCTestCase {
         for s in EnemyShot.cachedSheets { XCTAssertNil(boot[s.pict], "cache PICT \(s.pict)") }
         // WK1: the Walker Handles' four sets are level-load caches (`.CacheEncFaceSetFromPICT`, M l. 56757–56758,
         // 56762–56763), not boot faces, and no Setup-face table entry defines them otherwise; CR: so are the Crawler's
-        // walk / jump / death sets (M l. 56142–56144) and the Roach's death set (M l. 64894).
-        XCTAssertEqual(CachedFaces.handleSets.map(\.pict), [0x6a5, 0x6a6, 0x6aa, 0x6ab, 0x6ae, 0x6af, 0x6b1, 0x6b9])
+        // walk / jump / death sets (M l. 56142–56144) and the Roach's death set (M l. 64894); WK2: so are the Ax goblin's
+        // walk / swing / jump / death sets (M l. 56764–56767).
+        XCTAssertEqual(CachedFaces.handleSets.map(\.pict), [0x6a5, 0x6a6, 0x6aa, 0x6ab, 0x6ae, 0x6af, 0x6b1, 0x6b9,
+                                                            0x6d7, 0x6d8, 0x6d9, 0x6da])
+        // WK2: the 1750's single 0x6d6 is a level-load cache too (`.Cache1EncFaceFromPICT`, M l. 56756) — its Setup face.
+        XCTAssertNil(boot[0x6d6])
+        XCTAssertEqual(SetupFaces.sheet(pict: 0x6d6), .single(0x6d6))
         for s in CachedFaces.handleSets {
             XCTAssertNil(boot[s.pict], "cache PICT \(s.pict)")
             XCTAssertNil(SetupFaces.sheet(pict: s.pict), "cache PICT \(s.pict) in the Setup-face table")

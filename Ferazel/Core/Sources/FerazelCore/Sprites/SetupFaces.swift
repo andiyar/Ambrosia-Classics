@@ -165,8 +165,8 @@ public enum SetupFaces {
             set(0x578, 10, 0x50, 0x29, 10), set(0x2c7, 3, 0x28, 0x18, 1), one(0x58c), one(0x58d), one(0x58e),
             one(0x59a), one(0x59c), set(0x599, 0x3c, 0x10, 0x10, 10), set(0x59b, 0x2d, 0x18, 0x18, 1),
             set(0x582, 7, 0xd8, 200, 1),
-            // `.InitWalkerSprite`: 0x6a4 single, 0x6a9 set, 0x6e0 set (all cached, 0).
-            one(0x6a4), set(0x6a9, 3, 0xcc, 0x59, 1), set(0x6e0, 9, 0x54, 0x5c, 9),
+            // `.InitWalkerSprite`: 0x6a4 single, 0x6a9 set, 0x6e0 set, the 1750's single 0x6d6 (WK2; all cached, 0).
+            one(0x6a4), set(0x6a9, 3, 0xcc, 0x59, 1), set(0x6e0, 9, 0x54, 0x5c, 9), one(0x6d6),
             // `.InitCrawlerSprite`: 0x6b0 single (0x5dc+i are absent); `.InitRoachSprite`: 0x6b8 set (cached, 0).
             one(0x6b0), set(0x6b8, 6, 100, 0x36, 6),
         ]
@@ -497,14 +497,15 @@ public enum SetupFaces {
         case .walker:
             // `.SetupWalkerSprite @ 10067318` (M l. 56898–57100; WK1, `Walker.setup`): the class fields, the flip rule, the
             // hot rect, the tier, the three draws and the counting window. The face: `+0xc0` = the single 0x6a4 for
-            // every type (M l. 56951), then 0x6a9's set cell 0 (M l. 56976), 0x6e0…0x6e9's (M l. 56988). The 1750
-            // types 0x6d6…0x6df (their face 0x6d6, their marks) are WK2's; the other types are placed nowhere
-            // (enemies-ground §1).
+            // every type (M l. 56951), then 0x6a9's set cell 0 (M l. 56976), 0x6e0…0x6e9's (M l. 56988), the 1750
+            // types 0x6d6…0x6df the single 0x6d6 (M l. 57007; WK2, first placed on level 10); the other types are placed
+            // nowhere (enemies-ground §1).
             switch t {
             case 0x6a4: face(0x6a4, 0, .setupCached)
             case 0x6a9: face(0x6a9, 0, .setupCached)
+            case 0x6d6...0x6df: face(0x6d6, 0, .setupCached)
             case 0x6e0...0x6e9: face(0x6e0, 0, .setupCached)
-            default: throw Error.notTranscribed(type: p.type)       // later: WK2 — 0x6d6…0x6df
+            default: throw Error.notTranscribed(type: p.type)       // 1701…1704, 1706…1709: placed nowhere
             }
             Walker.setup(&s, record: p, playerX: c.playerX, rng: &rng, counting: &counting)
 

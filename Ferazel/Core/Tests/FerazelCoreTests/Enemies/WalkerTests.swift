@@ -131,7 +131,7 @@ final class WalkerTests: XCTestCase {
         XCTAssertTrue(try slot(w, try walker(w, type: 0x6e1, x: 549)).mirrored)
         XCTAssertTrue(try slot(w, try walker(w, type: 0x6a4, x: 551)).mirrored, "playerX 600 < 551 + 0x32")
         XCTAssertFalse(try slot(w, try walker(w, type: 0x6a4, x: 550)).mirrored)
-        XCTAssertThrowsError(try walker(w, type: 0x6d6, x: 100), "1750's Setup is WK2's")
+        XCTAssertEqual(try slot(w, try walker(w, type: 0x6d6, x: 100)).subtype, 1, "the 1750 arm (WK2)")
     }
 
     // MARK: - the thrower 1700
@@ -880,7 +880,9 @@ final class WalkerTests: XCTestCase {
         // the alive 0x6e0 keeps its own face.
         for (type, flip) in [(Int16(0x6a4), true), (0x6e0, true), (0x6e0, false)] {
             func run(_ hp: Int16) throws -> (SpriteSlot, Int32) {
-                let wf = try world(px: 0, floor: false)
+                // WK2: the 1760 arm faces the player first (flip = cx < P.x; cx 0 at the first Handle) — the player
+                // right of 0 for the flipped row, at 0 for the other.
+                let wf = try world(px: type == 0x6e0 && flip ? 3000 : 0, floor: false)
                 let fid = try walker(wf, type: type, x: 200)
                 wf.active.update(id: fid) { $0.mirrored = flip; $0.hp = hp }
                 frame(wf, fid, TileSolver(world: wf))
@@ -997,5 +999,831 @@ final class WalkerTests: XCTestCase {
         XCTAssertEqual(try slot(w, id).killCount, 1)
         XCTAssertEqual(w.enemies.live, live - 2)
         XCTAssertEqual(w.globals.achieved[0][1], 2)
+    }
+
+    // MARK: - the boulder thrower 1760 (WK2)
+
+    /// A 1760 (type 0x6e0) set up at (300, 315) — its hot rect's bottom 0x55 on the floor's surface (y 400) — with
+    /// record `p1`, three Handles with the player far right (out of reach: it stays in state 5).
+    private func boulderThrower(_ w: SpriteWorld, p1: Int16 = 0) throws -> (Int, TileSolver) {
+        let solver = TileSolver(world: w)
+        let id = try walker(w, type: 0x6e0, x: 300, y: 315, p1: p1)
+        for _ in 0..<3 { frame(w, id, solver) }
+        return (id, solver)
+    }
+
+    /// The draws of `.SetupEnemyShotSprite` for a boulder 0x6e1 / 0x6e2 (M l. 51442–51611): R(5), R(2), R(100) and
+    /// past 0x56 R(5); any other type R(5) only.
+    private func shotSetupDraws(_ r: inout FastRand, boulder: Bool) {
+        _ = r.next(5)
+        guard boulder else { return }
+        _ = r.next(2)
+        if 0x56 < r.next(100) { _ = r.next(5) }
+    }
+
+    func test1760ThrowsBoulder() throws {
+        // The 1760 arm (M l. 57995–58079): the ×0.7 friction; state 5 counts `+0xb2` up, faces the player and attacks
+        // inside 500 px across with `+0xb2 ≥ 0` (state 2, `+0xb2 = 0`, no vertical test); state 2 faces 0x6e0[`+0xb2 >>
+        // 1`], snd 304 at `+0xb2 == 6`, the boulder at 8 — `MTNewSprite(0x6e1 + p1, cx + (flip ? 0x1c : −0x1c) − 0x10,
+        // cy − 0x26, layer + 1, −1, .SetupEnemyShotSprite)`, its `+0xa6 = −30`, vy −0x6a4 − R(0x28a), then vx −0x514 −
+        // R(0x28a), negated when flipped; `+0xb2 >> 1` past 8 → state 5, `+0xb2 = −(R(0x50) + 0x28)`; then `+0xb2` + 1.
+        let w = try world(px: 3000)
+        let (id, solver) = try boulderThrower(w)
+        var s = try slot(w, id)
+        XCTAssertEqual([Int(s.subtype), Int(s.subState)], [5, 3], "out of reach: state 5, `+0xb2` counting up")
+        XCTAssertNotEqual(s.groundKind, 0)
+        let cx = s.centre.x, cy = s.centre.y
+        // The reach: |cx − P.x| < 500, either side, the player far above (no vertical test).
+        for (px, attacks) in [(cx + 500, false), (cx + 499, true), (cx - 500, false), (cx - 499, true)] {
+            w.player.centreX = Int16(px)
+            w.player.centreY = Int16(cy - 3000)
+            w.active.update(id: id) { $0.subtype = 5; $0.subState = 7 }
+            frame(w, id, solver)
+            s = try slot(w, id)
+            XCTAssertEqual([Int(s.subtype), Int(s.subState)], attacks ? [2, 0] : [5, 8], "P.x \(px)")
+        }
+        // `+0xb2` below 0 holds the attack: −2 → −1 waits, −1 → 0 attacks.
+        w.player.centreX = Int16(cx + 100)
+        for (b2, attacks) in [(Int16(-2), false), (-1, true)] {
+            w.active.update(id: id) { $0.subtype = 5; $0.subState = b2 }
+            frame(w, id, solver)
+            s = try slot(w, id)
+            XCTAssertEqual([Int(s.subtype), Int(s.subState)], attacks ? [2, 0] : [5, Int(b2) + 1], "b2 \(b2)")
+        }
+        // The throw, the player right (flip 1 from state 5): the boulder from cx + 0x1c − 0x10, vx positive.
+        XCTAssertTrue(s.mirrored)
+        w.player.cues = []
+        for b2 in 0...17 {
+            let before = try slot(w, id)
+            XCTAssertEqual(Int(before.subState), b2)
+            var r = w.rng
+            cry(&r)
+            var vx: Int32 = 0, vy: Int32 = 0
+            if b2 == 8 {
+                shotSetupDraws(&r, boulder: true)
+                vy = -0x6a4 - Int32(r.next(0x28a))
+                vx = 0x514 + Int32(r.next(0x28a))
+            }
+            let n = shots(w).count
+            frame(w, id, solver)
+            XCTAssertEqual(w.rng.seed, r.seed, "b2 \(b2)")
+            s = try slot(w, id)
+            XCTAssertEqual(s.face, FaceRef(pict: 0x6e0, index: b2 >> 1, set: .encoded), "b2 \(b2)")
+            XCTAssertEqual([Int(s.subtype), Int(s.subState)], [2, b2 + 1], "b2 \(b2)")
+            XCTAssertTrue(s.mirrored, "state 2 keeps the flip")
+            XCTAssertEqual(w.player.cues.filter { $0.snd == 304 }.count, b2 < 6 ? 0 : 1, "b2 \(b2)")
+            XCTAssertEqual(shots(w).count, n + (b2 == 8 ? 1 : 0), "b2 \(b2)")
+            if b2 == 8 {
+                let b = try XCTUnwrap(shots(w).last)
+                XCTAssertEqual(b.type, 0x6e1)
+                XCTAssertEqual([b.oldPosition.x, b.oldPosition.y, b.x, b.y],
+                               [cx + 0xc, cy - 0x26, cx + 0xc, cy - 0x26])
+                XCTAssertEqual([Int(b.layer), Int(b.counterA6), Int(b.vx), Int(b.vy)], [0xc, -30, Int(vx), Int(vy)])
+                XCTAssertEqual([Int(b.hp), Int(b.gravity)], [200, 300], "the boulder's Setup (ES)")
+            }
+        }
+        let thud = try XCTUnwrap(w.player.cues.first { $0.snd == 304 })
+        XCTAssertEqual([thud.call == .threeD, thud.priority == 1, thud.volume == 0x100], [true, true, true])
+        XCTAssertEqual(thud.position, SpriteSlot.Point(x: cx, y: cy))
+        // `+0xb2 >> 1` = 9: state 5, `+0xb2 = −(R(0x50) + 0x28) + 1`, the face kept; R(0x50) pinned at 0 and 0x4f.
+        for want in [0, 0x4f] as [Int16] {
+            w.active.update(id: id) { $0.subtype = 2; $0.subState = 18; $0.face = FaceRef(pict: 0x6e0, index: 8, set: .encoded) }
+            w.rng = FastRand(seed: seed { r in cry(&r); return r.next(0x50) == want })
+            var r = w.rng
+            cry(&r)
+            _ = r.next(0x50)
+            frame(w, id, solver)
+            XCTAssertEqual(w.rng.seed, r.seed)
+            s = try slot(w, id)
+            XCTAssertEqual([Int(s.subtype), Int(s.subState)], [5, 1 - (Int(want) + 0x28)], "R(0x50) \(want)")
+            XCTAssertEqual(s.face, FaceRef(pict: 0x6e0, index: 8, set: .encoded), "kept")
+        }
+        XCTAssertEqual(shots(w).count, 1, "one boulder a throw")
+        // The friction, both states (M l. 57996–58005): |vx| ≤ 0x80 → 0, else (int)(vx · 0.7) — in the air, no tiles.
+        let wf = try world(px: 3000, floor: false)
+        let sf = TileSolver(world: wf)
+        let fid = try walker(wf, type: 0x6e0, x: 300, y: 100)
+        frame(wf, fid, sf)
+        for (state, b2, vx, want) in [(Int16(5), Int16(-50), Int32(1000), 700), (2, 2, -1000, -700), (5, -50, 0x80, 0),
+                                      (5, -50, -0x81, -90), (2, 2, 0x81, 90)] {
+            wf.active.update(id: fid) { $0.subtype = state; $0.subState = b2; $0.vx = vx }
+            frame(wf, fid, sf)
+            XCTAssertEqual(Int(try slot(wf, fid).vx), want, "state \(state) vx \(vx)")
+        }
+        // No free record (Ruling 16): no boulder, no Setup draws — the speed pair still drawn, its stores dropped.
+        while w.active.sprites.count < SpriteWorld.recordCount { _ = w.active.insert(SpriteSlot(type: 1, x: 0, y: 0)) }
+        w.active.update(id: id) { $0.subtype = 2; $0.subState = 8 }
+        var r = w.rng
+        cry(&r)
+        _ = r.next(0x28a)
+        _ = r.next(0x28a)
+        let count = w.active.sprites.count
+        frame(w, id, solver)
+        XCTAssertEqual(w.rng.seed, r.seed)
+        XCTAssertEqual(w.active.sprites.count, count)
+        XCTAssertEqual(Int(try slot(w, id).subState), 9)
+    }
+
+    func test1760BombVariantP1() throws {
+        // The thrown type is 0x6e1 + the record's p1 (M l. 58049–58053): p1 1 → the bomb boulder 0x6e2 (level 4's rec 119),
+        // p1 2 → 0x6e3 (the default EnemyShot arm: rect (8, 8, 0x10, 0x10), one draw). Flip 0: from cx − 0x1c − 0x10,
+        // vx −0x514 − R(0x28a).
+        for (p1, type) in [(Int16(1), Int16(0x6e2)), (2, 0x6e3), (0, 0x6e1)] {
+            let w = try world(px: 3000)
+            let (id, solver) = try boulderThrower(w, p1: p1)
+            let c = try slot(w, id)
+            w.active.update(id: id) { $0.subtype = 2; $0.subState = 8; $0.mirrored = false }
+            var r = w.rng
+            cry(&r)
+            shotSetupDraws(&r, boulder: type != 0x6e3)
+            let vy = -0x6a4 - Int32(r.next(0x28a)), vx = -0x514 - Int32(r.next(0x28a))
+            frame(w, id, solver)
+            XCTAssertEqual(w.rng.seed, r.seed, "p1 \(p1)")
+            let b = try XCTUnwrap(shots(w).first, "p1 \(p1)")
+            XCTAssertEqual(b.type, type)
+            XCTAssertEqual([b.x, b.y], [c.centre.x - 0x2c, c.centre.y - 0x26], "p1 \(p1)")
+            XCTAssertEqual([Int(b.vx), Int(b.vy), Int(b.counterA6), Int(b.layer)], [Int(vx), Int(vy), -30, 0xc], "p1 \(p1)")
+            XCTAssertEqual(b.hotRect, type == 0x6e3 ? IdleSprites.Rect(top: 8, left: 8, bottom: 0x10, right: 0x10)
+                                                    : IdleSprites.Rect(top: 8, left: 8, bottom: 0x18, right: 0x18))
+            XCTAssertEqual(Int(b.crunches), type != 0x6e3 ? 1 : 0, "the bombs' crunch flag `+0xeb`")
+            XCTAssertEqual(try slot(w, id).face, FaceRef(pict: 0x6e0, index: 4, set: .encoded))
+        }
+        // The speeds pinned at their draws' ends: R(0x28a) = 0 → −0x6a4 / −0x514; R(0x28a) = 0x289 → −0x92d / −0x79d.
+        for want in [0, 0x289] as [Int16] {
+            let w = try world(px: 3000)
+            let (id, solver) = try boulderThrower(w, p1: 1)
+            w.active.update(id: id) { $0.subtype = 2; $0.subState = 8; $0.mirrored = true }
+            w.rng = FastRand(seed: seed { r in
+                cry(&r)
+                shotSetupDraws(&r, boulder: true)
+                return r.next(0x28a) == want && r.next(0x28a) == want
+            })
+            frame(w, id, solver)
+            let b = try XCTUnwrap(shots(w).first)
+            XCTAssertEqual([Int(b.vy), Int(b.vx)], want == 0 ? [-0x6a4, 0x514] : [-0x92d, 0x79d], "R \(want)")
+        }
+    }
+
+    func test1760FacesLeftSheet() throws {
+        // The sheet 0x6e0 faces left: `.SetupWalkerSprite` flips it (M l. 56943–56949, 56988–56994); its state 5 faces
+        // the player every frame, flip = cx < P.x (M l. 58024–58029) — the player level or left: unflipped. The blink
+        // (M l. 58010–58023): `+0xb4 < −20` → + 1, face 0x6e0[8], no draw; else + 1, R(25) == 1 with the stepped
+        // `+0xb4 ≥ 0` → `+0xb4 = −28`, face [0] — eight frames of [8].
+        let w = try world(px: 3000)
+        let solver = TileSolver(world: w)
+        let id = try walker(w, type: 0x6e0, x: 300, y: 315)
+        XCTAssertTrue(try slot(w, id).mirrored)
+        XCTAssertEqual(try slot(w, id).face, FaceRef(pict: 0x6e0, index: 0, set: .encoded))
+        var r = w.rng
+        cry(&r)
+        _ = r.next(0x19)
+        frame(w, id, solver)
+        XCTAssertEqual(w.rng.seed, r.seed)
+        XCTAssertEqual(try slot(w, id).classWordB4, -2, "the first Handle's −3 (flipped), then the blink step")
+        for _ in 0..<2 { frame(w, id, solver) }
+        let cx = try slot(w, id).centre.x
+        for (px, flip) in [(cx + 1, true), (cx, false), (cx - 1, false), (cx + 2000, true), (cx - 2000, false)] {
+            w.player.centreX = Int16(px)
+            w.active.update(id: id) { $0.subState = -100; $0.mirrored = !flip }
+            frame(w, id, solver)
+            XCTAssertEqual(try slot(w, id).mirrored, flip, "P.x \(px)")
+        }
+        w.player.centreX = Int16(cx + 2000)
+        // The blink's edges: R(25) == 1 starts it only from a stepped `+0xb4 ≥ 0`; R(25) 0 / 2 never.
+        for (b4, rand, want) in [(Int16(-1), Int16(1), Int16(-28)), (-2, 1, -1), (0, 1, -28), (0x50, 1, -28),
+                                 (0, 0, 1), (0, 2, 1), (-20, 1, -19)] {
+            w.active.update(id: id) { $0.classWordB4 = b4; $0.subState = -100 }
+            w.rng = FastRand(seed: seed { r in cry(&r); return r.next(0x19) == rand })
+            var q = w.rng
+            cry(&q)
+            _ = q.next(0x19)
+            frame(w, id, solver)
+            XCTAssertEqual(w.rng.seed, q.seed, "b4 \(b4)")
+            let s = try slot(w, id)
+            XCTAssertEqual(s.classWordB4, want, "b4 \(b4) R(25) \(rand)")
+            XCTAssertEqual(s.face, FaceRef(pict: 0x6e0, index: 0, set: .encoded), "b4 \(b4)")
+        }
+        // R(25), not R(26): a stream on which the two differ (R(25) 1, R(26) 2) starts the blink.
+        w.active.update(id: id) { $0.classWordB4 = 0; $0.subState = -100 }
+        w.rng = FastRand(seed: seed { r in
+            cry(&r)
+            var q = r
+            return r.next(0x19) == 1 && q.next(0x1a) == 2
+        })
+        frame(w, id, solver)
+        XCTAssertEqual(try slot(w, id).classWordB4, -28, "R(25) == 1")
+        // −28 … −21: face [8], no draw; −20: face [0] and the draw.
+        w.active.update(id: id) { $0.classWordB4 = -28; $0.subState = -100 }
+        for k in 0..<9 {
+            var q = w.rng
+            cry(&q)
+            if k == 8 { _ = q.next(0x19) }
+            frame(w, id, solver)
+            XCTAssertEqual(w.rng.seed, q.seed, "blink frame \(k)")
+            let s = try slot(w, id)
+            XCTAssertEqual(s.face, FaceRef(pict: 0x6e0, index: k < 8 ? 8 : 0, set: .encoded), "blink frame \(k)")
+            XCTAssertEqual(Int(s.classWordB4), k < 8 ? -27 + k : -19, "blink frame \(k)")
+        }
+        // The cache marks: the 0x6e0 Setup marks its own set (M l. 56989); the renderer's sheet holds the nine cells
+        // the Handle faces from (9 × 0x54×0x5c, one row).
+        XCTAssertEqual(CachedFaces.marks(type: 0x6e0).sets, [0x6e0])
+        XCTAssertEqual(CachedFaces.sheets(markedBy: [Int16(0x6e0)]),
+                       [SetupFaces.Sheet(pict: 0x6e0, count: 9, cellWidth: 0x54, cellHeight: 0x5c, columns: 9, clut: 200)])
+    }
+
+    // MARK: - the Ax goblin 1750 (WK2)
+
+    /// A 1750 (type 0x6d6) at (200, 308) — its hot rect's bottom 0x5c on the floor's surface (y 400) — after `settle`
+    /// Handles, the player alive (`G+4` 100).
+    private func axGoblin(_ w: SpriteWorld, p3: Int16 = 0, settle: Int = 3) throws -> (Int, TileSolver) {
+        w.globals.health = 100
+        let solver = TileSolver(world: w)
+        let id = try walker(w, type: 0x6d6, x: 200, y: 308, p3: p3)
+        for _ in 0..<settle { frame(w, id, solver) }
+        return (id, solver)
+    }
+
+    /// `.AxGoblinCoreLogic` alone on a 1750 whose centre is (`cx`, `cy`), the player at (`px`, `py`), from a reset of
+    /// the fields it reads (state 1, `+0xb2` 0, counters 0, HP 500, on ground, vx 77, vy 0), then `edit`.
+    private func logic(_ w: SpriteWorld, _ id: Int, cx: Int, cy: Int, px: Int, py: Int,
+                       _ edit: (inout SpriteSlot) -> Void = { _ in }) throws -> SpriteSlot {
+        w.player.centreX = Int16(px)
+        w.player.centreY = Int16(py)
+        w.player.cues = []
+        w.active.update(id: id) { s in
+            s.centre = SpriteSlot.Point(x: cx, y: cy)
+            s.subtype = 1
+            s.subState = 0
+            s.phase = 5
+            s.classWord160 = 0
+            s.launchSpeed = 0
+            s.classWord174 = 0
+            s.classWordB6 = 0
+            s.classWord16c = 0
+            s.classWord100 = 0
+            s.hp = 500
+            s.groundKind = 3
+            s.vx = 77
+            s.vy = 0
+            s.bonusP4 = 0
+            s.mirrored = false
+            edit(&s)
+        }
+        AxGoblin.coreLogic(w, id: id)
+        return try slot(w, id)
+    }
+
+    func testAxGoblinSwing() throws {
+        // `.AxGoblinCoreLogic`'s swing (M l. 57188–57200): the target within 110 px across and 40 px up or down, chasing
+        // (`+0xb6` 0), no wall jump → state 2, `+0xb2` 1, `+0x46` 0, `+0x160` = `+0x164` = 0, no draw.
+        let w = try world()
+        let (id, solver) = try axGoblin(w)
+        for (dx, dy, swings) in [(109, 0, true), (110, 0, false), (-109, 39, true), (-110, 0, false), (0, -39, true),
+                                 (50, 40, false), (50, -40, false), (0, 0, true)] {
+            let seed0 = w.rng.seed
+            let s = try logic(w, id, cx: 400, cy: 300, px: 400 + dx, py: 300 + dy) {
+                $0.classWord160 = 2
+                $0.launchSpeed = 9
+                $0.phase = 4
+            }
+            if !swings { XCTAssertNotEqual(Int(s.subtype), 2, "dx \(dx) dy \(dy)") }
+            if !swings && abs(dy) < 40 {
+                // dx 110, no wall hit: past the near test — `+0x164` 9 → 8, nothing more (no jump, no draw).
+                XCTAssertEqual([Int(s.subtype), Int(s.launchSpeed)], [1, 8], "dx \(dx)")
+                XCTAssertEqual(w.rng.seed, seed0, "dx \(dx)")
+            }
+            if swings {
+                XCTAssertEqual(Int(s.subtype), 2, "dx \(dx) dy \(dy)")
+                XCTAssertEqual([Int(s.subState), Int(s.phase), Int(s.classWord160), Int(s.launchSpeed), Int(s.classWordB6)],
+                               [1, 0, 0, 0, 0], "dx \(dx) dy \(dy)")
+                XCTAssertEqual(w.rng.seed, seed0, "no draw")
+                XCTAssertTrue(w.player.cues.isEmpty)
+            }
+        }
+        // Fleeing (`+0xb6` 3: HP ≤ 200 within 600 px) or a wall jump (`+0x16c` > 0 with dx ≥ 110) never swings.
+        XCTAssertNotEqual(try logic(w, id, cx: 400, cy: 300, px: 450, py: 300) { $0.hp = 200; $0.classWord16c = 1 }.subtype, 2)
+        // The swing frames (the Handle's state 2, M l. 58117–58197): gravity 0x151, vx halved toward zero, the face by
+        // `+0x46` (0 → 0x6d6; 1–2, 3–4, 5–6, 7–8, 9–11, 12–17 → 0x6d8[0…5]); `+0xa6 > 0` → − 1; at 0: `+0x46` + 1, at 5
+        // snd 704 pitched 45000 (`.STPlay3DSoundPitched`, no draw), at 8 `+0xa6 = 10 + R(12)` and the axe hitbox
+        // `MTNewSprite(0x6d6, x + (flip ? 3 : 0x99), y + 0x2c, 0, −1, .SetupEnemyShotSprite)`; else `+0x46` < 1 → face
+        // 0x6d6; else + 1, past 14 → 0 and `.AxGoblinCoreLogic`. Facing only while `+0x46 == 0`.
+        _ = solver
+        let w2 = try world()
+        let (gid, gs) = try axGoblin(w2)
+        let c = try slot(w2, gid)
+        XCTAssertNotEqual(c.groundKind, 0)
+        w2.player.centreX = Int16(c.centre.x + 60)
+        w2.player.centreY = Int16(c.centre.y)
+        w2.active.update(id: gid) { $0.subtype = 1; $0.subState = 0; $0.phase = 0; $0.counterA6 = 0; $0.classWord16c = 0 }
+        var r = w2.rng
+        cry(&r)
+        frame(w2, gid, gs)
+        XCTAssertEqual(w2.rng.seed, r.seed, "the walk and the swing draw nothing")
+        var s = try slot(w2, gid)
+        XCTAssertEqual([Int(s.subtype), Int(s.subState), Int(s.phase), Int(s.vx)], [2, 1, 0, -1400],
+                       "the walk step (away from the player at `+0xb2` 0), then the swing")
+        XCTAssertEqual(s.face, FaceRef(pict: 0x6d7, index: 0, set: .encoded))
+        XCTAssertFalse(s.mirrored, "facing at `+0x46` 0: the player right, `+0xb2` ≠ 2 → unflipped")
+        let faces: [Int: Int] = [1: 0, 2: 0, 3: 1, 4: 1, 5: 2, 6: 2, 7: 3, 8: 3, 9: 4, 10: 4, 11: 4, 12: 5, 13: 5, 14: 5]
+        let halves: [Int32] = [-700, -350, -175, -87, -43, -21, -10, -5, -2, -1, 0, 0, 0, 0, 0]
+        w2.player.cues = []
+        var a6 = 0
+        var atThrow = c
+        for k in 0..<15 {                                               // `+0x46` before: 0 … 14
+            let before = try slot(w2, gid)
+            if k == 7 { atThrow = before }
+            XCTAssertEqual(Int(before.phase), k)
+            w2.active.update(id: gid) { $0.gravity = 7 }
+            r = w2.rng
+            cry(&r)
+            if k == 7 {
+                a6 = Int(r.next(0xc)) + 10
+                shotSetupDraws(&r, boulder: false)
+            }
+            if k == 3 { w2.player.centreX = Int16(c.centre.x - 60) }  // moved left mid-swing: no turn until `+0x46` 0
+            frame(w2, gid, gs)
+            XCTAssertEqual(w2.rng.seed, r.seed, "phase \(k)")
+            s = try slot(w2, gid)
+            XCTAssertEqual(s.face, k == 0 ? FaceRef(pict: 0x6d6, index: 0, set: .encoded)
+                                          : FaceRef(pict: 0x6d8, index: faces[k]!, set: .encoded), "phase \(k)")
+            XCTAssertEqual(Int(s.vx), Int(halves[k]), "phase \(k)")
+            XCTAssertEqual(Int(s.gravity), 0x151)
+            XCTAssertEqual(w2.player.cues.filter { $0.snd == 704 }.count, k < 4 ? 0 : 1, "phase \(k)")
+            XCTAssertEqual(shots(w2).count, k < 7 ? 0 : 1, "phase \(k)")
+            if k < 14 {
+                XCTAssertEqual([Int(s.subtype), Int(s.phase), Int(s.counterA6)], [2, k + 1, k < 7 ? 0 : a6 - (k - 7)],
+                               "phase \(k)")
+                XCTAssertFalse(s.mirrored, "phase \(k)")
+            } else {
+                // Past 14: `+0x46` 0 and `.AxGoblinCoreLogic` (the player 60 px left: the swing again), then facing:
+                // the player left, `+0xb2` ≠ 2 → flipped.
+                XCTAssertEqual([Int(s.subtype), Int(s.phase), Int(s.subState), Int(s.counterA6)], [2, 0, 1, a6 - 7])
+                XCTAssertTrue(s.mirrored)
+            }
+        }
+        let swish = try XCTUnwrap(w2.player.cues.first { $0.snd == 704 })
+        XCTAssertEqual([swish.call == .threeDPitched, swish.rate == 45000, swish.priority == 1, swish.volume == 0x100],
+                       [true, true, true, true])
+        let axe = try XCTUnwrap(shots(w2).first)
+        XCTAssertEqual([Int(axe.type), axe.x, axe.y, Int(axe.layer)], [0x6d6, atThrow.x + 0x99, atThrow.y + 0x2c, 0])
+        XCTAssertEqual([Int(axe.counterA6), Int(axe.hp), Int(axe.vx), Int(axe.vy)], [3, 0x70, 0, 0])
+        XCTAssertEqual(axe.hotRect, IdleSprites.Rect(top: 0, left: 0, bottom: 0x18, right: 0x3c))
+        // The cooldown at `+0x46` 0: `+0xa6` − 1, face 0x6d6 — until it reaches 0, when `+0x46` steps to 1 that frame.
+        for left in stride(from: a6 - 8, through: 0, by: -1) {
+            frame(w2, gid, gs)
+            s = try slot(w2, gid)
+            XCTAssertEqual([Int(s.counterA6), Int(s.phase)], [left, left == 0 ? 1 : 0], "a6 \(left)")
+            XCTAssertEqual(s.face, FaceRef(pict: 0x6d6, index: 0, set: .encoded))
+        }
+        // R(12) pinned at its ends: 0 → `+0xa6` 10, 11 → 21.
+        for (want, wantA6) in [(Int16(0), 10), (11, 21)] {
+            let w3 = try world()
+            let (g, s2) = try axGoblin(w3)
+            w3.active.update(id: g) { $0.subtype = 2; $0.phase = 7; $0.counterA6 = 0; $0.mirrored = true }
+            w3.rng = FastRand(seed: seed { r in cry(&r); return r.next(0xc) == want })
+            let g0 = try slot(w3, g)
+            frame(w3, g, s2)
+            XCTAssertEqual(Int(try slot(w3, g).counterA6), wantA6, "R(12) \(want)")
+            let ax = try XCTUnwrap(shots(w3).first)
+            XCTAssertEqual([ax.x, ax.y], [g0.x + 3, g0.y + 0x2c], "flipped: x + 3")
+        }
+        // `+0x46` 1 under a running cooldown (no writer makes it so — synthetic): not below 1, so it steps on (→ 2) with
+        // the face of `+0x46` 1, 0x6d8[0].
+        w2.active.update(id: gid) { $0.subtype = 2; $0.phase = 1; $0.counterA6 = 5 }
+        frame(w2, gid, gs)
+        s = try slot(w2, gid)
+        XCTAssertEqual([Int(s.phase), Int(s.counterA6)], [2, 4])
+        XCTAssertEqual(s.face, FaceRef(pict: 0x6d8, index: 0, set: .encoded))
+        // States 0, 3 and 5 are `.ReportError("Ax goblin error!")` (M l. 58083–58085): nothing but the facing and the tail.
+        for state: Int16 in [0, 3, 5] {
+            w2.active.update(id: gid) { $0.subtype = state; $0.phase = 3; $0.counterA6 = 4; $0.vx = 0 }
+            r = w2.rng
+            cry(&r)
+            frame(w2, gid, gs)
+            XCTAssertEqual(w2.rng.seed, r.seed)
+            s = try slot(w2, gid)
+            XCTAssertEqual([Int(s.subtype), Int(s.phase), Int(s.counterA6)], [Int(state), 3, 4], "state \(state)")
+        }
+    }
+
+    func testAxGoblinJumpLand() throws {
+        // `.AxGoblinCoreLogic`'s jump (M l. 57202–57270): the target not below (T.y < cy + 25) or a wall jump, with the
+        // budget `+0x160` in 0…2: `+0xb2` 1, flip = T.x ≥ cx, snd 414 (`.STPlay3DSoundPitchedGob`, prio 0x14, vol 0x55,
+        // R(4000) + 40000), R(100) > 0x50 → snd 610 (vol 0xab, R(4000) + 40000); state 6, `+0x46` 0; vy = wall ? −2000 −
+        // R(3000) : −50·(short)(cy − T.y) − R(600), clamped to [−6250, −4800]; vx = wall ? ((R(30) + 30) / 10)·325 toward
+        // T : ((cy − T.y) / 10)·(T.x − cx) + R(400) − 200; vx and `+0x168` clamped to ±4200; `+0xce` 0; `+0x160` + 1.
+        let w = try world()
+        let (id, solver) = try axGoblin(w)
+        for (gate, cry610) in [(Int16(0x50), false), (0x51, true)] {
+            w.rng = FastRand(seed: seed { r in _ = r.next(4000); return r.next(100) == gate })
+            var r = w.rng
+            let p414 = Int32(r.next(4000))
+            _ = r.next(100)
+            let p610 = cry610 ? Int32(r.next(4000)) : 0
+            let vy = -5000 - Int32(r.next(600))
+            let vx = 500 + Int32(r.next(400)) - 200
+            let s = try logic(w, id, cx: 250, cy: 300, px: 300, py: 200)
+            XCTAssertEqual(w.rng.seed, r.seed, "R(100) \(gate)")
+            XCTAssertEqual([Int(s.subtype), Int(s.subState), Int(s.phase), Int(s.groundKind), Int(s.classWord160)],
+                           [6, 1, 0, 0, 1])
+            XCTAssertEqual([Int(s.vy), Int(s.vx), Int(s.bonusP4)], [Int(vy), Int(vx), Int(vx)])
+            XCTAssertTrue(s.mirrored, "T.x ≥ cx")
+            let pitch = s.voicePitch
+            XCTAssertEqual(w.player.cues.map { [Int($0.snd), Int($0.priority), Int($0.volume), Int($0.rate ?? 0)] },
+                           [[414, 0x14, 0x55, Int(pitch + p414 + 40000 - 0xffff)]]
+                            + (cry610 ? [[610, 0x14, 0xab, Int(pitch + p610 + 40000 - 0xffff)]] : []))
+            XCTAssertTrue(w.player.cues.allSatisfy { $0.call == .threeDPitched })
+        }
+        // The vy clamps and the vx terms (the stream re-derived per call): d = cy − T.y; (d, T.x − cx) →
+        //   (50, 50): −2500 − R(600) → −4800; vx 5·50 + R(400) − 200;  (109, 50): d / 10 = 10 (toward zero), vy −5450 − R;
+        //   (140, 100): −7000 − R → −6250, vx 14·100 + R − 200;  (500, ±100): vx 50·(±100) + R − 200 → ±4200.
+        for (d, dx, clampVY, vxBase, clampVX) in [(50, 50, true, 250, false), (109, 50, false, 500, false),
+                                                  (140, 100, true, 1400, false), (500, 100, true, 5000, true),
+                                                  (500, -100, true, -5000, true)] {
+            var r = w.rng
+            _ = r.next(4000)
+            if 0x50 < r.next(100) { _ = r.next(4000) }
+            let rv = Int32(r.next(600)), rx = Int32(r.next(400))
+            let s = try logic(w, id, cx: 300 - dx, cy: 200 + d, px: 300, py: 200)
+            XCTAssertEqual(w.rng.seed, r.seed)
+            let rawVY = -50 * Int32(d) - rv
+            XCTAssertEqual(Int(s.vy), clampVY ? (d < 100 ? -4800 : -6250) : Int(rawVY), "d \(d)")
+            XCTAssertTrue(clampVY ? (rawVY > -4800 || rawVY < -6250) : true, "d \(d): the clamp is taken")
+            let wantVX = clampVX ? (dx > 0 ? 4200 : -4200) : vxBase + Int(rx) - 200
+            XCTAssertEqual([Int(s.vx), Int(s.bonusP4)], [wantVX, wantVX], "d \(d) dx \(dx)")
+            XCTAssertEqual(s.mirrored, dx > 0)
+        }
+        // The wall jump (`+0x16c` > 0, dx ≥ 110): vy −2000 − R(3000) → −4800 below R 2800, else as drawn; vx (R(30) +
+        // 30) / 10 · 325: R 9 → 975, 10 → 1300, 19 → 1300, 20 → 1625, 29 → 1625; negated with the target left.
+        for (r30, want, r3000, wantVY) in [(Int16(9), 975, Int16(0), -4800), (10, 1300, 2799, -4800), (19, 1300, 2801, -4801),
+                                          (20, 1625, 2999, -4999), (29, 1625, 1500, -4800)] {
+            for left in [false, true] {
+                w.rng = FastRand(seed: seed { r in
+                    _ = r.next(4000)
+                    if 0x50 < r.next(100) { _ = r.next(4000) }
+                    return r.next(3000) == r3000 && r.next(0x1e) == r30
+                })
+                let s = try logic(w, id, cx: left ? 410 : 190, cy: 300, px: 300, py: 300) { $0.classWord16c = 1 }
+                XCTAssertEqual([Int(s.subtype), Int(s.vy)], [6, wantVY], "R(3000) \(r3000)")
+                XCTAssertEqual([Int(s.vx), Int(s.bonusP4)], [left ? -want : want, left ? -want : want], "R(30) \(r30)")
+                XCTAssertEqual(s.mirrored, !left)
+            }
+        }
+        // The jump's flip is T.x ≥ cx: the player straight above → flipped.
+        XCTAssertTrue(try logic(w, id, cx: 300, cy: 300, px: 300, py: 200).mirrored)
+        // Fleeing with the player level across (P.x == cx): T.x = −32000 (P.x < cx fails) — the wall jump goes left.
+        let tie = try logic(w, id, cx: 300, cy: 300, px: 300, py: 300) { $0.hp = 200; $0.classWord16c = 1 }
+        XCTAssertEqual([Int(tie.subtype), Int(tie.classWordB6)], [6, 3])
+        XCTAssertLessThan(tie.vx, 0)
+        XCTAssertFalse(tie.mirrored)
+        // dx 109 with a wall hit is no wall jump: the plain jump's stream (R(600), R(400)).
+        var r = w.rng
+        _ = r.next(4000)
+        if 0x50 < r.next(100) { _ = r.next(4000) }
+        let pv = Int32(r.next(600))
+        _ = r.next(400)
+        let plain = try logic(w, id, cx: 191, cy: 300, px: 300, py: 250) { $0.classWord16c = 1 }
+        XCTAssertEqual(w.rng.seed, r.seed)
+        XCTAssertEqual(Int(plain.vy), -4800, "−2500 − R(600) \(pv) clamped")
+        // The budget: 2 → jumps (→ 3); 3 → the retreat (state 1, `+0xb2` 2, `+0x164` 30, `+0x160` −30 − R(20)); −2 →
+        // −1, nothing; −1 → 0 and the jump.
+        XCTAssertEqual(try logic(w, id, cx: 250, cy: 300, px: 300, py: 200) { $0.classWord160 = 2 }.classWord160, 3)
+        r = w.rng
+        let back = -30 - Int(r.next(0x14))
+        var s = try logic(w, id, cx: 250, cy: 300, px: 300, py: 200) { $0.classWord160 = 3 }
+        XCTAssertEqual(w.rng.seed, r.seed)
+        XCTAssertEqual([Int(s.subtype), Int(s.subState), Int(s.launchSpeed), Int(s.classWord160), Int(s.classWord174)],
+                       [1, 2, 30, back, 0])
+        XCTAssertTrue(w.player.cues.isEmpty)
+        let seed0 = w.rng.seed
+        s = try logic(w, id, cx: 250, cy: 300, px: 300, py: 200) { $0.classWord160 = -2; $0.phase = 9 }
+        XCTAssertEqual([Int(s.subtype), Int(s.classWord160), Int(s.phase)], [1, -1, 9])
+        XCTAssertEqual(w.rng.seed, seed0)
+        XCTAssertEqual(try logic(w, id, cx: 250, cy: 300, px: 300, py: 200) { $0.classWord160 = -1 }.subtype, 6)
+        // Fleeing (HP ≤ 200 within 600 px; T = (±32000, ±32000) away from the player, `+0xb6` 3) with a wall hit: the
+        // wall jump away; at budget 3 the flee retreat — `+0x164` 70, `+0x160` −70 − R(20), `+0x174` −120 − R(60).
+        r = w.rng
+        let f160 = -70 - Int(r.next(0x14)), f174 = -120 - Int(r.next(0x3c))
+        s = try logic(w, id, cx: 400, cy: 300, px: 350, py: 300) { $0.hp = 200; $0.classWord16c = 1; $0.classWord160 = 3 }
+        XCTAssertEqual(w.rng.seed, r.seed)
+        XCTAssertEqual([Int(s.subtype), Int(s.subState), Int(s.classWordB6), Int(s.launchSpeed), Int(s.classWord160),
+                        Int(s.classWord174)], [1, 2, 3, 70, f160, f174])
+        s = try logic(w, id, cx: 400, cy: 300, px: 350, py: 300) { $0.hp = 200; $0.classWord16c = 1 }
+        XCTAssertEqual([Int(s.subtype), Int(s.classWordB6)], [6, 3])
+        XCTAssertGreaterThan(s.vx, 0, "away from the player (T.x 32000)")
+        XCTAssertTrue(s.mirrored)
+        // The target choice (M l. 57126–57162): flee while HP < 0xc9 ∧ `+0x174` == 0 (after its step) ∧ `+0x100` == 0 ∧
+        // |cx − P.x| < 600, or while the player's health `G+4` ≤ 0; else chase, which stores `+0x174 = 0`.
+        for (hp, l174, imm, px, health, flees) in [(200, 0, 0, 999, 100, true), (201, 0, 0, 999, 100, false),
+                                                   (200, 0, 0, 1000, 100, false), (200, 0, 0, -199, 100, true),
+                                                   (200, 0, 0, -200, 100, false), (200, -1, 0, 999, 100, true),
+                                                   (200, -2, 0, 999, 100, false), (200, 0, 1, 999, 100, false),
+                                                   (500, 0, 0, 999, 0, true), (500, 0, 0, 999, 1, false),
+                                                   (500, -50, 0, 999, 1, false)] {
+            w.globals.health = Int16(health)
+            s = try logic(w, id, cx: 400, cy: 300, px: px, py: 300) {
+                $0.hp = Int16(hp)
+                $0.classWord174 = Int32(l174)
+                $0.classWord100 = Int32(imm)
+            }
+            XCTAssertEqual(Int(s.classWordB6), flees ? 3 : 0, "hp \(hp) 174 \(l174) imm \(imm) px \(px) G+4 \(health)")
+            if !flees { XCTAssertEqual(s.classWord174, 0, "chasing clears the lockout") }
+            XCTAssertEqual([Int(s.subtype), Int(s.subState)], [1, 1], "far, no wall hit: advance")
+        }
+        w.globals.health = 100
+        // `+0x164` steps down first: 2 → 1 holds the state; 1 → 0 advances (state 1, `+0xb2` 1).
+        s = try logic(w, id, cx: 400, cy: 300, px: 600, py: 300) { $0.launchSpeed = 2; $0.subState = 2; $0.subtype = 7 }
+        XCTAssertEqual([Int(s.subtype), Int(s.subState), Int(s.launchSpeed)], [7, 2, 1])
+        s = try logic(w, id, cx: 400, cy: 300, px: 600, py: 300) { $0.launchSpeed = 1; $0.subState = 2; $0.subtype = 7 }
+        XCTAssertEqual([Int(s.subtype), Int(s.subState), Int(s.launchSpeed)], [1, 1, 0])
+        // The target below (T.y ≥ cy + 25, dx < 110): r = R(100), `+0x164` 30, `+0x160` −30 − R(20); r < 11 → hop with
+        // `+0xb2` 2, < 21 → hop with 1 (state 6, `+0x46` 0, vy −2500 − R(3000) clamped to [−6000, −4000], vx kept); < 61
+        // → state 1, `+0xb2` 1; else `+0xb2` 2 — both with a second `+0x160` −30 − R(20).
+        for (pick, hop, b2) in [(Int16(10), true, 2), (11, true, 1), (20, true, 1), (21, false, 1), (60, false, 1),
+                                (61, false, 2), (0, true, 2), (99, false, 2)] {
+            w.rng = FastRand(seed: seed { r in r.next(100) == pick })
+            r = w.rng
+            _ = r.next(100)
+            var j = -30 - Int(r.next(0x14))
+            var vy = 0
+            if hop { vy = -2500 - Int(r.next(3000)) } else { j = -30 - Int(r.next(0x14)) }
+            s = try logic(w, id, cx: 300, cy: 300, px: 330, py: 400)
+            XCTAssertEqual(w.rng.seed, r.seed, "R(100) \(pick)")
+            XCTAssertEqual([Int(s.subtype), Int(s.subState), Int(s.launchSpeed), Int(s.classWord160)],
+                           [hop ? 6 : 1, b2, 30, j], "R(100) \(pick)")
+            XCTAssertEqual([Int(s.vx), Int(s.groundKind)], [77, 3], "vx kept, still on ground")
+            if hop {
+                XCTAssertEqual(Int(s.phase), 0)
+                XCTAssertEqual(Int(s.vy), vy > -4000 ? -4000 : vy, "R(100) \(pick)")
+            }
+        }
+        for (r3000, wantVY) in [(Int16(1499), -4000), (1500, -4000), (1501, -4001), (2999, -5499)] {
+            w.rng = FastRand(seed: seed { r in
+                guard r.next(100) == 5 else { return false }
+                _ = r.next(0x14)
+                return r.next(3000) == r3000
+            })
+            XCTAssertEqual(Int(try logic(w, id, cx: 300, cy: 300, px: 330, py: 400).vy), wantVY, "R(3000) \(r3000)")
+        }
+        // The airborne state 6 (M l. 58242–58298): `+0x46` steps up while rising (vy < 0, below 8) and down while falling
+        // fast (vy > 2000, above 1); the face 0x6d9[(`+0x46` − 1) / 3] (toward zero; [0] below 0); airborne, vx moves
+        // toward `+0x168` by |`+0x168`| / 6. In the air — no tiles.
+        let wa = try world(floor: false)
+        let (aid, sa) = try axGoblin(wa, settle: 1)
+        func air(phase: Int16, vy: Int32, vx: Int32 = 0, target: Int32 = 0) throws -> SpriteSlot {
+            wa.active.update(id: aid) { s in
+                s.subtype = 6
+                s.phase = phase
+                s.vy = vy
+                s.vx = vx
+                s.bonusP4 = target
+                s.groundKind = 0
+            }
+            frame(wa, aid, sa)
+            return try slot(wa, aid)
+        }
+        for (p, vy, want) in [(Int16(7), Int32(-1), 8), (8, -1, 8), (0, -1, 1), (5, 0, 5), (5, 2000, 5), (5, 2001, 4),
+                              (2, 2001, 1), (1, 2001, 1), (-3, 2001, -2)] {
+            let s = try air(phase: p, vy: vy)
+            XCTAssertEqual(Int(s.phase), want, "phase \(p) vy \(vy)")
+            let cell = want < 0 ? 0 : (want - 1) / 3
+            XCTAssertEqual(s.face, FaceRef(pict: 0x6d9, index: cell, set: .encoded), "phase \(p) vy \(vy)")
+        }
+        for (p, cell) in [(Int16(1), 0), (2, 0), (3, 0), (4, 1), (6, 1), (7, 2), (8, 2)] {
+            XCTAssertEqual(try air(phase: p, vy: 100).face, FaceRef(pict: 0x6d9, index: cell, set: .encoded), "phase \(p)")
+        }
+        for (vx, target, want) in [(Int32(0), Int32(600), 100), (0, -600, -100), (5, 7, 6), (-5, -7, -6), (600, 600, 600),
+                                   (700, 600, 600), (-700, -600, -600), (10, -6, 9), (-10, 6, -9)] {
+            XCTAssertEqual(Int(try air(phase: 3, vy: 100, vx: vx, target: target).vx), want, "vx \(vx) → \(target)")
+        }
+        // The facing while fleeing inverts only at `+0x174` 0 (airborne: no core logic to change `+0xb6`): the player
+        // right, `+0xb2` 0 → unflipped; inverted → flipped.
+        for (l174, flip) in [(Int32(-50), false), (0, true)] {
+            wa.player.centreX = Int16(try slot(wa, aid).centre.x + 300)
+            wa.active.update(id: aid) { $0.classWordB6 = 3; $0.classWord174 = l174; $0.subState = 0; $0.mirrored = !flip }
+            XCTAssertEqual(try air(phase: 3, vy: 100).mirrored, flip, "+0x174 \(l174)")
+        }
+        wa.active.update(id: aid) { $0.classWordB6 = 0; $0.classWord174 = 0 }
+        // The walk's `.SetSpriteSpeed(±1400, 0x200)` stores vy 0x200: flagged on ground in the air, it falls from 0x200 —
+        // the vy of a no-op state-5 twin given 0x200 (the player far: the core logic does nothing).
+        func walkVY(_ state: Int16) throws -> Int32 {
+            wa.player.centreX = Int16(try slot(wa, aid).centre.x + 2000)
+            wa.active.update(id: aid) { s in
+                s.subtype = state
+                s.groundKind = 3
+                s.vy = state == 1 ? 0 : 0x200
+                s.launchSpeed = 50
+                s.subState = 0
+                s.classWord16c = 0
+            }
+            frame(wa, aid, sa)
+            return try slot(wa, aid).vy
+        }
+        XCTAssertEqual(try walkVY(1), try walkVY(5))
+        // −1 → 0: vy −5000 and `+0xce` 0 (as written — no writer of a negative `+0x46`), the same vy as a goblin set to
+        // −5000 at `+0x46` 0 (which then steps to 1).
+        let neg = try air(phase: -1, vy: 300)
+        let twin = try air(phase: 0, vy: -5000)
+        XCTAssertEqual([Int(neg.phase), Int(twin.phase), Int(neg.vy)], [0, 1, Int(twin.vy)])
+        // That frame does not steer: `+0xce` was just cleared but `+0xcd` (last frame's ground) is set.
+        let wg = try world(px: 3000)
+        let (gg, sg) = try axGoblin(wg)
+        wg.active.update(id: gg) { $0.subtype = 6; $0.phase = -1; $0.vx = 0; $0.bonusP4 = 600; $0.counterA6 = 0 }
+        frame(wg, gg, sg)
+        XCTAssertEqual([Int(try slot(wg, gg).phase), Int(try slot(wg, gg).vx)], [0, 0])
+        // The landing (the tail, M l. 58412–58418): landed in state 6 → `+0xa6 = 2 + R(4)`, `+0x46` 0, face 0x6d6; R(4)
+        // pinned at 0 and 3.
+        for (r4, wantA6) in [(Int16(0), 2), (3, 5)] {
+            let wl = try world(px: 3000)
+            let (lid, sl) = try axGoblin(wl)
+            wl.active.update(id: lid) { s in
+                s.subtype = 6
+                s.phase = 3
+                s.groundKind = 0
+                s.vx = 0
+                s.vy = 0
+                s.bonusP4 = 0
+                s.counterA6 = 0
+            }
+            wl.rng = FastRand(seed: seed { r in cry(&r); return r.next(4) == r4 })
+            var q = wl.rng
+            cry(&q)
+            _ = q.next(4)
+            frame(wl, lid, sl)
+            XCTAssertEqual(wl.rng.seed, q.seed, "R(4) \(r4)")
+            var t = try slot(wl, lid)
+            XCTAssertEqual([Int(t.subtype), Int(t.counterA6), Int(t.phase)], [6, wantA6, 0], "R(4) \(r4)")
+            XCTAssertNotEqual(t.groundKind, 0)
+            XCTAssertEqual(t.face, FaceRef(pict: 0x6d6, index: 0, set: .encoded))
+            // On the ground in state 6: face 0x6d6, vx 0; `+0xa6 > 0` → `+0x170 = 50`, `+0xa6` − 1, `+0x16c` 0; at 0 (and
+            // `+0x46 ≥ 0`) `.AxGoblinCoreLogic` — the player far right, no wall: advance (state 1, `+0xb2` 1).
+            for left in stride(from: wantA6 - 1, through: 0, by: -1) {
+                wl.active.update(id: lid) { $0.classWord16c = 4; $0.vx = 300 }
+                frame(wl, lid, sl)
+                t = try slot(wl, lid)
+                XCTAssertEqual([Int(t.subtype), Int(t.counterA6), Int(t.classWord170), Int(t.classWord16c), Int(t.vx)],
+                               [6, left, 50, 0, 0], "a6 → \(left)")
+                XCTAssertEqual(t.face, FaceRef(pict: 0x6d6, index: 0, set: .encoded))
+            }
+            frame(wl, lid, sl)
+            t = try slot(wl, lid)
+            XCTAssertEqual([Int(t.subtype), Int(t.subState)], [1, 1], "R(4) \(r4): `.AxGoblinCoreLogic`")
+            // `+0x46` below 0 on the ground with `+0xa6` 0: no `.AxGoblinCoreLogic` (it steps toward 0 instead).
+            wl.active.update(id: lid) { $0.subtype = 6; $0.phase = -3; $0.counterA6 = 0; $0.subState = 2 }
+            frame(wl, lid, sl)
+            t = try slot(wl, lid)
+            XCTAssertEqual([Int(t.subtype), Int(t.phase), Int(t.subState)], [6, -2, 2])
+        }
+        // The walk (state 1 on the ground, M l. 58089–58114): right iff P.x < cx, inverted at `+0xb2` 1 and again while
+        // fleeing (`+0xb6` 3 ∧ `+0x174` 0); `.SetSpriteSpeed(±1400, 0x200)`; `+0x46` + 1 wrapped 0…15; face 0x6d7[`+0x46 >>
+        // 1`]; then `.AxGoblinCoreLogic`. Facing (not dying, not mid-swing): P right → flip = (`+0xb2` == 2), P left →
+        // flip = (`+0xb2` ≠ 2), inverted while fleeing.
+        let ww = try world(px: 3000)
+        let (wid, sw) = try axGoblin(ww)
+        let wc = try slot(ww, wid).centre
+        // (The fleeing rows keep HP 200 so the call's own target choice keeps `+0xb6` 3; at `+0x174` −9 it chases and
+        // clears `+0xb6` before the facing.)
+        for (pxSide, b2, b6, l174, vx, flip) in [(1, Int16(0), Int16(0), Int32(0), -1400, false), (-1, 0, 0, 0, 1400, true),
+                                                 (1, 1, 0, 0, 1400, false), (-1, 1, 0, 0, -1400, true),
+                                                 (1, 2, 0, 0, -1400, true), (-1, 2, 0, 0, 1400, false),
+                                                 (1, 2, 3, 0, 1400, false), (-1, 2, 3, 0, -1400, true),
+                                                 (1, 2, 3, -9, -1400, true), (0, 1, 0, 0, 1400, false)] {
+            ww.player.centreX = Int16(wc.x + pxSide * 400)
+            ww.player.centreY = Int16(wc.y)
+            ww.globals.health = 100
+            ww.active.update(id: wid) { s in
+                s.subtype = 1
+                s.subState = b2
+                s.classWordB6 = b6
+                s.classWord174 = l174
+                s.phase = 15
+                s.launchSpeed = 50
+                s.hp = b6 == 3 ? 200 : 500
+                s.classWord16c = 0
+                s.mirrored = !flip
+            }
+            frame(ww, wid, sw)
+            let t = try slot(ww, wid)
+            XCTAssertEqual([Int(t.vx), Int(t.phase)], [vx, 0], "side \(pxSide) b2 \(b2) b6 \(b6) 174 \(l174)")
+            XCTAssertEqual(t.face, FaceRef(pict: 0x6d7, index: 0, set: .encoded))
+            if pxSide != 0 { XCTAssertEqual(t.mirrored, flip, "side \(pxSide) b2 \(b2) b6 \(b6) 174 \(l174)") }
+        }
+        // The walk face is 0x6d7[`+0x46 >> 1`]: 4 → 5 → [2]; below 0 it wraps to 15 → [7].
+        for (p, want, cell) in [(Int16(4), 5, 2), (-2, 15, 7)] {
+            ww.player.centreX = Int16(wc.x + 2000)
+            ww.active.update(id: wid) { $0.subtype = 1; $0.subState = 0; $0.phase = p; $0.launchSpeed = 50; $0.hp = 500 }
+            frame(ww, wid, sw)
+            let t = try slot(ww, wid)
+            XCTAssertEqual(Int(t.phase), want, "phase \(p)")
+            XCTAssertEqual(t.face, FaceRef(pict: 0x6d7, index: cell, set: .encoded), "phase \(p)")
+        }
+    }
+
+    func testAxGoblinTierHP() throws {
+        // `.SetupWalkerSprite`'s 1750 arm (M l. 56996–57007, types 0x6d6…0x6df): the marks 0x6d6 (single), 0x6d7 walk,
+        // 0x6d9 jump, 0x6d8 swing, 0x6da death; state 1; face 0x6d6; flip while P.x < x + 0x32; rect (0x5e, 0x23, 0x7f,
+        // 0x5c). The tier's HP column "1750" is type 0x6d6's alone (M l. 57008–57078); 0x6d7… take the others'.
+        let hp1750: [Int16: Int] = [-1: 500, 0: 500, 1: 500, 2: 1200, 3: 1680, 4: 2000, 5: 1500, 6: 1350, 7: 500]
+        let hpOthers: [Int16: Int] = [-1: 500, 0: 500, 1: 250, 2: 675, 3: 950, 4: 1500, 5: 850, 6: 750, 7: 500]
+        let base: [Int16: (Int, Int, Int)] = [1: (16, 0x10010, 0), 2: (6, 0x10011, 0), 3: (13, 0x10012, 0),
+                                              4: (4, 0x10013, 1), 5: (10, 0x10014, 0), 6: (6, 0x10015, 0)]
+        for p3: Int16 in -1...7 {
+            for type: Int16 in [0x6d6, 0x6d7, 0x6df] {
+                let w = try world(px: 600)
+                var r = w.rng
+                let pitch = Int32(r.next(0x5fff)) * 2 + 0xbfff
+                let reach = Int32(r.next(0x46)) + 0x78
+                let w154 = Int32(r.next(400)) + 1000
+                let s = try slot(w, try walker(w, type: type, x: 100, y: 280, p3: p3))
+                XCTAssertEqual(w.rng.seed, r.seed)
+                let k = base[p3] ?? (8, 0, 0)
+                XCTAssertEqual([Int(s.hp), Int(s.classWord158), Int(s.mode), Int(s.classWord100)],
+                               [type == 0x6d6 ? hp1750[p3]! : hpOthers[p3]!, k.0, k.1, k.2], "p3 \(p3) type \(type)")
+                XCTAssertEqual([s.voicePitch, s.classTimer, s.classWord154, s.classWord150], [pitch, reach, w154, -1])
+                XCTAssertEqual([Int(s.subtype), Int(s.gravity), Int(s.layer)], [1, 0x151, 4], "type \(type)")
+                XCTAssertEqual(s.hotRect, IdleSprites.Rect(top: 0x23, left: 0x5e, bottom: 0x5c, right: 0x7f))
+                XCTAssertEqual(s.face, FaceRef(pict: 0x6d6, index: 0, set: .encoded))
+                XCTAssertEqual([s.handler == .walker, s.hasHit, s.hasTileHit, s.mirrored, s.countedInTotals],
+                               [true, true, true, false, true])
+                XCTAssertEqual([s.keepRecord, s.noWriteBack189, s.noWriteBack18a, s.keepRecordAtKill, s.killedForGood],
+                               [false, false, false, false, false], "no save write-back flag")
+            }
+        }
+        // The flip: P.x 600 < x + 0x32 at x 551, not at 550.
+        let wf = try world(px: 600)
+        XCTAssertTrue(try slot(wf, try walker(wf, type: 0x6d6, x: 551)).mirrored)
+        XCTAssertFalse(try slot(wf, try walker(wf, type: 0x6d6, x: 550)).mirrored)
+        // The entry's sheet and source; the level cache: the marks and the five sheets (`.InitWalkerSprite` M l.
+        // 56756, 56764–56767: the single 0x6d6; 0x6d7 8, 0x6d8 6, 0x6d9 3, 0x6da 6 cells of 0xd8×0x6e, one a row).
+        let p = Placement(index: 0, flag: 1, byte1: 0, type: 0x6d6, p1: 0, p2: 0, p3: 0, p4: 0, y: 280, x: 100)
+        let e = try SetupFaces.setup(p, context: SetupFaces.Context(level: wf.level, playerX: 600, records: [p]))
+        XCTAssertEqual(e.sheet, .single(0x6d6))
+        XCTAssertEqual(e.source, .setupCached)
+        for t: Int16 in [0x6d6, 0x6d9, 0x6df] {
+            XCTAssertEqual(CachedFaces.marks(type: t).sets, [0x6d7, 0x6d8, 0x6d9, 0x6da], "type \(t)")
+            XCTAssertEqual(CachedFaces.marks(type: t).singles, [0x6d6], "type \(t)")
+        }
+        XCTAssertEqual(CachedFaces.marks(type: 0x6d5).sets, [])
+        func set(_ pict: Int16, _ n: Int) -> SetupFaces.Sheet {
+            SetupFaces.Sheet(pict: pict, count: n, cellWidth: 0xd8, cellHeight: 0x6e, columns: 1, clut: 200)
+        }
+        XCTAssertEqual(CachedFaces.sheets(markedBy: [Int16(0x6d6)]),
+                       [set(0x6d7, 8), set(0x6d8, 6), set(0x6d9, 3), set(0x6da, 6), .single(0x6d6)])
+        // The death (the tail's 0x6d6 entry, then the 1750 path of state 4, M l. 58198–58241): `+0xb2` 0, state 4,
+        // `+0x15c` 0, face 0x6da[0], the death cry, score + 800; then face 0x6da[min(`+0xb2` / 4, 5)], snd 703 at 0,
+        // vy − 800 at `+0xb2` 20, layer 1, the ×0.9 friction, no `+0xea`; past 60: `+0x15c` + 1 (the burn past 2),
+        // the record's flag cleared, the Kill when the player is 451 px across or 351 px up / down away.
+        let w = try world(px: 300, floor: false)
+        let (id, solver) = try axGoblin(w, settle: 1)
+        w.active.update(id: id) { $0.hp = 0; $0.subtype = 5; $0.vx = 1000 }
+        var r = w.rng
+        cry(&r)
+        _ = r.next(100)
+        _ = r.next(10000)
+        frame(w, id, solver)
+        XCTAssertEqual(w.rng.seed, r.seed)
+        var s = try slot(w, id)
+        XCTAssertEqual([Int(s.type), Int(s.subtype), Int(s.subState), Int(s.classWord15c), Int(w.globals.score)],
+                       [0x6d6, 4, 0, 0, 800])
+        XCTAssertEqual(s.face, FaceRef(pict: 0x6da, index: 0, set: .encoded))
+        XCTAssertEqual(s.vx, 1000, "the entry frame: no friction yet")
+        var fall: Int32?
+        for b2 in 0...60 {
+            w.player.cues = []
+            w.active.update(id: id) { $0.vy = 0 }
+            frame(w, id, solver)
+            s = try slot(w, id)
+            XCTAssertEqual(s.face, FaceRef(pict: 0x6da, index: min(b2 / 4, 5), set: .encoded), "b2 \(b2)")
+            XCTAssertEqual([Int(s.layer), Int(s.subState), Int(s.subtype)], [1, b2 + 1, 4], "b2 \(b2)")
+            XCTAssertFalse(s.killedForGood, "b2 \(b2): no `+0xea` on the 1750 path")
+            XCTAssertEqual(w.player.cues.contains { $0.snd == 703 && $0.volume == 0x100 }, b2 == 0, "b2 \(b2)")
+            if fall == nil { fall = s.vy }
+            XCTAssertEqual(s.vy, try XCTUnwrap(fall) - (b2 == 20 ? 800 : 0), "b2 \(b2): from vy 0, − 800 at 20")
+            if b2 == 0 { XCTAssertEqual(s.vx, 900) }
+            XCTAssertEqual(Int(s.classWord15c), b2 == 60 ? 1 : 0, "b2 \(b2)")
+            XCTAssertEqual(Int(w.records[0].flag), b2 == 60 ? 0 : 1, "b2 \(b2)")
+        }
+        w.active.update(id: id) { $0.vy = 0 }
+        frame(w, id, solver)
+        XCTAssertEqual(try slot(w, id).burnRow, 0)
+        w.active.update(id: id) { $0.vy = 0 }
+        frame(w, id, solver)
+        s = try slot(w, id)
+        XCTAssertEqual([Int(s.classWord15c), Int(s.burnRow), Int(s.killCount)], [3, 1, 0], "the player near: burning")
+        // The Kill distance (M l. 58226–58238).
+        for (dx, dy, kills) in [(0x1c2, 0, false), (0x1c3, 0, true), (-0x1c3, 0, true), (0, 0x15e, false),
+                                (0, 0x15f, true), (0, -0x15e, false)] {
+            let wk = try world(floor: false)
+            let (ik, sk) = try axGoblin(wk, settle: 1)
+            wk.levelIndex = 1
+            let c = try slot(wk, ik)
+            wk.player.centreX = Int16(c.centre.x + dx)
+            wk.player.centreY = Int16(c.centre.y + dy)
+            wk.active.update(id: ik) { $0.hp = 0; $0.subtype = 4; $0.subState = 0x3c }
+            let live = wk.enemies.live
+            frame(wk, ik, sk)
+            XCTAssertEqual(try slot(wk, ik).dead, kills, "dx \(dx) dy \(dy)")
+            XCTAssertEqual(wk.enemies.live, kills ? live - 1 : live, "dx \(dx) dy \(dy)")
+        }
     }
 }

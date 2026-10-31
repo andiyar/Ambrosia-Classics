@@ -1049,7 +1049,7 @@ public struct CachedFaces: Equatable, Sendable {
 
     /// The set list `_DAT_100a12b4` in registration order (`.InitSprites` M l. 106–145 calls the Init routines in the
     /// order Platform … Crawler, Roach, Walker, Box, Background, …, Bat, Blob, …, Frog) — the records levels 1–4 can mark
-    /// (Crawler M l. 56142–56144, Roach 64893–64894, Walker 56757–56768, Box 58785–58786 (LV3: the mine cart's 0xb72 /
+    /// (Crawler M l. 56142–56144, Roach 64893–64894, Walker 56757–56768 (WK2: the 1750's four, 56764–56767), Box 58785–58786 (LV3: the mine cart's 0xb72 /
     /// 0xb73) and 58806, Background 61864 (LV3: the wall spikes' 0x730) and 61875, Bat 68099, Blob 67666 (LV3), Frog
     /// 70116). ES: the dart traps' three (Background M l. 61886–61888, after 0x442; marked only from level 22 on);
     /// `.InitEnemyShotSprite`'s four (M l. 51434–51437, after the Background's, flag 0 — `.InitBackgroundSprite`
@@ -1063,7 +1063,10 @@ public struct CachedFaces: Equatable, Sendable {
         Record(pict: 0x6b8, faces: 6, flag: 0), Record(pict: 0x6b9, faces: 6, flag: 0),
         Record(pict: 0x6a5, faces: 8, flag: 0), Record(pict: 0x6a6, faces: 6, flag: 0),
         Record(pict: 0x6a9, faces: 3, flag: 0), Record(pict: 0x6aa, faces: 2, flag: 0),
-        Record(pict: 0x6ab, faces: 9, flag: 0), Record(pict: 0x6e0, faces: 9, flag: 0),
+        Record(pict: 0x6ab, faces: 9, flag: 0),
+        Record(pict: 0x6d7, faces: 8, flag: 0), Record(pict: 0x6d8, faces: 6, flag: 0),
+        Record(pict: 0x6d9, faces: 3, flag: 0), Record(pict: 0x6da, faces: 6, flag: 0),
+        Record(pict: 0x6e0, faces: 9, flag: 0),
         Record(pict: 0xb72, faces: 14, flag: 0), Record(pict: 0xb73, faces: 21, flag: 0),
         Record(pict: 0x5be, faces: 4, flag: 0),
         Record(pict: 0x730, faces: 12, flag: 0), Record(pict: 0x442, faces: 5, flag: 0),
@@ -1075,14 +1078,15 @@ public struct CachedFaces: Equatable, Sendable {
         Record(pict: 0x708, faces: 8, flag: 0),
     ]
 
-    /// The singles list `PTR_DAT_100a12b8` in registration order (the same subset): Walker 0x6a4 (M l. 56755); Box
+    /// The singles list `PTR_DAT_100a12b8` in registration order (the same subset): Walker 0x6a4, 0x6d6 (M l. 56755–56756;
+    /// WK2); Box
     /// loops 0xaf5+i (58776), 0xb86+i (58781), the flag-1 block 0x5b4…0x5bb (58798–58805, raw `1006af78` / `1006b014`),
     /// 0xb22+i (flag 1, 58818–58823), 0xb36+i (58825), 0xb68+i (58830); Background 0xb54 (61862), the spikes' 0x732 /
     /// 0x733 (61865–61866; LV3), 3000+i (flag 1, 61899), 0x5c8+i (61905), 0xa8c+i (flag 1, 61911). LV3 adds the
     /// decorations 0xafc, 0xafd, 0xb04, 0xb05, 0xb10, 0xb1b, the outcrops 0xb34 / 0xb35 (flag 1) and the mushroom 0xb44
     /// at their places in the loops.
     static let singles: [Record] = [
-        Record(pict: 0x6a4, faces: 1, flag: 0),
+        Record(pict: 0x6a4, faces: 1, flag: 0), Record(pict: 0x6d6, faces: 1, flag: 0),
         Record(pict: 0xafc, faces: 1, flag: 0), Record(pict: 0xafd, faces: 1, flag: 0),
         Record(pict: 0xb04, faces: 1, flag: 0), Record(pict: 0xb05, faces: 1, flag: 0),
         Record(pict: 0xb10, faces: 1, flag: 0),
@@ -1115,7 +1119,8 @@ public struct CachedFaces: Equatable, Sendable {
 
     /// The marks each placed type's Setup makes (`rec+1 = 1`), for the types levels 1–4 place: Walker 0x6a4 → single
     /// 0x6a4 + sets 0x6a5, 0x6a6 (M l. 56966–56969), 0x6a9 → 0x6a9, 0x6aa, 0x6ab (56977–56980), 0x6e0…0x6e9 → 0x6e0
-    /// (56989); Crawler 0x6b0 → 0x6ae, 0x6af, 0x6b1 (56188–56190); Roach 0x6b8 → 0x6b8, 0x6b9 (64931–64932);
+    /// (56989), 0x6d6…0x6df → single 0x6d6 + sets 0x6d7, 0x6d9, 0x6d8, 0x6da (56998–57005; WK2 — first placed on level
+    /// 10; the sets listed in registration order); Crawler 0x6b0 → 0x6ae, 0x6af, 0x6b1 (56188–56190); Roach 0x6b8 → 0x6b8, 0x6b9 (64931–64932);
     /// Background 0x442 → set 0x442 (62061), 0x5c8+i → single 0x5c8+i (≈ 62320), 0xa8c+i / 3000+i → their singles,
     /// 0xb54 (62434); Box 0x5b8 (59213), 0x5b5 / 0x5b6 → 0x5b5 (59200 / 59204), 0x5be → set 0x5be (59260), the
     /// decoration, outcrop, mushroom, furniture and NPC singles of the same id; Bat 0x6cc → set 0x6cc (68286); Frog
@@ -1133,6 +1138,7 @@ public struct CachedFaces: Equatable, Sendable {
         case 0x6a4: return ([0x6a5, 0x6a6], [0x6a4])
         case 0x6a9: return ([0x6a9, 0x6aa, 0x6ab], [])
         case 0x6e0...0x6e9: return ([0x6e0], [])
+        case 0x6d6...0x6df: return ([0x6d7, 0x6d8, 0x6d9, 0x6da], [0x6d6])
         case 0x6b0: return ([0x6ae, 0x6af, 0x6b1], [])
         case 0x6b8: return ([0x6b8, 0x6b9], [])
         case 0x442: return ([0x442], [])
@@ -1160,7 +1166,9 @@ public struct CachedFaces: Equatable, Sendable {
     /// 56762–56763; flag 0 → clut 200), marked by the 1700 / 1705 Setups (M l. 56966–56969, 56977–56980; WK1); CR:
     /// `.InitCrawlerSprite`'s 0x6ae walk, 0x6af jump and 0x6b1 death (6 × 0x40×0x2c, 6 a row; M l. 56142–56144) and
     /// `.InitRoachSprite`'s 0x6b9 death (6 × 100×0x36, 6 a row; M l. 64894; its 0x6b8 walk is the Setup-face table's),
-    /// marked by the Crawler / Roach Setups (M l. 56188–56190, 64931–64932).
+    /// marked by the Crawler / Roach Setups (M l. 56188–56190, 64931–64932); WK2: `.InitWalkerSprite`'s 1750 sets 0x6d7
+    /// walk (8), 0x6d8 swing (6), 0x6d9 jump (3), 0x6da death (6), each 0xd8×0x6e, one a row (M l. 56764–56767), marked
+    /// by the 0x6d6…0x6df Setup (M l. 56998–57005).
     public static let handleSets: [SetupFaces.Sheet] = [
         SetupFaces.Sheet(pict: 0x6a5, count: 8, cellWidth: 100, cellHeight: 0x50, columns: 4, clut: 200),
         SetupFaces.Sheet(pict: 0x6a6, count: 6, cellWidth: 100, cellHeight: 0x50, columns: 6, clut: 200),
@@ -1170,6 +1178,10 @@ public struct CachedFaces: Equatable, Sendable {
         SetupFaces.Sheet(pict: 0x6af, count: 6, cellWidth: 0x40, cellHeight: 0x2c, columns: 6, clut: 200),
         SetupFaces.Sheet(pict: 0x6b1, count: 6, cellWidth: 0x40, cellHeight: 0x2c, columns: 6, clut: 200),
         SetupFaces.Sheet(pict: 0x6b9, count: 6, cellWidth: 100, cellHeight: 0x36, columns: 6, clut: 200),
+        SetupFaces.Sheet(pict: 0x6d7, count: 8, cellWidth: 0xd8, cellHeight: 0x6e, columns: 1, clut: 200),
+        SetupFaces.Sheet(pict: 0x6d8, count: 6, cellWidth: 0xd8, cellHeight: 0x6e, columns: 1, clut: 200),
+        SetupFaces.Sheet(pict: 0x6d9, count: 3, cellWidth: 0xd8, cellHeight: 0x6e, columns: 1, clut: 200),
+        SetupFaces.Sheet(pict: 0x6da, count: 6, cellWidth: 0xd8, cellHeight: 0x6e, columns: 1, clut: 200),
     ]
 
     /// The level-load cache faces the Setups of `types` mark (`marks`), as sheets, in mark order — what
