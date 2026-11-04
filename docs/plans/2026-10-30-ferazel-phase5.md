@@ -244,6 +244,10 @@ then the new values are re-derived twice. Each ◈ task lists every golden's old
 executed", and moves the Windows references in PB's pin test + `tools/windows/smoke-ferazel-win.sh` in the same commit
 (GW4R/GW6 confirm by day). Every other task, and a ◈ task for any other golden or cause, **must not move a golden or a
 count** (Invariant 10). FE0 and the map first frame must hold for the whole phase.
+**⚑ audit (2026-11-04, `docs/superpowers/audits/2026-11-04-ferazel-audit.md` ruling 1):** the "switch it off" check
+is **stub the class's Handle body** (one local patch, never committed) — setting the `forClass` row back to `.inert`
+switches nothing off, because every class Setup stores its own handler (`Walker.swift:92`, `CrawlerRoach.swift:57`,
+`Bat.setup`). Re-run that way for the Crawler and the Bat: every old value returns.
 
 **Honesty gate (Ben only):** the Phase 5 gate card ("through the first boss door") — Mac and Windows. Completion is
 phrased "machine gates green; Ben's gate pending".
