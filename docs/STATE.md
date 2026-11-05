@@ -57,6 +57,14 @@
   in Python. Staged **~/Desktop/Deimos Rising.app** + WHAT-TO-EXPECT (gate card). Q1 ruled 60 Hz (D30), restaged.
   Next: the Phase 2 plan (level 1 plays; de01 film replay gate). Carries for Phase 2: `DeimosAudio`
   target (design M6), `playerOps` return type, `HeadlessRun` film params, Phase-4 prefs file widening (C1 review m3).
+- **Deimos Rising Phase 2 — level 1 plays: RE-PLANNED (2026-11-05, Fable re-planning pass, `replan.md`; D45).** Branch
+  `deimos-phase2` (44 commits, pushed, unmerged; worktree `.claude/worktrees/inspiring-cannon-e97ccd`): waves 2.0–2.5
+  reviewed, 2.6 built; suite **313/0/0** against both HectorKit e595472 and current main ef2c341. Audit of the branch
+  (`docs/superpowers/audits/2026-11-05-deimos-phase2-audit.md`): 0 rules wrong, 0 redo, 23 change, 12 missing; the three
+  owed legs discharged. Spec `docs/superpowers/specs/2026-11-05-deimos-remainder-design.md`; plan
+  `docs/superpowers/plans/2026-11-05-deimos-remainder.md` (wave 2a: audit fix round → 318, merge to main, bank
+  corrections; wave 2b: C12 → 327, C18a → 335; then cards). Handoff `docs/handoff-2026-11-05-deimos-replan.md`.
+  **Waits for Ben's go.**
 - **Originals:** Aki 1.1.0 + 1.2.0 UB (symlinked as git-ignored `Resources/Aki/1.1.0.app`, `1.2.0.app`);
   Bubble Trouble X 1.1 UB; Ferazel's Wand 1.0.3, Deimos Rising 1.0.6, Cythera 1.0.4 (PEF).
   Archive map: `~/Developer/Ambrosia/docs/ARCHIVE-INDEX.md`.

@@ -1931,3 +1931,27 @@ tests); C9 extends `scriptSegment` so the combat-AI band 0x0410–0x0436 is retu
 from frame 0's tile table (faithful; Phase 1 passes the table); the four differing `clut 256` entries are named on
 the 1a gate card; the Phase 0 plan's "Fable reviewers" legend is superseded by the all-Opus policy.
 **Approved by:** Ben (1–5, 2026-11-05); the seat's rulings shown to him in the same message.
+
+## D45 — Deimos Rising re-planning pass: Ben's answers and the seat's rulings (2026-11-05)
+
+**Decided (Ben, in chat, 2026-11-05, answering the re-planning pass's six questions — spec
+`docs/superpowers/specs/2026-11-05-deimos-remainder-design.md` §10; seat Claude Fable 5.1 per `replan.md`):**
+1. **Merge `deimos-phase2` after the audit's fix round, before C12** (Q-A): the audit (five Opus reviewers,
+   `docs/superpowers/audits/2026-11-05-deimos-phase2-audit.md`) discharges the three review legs wave 2.6 owed; once its
+   23 "change" rows land, the whole branch is reviewed work and is merged to local main (Task 2.2 of the plan).
+2. **HectorKit: current main from now on** (Q-B); the pin e595472 was only K2's landing commit. Measured 2026-11-05: the
+   branch suite is 313/0/0 against both; kit zero-skip 370 executed at ef2c341 (4 Aki 1.1 census skips are a machine
+   data-path matter, not Deimos's).
+3. **`Deimos/Core` is live; `Deimos/DeimosCore` is its symlink** (Q-C); no action.
+4. **Phase order: 3 campaign → 4 front end → 5 Windows** (Q-D; design Q7 answered): the de02–de04 films prove the campaign
+   by machine.
+5. **A game controller for Deimos in Phase 4** (Q-E), with the controls window, as the original's keys (D36/D37 shape).
+6. **Reviews stay Opus-only** (Q-F, his 7 Oct rule restated); the seat for the next wave is his call on the pass's
+   recommendation (Fable seat for the join wave 2b, Opus seat for the mechanical wave 2a) — recorded in the handoff.
+**Seat rulings under the 100 % rule (spec §7):** the audit discharges the owed legs; bank corrections are applied in
+the next wave as a docs task (Task 2.3), not at the end of the phase (changes D31.11); the next wave is fenced to
+waves 2a (fix round, merge, bank corrections) and 2b (C12, C18a). **Audit outcome:** every re-derived rule matches the
+oracle; 0 redo, 23 change, 12 missing (seams written into the C12/C18a/H2 briefs); two shipped units (`bocr`, `tatr`)
+draw to terrain every tick, so C12 builds the +0x36 draw path and the +0x90 stamp-time field; no cyclic state has a
+max speed below 1.
+**Approved by:** Ben (1–5 "yes", 2026-11-05); seat rulings shown to him in the same message.
