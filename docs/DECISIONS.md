@@ -1947,11 +1947,12 @@ the 1a gate card; the Phase 0 plan's "Fable reviewers" legend is superseded by t
    by machine.
 5. **A game controller for Deimos in Phase 4** (Q-E), with the controls window, as the original's keys (D36/D37 shape).
 6. **Reviews stay Opus-only** (Q-F, his 7 Oct rule restated); the seat for the next wave is his call on the pass's
-   recommendation (Fable seat for the join wave 2b, Opus seat for the mechanical wave 2a) — recorded in the handoff.
+   recommendation — **Ben, 2026-11-05: "I am generally happy with fable orchestrators and opus agents" → Fable 5.1
+   holds the seat for both waves 2a and 2b; every implementer and reviewer leg is Opus 5.5.**
 **Seat rulings under the 100 % rule (spec §7):** the audit discharges the owed legs; bank corrections are applied in
 the next wave as a docs task (Task 2.3), not at the end of the phase (changes D31.11); the next wave is fenced to
 waves 2a (fix round, merge, bank corrections) and 2b (C12, C18a). **Audit outcome:** every re-derived rule matches the
 oracle; 0 redo, 23 change, 12 missing (seams written into the C12/C18a/H2 briefs); two shipped units (`bocr`, `tatr`)
 draw to terrain every tick, so C12 builds the +0x36 draw path and the +0x90 stamp-time field; no cyclic state has a
 max speed below 1.
-**Approved by:** Ben (1–5 "yes", 2026-11-05); seat rulings shown to him in the same message.
+**Approved by:** Ben (1–5 "yes", 6 Fable seat + Opus agents, 2026-11-05); seat rulings shown to him in the same message.

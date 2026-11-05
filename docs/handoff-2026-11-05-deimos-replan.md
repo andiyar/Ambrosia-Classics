@@ -39,7 +39,7 @@ superpowers:subagent-driven-development first. House method ~/Developer/Toolkits
 (§2 loop, §5 cap, §6 model policy); if you are Opus, opus-driver.md §3. Echo the mission in one sentence, say what
 you'll do first, start.
 
-MODEL SEAT: Opus 5.5 may hold this seat (wave 2a is mechanical). Say which model you are in your first message.
+MODEL SEAT: Fable 5.1 holds this seat (Ben, 2026-11-05: Fable orchestrators, Opus agents). Say which model you are in your first message.
 Every subagent runs on claude-opus-5-5 exactly: dispatch fk-implementer / fk-reviewer and OMIT the Agent `model`
 param. Reviews are Opus-only (Ben, 2026-10-07, restated 2026-11-05). Floor: one implementer + one reviewer per task.
 
@@ -66,15 +66,13 @@ NOT in this wave: C12, C18a, anything in wave 3+, any kit change, any push, any 
 
 CLOSE: STATE (the Deimos Phase 2 paragraph: numbers as measured), DECISIONS D45 as-built lines, remove the branch
 worktree after 2.2 is green, memory file + index line, then ONE chip for wave 2b (C12 then C18a; the plan's Tasks
-2.4 and 2.5; a fresh worktree from main; recommended seat Fable 5.1 — the joins are where the seat's judgement
-matters — Ben decides). Closing message to Ben in plain English: what landed, the numbers before/after, what review
+2.4 and 2.5; a fresh worktree from main; seat Fable 5.1, agents Opus 5.5 — Ben's standing choice). Closing message to Ben in plain English: what landed, the numbers before/after, what review
 caught, the next session to click. No "owed by you" section.
 ```
 
 ## Wave 2b (the chip after 2a; for the record)
 C12 (plan Task 2.4, +9 → 327) then C18a (Task 2.5, +8 → 335), each ⚑ MAJOR with two Opus legs, in a fresh worktree
-from main; G5 at the close. Recommended seat: Fable 5.1 (the join tasks; the audit's twelve "missing" seams are
-theirs). Nothing past C18a.
+from main; G5 at the close. Seat: Fable 5.1 (Ben's choice, 2026-11-05); agents Opus 5.5. Nothing past C18a.
 
 ## Machine notes
 - A kit worktree folder not named `HectorKit` does not resolve as the package `HectorKit`; point `HECTORKIT_PATH`
