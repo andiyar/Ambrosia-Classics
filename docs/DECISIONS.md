@@ -1898,3 +1898,36 @@ lockout; a second R(20) and the jump cry's own R(4000); no draw during the blink
 wakes on any golden route; level 1's 1760, record 73, wakes only in non-golden tests, state 5); switch-off check by the
 implementer and leg 1. Leg 2's mutation tables (CR 174 mutants / ~21 real survivors; WK2 271 / 22) drove the two
 tests-only rounds; the implementers' own "≤ 9 survivors" counts were overstated both times.
+
+## D45 — Cythera re-planning pass: Ben's five answers + the seat's rulings (2026-11-05)
+
+**Context.** Phase 0 half built (K1, C0–C5, 44 tests) and stalled since 2026-10-07; nothing planned beyond it. Fable
+5.1 in the seat ran `~/Developer/Toolkits/fable-kit/replan.md` (the lighter case): review, spec
+`docs/superpowers/specs/2026-11-05-cythera-remainder-design.md`, plan `docs/superpowers/plans/2026-11-05-cythera-remainder.md`,
+audit `docs/superpowers/audits/2026-11-05-cythera-phase0-audit.md` (two Opus 5.5 reviewers, 15 rulings, 0 redo).
+Nothing built. Seat's own runs: Cythera/Core 44/0/0 on HectorKit main ef2c341; HectorKit gate PASS 370 at ef2c341 and
+322 at the pin 4ca2e18 (with `HECTORKIT_DATA_AKI11` overridden — the script's default Aki path is stale).
+
+**Decided (Ben, 2026-11-05, "Accept all five"):**
+1. **HectorKit re-base:** Cythera's pin moves 4ca2e18 → **ef2c341 (floor 370)**; from now on a later clean HectorKit
+   main is accepted at ≥ the recorded floor and the new SHA/floor is recorded at the merge (the Ferazel rule of
+   2026-11-04). C12 records the pin.
+2. **Text:** glyph sheets **baked once on the Mac** from the shipped `sfnt`/`NFNT` and the system fonts at exactly the
+   requested sizes and styles (TxSt), committed as data beside the port with a census test; the anti-aliased path
+   read in R1; the 1999 screenshots judge. Rejected: an own TrueType/NFNT rasteriser.
+3. **Next wave's shape:** three Opus 5.5 orchestrator sessions — A: C8 → C9; B: C6 ∥ C7 ∥ C10; C: C13 → C11 → C12 —
+   each one implementer + one reviewer per task, two legs per ⚑; Fable only on a contraindication, after asking Ben.
+4. **D28 ruling 2 wording:** "Alaric walks" → **"the player walks"** (Alaric is character 2, the ruler; the player is
+   character 1, default name Bellerophon). Nothing else in D28 changes.
+5. **The first gate is split:** **1a** the still picture, side by side with the Catamarca screenshot; **1b** the player
+   walks Catamarca, roofs lift. Each its own gate card.
+
+**Seat's rulings (under the 100 % rule; spec §5, audit rulings 1–15):** one state model = what the save holds, all
+else derived (spec §3); one instruction walker shared by the C8 decoder and the Phase 2 VM; the VM proven by decoder
+parity, headless shape runs and the bank's worked examples as goldens (spec §7); the ladder re-cut for the C8-first
+order: C8 50 → C9 57 → C6 63 → C7 71 → C10 80 → C13 86 → C11 91; new minor task **C13** (the overlay becomes a
+`SegmentStore` with a decrypted read, a store-based map initialiser, the carried minors, comments, two pinning
+tests); C9 extends `scriptSegment` so the combat-AI band 0x0410–0x0436 is returned as stored; compo tiles are built
+from frame 0's tile table (faithful; Phase 1 passes the table); the four differing `clut 256` entries are named on
+the 1a gate card; the Phase 0 plan's "Fable reviewers" legend is superseded by the all-Opus policy.
+**Approved by:** Ben (1–5, 2026-11-05); the seat's rulings shown to him in the same message.

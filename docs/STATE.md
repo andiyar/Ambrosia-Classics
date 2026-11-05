@@ -189,6 +189,13 @@
   0x8002 chunk 0 and the 0xF001 tail wrong — seat re-measured and ruled (D28 as-built tranche 2; plan "Tranche 2
   corrections"). Next: C8 ⚑ → C9 ⚑ (script decoder + parity), then wave C (C6, C7 ⚑, C10) — chip. Handoff
   `docs/handoff-2026-10-07-cythera-phase0-t2.md`.
+  **RE-PLANNED (2026-11-05, Fable seat, replan.md; DECISIONS D45):** spec `docs/superpowers/specs/2026-11-05-cythera-remainder-design.md`,
+  plan `docs/superpowers/plans/2026-11-05-cythera-remainder.md` (wave 1 = Phase 0b bite-sized: C8 → C9 · C6 ∥ C7 ∥ C10 ·
+  C13 → C11 → C12, ladder 44 → 91; wave 2 = R1 Phase 1 research; Phases 1–8 as cards), audit
+  `docs/superpowers/audits/2026-11-05-cythera-phase0-audit.md` (15 rulings, 0 redo). Seat's runs: Core **44/0/0** on
+  HectorKit **ef2c341** (new pin, floor 370; the gate needs `HECTORKIT_DATA_AKI11` overridden — stale default path).
+  Ben accepted all five questions (re-base, baked glyph sheets, three Opus sessions, "the player walks", gate split
+  1a/1b). Nothing built. **Next: wave 1 session A (C8 → C9) — chip in `docs/handoff-2026-11-05-cythera-plan.md`; waits for Ben's go.**
 
 1. **Aki Phase 2 — DONE, Ben's gate PASSED 2026-10-04 (DECISIONS D9): "the game works fine"; pairs fade.** P2.1–P2.12
    as before (AkiCore 107 tests). Q24 fix 6603e55: `runFade` waits one full tick (1/60 s) after each of its two presents
