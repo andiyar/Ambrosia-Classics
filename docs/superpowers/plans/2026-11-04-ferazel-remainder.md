@@ -139,7 +139,7 @@ plus the three minor findings. ⚑ audit: audit C's rows on the branch are appli
 | :517, :554 | the dying state's face 0; blood particle delay 0 | `testBatDeathCoinsBlood` |
 | :588, :602 | swarm member `x + 12`; `abs(vy) < 0x578` | `testSwarmMembersHome` |
 | :774 | `+0x194 = 0` | `testBatSetupBySubRange` |
-| :749, :750, :758–:779 | path modes 10/11: the Setup zeroes `+0xf8`; **the Handle body is missing** — the dump counts `+0xf8` up, zeroes vx and vy, runs the radial updates and zeroes `+0x194` (M l. 39446–39466); and the "no radius" flag for p1 110/111 is dropped (`:719–:720`; the dump clears it so `.MakeRadial` gets radius 0, M l. 39307–39309, 39352–39368) | `testPathBat1741` (a synthetic mode-10 path: the four writes above; a p1-110 path: radius 0) — **change** `ProgrammedPath` for both, failing assert first (⚑ audit 3, R5) |
+| :749, :750, :758–:779 | path modes 10/11: the Setup zeroes `+0xf8`; **the Handle body is missing** — the dump counts `+0xf8` up, zeroes vx and vy, runs the radial updates and zeroes `+0x194` (M l. 39446–39466); and the "no radius" flag for p1 110/111 is dropped (`:719–:720`; the dump clears it so `.MakeRadial` gets radius 0, M l. 39307–39309, 39352–39368) — **⚑ run 43: wrong on the argument — the flag zeroes the swing SPEED (p3, `.MakeRadial`'s fifth argument), not the radius (M l. 39310–39313, 39354–39378, 35737–35767); built and pinned as speed 0** | `testPathBat1741` (a synthetic mode-10 path: the four writes above; a p1-110 path: radius 0) — **change** `ProgrammedPath` for both, failing assert first (⚑ audit 3, R5) |
 | :187, :192 | `r >> 1` for a negative radius; the insect face cell 3 on the crate path | `testSwarmMembersHome` (negative radius) · `testKillCrateBatDropArm` (cell 3) |
 | `BoxSprite.swift:1188` | the crate's record 0x200 read as zeros | `testKillCrateBatDropArm` |
 
@@ -148,7 +148,7 @@ plus the three minor findings. ⚑ audit: audit C's rows on the branch are appli
 dispatch (M l. 1750–1753) sends 0x73f–0x743 to the Background class; the 0x73a…0x73e range is right; no change, and the
 five "survivors" on that bound (`Bat.swift:132, :418, :435, :493, :495`) are equivalent — not pinned. (3) `Bat.swift:444`'s
 out-of-range face guard checks a cell index where the dump compares the face with one global placeholder pointer
-(M l. 68877): leave as built, add a one-line comment naming the dump's test (never fires; bank).
+(M l. 68877 — **⚑ run 43: 68882**): leave as built, add a one-line comment naming the dump's test (never fires; bank).
 
 - [ ] **Step 1** (implementer): read `BatTests.swift` and `Bat.swift` at the cited lines; re-read M l. 68092–69079
   and 39446–39466. Add the asserts above, run `swift test --filter BatTests` — expected 9 / 0 / 0 before and after

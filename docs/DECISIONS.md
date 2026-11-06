@@ -1899,6 +1899,14 @@ wakes on any golden route; level 1's 1760, record 73, wakes only in non-golden t
 implementer and leg 1. Leg 2's mutation tables (CR 174 mutants / ~21 real survivors; WK2 271 / 22) drove the two
 tests-only rounds; the implementers' own "≤ 9 survivors" counts were overstated both times.
 
+**As built — attended run 43 (2026-11-07, Fable seat, D45), BA ⚑◈ finished (the remainder plan's RC + BAf).** Ladder: BA
+**569** / 2 opt-in skips (441 rules + 128 render; the seat's whole-suite number at the cherry-picked head e605eb0 and at
+the fix round 60d92f7). Run 42's Bat class (005058f) cherry-picked, its fix round run as asserts inside the nine tests, the
+`ProgrammedPath` pair moved to `World/Movers/ProgrammedPath.swift` with the mode-10/11 Handle body and the 1xx-form flag
+(**the flag zeroes the swing speed, not the radius** — the audit's ruling 3 corrected from the dump; plan "As executed"
+under BA has the lines). Re-review MERGEABLE (26/26 mutants killed; switch-off by stubbing the Handle returns the two L3
+BootFaces values). ◈ none moved. The draw-mode audit's line-anchored rows for `Bat.swift` re-anchored (+1…+5 lines).
+
 ## D45 — Cythera re-planning pass: Ben's five answers + the seat's rulings (2026-11-05)
 
 **Context.** Phase 0 half built (K1, C0–C5, 44 tests) and stalled since 2026-10-07; nothing planned beyond it. Fable

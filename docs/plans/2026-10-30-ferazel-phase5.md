@@ -1136,6 +1136,25 @@ records the summary line.
   constants) · `testPathBat1741` (level 3 rec with p 2, 340, 800) · `testPathBatSpit` · `testSwarmMembersHome` ·
   `testInsectBodyFollows` · `testBatDeathCoinsBlood` · `testKillCrateBatDropArm`.
 - **Gate:** G2 568 + ◈. Quick bot levels 2–4. **Commit:** `FerazelCore: the Bat class — chasers, path bats and spit, swarms, insects; 9 tests`.
+- **As executed (2026-10-31 loop run 42 → 2026-11-07 attended run 43, Fable seat, D45):** run 42 built the class (005058f,
+  `Bat.swift` 786 lines, 9 tests) and ran both Opus legs (leg 1 MERGEABLE; leg 2 WITH FIXES: 409 mutants, 40 named
+  survivors) before the STOP file ended it at 21:00; run 43 cherry-picked it (e605eb0) and ran the fix round as the
+  remainder plan's **BAf** (60d92f7 + 54964b6): asserts inside the nine tests only (ladder **569** = 441 rules + 128
+  render, 2 opt-in skips; the seat's whole-suite number at e605eb0 and at 60d92f7), the three cites (68147, 68297, 68715),
+  the face-guard comment (dump line **68882**, not 68877) and the 20-member swarm comment; `ProgrammedPath` moved to
+  `World/Movers/ProgrammedPath.swift` with the mode-10/11 Handle body (count `+0xf8`, zero vx/vy, `.UpdateRadialPos` +
+  `.UpdateRadiusSprites`, zero `+0x194`; M l. 39446–39466) and the 1xx-form flag — **the dump zeroes the swing SPEED
+  (p3, `.MakeRadial`'s fifth argument), not the radius** (M l. 39310–39313, 39354–39378, 35737–35767; the platform's
+  10/11 arm agrees): the audit's "radius 0" (ruling 3, report C Q4) was wrong, the implementer's reading held and the
+  re-review leg confirmed it from the dump. The "widen 0x73a… to 0x743" item was dropped (class dispatch M l. 1750–1753:
+  0x73f–0x743 are Background types; five "survivors" equivalent). Re-review: MERGEABLE, 26 mutants applied / 26 killed;
+  switch-off by stubbing `Bat.handle`: `BootFacesTests` L3 f30 `0xd4f7e113045d39a2` / f120 `0x5a2e3d4e64f7c1ee` return.
+  **◈ none moved** (run 42's probe; the Phase 2 and Phase 1 goldens unchanged). Quick bot: `== core: random play — levels 3,
+  seeds 4, steps 21600, deaths 2, exits 16, failures 0`. The fix round's comments shifted 14 `DrawModeAuditTests` writer
+  rows in `Bat.swift` by 1–5 lines (re-anchored, values unchanged — a line-anchored audit moves with every comment).
+  Carried [LOW]: `ProgrammedPath.makeRadial` has no caller until `SetupFaces` admits modes 10/11 (GF / 6A-BX1); the
+  `+0x194` write precedes the radial calls (equivalent: `Radial` never touches it); the idle 0x6cc Setup face pre-set
+  (Phase-1 ◇, audit C).
 
 #### FR — ⚑ MAJOR ◈ — Frog and Salamander (→ 576)
 - **Files:** `Sources/FerazelCore/World/Enemies/FrogSalamander.swift` (new), `Sources/FerazelCore/Sprites/SetupFaces.swift`
