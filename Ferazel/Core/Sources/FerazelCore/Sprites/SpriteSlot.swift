@@ -139,7 +139,7 @@ public struct SpriteSlot: Equatable, Sendable {
     public var classWord174: Int32 = 0
     /// BA (added, Invariant 9): `+0xf0` (i32) — the programmed path's mode (`.SetupProgrammedPath` M l. 39301–39310:
     /// |record p1|, 100…199 → − 100; `.HandleProgrammedPath` M l. 39390 dispatches on it; the Bat Handle's path arm
-    /// reads 2, M l. 68733). The same offset is the Walker's / Frog's voice pitch `voicePitch` — a different class's
+    /// reads 2, M l. 68715). The same offset is the Walker's / Frog's voice pitch `voicePitch` — a different class's
     /// meaning, kept apart (plan BA: the Bat's path mode moves out of the `voicePitch` slot).
     public var pathMode: Int32 = 0
     /// BA (added, Invariant 9): `+0xf8` (i32) — the path's direction (`.SetupProgrammedPath` 1, mode 3 / 10 / 11 0;

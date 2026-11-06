@@ -8,7 +8,8 @@ import Foundation
 /// `.HandleInsectBodySprite @ 1007f4a0` (M l. 68919–68927, `handleInsectBody`), `.HitBatSprite @ 1007f508` (M l.
 /// 68930–68982, `hit`), `.HitSwarmMemberSprite @ 1007f734` (M l. 68985–69015, `hitSwarmMember`), `.KillBat @ 1007f874`
 /// (M l. 69018–69042, `killBat`), `.HitBatTileSprite @ 1007f91c` (M l. 69045–69078 — the Crawler's body less its debug
-/// key: `CrawlerRoach.hitTile`). The programmed path the path bats run is `ProgrammedPath` (below).
+/// key: `CrawlerRoach.hitTile`). The programmed path the path bats run is `ProgrammedPath`
+/// (`World/Movers/ProgrammedPath.swift`).
 ///
 /// No Setup stores a Kill proc `+0x50` (the Handle calls `.KillBat` itself; the swarm members burn away to `+0xe9`),
 /// any idle margin, `+0x189`, `+0x18a` or `+0x18b`. `+0x188` is stored for the path bats 0x6cd (and 0x6ce, retyped) and
@@ -164,6 +165,8 @@ public enum Bat {
             let count: Int16 = p2 == 0 ? 8 : p2
             let r = Int(p3 == 0 ? 0x4b : p3)
             s.classWord154 = Int32(r)
+            // The original's block is 0x54 bytes: 20 members at most (a larger p2 overruns it); the array grows. No
+            // shipped swarm has more than 12.
             s.swarm = SpriteSlot.SwarmBlock(members: [], alive: count, total: count)
             s.hp = 100
             s.hasHit = false                                            // `+0x5c = 0`
@@ -382,7 +385,7 @@ public enum Bat {
             } else {
                 faceThePlayer(&s, cx: cx)
             }
-            ProgrammedPath.handle(&s)
+            ProgrammedPath.handle(w, id: id, slot: &s)
         }
         // The spit tail (M l. 68756–68781).
         if 0 < s.classWord154 { s.classWord154 &-= 1 }
@@ -441,6 +444,8 @@ public enum Bat {
                 }
             }
         }
+        // The dump compares `+0xc0` with the one placeholder face `*_DAT_100a007c` (M l. 68882); a cell index past the
+        // set stands in for it here (§7.3: never fires).
         if let t2 = w.active.record(id: id), let f = t2.face, let n = cells(f.pict), n <= f.index {
             w.active.update(id: id) { $0.counterA6 &+= 0x45 }           // PICT 151 (M l. 68882–68884; §7.3)
         }
@@ -699,88 +704,6 @@ public enum Bat {
             let pos = w.active.record(id: id)?.centre
             w.player.cue(PlayerCue(call: .threeDPitched, snd: memberSound, priority: 1, volume: 0xab, position: pos,
                                    rate: r + 58000))
-        }
-    }
-}
-
-/// The programmed path (physics §8.5): `.SetupProgrammedPath @ 10044c58` (M l. 39288–39381) and `.HandleProgrammedPath
-/// @ 10044fe8` (M l. 39384–39468), as the path bats run them (BA). Modes 1 (vertical) and 2 (horizontal) shuttle
-/// between two 24.8 bounds; 3 is stores only (its Handle has no arm); 10 / 11 (`.MakeRadial`, `.UpdateRadialPos`,
-/// `.MakeRadiusSprites`) are refused at the Setups that would reach them (no Bat places them).
-public enum ProgrammedPath {
-    /// `.SetupProgrammedPath(s, −1, 0)` (M l. 39288–39381) — `record` the live record of `+0x48` (nil = −1): mode
-    /// `+0xf0` = |p1| (100…199 → − 100, the radial "no radius" flag), `+0xfc` = p3; `+0xf8 = 1`; then mode 3: rect (7,
-    /// 0, 0x46, 0x1e), `+0x19e = 0x50`, gravity 0x15e, `+0x13a = 0x2d`, `+0x138 = 0x3c`, `+0xf8 = 0`; mode 1: (with a
-    /// record) `+0x100 = +0x1c + 8·p3`, `+0x104 = +0x1c + 256·p2 − 8·p3`, vy = `+0xfc`, vx = 0, `+0x13a = 0`; mode 2:
-    /// the same on `+0x14`, vx = `+0xfc`, vy = 0; modes 10 / 11 (with a record): `+0xf8 = 0` // later: Phase 6 —
-    /// `.MakeRadial` and `.MakeRadiusSprites` (no Bat or Gremlin places them; the Setups refuse them).
-    public static func setup(_ s: inout SpriteSlot, record p: Placement?) {
-        if let p {
-            s.pathMode = Int32(p.p1 < 1 ? -p.p1 : p.p1)
-            if 99 < s.pathMode && s.pathMode < 200 { s.pathMode -= 100 }
-            s.pathSpeed = Int32(p.p3)
-        }
-        s.pathDirection = 1
-        let mode = s.pathMode
-        if mode == 3 {
-            s.hotRect = IdleSprites.Rect(top: 0, left: 7, bottom: 0x1e, right: 0x46)
-            s.buoyancy = 0x50
-            s.gravity = 0x15e
-            s.sag = 0x2d
-            s.pushMass = 0x3c
-            s.pathDirection = 0
-        } else if mode < 3 {
-            if mode == 1 {
-                if let p {
-                    s.pathLow = s.y256 &+ s.pathSpeed &* 8
-                    s.pathHigh = s.y256 &+ Int32(p.p2) &* 0x100 &+ s.pathSpeed &* -8
-                }
-                s.vy = s.pathSpeed
-                s.vx = 0
-                s.sag = 0
-            } else if 0 < mode {
-                if let p {
-                    s.pathLow = s.x256 &+ s.pathSpeed &* 8
-                    s.pathHigh = s.x256 &+ Int32(p.p2) &* 0x100 &+ s.pathSpeed &* -8
-                }
-                s.vx = s.pathSpeed
-                s.vy = 0
-            }
-        } else if mode < 0xc && 9 < mode && p != nil {
-            s.pathDirection = 0
-        }
-    }
-
-    /// `.HandleProgrammedPath(s)` (M l. 39384–39468): mode 2 — direction 1: past `+0x104` (`+0x104 < +0x14`) → −1, else
-    /// vx + `+0xfc >> 4` while below `+0xfc`, capped at `+0xfc`; direction ≠ 1: before `+0x100` → 1, else vx − `+0xfc
-    /// >> 4` while above −`+0xfc`, floored at −`+0xfc`; then `+0x194 = 0`. Mode 1 the same on `+0x1c` / vy. Modes 10 /
-    /// 11 // later: Phase 6 (`.UpdateRadialPos`, `.UpdateRadiusSprites`; refused at Setup). Any other mode: nothing.
-    public static func handle(_ s: inout SpriteSlot) {
-        let mode = s.pathMode
-        func run(_ pos: Int32, _ v: inout Int32) {
-            if s.pathDirection == 1 {
-                if s.pathHigh < pos {
-                    s.pathDirection = -1
-                } else {
-                    if v < s.pathSpeed { v &+= s.pathSpeed >> 4 }
-                    if s.pathSpeed < v { v = s.pathSpeed }
-                }
-            } else if pos < s.pathLow {
-                s.pathDirection = 1
-            } else {
-                if 0 &- s.pathSpeed < v { v &-= s.pathSpeed >> 4 }
-                if v < 0 &- s.pathSpeed { v = 0 &- s.pathSpeed }
-            }
-            s.jumpBonus = 0
-        }
-        if mode == 2 {
-            var v = s.vx
-            run(s.x256, &v)
-            s.vx = v
-        } else if mode == 1 {
-            var v = s.vy
-            run(s.y256, &v)
-            s.vy = v
         }
     }
 }

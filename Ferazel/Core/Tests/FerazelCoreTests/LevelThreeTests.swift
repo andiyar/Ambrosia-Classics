@@ -107,7 +107,7 @@ final class LevelThreeTests: XCTestCase {
                                                  clut: 200))
         // Bat 1741 (rec 189: p1 2, p2 340, p3 800): the 0x6cc… arm plus `+0x188`, `+0xa6 = 1`, gravity 0 and the
         // programmed path's mode 2 (`+0xf0` = 2 — BA: the path mode's own field, `pathMode`, no longer the Walker's
-        // `voicePitch` —, vx = p3); the Bat hit callback (BA, M l. 68137); no draw.
+        // `voicePitch` —, vx = p3); the Bat hit callback (BA, M l. 68147); no draw.
         e = try entry(189)
         XCTAssertEqual([e.slot.keepRecord, e.slot.hasHit], [true, true])
         XCTAssertEqual([Int32(e.slot.counterA6), Int32(e.slot.gravity), e.slot.pathMode, e.slot.vx, e.slot.vy,

@@ -110,7 +110,7 @@ final class LevelFlowTests: XCTestCase {
         XCTAssertEqual(e.source, .setup)
         // 1740 (rec 186, bat): no draw; layer 0xb, HP 500, rect, Handle face set 0x6cc (11 × 0x38×0x34, clut 200).
         // BA: the Bat class's own Handle (`.HandleBatSprite`), hit and tile callbacks (`.SetupBatSprite` M l.
-        // 68135–68140); asleep (`+0xa6 = 0`, M l. 68296), `+0x15c = 0`, no `+0x188` (the 0x6cc arm stores none).
+        // 68147); asleep (`+0xa6 = 0`, M l. 68297), `+0x15c = 0`, no `+0x188` (the 0x6cc arm stores none).
         (e, rng) = try setup(186)
         XCTAssertEqual(rng.seed, 1)
         XCTAssertEqual([Int(e.slot.layer), Int(e.slot.hp), Int(e.slot.classWord150), Int(e.slot.classWord158)],

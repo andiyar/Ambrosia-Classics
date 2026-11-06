@@ -86,6 +86,19 @@ final class BatTests: XCTestCase {
         })
     }
 
+    /// The particles `.BloodSpray(victim, shot, 0x28, 400, 0x96, 2)` makes from the stream `r` on a twin world holding
+    /// copies of the two records as they stand after the hit (the spray is the hit's last change to either), and the
+    /// stream after it — compared with what a hit left in `w`.
+    private func sprayTwin(_ w: SpriteWorld, victim: Int, shot: Int, rng r: FastRand) throws
+        -> (parts: [ParticlePool.Record], rng: FastRand) {
+        let tw = try world()
+        let v = tw.active.insert(try slot(w, victim))
+        let a = tw.active.insert(try XCTUnwrap(w.active.record(id: shot)))
+        tw.rng = r
+        BloodSpray.spray(tw, victim: v, attacker: a, count: 0x28, speed: 400, spread: 0x96, kind: 2)
+        return (tw.particles.records.filter(\.alive), tw.rng)
+    }
+
     // MARK: - Setup
 
     func testBatSetupBySubRange() throws {
@@ -178,6 +191,7 @@ final class BatTests: XCTestCase {
             s = e.slot
             XCTAssertEqual([Int(s.hp), Int(s.counterA6), Int(s.layer), Int(s.classWord160), Int(s.subtype)],
                            [100, 0, 0xb, 0, 7])
+            XCTAssertEqual([s.classWord158, s.classWord15c], [0x1e, 0], "the 1850 family's thrust (M l. 68261)")
             XCTAssertEqual([s.keepRecord, s.countedInTotals], [true, true])
             XCTAssertEqual(s.hotRect, rect(0x10, 0x1e, 0x30, 0x32))
             XCTAssertEqual(e.sheet?.pict, Bat.familySet)
@@ -194,6 +208,7 @@ final class BatTests: XCTestCase {
             s = e.slot
             XCTAssertEqual([Int(s.layer), Int(s.classWord160), Int(s.counterA6), Int(s.pathMode), Int(s.vx)],
                            [8, 1, 1, 2, 200])
+            XCTAssertEqual([s.classWord158, s.classWord15c], [0x1e, 0])
             XCTAssertEqual([s.countedInTotals ? 1 : 0, Int(w.enemies.live)], [0, 0])
             XCTAssertEqual(e.sheet?.pict, Bat.familyBackSet)
         }
@@ -395,8 +410,11 @@ final class BatTests: XCTestCase {
             Bat.steer(&s, dir: d)
             return s
         }
+        // The wrap (M l. 68571–68578): 34 → 35 holds, 1 → 0 holds, 0 → −1 → 35; 35 → 36 → 0 only with a d past 35 (none
+        // from `FindDesiredDirectionGeneric`: the arm as written).
         for (h, d, want, state) in [(Int16(10), 18, Int16(11), Int16(7)), (17, 34, 18, 7), (17, 35, 16, 7),
-                                    (0, 27, 35, 7), (35, 0, 34, 7), (5, 3, 4, 7), (18, 18, 18, 8)] {
+                                    (0, 27, 35, 7), (35, 0, 34, 7), (5, 3, 4, 7), (18, 18, 18, 8), (34, 35, 35, 7),
+                                    (1, 0, 0, 7), (35, 40, 0, 7)] {
             let s = steer(state: 7, heading: h, d: d)
             XCTAssertEqual([s.phase, s.subtype], [want, state], "h \(h) d \(d)")
             XCTAssertEqual([s.vx, s.vy], [0, 0])
@@ -507,6 +525,21 @@ final class BatTests: XCTestCase {
             wb.active.update(id: b) { $0.subtype = 9; $0.vx = 0x200; $0.mirrored = true }
             frame(wb, b, TileSolver(world: wb))
             XCTAssertEqual([try slot(wb, b).vx, try slot(wb, b).mirrored ? 1 : 0], [0x200, 1])
+            // Level (M l. 68512–68525: `<` both ways): the facing held from either side.
+            do {
+                let wl = try world(px: 327, py: 1000)
+                let (lb, _) = try bat(wl, type: 0x6d1)
+                wl.active.update(id: lb) { $0.subtype = 9; $0.vx = -0x200; $0.mirrored = false }
+                frame(wl, lb, TileSolver(world: wl))
+                XCTAssertEqual([try slot(wl, lb).vx, try slot(wl, lb).mirrored ? 1 : 0], [-0x200, 0])
+            }
+            // The path arm's facing (M l. 68748–68753) level too: held either way.
+            for held in [true, false] {
+                let (pb, _) = try bat(wb, type: 0x6cf, x: 300, y: 500)
+                wb.active.update(id: pb) { $0.mirrored = held }
+                frame(wb, pb, TileSolver(world: wb))
+                XCTAssertEqual(try slot(wb, pb).mirrored, held, "path arm level, held \(held)")
+            }
             let (q, _) = try bat(wb, type: 0x6cc, x: 300, y: 800)
             wb.player.centreX = 500
             wb.active.update(id: q) { $0.vx = -0x200 }
@@ -575,6 +608,55 @@ final class BatTests: XCTestCase {
             frame(wi, b, TileSolver(world: wi))
             XCTAssertEqual(try slot(wi, b).counterA6, want, "a6 \(a6)")
             XCTAssertEqual(try slot(wi, b).face, f(Bat.insectSet, Int(want) - 1))
+        }
+        // The chaser arm runs for 0x73a and 0x744 too (M l. 68507): awake, the brake and the facing; in liquid the vy
+        // lift and the damage; asleep, the waking. 0x73a centre (332, 140), 0x744 centre (324, 122).
+        for (type, cx, cy, hp) in [(Int16(0x73a), 332, 140, Int16(0)), (0x744, 324, 122, 100)] {
+            let wc = try world(px: Int16(cx - 41), py: 1000)
+            let (b, _) = try bat(wc, type: type)
+            wc.active.update(id: b) { t in
+                t.counterA6 = 2
+                t.subtype = 9
+                t.vx = 0x101
+                t.mirrored = true
+                t.waterRow = 1
+                t.waterKind = 0
+            }
+            frame(wc, b, TileSolver(world: wc))
+            let t = try slot(wc, b)
+            XCTAssertEqual([t.vx, t.vy], [0x101 - 0x48, -100], "\(type): the brake, the lift")
+            XCTAssertFalse(t.mirrored, "\(type): P.x < c.x → flip 0")
+            XCTAssertEqual([t.hp, t.invulnerable, t.flash], [hp, 0x13, 0x11], "\(type): the water damage")
+            XCTAssertEqual(wc.player.cues.map { [Int($0.snd), Int($0.volume)] }, [[701, 0x55]], "\(type)")
+            let ww = try world(px: Int16(cx), py: Int16(cy + 33))
+            let (k, _) = try bat(ww, type: type)
+            ww.active.update(id: k) { $0.counterA6 = 0 }
+            frame(ww, k, TileSolver(world: ww))
+            XCTAssertEqual(ww.player.cues.map(\.snd), [608], "\(type): wakes")
+            // 0x73a: 0x14 + 1 past 0x12 → 0; 0x744: 0x14 + 1 = 0x15, − 8 = 13, clamped to 8 (M l. 68839–68846).
+            XCTAssertEqual(try slot(ww, k).counterA6, type == 0x744 ? 8 : 0, "\(type)")
+        }
+        // The 0x6cc… animation bound (M l. 68826: `< 0x6d6`): 0x6d5 steps, 0x6d6 does not.
+        do {
+            let wa = try world()
+            let (b, _) = try bat(wa, type: 0x6d5)
+            wa.active.update(id: b) { $0.counterA6 = 4 }
+            frame(wa, b, TileSolver(world: wa))
+            XCTAssertEqual(try slot(wa, b).counterA6, 5)
+            XCTAssertEqual(try slot(wa, b).face, f(Bat.batSet, 2))
+            wa.active.update(id: b) { $0.type = 0x6d6; $0.counterA6 = 4; $0.face = nil }
+            frame(wa, b, TileSolver(world: wa))
+            XCTAssertEqual(try slot(wa, b).counterA6, 4, "0x6d6: no animation")
+            XCTAssertNil(try slot(wa, b).face)
+        }
+        // Fully under on exactly the surface line (M l. 68877: `y < +0x164`): vy kept.
+        do {
+            let wu = try world(waterRow: 1)
+            let (u, _) = try bat(wu, type: 0x73a, y: 100)
+            wu.active.update(id: u) { $0.surfaceLine = 96; $0.vy = -0x200 }
+            frame(wu, u, TileSolver(world: wu))
+            let t = try slot(wu, u)
+            XCTAssertEqual([Int(t.waterRow), t.y, Int(t.surfaceLine), Int(t.vy)], [1, 96, 96, -0x200])
         }
         // An unplaced 1740-family type (0x6cf): the path arm with no path — faces the player, `+0x8a = 0`, motionless.
         do {
@@ -679,6 +761,105 @@ final class BatTests: XCTestCase {
         wv.active.update(id: v) { $0.y256 = $0.pathHigh + 1 }
         frame(wv, v, TileSolver(world: wv))
         XCTAssertEqual(try slot(wv, v).pathDirection, -1)
+
+        // Path modes 10 / 11 (M l. 39354–39378, 39448–39459) — on no placed Bat (SetupFaces refuses them); the maces,
+        // cannons and the Gremlin share the pair. The Setup: `+0xf8 = 0`, then with a record `.MakeRadial(s, +0x10,
+        // +0xe, r = p2, speed = p3 — 0 in the 1xx form (`bVar1` cleared, M l. 39310–39313) —, angle = p4, g 0 (10) /
+        // 0x1e (11), 0, 0, 0)`; no `.MakeRadiusSprites` (every caller passes −1). No record: no block.
+        func radialBat(_ wr: SpriteWorld, p1: Int16) -> (Int, Placement) {
+            var r = SpriteSlot(type: 0x6cd, x: 300, y: 100)
+            r.x256 = 300 << 8
+            r.y256 = 100 << 8
+            r.centre = SpriteSlot.Point(x: 327, y: 131)
+            r.handler = .bat
+            let rec = Placement(index: 0, flag: 1, byte1: 0, type: 0x6cd, p1: p1, p2: 40, p3: 0x200, p4: 90, y: 100,
+                                x: 300)
+            ProgrammedPath.setup(&r, record: rec)
+            return (wr.active.insert(r), rec)
+        }
+        for (p1, mode, speed, g) in [(Int16(10), Int32(10), Int32(0x200), Int16(0)), (11, 11, 0x200, 0x1e),
+                                     (110, 10, 0, 0), (111, 11, 0, 0x1e), (-10, 10, 0x200, 0), (-111, 11, 0, 0x1e)] {
+            let wr = try world()
+            let (rid, rec) = radialBat(wr, p1: p1)
+            let r = try slot(wr, rid)
+            XCTAssertEqual([r.pathMode, r.pathSpeed, r.pathDirection, r.vx, r.vy], [mode, 0x200, 0, 0, 0], "p1 \(p1)")
+            ProgrammedPath.makeRadial(wr, id: rid, record: rec)
+            let b = try XCTUnwrap(try slot(wr, rid).radial, "p1 \(p1)")
+            XCTAssertEqual([b.hubX, b.hubY, b.radius, b.radiusCopy, b.speed, b.angle],
+                           [327 << 8, 131 << 8, 40 << 8, 40 << 8, speed, 90 << 8], "p1 \(p1)")
+            XCTAssertEqual([b.gravity, b.damp, b.persp, b.spokeCount], [g, 0, 0, 0], "p1 \(p1)")
+            XCTAssertEqual(b.hubDamp, 0)
+            let wn = try world()
+            let (nid, _) = radialBat(wn, p1: p1)
+            ProgrammedPath.makeRadial(wn, id: nid, record: nil)
+            XCTAssertNil(try slot(wn, nid).radial, "no record: no block")
+        }
+        do {
+            let wr = try world()
+            let (rid, rec) = radialBat(wr, p1: 2)
+            ProgrammedPath.makeRadial(wr, id: rid, record: rec)
+            XCTAssertNil(try slot(wr, rid).radial, "mode 2: no block")
+        }
+        // The Handle: `+0xf8` < 0 → + 1, else 0; vx = vy = 0; `.UpdateRadialPos`, `.UpdateRadiusSprites(s, 0, 0)`;
+        // `+0x194 = 0`. The position against `RadialMotion.updatePosition` on a twin.
+        for (dir, want) in [(Int32(-3), Int32(-2)), (-1, 0), (0, 0), (1, 0), (5, 0)] {
+            let wr = try world(), wq = try world()
+            let (rid, rec) = radialBat(wr, p1: 10)
+            let (qid, _) = radialBat(wq, p1: 10)
+            ProgrammedPath.makeRadial(wr, id: rid, record: rec)
+            ProgrammedPath.makeRadial(wq, id: qid, record: rec)
+            for (ww, i) in [(wr, rid), (wq, qid)] {
+                ww.active.update(id: i) { c in
+                    c.pathDirection = dir
+                    c.vx = 123
+                    c.vy = -45
+                    c.jumpBonus = 7
+                }
+            }
+            RadialMotion.updatePosition(wq, id: qid)
+            let q = try slot(wq, qid)
+            var t = try slot(wr, rid)
+            ProgrammedPath.handle(wr, id: rid, slot: &t)
+            XCTAssertEqual([t.pathDirection, t.vx, t.vy, t.jumpBonus], [want, 0, 0, 0], "dir \(dir)")
+            XCTAssertEqual(t.radial?.angle, (90 << 8) + 0x200, "dir \(dir): `.UpdateRadialPos` ran")
+            XCTAssertEqual([t.x, t.y, Int(t.x256), Int(t.y256)], [q.x, q.y, Int(q.x256), Int(q.y256)], "dir \(dir)")
+            XCTAssertEqual(t.radial, q.radial)
+            // The slot-only Handle makes the same stores (no radial update).
+            var u = SpriteSlot(type: 0x6cd, x: 0, y: 0)
+            u.pathMode = 11
+            u.pathDirection = dir
+            u.vx = 123
+            u.vy = -45
+            u.jumpBonus = 7
+            ProgrammedPath.handle(&u)
+            XCTAssertEqual([u.pathDirection, u.vx, u.vy, u.jumpBonus], [want, 0, 0, 0], "dir \(dir)")
+        }
+        // Through the Bat Handle's path arm: the radial step runs (vx, vy 0; the angle advanced).
+        do {
+            let wr = try world(px: 0, py: 0)
+            let (rid, rec) = radialBat(wr, p1: 10)
+            ProgrammedPath.makeRadial(wr, id: rid, record: rec)
+            wr.active.update(id: rid) { $0.vx = 300 }
+            frame(wr, rid, TileSolver(world: wr))
+            let t = try slot(wr, rid)
+            XCTAssertEqual([t.vx, t.vy, t.radial?.angle ?? 0], [0, 0, (90 << 8) + 0x200])
+        }
+        // `+0x194 = 0` is the path's (modes 1 / 2), not the arm's: a mode-0 path bat keeps it.
+        do {
+            let wz = try world(px: 0, py: 0)
+            let (z, _) = try bat(wz, type: 0x6cd, x: 300, y: 100, p1: 0)
+            wz.active.update(id: z) { $0.jumpBonus = 7 }
+            frame(wz, z, TileSolver(world: wz))
+            XCTAssertEqual(try slot(wz, z).jumpBonus, 7, "mode 0: no store")
+            let (y2, _) = try bat(wz, type: 0x6cd, x: 300, y: 100, p1: 2, p2: 100, p3: 0x100)
+            wz.active.update(id: y2) { $0.jumpBonus = 7 }
+            frame(wz, y2, TileSolver(world: wz))
+            XCTAssertEqual(try slot(wz, y2).jumpBonus, 0, "mode 2: `+0x194 = 0`")
+            let (y1, _) = try bat(wz, type: 0x6cd, x: 300, y: 100, p1: 1, p2: 100, p3: 0x100)
+            wz.active.update(id: y1) { $0.jumpBonus = 7 }
+            frame(wz, y1, TileSolver(world: wz))
+            XCTAssertEqual(try slot(wz, y1).jumpBonus, 0, "mode 1: `+0x194 = 0`")
+        }
     }
 
     func testPathBatSpit() throws {
@@ -805,10 +986,17 @@ final class BatTests: XCTestCase {
             return 0
         }
         // (rel x, rel y, the vx after the pull — nil: from rest —, scatter expected).
-        let rows: [(Int, Int, Int32?, Bool)] = [(7, -7, nil, true), (8, 0, nil, false), (0, 8, nil, false),
+        var rows: [(Int, Int, Int32?, Bool)] = [(7, -7, nil, true), (8, 0, nil, false), (0, 8, nil, false),
                                                 (-7, -7, nil, true), (-8, 0, nil, false), (0, -8, nil, false),
                                                 (0, 0, 0x577, true), (0, 0, 0x578, false), (0, 0, -0x577, true),
                                                 (0, 0, -0x578, false)]
+        // The pull aims from (y + 12, x + 12) (M l. 68363): two places where x + 11 or x + 13 would aim elsewhere.
+        func aim(_ rx: Int, _ k: Int) -> Int {
+            BloodSpray.direction(target: (v: 0, h: 0), from: (v: Int16(30 + 12), h: Int16(rx + k)))
+        }
+        let below = try XCTUnwrap((-60...60).first { abs($0) >= 8 && aim($0, 12) != aim($0, 11) })
+        let above = try XCTUnwrap((-60...60).first { abs($0) >= 8 && aim($0, 12) != aim($0, 13) })
+        rows += [(below, 30, nil, false), (above, 30, nil, false)]
         for (rx, ry, edge, scatter) in rows {
             place(rx, ry, vx: edge.map(landing) ?? 0)
             let pre = try slot(w, m)
@@ -831,6 +1019,40 @@ final class BatTests: XCTestCase {
             XCTAssertEqual(w.rng.seed, r.seed, "rel (\(rx), \(ry)) edge \(String(describing: edge))")
             XCTAssertEqual([try slot(w, m).vx, try slot(w, m).vy], [wantVX, wantVY],
                            "rel (\(rx), \(ry)) edge \(String(describing: edge))")
+        }
+        // The same speed edge on vy (M l. 68404): ±0x577 scatters, ±0x578 does not.
+        func landingY(_ edge: Int32) -> Int32 {
+            let d = BloodSpray.direction(target: (v: 0, h: 0), from: (v: 12, h: 12))
+            var r = w.rng
+            let m = Int32(r.next(0x96)) + 0x172
+            for v in (edge - 600)...(edge + 600) {
+                var probe = SpriteSlot(type: 0x74c, x: 0, y: 0)
+                probe.vy = v
+                PlayerShot.addDirImpulse(&probe, dir: d, magnitude: m)
+                if probe.vy == edge { return v }
+            }
+            XCTFail("no vy lands on \(edge)")
+            return 0
+        }
+        for (edge, scatter) in [(Int32(0x577), true), (0x578, false), (-0x577, true), (-0x578, false)] {
+            place(0, 0, vy: landingY(edge))
+            let pre = try slot(w, m)
+            var r = w.rng
+            let d = BloodSpray.direction(target: (v: 0, h: 0), from: (v: 12, h: 12))
+            var probe = pre
+            PlayerShot.addDirImpulse(&probe, dir: d, magnitude: Int32(r.next(0x96)) + 0x172)
+            probe.enforceMaxSpeed(0xa8c)
+            XCTAssertEqual(probe.vy, edge)
+            XCTAssertLessThan(abs(probe.vx), 0x578)
+            var wantVX = probe.vx, wantVY = probe.vy
+            if scatter {
+                wantVX = Int32(r.next(0x12fc)) - 2430
+                wantVY = Int32(r.next(0x12fc)) - 2430
+            }
+            wantVX += Int32(r.next(400)) - 200
+            wantVY += Int32(r.next(400)) - 200
+            frame(w, m, solver)
+            XCTAssertEqual([try slot(w, m).vx, try slot(w, m).vy], [wantVX, wantVY], "vy edge \(edge)")
         }
         // The flip: x + 12 < P.x (x after the integration), both sides.
         w.player.centreX = 0
@@ -932,9 +1154,12 @@ final class BatTests: XCTestCase {
             wh.player.cues = []
             let live = wh.particles.live
             var r = wh.rng
+            let pre = try slot(wh, mh)
             Bat.hitSwarmMember(wh, id: mh, other: sh, lights: &l)
             let t = try slot(wh, mh)
             XCTAssertEqual(t.hp, alive ? 60 : -40)
+            XCTAssertEqual([t.vx - pre.vx, t.vy - pre.vy], [1000 >> 3, -200 >> 3], "the push (vx >> 3, vy >> 3)")
+            XCTAssertEqual([t.invulnerable, t.flash], [2, 8])
             XCTAssertEqual(wh.particles.live > live, alive, "the blood spray only while alive")
             XCTAssertEqual(wh.player.cues.map { [Int($0.snd), Int($0.volume)] }, [[480, 0xab]])
             XCTAssertEqual(wh.player.cues.first?.call, .threeDPitched)
@@ -954,6 +1179,50 @@ final class BatTests: XCTestCase {
             let st = try shot(w2, type: 1)
             Bat.hitSwarmMember(w2, id: m2, other: st, lights: &l)
             XCTAssertEqual(try slot(w2, m2).handler, .statue, "the Statue spell")
+        }
+        // The spray in full (a twin from the stream before the hit; the 480 rate drawn after it), 0x28 particles; HP
+        // exactly 1 left still sprays, exactly 0 does not; any other sprite but a player shot: nothing (M l. 68995).
+        for (dmg, sprays) in [(Int16(99), true), (100, false)] {
+            let w3 = try world()
+            let m3 = try XCTUnwrap(w3.newSprite(type: Bat.defaultMember, x: 320, y: 110, layer: 4, handler: .swarmMember,
+                                                record: 0x200) { c in Bat.setupSwarmMember(&c, phase: 0) })
+            w3.active.update(id: m3) { $0.x = 320; $0.y = 110 }
+            let sh = try shot(w3, damage: dmg)
+            let r = w3.rng
+            Bat.hitSwarmMember(w3, id: m3, other: sh, lights: &l)
+            XCTAssertEqual(try slot(w3, m3).hp, 100 - dmg)
+            let parts = w3.particles.records.filter(\.alive)
+            if sprays {
+                var twin = try sprayTwin(w3, victim: m3, shot: sh, rng: r)
+                _ = twin.rng.next(20000)
+                XCTAssertEqual(parts.count, 0x28)
+                XCTAssertEqual(parts, twin.parts)
+                XCTAssertEqual(w3.rng.seed, twin.rng.seed)
+            } else {
+                XCTAssertTrue(parts.isEmpty, "HP 0: no spray")
+            }
+        }
+        do {
+            let w4 = try world()
+            let m4 = try XCTUnwrap(w4.newSprite(type: Bat.defaultMember, x: 320, y: 110, layer: 4, handler: .swarmMember,
+                                                record: 0x200) { c in Bat.setupSwarmMember(&c, phase: 0) })
+            let other = try XCTUnwrap(w4.newSprite(type: 2, x: 330, y: 120, layer: 0xb, handler: .enemyShot) { c in
+                c.x = 330
+                c.y = 120
+                c.hotRect = IdleSprites.Rect(top: 0, left: 0, bottom: 20, right: 20)
+                c.hp = 150
+                c.vx = 1000
+            })
+            let seed = w4.rng.seed
+            Bat.hitSwarmMember(w4, id: m4, other: other, lights: &l)
+            XCTAssertEqual([Int(try slot(w4, m4).hp), Int(try slot(w4, m4).vx), w4.player.cues.count], [100, 0, 0])
+            XCTAssertEqual(w4.rng.seed, seed)
+            XCTAssertEqual(w4.active.record(id: other)?.dead, false, "not killed")
+        }
+        // A negative radius (no shipped swarm): the rect half rounds toward zero, r / 2 (`srawi 1; addze`), not r >> 1.
+        do {
+            let (_, e) = try bat(try world(), type: Bat.swarm, p2: -1, p3: -11)
+            XCTAssertEqual(e.slot.hotRect, rect(5, 5, -5, -5), "−11 / 2 = −5")
         }
 
         // The level spawn (`SetupFaces.spawnLevelSprites`): the members are inserted active before the centre, which
@@ -1018,6 +1287,17 @@ final class BatTests: XCTestCase {
         XCTAssertEqual(try slot(we, ide).face, f(Bat.insectSet, 3))
         XCTAssertEqual([try slot(we, bodyE).x, try slot(we, bodyE).y], [400, 100], "the before-copy ran")
         XCTAssertEqual(try slot(we, bodyE).face, f(Bat.insectSet, 8), "the before-copy's face")
+        // 0x745 animates as 0x744 does (M l. 68838: `type − 0x744 < 2`); past 8 after the − 8 → 8 (a hit's 0x15 →
+        // 0x16 − 8 = 14 → 8; M l. 68843–68846).
+        for (type, a6, want) in [(Int16(0x745), Int16(3), Int16(4)), (0x744, 0x15, 8), (0x745, 0x10, 8),
+                                 (0x744, 8, 1)] {
+            let wa = try world()
+            let (a, _) = try bat(wa, type: type, x: 400, y: 100)
+            wa.active.update(id: a) { $0.subtype = 9; $0.counterA6 = a6 }
+            frame(wa, a, TileSolver(world: wa))
+            XCTAssertEqual(try slot(wa, a).counterA6, want, "\(type) a6 \(a6)")
+            XCTAssertEqual(try slot(wa, a).face, f(Bat.insectSet, Int(want) - 1), "\(type) a6 \(a6)")
+        }
         // Types 0x747…0x74c: no body face copy (the position still copies); their path arm (no path) holds them still.
         let w2 = try world()
         let (id2, _) = try bat(w2, type: 0x747, x: 400, y: 100)
@@ -1114,6 +1394,7 @@ final class BatTests: XCTestCase {
             XCTAssertEqual(Set(parts.map { [Int($0.kind), Int($0.gravity), Int($0.shape), Int($0.mode)] }),
                            [[2, 0x78, 4, 1]])
             XCTAssertEqual(parts.map { [Int($0.x >> 8), Int($0.y >> 8), Int($0.vx), Int($0.vy)] }, want)
+            XCTAssertEqual(Set(parts.map(\.age)), [0], "delay 0 (M l. 68813, 68823)")
             XCTAssertEqual(w.rng.seed, rc.seed, "R(3), the coins, the blood")
             // `+0xe9`: the next Handle does nothing.
             let after = w.rng.seed
@@ -1127,6 +1408,38 @@ final class BatTests: XCTestCase {
         frame(wu, u, TileSolver(world: wu))
         XCTAssertEqual([Int(wu.globals.score), Int(wu.enemies.live)], [600, 0])
         XCTAssertEqual(wu.globals.achieved[0][0], 0)
+
+        // The dying state's face 0 (M l. 68793) stands for the types no animation re-faces (0x746…0x74c).
+        do {
+            let wd = try world()
+            let (d, _) = try bat(wd, type: 0x747)
+            wd.active.update(id: d) { $0.subtype = 4 }
+            XCTAssertNotNil(try slot(wd, d).face)
+            frame(wd, d, TileSolver(world: wd))
+            XCTAssertEqual(try slot(wd, d).dead, true)
+            XCTAssertNil(try slot(wd, d).face, "0x747: face 0 held")
+        }
+        // The bat hit's spray and sounds (M l. 68950–68963): `.BloodSpray(s, o, 0x28, 400, 0x96, 2)` (measured on a
+        // twin from the stream after the 609 rate), then HP 200 < 0xc9 → snd 702 at vol 0x100.
+        do {
+            let wh = try world()
+            let (b, _) = try bat(wh, type: 0x6cc)
+            let sh = try shot(wh, damage: 300)
+            var r = wh.rng
+            _ = r.soundRate()
+            var l = LightTable()
+            Bat.hit(wh, id: b, other: sh, lights: &l)
+            XCTAssertEqual(try slot(wh, b).hp, 200)
+            XCTAssertEqual(wh.player.cues.map { [Int($0.snd), Int($0.volume), Int($0.priority)] },
+                           [[609, 0xab, 1], [702, 0x100, 1]])
+            XCTAssertEqual(wh.player.cues.last?.call, .threeD)
+            let twin = try sprayTwin(wh, victim: b, shot: sh, rng: r)
+            let parts = wh.particles.records.filter(\.alive)
+            XCTAssertEqual(parts.count, 0x28)
+            XCTAssertEqual(parts, twin.parts)
+            XCTAssertEqual(Set(parts.map(\.kind)), [2])
+            XCTAssertEqual(wh.rng.seed, twin.rng.seed, "the spray is the hit's last draw")
+        }
 
         // The crush (M l. 68962–68984): a Statue or Box whose `.PlatformBounce` is 2 (measured on a twin world) with the
         // solid falling or the bat on ground → HP 0, `+0x150 = 0x16`; else nothing; a Platform: nothing.
@@ -1215,14 +1528,21 @@ final class BatTests: XCTestCase {
                 XCTAssertEqual(try slot(w, b.id).type, 0x6d1)
             }
         }
-        // A 1741 from a crate: the path from record 0x200 (zeros — mode 0, speed 0), direction 1; `+0x188`.
+        // A 1741 from a crate: the path from record 0x200 (zeros — mode 0, speed 0), direction 1; `+0x188`. Every live
+        // record below 0x200 holds a mode-2 path here, so reading any of them would show.
         let w = try world()
+        w.records = (0..<0x200).map { Placement(index: $0, flag: 1, byte1: 0, type: 0x6cd, p1: 2, p2: 340, p3: 800,
+                                                 p4: 0, y: 100, x: 100) }
         var l = LightTable()
         let g = try XCTUnwrap(BoxSprite.generate(w, type: 0x6cd, x: 100, y: 100, layer: 3, lights: &l, effects: 1))
         let s = try slot(w, g)
         XCTAssertEqual([s.pathMode, s.pathSpeed, s.pathDirection, s.vx, s.vy], [0, 0, 1, 0, 0])
         XCTAssertEqual([s.keepRecord, s.hasHit], [true, true])
         XCTAssertEqual([s.x, s.y, Int(s.recordIndex), Int(s.layer)], [100, 100, 0x200, 0xb])
+        // An insect from a crate: face = the 0x744 set's cell 3 (M l. 68219), as at level load.
+        let gi = try XCTUnwrap(BoxSprite.generate(w, type: 0x744, x: 100, y: 100, layer: 3, lights: &l, effects: 1))
+        XCTAssertEqual(try slot(w, gi).face, f(Bat.insectSet, 3))
+        XCTAssertNotNil(try slot(w, gi).siblings.first)
         // A swarm from `.GenerateSprite`: its members made at once (8 of 0x74c, record 0x200), linked.
         let gs = try XCTUnwrap(BoxSprite.generate(w, type: Bat.swarm, x: 100, y: 100, layer: 3, lights: &l, effects: 1))
         let block = try XCTUnwrap(try slot(w, gs).swarm)

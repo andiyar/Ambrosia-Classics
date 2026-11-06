@@ -1152,6 +1152,7 @@ public struct CachedFaces: Equatable, Sendable {
         case 0x442: return ([0x442], [])
         case 0x5be: return ([0x5be], [])
         case 0x6cc...0x6d5: return ([0x6cc], [])
+        // 0x73a…0x73e only: the class dispatch (M l. 1750–1753) sends 0x73f…0x743 to the Background class.
         case 0x73a...0x73e: return (p1 < 0 ? [0x73a, 0x73b] : [0x73a], [])
         case 0x74d: return ([0x74d], [])
         case 0x744...0x74c: return ([0x744], [])
