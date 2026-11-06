@@ -32,6 +32,17 @@ brother's Windows machine.
 
 ## Open
 
+### Q17 — 2026-11-07 — The Aki 1.1.0 original has moved on your Mac (HectorKit's four Aki census tests skip) — a note, no action needed from the loop
+Context: HectorKit's machine gate (`tools/check-zero-skip.sh`) looks for the Aki 1.1.0 app at
+`~/Developer/Ambrosia/Aki/Aki - Mahjong Solitaire/…`, and this repo's git-ignored `Resources/Aki/1.1.0.app` symlink pointed
+at the same folder. That folder is gone; the app still exists at `~/Developer/Ambrosia/Resources/ambrosia-extracted/Action-Adventure/Aki - Mahjong Solitaire/Aki 1.1.0/Aki - Mahjong Solitaire/Aki - Mahjong Solitaire.app`.
+The attended run 43 re-pointed this repo's symlink at that copy (local only, git-ignored). The kit's own default still
+misses, so its gate reports 4 skips unless `HECTORKIT_DATA_AKI11` is set — the reconcile step in NEXT now sets it.
+Options: (a) leave it — the loop sets the variable; (b) you restore or move the folder so the kit's default works again.
+Recommendation: (a).
+Blocks: nothing.
+Answer:
+
 ### Q16 — 2026-10-30 — Phase 5 plan (enemies): five small choices, for your later read
 Context: Loop run 36 wrote the plan for Phase 5 (`docs/plans/2026-10-30-ferazel-phase5.md`, D44): 22 tasks over about
 ten runs, Mac and Windows together. It starts with your Q15 follow-ups (the sparkle fix, the draw-mode audit, the
@@ -47,7 +58,7 @@ placed after level 5 (Dillo, Gremlin, Wraith, Salamander, Crab, pipes, geysers) 
 reachable until Phase 6: (a) yes (b) wait.
 Recommendation: (1a), (2a), (5a); (3) and (4) only when convenient.
 Blocks: nothing (D34: execution does not wait).
-Answer:
+Answer: (not read yet, 2026-11-07 — "the defaults stand" per D45.1; stays open for Ben's later read)
 
 ### Q15 — 2026-10-29 — Andrew's Windows test: the teleporter quit the game (fixed); four follow-ups for the loop (written by Ben's attended session)
 Context: Andrew (Windows beta tester) found the game closes when Ferazel uses the level-1 teleporter (the urn). Test
@@ -92,6 +103,23 @@ _Loop run 37 (2026-10-30): PB, SP, RV built and merged (0b02d31). Item 1: the dr
 _Loop run 38 (2026-10-30): item 2 built as a standing audit test (no picture the port refuses can be reached in levels 1–4; it runs in every suite and at every phase end). Item 7: the status-bar comment checked against the colour tables (it was right) and the map test now pins colours worked out independently; the map-text colours and the Let's-Play comparison idea stay with you (no task). Left open for Ben's word._
 _Loop run 39 (2026-10-30/31): item 5 built — the random-play bot plays every built level for 3 minutes × 4 seeds through both the Mac and the Windows game paths and fails on any quit, refused picture, error box, freeze or crash (`tools/ferazel-random-play.sh both`; 0 failures). It uses your new memory limits from the visit sweep. Left open for your word._
 
+### Q13 — 2026-10-26 — Windows plan (Phase W): six small choices, for your later read
+Context: Loop run 31 wrote the plan for Ferazel's Windows build (`docs/plans/2026-10-26-ferazel-windows.md`, D43): seven
+tasks over about four runs, reusing Bubble Trouble X's Windows parts, the zip staged under `out/` (never published).
+Launches follow your Q12 rule (muted, never 21:00–09:00). The loop builds with the defaults below unless you say otherwise.
+Options: WQ2 saved-game files: (a) native Windows Open/Save boxes (b) the original's file box drawn in the window
+(c) a fixed saves folder with an in-window list. WQ3 full-screen key: (a) Alt+Enter (b) F11 (c) both. WQ4 window:
+(a) resizable, whole-number scaling on black (b) fixed like the Mac. WQ5 key names in Options: (a) US-layout names
+(b) the PC's own layout. WQ6 saved-game names: (a) no extension, as the Mac (b) add `.fwsg`. WQ7 dialogs: (a) inside
+the window, enlarged with the game (as Bubble Trouble X) (b) inside, always original size (c) separate windows.
+Recommendation: (a) for all six — closest to the Mac app and to what Bubble Trouble X's Windows build already does.
+Blocks: nothing (D34: execution does not wait).
+Answer:
+
+## Answered
+
+_(moved here by the run that acted on the answer, with what it did)_
+
 ### Q14 — 2026-10-27 — Windows gate: does Ferazel's Wand on Windows behave like the Mac build?
 Context: The Windows build of Ferazel's Wand (the same game as the Phase 4 Mac build: levels 1–4, spells, items, saves,
 map, controller) is finished on the machine side (loop run 35). The loop checked it muted, by day: in a clean CrossOver
@@ -105,20 +133,7 @@ after a relaunch, the close button asking before quitting a level.
 Options: (a) pass; (b) pass with notes (write them — each becomes a task); (c) fail (say what is wrong).
 Recommendation: a or b — every picture the machine can compare matches the Mac; only a person can judge sound and a real PC.
 Blocks: nothing (gates queue, D34). The loop plans Phase 5 (enemies) next, Mac and Windows together.
-Answer:
-
-### Q13 — 2026-10-26 — Windows plan (Phase W): six small choices, for your later read
-Context: Loop run 31 wrote the plan for Ferazel's Windows build (`docs/plans/2026-10-26-ferazel-windows.md`, D43): seven
-tasks over about four runs, reusing Bubble Trouble X's Windows parts, the zip staged under `out/` (never published).
-Launches follow your Q12 rule (muted, never 21:00–09:00). The loop builds with the defaults below unless you say otherwise.
-Options: WQ2 saved-game files: (a) native Windows Open/Save boxes (b) the original's file box drawn in the window
-(c) a fixed saves folder with an in-window list. WQ3 full-screen key: (a) Alt+Enter (b) F11 (c) both. WQ4 window:
-(a) resizable, whole-number scaling on black (b) fixed like the Mac. WQ5 key names in Options: (a) US-layout names
-(b) the PC's own layout. WQ6 saved-game names: (a) no extension, as the Mac (b) add `.fwsg`. WQ7 dialogs: (a) inside
-the window, enlarged with the game (as Bubble Trouble X) (b) inside, always original size (c) separate windows.
-Recommendation: (a) for all six — closest to the Mac app and to what Bubble Trouble X's Windows build already does.
-Blocks: nothing (D34: execution does not wait).
-Answer:
+Answer: (a) pass on Andrew's word — "AJ told me Windows was working" (in chat, 2026-11-07; D45.1). Andrew had already saved, restored and played level 1 → map → level 2 on a real PC.
 
 ### Q11 — 2026-10-26 — Phase 4 gate: do the spells, items and levels 1–4 feel like Ferazel's?
 Context: Phase 4 "Spells + items" is finished on the machine side (loop run 30): all 490 core tests pass, the original
@@ -136,11 +151,7 @@ add it).
 Options: (a) pass; (b) pass with notes (write them — each becomes a task); (c) fail (say what feels wrong).
 Recommendation: a or b — every point the machine can check matches the original; only your hands and eyes can judge feel.
 Blocks: nothing (D34: gates queue). The loop plans the Windows build next (your Q10 answer), then Phase 5.
-Answer:
-
-## Answered
-
-_(moved here by the run that acted on the answer, with what it did)_
+Answer: (a) pass on what Ben could test — "spells seemed to work (fireball is all I had)" (in chat, 2026-11-07; recorded by the attended run 43 as D45.1). No notes, no fix wave.
 
 ### Q12 — 2026-10-26 — NEVER launch the game (Ben's ruling, written by his attended session) — overrides D34's G9 boot permission
 Context: The Phase 4 end run's boot check opened the staged app four times at ~22:00 with sound; it woke Ben's wife.

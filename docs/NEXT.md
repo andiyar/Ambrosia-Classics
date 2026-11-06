@@ -78,9 +78,12 @@ CLOSE. Partial progress is progress: merge what is green, say what is not.
    still works when the dirty paths are not in your diff.
 3. Run G2 once from your worktree before dispatching (3–5 min): the count must equal the STATE block's. Any other
    number is Invariant 10: STOP, reconcile, record.
-4. `git -C ~/Developer/HectorKit status --porcelain` empty and `log -1` = the HK SHA below (**35a85ba**, or a later local
-   main that a previous run or Ben recorded in STATE); a dirty HectorKit checkout is Ben's — do not touch it; use an HK
-   worktree.
+4. **HectorKit (D45.2, Ben 2026-11-07: Ferazel follows HectorKit main):** `git -C ~/Developer/HectorKit status --porcelain`
+   empty; `log --oneline -1` = the SHA the STATE block records (**ef2c341**, floor **370**) — or a LATER clean main: then run
+   `HECTORKIT_DATA_AKI11="$REPO/Resources/Aki/1.1.0.app/Contents/Resources" bash ~/Developer/HectorKit/tools/check-zero-skip.sh`
+   (background, ~5 min), require 0 failed and executed ≥ the recorded floor, and record the new SHA + floor in STATE, the G1
+   line, LOOP-LOG and `docs/STATE.md`. "No HectorKit change" means "by a Ferazel task". A dirty HectorKit checkout is Ben's —
+   do not touch it; wait or use an HK worktree at its HEAD.
 
 ## STATE (live, 2026-10-31, written by loop run 41 at its close; head of `main` = run 41's docs-close commit on top of 891811e — read `git log -12 main`)
 - **Current numbers (supersede every older count below):** Ferazel/Core **560 test cases = 558 passed + 2 skipped** (the
@@ -88,7 +91,9 @@ CLOSE. Partial progress is progress: merge what is green, say what is not.
   census 1,108/0; FerazelWinKit **81 = 79 passed + 2 opt-in skips** (`WinVisitSweepTests`, `WinRandomPlayTests`);
   **wave 5.2 end gates (run 41, seat, at 891811e): visit sweep `core` 3,360 visits / 0 rows (706 s), random-play bot `core`
   levels 1–4 86,400 steps / 0 failures, Proof B 557 / 0 / 3 / 0 of 560 (16:xx, muted), GW4R main menu identical** —
-  no launch gate is owed; HectorKit 35a85ba clean, floor 361.
+  no launch gate is owed. **HectorKit (reconciled by the attended run 43, 2026-11-07, D45.2): main ef2c341 clean,
+  zero-skip 370 executed / 0 failed (4 Aki-1.1 census skips = a machine data path; the repo's git-ignored
+  `Resources/Aki/1.1.0.app` symlink was re-pointed at the surviving copy) — Ferazel follows HectorKit main from now on.**
 - **Loop run 41 built CR ⚑◈ + WK2 ⚑◈** (D44 "As built — run 41"; plan "As executed" under each task; merged a0b0401 +
   7c2b880 CR, 2627d80 + 891811e WK2): `World/Enemies/CrawlerRoach.swift` (both classes complete; the run-29 Roach carry
   closed) and `World/Enemies/AxGoblin.swift` + the 1750 / 1760 arms in `Walker.swift` (no `// later: WK2` left). **◈:**
@@ -351,8 +356,8 @@ CLOSE. Partial progress is progress: merge what is green, say what is not.
 WT=$PWD; SCRATCH=$(mktemp -d)
 # LAUNCH GUARD — right before EVERY launch gate (GWB, GW4R, GW6, G9M); outside 09..20 skip it: "boot check owed (night rule)"
 h=$(date +%H); (( 10#$h >= 9 && 10#$h <= 20 )) && echo "launch ok ($h)" || echo "boot check owed (night rule) ($h)"
-# G1 HectorKit untouched (Phase W changes none — Ruling 17)
-git -C ~/Developer/HectorKit status --porcelain; git -C ~/Developer/HectorKit log --oneline -1      # empty; 35a85ba
+# G1 HectorKit (D45.2): clean, at the STATE block's SHA or a later main that passed the zero-skip check at ≥ the recorded floor
+git -C ~/Developer/HectorKit status --porcelain; git -C ~/Developer/HectorKit log --oneline -1      # empty; ef2c341 (floor 370)
 # G2 suite (total = ladder, 0 failed, skipped = exactly the opt-in list; see the plan): 560 total now, 2 named skips; +1 vs the plan's table (BA 569, FR 577); ~15 min — background it
 cd "$WT/Ferazel/Core" && swift test > "$SCRATCH/fz.log" 2>&1; grep -cE "^Test Case '.*' (passed|failed|skipped) \(" "$SCRATCH/fz.log"; grep -cE "^Test Case '.*' (failed|skipped) \(" "$SCRATCH/fz.log"
 # G3 census (WF0 edits it; every wave end): 0 and the Totals line

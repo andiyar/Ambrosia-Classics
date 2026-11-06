@@ -1956,3 +1956,36 @@ oracle; 0 redo, 23 change, 12 missing (seams written into the C12/C18a/H2 briefs
 draw to terrain every tick, so C12 builds the +0x36 draw path and the +0x90 stamp-time field; no cyclic state has a
 max speed below 1.
 **Approved by:** Ben (1–5 "yes", 6 Fable seat + Opus agents, 2026-11-05); seat rulings shown to him in the same message.
+
+## D45 — Ferazel's Wand re-planning pass: Ben's answers and the seat's rulings (2026-11-07)
+
+**Decided (Ben, in chat, 2026-11-07, answering the re-planning pass's five questions — spec
+`docs/superpowers/specs/2026-11-04-ferazel-remainder-design.md` §6; seat Claude Fable 5.1 per `replan.md` §5; the
+pass itself landed 2026-11-04 at f07e2f8 with nothing built):**
+1. **The three queued gates (Q-A):** Q11 Phase 4 (spells + items, levels 1–4) — **pass on what he could test**: "spells
+   seemed to work (fireball is all I had)"; no notes, no fix wave. Q14 Windows — **pass on Andrew's word** ("AJ told me
+   Windows was working"; Andrew had already saved, restored and played level 1 → map → level 2 on a real PC,
+   2026-10-29/30). Q16 Phase 5's five defaults — **not read yet; the defaults stand** (1a, 2a, 5a; 3 and 4 when
+   convenient), as D34 allows; Q16 stays open for his later read.
+2. **HectorKit: Ferazel follows HectorKit main from now on (Q-B a).** The pin 35a85ba is retired; each run records the
+   kit SHA and zero-skip floor at reconcile, and "no HectorKit change" means "by a Ferazel task". Measured at this
+   reconcile (2026-11-07): HectorKit main **ef2c341**, tree clean, `tools/check-zero-skip.sh` **370 executed = 366
+   passed + 4 skipped / 0 failed** (floor 370). The 4 skips are the Aki 1.1 census tests: the Aki 1.1.0 app is no
+   longer at the kit's default path on this Mac and the repo's `Resources/Aki/1.1.0.app` symlink points at that same
+   missing folder — a machine data-path matter, not Ferazel's (the Deimos pass recorded the identical result on
+   2026-11-05). Accepted as the recorded floor; restoring the Aki 1.1 copy is a note for Ben (QUESTIONS Q17).
+3. **The Bat class is resumed, not rebuilt (Q-C a):** run 42's 005058f cherry-picked onto run 43's branch; the fix
+   round, re-review and merge are plan task BAf.
+4. **Phase 6 is three gated phases (Q-D a):** 6A levels 10–22 + the Goblin Chief; 6B levels 25–52 + the Wizard; 6C
+   levels 55–70 + the Fire Guardians, Xichra, victory — each ends in something Ben can play.
+5. **Release shape (Q-E a):** one GitHub release `ferazel-1.0` with a notarized Mac DMG and a Windows zip, BTX's recipe
+   (D25), copied to `releases/ferazel-1.0/` in the main checkout.
+6. **Seat for the remainder (Ben, 2026-11-07, "let's resume Ferazel from the replan and fable-kit"):** Fable 5.1 holds
+   the seat for wave 1 (run 43) attended, in this session, under the remainder plan
+   `docs/superpowers/plans/2026-11-04-ferazel-remainder.md`; every implementer and reviewer leg is Opus 5.5
+   (`fk-implementer` / `fk-reviewer`, D34). The unattended loop stays stopped (STOP file in place) until Ben says go.
+**Seat rulings:** the switch-off recipe is "stub the class's Handle body" (audit ruling 1); G2 runs as two commands
+with the skipped tests checked by name (rulings 11, 15); D44's ladder (+1) stands: BA 569, FR 577.
+**Rejected:** pinning HectorKit through a worktree (one kit, one truth; the drift is Shell-only); rebuilding the Bat
+(two review legs already passed it); one whole-game gate for Phase 6 (too long between things Ben can play).
+**Approved by:** Ben (1 in his words, 2–5 "yes, all recommended", 6 by his resume request, 2026-11-07).
