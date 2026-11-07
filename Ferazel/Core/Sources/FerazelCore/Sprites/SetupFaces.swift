@@ -229,7 +229,7 @@ public enum SetupFaces {
         all += [set(Dillo.walkType, 6, 100, 0x50, 6), set(Dillo.curlType, 5, 100, 0x50, 5),
                 set(Dillo.deathType, 5, 100, 0x50, 5), set(Dillo.jumpType, 2, 100, 0x50, 2)]
         // GY: `.InitBoxSprite`'s three geyser cache sets (M l. 58813–58815, flag 0): the base 1440 (12 × 0x18×0x10, 4 per
-        // row), the head 1441 (6 × 0x30×0x20) and the segment 1442 (6 × 0x14×0x20), one row each.
+        // row, 3 rows), the head 1441 (6 × 0x30×0x20) and the segment 1442 (6 × 0x14×0x20), one row each of those two.
         all += [set(Geyser.baseSet, 0xc, 0x18, 0x10, 4), set(Geyser.headSet, 6, 0x30, 0x20, 6),
                 set(Geyser.segmentSet, 6, 0x14, 0x20, 6)]
         all.append(one(placeholderPict))

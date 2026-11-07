@@ -223,6 +223,9 @@ public enum Geyser {
         let v = s.geyserVelocity
         w.active.update(id: id) { $0.mayIdle = false }
         var n = Int(Int16(truncatingIfNeeded: (hpx + 0x1f) >> 5))
+        // A head that left the active list while the block still held its id would not be re-made here (the original
+        // writes through the stale pointer); nothing kills or idles a head but this routine and `.KillBox` — HP 600, not
+        // in the idle table.
         if let hd = block.head {
             w.active.update(id: hd) { c in
                 c.phase &+= 1

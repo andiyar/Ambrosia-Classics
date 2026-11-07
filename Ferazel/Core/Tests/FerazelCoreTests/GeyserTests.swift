@@ -100,6 +100,69 @@ final class GeyserTests: XCTestCase {
         }
     }
 
+    /// The R(100) branch draws a spray model saw, the segments' and the head's.
+    private struct Seen { var seg: [Int16] = [], head: [Int16] = [] }
+
+    /// The dump's spray order for one `.HandleGeyserColumn` call (M l. 59829–59914), as a model: per live segment R(3)
+    /// first, then — on screen — R(3) + 3 tries of r = R(32), r ≥ `+0x1bc` → R(100) < 0x33 ? (x + 10 − R(5), −40 − R(100))
+    /// : (x + 14 + R(5), 40 + R(100)), vy = 200 − R(1000) − v, delay R(10); then the head: R(6) + 10 + head y, R(4)
+    /// dropped, R(100) < 0x33 ? (x + 12 − R(12), −70 − R(170)) : (x + 12 + R(12), 70 + R(170)), vy = 250 − R(1300) − v,
+    /// delay R(10).
+    private func sprayModel(_ r: inout FastRand, x: Int, segs: [(y: Int, clip: Int)], onScreen: Bool, headY: Int?,
+                            v: Int32, kind: Int16, seen: inout Seen) -> [ParticlePool.Record] {
+        var out: [ParticlePool.Record] = []
+        func part(_ y: Int, _ px: Int, _ vx: Int32, _ vy: Int32, _ delay: Int16) {
+            var p = ParticlePool.Record()
+            p.alive = true
+            p.age = 0 - delay
+            p.shape = 4
+            p.kind = kind + 200
+            p.gravity = 0xbe
+            p.x = Int32(px) << 8
+            p.y = Int32(y) << 8
+            p.vx = vx
+            p.vy = vy
+            p.mode = 1
+            out.append(p)
+        }
+        for (segY, clip) in segs {
+            let k = Int(r.next(3))
+            guard onScreen else { continue }
+            for _ in 0..<(k + 3) {
+                let rr = Int(r.next(32))
+                guard clip <= rr else { continue }
+                let b = r.next(100)
+                seen.seg.append(b)
+                let px: Int, vx: Int32
+                if b < 0x33 {
+                    px = x + 10 - Int(r.next(5))
+                    vx = -40 - Int32(r.next(100))
+                } else {
+                    px = x + 14 + Int(r.next(5))
+                    vx = 40 + Int32(r.next(100))
+                }
+                let vy = 200 - Int32(r.next(1000)) - v
+                part(segY + rr, px, vx, vy, r.next(10))
+            }
+        }
+        guard let headY else { return out }
+        let a = Int(r.next(6))
+        _ = r.next(4)
+        let b = r.next(100)
+        seen.head.append(b)
+        let px: Int, vx: Int32
+        if b < 0x33 {
+            px = x + 12 - Int(r.next(12))
+            vx = -0x46 - Int32(r.next(0xaa))
+        } else {
+            px = x + 12 + Int(r.next(12))
+            vx = 0x46 + Int32(r.next(0xaa))
+        }
+        let vy = 0xfa - Int32(r.next(0x514)) - v
+        part(headY + a + 10, px, vx, vy, r.next(10))
+        return out
+    }
+
     // MARK: -
 
     func testGeyserSetupDefaults() throws {
@@ -133,7 +196,7 @@ final class GeyserTests: XCTestCase {
                                [false, true, false, false, false], tag)
                 XCTAssertEqual([s.x, s.y, Int(s.x256 >> 8), Int(s.y256 >> 8)], [400, 600, 400, 600])
                 XCTAssertEqual(kids, [])
-                XCTAssertEqual(e.source, .handle)
+                XCTAssertEqual([e.source == .handle ? 1 : 0, e.faceIndex], [1, 0], tag)
                 XCTAssertEqual(e.sheet, SetupFaces.Sheet(pict: 0x5a0, count: 12, cellWidth: 0x18, cellHeight: 0x10,
                                                          columns: 4, clut: 200))
                 // `+0x189` keeps the renamed type off the record (`.UpdateSprites` M l. 4959–4967).
@@ -166,6 +229,10 @@ final class GeyserTests: XCTestCase {
         // geyser Setup marks all three (M l. 59117–59120); the head marks nothing.
         for t: Int16 in 0x5a0...0x5a8 { XCTAssertEqual(CachedFaces.marks(type: t).sets, [0x5a0, 0x5a1, 0x5a2], "\(t)") }
         XCTAssertEqual(CachedFaces.marks(type: 0x5a9).sets, [])
+        // The `CachedFaces` records (`_DAT_100a12b4`, flag 0): 1440 12 faces, 1441 and 1442 6 each.
+        let at = try XCTUnwrap(CachedFaces.sets.firstIndex { $0.pict == 0x5a0 })
+        XCTAssertEqual(CachedFaces.sets[at...at + 2].map(\.pict), [0x5a0, 0x5a1, 0x5a2])
+        XCTAssertEqual(CachedFaces.sets[at...at + 2].map(\.faces), [12, 6, 6])
         XCTAssertEqual(SetupFaces.sheet(pict: 0x5a1), SetupFaces.Sheet(pict: 0x5a1, count: 6, cellWidth: 0x30,
                                                                        cellHeight: 0x20, columns: 6, clut: 200))
         XCTAssertEqual(SetupFaces.sheet(pict: 0x5a2), SetupFaces.Sheet(pict: 0x5a2, count: 6, cellWidth: 0x14,
@@ -240,6 +307,9 @@ final class GeyserTests: XCTestCase {
         XCTAssertEqual([floor.geyserVelocity, floor.geyserHeight], [-0x700, 0])     // h < 0 → 0
         XCTAssertEqual(try step(h: 0x100, fall: 0x100, C: 0).geyserFall, 0x6400, "rising stores +0xf4 = target")
         XCTAssertEqual(try step(h: 0x100, fall: 0x100, C: 61).geyserFall, 0x100, "falling keeps it")
+        // The fall reads `+0xf4`, not `+0x154`: trunc(0.12·(0x1000 − 0x6400)) = −2580 → −0x700.
+        let fallRef = try step(h: 0x1000, target: 0x1000, fall: 0x6400, C: 61)
+        XCTAssertEqual([fallRef.geyserVelocity, fallRef.geyserHeight], [-0x700, 0x900])
 
         // The base face: `+0x46` + 1, past 7 → 0; cache 1440 entry (`+0x46 >> 1`) + 4·kind. Kinds 3 / 4 index past the
         // 12-face cache: drawn as nothing (◇ NR 3, unplaced).
@@ -261,6 +331,13 @@ final class GeyserTests: XCTestCase {
             frame(wf, fid, 0)
             XCTAssertNil(try slot(wf, fid).face, "type \(t)")
         }
+        // Kind 3 with the phase wrapping 7 → 0: entry 0 + 12 — one past the cache, still nothing.
+        let (w3f, _) = try world()
+        let (f3, _, _) = try geyser(w3f, place(0x5a3))
+        w3f.active.update(id: f3) { $0.phase = 7 }
+        frame(w3f, f3, 0)
+        XCTAssertEqual(try slot(w3f, f3).phase, 0)
+        XCTAssertNil(try slot(w3f, f3).face, "cell 12")
     }
 
     func testColumnSegmentsAndHead() throws {
@@ -274,6 +351,8 @@ final class GeyserTests: XCTestCase {
         let head = try XCTUnwrap(b.head)
         var hd = try slot(w, head)
         XCTAssertEqual([Int(hd.type), hd.x, hd.y, Int(hd.layer), Int(hd.recordIndex)], [0x5a9, 388, 580, 2, -1])
+        // `.MTNewSprite`'s fixed-point copies keep the spawn point (x − 12, y); only `+0xc` / `+0xa` move.
+        XCTAssertEqual([hd.x256, hd.y256], [388 << 8, 600 << 8])
         XCTAssertEqual([hd.face == nil, hd.oneWay, hd.handler == .box], [true, false, true])
         XCTAssertEqual([Int(hd.geyserKind), Int(hd.mode)], [2, 0x1000c])
         XCTAssertEqual(hd.hotRect, IdleSprites.Rect(top: 8, left: 8, bottom: 0x20, right: 0x28))
@@ -291,6 +370,7 @@ final class GeyserTests: XCTestCase {
         XCTAssertEqual([s0.x, s0.y, Int(s0.layer), Int(s0.type), Int(s0.geyserKind), Int(s0.mode), s0.clip.top],
                        [401, 578, 1, 0x5a0, 2, 0x1000c, 16])
         XCTAssertEqual(s0.face, f(0x5a2, 0))
+        XCTAssertEqual([s0.x256, s0.y256], [401 << 8, 600 << 8], "the spawn point (x + 1, y)")
         XCTAssertEqual([s0.handler == .geyserSegment, s0.hasHit, s0.hasTileHit, s0.lightOverlay],
                        [true, false, false, false])
         XCTAssertEqual(s0.hotRect, IdleSprites.Rect(top: 0x18, left: 4, bottom: 0x20, right: 0x10))
@@ -324,6 +404,11 @@ final class GeyserTests: XCTestCase {
         b = try block(w, id)
         XCTAssertEqual(b.segments.compactMap { $0 }.count, 2)
         for g in gone { XCTAssertEqual([try slot(w, g).dead, try slot(w, g).face == nil], [true, true]) }
+        // 33 px: n = (33 + 31) >> 5 = 2, the top one clipped 64 − 33 = 31 rows.
+        column(w, id, h: 33 << 8)
+        b = try block(w, id)
+        XCTAssertEqual(b.segments.compactMap { $0 }.count, 2)
+        XCTAssertEqual(try slot(w, b.segments[1]).clip.top, 31)
         // 600 px: n = 19, 16 slots.
         column(w, id, h: 600 << 8)
         XCTAssertEqual(try block(w, id).segments.compactMap { $0 }.count, 16)
@@ -337,6 +422,13 @@ final class GeyserTests: XCTestCase {
         XCTAssertEqual(try slot(w, head).y, 592)
         XCTAssertNotNil(try slot(w, head).face)
         XCTAssertEqual(try block(w, id).segments.compactMap { $0 }.count, 1)
+        // h 1 (above the collapse test's h < 1): the head stays, at y − 0 − 4, hidden; n 0; `+0x1c6 = 0`.
+        column(w, id, h: 1)
+        XCTAssertEqual([try slot(w, head).dead ? 1 : 0, try slot(w, head).y], [0, 596])
+        XCTAssertNil(try slot(w, head).face)
+        XCTAssertEqual(try block(w, id).segments.compactMap { $0 }, [])
+        XCTAssertEqual(try block(w, id).head, head)
+        XCTAssertFalse(try slot(w, id).mayIdle)
         // The tints by kind: 1 → 0x10017, 0 → 0, 3 / 4 unchanged; the segments copy the head's.
         for (k, before, after) in [(Int32(1), UInt32(0), UInt32(0x10017)), (0, 0x1000c, 0), (3, 0x1234, 0x1234),
                                    (4, 0x1234, 0x1234)] {
@@ -375,60 +467,85 @@ final class GeyserTests: XCTestCase {
         for onScreen in [true, false] {
             let (s, _) = try world()
             let (g, _, _) = try geyser(s, place(0x5a1))           // acid: kind 1 → particles of kind 201
+            var seen = Seen()
+            var r0 = s.rng
             column(s, g, h: 0x3800, v: 0x40)                      // head made (face 0, n 0): its draws only
+            let first = sprayModel(&r0, x: 400, segs: [], onScreen: true, headY: 540, v: 0x40, kind: 1, seen: &seen)
+            XCTAssertEqual([s.particles.live, first.count], [1, 1], "the new head's particle only")
+            XCTAssertEqual(Array(s.particles.records.prefix(1)), first)
+            XCTAssertEqual(s.rng.seed, r0.seed)
             s.particles = ParticlePool()
             s.player.scrollH = 300
             s.player.scrollV = onScreen ? 300 : 0                 // the column spans y 544…600
             var r = s.rng
             column(s, g, h: 0x3800, v: 0x40)                      // 56 px: n = 2, top clip 64 − 56 = 8
-            var want: [ParticlePool.Record] = []
-            func part(_ y: Int, _ px: Int, _ vx: Int32, _ vy: Int32, _ delay: Int16) {
-                var p = ParticlePool.Record()
-                p.alive = true
-                p.age = 0 - delay
-                p.shape = 4
-                p.kind = 201
-                p.gravity = 0xbe
-                p.x = Int32(px) << 8
-                p.y = Int32(y) << 8
-                p.vx = vx
-                p.vy = vy
-                p.mode = 1
-                want.append(p)
-            }
-            for (segY, clip) in [(578, 0), (546, 8)] {
-                let k = Int(r.next(3))
-                guard onScreen else { continue }
-                for _ in 0..<(k + 3) {
-                    let rr = Int(r.next(32))
-                    guard clip <= rr else { continue }
-                    let px: Int, vx: Int32
-                    if r.next(100) < 0x33 {
-                        px = 410 - Int(r.next(5))
-                        vx = -40 - Int32(r.next(100))
-                    } else {
-                        px = 414 + Int(r.next(5))
-                        vx = 40 + Int32(r.next(100))
-                    }
-                    let vy = 200 - Int32(r.next(1000)) - 0x40
-                    part(segY + rr, px, vx, vy, r.next(10))
-                }
-            }
-            let a = Int(r.next(6))
-            _ = r.next(4)
-            let px: Int, vx: Int32
-            if r.next(100) < 0x33 {
-                px = 412 - Int(r.next(12))
-                vx = -0x46 - Int32(r.next(0xaa))
-            } else {
-                px = 412 + Int(r.next(12))
-                vx = 0x46 + Int32(r.next(0xaa))
-            }
-            let vy = 0xfa - Int32(r.next(0x514)) - 0x40
-            part(600 - 0x38 - 4 + a + 10, px, vx, vy, r.next(10))
+            let want = sprayModel(&r, x: 400, segs: [(578, 0), (546, 8)], onScreen: onScreen, headY: 540, v: 0x40,
+                                  kind: 1, seen: &seen)
             XCTAssertEqual(Array(s.particles.records.prefix(want.count)), want, "on screen \(onScreen)")
             XCTAssertEqual(s.particles.live, want.count)
             XCTAssertEqual(s.rng.seed, r.seed)
+        }
+        // One frame as literal numbers, from a hand run of the dump's order (M l. 59829–59914) with seed 0x1234567 at
+        // 56 px, v 0x40, acid, on screen: (y, px, vx, vy, delay) — eight segment particles, then the head's.
+        do {
+            let (s, _) = try world()
+            let (g, _, _) = try geyser(s, place(0x5a1))
+            column(s, g, h: 0x3800, v: 0x40)
+            s.player.scrollH = 300
+            s.player.scrollV = 300
+            s.particles = ParticlePool()
+            s.rng = FastRand(seed: 0x1234567)
+            column(s, g, h: 0x3800, v: 0x40)
+            let got = s.particles.records.prefix(s.particles.live).map {
+                [Int($0.y >> 8), Int($0.x >> 8), Int($0.vx), Int($0.vy), -Int($0.age)]
+            }
+            XCTAssertEqual(got, [[609, 406, -45, -571, 3], [584, 417, 46, -339, 2], [592, 407, -105, 133, 3],
+                                 [597, 418, 50, -154, 4], [568, 418, 70, -727, 0], [577, 407, -117, -589, 8],
+                                 [556, 408, -92, -694, 6], [565, 414, 87, -334, 2], [551, 420, 117, -490, 2]])
+            XCTAssertEqual(s.rng.seed, 0x14034c86)
+        }
+        // 400 frames each at 56 px (top clip 8) and 33 px (top clip 31) against the model: the draws 50 and 51 either
+        // side of each R(100) < 0x33 occur, for the segments and the head.
+        for (hgt, segs) in [(Int32(0x3800), [(y: 578, clip: 0), (y: 546, clip: 8)]), (0x2100, [(578, 0), (546, 31)])] {
+            let (s, _) = try world()
+            let (g, _, _) = try geyser(s, place(0x5a1))
+            column(s, g, h: hgt, v: 0x40)
+            s.player.scrollH = 300
+            s.player.scrollV = 300
+            var seen = Seen()
+            for i in 0..<400 {
+                s.particles = ParticlePool()
+                var r = s.rng
+                column(s, g, h: hgt, v: 0x40)
+                let want = sprayModel(&r, x: 400, segs: segs, onScreen: true, headY: 600 - Int(hgt >> 8) - 4, v: 0x40,
+                                      kind: 1, seen: &seen)
+                if Array(s.particles.records.prefix(want.count)) != want || s.particles.live != want.count
+                    || s.rng.seed != r.seed {
+                    XCTFail("h \(hgt) frame \(i)")
+                    break
+                }
+            }
+            for want: Int16 in [50, 51] {
+                XCTAssertTrue(seen.seg.contains(want), "h \(hgt): segment draw \(want)")
+                XCTAssertTrue(seen.head.contains(want), "h \(hgt): head draw \(want)")
+            }
+        }
+        // The view rect (h, v, h + 608, v + 384) against the column rect (400, 544, 464, 600), `SectRect` (touching is
+        // no overlap): the segment particles (all but the head's) at each edge.
+        func segParticles(_ sh: Int, _ sv: Int) throws -> Int {
+            let (s, _) = try world()
+            let (g, _, _) = try geyser(s, place(0x5a1))
+            column(s, g, h: 0x3800, v: 0x40)
+            s.player.scrollH = sh
+            s.player.scrollV = sv
+            s.particles = ParticlePool()
+            column(s, g, h: 0x3800, v: 0x40)
+            return s.particles.live - 1
+        }
+        for (sh, sv, some) in [(300, 160, false), (300, 161, true), (-208, 300, false), (-207, 300, true),
+                               (464, 300, false), (463, 300, true), (300, 600, false), (300, 599, true),
+                               (0, 500, true)] {
+            XCTAssertEqual(try segParticles(sh, sv) > 0, some, "scroll (\(sh), \(sv))")
         }
 
         // Through the session: a geyser near the player, rising every frame (p2 1000, p3 1), run by the Box dispatch row;
@@ -454,10 +571,21 @@ final class GeyserTests: XCTestCase {
         let live = try XCTUnwrap(g3.geyserColumn).segments.compactMap { $0 }
         XCTAssertEqual(live.count, (hp + 31) >> 5)
         let seg = live[0]
-        sw.active.update(id: seg) { $0.vx = 0x400 }
+        sw.active.update(id: seg) { $0.vx = 0x400; $0.invulnerable = 5 }
         let before = try slot(sw, seg).x256
         _ = sess.step(keys: KeyState())
         XCTAssertEqual(try slot(sw, seg).x256, before, "no StandardSpriteHandles: the segment Handle is empty")
+        XCTAssertEqual(try slot(sw, seg).invulnerable, 5, "no StandardSpriteHandles: `+0x116` not counted down")
+
+        // No free record (Ruling 16): `.MTNewSprite` fails, no head — n 0, no segment, no draw.
+        let (fw, _) = try world()
+        let (fid, _, _) = try geyser(fw, place(0x5a2))
+        while fw.active.sprites.count < SpriteWorld.recordCount { _ = fw.active.insert(SpriteSlot(type: 1, x: 0, y: 0)) }
+        let fr = fw.rng
+        column(fw, fid, h: 0x2000, v: 1)
+        XCTAssertEqual(try block(fw, fid), SpriteSlot.GeyserBlock())
+        XCTAssertEqual([fw.rng.seed, Int32(fw.particles.live)], [fr.seed, 0])
+        XCTAssertFalse(try slot(fw, fid).mayIdle)
     }
 
     func testHeadHurtsByKind() throws {
@@ -465,18 +593,22 @@ final class GeyserTests: XCTestCase {
         // 0x150), `.HurtSprite(player, d, ±400, −0x640, 0x3c, 0xc)` (+400 when the head's centre x is left of the
         // player's), a hurt → the stun; kind 1 skipped by the walk-on power-up for liquid 1; kind 2 by the walk-on for
         // liquid 2 or the Fire Charm (item 0x18). Kind 0 harmless; kinds 3 / 4 take the 0x70 default (unplaced).
-        func land(kind: Int32, headLeft: Bool = true, walkOn: Int16? = nil, charm: Bool = false, invul: Int16 = 0,
-                  rising: Bool = false) throws -> (SpriteSlot, Int16) {
+        func land(kind: Int32, headLeft: Bool = true, headX: Int? = nil, walkOn: Int16? = nil, staleKind: Int16? = nil,
+                  charm: Bool = false, invul: Int16 = 0, rising: Bool = false) throws -> (SpriteSlot, Int16) {
             let (w, p) = try world(player: true)
             let pid = try XCTUnwrap(p)
             let hid = try XCTUnwrap(Geyser.newHead(w, x: 1188, y: 400))
             w.active.update(id: hid) { s in
                 s.geyserKind = kind
                 s.face = FaceRef(pict: Geyser.headSet, index: 0, set: .encoded)
-                s.centre = SpriteSlot.Point(x: headLeft ? 1200 : 1300, y: 420)
+                s.centre = SpriteSlot.Point(x: headX ?? (headLeft ? 1200 : 1300), y: 420)
             }
             if let k = walkOn {
                 w.player.walkOnLiquid = true
+                w.player.walkOnLiquidKind = k
+            }
+            if let k = staleKind {                              // the power-up off, its liquid kind left behind
+                w.player.walkOnLiquid = false
                 w.player.walkOnLiquidKind = k
             }
             if charm { w.globals.inventory[0] = InventorySlot(id: 0x18, count: 1, field4: -1, field6: 0, isSpell: 0) }
@@ -516,17 +648,42 @@ final class GeyserTests: XCTestCase {
         XCTAssertEqual(try land(kind: 2, walkOn: 2).0.hp, 0x300)
         XCTAssertEqual(try land(kind: 2, walkOn: 1).0.hp, 0x300 - 0x150)
         XCTAssertEqual(try land(kind: 2, charm: true).0.hp, 0x300)
+        // The walk-on kind counts only with the power-up on: a stale kind is no immunity.
+        XCTAssertEqual(try land(kind: 2, staleKind: 2).0.hp, 0x300 - 0x150)
+        XCTAssertEqual(try land(kind: 1, staleKind: 1).0.hp, 0x300 - 0x70)
+        // Equal centres: not left of the player → −400.
+        XCTAssertEqual(Int16(try land(kind: 2, headX: 1250).0.vx), -400)
         // An invulnerable player takes nothing and is not stunned; no landing, no hurt.
         let (iv, ivs) = try land(kind: 2, invul: 5)
         XCTAssertEqual([iv.hp, ivs], [0x300, 0])
         XCTAssertEqual(try land(kind: 2, rising: true).0.hp, 0x300)
+        // Through the session: the player falling onto a lava head (its top 4 px under his feet after the fall) is hurt
+        // in the session's player pass — 0x150, the head right of him → −400, −0x640, invulnerable 60, the stun.
+        let sess = try FerazelSession(resources: try resources(), prefs: FerazelPrefs(), level: 3, seed: 1)
+        let sw = sess.world
+        _ = sess.step(keys: KeyState())                         // the first step places the player
+        let pid = try XCTUnwrap(sw.playerID)
+        let me = try slot(sw, pid)
+        let r = HandleKeys.standardHotRect
+        let hid = try XCTUnwrap(Geyser.newHead(sw, x: me.x + r.left - 8, y: me.y + r.bottom - 4 - 8 - 3))
+        sw.active.update(id: hid) { s in
+            s.geyserKind = 2
+            s.face = FaceRef(pict: Geyser.headSet, index: 0, set: .encoded)
+        }
+        sw.active.update(id: pid) { s in s.hp = 0x300; s.invulnerable = 0; s.vx = 0; s.vy = 0x300 }
+        _ = sess.step(keys: KeyState())
+        let hurt = try slot(sw, pid)
+        XCTAssertEqual([hurt.hp, Int16(hurt.vx), Int16(hurt.vy), hurt.invulnerable, sw.player.stun],
+                       [0x300 - 0x150, -400, -0x640, 0x3c, 1])
     }
 
     func testSegmentHazard() throws {
         // The Effect test's 0x5a0 part (M l. 49763–49799): any handler reaching it with type 0x5a0 and `+0x14c` ≥ 1 →
         // 0x70 (kind 2: 0x150, its walk-on and Fire Charm immunities; kind 1 its walk-on), `.HurtSprite(player, d, ±300,
         // −0x640, 0x3c, 0xc)` — no scream, no coin loss —, a hurt → the stun.
-        func touch(kind: Int32, left: Bool = true, walkOn: Int16? = nil, charm: Bool = false) throws -> (SpriteSlot, Int16, SpriteWorld) {
+        func touch(kind: Int32, left: Bool = true, centreX: Int? = nil, walkOn: Int16? = nil, staleKind: Int16? = nil,
+                   charm: Bool = false, type: Int16? = nil, handler: SpriteHandler? = nil,
+                   phase: Int16? = nil) throws -> (SpriteSlot, Int16, SpriteWorld) {
             let (w, p) = try world(player: true)
             let pid = try XCTUnwrap(p)
             var lights = LightTable()
@@ -535,10 +692,17 @@ final class GeyserTests: XCTestCase {
             XCTAssertEqual(try slot(w, g).handler, .geyserSegment)
             w.active.update(id: g) { s in
                 s.geyserKind = kind
-                s.centre = SpriteSlot.Point(x: left ? 1200 : 1300, y: 370)
+                s.centre = SpriteSlot.Point(x: centreX ?? (left ? 1200 : 1300), y: 370)
+                if let type { s.type = type }
+                if let handler { s.handler = handler }
+                if let phase { s.phase = phase }
             }
             if let k = walkOn {
                 w.player.walkOnLiquid = true
+                w.player.walkOnLiquidKind = k
+            }
+            if let k = staleKind {
+                w.player.walkOnLiquid = false
                 w.player.walkOnLiquidKind = k
             }
             if charm { w.globals.inventory[0] = InventorySlot(id: 0x18, count: 1, field4: -1, field6: 0, isSpell: 0) }
@@ -564,7 +728,15 @@ final class GeyserTests: XCTestCase {
         XCTAssertEqual(try touch(kind: 2, walkOn: 2).0.hp, 0x300)
         XCTAssertEqual(try touch(kind: 2, walkOn: 1).0.hp, 0x300 - 0x150)
         XCTAssertEqual(try touch(kind: 2, charm: true).0.hp, 0x300)
+        XCTAssertEqual(try touch(kind: 2, staleKind: 2).0.hp, 0x300 - 0x150, "a stale walk-on kind: no immunity")
+        XCTAssertEqual(try touch(kind: 1, staleKind: 1).0.hp, 0x300 - 0x70)
+        XCTAssertEqual(Int16(try touch(kind: 2, centreX: 1250).0.vx), -300, "equal centres")
         // An Effect-class 0x4b7 still takes its own branch; a 0x4b7 under another handler does not.
+        XCTAssertEqual(try touch(kind: 0, type: 0x4b7, handler: .effect, phase: 7).0.hp, 0x300 - 0x70)
+        XCTAssertEqual(try touch(kind: 1, type: 0x4b7, handler: .geyserSegment, phase: 0).0.hp, 0x300)
+        // Nor does a 0x4b7 past phase 7, or any other type (the debris 0xc1b), whatever its `+0x14c`.
+        XCTAssertEqual(try touch(kind: 1, type: 0x4b7, handler: .effect, phase: 8).0.hp, 0x300)
+        XCTAssertEqual(try touch(kind: 1, type: 0xc1b, handler: .effect).0.hp, 0x300)
         // Enemies: the Walker form hurts on kind 1 / 2, the Crawler / Frog form (`+0x14c == 1 || +0x150 == 2`) only on
         // kind 1 — a segment's `+0x150` is 0 (enemies-ground §2.3).
         let (we, _) = try world()
@@ -618,6 +790,11 @@ final class GeyserTests: XCTestCase {
             XCTAssertEqual([Int(c.recordIndex), Int(c.layer), Int(c.phase)], [0, 0, Int(draws[i + 1])])
             XCTAssertEqual(c.geyserColumn, SpriteSlot.GeyserBlock())
         }
+        // The last placed type 0x5a8: the triple of kind 3, two children.
+        let (w8, _) = try world()
+        let (id8, e8, kids8) = try geyser(w8, place(0x5a8))
+        XCTAssertEqual([Int(try slot(w8, id8).type), Int(try slot(w8, id8).geyserKind), e8.children.count, kids8.count],
+                       [0x5a5, 3, 2, 2])
         // The re-targeting (M l. 60425–60481), rising only: each head ridden this frame (`+0x186`) by a rider other than
         // the player counts as covered (its flag cleared); B = `+0x16c`, L = trunc(max(50.0, 0.33·B)), c = the count;
         // each column's `+0x154` = L if covered, else B + c·(B − L).
@@ -664,6 +841,22 @@ final class GeyserTests: XCTestCase {
         pw.active.update(id: ph[2]) { $0.ridingLatch = true; $0.rider = 9999 }
         frame(pw, pid, 0)
         XCTAssertEqual(try ([pid] + pk).map { try slot(pw, $0).geyserTarget }, [256 + 172, 256 + 172, 84])
+        // A single geyser never re-targets: its ridden head keeps the target and the flag.
+        let (sw1, _) = try world(player: true)
+        let (sid, _, _) = try geyser(sw1, place(0x5a2))
+        let sh = try heads(sw1, [sid])
+        sw1.active.update(id: sh[0]) { $0.ridingLatch = true; $0.rider = 9999 }
+        frame(sw1, sid, 0)
+        XCTAssertEqual(try slot(sw1, sid).geyserTarget, 0x6400)
+        XCTAssertTrue(try slot(sw1, sh[0]).ridingLatch)
+        // `.KillBox` on the triple (type 0x5a5 is in 0x5a0…0x5a8): its own head and segment killed, the block cleared.
+        let (kw, _) = try world()
+        let (kid, _, _) = try geyser(kw, place(0x5a5))
+        let kh = try heads(kw, [kid])[0]
+        let kseg = try XCTUnwrap(try block(kw, kid).segments[0])
+        BoxSprite.killBox(kw, id: kid)
+        XCTAssertEqual(try block(kw, kid), SpriteSlot.GeyserBlock())
+        XCTAssertEqual([try slot(kw, kh).dead, try slot(kw, kseg).dead], [true, true])
     }
 
     func testIdleReactivationKeepsBlock() throws {
@@ -698,6 +891,7 @@ final class GeyserTests: XCTestCase {
         while try slot(w, id).geyserHeight > 0 || C < 31 {
             frame(w, id, C)
             C += 1
+            guard C < 400 else { return XCTFail("never collapsed") }
         }
         XCTAssertTrue(try slot(w, head).dead)
         s = try slot(w, id)

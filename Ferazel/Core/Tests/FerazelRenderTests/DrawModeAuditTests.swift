@@ -502,14 +502,14 @@ final class DrawModeAuditTests: XCTestCase {
           pins: ["if 0 < above { step = 0x200 }", "} else if above < 100 {", "step = -0x200",
                  "Int16(truncatingIfNeeded: g.y) &+ 7", "if p2 != 0 { c &+= 0x20 }"]),
         W("World/Movers/BoxSprite.swift:896", .mirrored, .copy, "box.balloon"),
-        // GY: the geyser head's tint by liquid kind (`.HandleGeyserColumn` M l. 59806–59816: kind 1 → 0x10017, 0 → 0, 2 →
+        // GY: the geyser head's tint by liquid kind (`.HandleGeyserColumn` M l. 59811–59821: kind 1 → 0x10017, 0 → 0, 2 →
         // 0x1000c — mode-1 remaps through tint tables 0x17 / 0xc; kinds 3 / 4 unchanged), the segments' copy of it (M l.
-        // 59844) and the top segment's clipped rows `+0x1bc` = 32·n − h_px, 0…31 (M l. 59846–59852).
-        W("World/Movers/Geyser.swift:245", .mode, .words([0x10017]), "box.geyserHead"),
-        W("World/Movers/Geyser.swift:247", .mode, .words([0]), "box.geyserHead"),
-        W("World/Movers/Geyser.swift:249", .mode, .words([0x1000c]), "box.geyserHead"),
-        W("World/Movers/Geyser.swift:280", .mode, .copy, "geyserSegment"),
-        W("World/Movers/Geyser.swift:281", .clipTop, .range(0...31), "geyserSegment", at: ["275"],
+        // 59842) and the top segment's clipped rows `+0x1bc` = 32·n − h_px, 0…31 (M l. 59846–59852).
+        W("World/Movers/Geyser.swift:248", .mode, .words([0x10017]), "box.geyserHead"),
+        W("World/Movers/Geyser.swift:250", .mode, .words([0]), "box.geyserHead"),
+        W("World/Movers/Geyser.swift:252", .mode, .words([0x1000c]), "box.geyserHead"),
+        W("World/Movers/Geyser.swift:283", .mode, .copy, "geyserSegment"),
+        W("World/Movers/Geyser.swift:284", .clipTop, .range(0...31), "geyserSegment", at: ["278"],
           pins: ["(n << 5) - hpx", "i == n - 1"]),
         // (subtype + 0x5a) % 360, subtype a spoke's degrees 0…359 or −90 (`Radial.updateSpokes`) → 0…359.
         W("World/Movers/ChainSprite.swift:51", .rotation, .range(0...359), "chain.maceChain", at: ["49"],
