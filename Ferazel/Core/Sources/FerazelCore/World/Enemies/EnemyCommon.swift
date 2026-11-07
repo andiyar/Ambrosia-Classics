@@ -70,7 +70,7 @@ public enum EnemyCommon {
         case .crawler, .roach: break                    // the session dispatches `CrawlerRoach` (CR)
         case .dillo: break                              // later: DL — `.HandleDilloSprite`
         case .bat, .swarmMember, .insectBody: break     // the session dispatches `Bat` (BA)
-        case .gremlin, .floater: break                  // later: GF — `.HandleGremlinSprite` / `.HandleFloaterSprite`
+        case .gremlin, .floater: break                  // the session dispatches `GremlinFloater` (GF)
         case .frog, .salamander: break                  // the session dispatches `FrogSalamander` (FR)
         case .blob, .deadBlob, .crab, .crabSegment: break   // the session dispatches `BlobCrab` (BL)
         case .geyserSegment: break                      // later: GY — `.HandleGeyserSegSprite`
@@ -105,9 +105,10 @@ public enum EnemyCommon {
             }
             // `.KillWalker` is the count alone (WK1). // later: DL / LV5 — each other Kill's own tail
         case .gremlin:
-            guard s.killCount == 0 else { return }      // `+0xe9 ≠ 0` → return (M l. 69736–69738, raw 100810e0 bnelr)
-            w.enemies.kill(&s, globals: &w.globals, level: w.levelIndex, forGood: true)
-            // later: GF — `.KillGremlinSprite`'s score and rider
+            // `.KillGremlinSprite` (GF): `+0xe9 ≠ 0` → return (M l. 69736–69738, raw 100810e0 bnelr); the count, score
+            // + 2000, the back layer and a mounted rider killed, the rider's backlink cleared.
+            guard s.killCount == 0 else { return }
+            GremlinFloater.killGremlin(w, &s)
         default:
             // `+0x50 == 0` → `+0xe9 = 1` — the Crawler, Roach, Bat and Blob (audit 4) and the EnemyShot class too:
             // `.SetupEnemyShotSprite` stores no `+0x50` (ES; a shield-reflected dart burns away to this, never to

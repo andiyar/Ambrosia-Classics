@@ -575,7 +575,15 @@ public final class FerazelSession {
         case .crabSegment:
             // `.HandleCrabSegSprite @ 10089dec` (BL): the face only; no hit (`+0x5c` 0).
             BlobCrab.handleCrabSegment(world: world, id: id)
-        case .dillo, .gremlin, .floater, .geyserSegment, .warrior:
+        case .gremlin:
+            // `.HandleGremlinSprite @ 1007feec` (GF, `GremlinFloater.handleGremlin`): the body, its back layer and the
+            // rider by `+0xec`; the coins' and the rider's shot's Setups take `lightTable` and prefs+6.
+            GremlinFloater.handleGremlin(world: world, id: id, solver: solver, lights: &self.lightTable, effects: effects,
+                                         faceWidth: { Self.frameRect($0, resources: res).right })
+        case .floater:
+            // `.HandleFloaterSprite @ 100816d8` (GF, `GremlinFloater.handleFloater`).
+            GremlinFloater.handleFloater(world: world, id: id, solver: solver) { Self.frameRect($0, resources: res).right }
+        case .dillo, .geyserSegment, .warrior:
             // EC: the enemy Handles — the `+0x1b2` early return, then each a named no-op until its task
             // (`EnemyCommon.handle`).
             EnemyCommon.handle(world: world, id: id)
@@ -1151,7 +1159,7 @@ public final class FerazelSession {
     /// `.HitButtonSprite` (BT); `.HitEnemyShotSprite` (ES); `.HitWalkerSprite` (WK1; also the corpse raft's, kept
     /// under the Platform Handle); `.HitCrawlerSprite` / `.HitRoachSprite` (CR); `.HitBatSprite` /
     /// `.HitSwarmMemberSprite` (BA); `.HitFrogSprite` / `.HitSalamanderSprite` (FR); `.HitBlobSprite` / `.HitCrabSprite`
-    /// (BL). // later: Phase 5 (the other enemy
+    /// (BL); `.HitGremlinSprite` / `.HitFloaterSprite` (GF). // later: Phase 5 (the other enemy
     /// classes). The session's form:
     /// `hitCallback` on `lightTable`.
     private func hit(_ w: SpriteWorld, _ a: Int, _ b: Int) {
@@ -1204,6 +1212,12 @@ public final class FerazelSession {
         case .crab:                                                                     // `.HitCrabSprite` (BL)
             BlobCrab.hitCrab(w, id: a, other: b, lights: &lights, effects: effects, faceWidth: faceWidth,
                              faceBounds: faceBounds)
+        case .gremlin:                                                                  // `.HitGremlinSprite` (GF)
+            GremlinFloater.hitGremlin(w, id: a, other: b, lights: &lights, effects: effects, faceWidth: faceWidth,
+                                      faceBounds: faceBounds)
+        case .floater:                                                                  // `.HitFloaterSprite` (GF)
+            GremlinFloater.hitFloater(w, id: a, other: b, lights: &lights, effects: effects, faceWidth: faceWidth,
+                                      faceBounds: faceBounds)
             // The dead Blob (`+0x5c` cleared in state 4) and the Crab's links (`+0x5c` 0) have no hit callback.
         case .background:                                                               // `.HitBackgroundSprite` (W2b)
             BackgroundSprite.hit(w, id: a, other: b, lights: &lights, effects: effects, faceWidth: faceWidth,

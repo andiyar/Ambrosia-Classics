@@ -219,6 +219,11 @@ public enum SetupFaces {
         // 0x30×0x2c), the swarm members 0x74d (8 × 0x18×0x16), the 1850 family 0x73a / 0x73b (12 × 0x40×0x50).
         all += [set(0x744, 9, 0x30, 0x2c, 9), set(0x74d, 8, 0x18, 0x16, 8), set(0x73a, 0xc, 0x40, 0x50, 0xc),
                 set(0x73b, 0xc, 0x40, 0x50, 0xc)]
+        // GF: `.InitGremlinSprite`'s three cache sets (M l. 69118–69120, flag 0, one row each): the body 0x6ea and its
+        // back layer 0x6eb (10 × 0x84×0x78), the rider 0x6ec (4 × 0x20×0x20); `.InitFloaterSprite`'s Wraith 0x6f4 (6 ×
+        // 100×0x50, M l. 69827). Its 0x6fe / 0x6ff (M l. 69828–69829) are absent from the data: the variant is refused.
+        all += [set(GremlinFloater.bodySet, 10, 0x84, 0x78, 10), set(GremlinFloater.backSet, 10, 0x84, 0x78, 10),
+                set(GremlinFloater.riderSet, 4, 0x20, 0x20, 4), set(GremlinFloater.wraithSet, 6, 100, 0x50, 6)]
         all.append(one(placeholderPict))
         // BN: every face `.InitBonusSprite` loads (`BonusSprite.sheets`; the level-1/2 entries above are the same sheets).
         var table = Dictionary(uniqueKeysWithValues: all)
@@ -614,6 +619,42 @@ public enum SetupFaces {
             FrogSalamander.setupSalamander(&s, rng: &rng, counting: &counting)
             face(FrogSalamander.salamanderSet, 0, .handle)
 
+        case .gremlin:
+            // `.SetupGremlinSprite @ 1007fc88` (M l. 69153–69234; GF, `GremlinFloater.setupGremlin`): every type 1770…1779
+            // alike — the body (the record) and its two `.MTNewSprite(type, …, 0x1ff, .SetupGremlinSprite)` children, the
+            // back layer (layer 9) and the rider (layer 12) (`Entry.children`, inserted before the body; the body's
+            // `+0x1d4` / `+0x1d8` hold their indices until the spawn, which also makes the rider's backlink), the path
+            // (`.SetupProgrammedPath(s, −1, 0)` — the record's p1 any mode: 10 / 11 reach `.MakeRadial`, made by the
+            // spawn after the insert), the counting window. `+0xc0 = 0`: the Handle faces the body from the cache set
+            // 0x6ea (marked, M l. 69175); the entry names that face (`.handle`). First placed on level 15.
+            s.oldPosition = SpriteSlot.Point(x: s.x, y: s.y)           // `.MTNewSprite`'s `+8` / `+6`
+            var kids: [SpriteSlot] = []
+            let type = s.type
+            GremlinFloater.setupGremlin(&s, record: p, counting: &counting) { x, y, layer, store in
+                var k = SpriteWorld.newRecord(type: type, x: x, y: y, layer: Int16(truncatingIfNeeded: layer),
+                                              handler: .gremlin, record: 0x1ff) { c in
+                    var none = EnemyCounting()                          // a child counts nothing (`+0x48 == 0x1ff`)
+                    GremlinFloater.setupGremlin(&c, record: nil, counting: &none) { _, _, _, _ in nil }
+                }
+                store(&k)
+                kids.append(k)
+                return kids.count - 1
+            }
+            children = kids
+            face(GremlinFloater.bodySet, 0, .handle)
+
+        case .floater:
+            // `.SetupFloaterSprite @ 100814b8` (M l. 69834–69907; GF, `GremlinFloater.setupFloater`): 0x6f4…0x6fd — the
+            // hidden period, first delay and teleport box from the record's p1…p3, home, unlit, counted. `+0xc0 = 0`: the
+            // Handle faces it from the cache set 0x6f4 (marked, M l. 69876); the entry names that face (`.handle`). The
+            // unfinished 0x6fe…0x707 (unplaced): their sets 1790 / 1791 are absent from the data and their home and box
+            // stay 0 — the Handle's `FastRand(0)` reseeds from the clock (enemies-flyers §5.1): refused before any
+            // tally. First placed on level 62.
+            guard (0x6f4...0x6fd).contains(t) else { throw Error.notTranscribed(type: p.type) }
+            s.oldPosition = SpriteSlot.Point(x: s.x, y: s.y)
+            GremlinFloater.setupFloater(&s, record: p, counting: &counting)
+            face(GremlinFloater.wraithSet, 0, .handle)
+
         default:
             throw Error.notTranscribed(type: p.type)
         }
@@ -656,8 +697,9 @@ public enum SetupFaces {
     /// 68270–68273, 68282–68285; BA),
     /// `.SetupFrogSprite` at its end (M l. 70211–70215), `.SetupSalamanderSprite` at its end (M l. 70692–70698; FR),
     /// `.SetupBlobSprite` at its end for every type (M l. 67728–67731; LV3, BL). The Crab counts nothing (BL).
-    /// // later: Phase 5–6 — the other enemy
-    /// classes' sites (Gremlin 69229, Floater 69899, Dillo 72370, Warrior 73069, Demon 74493, Chief 75110, Wizard
+    /// `.SetupGremlinSprite` in the body arm (M l. 69227–69230), `.SetupFloaterSprite` for every type (M l. 69900–69903;
+    /// GF). // later: Phase 5–6 — the other enemy
+    /// classes' sites (Dillo 72370, Warrior 73069, Demon 74493, Chief 75110, Wizard
     /// 75676, Xichra 76435), some branch-gated, are not transcribed (their Setups throw `notTranscribed` before any
     /// tally). EC: the enemies are `EnemyCounting.live` — each counted Setup's `countIfWindow` — copied here after the
     /// spawn; the secrets and Xichrons are counted here by type, while the window is set.
@@ -769,6 +811,7 @@ public enum SetupFaces {
                 let ids = e.children.map { out.active.insert($0) }
                 var parent = e.slot
                 if let f = parent.siblings.first { parent.siblings.first = ids[f] }
+                if let f = parent.siblings.second { parent.siblings.second = ids[f] }   // GF: the Gremlin's rider
                 if var block = parent.swarm {
                     block.members = block.members.map { $0.map { ids[$0] } }
                     parent.swarm = block
@@ -793,6 +836,15 @@ public enum SetupFaces {
                     // added to `makeRadial` would be swallowed silently — thread the stream through first.
                     let w = SpriteWorld(level: c.level, active: out.active)
                     BackgroundSprite.makeRadial(w, id: id, record: e.record)
+                    out.active = w.active
+                }
+                if e.spriteClass == .gremlin {
+                    // GF: the rider's backlink `+0x1d4` = the body (M l. 69219), and for path modes 10 / 11 the
+                    // `.MakeRadial` of `.SetupProgrammedPath` (M l. 39354–39378; no `FastRand`) — both need the body's id.
+                    // The Gremlin class always spawns now (`SpriteClassTable`).
+                    let w = SpriteWorld(level: c.level, active: out.active)
+                    GremlinFloater.linkRider(w, parent: id)
+                    ProgrammedPath.makeRadial(w, id: id, record: e.record)
                     out.active = w.active
                 }
             case .idle:

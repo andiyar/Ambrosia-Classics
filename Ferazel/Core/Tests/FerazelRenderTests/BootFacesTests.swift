@@ -186,6 +186,21 @@ final class BootFacesTests: XCTestCase {
         }
         XCTAssertEqual(SetupFaces.sheet(pict: BlobCrab.linkFace), .single(0x767))
         XCTAssertEqual(CachedFaces.sheets(markedBy: [BlobCrab.linkType]).map(\.pict), [0x762, 0x767])
+        // GF: `.InitGremlinSprite`'s 0x6ea / 0x6eb / 0x6ec and `.InitFloaterSprite`'s 0x6f4 (M l. 69118–69120, 69825)
+        // are level-load caches, defined once in the Setup-face table; the rider's shot 0x712 faces from the boot singles
+        // 0x456 / 0x457 (above), the Wraith's bolt 0x6f4 from the enemy-shot boot set 0x45d. The 1790 variant's 0x6fe /
+        // 0x6ff (M l. 69828–69829) are absent from the data and defined nowhere (the variant is refused).
+        for p in [GremlinFloater.bodySet, GremlinFloater.backSet, GremlinFloater.riderSet, GremlinFloater.wraithSet] {
+            XCTAssertNil(boot[p], "cache PICT \(p)")
+            XCTAssertNotNil(SetupFaces.sheet(pict: p), "cache PICT \(p) geometry")
+            XCTAssertFalse(CachedFaces.handleSets.contains { $0.pict == p }, "cache PICT \(p) defined twice")
+        }
+        for p: Int16 in [0x6fe, 0x6ff] {
+            XCTAssertNil(res.resource(type: "PICT", id: p, chain: .frontEnd), "PICT \(p) absent")
+            XCTAssertNil(SetupFaces.sheet(pict: p))
+            XCTAssertNil(boot[p])
+        }
+        XCTAssertEqual(CachedFaces.sheets(markedBy: [Int16(0x6ea), 0x6f4, 0x6fe]).map(\.pict), [0x6ea, 0x6eb, 0x6ec, 0x6f4])
     }
 
     /// Levels 1–4: every boot face the data holds, every class sheet Core declares and every Setup sheet of the level's

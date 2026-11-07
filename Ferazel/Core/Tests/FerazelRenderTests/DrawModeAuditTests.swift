@@ -198,8 +198,8 @@ final class DrawModeAuditTests: XCTestCase {
         W("Particles/Burn.swift:60", .clipTop, .range(1...0x100), "any", at: ["45", "50"],
           pins: ["s.burnRow = top", "s.burnRow &+= 1"]),
         // EC: the ground enemies' liquid hurt flash (`EnemyCommon.liquids`: 0xc for the Walker in water, else 0x11).
-        W("World/Enemies/EnemyCommon.swift:244", .flash, .range(0xc...0x11), "walker", "crawler", "roach", "dillo",
-          "blob", at: ["230", "235", "236", "237"], pins: ["(0xc, 0x96, 0xc)", "(0x13, 100, 0x11)"]),
+        W("World/Enemies/EnemyCommon.swift:245", .flash, .range(0xc...0x11), "walker", "crawler", "roach", "dillo",
+          "blob", at: ["231", "236", "237", "238"], pins: ["(0xc, 0x96, 0xc)", "(0x13, 100, 0x11)"]),
         // ES: the enemy shots — the egg's random facing (`R(100) > 0x32`) and its flash every 45 frames, the Warrior
         // shot's facing by vx, the Wraith shot's tint by age (`.HandleEnemyShotSprite` M l. 51711–51723).
         // BA: the Bat class — the spitters' tint 0x1000c (0x6ce / 0x73c retyped), the insects' 0xb0004, the swarm
@@ -260,6 +260,35 @@ final class DrawModeAuditTests: XCTestCase {
           pins: ["(Int(s.phase) + 0xb4) % 0x168", "s.phase &+= 0x168", "s.phase &-= 0x168"]),
         W("World/Enemies/BlobCrab.swift:481", .rotation, .range(0...359), "crab", at: ["472", "474"],
           pins: ["s.rotation = s.phase", "s.phase &+= 0x168", "s.phase &-= 0x168"]),
+        // GF: the Gremlin — the back layer's 0xb0000 (`.SetupGremlinSprite` M l. 69214), the body's dead water flash
+        // 0x11, its facing by the player's side or (path mode 2) by vx, the back layer's and the mounted rider's copies
+        // of the body's facing, flash, tint and burn row (the rider's less 0x1b; M l. 69395–69420); the rider's shot's
+        // flip and face rotation 0xdc / 0x140 (M l. 69611–69617). The Wraith: its facing, the fade-in / fade-out tints
+        // 0xb0002 / 0xb0000 / 0xb0001 and 0, the hurt flash 10 (`.HandleFloaterSprite` M l. 69916–70020,
+        // `.HitFloaterSprite` M l. 70058).
+        W("World/Enemies/GremlinFloater.swift:113", .mode, .words([0xb0000]), "gremlin.back"),
+        W("World/Enemies/GremlinFloater.swift:192", .flash, .range(0x11...0x11), "gremlin"),
+        W("World/Enemies/GremlinFloater.swift:207", .mirrored, .flags([true]), "gremlin"),
+        W("World/Enemies/GremlinFloater.swift:209", .mirrored, .flags([false]), "gremlin"),
+        W("World/Enemies/GremlinFloater.swift:242", .mirrored, .flags([false, true]), "gremlin"),
+        W("World/Enemies/GremlinFloater.swift:266", .mirrored, .copy, "gremlin.back"),
+        W("World/Enemies/GremlinFloater.swift:268", .clipTop, .range(0...0x100), "gremlin.back",
+          at: ["Particles/Burn.swift:60", "Physics/StandardSprite.swift:34"], pins: ["c.clip.top = t.clip.top", "s.clip.top = Int(s.burnRow)", "s.clip.top = 0"]),
+        W("World/Enemies/GremlinFloater.swift:273", .mirrored, .copy, "gremlin.rider"),
+        W("World/Enemies/GremlinFloater.swift:274", .flash, .copy, "gremlin.rider"),
+        W("World/Enemies/GremlinFloater.swift:275", .mode, .copy, "gremlin.rider"),
+        W("World/Enemies/GremlinFloater.swift:276", .clipTop, .range(1...0x100 - 0x1b), "gremlin.rider",
+          at: ["Particles/Burn.swift:60"], pins: ["if 0x1b < t.clip.top { c.clip.top = t.clip.top - 0x1b }", "s.clip.top = Int(s.burnRow)"]),
+        W("World/Enemies/GremlinFloater.swift:474", .mirrored, .flags([true]), "enemyShot.spit"),
+        W("World/Enemies/GremlinFloater.swift:475", .rotation, .range(0xdc...0xdc), "enemyShot.spit"),
+        W("World/Enemies/GremlinFloater.swift:477", .rotation, .range(0x140...0x140), "enemyShot.spit"),
+        W("World/Enemies/GremlinFloater.swift:695", .mirrored, .flags([false, true]), "floater"),
+        W("World/Enemies/GremlinFloater.swift:713", .mode, .words([0xb0002, 0xb0000, 0xb0001]), "floater"),
+        W("World/Enemies/GremlinFloater.swift:716", .mode, .words([0]), "floater"),
+        W("World/Enemies/GremlinFloater.swift:726", .mode, .words([0xb0001, 0xb0000, 0xb0002]), "floater"),
+        W("World/Enemies/GremlinFloater.swift:729", .mode, .words([0]), "floater"),
+        W("World/Enemies/GremlinFloater.swift:733", .mode, .words([0]), "floater"),
+        W("World/Enemies/GremlinFloater.swift:781", .flash, .range(10...10), "floater"),
         W("World/Enemies/EnemyShot.swift:154", .mirrored, .flags([false, true]), "enemyShot.egg"),
         W("World/Enemies/EnemyShot.swift:314", .mode, .words([0xb0002, 0xb0000, 0xb0001, 0]), "enemyShot.wraith"),
         W("World/Enemies/EnemyShot.swift:339", .mirrored, .flags([false, true]), "enemyShot.warrior"),
@@ -376,14 +405,14 @@ final class DrawModeAuditTests: XCTestCase {
         W("Shots/PlayerShot.swift:474", .mode, .words([0x10004]), "shot.gravity"),        // the seed (gravity 0xfa)
         W("Shots/PlayerShotHits.swift:109", .mode, .words([0x10004]), "shot.gravity"),    // the seed
         W("Shots/PlayerShotHits.swift:221", .flash, .range(10...10), "box"),
-        W("Sprites/SetupFaces.swift:383", .mirrored, .flags([true]), "background.plant"),
-        W("Sprites/SetupFaces.swift:384", .mode, .placedTint(0xa8c...0xaef), "background.plant",
+        W("Sprites/SetupFaces.swift:388", .mirrored, .flags([true]), "background.plant"),
+        W("Sprites/SetupFaces.swift:389", .mode, .placedTint(0xa8c...0xaef), "background.plant",
           pins: ["if p.p2 != 0 { s.mode = UInt32(truncatingIfNeeded: Int(p.p2) + 0x10000) }"]),
-        W("Sprites/SetupFaces.swift:435", .mode, .words([0x90000]), "box.teleporter"),
-        W("Sprites/SetupFaces.swift:453", .mode, .words([0x90000]), "box.chest"),
-        W("Sprites/SpriteSlot.swift:536", .mode, .words([0]), "platform.raft", "box.boulder", "background.maceBall",
+        W("Sprites/SetupFaces.swift:440", .mode, .words([0x90000]), "box.teleporter"),
+        W("Sprites/SetupFaces.swift:458", .mode, .words([0x90000]), "box.chest"),
+        W("Sprites/SpriteSlot.swift:540", .mode, .words([0]), "platform.raft", "box.boulder", "background.maceBall",
           "chain.maceChain"),
-        W("Sprites/SpriteSlot.swift:538", .mode, .levelLight, "platform.raft", "box.boulder", "background.maceBall",
+        W("Sprites/SpriteSlot.swift:542", .mode, .levelLight, "platform.raft", "box.boulder", "background.maceBall",
           "chain.maceChain", pins: ["mode = UInt32(truncatingIfNeeded: L * 0x100 + 0xc0000 + F)"]),
         // (angle >> 8) + 0x5a with the angle wrapped into 0…0x167ff (`RadialMotion.updatePosition`), − 360 once.
         W("World/Movers/BackgroundSprite.swift:194", .rotation, .range(0...359), "background.maceBall", at: ["192", "193"],
@@ -1351,7 +1380,7 @@ final class DrawModeAuditTests: XCTestCase {
           "the session is built at each level start, every built level's run included"),
         R("Sprites/SetupFaces.swift", "Error.unmapped", 1, .loadsClean, [.levelsLoad],
           "every active placement of every built level sets up (the audit runs each one, and the level start does)"),
-        R("Sprites/SetupFaces.swift", "Error.notTranscribed", 12, .loadsClean, [.levelsLoad], "the same Setups"),
+        R("Sprites/SetupFaces.swift", "Error.notTranscribed", 13, .loadsClean, [.levelsLoad], "the same Setups"),
         R("Sprites/SetupFaces.swift", "Error.autoScrollSprites", 1, .headerZero, [.headerCamera],
           "header `autoScrollEnable` = 0 on every built level"),
         R("World/Movers/BonusSprite.swift", "SetupFaces.Error.notTranscribed", 2, .loadsClean,

@@ -618,6 +618,16 @@ final class FaceTests: XCTestCase {
         }
         XCTAssertEqual(CachedFaces.sheets(markedBy: [BlobCrab.crab]).map(\.pict), [0x762, 0x767])
         XCTAssertNil(one.sprites.faces.face(FaceRef(pict: 0x6c2, index: 0, set: .encoded)), "level 1 places no blob")
+        // GF: the Gremlin Handle faces its body, back layer and rider from the cache sets 0x6ea / 0x6eb (10 cells each)
+        // and 0x6ec (4), the Wraith's from 0x6f4 (6) — each loaded only where their Setups mark them (first placed on
+        // levels 15 and 62): the data holds them, no level-1 renderer loads them.
+        for (p, cells) in [(GremlinFloater.bodySet, 10), (GremlinFloater.backSet, 10), (GremlinFloater.riderSet, 4),
+                           (GremlinFloater.wraithSet, 6)] {
+            let sh = try XCTUnwrap(SetupFaces.sheet(pict: p))
+            XCTAssertNotNil(r.resource(type: "PICT", id: p, chain: .frontEnd), "GF PICT \(p)")
+            XCTAssertEqual(sh.count, cells, "GF PICT \(p) cells")
+            XCTAssertNil(one.sprites.faces.face(FaceRef(pict: p, index: 0, set: .encoded)), "level 1 places no \(p)")
+        }
         // The drops of every chest and crate on levels 1–4 and the key faces their locks show — each in its own
         // level's renderer. The original loads every Bonus face at boot (`.InitBonusSprite` M l. 52261–52337); the
         // replica's per-level load (`BoxSprite.dropSheets`) is a seam, so the faces are named here, not derived from it.

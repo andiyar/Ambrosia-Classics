@@ -523,6 +523,27 @@ statue's hit callback is `.HitBoxSprite`, whose player-shot arm damages only cra
 damage until it thaws [MED: from the decompile]; linked parts (insect body, gremlin rider) are
 updated only by the suspended handler, so they freeze in place for the 120 frames [MED].
 
+### 7.7 ⚑ corrected (run 44, 2026-11-07, GF — read against the committed dump, M l. 69080–70110)
+1. §4.2 water block: the "**second** `.StandardSpriteHandles`" at `1008061c` is the body arm's **only** call
+   (raw `1008061c..10080620`; nothing earlier in the arm calls it). The conclusion stands: it zeroes `+0x11c` (while
+   `+0x118 < 0x1d`) right before the read, so the block is dead as shipped.
+2. §4.4 hurt sounds: the alive branch's 701 is `.STPlay3DSoundRand` at vol **0x55** (M l. 69677), not 0x100; the 702
+   branch is `.STPlay3DSound` 0x100. The rider's dislodge 703 is Rand 0x55 (as written).
+3. §4.4 `.HitGremlinTileSprite`: the dying-or-rider vx · 0.8 runs on **every** call, before the layer test (M l.
+   69779–69790), so BG calls scale vx too; and `.SeparateFromTiles2` calls the callback for every BG cell of kind −1
+   (empty) the rect meets — in the open a dying body loses vx · 0.8 per overlapping BG cell per separation pass. The
+   |vy| < 0x100 → 0 clamp follows any FG bounce (factor 0 or 0xa0). On a flat FG floor (kind 3) the rider's 0xa0 bounce
+   never sets `+0xce`, so its "grounded → vx · 0.5" (§4.3) does not fire there.
+4. §4.3 rider death particles: the v offset is R(6) **+ 0x10** (M l. 69487), not the Bat's − 3; h is R(6) − 3.
+5. §4.2 saddle blood: the delay argument is R(3) itself (1 or 2) when non-zero, else −0x32 − R(0x46) (M l. 69447–69451).
+6. §5.2 phases 65…74: (10 − (p − 65)) >> 1 gives 5…**0** (phase 74 → frame 0), not 5…1.
+7. §5.2 facing: written only in phases 0…19 (M l. 69952–69954, 69967–69969), not every visible frame; the first visible
+   frame reads `+0x10` as the Setup left it (no `.CalcCenterPos` in `.SetupFloaterSprite`: 0 on a fresh record).
+8. §4.1 rider rect: `.CalcCenterPos` runs before a child's rect is emptied (M l. 69196–69198): every part's stored
+   centre is the full rect's (x + 0x40, y + 0x3b) until its first integration.
+9. §4.1 / audit: `.SetupProgrammedPath(s, −1, 0)` reads p1 from the body's record unfiltered, so path modes 10 / 11 (and
+   their 1xx forms) reach `.MakeRadial` for a Gremlin; no shipped Gremlin uses them (census p1 ∈ {1, 2}).
+
 ## NOT RESOLVED
 1. `+0xb8` draw-mode values (0xb0000/1/2/4, 0x10009, 0x1000c): passed to `.WrapDrawFace` (main dump
    l. 10246–10351; flash overrides with 0x30000/0x40000) — the meaning of modes 0xb/1 not read.

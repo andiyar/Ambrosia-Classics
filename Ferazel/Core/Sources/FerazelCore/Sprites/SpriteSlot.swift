@@ -454,6 +454,10 @@ public struct SpriteSlot: Equatable, Sendable {
     public var counterA6: Int16 = 0
     /// `+0xb2` (i16): the platform sub-state (modes 50/51 10 / 0xb) and the radial "driver" flag (W1).
     public var subState: Int16 = 0
+    /// GF (added, Invariant 9): `+0xec` (i16) — the Gremlin's composite part index (`.SetupGremlinSprite` M l.
+    /// 69205, 69209, 69213): 0 the body (the record), 1 the back layer, 2 the rider; `.HandleGremlinSprite` and
+    /// `.HitGremlinSprite` branch on it.
+    public var partIndex: Int16 = 0
     /// `+0x17c` (u8): the platform's first-frame `.DoSetupPlatformSprite` has run (W1); a Walker's first Handle has
     /// run (`.HandleWalkerSprite` M l. 57562–57570; WK1).
     public var setupDone = false
@@ -634,6 +638,8 @@ public enum SpriteHandler: Equatable, Hashable, Sendable {
         case .bat: return .bat              // BA: the Bat class 1740…1749, 1850…1854, 1860…1869
         case .blob: return .blob            // BL: the Blob 1730…1739
         case .crab: return .crab            // BL: the Crab 1890…1899 (its Setup gives the links 0x767 `.crabSegment`)
+        case .gremlin: return .gremlin      // GF: the Gremlin 1770…1779 (every part, the back layer and rider too)
+        case .floater: return .floater      // GF: the Floater (the Wraith) 1780…1799
         default: return .inert
         }
     }
