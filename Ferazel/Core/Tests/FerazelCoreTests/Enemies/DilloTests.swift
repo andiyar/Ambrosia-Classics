@@ -141,7 +141,9 @@ final class DilloTests: XCTestCase {
         let n = try world()
         let (nid, _) = try dillo(n, window: false)
         XCTAssertEqual([try slot(n, nid).countedInTotals ? 1 : 0, Int(n.enemies.live)], [0, 0])
-        // 1872…1879: HP 0, max 0 — the Handle's first decision divides by the max (`divw` by 0, raw 10086a48): refused.
+        // 1872…1879: HP 0, max 0 — the original always dies on frame 1 (the HP < 1 test, M l. 72819, follows the state
+        // switch); the idle decision divides by the max 0 (plain `divw`, raw 10086a48: undefined, no trap) only when the
+        // R(10) timer starts at 0 or 1. Refused: a named ◇ for an unplaced variant (bank §8, the Wraith-variant precedent).
         for t: Int16 in [0x750, 0x757] {
             XCTAssertThrowsError(try dillo(try world(), type: t), "type \(t)")
         }
@@ -173,10 +175,20 @@ final class DilloTests: XCTestCase {
         let sd = try slot(sw, nd)
         XCTAssertEqual([Int(sd.counterA6), Int(sd.subtype)], [4, 6], "the Dillo Handle ran")
         XCTAssertEqual(sd.face, f(0x74e, 0))
+        XCTAssertEqual(sd.vx, 500, "state 6: vx 1000 × 0.5 (M l. 72607–72608)")
+        // The idle halving is `(int)(vx · 0.5)` (f64, `fctiwz`): toward zero either side, no decision draw at `+0xa6` 5.
+        for (vx0, vx1) in [(Int32(1001), Int32(500)), (-1001, -500), (1, 0), (-1, 0)] {
+            let h = try world()
+            let (hid, _) = try dillo(h)
+            h.active.update(id: hid) { s in s.counterA6 = 5; s.vx = vx0 }
+            let seed0 = h.rng.seed
+            frame(h, hid)
+            XCTAssertEqual([try slot(h, hid).vx, Int32(h.rng.seed == seed0 ? 1 : 0)], [vx1, 1], "idle vx \(vx0)")
+        }
     }
 
     func testDilloSpines5And7() throws {
-        // State 8 (M l. 72626–72768): vx × 0.5 each frame. `+0xb2` 0, the curl: face 1871[`+0x46 >> 1`], `+0x46` + 1; past
+        // State 8 (M l. 72626–72768): vx × 0.5 each frame. `+0xb2` 0, the curl: face 0x74f[`+0x46 >> 1`], `+0x46` + 1; past
         // 8 → `+0x46 = 9`, `+0xb2 = 1`, `+0x14c` + 1.
         let c = try world()
         let (cid, _) = try dillo(c)
@@ -199,7 +211,7 @@ final class DilloTests: XCTestCase {
         }
         XCTAssertEqual(curl, [0, 0, 1, 1, 2, 2, 3, 3, 4], "phases 0…8; the 9th frame (phase 8 → 9) sets `+0xb2 = 1`")
         XCTAssertEqual(try slot(c, cid).phase, 9)
-        // `+0xb2` 1: face 1871[4] only while `+0xa6 < 16` (16 keeps the curl face).
+        // `+0xb2` 1: face 0x74f[4] only while `+0xa6 < 16` (16 keeps the curl face).
         frame(c, cid)
         var s = try slot(c, cid)
         XCTAssertEqual([Int(s.counterA6), s.face?.index ?? -1], [15, 4], "a6 16: face kept (index 4 from the curl)")
@@ -210,7 +222,7 @@ final class DilloTests: XCTestCase {
         frame(c, cid)
         XCTAssertEqual(try slot(c, cid).face?.index, 0, "a6 16: not < 16")
 
-        // The 5-spine volley: mode 0 (`+0x154`), `+0xa6` 1 → 0 with `+0x14c > 1`: face 1871[3], `+0xa6 = 16`,
+        // The 5-spine volley: mode 0 (`+0x154`), `+0xa6` 1 → 0 with `+0x14c > 1`: face 0x74f[3], `+0xa6 = 16`,
         // `.ShootSpines(S, 0)`; then `+0x14c` − 1. The table (M l. 72400–72469): snd 463 (3D, 1, 0x100, S centre);
         // MTNewSprite(0x754, c + offset, layer 0, −1, .SetupEnemyShotSprite) ×5 — each Setup draws R(5) for `+0x46`, then
         // overwritten; v 0x900 / 0xbb3, d = (int)(0.7·v) = 1612 / 2096, `+0xa4` 0x38 / 0xe0, `+0xb8` 0 / 0x1000b.
@@ -267,7 +279,7 @@ final class DilloTests: XCTestCase {
         XCTAssertEqual([shots(q, 0x754).count, Int(try slot(q, qid).classTimer), Int(try slot(q, qid).subState)],
                        [0, 0, 2])
 
-        // The jump, mode 1 (M l. 72705–72714): `+0xa6 = 16`, face 1873[1], `+0xb2 = 3`, vy −0xed8, `+0xce = 0`, R(4000),
+        // The jump, mode 1 (M l. 72705–72714): `+0xa6 = 16`, face 0x751[1], `+0xb2 = 3`, vy −0xed8, `+0xce = 0`, R(4000),
         // snd 414 pitched (prio 0x14, vol 0xab, 75000 + R).
         let j = try world(floorRow: nil)
         let (jid, _) = try dillo(j)
@@ -287,8 +299,8 @@ final class DilloTests: XCTestCase {
                        [Dillo.jumpType, 1, 3, 16])
         XCTAssertEqual([s.vy, Int32(s.classTimer)], [-0xed8 + 0x122, 1], "vy −3800 + one gravity; `+0x14c` 1")
 
-        // The 7-spine apex volley (`+0xb2` 3, M l. 72751–72767): face 1873[1] rising / [0] falling; vy < 0 ≤ vy + 0x122 →
-        // face 1873[1] and `.ShootSpines(S, 1)`: the five, then (−7, −15) (−d, +d) `+0x46` 7 and (+7, −15) (+d, +d) 5.
+        // The 7-spine apex volley (`+0xb2` 3, M l. 72751–72767): face 0x751[1] rising / [0] falling; vy < 0 ≤ vy + 0x122 →
+        // face 0x751[1] and `.ShootSpines(S, 1)`: the five, then (−7, −15) (−d, +d) `+0x46` 7 and (+7, −15) (+d, +d) 5.
         for (vy0, fires) in [(Int32(-0x122), true), (-0x123, false), (0, false), (-1, true)] {
             let a = try world(floorRow: nil)
             let (aid, _) = try dillo(a, type: Dillo.curlType)
@@ -320,7 +332,7 @@ final class DilloTests: XCTestCase {
         frame(l, lid)
         XCTAssertEqual(try slot(l, lid).subState, 1, "landed")
 
-        // The uncurl (`+0xb2` 2, M l. 72627–72646): face 1871[`+0x46 >> 1`], `+0x46` − 1, `+0x164` and `+0x1aa` 0; below 0 →
+        // The uncurl (`+0xb2` 2, M l. 72627–72646): face 0x74f[`+0x46 >> 1`], `+0x46` − 1, `+0x164` and `+0x1aa` 0; below 0 →
         // state 6, `+0xa6 = 12 + R(30)`, or with `+0x14c == 2` `6 + R(12)`.
         for timer in [Int32(0), 2] {
             let u = try world()
@@ -342,9 +354,9 @@ final class DilloTests: XCTestCase {
     }
 
     func testDilloEggBomb() throws {
-        // Mode 2 (M l. 72663–72698): R(4000), snd 498 pitched (prio 0x14, vol 0x100, 63000 + R); face 1871[3], `+0xa6 =
+        // Mode 2 (M l. 72663–72698): R(4000), snd 498 pitched (prio 0x14, vol 0x100, 63000 + R); face 0x74f[3], `+0xa6 =
         // 16`, `+0x14c = 0`; MTNewSprite(0x753, x, cy − 8, layer 0, −1, .SetupEnemyShotSprite) — x = S.x + face.right −
-        // 0x17 facing left, S.x + face.left + 5 facing right, the face the one shown (1871[4], `+0xa6` < 16) —; layer S − 1;
+        // 0x17 facing left, S.x + face.left + 5 facing right, the face the one shown (0x74f[4], `+0xa6` < 16) —; layer S − 1;
         // vx +0x200 facing left / −0x200 right; vy −800; `+0xa4` 0xe0 (1870) / 0x1c0 + `+0xb8 0x1000b` (1871). Then
         // `+0x14c` − 1 → −1 → `+0xb2 = 2`.
         for (type, right) in [(Dillo.walkType, false), (Dillo.walkType, true), (Dillo.curlType, false)] {
@@ -637,6 +649,30 @@ final class DilloTests: XCTestCase {
             XCTAssertFalse(try slot(w, sid).dead, "a6 \(a6) HP \(hp)")
             XCTAssertEqual(w.player.cues, [])
         }
+        // From the front while still invulnerable from a previous hit: `.HurtSprite` refuses, so no blood, no ouch and no
+        // `.RandomDilloAttack` (it sits inside the hurt's success, M l. 72884–72893) — the state, mode and attack phase
+        // stay and the stream does not move. The shot is still killed (`.KillPlayerShot` comes first).
+        for state in [Int16(6), 7] {
+            let w = try world()
+            let (id, _) = try dillo(w)
+            w.active.update(id: id) { s in
+                s.subtype = state; s.mirrored = false; s.invulnerable = 2; s.phase = 3; s.subState = 2
+                s.classWord154 = 9; s.classTimer = 7; s.counterA6 = 11
+            }
+            let sid = try other(w, over: id, dx: -3, damage: 150)
+            let seed0 = w.rng.seed
+            w.player.cues = []
+            FerazelSession.hitCallback(w, id, sid)
+            let s = try slot(w, id)
+            let tag = "invulnerable, state \(state)"
+            XCTAssertTrue(try slot(w, sid).dead, tag)
+            XCTAssertEqual([Int(s.hp), Int(s.invulnerable), Int(s.subtype), Int(s.phase), Int(s.subState)],
+                           [500, 2, Int(state), 3, 2], tag)
+            XCTAssertEqual([Int(s.classWord154), Int(s.classTimer), Int(s.counterA6)], [9, 7, 11], "\(tag): no attack")
+            XCTAssertEqual(w.rng.seed, seed0, "\(tag): no R(100) / R(2)")
+            XCTAssertEqual(w.player.cues.filter { $0.snd == 701 || $0.snd == 702 }, [], tag)
+            XCTAssertEqual(blood(w), 0, tag)
+        }
         // The Statue spell from the front in state 6: `.TurnIntoStatue`; no hurt, no retaliation.
         let v = try world()
         let (vid, _) = try dillo(v)
@@ -682,7 +718,7 @@ final class DilloTests: XCTestCase {
 
     func testDilloKillScore1500() throws {
         // HP < 1 with state ≠ 4, after the state switch (M l. 72819–72824): state 4, `+0x46 = +0xa6 = 0`, snd 703 (3D, 1,
-        // 0x100). State 4 (M l. 72611–72625): vx × 0.9; face 1872[`+0x46 / 3`]; `+0x46` + 1, capped at 14; `+0xa6` + 1; at
+        // 0x100). State 4 (M l. 72611–72625): vx × 0.9; face 0x750[`+0x46 / 3`]; `+0x46` + 1, capped at 14; `+0xa6` + 1; at
         // 45 → `+0x1a2 = 1` (the burn, `.KillDillo` at its end).
         let w = try world()
         let (id, _) = try dillo(w)

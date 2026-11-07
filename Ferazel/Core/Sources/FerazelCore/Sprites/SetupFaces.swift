@@ -677,9 +677,11 @@ public enum SetupFaces {
             // `.SetupDilloSprite @ 1008622c` (M l. 72291–72378; DL, `Dillo.setup`): the class fields, HP by type, `+0x188`,
             // the live record's p2 0 → 150 (written back), the bounds, the facing draw, the counting window. `+0xc0` = the
             // global `PTR_DAT_100a0d1c` — the walk set's face 0 once any Dillo Handle has run (M l. 72562–72563), 0 before: the
-            // first Handle faces it; the entry names that face (`.handle`). 1872…1879 (unplaced) get HP 0 and max 0 —
-            // the first decision divides by the max (`divw` by 0, raw 10086a48, result undefined): refused before any
-            // tally. Placed on levels 15 and 22.
+            // first Handle faces it; the entry names that face (`.handle`). 1872…1879 (unplaced) get HP 0 and max 0: the
+            // original always dies on its first frame (the HP < 1 test, M l. 72819, follows the state switch); the idle
+            // decision before it divides by the max 0 (plain `divw`, raw 10086a48 — undefined, no trap) only when the
+            // `FastRand(10)` timer starts at 0 or 1. A named ◇ for an unplaced variant (bank §8, as the Wraith variants
+            // above): refused before any tally. Placed on levels 15 and 22.
             guard t == Int(Dillo.walkType) || t == Int(Dillo.curlType) else { throw Error.notTranscribed(type: p.type) }
             s.oldPosition = SpriteSlot.Point(x: s.x, y: s.y)           // `.MTNewSprite`'s `+8` / `+6`
             record = Dillo.setup(&s, record: p, rng: &rng, counting: &counting)

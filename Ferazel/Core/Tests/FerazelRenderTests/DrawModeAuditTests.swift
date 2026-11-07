@@ -1499,7 +1499,7 @@ final class DrawModeAuditTests: XCTestCase {
             // WK2: the Ax goblin's jump budget (`.AxGoblinCoreLogic`, made negative by its retreats) — written only on the
             // sprite `AxGoblin.arm` runs for, a Walker 0x6d6 (`Walker.handle`'s exact-type arm), never on a Box.
             // BA: the 1850 family's background flag (`.SetupBatSprite` 0 / 1 by the record p1 sign, M l. 68263–68275) —
-            // on Bat sprites only, never negative. DL: the Dillo's right patrol bound (`.SetupDilloSprite` M l. 72368–72363) — on
+            // on Bat sprites only, never negative. DL: the Dillo's right patrol bound (`.SetupDilloSprite` M l. 72363–72368) — on
             // Dillo sprites only.
             XCTAssertEqual(writes.filter { !$0.hasPrefix("World/Enemies/AxGoblin.swift ") }.sorted(),
                            ["Shots/PlayerShot.swift s.stepX = sx",
