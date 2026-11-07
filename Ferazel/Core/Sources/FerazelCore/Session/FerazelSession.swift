@@ -1212,13 +1212,13 @@ public final class FerazelSession {
         case .crab:                                                                     // `.HitCrabSprite` (BL)
             BlobCrab.hitCrab(w, id: a, other: b, lights: &lights, effects: effects, faceWidth: faceWidth,
                              faceBounds: faceBounds)
+            // The dead Blob (`+0x5c` cleared in state 4) and the Crab's links (`+0x5c` 0) have no hit callback.
         case .gremlin:                                                                  // `.HitGremlinSprite` (GF)
             GremlinFloater.hitGremlin(w, id: a, other: b, lights: &lights, effects: effects, faceWidth: faceWidth,
                                       faceBounds: faceBounds)
         case .floater:                                                                  // `.HitFloaterSprite` (GF)
             GremlinFloater.hitFloater(w, id: a, other: b, lights: &lights, effects: effects, faceWidth: faceWidth,
                                       faceBounds: faceBounds)
-            // The dead Blob (`+0x5c` cleared in state 4) and the Crab's links (`+0x5c` 0) have no hit callback.
         case .background:                                                               // `.HitBackgroundSprite` (W2b)
             BackgroundSprite.hit(w, id: a, other: b, lights: &lights, effects: effects, faceWidth: faceWidth,
                                  faceBounds: faceBounds)

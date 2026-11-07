@@ -94,6 +94,14 @@ final class GremlinFloaterTests: XCTestCase {
         }
     }
 
+    /// Whether the next `R(n)` of `r` differs from `R(n − 1)` and `R(n + 1)` at the same point (seed luck: a mutated
+    /// range would show).
+    private func differs(_ r: FastRand, _ n: Int16) -> Bool {
+        var a = r, b = r, c = r
+        let x = a.next(n)
+        return x != b.next(n - 1) && x != c.next(n + 1)
+    }
+
     /// One Gremlin / Floater Handle call by `+0x4c` (the session's dispatch).
     private func frame(_ w: SpriteWorld, _ id: Int, effects: Int16 = 1) {
         var lights = LightTable()
@@ -319,6 +327,27 @@ final class GremlinFloaterTests: XCTestCase {
         w.active.update(id: g.body) { $0.mirrored = true }
         frame(w, g.body)
         XCTAssertTrue(try slot(w, g.body).mirrored, "equal x: kept")
+        w.player.centreX = Int16(try slot(w, g.body).centre.x)
+        w.active.update(id: g.body) { $0.mirrored = false }
+        frame(w, g.body)
+        XCTAssertFalse(try slot(w, g.body).mirrored, "equal x: kept (left)")
+        XCTAssertEqual([try slot(w, g.back).mode, UInt32(try slot(w, g.back).flash)], [0xb0000, 0],
+                       "the back layer keeps its tint; no flash copied to it")
+        // The burn row `+0x1bc` (`.HandleBurn`'s top clip, here from a stub face whose opaque top is `top`: the row
+        // starts at `top`, + 1 a frame): the back layer takes it as is; the mounted rider takes it − 0x1b only when it
+        // is > 0x1b (0x30 → 0x15; 0x1b → its own kept).
+        for (top, want) in [(Int16(0x2f), 0x15), (0x1a, 7)] {
+            let bw = try world()
+            bw.particleFaces = ParticleFaces(sprite: { _ in
+                ParticleFace(frame: [0, 0, 0x78, 0x84], bounds: [top, 0, 0x78, 0x84], tokens: [])
+            })
+            let bg = try gremlin(bw, p1: 0)
+            bw.active.update(id: bg.body) { $0.burnRow = 1 }
+            bw.active.update(id: bg.rider) { $0.clip.top = 7 }
+            frame(bw, bg.body)
+            XCTAssertEqual([try slot(bw, bg.body).clip.top, try slot(bw, bg.back).clip.top, try slot(bw, bg.rider).clip.top],
+                           [Int(top) + 1, Int(top) + 1, want], "burn row \(top + 1)")
+        }
         // Mode 1's anim gate: vy < `+0x30` (strict) or mid-cycle.
         for (a6, prev, want) in [(Int16(0), Int32(800), Int16(0)), (0, 801, 1), (3, 800, 4), (3, 0, 4)] {
             let m = try world()
@@ -398,9 +427,12 @@ final class GremlinFloaterTests: XCTestCase {
                 s.vx = 1000
                 s.vy = -300
                 s.classTimer = mounted ? 0 : 1
+                s.hp = 0                                                // dying: no saddle blood
             }
             e.rng = FastRand(seed: seed { $0.next(3) == n })
             let c0 = try slot(e, eg.body).centre
+            var q = e.rng
+            _ = q.next(3)
             frame(e, eg.body)
             let s = try slot(e, eg.body)
             XCTAssertEqual([s.hasHit, s.hasTileHit], [false, true], "n \(n)")
@@ -410,20 +442,32 @@ final class GremlinFloaterTests: XCTestCase {
             let coins = e.active.sprites.filter { $0.type == 0x516 }
             XCTAssertEqual(coins.count, Int(n) + 1, "n \(n)")
             XCTAssertEqual(Set(coins.map(\.handler)), [.bonus])
-            for c in coins {
-                XCTAssertTrue((-500...499).contains(c.vx), "coin vx \(c.vx)")
-                XCTAssertTrue((-0x578 - 0x63f ... -0x578).contains(c.vy), "coin vy \(c.vy)")
+            for c in coins.sorted(by: { $0.id < $1.id }) {
+                // `MTNewSprite(0x516, c.x − 4, c.y − 4, 2, −1, .SetupBonusSprite)`: its Setup's draws, then vy, then vx.
+                let k = SpriteWorld.newRecord(type: 0x516, x: c0.x - 4, y: c0.y - 4, layer: 2, handler: .bonus,
+                                              record: -1) { b in
+                    _ = try? BonusSprite.setup(&b, x: c0.x - 4, y: c0.y - 4, level: e.level, records: e.records,
+                                               effects: 1, lightCount: 0, counting: false, playerLayer: 0,
+                                               rng: &q) { _, _, _, _ in 0 }
+                }
+                let cvy = -0x578 - Int32(q.next(0x640)), cvx = Int32(q.next(1000)) - 500
+                XCTAssertEqual([Int(c.x256 >> 8), Int(c.y256 >> 8), Int(c.layer)], [c0.x - 4, c0.y - 4, Int(k.layer)])
+                XCTAssertEqual([c.vy, c.vx], [cvy, cvx], "n \(n): vy drawn before vx")
             }
             let monster = e.player.cues.filter { $0.snd == 477 || $0.snd == 478 }
-            XCTAssertEqual(monster.count, mounted ? 1 : 0, "n \(n)")
-            if let m = monster.first {
-                XCTAssertEqual([m.priority, m.volume], [1, 0x100])
-                XCTAssertEqual(m.call, .threeDRand)
-                XCTAssertEqual(m.position, c0)
+            if mounted {
+                let k = q.next(2)
+                XCTAssertEqual(monster, [PlayerCue(call: .threeDRand, snd: 477 + k, priority: 1, volume: 0x100,
+                                                   position: c0, rate: q.soundRate())], "n \(n)")
+            } else {
+                XCTAssertEqual(monster, [], "n \(n)")
             }
+            XCTAssertEqual(e.rng.seed, q.seed, "n \(n): R(3), the coins, the monster sound")
             // The next frame: no second burn start, score or coins; vx · 0.8 again.
             e.player.cues = []
+            _ = q.next(3)
             frame(e, eg.body)
+            XCTAssertEqual(e.rng.seed, q.seed, "n \(n): R(3) drawn again on the next dying frame, nothing else")
             let t = try slot(e, eg.body)
             XCTAssertEqual([Int(t.vx), Int(t.burnRow), Int(e.globals.score)], [640, 1, 1200])
             XCTAssertEqual(e.active.sprites.filter { $0.type == 0x516 }.count, Int(n) + 1)
@@ -456,6 +500,7 @@ final class GremlinFloaterTests: XCTestCase {
                 s.vx = 300
                 s.vy = -200
             }
+            bl.rng = FastRand(seed: seed { differs($0, 5) })
             var q = bl.rng
             frame(bl, bg.body)
             let s = try slot(bl, bg.body)
@@ -567,7 +612,7 @@ final class GremlinFloaterTests: XCTestCase {
         // (and `+0x14c ≠ 2`): `+0x158 = (d + 18) mod 36`, `+0x154 = 0`, `+0xb2 = 9`.
         func fire(right: Bool = false, d k: Int, state: Int32 = 0, bodyHP: Int16 = 500, bodyAt: (Int, Int)? = nil,
                   noBody: Bool = false, playerX: Int16? = nil, cooldown: Int32 = 0, firing: Bool = false)
-            throws -> (fired: Bool, dir: Int32, t: Int32, face: FaceRef?) {
+            throws -> (fired: Bool, dir: Int32, t: Int32, face: FaceRef?, cd: Int32) {
             let w = try world()
             let g = try gremlin(w, p1: 0)
             let rc = try slot(w, g.rider).centre
@@ -590,7 +635,7 @@ final class GremlinFloaterTests: XCTestCase {
             if firing { w.active.update(id: g.rider) { $0.classWord158 = 77 } }
             frame(w, g.rider)
             let r = try slot(w, g.rider)
-            return (r.subState == 9, r.classWord158, r.classWord154, r.face)
+            return (r.subState == 9, r.classWord158, r.classWord154, r.face, r.classWord15c)
         }
         // Facing left: 15 | 16 17 18 | 19 … 24 | 25.
         for (k, fired, want) in [(15, false, Int32(15)), (16, true, 0), (17, true, 0), (18, true, 0), (19, true, 4),
@@ -622,6 +667,11 @@ final class GremlinFloaterTests: XCTestCase {
         XCTAssertEqual([dl4.fired ? 1 : 0, Int(dl4.dir)], [0, 18], "the player behind (c.x < P.x)")
         let dr = try fire(right: true, d: 0, state: 1, playerX: 0)
         XCTAssertEqual([dr.fired ? 1 : 0, Int(dr.dir)], [0, 0], "facing right, the player behind (P.x < c.x)")
+        // The player's x equal to the rider's centre x (702) is not "behind" either way.
+        XCTAssertTrue(try fire(d: 18, state: 1, playerX: 702).fired, "left, equal x")
+        XCTAssertTrue(try fire(right: true, d: 0, state: 1, playerX: 702).fired, "right, equal x")
+        // The cooldown's `= 0` store below 1 (0 − 1 → 0), firing or not.
+        XCTAssertEqual([try fire(d: 16, firing: true).cd, try fire(d: 5).cd], [0, 0])
         let dr2 = try fire(right: true, d: 31, state: 1, playerX: 2000)
         XCTAssertEqual([dr2.fired ? 1 : 0, Int(dr2.dir)], [1, 18])
         // `+0x14c == 2`: never a shot; `+0x158` keeps the gated d.
@@ -658,7 +708,8 @@ final class GremlinFloaterTests: XCTestCase {
             var faces: [Int] = []
             for t in 0...12 {
                 let rc = try slot(w, g.rider).centre
-                if t == 1 { w.rng = FastRand(seed: seed { (r: inout FastRand) in (r.next(100) < 0x33) == hiss2 }) }
+                if t == 1 { w.rng = FastRand(seed: seed { (r: inout FastRand) in r.next(100) == (hiss2 ? 0x32 : 0x33) }) }
+                if t == 12 { w.rng = FastRand(seed: seed { differs($0, 0x1e) }) }
                 var q = w.rng
                 let bodyBefore = try slot(w, g.body)
                 w.player.cues = []
@@ -764,6 +815,7 @@ final class GremlinFloaterTests: XCTestCase {
                 s.classTimer = 1
                 s.hp = 0
                 s.classWord15c = 9
+                s.face = FaceRef(pict: GremlinFloater.riderSet, index: 2, set: .encoded)
             }
             let rc = try slot(w, g.rider).centre
             var q = w.rng
@@ -878,6 +930,20 @@ final class GremlinFloaterTests: XCTestCase {
                 XCTAssertEqual([Int(b.hp), Int(b.invulnerable), Int(b.flash), Int(b.counterA6)], [350, 2, 8, 0x15])
                 XCTAssertEqual([b.vx, b.vy], [125, 800 - 25], "the hurt's push: shot v >> 3")
                 XCTAssertEqual(w.particles.records.prefix(0x28).filter { $0.alive && $0.kind == 2 }.count, 0x28)
+                // `.BloodSpray(s, o, 0x28, 400, 0x96, 2)`: the 10° vector of length 400 from the shot's centre toward the
+                // body's, negated and truncated, plus R(0x96) − 0x4b each (vy drawn first).
+                let sd = BloodSpray.direction(target: (v: Int16(b.centre.y), h: Int16(b.centre.x)),
+                                              from: (v: Int16(b.centre.y), h: Int16(b.centre.x)))
+                let vec = BloodSpray.vector(sd, magnitude: 400)
+                let nx = Int32((-vec.x).rounded(.towardZero)), ny = Int32((-vec.y).rounded(.towardZero))
+                var sq = FastRand(seed: s)
+                var spray: [[Int32]] = []
+                for _ in 0..<0x28 {
+                    let vy = ny + Int32(sq.next(0x96)) - 0x4b
+                    spray.append([nx + Int32(sq.next(0x96)) - 0x4b, vy])
+                }
+                XCTAssertEqual(w.particles.records.prefix(0x28).map { [$0.vx, $0.vy] }, spray)
+                XCTAssertEqual(Set(w.particles.records.prefix(0x28).map { [Int($0.gravity), Int($0.kind)] }), [[0xbe, 2]])
                 var want = [PlayerCue(call: .threeDRand, snd: 701, priority: 1, volume: 0x55, position: b.centre,
                                       rate: q.soundRate())]
                 let m = q.next(100)
@@ -903,6 +969,40 @@ final class GremlinFloaterTests: XCTestCase {
                 XCTAssertEqual(w.rng.seed, q.seed)
             }
         }
+        // HP exactly 0 left: no blood (HP > 0 fails), 702 (< 0xc9, mounted), then the dislodge draw; HP 1 left: the blood
+        // and 702. A dislodged body left at HP 0: no sound, no draw.
+        for (hp, blood) in [(Int16(150), false), (151, true)] {
+            let (w0, g0) = try hit(seed: 11, hp: hp)
+            let b0 = try slot(w0, g0.body)
+            XCTAssertEqual([Int(b0.hp), Int(w0.particles.counters.count)], [Int(hp) - 150, blood ? 0x28 : 0])
+            XCTAssertEqual(w0.player.cues.first, PlayerCue(call: .threeD, snd: 702, priority: 1, volume: 0x100,
+                                                           position: b0.centre))
+            var q = blood ? plan(11) : FastRand(seed: 11)
+            if 0x50 < q.next(100) {
+                _ = q.soundRate(); _ = q.next(300); _ = q.next(200); _ = q.next(200)
+            }
+            XCTAssertEqual(w0.rng.seed, q.seed, "HP \(hp - 150)")
+        }
+        let (z0, zg) = try hit(seed: 11, hp: 150, state: 1)
+        XCTAssertEqual([Int(try slot(z0, zg.body).hp), z0.player.cues.count], [0, 0])
+        XCTAssertEqual(z0.rng.seed, 11, "no draw")
+        // The dislodge's R(300), R(200), R(200) at a point where R(n ± 1) differs.
+        let lucky = find { r in
+            _ = r.soundRate()
+            guard 0x12 <= r.next(100), 0x50 < r.next(100) else { return false }
+            _ = r.soundRate()
+            guard self.differs(r, 300) else { return false }
+            _ = r.next(300)
+            guard self.differs(r, 200) else { return false }
+            _ = r.next(200)
+            return self.differs(r, 200)
+        }
+        let (lw, lg) = try hit(seed: lucky)
+        var lq = plan(lucky)
+        _ = lq.soundRate(); _ = lq.next(100); _ = lq.next(100); _ = lq.soundRate()
+        let lhp = lq.next(300) + 300, lvx = -(Int32(lq.next(200)) + 300), lvy = -0x226 - Int32(lq.next(200))
+        let lr = try slot(lw, lg.rider)
+        XCTAssertEqual([Int(lr.hp), Int(lr.vx), Int(lr.vy)], [Int(lhp), Int(lvx), Int(lvy)])
         // HP < 0xc9 (200 left: 702; 201 left: 701): mounted body.
         for (hp, uhOh) in [(Int16(350), true), (351, false), (300, true)] {
             let s = find { r in _ = r.soundRate(); _ = r.next(100); return r.next(100) < 0x50 }
@@ -1001,6 +1101,23 @@ final class GremlinFloaterTests: XCTestCase {
                                           layer: .background)
             XCTAssertEqual(try slot(w, id).vx, want, "part \(part) dying \(dying)")
         }
+        // After an FG bounce, |vy| < 0x100 → 0: the rider (factor 0xa0) landing on a kind-3 tile with vy 410 bounces to
+        // −(410 · 0xa0 >> 8) = −0x100, kept; with vy 408 to −0xff → 0.
+        for (vy, want) in [(Int32(410), Int32(-0x100)), (408, 0)] {
+            let w = try world(floorRow: 20)
+            let g = try gremlin(w)
+            w.active.update(id: g.rider) { r in
+                r.x = 640
+                r.y = 640 + 0x10 - 0x16 + 2                         // kind 3's surface is the tile's Y + 0x10
+                r.x256 = Int32(r.x) << 8
+                r.y256 = Int32(r.y) << 8
+                r.vx = 0
+                r.vy = vy
+            }
+            GremlinFloater.hitGremlinTile(TileSolver(world: w), id: g.rider, pos: TilePos(x: 640, y: 640), kind: 3,
+                                          layer: .foreground)
+            XCTAssertEqual(try slot(w, g.rider).vy, want, "vy \(vy)")
+        }
         // Through the session's hit dispatch.
         let hw = try world()
         let hg = try gremlin(hw)
@@ -1073,6 +1190,12 @@ final class GremlinFloaterTests: XCTestCase {
         XCTAssertNil(try slot(hw, hid).face)
         // Phase 0: the teleport — x = home x − box/2 + R(box), y likewise (the x draw first), vx = R(600) − 300, vy
         // likewise; the phase + 1; `.ApplyGravityAndSeparateFromTiles` drifts it once by v.
+        hw.rng = FastRand(seed: seed { r in
+            _ = r.next(0x50); _ = r.next(0x50)
+            guard self.differs(r, 600) else { return false }
+            _ = r.next(600)
+            return self.differs(r, 600)
+        })
         var q = hw.rng
         let tx = 600 - 0x28 + Int(q.next(0x50)), ty = 300 - 0x28 + Int(q.next(0x50))
         let vx = Int32(q.next(600)) - 300, vy = Int32(q.next(600)) - 300
@@ -1085,6 +1208,15 @@ final class GremlinFloaterTests: XCTestCase {
         XCTAssertEqual(s.face, f(0x6f4, 0))
         XCTAssertEqual(s.mode, 0xb0002)
         // An odd box halves toward zero: 0x51 / 2 = 40.
+        // A negative odd box (p3 −9, a record the Setup takes as is): box / 2 truncates toward zero (−4, not −5), and
+        // `FastRand(−9)` returns ≤ 0.
+        let nw = try world()
+        let (nid9, _) = try floater(nw, p3: -9)
+        var nq = nw.rng
+        let nx9 = 600 + 4 + Int(nq.next(-9)), ny9 = 300 + 4 + Int(nq.next(-9))
+        frame(nw, nid9)
+        let n9 = try slot(nw, nid9)
+        XCTAssertEqual([Int((n9.x256 - n9.vx) >> 8), Int((n9.y256 - n9.vy) >> 8)], [nx9, ny9])
         let ow = try world()
         let (oid, _) = try floater(ow, p3: 0x51)
         var oq = ow.rng
@@ -1205,6 +1337,25 @@ final class GremlinFloaterTests: XCTestCase {
             XCTAssertEqual(try slot(w, id).phase, 0x1e)
             XCTAssertEqual(try slot(w, id).face, s0.face, "phase 0x1d leaves the face")
         }
+        // The target is the player's centre + 8 down: a player y where the + 8 changes the 10° sector.
+        let pyFound = try XCTUnwrap((300...700).first { py in
+            let from = SpriteSlot.Point(x: 606, y: 322)
+            return dir(SpriteSlot.Point(x: 640, y: py + 8), from: from) != dir(SpriteSlot.Point(x: 640, y: py), from: from)
+                && dir(SpriteSlot.Point(x: 640, y: py + 8), from: from)
+                != dir(SpriteSlot.Point(x: 640, y: py + 7), from: from)
+        })
+        let pw = try world(px: 640, py: Int16(pyFound))
+        let (pid, _) = try floater(pw, x: 600, y: 300)
+        pw.active.update(id: pid) { s in
+            s.phase = 0x1d
+            s.mirrored = false
+            s.vx = 0
+            s.vy = 0
+        }
+        frame(pw, pid)
+        let pshot = try XCTUnwrap(pw.active.sprites.first { $0.handler == .enemyShot })
+        XCTAssertEqual(Int(pshot.classWord15c), dir(SpriteSlot.Point(x: 640, y: pyFound + 8),
+                                                     from: SpriteSlot.Point(x: 606, y: 322)), "P.y + 8")
         // Phases 28 and 30: no shot; hidden at phase 0x1d: the countdown, no shot.
         for (phase, hidden) in [(Int16(28), Int16(0)), (30, 0), (0x1d, 3)] {
             let w = try world()
