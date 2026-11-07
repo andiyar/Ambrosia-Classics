@@ -555,7 +555,15 @@ public final class FerazelSession {
         case .insectBody:
             // `.HandleInsectBodySprite @ 1007f4a0` (BA).
             Bat.handleInsectBody(world: world, id: id) { Self.frameRect($0, resources: res).right }
-        case .dillo, .gremlin, .floater, .frog, .salamander,
+        case .frog:
+            // `.HandleFrogSprite @ 1008214c` (FR, `FrogSalamander.handleFrog`).
+            FrogSalamander.handleFrog(world: world, id: id, solver: solver) { Self.frameRect($0, resources: res).right }
+        case .salamander:
+            // `.HandleSalamanderSprite @ 10083074` (FR, `FrogSalamander.handleSalamander`).
+            FrogSalamander.handleSalamander(world: world, id: id, solver: solver) {
+                Self.frameRect($0, resources: res).right
+            }
+        case .dillo, .gremlin, .floater,
              .blob, .deadBlob, .crab, .crabSegment, .geyserSegment, .warrior:
             // EC: the enemy Handles — the `+0x1b2` early return, then each a named no-op until its task
             // (`EnemyCommon.handle`).
@@ -1131,7 +1139,8 @@ public final class FerazelSession {
     /// the stalactite's shot case; BX1 the rest; SW: a Statue's hit is the Box class's, `.TurnIntoStatue`);
     /// `.HitButtonSprite` (BT); `.HitEnemyShotSprite` (ES); `.HitWalkerSprite` (WK1; also the corpse raft's, kept
     /// under the Platform Handle); `.HitCrawlerSprite` / `.HitRoachSprite` (CR); `.HitBatSprite` /
-    /// `.HitSwarmMemberSprite` (BA). // later: Phase 5 (the other enemy classes). The session's form:
+    /// `.HitSwarmMemberSprite` (BA); `.HitFrogSprite` / `.HitSalamanderSprite` (FR). // later: Phase 5 (the other enemy
+    /// classes). The session's form:
     /// `hitCallback` on `lightTable`.
     private func hit(_ w: SpriteWorld, _ a: Int, _ b: Int) {
         let res = resources
@@ -1171,6 +1180,12 @@ public final class FerazelSession {
         case .swarmMember:                                                              // `.HitSwarmMemberSprite` (BA)
             Bat.hitSwarmMember(w, id: a, other: b, lights: &lights, effects: effects, faceWidth: faceWidth,
                                faceBounds: faceBounds)
+        case .frog:                                                                     // `.HitFrogSprite` (FR)
+            FrogSalamander.hitFrog(w, id: a, other: b, lights: &lights, effects: effects, faceWidth: faceWidth,
+                                   faceBounds: faceBounds)
+        case .salamander:                                                               // `.HitSalamanderSprite` (FR)
+            FrogSalamander.hitSalamander(w, id: a, other: b, lights: &lights, effects: effects, faceWidth: faceWidth,
+                                         faceBounds: faceBounds)
         case .background:                                                               // `.HitBackgroundSprite` (W2b)
             BackgroundSprite.hit(w, id: a, other: b, lights: &lights, effects: effects, faceWidth: faceWidth,
                                  faceBounds: faceBounds)

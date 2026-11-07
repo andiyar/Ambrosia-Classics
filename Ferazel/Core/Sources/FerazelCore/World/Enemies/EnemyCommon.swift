@@ -71,7 +71,7 @@ public enum EnemyCommon {
         case .dillo: break                              // later: DL — `.HandleDilloSprite`
         case .bat, .swarmMember, .insectBody: break     // the session dispatches `Bat` (BA)
         case .gremlin, .floater: break                  // later: GF — `.HandleGremlinSprite` / `.HandleFloaterSprite`
-        case .frog, .salamander: break                  // later: FR — `.HandleFrogSprite` / `.HandleSalamanderSprite`
+        case .frog, .salamander: break                  // the session dispatches `FrogSalamander` (FR)
         case .blob, .deadBlob, .crab, .crabSegment: break   // later: BL — the Blob, the dead Blob, the Crab, its segments
         case .geyserSegment: break                      // later: GY — `.HandleGeyserSegSprite`
         case .warrior: break                            // later: LV5 ◇ — the Warrior stand-in (Ruling 3)
@@ -91,8 +91,14 @@ public enum EnemyCommon {
         let killer = s.walkerCallbacks ? SpriteHandler.walker : s.handler
         switch killer {
         case .walker, .crawler, .roach, .dillo, .bat, .frog, .salamander, .blob, .warrior:
-            w.enemies.kill(&s, globals: &w.globals, level: w.levelIndex, forGood: EnemyCounting.killsForGood(killer))
-            // `.KillWalker` is this alone (WK1). // later: CR / DL / BA / FR / BL / LV5 — each other Kill's own tail
+            switch killer {
+            case .frog: FrogSalamander.killFrog(w, &s)              // `.KillFrog` (FR): the count, then its score
+            case .salamander: FrogSalamander.killSalamander(w, &s)  // `.KillSalamander` (FR)
+            default:
+                w.enemies.kill(&s, globals: &w.globals, level: w.levelIndex,
+                               forGood: EnemyCounting.killsForGood(killer))
+            }
+            // `.KillWalker` is the count alone (WK1). // later: CR / DL / BA / BL / LV5 — each other Kill's own tail
         case .gremlin:
             guard s.killCount == 0 else { return }      // `+0xe9 ≠ 0` → return (M l. 69736–69738, raw 100810e0 bnelr)
             w.enemies.kill(&s, globals: &w.globals, level: w.levelIndex, forGood: true)

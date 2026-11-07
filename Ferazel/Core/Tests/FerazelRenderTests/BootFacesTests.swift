@@ -166,6 +166,16 @@ final class BootFacesTests: XCTestCase {
         XCTAssertNotNil(boot[0x456])
         XCTAssertNotNil(boot[0x457])
         XCTAssertNotNil(boot[0x516])
+        // FR: `.InitFrogSprite`'s 0x708 and `.InitSalamanderSprite`'s 0x712 (M l. 70116, 70649) are level-load caches,
+        // defined once in the Setup-face table; the spit 0x709 faces from the boot sets 0x454 / 0x455, the fireball
+        // 0x712 from 0x456 / 0x457.
+        for p in [FrogSalamander.frogSet, FrogSalamander.salamanderSet] {
+            XCTAssertNil(boot[p], "cache PICT \(p)")
+            XCTAssertNotNil(SetupFaces.sheet(pict: p), "cache PICT \(p) geometry")
+            XCTAssertFalse(CachedFaces.handleSets.contains { $0.pict == p }, "cache PICT \(p) defined twice")
+        }
+        XCTAssertNotNil(boot[0x454])
+        XCTAssertNotNil(boot[0x455])
     }
 
     /// Levels 1–4: every boot face the data holds, every class sheet Core declares and every Setup sheet of the level's

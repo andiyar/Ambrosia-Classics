@@ -187,6 +187,8 @@ public enum SetupFaces {
         for p: Int16 in [0x534, 0xc85, 0xb20, 0xb21, 0xb6d, 0xb6e, 0xb70, 0xb8a] { all.append(one(p)) }
         all += [set(0x53c, 6, 0x2c, 0x2a, 6), set(0x53d, 6, 0x2c, 0x2a, 6), set(0xb75, 0x18, 0x20, 0x36, 0xc),
                 set(0x6cc, 0xb, 0x38, 0x34, 0xb), set(0x708, 8, 0x78, 100, 8)]
+        // FR: the Salamander set 0x712 (`.InitSalamanderSprite` M l. 70649, cached, 9 × 0x50×100, one row, flag 0).
+        all += [set(0x712, 9, 0x50, 100, 9)]
         // BX1 (`.InitBoxSprite` M l. 58745, 58747, 58760, 58785–58786, 58811): the boulders 2 / 3 0x42f / 0x430 and the crate 0xc13
         // (boot singles), the mine cart's cache sets 0xb72 (14 × 0x80×0x60, 7 per row) and 0xb73 (21 × 0x80×0x3a; flag
         // 0), the ice wall 0xb7d (boot single).
@@ -580,30 +582,23 @@ public enum SetupFaces {
             face(0x6c2, 0, .setupCached)
 
         case .frog:
-            // `.SetupFrogSprite @ 10081f14` (M l. 70137–70220; W4, inert): layer 0xb, HP 500, `+0xb0 = 0xb`,
-            // `+0x14c = −0x14 − FastRand(0x1e)` (raw `10081f84`), SetRect(0xb, 0x14, 0x48, 0x49), `+0x150 = −1`,
-            // `+0x15c` = p1, `+0xf0 = FastRand(0x5fff)·2 + 0xbfff` (`10081ff8`); p1 tiers (HP, `+0xb8`); hdr 0x26cd ≠ 0 →
-            // `+0x8e = 1` (0 on levels 1–2 — no field); `+0xc0` = cache 0x708 face 0. // later: Phase 5 (Handle).
+            // `.SetupFrogSprite @ 10081f14` (M l. 70137–70220; FR, `FrogSalamander.setupFrog`): the class fields, the p1
+            // variant (HP, `+0xb8`), hdr 0x26cd ≠ 0 → `+0x8e = 1`, the counting window; `+0xc0` = cache 0x708 face 0
+            // (l. 70211).
             guard (0x708...0x711).contains(t) else { throw Error.notTranscribed(type: p.type) }
-            s.layer = 0xb
-            s.hp = 500
-            s.classTimer = -0x14 - Int32(rng.next(0x1e))
-            s.hotRect = IdleSprites.Rect(top: 0x14, left: 0xb, bottom: 0x49, right: 0x48)
-            s.classWord150 = -1
-            s.subtype = 0xb                                    // `+0xb0 = 0xb` (l. 70171)
-            s.gravity = 0x8c                                   // `+0x110 = 0x8c` (l. 70179)
-            s.classWord15c = Int32(p.p1)
-            s.voicePitch = Int32(rng.next(0x5fff)) * 2 + 0xbfff
-            switch p.p1 {
-            case 0: s.hp = 0x15e; s.mode = 0
-            case 1: s.hp = 500; s.mode = 0x1000c
-            case 2: s.hp = 0x15e; s.mode = 0x10017
-            case 3: s.hp = 0x5dc; s.mode = 0x1000f
-            case 4: s.hp = 1000; s.mode = 0x1000b
-            default: break
-            }
-            face(0x708, 0, .setupCached)                       // `+0xc0 = cache 0x708 + 4` (l. 70209)
-            counting.countIfWindow(&s)                         // `+0x1b5 = 1`, live + 1 in the window (M l. 70213–70215)
+            s.oldPosition = SpriteSlot.Point(x: s.x, y: s.y)           // `.MTNewSprite`'s `+8` / `+6`
+            FrogSalamander.setupFrog(&s, record: p, freezing: c.level.header.inLiquid != 0, rng: &rng,
+                                     counting: &counting)
+            face(FrogSalamander.frogSet, 0, .setupCached)               // `+0xc0 = cache 0x708 + 4` (l. 70211)
+
+        case .salamander:
+            // `.SetupSalamanderSprite @ 10082f20` (M l. 70654–70703; FR, `FrogSalamander.setupSalamander`): the class
+            // fields and the counting window; `+0xc0 = 0` — the first Handle faces it from the cache set 0x712 (marked,
+            // l. 70680). The entry names that face (`.handle`). First placed on level 50.
+            guard (0x712...0x71b).contains(t) else { throw Error.notTranscribed(type: p.type) }
+            s.oldPosition = SpriteSlot.Point(x: s.x, y: s.y)
+            FrogSalamander.setupSalamander(&s, rng: &rng, counting: &counting)
+            face(FrogSalamander.salamanderSet, 0, .handle)
 
         default:
             throw Error.notTranscribed(type: p.type)
@@ -645,12 +640,12 @@ public enum SetupFaces {
     /// enemies: `.SetupCrawlerSprite` (M l. 56236–56240), `.SetupWalkerSprite` (M l. 57090–57094), `.SetupRoachSprite`
     /// (M l. 64947–64951) at their ends (no early return), `.SetupBatSprite`'s arms (M l. 68210–68213, 68234–68237,
     /// 68270–68273, 68282–68285; BA),
-    /// `.SetupFrogSprite` at its end (M l. 70211–70215), `.SetupBlobSprite` at its end for every type (M l.
-    /// 67728–67730; LV3). // later: Phase 5–6 — the other enemy classes' sites (Gremlin 69229, Floater 69899,
-    /// Salamander 70697, Dillo 72370, Warrior 73069, Demon 74493, Chief 75110, Wizard 75676, Xichra 76435), some
-    /// branch-gated, are not transcribed (their Setups throw `notTranscribed` before any tally). EC: the enemies are
-    /// `EnemyCounting.live` — each counted Setup's `countIfWindow` — copied here after the spawn; the secrets and
-    /// Xichrons are counted here by type, while the window is set.
+    /// `.SetupFrogSprite` at its end (M l. 70211–70215), `.SetupSalamanderSprite` at its end (M l. 70692–70698; FR),
+    /// `.SetupBlobSprite` at its end for every type (M l. 67728–67730; LV3). // later: Phase 5–6 — the other enemy
+    /// classes' sites (Gremlin 69229, Floater 69899, Dillo 72370, Warrior 73069, Demon 74493, Chief 75110, Wizard
+    /// 75676, Xichra 76435), some branch-gated, are not transcribed (their Setups throw `notTranscribed` before any
+    /// tally). EC: the enemies are `EnemyCounting.live` — each counted Setup's `countIfWindow` — copied here after the
+    /// spawn; the secrets and Xichrons are counted here by type, while the window is set.
     public struct Tallies: Equatable, Sendable {
         public var secrets: Int16 = 0
         public var xichrons: Int16 = 0

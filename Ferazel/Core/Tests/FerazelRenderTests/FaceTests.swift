@@ -598,6 +598,14 @@ final class FaceTests: XCTestCase {
                          "Bat PICT \(p) unmarked on level 1")
         }
         XCTAssertNil(one.sprites.faces.face(FaceRef(pict: 0x6cc, index: 0, set: .encoded)), "level 1 places no bat")
+        // FR: the Frog Handle faces all 8 cells of its cache set 0x708 on levels 2–4 (below; its Setup marks it); the
+        // Salamander set 0x712 (9 cells) loads only where its Setup marks it — first placed on level 50. The spit 0x709
+        // and the fireball 0x712 face from the enemy-shot boot sets 0x454…0x457 (above).
+        let salamander = try XCTUnwrap(SetupFaces.sheet(pict: FrogSalamander.salamanderSet))
+        XCTAssertNotNil(r.resource(type: "PICT", id: salamander.pict, chain: .frontEnd), "Salamander PICT")
+        XCTAssertEqual(salamander.count, 9)
+        XCTAssertNil(one.sprites.faces.face(FaceRef(pict: 0x712, index: 0, set: .encoded)), "level 1 places no salamander")
+        XCTAssertNil(one.sprites.faces.face(FaceRef(pict: 0x708, index: 0, set: .encoded)), "level 1 places no frog")
         // The drops of every chest and crate on levels 1–4 and the key faces their locks show — each in its own
         // level's renderer. The original loads every Bonus face at boot (`.InitBonusSprite` M l. 52261–52337); the
         // replica's per-level load (`BoxSprite.dropSheets`) is a seam, so the faces are named here, not derived from it.
@@ -615,6 +623,7 @@ final class FaceTests: XCTestCase {
             let frame = n == 1 ? one : try renderer(n)
             want("level \(n) balloon", BoxSprite.balloon, in: frame)
             if 1 < n { want("level \(n) bat set", Bat.batSet, cells: 11, in: frame) }
+            if 1 < n { want("level \(n) frog set", FrogSalamander.frogSet, cells: 8, in: frame) }
             for k in keys[n]! { want("level \(n) key face", k, in: frame) }
             for (pict, cells) in drops[n]! { want("level \(n) drop", pict, cells: cells, in: frame) }
             for sh in BoxSprite.dropSheets(frame.level.placements) {

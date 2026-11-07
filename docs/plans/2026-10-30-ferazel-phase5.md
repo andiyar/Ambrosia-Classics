@@ -1169,6 +1169,28 @@ records the summary line.
 - **Tests (8):** `testFrogVariantsByP1` · `testFrogLeapCycle` · `testFrogSpitAtStep6` · `testFrogHitByShot` ·
   `testFrogDeathBurns` · `testSalamanderFireball` (0x712 at step 0xc) · `testSalamanderWater` · `testSalamanderContactHazardArm`.
 - **Gate:** G2 576 + ◈. **Commit:** `FerazelCore: Frogs and Salamanders; 8 tests`.
+- **As executed (2026-11-07 attended run 43, Opus implementer, D45; ladder 577):** `World/Enemies/FrogSalamander.swift`
+  holds both classes (Setup, Handle, Hit, Kill, tile callback; the statue arm through `EnemyCommon.turnIntoStatue`; the
+  Frog's Smiting/geyser arm through `EnemyCommon.environmentalHazard(crawlerFields: true)`, M l. 70509–70519; the
+  crush through `CrawlerRoach.crush`). Write-back flags: neither class stores `+0x188`…`+0x18b`; `+0xea` only in the
+  two Kills (M l. 70575, 70934). Both water blocks are transcribed as written and stay dead (M l. 70245, 70722 — tested
+  after `.StandardSpriteHandles`' zero). Files beyond the card: `Session/FerazelSession.swift` (the Handle and hit
+  dispatch, as every built class has; `EnemyCommon.handle`'s `.frog` / `.salamander` row now names that dispatch),
+  `EnemyCommon.killProc` (the Frog / Salamander arm routes to `.KillFrog` / `.KillSalamander` for their scores — the arm
+  list is unchanged, audit ruling 4), `Tests/FerazelRenderTests/DrawModeAuditTests.swift` (the Frog's tint rows moved
+  from `SetupFaces.swift` to `FrogSalamander.swift`, the spit tints, the dead blocks' flash, the facing writes; the
+  `SetupFaces` rows re-anchored +2; the `notTranscribed` refusal count 11 → 12 for the Salamander arm's type guard),
+  `FaceTests` / `BootFacesTests` (asserts only, the Faces rule). The Salamander set 0x712 (9 × 0x50×100, M l. 70649) is a
+  level-load cache registered after the Frog's (`CachedFaces.sets`), marked by every 0x712…0x71b Setup (M l. 70680);
+  the Frog's mark row widened to 0x708…0x711 (the Setup marks unconditionally, M l. 70211). The spit 0x709 and the
+  fireball 0x712 face from the enemy-shot boot sets 0x454…0x457 — no `BootFaces` change. ◈: no Frog Handle runs on any
+  golden route (a temporary print over `Phase2GoldenTests` and `FrameGoldenTests` saw none — the level-2 Frogs start
+  idled), so no golden moved and the Windows references are untouched; with the Frog's Handle and Hit stubbed the
+  goldens pass unchanged. One Frog (level 3 or 4, rec 161) runs one Handle in `BootFacesTests`' 120-frame sessions and
+  turns to face the player: no pinned row reads the flip. No dump-vs-bank contradiction; two bank omissions, not
+  corrected: the Salamander's idle exit also sets `+0x46 = 0` (M l. 70839), and its spit restart sets `+0x46 = 0` then
+  `+ 1` (M l. 70771, 70785). A headless session has no face pixels, so the burn — and with it every Frog / Salamander
+  death — never ends there (EC's burn rule, `Burn.handle`'s guard).
 
 #### BL — ⚑ MAJOR — Blob and Crab; the Multi Crystal's Blob-attacker exception (→ 583)
 - **Files:** `Sources/FerazelCore/World/Enemies/BlobCrab.swift` (new), `Sources/FerazelCore/Sprites/SetupFaces.swift`

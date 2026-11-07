@@ -1057,7 +1057,9 @@ public struct CachedFaces: Equatable, Sendable {
     /// from level 22 on);
     /// `.InitEnemyShotSprite`'s four (M l. 51434–51437, after the Background's, flag 0 — `.InitBackgroundSprite`
     /// leaves `*_DAT_100a0a48` 0, M l. 61912): 0x46a three times (6 × 48×48, then 6 × 64×64 twice) and 0x77b (16 faces);
-    /// only the boss Setups mark them (`EnemyShot.cachedSheets`). One PICT in three records: `loadedSets` keys by PICT,
+    /// only the boss Setups mark them (`EnemyShot.cachedSheets`). FR: `.InitSalamanderSprite`'s 0x712 (9 faces, M l.
+    /// 70649, flag 0), registered after the Frog's (`.InitSprites` calls Frog, Gremlin, Salamander — the Gremlin's sets
+    /// are GF's). One PICT in three records: `loadedSets` keys by PICT,
     /// so a mark of 0x46a counts all three [LOW: no mark before Phase 6]. // later: Phase 5–6 — the other sets, as their
     /// Setups are transcribed.
     static let sets: [Record] = [
@@ -1080,7 +1082,7 @@ public struct CachedFaces: Equatable, Sendable {
         Record(pict: 0x6cc, faces: 11, flag: 0), Record(pict: 0x744, faces: 9, flag: 0),
         Record(pict: 0x74d, faces: 8, flag: 0), Record(pict: 0x73a, faces: 12, flag: 0),
         Record(pict: 0x73b, faces: 12, flag: 0), Record(pict: 0x6c2, faces: 16, flag: 0),
-        Record(pict: 0x708, faces: 8, flag: 0),
+        Record(pict: 0x708, faces: 8, flag: 0), Record(pict: 0x712, faces: 9, flag: 0),
     ]
 
     /// The singles list `PTR_DAT_100a12b8` in registration order (the same subset): Walker 0x6a4, 0x6d6 (M l. 56755–56756;
@@ -1132,7 +1134,7 @@ public struct CachedFaces: Equatable, Sendable {
     /// decoration, outcrop, mushroom, furniture and NPC singles of the same id; BA: every Bat type 0x6cc…0x6d5 → set
     /// 0x6cc (`PTR_DAT_100a0c90[1] = 1`, M l. 68286 — the whole arm), 0x73a…0x73e → set 0x73a (M l. 68241) and with
     /// record p1 < 0 also 0x73b (M l. 68267; `p1`), 0x74d → set 0x74d (M l. 68158), 0x744…0x74c → set 0x744 (M l.
-    /// 68218); Frog 0x708 → set 0x708 (70211). LV3: Blob 0x6c2 → set 0x6c2 (67726);
+    /// 68218); Frog 0x708…0x711 → set 0x708 (70211); FR: Salamander 0x712…0x71b → set 0x712 (70680). LV3: Blob 0x6c2 → set 0x6c2 (67726);
     /// the spikes 0x730 / 0x731 → set 0x730 (61984, 62281), 0x732 / 0x733 → **both** singles 0x732 and 0x733 (62460–
     /// 62461); the mine cart 0xb72 / 0xb73 with a record → sets 0xb72, 0xb73 (59434–59435); the level-3 decoration,
     /// outcrop and mushroom singles of the same id (59647, 59699, 59709). ES (unplaced before level 22): the dart traps
@@ -1162,7 +1164,8 @@ public struct CachedFaces: Equatable, Sendable {
         case 0x76e, 0x76f: return ([t], [])
         case 0x732, 0x733: return ([], [0x732, 0x733])
         case 0xb72, 0xb73: return ([0xb72, 0xb73], [])
-        case 0x708: return ([0x708], [])
+        case 0x708...0x711: return ([0x708], [])
+        case 0x712...0x71b: return ([0x712], [])
         case 0x5b5, 0x5b6: return ([], [0x5b5])
         case 0x5b8, 0x5cd, 0xa96, 0xa99, 0xa9a, 0xbba, 0xb54, 0xb1a, 0xb20, 0xb21, 0xb87, 0xb88, 0xb8a, 0xb25,
              0xb36, 0xb37, 0xb3a, 0xb43, 0xb6a, 0xb6c, 0xb6d, 0xb6e, 0xb6f, 0xb70,
