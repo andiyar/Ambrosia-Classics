@@ -1907,6 +1907,22 @@ the fix round 60d92f7). Run 42's Bat class (005058f) cherry-picked, its fix roun
 under BA has the lines). Re-review MERGEABLE (26/26 mutants killed; switch-off by stubbing the Handle returns the two L3
 BootFaces values). ◈ none moved. The draw-mode audit's line-anchored rows for `Bat.swift` re-anchored (+1…+5 lines).
 
+**As built — attended run 43 (2026-11-07, Fable seat, D45), FR ⚑◈ (Frogs and Salamanders).** Ladder: FR **577** / 2 opt-in
+skips (449 rules + 128 render; the seat's whole-suite number at the fix-round head 8fa5ca2). `World/Enemies/FrogSalamander.swift`
+(both classes; the session's Handle/hit dispatch in `FerazelSession.swift`; `killProc` routes the two classes to their own
+Kills), 8 tests. Two Opus legs: leg 1 found **the Frog's launch aim following the bank instead of the binary** — the
+original compares the player's **x** (the playerX global, raw 100824bc through TOC slot −0x7aac) with the frog's centre y −
+0x28, while its idle state reads player y (slot −0x7ab0): a quirk of the original, ported as written (bank
+enemies-water-cave §1.3 corrected ⚑); leg 2's mutation table: 87 mutants, 24 real survivors. Fix round (8fa5ca2): the aim
+fix with a failing assert first, two asserts re-derived from the dump (the far scenario's "above" branch; landing gravity
+0x5a per M l. 70400, 400 only on a solid-floor hit M l. 70622–70624), all 24 pinned, the `freezing` → `inLiquid` rename.
+Re-review MERGEABLE (25/25 mutants killed; the "16 px lower" worry did not reproduce — a test comment's wrong threshold,
+corrected by the seat). Write-back flags: `+0xea` in the two Kills only (M l. 70575, 70934); neither class writes
+`+0x188…+0x18b`. **◈ none moved** — no Frog Handle runs on a golden route (the level-2 Frogs start idled); Windows
+references untouched. Carried [LOW]: a headless session has no face pixels, so the burn — and every Frog/Salamander death —
+never ends there (EC's burn rule; shells pass the renderer); the Salamander's stale register on `.KillPlayerShot` is nil
+(unverified); two bank omissions noted in "As executed" (`+0x46 = 0` at M l. 70839; the spit restart M l. 70771/70784).
+
 ## D45 — Cythera re-planning pass: Ben's five answers + the seat's rulings (2026-11-05)
 
 **Context.** Phase 0 half built (K1, C0–C5, 44 tests) and stalled since 2026-10-07; nothing planned beyond it. Fable

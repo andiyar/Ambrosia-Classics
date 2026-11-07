@@ -227,7 +227,7 @@ final class FrogSalamanderTests: XCTestCase {
             var vy = -0x514 - Int32(x.next(400))
             let timer = -10 - Int32(x.next(10))
             // ⚑ The aim's "player above" test reads the player's centre X (M l. 70358, `_DAT_1009fd94`): x 450 < the
-            // frog's cy − 0x28 (≈ 573), so the "above" branch is taken though the player stands level with the frog:
+            // frog's cy − 0x28 (589: the frog centre y 629 − 40), so the "above" branch is taken though the player stands level with the frog:
             // vy −= R(0x96) + 200, and no near-range R(100).
             vy -= Int32(x.next(0x96)) + 200
             XCTAssertEqual(w.rng.seed, x.seed)
