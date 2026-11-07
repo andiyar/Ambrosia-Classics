@@ -16,13 +16,14 @@ can, in order, without cutting corners on the 100 % rule.** Repo `/Users/andiyar
 (`$REPO`); local-only — **never push, fetch, or touch a remote**. You are already in your own worktree on your own
 `loop/<N>-<stamp>` branch (the looper made it from `main`); verify `git branch --show-current` before EVERY commit.
 Invoke `superpowers:subagent-driven-development` first. House method: `~/Developer/Toolkits/fable-kit/orchestrator.md`
-(§2 loop, §3 subagent brief, §5 cap, §6 model policy) and `opus-driver.md` §3. Echo the mission in one sentence, say
-what you'll do first, start.
+(§0 Ben's statement, §2 loop, §3 subagent brief, §5 cap, §6 model policy; the same rules whichever model holds the
+seat). Echo the mission in one sentence, say what you'll do first, start.
 
 ## MODEL SEAT (Ben 2026-10-07 + 2026-10-13; CLAUDE.md "Workflow"; D34)
 - You are Opus 5.5 (the looper's `MODEL`). Every implementer and reviewer is `fk-implementer` / `fk-reviewer` with
   **NO `model` param** (frontmatter pins `claude-opus-5-5`; `"opus"` there is the wrong Opus). Never Sonnet/Haiku,
-  never general-purpose for typed work. Floor: one implementer + one reviewer per task; ⚑ MAJOR = two Opus review legs.
+  never general-purpose for typed work. Per task: one implementer, then two Opus review legs (spec, then quality) that
+  check each other — every task, not only ⚑ MAJOR (kit rule 2026-11-08).
 - **Fable 5.1 is the cross-check, not the gate.** Exactly these Fable legs (`fk-reviewer` with `model: "fable"`,
   named "FABLE-GRADE gate" in its prompt; it re-runs the gates itself): (1) **each phase plan**, once, after its two
   Opus review legs, before execution; (2) **each phase end**, once, over the phase's whole diff

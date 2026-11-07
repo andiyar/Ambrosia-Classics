@@ -45,10 +45,11 @@ Classics to the HectorKit tag only when a game ships). Push both. Orchestrator c
 Invoke `superpowers:brainstorming` FIRST (this phase has unlocked design decisions: present path, window/scaling
 behaviour, how the map's lanterns and progression are drawn), then `superpowers:writing-plans` (one Opus planner,
 one Fable reviewer with a dry run, fix pass), then `superpowers:subagent-driven-development`. House method:
-~/Developer/Toolkits/fable-kit/orchestrator.md; if you are not Fable, opus-driver.md first.
+~/Developer/Toolkits/fable-kit/orchestrator.md (§0 first; the same rules whichever model holds the seat).
 
-MODEL SEAT: say which model you are in your first message. Every subagent `model: "opus"` — except Fable-grade
-review legs on MAJOR tasks (omit `model`).
+MODEL SEAT: say which model you are in your first message. Every subagent is `fk-implementer` / `fk-reviewer` with
+no `model` param (the agent files pin `claude-opus-5-5`); two Opus review legs per task. Fable reviews no single
+task; its one cross-check is at the phase end (docs/NEXT.md "MODEL SEAT").
 
 READ FIRST (in order): 1. docs/STATE.md (whole). 2. docs/handoff-2026-10-03-phase0-plan.md. 3. Design doc
 docs/design-2026-10-03-hectorkit-and-classics.md §2 (HectorShell row), §4, §4a (scaling ruling), §5, §6 item 1,
