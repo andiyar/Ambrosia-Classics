@@ -120,7 +120,7 @@ public enum Geyser {
     ///   `CalcStereoVolume` at `+0xa6 == 0` with `+0xac ≠ −1` is dead: no sound); falling: v = trunc(0.12·(h − `+0xf4`)),
     ///   > −0x100 → −0x100, < −0x700 → −0x700, h += v; then h < 0 → 0;
     /// - the triple while rising: `retarget`; then `column`.
-    /// A period of 0 (on + off = −1, no placement) would divide by zero (`divwu`, undefined): the quotient is taken as 0.
+    /// A period of 0 (on + off = −1, no placement) would divide by zero (`divwu`, undefined): the quotient is taken as 0 — and since quotient × 0 is 0 whatever the quotient, `+0xa6` is the frame counter's low 16 bits either way.
     static func erupt(_ w: SpriteWorld, id: Int, lights: inout LightTable, effects: Int16) {
         guard let s0 = w.active.record(id: id) else { return }
         let C = UInt32(bitPattern: w.frameCounter)

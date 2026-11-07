@@ -341,7 +341,7 @@ final class GeyserTests: XCTestCase {
     }
 
     /// The period-0 guard in the eruption arm (`LAB_1006df20`, M l. 60379–60483): with on + off = −1 the divisor
-    /// on + off + 1 is 0, which `divwu` leaves undefined; the port takes the quotient as 0, so `+0xa6` = Int16(C) — the
+    /// on + off + 1 is 0, which `divwu` leaves undefined; the port takes the quotient as 0, and since quotient × 0 is 0 whatever the quotient, `+0xa6` = Int16(C) — the
     /// level frame counter's low half — and nothing traps. Unreachable from shipped data: no geyser placement on levels
     /// 10, 50 or 51 gives on + off = −1; the placement here is made by hand.
     func testEruptionPeriodZeroGuard() throws {
