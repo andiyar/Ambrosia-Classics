@@ -377,7 +377,7 @@ crush as Frog. No explosion branch.
 `.SetupCrabSprite @ 100894e4` (l. 20532–20657), `.HandleCrabSprite @ 10089828` (l. 20658–20857),
 `.HandleCrabSegSprite @ 10089dec` (l. 20858–20869), `.HitCrabSprite @ 10089e24`
 (l. 20870–20882); main `.InitCrabSprite @ 10089454`. Sheets: claw PICT **1890**, 6 cells
-100×100; chain link PICT **1895** (one face). Layer 8 (links 7). Hot rect SetRect(24,24,76,76).
+100×100; chain link PICT **1895** (one face). Layer 8 (links ~~7~~ 8 ⚑ corrected (run 44)). Hot rect SetRect(24,24,76,76).
 No gravity, **no tile callback**, no kill proc, HP 1000 never reduced.
 
 ### 4.1 Setup  [HIGH]

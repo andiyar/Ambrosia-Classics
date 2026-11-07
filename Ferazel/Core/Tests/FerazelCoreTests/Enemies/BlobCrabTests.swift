@@ -200,6 +200,12 @@ final class BlobCrabTests: XCTestCase {
         // 2 + R(14)`.
         var s = blob { $0.subtype = 6; $0.phase = 2; $0.mirrored = true }
         var phases: [Int16] = [], sub: [Int16] = []
+        // A stream whose first R(14) differs from R(15) and R(13) (the bound itself is pinned).
+        w.rng = FastRand(seed: seed { r in
+            var q = r, u = r
+            let v = r.next(0xe)
+            return v != q.next(0xf) && v != u.next(0xd)
+        })
         var x = w.rng
         for _ in 0..<14 {
             s = run(s)
@@ -249,13 +255,16 @@ final class BlobCrabTests: XCTestCase {
         x = w.rng
         w.player.cues = []
         s = blob { $0.subtype = 2; $0.classTimer = 1; $0.phase = 0 }
-        var vxs: [Int32] = []
-        for _ in 0..<20 {
+        var vxs: [Int32] = [], cueFrames: [Int] = []
+        for k in 1...20 {
+            let n = w.player.cues.count
             s = run(s)
+            if w.player.cues.count != n { cueFrames.append(k) }
             vxs.append(s.vx)
             XCTAssertEqual(s.classTimer, 1, "side: the player is right")
         }
         XCTAssertEqual(vxs, [0, 0, 0, 0, 0, 0, 0, 400, 800, 1200, 1600, 2000, 2400, 2000, 1600, 1200, 800, 400, 0, 0])
+        XCTAssertEqual(cueFrames, [5], "slimemove on the frame entered at `+0x46 == 4` only")
         let rate = Int32(x.next(30000)) + 50000
         XCTAssertEqual(w.player.cues, [PlayerCue(call: .threeDPitched, snd: 607, priority: 1, volume: 0x55,
                                                  position: s.centre, rate: rate)])
@@ -290,7 +299,7 @@ final class BlobCrabTests: XCTestCase {
         }
         // State 5, the brake (M l. 67930–67944): vx × 0.8, `+0x46` cycles 0…19; |vx| < 200 → 0 and state 2.
         for (vx, out, state) in [(Int32(1000), Int32(800), Int16(5)), (250, 200, 5), (249, 0, 2), (-249, 0, 2),
-                                 (-250, -200, 5)] {
+                                 (-250, -200, 5), (1001, 800, 5), (-1001, -800, 5)] {
             let t = run(blob { $0.subtype = 5; $0.vx = vx; $0.phase = 3 })
             XCTAssertEqual([t.vx, Int32(t.subtype), Int32(t.phase)], [out, Int32(state), 4], "vx \(vx)")
         }
@@ -313,6 +322,10 @@ final class BlobCrabTests: XCTestCase {
                 v.active.update(id: id) { $0.mirrored = true; $0.subtype = 5; $0.vx = 5000 }
                 frame(v, id, solver)
                 XCTAssertTrue(try slot(v, id).mirrored, "equal centres: kept")
+                v.active.update(id: id) { $0.mirrored = false; $0.subtype = 5; $0.vx = 5000 }
+                v.player.centreX = Int16(try slot(v, id).centre.x)
+                frame(v, id, solver)
+                XCTAssertFalse(try slot(v, id).mirrored, "equal centres: kept (false)")
             }
         }
         let d = try world()
@@ -449,6 +462,24 @@ final class BlobCrabTests: XCTestCase {
         frame(u, uid, TileSolver(world: u))
         XCTAssertEqual([Int(u.globals.score), Int(u.enemies.live), Int(u.globals.achieved[0][3])], [250, 2, 0])
         XCTAssertEqual([try slot(u, uid).dead, try slot(u, uid).killedForGood], [true, true])
+        // The session's Handle dispatch by `+0x4c` (`FerazelSession`'s handle pass): a live Blob and a dead puddle, kept
+        // active (`+0x1c6` 0), each advance one step a frame.
+        let sess = try FerazelSession(resources: try resources(), prefs: FerazelPrefs(), level: 3, seed: 1)
+        let sw = sess.world
+        let pl = try slot(sw, try XCTUnwrap(sw.playerID))
+        var nb = SpriteSlot(type: 0x6c2, x: pl.x + 200, y: pl.y - 50)
+        nb.oldPosition = SpriteSlot.Point(x: nb.x, y: nb.y)
+        var none = EnemyCounting()
+        BlobCrab.setupBlob(&nb, counting: &none)
+        nb.mayIdle = false
+        var nd = nb
+        nd.handler = .deadBlob
+        nd.hasHit = false
+        let nbid = sw.active.insert(nb), ndid = sw.active.insert(nd)
+        _ = sess.step(keys: KeyState())
+        XCTAssertEqual([Int(try slot(sw, nbid).phase), try slot(sw, nbid).face?.index ?? -1], [3, 1], "the Blob Handle ran")
+        XCTAssertEqual([Int(try slot(sw, ndid).classWord15c), try slot(sw, ndid).killedForGood ? 1 : 0], [1, 1],
+                       "the dead Blob Handle ran")
     }
 
     func testBlobAttackerKeepsMultiCrystal() throws {
@@ -693,6 +724,15 @@ final class BlobCrabTests: XCTestCase {
                                                                                             h: Int16(qc.x - 200))), 13)
         BlobCrab.handleCrab(world: q, id: qid)
         XCTAssertEqual(try slot(q, qid).phase, 95)
+        // The water lookup's order through SetupFaces: `.GetBGTile(x >> 5, y >> 5)` — column first. Level 62's cell
+        // (231, 28) is water (enemies-water-cave §7.3); (28, 231) — the swapped order — is not.
+        let lv = try crabWorld()
+        let L = lv.level
+        XCTAssertTrue(UnderWater.isWaterTile(L.bgKind(tile: L.bgTile(col: 231, row: 28))))
+        XCTAssertFalse(UnderWater.isWaterTile(L.bgKind(tile: L.bgTile(col: 28, row: 231))))
+        let (wid, _, wl) = try enemy(lv, type: 0x764, x: 231 * 32, y: 28 * 32)
+        XCTAssertEqual([try slot(lv, wid).classWord16c, Int32(try slot(lv, wid).mode)], [1, 0x90000])
+        XCTAssertEqual(try wl.map { try slot(lv, $0).mode }, [UInt32](repeating: 0x90000, count: 5))
     }
 
     func testCrabStrike30Frames() throws {
@@ -746,7 +786,7 @@ final class BlobCrabTests: XCTestCase {
         BlobCrab.handleCrab(world: w, id: id)
         XCTAssertEqual(try slot(w, id).subtype, 1, "cooled down, in reach, on target: strikes")
         // A diagonal (angle 40 → index 22: (sin 50°·r, −sin 40°·r) truncated) and straight right (angle 0 → 18: (r, 0)).
-        for (angle, idx) in [(Int16(40), 22), (0, 18), (350, 17), (270, 9)] {
+        for (angle, idx) in [(Int16(40), 22), (0, 18), (350, 17), (270, 9), (170, 35), (70, 25), (180, 0)] {
             let v = try crabWorld()
             let (vid, _, _) = try enemy(v, type: 0x766, x: 600, y: 500)
             v.active.update(id: vid) { $0.subtype = 1; $0.counterA6 = 5; $0.phase = angle }
@@ -756,6 +796,12 @@ final class BlobCrabTests: XCTestCase {
             XCTAssertEqual([t.classWord16c, t.classWord170], [Int32(vec.x), Int32(vec.y)], "angle \(angle)")
             XCTAssertEqual([t.x, t.y], [600 + Int(Int32(vec.x)) / 144, 500 + Int(Int32(vec.y)) / 144])
         }
+        // Angle 70 → index 25: y = −0.94·100 — the table's stored sin 70° is 0.94 (`100a18b8` = 0x3fee147ae147ae14), so
+        // −94 exactly; the y truncation is pinned by index 22 below (−64.27 → −64, a floor gives −65). Angle 180 → index
+        // (18 + 18) mod 36 = 0: (−100, 0), x = 600 + (−100) / 144 = 600 (C division; a floor would give 599); angle 170 →
+        // index 35.
+        XCTAssertEqual(Int32(BloodSpray.vector(25, magnitude: 100).y), -94)
+        XCTAssertEqual([Int32(BloodSpray.vector(0, magnitude: 100).x), Int32(600 + -100 / 144)], [-100, 600])
         XCTAssertEqual([Int32(BloodSpray.vector(22, magnitude: 100).x), Int32(BloodSpray.vector(22, magnitude: 100).y)],
                        [76, -64])
         // The cap: reach 300 → 12 links, divisor 13; at full reach (angle 0, u 12) link 12's place is never written.
@@ -783,6 +829,27 @@ final class BlobCrabTests: XCTestCase {
         XCTAssertEqual(after.face, f(0x767, 0))
         after.face = before.face
         XCTAssertEqual(after, before)
+        // The session's Handle dispatch: a Crab claw and its links, kept active, each run their Handle in a frame — the
+        // claw's aim faces it 0x762[0] and sets `+0x1aa`, each link takes the single 0x767.
+        let sess = try FerazelSession(resources: try resources(), prefs: FerazelPrefs(), level: 3, seed: 1)
+        let sw = sess.world
+        let me = try slot(sw, try XCTUnwrap(sw.playerID))
+        var nc = SpriteSlot(type: 0x766, x: me.x + 200, y: me.y - 150)
+        nc.oldPosition = SpriteSlot.Point(x: nc.x, y: nc.y)
+        BlobCrab.setupCrab(&nc, reach: 0, water: { _, _ in false }) { x, y, layer, wet in
+            var k = BlobCrab.makeLink(x: x, y: y, layer: layer, clawInWater: wet, water: { _, _ in false })
+            k.mayIdle = false
+            return sw.active.insert(k)
+        }
+        nc.mayIdle = false
+        let ncid = sw.active.insert(nc)
+        let nl = (try slot(sw, ncid).crabLinks?.links ?? []).compactMap { $0 }
+        XCTAssertEqual(nl.count, 5)
+        _ = sess.step(keys: KeyState())
+        XCTAssertEqual(try slot(sw, ncid).face, f(0x762, 0), "the Crab Handle ran")
+        XCTAssertEqual(try slot(sw, ncid).rotation, try slot(sw, ncid).phase)
+        XCTAssertEqual(try nl.map { try slot(sw, $0).face }, [FaceRef?](repeating: f(0x767, 0), count: 5),
+                       "the segment Handle ran")
     }
 
     func testCrabInvulnerable() throws {
@@ -853,8 +920,21 @@ final class BlobCrabTests: XCTestCase {
         let bs = try other(b, over: bid, damage: 150, vx: 1001, vy: -200)
         let pre = try slot(b, bid)
         b.player.cues = []
+        var draws = b.rng
         BlobCrab.hitBlob(b, id: bid, other: bs)
         s = try slot(b, bid)
+        // The slime's velocities (`BloodSpray` rule: the 10° vector of length 400 from the shot's centre toward the
+        // Blob's, negated and truncated, plus R(0x96) − 0x4b each — vy drawn first).
+        let dir = BloodSpray.direction(target: (v: Int16(s.centre.y), h: Int16(s.centre.x)),
+                                       from: (v: Int16(try slot(b, bs).centre.y), h: Int16(try slot(b, bs).centre.x)))
+        let vec = BloodSpray.vector(dir, magnitude: 400)
+        let nx = Int32((-vec.x).rounded(.towardZero)), ny = Int32((-vec.y).rounded(.towardZero))
+        var want: [[Int32]] = []
+        for _ in 0..<0x28 {
+            let vy = ny + Int32(draws.next(0x96)) - 0x4b
+            want.append([nx + Int32(draws.next(0x96)) - 0x4b, vy])
+        }
+        XCTAssertEqual(b.particles.records.filter { $0.alive && $0.kind == 0xc9 }.map { [$0.vx, $0.vy] }, want)
         XCTAssertTrue(try slot(b, bs).dead)
         XCTAssertEqual([Int(s.hp), Int(s.invulnerable), Int(s.flash), Int(s.subtype)], [550, 2, 8, 5])
         XCTAssertEqual([s.vx - pre.vx, s.vy - pre.vy], [500, -1000])
@@ -870,7 +950,8 @@ final class BlobCrabTests: XCTestCase {
             e.player.cues = []
             let o = try other(e, over: eid, damage: 150)
             BlobCrab.hitBlob(e, id: eid, other: o)
-            XCTAssertEqual(e.player.cues.map(\.snd), [snd], "HP \(hp - 150)")
+            XCTAssertEqual(e.player.cues, [PlayerCue(call: .threeD, snd: snd, priority: 1, volume: 0x100,
+                                                     position: try slot(e, eid).centre)], "HP \(hp - 150)")
             XCTAssertEqual(slime(e), 0x28, "blood even when killed")
         }
         // Statue spell; a dead Blob (HP 0) or a cooling shot is not hit; a Smiting explosion 0x4b7 does nothing.
@@ -888,6 +969,9 @@ final class BlobCrabTests: XCTestCase {
         z.active.update(id: zid) { $0.hp = 700 }
         BlobCrab.hitBlob(z, id: zid, other: cool)
         XCTAssertFalse(try slot(z, cool).dead)
+        let spent = try other(z, over: zid) { $0.counterA6 = -6 }
+        BlobCrab.hitBlob(z, id: zid, other: spent)
+        XCTAssertEqual([try slot(z, spent).dead, try slot(z, zid).hp == 700], [false, true], "`+0xa6` −6: no hit")
         let blast = try other(z, over: zid, type: 0x4b7, handler: .effect) { $0.phase = 0 }
         BlobCrab.hitBlob(z, id: zid, other: blast)
         XCTAssertEqual(try slot(z, zid).hp, 700, "no explosion arm")
@@ -907,6 +991,22 @@ final class BlobCrabTests: XCTestCase {
         })
         BlobCrab.hitBlob(cr, id: crid, other: crate)
         XCTAssertEqual([Int(try slot(cr, crid).hp), Int(try slot(cr, crid).classWord150)], [0, 0x16])
+        // A falling Statue (`PTR_PTR_100a01f8`) crushes it the same way.
+        let sc = try world()
+        let (scid, _, _) = try enemy(sc)
+        let ss = TileSolver(world: sc)
+        for _ in 0..<40 { frame(sc, scid, ss) }
+        sc.active.update(id: scid) { $0.vy = -0x400 }
+        let sf = try slot(sc, scid)
+        let sx = sf.x + sf.hotRect.left, sy = sf.y + sf.hotRect.top - 30
+        let statue = try XCTUnwrap(sc.newSprite(type: 0x708, x: sx, y: sy, layer: 2, handler: .statue) { s in
+            s.x = sx
+            s.y = sy
+            s.hotRect = IdleSprites.Rect(top: 0, left: 0, bottom: 0x20, right: sf.hotRect.right - sf.hotRect.left)
+            s.vy = 1
+        })
+        BlobCrab.hitBlob(sc, id: scid, other: statue)
+        XCTAssertEqual([Int(try slot(sc, scid).hp), Int(try slot(sc, scid).classWord150)], [0, 0x16], "Statue crush")
         // Through the session's hit dispatch.
         let h = try world()
         let (hid, _, _) = try enemy(h)
