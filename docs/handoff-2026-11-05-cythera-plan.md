@@ -12,45 +12,57 @@ spec `docs/superpowers/specs/2026-11-05-cythera-remainder-design.md` · plan
   `HECTORKIT_DATA_AKI11` line) — a one-line kit fix for whoever next touches HectorKit; the PICT opcode-walk kit carry
   (D14: an error naming the first bits opcode); Phase 4's writable-store protocol and `RefindSegment` rule (audit 1, 11).
 
-## The brief for session A (paste into a fresh session)
+*Everything above this line is history (2026-11-05). The brief below was rebuilt from nothing on 2026-11-08 and is
+the only part a new session reads.*
 
-> You are the ORCHESTRATOR (Claude Opus 5.5) for **Cythera wave 1, session A: tasks C8 → C9** in
-> `/Users/andiyar/Developer/Ambrosia-Classics` (quote the HectorKit path; the data path has a space). Method:
-> `superpowers:subagent-driven-development`; house overlay `~/Developer/Toolkits/fable-kit/orchestrator.md` (read §2–§7
-> first) and the repo's `CLAUDE.md`. Ben's rules: `~/.claude/CLAUDE.md` (plain English, numbers in tables).
-> **Model policy:** one `fk-implementer` + one `fk-reviewer` per task, no `model` param; both tasks are ⚑ → two
-> reviewer legs each; Fable only on a contraindication and only after asking Ben.
+## The brief for the next session (wave 1, session A — paste into a fresh session)
+
+> You are the ORCHESTRATOR (Claude Opus 5.5) for **Cythera wave 1, session A: tasks C8 then C9**, in
+> `"/Users/andiyar/Developer/Ambrosia-Classics"`. Method: `~/Developer/Toolkits/fable-kit/orchestrator.md`. Ben's
+> rules: `~/.claude/CLAUDE.md` (plain English, numbers in tables).
 >
-> **READ FIRST, in order:** (1) `docs/superpowers/plans/2026-11-05-cythera-remainder.md` §0 (verification model, paths,
-> gates, ladder) and "Wave 1 — Session A" (C8 and C9 whole); (2) `docs/superpowers/specs/2026-11-05-cythera-remainder-design.md`
-> §2 (module map, "one instruction walker") and §7 (how the script decoder is proven); (3)
-> `docs/plans/2026-10-06-cythera-phase0.md` lines 14–24 (corrections), 101–141 (invariants), 154–199 (S2);
-> (4) `docs/cythera/script-vm.md` §4, §5, §8 and `docs/cythera/script-census.md` §1–§2; (5) `docs/DECISIONS.md` D45 and
-> D28; (6) `docs/superpowers/audits/2026-11-05-cythera-phase0-audit.md` rulings 2 and 10.
+> **Authority:** `docs/superpowers/plans/2026-11-05-cythera-remainder.md` is the one plan. Read its headings
+> "0. The verification model", "0b. Done before this plan, the binding invariants, the locked surface", the
+> "Wave 1 — Phase 0b" introduction, and "Session A — C8 then C9" (both cards whole). Nothing else in that file is
+> this session's.
 >
-> **SCOPE:** C8 (script instruction decoder, 6 tests → 50) then C9 (segment model + canonical parity for 958 segments,
-> `script_canon.py`, the committed `docs/cythera/script-parity.sha256`, the AI band returned as stored, 7 tests → 57).
-> NOT in this session: C6, C7, C10, C11, C12, C13, anything of Phase 1, any `Package.swift` target change, any HectorKit
+> **Read first, in order:** the repo's `CLAUDE.md`; `docs/STATE.md` (where things stand — do not rely on any copy of
+> it); this brief; the plan headings above; the research the cards mirror: `docs/cythera/script-vm.md` §4, §5, §8 and
+> `docs/cythera/script-census.md` §1–§2.
+>
+> **This session's tasks:**
+>
+> | task | what it delivers | acceptance |
+> |---|---|---|
+> | C8 ⚑ | the script instruction decoder: one statement or expression at a time, 95 builtin names | 6 tests green; suite 50/0; the 0x1802 head decodes exactly as the card lists |
+> | C9 ⚑ | the segment model, reachability and canonical parity for all 958 script segments; the combat-AI band read as stored | 7 tests green; suite 57/0; `script-parity.sha256` committed (958 lines) and every Swift hash equal |
+>
+> Not this session: C6, C7, C10, C11, C12, C13, anything of Phase 1, any `Package.swift` target change, any HectorKit
 > change, any app target, anything with a window.
 >
-> **Worktree:** `EnterWorktree`; verify `git branch --show-current` before every commit; never `git stash`, never
-> `git add -A`; commit explicit paths with the trailer `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
-> The worktree reaches HectorKit through `.claude/worktrees/HectorKit` (exists). Pre-dispatch grounding (do it
-> yourself): `SegmentFile.swift` lines 118 (`segment`) and 128 (`scriptSegment`); `ls ghidra/cythera/cythera-scripts | wc -l`
-> = 958; the plan's C9 contract 4 numbers (22,166 / 16,899 / 4,665 / 602 / 34 mnemonics) re-measurable by its regexes.
+> **Gates, expected as of 2026-11-08** (commands in the plan's gate table):
 >
-> **GATES (the plan §0):** G2 after each task (C8 **50/0**, C9 **57/0**, counted by `^Test Case` lines — there is no
-> package total), G6 scope fence, G7 layering greps empty, G8 parity (`script_canon.py` over the committed listings →
-> `diff` clean → `PARITY-OK`), G9 clean tree, G1 at the close with the Aki override
-> (`HECTORKIT_DATA_AKI11="/Users/andiyar/Developer/Ambrosia/Resources/Aki - Mahjong Solitaire/Aki - Mahjong Solitaire.app/Contents/Resources"`
-> → `PASS … executed 370 == floor 370` at ef2c341 or a later clean main, recorded). **Invariant 10:** any number that
-> disagrees (a hash, a count, a ladder total) → STOP, show the command output, ask Ben; never edit an expectation.
-> Numbers in your close come from commands you ran, never from a subagent's report.
+> | gate | expected |
+> |---|---|
+> | G2 suite (count `^Test Case` lines) | 44 before · C8 **50**, then `0` failed/skipped · C9 **57**, then `0` |
+> | G8 parity | `PARITY-OK`; 958 hash lines; 22,166 canonical lines |
+> | G7 layering greps | both empty |
+> | G6 scope fence · G9 clean tree | the diff ⊆ the card's Files · empty after every commit |
+> | G1 HectorKit, at the close | `PASS: zero skips, zero failures, executed 370 == floor 370` at `ef2c341` (or a later clean main, recorded) — only with `HECTORKIT_DATA_AKI11` set as the plan's G1 row says |
+> | grounding before the first dispatch | `ls ghidra/cythera/cythera-scripts \| wc -l` = 958; `SegmentFile.swift` has `segment` at line 118 and `scriptSegment` at 128 |
 >
-> **CLOSE:** merge the worktree to local `main` when verified (never push — a human session pushes); re-run G2/G7/G8 at
-> the merge head; append "As executed — session A" to the plan (deviations, numbers); update STATE's Cythera bullet
-> (one line); write `docs/handoff-2026-11-05-cythera-wave1-A.md` and **chip session B** (C6 ∥ C7 ∥ C10: the plan's
-> "Session B" table; ladder 57 → 63 → 71 → 80; same rules, same reads 1–5; C7 ⚑ two legs); remove the worktree. Cap:
-> 300k of your own context — at ~240k finish the task in flight, close, chip; never start a task you cannot close.
-> Closing message to Ben in plain English: what landed, the ladder before/after as a table, what review caught, the
-> next session to click. No "owed by you" section.
+> **Binding rules (each has bitten here or on this machine):**
+> - Any number that disagrees with the plan (count, hash, ladder total): STOP, show the command output; never edit an expectation.
+> - Numbers in your close come from commands you ran at the merge head, never from a subagent's report.
+> - One `fk-implementer` + one `fk-reviewer` per task, no `model` param; both tasks ⚑ → two reviewer legs; Fable only after asking Ben.
+> - Work in your own worktree (`EnterWorktree`); `git branch --show-current` before every commit; explicit paths; never `git stash`, never `git add -A`.
+> - `Resources/Cythera/` and `ghidra/cythera/` are read-only data.
+> - At most 4–6 heavy processes at once (builds, test suites); one full suite at a time — Ben's Mac has run out of memory before.
+> - Your own context cap is 300k: at ~240k finish the task in flight, close, hand over; never start a task you cannot close.
+> - Merge to `main` and push (the repo's `CLAUDE.md`: commit each verified step to main and push). Never touch any Ferazel file or `docs/NEXT.md`, `docs/LOOP-LOG.md`, `docs/QUESTIONS.md` — the Ferazel chain owns them.
+>
+> **Close:** re-run G2, G7, G8 (and G1) at the merge head; add "As executed — session A" under the two cards in the
+> plan (deviations, numbers); update STATE's Cythera bullet in one line; write `docs/handoff-<date>-cythera-wave1-A.md`
+> whose brief is rebuilt from nothing for session B (the plan's "Session B" heading: C6, C7 ⚑, C10; ladder 57 → 63 →
+> 71 → 80); remove your worktree; then start the next attended Cythera session yourself (`start_session`, fresh context, brief = "read the new handoff's brief and run it" — the repo's chaining rule, 2026-11-07), unless a question only Ben can answer blocks session B, in which case stop and name it. Closing message to Ben in plain
+> English: what landed, the test count before and after as a table, what review caught, what runs next.

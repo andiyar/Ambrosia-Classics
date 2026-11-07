@@ -1,3 +1,5 @@
+> Superseded by `docs/superpowers/plans/2026-11-05-cythera-remainder.md` on 2026-11-08. Kept as history; nothing current reads it.
+
 # Plan — Cythera 1.0.4 Phase 0: data in git, decoders, census — 2026-10-06
 
 > Status: **WRITTEN by Fable planner 2026-10-06 (Ben: no separate review); ready to execute.**
