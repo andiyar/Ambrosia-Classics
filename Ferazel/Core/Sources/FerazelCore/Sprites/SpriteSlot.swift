@@ -81,6 +81,18 @@ public struct SpriteSlot: Equatable, Sendable {
         }
     }
 
+    /// GY: the geyser base's 0x44-byte column block (`+0x9c`, `.SetupBoxSprite`'s geyser arm `AllocateGameMem(0x44)`,
+    /// M l. 59146–59147): the 16 segment pointers at `+0` and the head pointer at `+0x40` (`ActiveList` ids; nil = 0).
+    /// `.MTKillSprite` frees nothing (M l. 30739ff), so the block idles with the record and is reused (NR 2).
+    public struct GeyserBlock: Equatable, Sendable {
+        public var segments: [Int?]
+        public var head: Int?
+
+        public init(segments: [Int?] = Array(repeating: nil, count: 16), head: Int? = nil) {
+            self.segments = segments; self.head = head
+        }
+    }
+
     /// Identity in the `ActiveList` (the original's record pointer); assigned by `ActiveList.insert`.
     public internal(set) var id: Int = 0
     /// `+0x04`.
@@ -179,6 +191,56 @@ public struct SpriteSlot: Equatable, Sendable {
     /// BL (added, Invariant 9): `+0x9c` the Crab claw's link block (`CrabBlock`; nil = 0 — the links and every other
     /// sprite).
     public var crabLinks: CrabBlock?
+    /// GY (added, Invariant 9): `+0x9c` a geyser base's column block (`GeyserBlock`; nil = 0 — every other sprite).
+    public var geyserColumn: GeyserBlock?
+    /// GY (added, Invariant 9): `+0xac` (i32) — −1 on a triple geyser's parent and its second child (M l. 59167, 59182):
+    /// the eruption's `CalcStereoVolume` call is skipped — dead either way, its result is never read (geysers §6).
+    public var classWordAC: Int32 = 0
+    /// GY (geysers.md "Proposed additions"; one storage per offset): `+0x14c` the liquid kind (0 water, 1 acid, 2 lava;
+    /// copied to the head and segments) = `classTimer`; `+0x150` the base y at Setup = `classWord150`; `+0x154` the
+    /// current target height = `classWord154`; `+0x158` / `+0x15c` the on / off frames = `classWord158` / `classWord15c`;
+    /// `+0x164` / `+0x168` the column height / velocity (8.8 px) = `launchSpeed` / `bonusP4`; `+0x16c` the base target
+    /// = `classWord16c`; `+0xf4` the fall reference = `classWordF4`; `+0x170` the triple flag = `classWord170`.
+    public var geyserKind: Int32 {
+        get { classTimer }
+        set { classTimer = newValue }
+    }
+    public var geyserBaseY: Int32 {
+        get { classWord150 }
+        set { classWord150 = newValue }
+    }
+    public var geyserTarget: Int32 {
+        get { classWord154 }
+        set { classWord154 = newValue }
+    }
+    public var geyserOn: Int32 {
+        get { classWord158 }
+        set { classWord158 = newValue }
+    }
+    public var geyserOff: Int32 {
+        get { classWord15c }
+        set { classWord15c = newValue }
+    }
+    public var geyserHeight: Int32 {
+        get { launchSpeed }
+        set { launchSpeed = newValue }
+    }
+    public var geyserVelocity: Int32 {
+        get { bonusP4 }
+        set { bonusP4 = newValue }
+    }
+    public var geyserBaseTarget: Int32 {
+        get { classWord16c }
+        set { classWord16c = newValue }
+    }
+    public var geyserFall: Int32 {
+        get { classWordF4 }
+        set { classWordF4 = newValue }
+    }
+    public var geyserTriple: Int32 {
+        get { classWord170 }
+        set { classWord170 = newValue }
+    }
     /// `+0xb0` (i16): a class's sub-type word — the Background's p1, a Platform's base type (0x58c = springboard,
     /// read through the ridden `+0xdc` by `.CheckGroundCeilingHitEffects` and `.HandleKeys`; W1 writes it).
     public var subtype: Int16 = 0

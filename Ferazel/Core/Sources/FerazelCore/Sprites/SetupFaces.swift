@@ -228,6 +228,10 @@ public enum SetupFaces {
         // curl 0x74f (5), death 0x750 (5), jump 0x751 (2).
         all += [set(Dillo.walkType, 6, 100, 0x50, 6), set(Dillo.curlType, 5, 100, 0x50, 5),
                 set(Dillo.deathType, 5, 100, 0x50, 5), set(Dillo.jumpType, 2, 100, 0x50, 2)]
+        // GY: `.InitBoxSprite`'s three geyser cache sets (M l. 58813–58815, flag 0): the base 1440 (12 × 0x18×0x10, 4 per
+        // row), the head 1441 (6 × 0x30×0x20) and the segment 1442 (6 × 0x14×0x20), one row each.
+        all += [set(Geyser.baseSet, 0xc, 0x18, 0x10, 4), set(Geyser.headSet, 6, 0x30, 0x20, 6),
+                set(Geyser.segmentSet, 6, 0x14, 0x20, 6)]
         all.append(one(placeholderPict))
         // BN: every face `.InitBonusSprite` loads (`BonusSprite.sheets`; the level-1/2 entries above are the same sheets).
         var table = Dictionary(uniqueKeysWithValues: all)
@@ -437,7 +441,13 @@ public enum SetupFaces {
 
         case .box:
             // `.SetupBoxSprite` (W3, `BoxSprite.setup`): layer, rect, one-way, callbacks, gravity, HP, the type's fields.
-            BoxSprite.setup(&s, record: p, level: c.level)
+            // GY: the geyser arm 1440…1448 (`Geyser.setup`) draws `R(4)` and makes the triple's two children
+            // (`Entry.children`, inserted before the parent; its links index them).
+            if Geyser.placed.contains(p.type) {
+                children = Geyser.setup(&s, record: p, level: c.level, rng: &rng)
+            } else {
+                BoxSprite.setup(&s, record: p, level: c.level)
+            }
             switch t {
             case 0x426:                                        // teleporter 3 (l. 59012)
                 face(0x426, 0, .setup)
@@ -458,6 +468,10 @@ public enum SetupFaces {
                 face(0x4e2, t - 0x4e2, .setup)
             case 0x5aa...0x5ad:                                // spouts (M l. 59596; BT): set 0x5aa cell t − 0x5aa
                 face(0x5aa, t - 0x5aa, .setup)
+            case 0x5a0...0x5a8:                                // geysers (GY): `+0xc0` 0; the eruption arm faces cache 1440
+                face(Geyser.baseSet, 0, .handle)
+            case 0x5a9:                                        // the geyser head (GY; never placed): `+0xc0` 0, no face
+                break
             case 0x51c:                                        // chest (l. 59031)
                 if inWater() { s.mode = 0x90000 }
                 face(0x51c, 0, .setup)

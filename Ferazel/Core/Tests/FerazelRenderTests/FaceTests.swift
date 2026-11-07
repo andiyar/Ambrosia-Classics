@@ -637,6 +637,15 @@ final class FaceTests: XCTestCase {
             XCTAssertEqual(sh.count, cells, "Dillo PICT \(p) cells")
             XCTAssertNil(one.sprites.faces.face(FaceRef(pict: p, index: 0, set: .encoded)), "level 1 places no \(p)")
         }
+        // GY: the geysers face the base 1440 (12 cells), the run-time head 0x5a9 from 1441 (6) and the run-time segments
+        // 0x5a0 from 1442 (6) — `.InitBoxSprite`'s cache sets (M l. 58813–58815), loaded only where a geyser Setup marks
+        // them (placed on levels 10, 50, 51): the data holds them, no level-1 renderer loads them.
+        for (p, cells) in [(Geyser.baseSet, 12), (Geyser.headSet, 6), (Geyser.segmentSet, 6)] {
+            let sh = try XCTUnwrap(SetupFaces.sheet(pict: p))
+            XCTAssertNotNil(r.resource(type: "PICT", id: p, chain: .frontEnd), "geyser PICT \(p)")
+            XCTAssertEqual(sh.count, cells, "geyser PICT \(p) cells")
+            XCTAssertNil(one.sprites.faces.face(FaceRef(pict: p, index: 0, set: .encoded)), "level 1 places no \(p)")
+        }
         // The drops of every chest and crate on levels 1–4 and the key faces their locks show — each in its own
         // level's renderer. The original loads every Bonus face at boot (`.InitBonusSprite` M l. 52261–52337); the
         // replica's per-level load (`BoxSprite.dropSheets`) is a seam, so the faces are named here, not derived from it.

@@ -9,9 +9,9 @@ import Foundation
 ///
 /// BX2: the chest 0x51c and door 0xb5e / 0xb5f Handle arms (`chestArm`, `doorArm`) and the thought balloons
 /// (`createBalloon`, `destructBalloon`). BT: the gate 0xb7c (`gateArm`, with the 2941's move and clip), the switch
-/// blocks 0x4e2…0x4ff (`switchBlockArm`) and the spouts 0x5aa…0x5ad (`spoutArm`; ES: their boulders). Not built
-/// (named where they stand): the geysers
-/// 0x5a0…0x5a9 and the pipes 0x5d2…0x5d5 (Phase 5), the carpet 0x438 / 0x439, the spiked balls 0x5c3 / 0x5c4, the table
+/// blocks 0x4e2…0x4ff (`switchBlockArm`) and the spouts 0x5aa…0x5ad (`spoutArm`; ES: their boulders). GY: the geysers
+/// 0x5a0…0x5a9 (`Geyser`: the Setup arm, the eruption arm, the column and its head). Not built (named where they stand):
+/// the pipes 0x5d2…0x5d5 (Phase 5), the carpet 0x438 / 0x439, the spiked balls 0x5c3 / 0x5c4, the table
 /// 0xb71 and the snowball 0xbfe (Phase 6) — those types still return at once from the Handle (`handleBuilt`) and stand
 /// still; `.HitBoxSprite`'s carpet arm (Phase 6). SW: the tree trunk 0x2c8 / 0x2c9 (`newTrunk`, the Setup and Handle
 /// arms); `.HitBoxSprite` is also a Statue's hit (`StatueSprite`), and takes a Statue as a pair partner.
@@ -138,11 +138,12 @@ public enum BoxSprite {
     /// 0x5aa…0x5b3 (BT), furniture 0xb68…0xb70, decorations
     /// 0xaf5…0xb21, outcrops 0xb22…0xb35, mushrooms 0xb36…0xb49, NPCs 0xb87…0xb99; BX1: the mine cart 0xb72 / wheel
     /// 0xb73, the ice wall 0xb7d; BT: the gate 0xb7c; SW: the tree trunk 0x2c8 / 0x2c9 (no draw; made by the Tree Trunk
-    /// shot, `newTrunk`). The other arms (several make sprites or draw `FastRand` at Setup)
-    /// leave the head's fields — // later: Phase 5
-    /// (geysers 0x5a0…0x5a9, pipes 0x5d2…0x5d5), Phase 6 (carpet 0x438/0x439, spiked balls 0x5c3/0x5c4, the table
-    /// 0xb71, the snowball 0xbfe). Their write-back flags come with them: the geysers' `+0x189` and their two parts'
-    /// `+0x188` (M l. 59127, 59174, 59181).
+    /// shot, `newTrunk`); GY: the geyser head 0x5a9 (M l. 59107–59115, tested before the geyser arm: SetRect(8, 8, 0x28,
+    /// 0x20), one-way, no tile callback, gravity 0, push mass and sag 0 — made only by the column, `Geyser.newHead`). The
+    /// geyser arm 0x5a0…0x5a8 draws `FastRand` and makes the triple's children: `Geyser.setup` runs this head and tail,
+    /// then the arm (its `+0x189` and the children's `+0x188`, M l. 59127, 59174, 59181). The other arms (several make
+    /// sprites or draw `FastRand` at Setup) leave the head's fields — // later: Phase 5 (pipes 0x5d2…0x5d5), Phase 6
+    /// (carpet 0x438/0x439, spiked balls 0x5c3/0x5c4, the table 0xb71, the snowball 0xbfe).
     public static func setup(_ s: inout SpriteSlot, record p: Placement, level: LevelFile) {
         let t = s.type
         s.oldPosition = SpriteSlot.Point(x: s.x, y: s.y)                       // the spawn copy `+8` / `+6`
@@ -154,6 +155,13 @@ public enum BoxSprite {
         s.gravity = 0x151
         s.hp = 600
         switch t {
+        case Geyser.head:                                  // the geyser head 1449 (M l. 59107–59115; GY)
+            s.hotRect = rect(8, 8, 0x28, 0x20)
+            s.oneWay = true
+            s.hasTileHit = false
+            s.gravity = 0
+            s.pushMass = 0
+            s.sag = 0
         case trunkSegment:                                 // the trunk segment 713 (M l. 58967–58972; SW)
             s.gravity = 0
             s.hotRect = rect(3, 3, 0x1d, 0x15)
@@ -418,18 +426,18 @@ public enum BoxSprite {
     }
 
     /// Whether the type's `.HandleBoxSprite` runs (the arm and the common tail). The types whose arm is not built yet
-    /// return at once and stand still: the geysers 0x5a0…0x5a9 and the pipes 0x5d2…0x5d5 (// later: Phase 5), the carpet
+    /// return at once and stand still: the pipes 0x5d2…0x5d5 (// later: Phase 5), the carpet
     /// 0x438 / 0x439, the spiked
     /// balls 0x5c3 / 0x5c4, the table 0xb71 and the snowball 0xbfe (// later: Phase 6). Every other Box runs: the built
     /// arms (W3 trampoline and bridges, S1 save point, C1 NPCs, BX1 boulders and rocks, stalactite, mine cart, crates,
     /// the 2907 timer's countdown, the 2941's death; BX2 the chest and the doors; BT the gate 0xb7c with the 2941's
     /// move and clip, the switch blocks 0x4e2…0x4ff, the spouts 0x5aa…0x5ad; SW the tree trunk 0x2c8 / 0x2c9's
-    /// lifetime) and the types with no arm
+    /// lifetime; GY the geysers 0x5a0 / 0x5a5) and the types with no arm (GY: the geyser head 0x5a9 among them)
     /// (teleporters, signs, decorations, outcrops, mushrooms, furniture, the wheel, the crate range 0xc15…0xc1b), which
     /// go through the block chain's faces (M l. 61088–61151) to the tail.
     public static func handleBuilt(_ t: Int16) -> Bool {
         switch t {
-        case 0x5a0...0x5a9, 0x5d2...0x5d5, 0x438, 0x439, 0x5c3, 0x5c4, 0xb71, 0xbfe:
+        case 0x5d2...0x5d5, 0x438, 0x439, 0x5c3, 0x5c4, 0xb71, 0xbfe:
             return false
         default:
             return true
@@ -457,7 +465,8 @@ public enum BoxSprite {
     ///   handled again that frame), HP < 1 → `.KillCrate`; the 2907 timer 0xb5b (M l. 60786–60791): `+0xa6 > 0` → −1;
     ///   the gate 0xb7c and the 2941 (M l. 61016–61064; `gateArm`); the spouts 0x5aa…0x5ad (M l. 60488–60547;
     ///   `spoutArm`); the chest 0x51c (M l. 60101–60187; `chestArm`); the doors 0xb5e / 0xb5f (M l. 60803–60868;
-    ///   `doorArm`);
+    ///   `doorArm`); the geysers 0x5a0 / 0x5a5 (`LAB_1006df20`, M l. 60379–60483; GY, `Geyser.erupt`: the eruption,
+    ///   the triple's re-targeting, `.HandleGeyserColumn`);
     /// - every other type reaches the block chain (M l. 61088–61151): the switch blocks (`switchBlockArm`), then the face
     ///   from the class caches — decorations 0xaf5…0xb21 (`0x1009b500 + type·0x10` = the cache entry), outcrops
     ///   0xb22…0xb35, mushrooms 0xb36…0xb49, furniture 0xb68…0xb70 (each `cache[type − first] + 4`); the NPCs 0xb87…0xb99
@@ -519,6 +528,8 @@ public enum BoxSprite {
             gateArm(w, id: id)
         case 0x5aa...0x5ad:
             spoutArm(w, id: id)
+        case Geyser.base, Geyser.triple:
+            Geyser.erupt(w, id: id, lights: &lights, effects: effects)
         case chest:
             chestArm(w, id: id, lights: &lights, effects: effects)
         case doors:
@@ -1198,16 +1209,18 @@ public enum BoxSprite {
 
     /// `.KillBox(s) @ 100705f0` (M l. 61483–61520): `+0xe9 = 1`; the switch blocks 0x4e2…0x4ff and the rocks 0x433 /
     /// 0x434 → `.STPlay3DSoundRand(424, 1, 0x100, centre)` and `.ExplodeFaceIntoParticles(+0xc0, (+0xa, +0xc), 2, 2, 2,
-    /// 100, 100)`. // later: Phase 5 — the geysers 0x5a0…0x5a8's column buffer `+0x9c` (its 16 pieces and the head
-    /// killed); no Box builds one yet.
+    /// 100, 100)`; then a geyser 0x5a0…0x5a8 with a column block `+0x9c`: its 16 segments and its head killed and their
+    /// slots cleared (M l. 61502–61517; GY, `Geyser.killColumn`).
     static func killBox(_ w: SpriteWorld, id: Int) {
         w.active.update(id: id) { $0.dead = true }
-        guard let s = w.active.record(id: id), switchBlocks.contains(s.type) || s.type == 0x433 || s.type == 0x434
-        else { return }
-        w.player.cue(PlayerCue(call: .threeDRand, snd: breakSound, priority: 1, volume: 0x100, position: s.centre,
-                               rate: w.rng.soundRate()))
-        ExplodeFace.explode(w, face: s.face.flatMap(w.particleFaces.sprite), v: Int16(truncatingIfNeeded: s.y),
-                            h: Int16(truncatingIfNeeded: s.x), xStep: 2, yStep: 2, shape: 2, gravity: 100, style: 100)
+        if let s = w.active.record(id: id), switchBlocks.contains(s.type) || s.type == 0x433 || s.type == 0x434 {
+            w.player.cue(PlayerCue(call: .threeDRand, snd: breakSound, priority: 1, volume: 0x100, position: s.centre,
+                                   rate: w.rng.soundRate()))
+            ExplodeFace.explode(w, face: s.face.flatMap(w.particleFaces.sprite), v: Int16(truncatingIfNeeded: s.y),
+                                h: Int16(truncatingIfNeeded: s.x), xStep: 2, yStep: 2, shape: 2, gravity: 100,
+                                style: 100)
+        }
+        Geyser.killColumn(w, id: id)
     }
 
     // MARK: - tile and sprite hits

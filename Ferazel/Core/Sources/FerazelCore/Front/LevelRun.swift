@@ -1052,7 +1052,8 @@ public struct CachedFaces: Equatable, Sendable {
     /// (Crawler M l. 56142–56144, Roach 64893–64894, Walker 56757–56768 (WK2: the 1750's four, 56764–56767), Box
     /// 58785–58786 (LV3: the mine cart's 0xb72 /
     /// 0xb73) and 58806, Background 61864 (LV3: the wall spikes' 0x730) and 61875, Bat 68099, Blob 67666 (LV3), Frog
-    /// 70116; BL: Crab 73964 — 0x762, after the Blob's). BA: `.InitBatSprite`'s five in its order — 0x6cc (11), 0x744 (9), 0x74d (8), 0x73a (12), 0x73b (12)
+    /// 70116; BL: Crab 73964 — 0x762, after the Blob's; GY: the Box's geyser sets 0x5a0, 0x5a1, 0x5a2 after the
+    /// trampoline's, M l. 58813–58815, flag 0). BA: `.InitBatSprite`'s five in its order — 0x6cc (11), 0x744 (9), 0x74d (8), 0x73a (12), 0x73b (12)
     /// (M l. 68099–68103, flag 0). ES: the dart traps' three (Background M l. 61886–61888, after 0x442; marked only
     /// from level 22 on);
     /// `.InitEnemyShotSprite`'s four (M l. 51434–51437, after the Background's, flag 0 — `.InitBackgroundSprite`
@@ -1080,6 +1081,8 @@ public struct CachedFaces: Equatable, Sendable {
         Record(pict: 0x6e0, faces: 9, flag: 0),
         Record(pict: 0xb72, faces: 14, flag: 0), Record(pict: 0xb73, faces: 21, flag: 0),
         Record(pict: 0x5be, faces: 4, flag: 0),
+        Record(pict: 0x5a0, faces: 12, flag: 0), Record(pict: 0x5a1, faces: 6, flag: 0),
+        Record(pict: 0x5a2, faces: 6, flag: 0),
         Record(pict: 0x730, faces: 12, flag: 0), Record(pict: 0x442, faces: 5, flag: 0),
         Record(pict: 0x76c, faces: 6, flag: 0), Record(pict: 0x76e, faces: 6, flag: 0),
         Record(pict: 0x76f, faces: 6, flag: 0),
@@ -1154,7 +1157,8 @@ public struct CachedFaces: Equatable, Sendable {
     /// type 0x6ea…0x6f3 (each part) → sets 0x6ea, 0x6eb, 0x6ec (M l. 69181–69183); Floater 0x6f4…0x6fd → 0x6f4 (69876),
     /// 0x6fe…0x707 → 0x6fe, 0x6ff (69870–69871).
     /// LV3, BL: every Blob type 0x6c2…0x6cb → set 0x6c2 (67726); BL: every Crab type 0x762…0x76b → set 0x762 and single 0x767 (74007–74008);
-    /// DL: every Dillo type 0x74e…0x757 → sets 0x74e…0x751 (72330–72333);
+    /// DL: every Dillo type 0x74e…0x757 → sets 0x74e…0x751 (72330–72333); GY: every geyser 0x5a0…0x5a8 → sets 0x5a0,
+    /// 0x5a1, 0x5a2 (59117–59120; the head 0x5a9's arm marks nothing);
     /// the spikes 0x730 / 0x731 → set 0x730 (61984, 62281), 0x732 / 0x733 → **both** singles 0x732 and 0x733 (62460–
     /// 62461); the mine cart 0xb72 / 0xb73 with a record → sets 0xb72, 0xb73 (59434–59435); the level-3 decoration,
     /// outcrop and mushroom singles of the same id (59647, 59699, 59709). ES (unplaced before level 22): the dart traps
@@ -1181,6 +1185,7 @@ public struct CachedFaces: Equatable, Sendable {
         case 0x6c2...0x6cb: return ([0x6c2], [])
         case 0x762...0x76b: return ([0x762], [0x767])
         case 0x74e...0x757: return ([0x74e, 0x74f, 0x750, 0x751], [])
+        case 0x5a0...0x5a8: return ([0x5a0, 0x5a1, 0x5a2], [])
         case 0x730, 0x731: return ([0x730], [])
         case 0x76c, 0x76d: return ([0x76c], [])
         case 0x76e, 0x76f: return ([t], [])

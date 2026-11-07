@@ -587,7 +587,10 @@ public final class FerazelSession {
             // `.HandleDilloSprite @ 1008697c` (DL, `Dillo.handle`): the egg's x reads the face bounds.
             Dillo.handle(world: world, id: id, solver: solver, faceWidth: { Self.frameRect($0, resources: res).right },
                          faceBounds: bounds)
-        case .geyserSegment, .warrior:
+        case .geyserSegment:
+            // `.HandleGeyserSegSprite @ 10060cd8` (GY, `Geyser.handleSegment`): empty — the column moves the segments.
+            Geyser.handleSegment(world: world, id: id)
+        case .warrior:
             // EC: the enemy Handles — the `+0x1b2` early return, then each a named no-op until its task
             // (`EnemyCommon.handle`).
             EnemyCommon.handle(world: world, id: id)

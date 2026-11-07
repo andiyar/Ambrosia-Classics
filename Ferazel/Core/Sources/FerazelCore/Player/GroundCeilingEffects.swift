@@ -133,7 +133,10 @@ public enum EffectSprite {
     /// - 0xcb2 → layer 100, > 0xcb2 → 0x65 (l. 53796–53801); 0x442 → 0x7fbc (l. 53802–53804);
     /// - 0xc1b: `FastRand(100)` < 0x33 → `+0x14c` 1, else 0; `+0x46 = FastRand(8)`; gravity `+0x110` 0x5a; the tile
     ///   callback re-stored (the same); `SetRect(+0x34, 10, 10, 0xe, 0xe)` (l. 53812–53825).
-    /// The 0x5a0 geyser segment's arm (l. 53805–53811) // later: the geyser task; 0x4c4's is `FerazelSession`'s.
+    /// - 0x5a0, the geyser segment (l. 53805–53811; GY): the Handle `.HandleGeyserSegSprite` (`Geyser.handleSegment`),
+    ///   no hit callback (`+0x5c = 0`), no tile callback, `SetRect(+0x34, 4, 0x18, 0x10, 0x20)` (an 8-px band at the
+    ///   foot of its 32-px cell), layer 1; the package skips it.
+    /// 0x4c4's arm is `FerazelSession`'s.
     public static func setup(_ w: SpriteWorld, _ s: inout SpriteSlot, effects: Int16, lights: inout LightTable) {
         setup(&s)
         let t = s.type
@@ -170,6 +173,13 @@ public enum EffectSprite {
             s.layer = 0x65
         }
         if t == BackgroundSprite.smoke { s.layer = 0x7fbc }
+        if t == Geyser.base {
+            s.handler = .geyserSegment
+            s.hasHit = false
+            s.hasTileHit = false
+            s.hotRect = IdleSprites.Rect(top: 0x18, left: 4, bottom: 0x20, right: 0x10)
+            s.layer = 1
+        }
         if t == debris {
             s.classTimer = w.rng.next(100) < 0x33 ? 1 : 0
             s.phase = w.rng.next(8)

@@ -9,8 +9,9 @@ import HectorResources
 /// the Box mechanisms placed on levels 1–4 (BX1, BX2, BT, TP), the **Effect** arm (EF), the **Statue** arm (SW)
 /// and the spikes (LV3); EC: the enemy rows of step 6 (`enemyHazard`) and step 7's generic path (`enemyContact`),
 /// keyed on the `SpriteHandler` cases — dormant until each class's task maps its `forClass` row; ES: step 7's
-/// enemy-shot rows with `.ShieldBlock` (`EnemyShot.shieldBlock`). // later: GY — the geyser segment 0x5a0; Phase 6 —
-/// the types first placed on levels 5+.
+/// enemy-shot rows with `.ShieldBlock` (`EnemyShot.shieldBlock`); GY: the geyser head 0x5a9's landing hurt (step 7 of
+/// `box`) and the geyser segment 0x5a0's part of the Effect test (`effect`). // later: Phase 6 — the types first placed
+/// on levels 5+.
 public enum HitPlayerSprite {
     /// The test form: the light calls (`.KillBonus`'s `.RemoveLight`) go to a scratch table, Effects is the default
     /// prefs'.
@@ -55,8 +56,10 @@ public enum HitPlayerSprite {
         case .box, .seeSawSegment:
             box(w, player: pID, other: oID, keys: keys)                 // `PTR_PTR_100a0484` / `_DAT_100a01c8` (W3)
             return
-        case .effect:
-            effect(w, player: pID, other: oID)                          // `PTR_PTR_100a0460` (EF)
+        case .effect, .geyserSegment:
+            // `PTR_PTR_100a0460` (EF); GY: a segment's `.HandleGeyserSegSprite` (`PTR_PTR_100a0900`) is in none of the
+            // enemy rows, so it reaches the same test (M l. 49763).
+            effect(w, player: pID, other: oID)
             return
         case .salamander, .floater, .crab, .dillo:
             enemyHazard(w, player: pID, other: oID)                     // step 6's enemy rows (EC)
@@ -186,7 +189,7 @@ extension HitPlayerSprite {
     /// 5. signs 0xb56…0xb5d with `+0x15c == 0` → return (l. 49304–49307): only 2902 / 2907 (`+0x15c = 1`) are standable;
     /// 6. `.PlatformBounce(player, box, d, 0, player +0x34, 0)` (l. 49308); not a landing (≠ 1) → return. A Box with
     ///    a surface function (`+0x1e8`: only the unplaced rope bridge 1466) // later: Phase 6;
-    /// 7. // later: Phase 5 — the geyser head 0x5a9 hurt (l. 49310–49335; made only by `.HandleGeyserColumn`);
+    /// 7. the geyser head 0x5a9 (l. 49310–49335; made only by `.HandleGeyserColumn`; GY, `geyserHead`) — no return;
     /// 8. the trampoline 0x5be (l. 49339–49361): `+0x46 = 1`; entry vy ≤ 0xa5a (`cmpwi r25,0xa5a; ble`) → return;
     ///    vy = max(−6500, −(0.6·g + vy)) — 0.6 is the **double** at `0x100a1a10` (`lfd f4,-0x5e30(r2)`), −6500 the
     ///    double at `0x100a1a08`, `fnmsub`, `fctiwz` truncates toward zero; `.STPlayRegSound(604, 1, 0x100)`
@@ -225,7 +228,8 @@ extension HitPlayerSprite {
         if (0xb56...0xb5d).contains(o.type) && o.classWord15c == 0 { return }
         guard w.platformBounce(mover: pID, solid: oID, centre: d, factor: 0, rect: rect, bounce: false) == 1
         else { return }
-        guard o.type == BoxSprite.trampoline else {                     // later: Phase 5 (7, the geyser head)
+        if o.type == Geyser.head { geyserHead(w, player: pID, head: oID) }   // 7 (GY)
+        guard o.type == BoxSprite.trampoline else {
             if spinStomp(w, player: pID, other: oID, entryVY: entryVY, keys: keys) { return }
             if (0x424...0x426).contains(o.type) {                      // `(type − 0x424 & 0xffff) < 3` (M l. 49407)
                 teleporter(w, other: oID)
@@ -1165,15 +1169,45 @@ extension HitPlayerSprite {
     /// §3.4): an Effect (`+0x4c == PTR_PTR_100a0460`) of type 0x4b7 whose `+0x46` ≤ 7 →
     /// `.HurtSprite(player, 0x70, kvx, −0x640, 0x3c, 0xc)` with kvx = 300 when the effect's centre x `+0x10` is left of
     /// the player's (i16 compare), else −300; a hurt → the stun `_DAT_100a0748 = 1`. `.HurtSprite`, not `.HurtPlayer`:
-    /// no scream, no coin loss. Any other Effect: nothing. The 0x5a0 geyser segment's part of the same test (a sprite
-    /// of type 0x5a0 with `+0x14c` ≥ 1, any handler on this path: 0x70 / 0x150 by liquid kind, the walk-on and Fire
-    /// Charm immunities) // later: Phase 5 (geysers).
+    /// no scream, no coin loss. Any other Effect: nothing. GY: the 0x5a0 geyser segment's part of the same test — a
+    /// sprite of type 0x5a0 with `+0x14c` ≥ 1 under any handler on this path (the segment's own): 0x70; kind 1 with the
+    /// walk-on power-up for liquid 1 (`PTR_DAT_100a0648` ∧ `063c == 1`) → nothing; kind 2 → 0x150, nothing with the
+    /// walk-on for liquid 2 or `.HasItem(0x18)` (the Fire Charm); kinds 3 / 4 the 0x70 default (unplaced); the same
+    /// `.HurtSprite` and stun.
     static func effect(_ w: SpriteWorld, player pID: Int, other oID: Int) {
-        guard let o = w.active.record(id: oID), o.type == EffectSprite.bigExplosion, o.phase <= 7,
-              let p = w.active.record(id: pID) else { return }
+        guard let o = w.active.record(id: oID), let p = w.active.record(id: pID) else { return }
+        var damage: Int16 = 0x70
+        if !(o.handler == .effect && o.type == EffectSprite.bigExplosion && o.phase <= 7) {
+            guard o.type == Geyser.base, 0 < o.geyserKind else { return }
+            guard let d = liquidDamage(w, kind: o.geyserKind, fireCharm: w.globals.hasItem(0x18)) else { return }
+            damage = d
+        }
         let kvx: Int16 = Int16(truncatingIfNeeded: o.centre.x) < Int16(truncatingIfNeeded: p.centre.x) ? 300 : -300
-        if HurtSprite.apply(w, id: pID, damage: 0x70, dvx: kvx, dvy: -0x640, invulnerable: 0x3c, flash: 0xc) {
+        if HurtSprite.apply(w, id: pID, damage: damage, dvx: kvx, dvy: -0x640, invulnerable: 0x3c, flash: 0xc) {
             w.player.stun = 1                                           // `*_DAT_100a0748 = 1`
+        }
+    }
+
+    /// The geysers' damage by liquid kind (≥ 1; M l. 49313–49329, 49773–49786): 0x70, nil (no hurt) for kind 1 with the
+    /// walk-on power-up for liquid 1; kind 2 → 0x150, nil with the walk-on for liquid 2 or the Fire Charm (`fireCharm`:
+    /// `.HasItem(0x18)`, inlined for the head as the 27-slot scan of item 0x18 with `+8 == 0`).
+    static func liquidDamage(_ w: SpriteWorld, kind: Int32, fireCharm: Bool) -> Int16? {
+        if kind == 1 && w.player.walkOnLiquid && w.player.walkOnLiquidKind == 1 { return nil }
+        guard kind == 2 else { return 0x70 }
+        if w.player.walkOnLiquid && w.player.walkOnLiquidKind == 2 { return nil }
+        return fireCharm ? nil : 0x150
+    }
+
+    /// Step 7 of the Box arm, after a landing (M l. 49312–49335; enemy-shots-and-damage §3.3): a head 0x5a9 with `+0x14c`
+    /// > 0 → `liquidDamage` (nil → the whole arm returns — no later step matches a head), `.HurtSprite(player, d, ±400,
+    /// −0x640, 0x3c, 0xc)` (+400 when the head's centre x `+0x10` is left of the player's, i16), a hurt → the stun
+    /// `_DAT_100a0748 = 1`. Kind 0 (water) is a plain platform.
+    static func geyserHead(_ w: SpriteWorld, player pID: Int, head hID: Int) {
+        guard let o = w.active.record(id: hID), let p = w.active.record(id: pID), 0 < o.geyserKind,
+              let d = liquidDamage(w, kind: o.geyserKind, fireCharm: w.globals.hasItem(0x18)) else { return }
+        let kvx: Int16 = Int16(truncatingIfNeeded: o.centre.x) < Int16(truncatingIfNeeded: p.centre.x) ? 400 : -400
+        if HurtSprite.apply(w, id: pID, damage: d, dvx: kvx, dvy: -0x640, invulnerable: 0x3c, flash: 0xc) {
+            w.player.stun = 1
         }
     }
 }

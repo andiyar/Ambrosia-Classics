@@ -73,7 +73,7 @@ public enum EnemyCommon {
         case .gremlin, .floater: break                  // the session dispatches `GremlinFloater` (GF)
         case .frog, .salamander: break                  // the session dispatches `FrogSalamander` (FR)
         case .blob, .deadBlob, .crab, .crabSegment: break   // the session dispatches `BlobCrab` (BL)
-        case .geyserSegment: break                      // later: GY — `.HandleGeyserSegSprite`
+        case .geyserSegment: break                      // the session dispatches `Geyser.handleSegment` (GY)
         case .warrior: break                            // later: LV5 ◇ — the Warrior stand-in (Ruling 3)
         default: break
         }
@@ -206,8 +206,10 @@ public enum EnemyCommon {
 
     /// The environmental hazards of the enemy Hit routines (`.HitWalkerSprite` M l. 58590–58595, `.HitCrawlerSprite`
     /// M l. 56636–56640): an Effect (`+0x4c == PTR_PTR_100a0460`) of type 0x4b7 at `+0x46 < 8`, or a sprite of type
-    /// 0x5a0 (a geyser base or segment) with `+0x14c` 1 or 2 — the Crawler's test is `+0x14c == 1 || +0x150 == 2`
-    /// (`crawlerFields`, raw `1006687c`, as read).
+    /// 0x5a0 with `+0x14c` 1 or 2 — the Crawler's test is `+0x14c == 1 || +0x150 == 2` (`crawlerFields`, raw
+    /// `1006687c`, as read). GY: every caller tests the Statue / Box solids first (Walker M l. 58578, Crawler 56625,
+    /// Roach 65136, Frog 70510), so a Box geyser base never reaches it — only the segments (`.HandleGeyserSegSprite`),
+    /// whose `+0x150` is 0: lava segments pass the Crawler and Frog by.
     public static func environmentalHazard(_ o: SpriteSlot, crawlerFields: Bool = false) -> Bool {
         if o.handler == .effect && !o.handleCleared && o.type == EffectSprite.bigExplosion && o.phase < 8 { return true }
         guard o.type == 0x5a0 else { return false }

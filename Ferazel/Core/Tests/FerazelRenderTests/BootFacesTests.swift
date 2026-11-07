@@ -211,6 +211,14 @@ final class BootFacesTests: XCTestCase {
         XCTAssertNotNil(boot[0x753])
         XCTAssertNotNil(boot[0x754])
         XCTAssertEqual(CachedFaces.sheets(markedBy: [Dillo.curlType]).map(\.pict), [0x74e, 0x74f, 0x750, 0x751])
+        // GY: `.InitBoxSprite`'s geyser sets 1440…1442 (M l. 58813–58815) are level-load caches, defined once in the
+        // Setup-face table, all three marked by every geyser Setup — the run-time head and segments face from them.
+        for p in [Geyser.baseSet, Geyser.headSet, Geyser.segmentSet] {
+            XCTAssertNil(boot[p], "cache PICT \(p)")
+            XCTAssertNotNil(SetupFaces.sheet(pict: p), "cache PICT \(p) geometry")
+            XCTAssertFalse(CachedFaces.handleSets.contains { $0.pict == p }, "cache PICT \(p) defined twice")
+        }
+        XCTAssertEqual(CachedFaces.sheets(markedBy: [Int16(0x5a7)]).map(\.pict), [0x5a0, 0x5a1, 0x5a2])
     }
 
     /// Levels 1–4: every boot face the data holds, every class sheet Core declares and every Setup sheet of the level's
