@@ -8,7 +8,7 @@ Everything below this brief is the history of the 2026-11-05 pass. The live stat
 You are the ORCHESTRATOR for Deimos Rising (Ambrosia Classics), wave 2a of the remainder plan: the audit's fix
 round on branch deimos-phase2, the merge of that branch into LOCAL main, and the research-bank corrections.
 Repo "/Users/andiyar/Developer/Ambrosia-Classics". Method ~/Developer/Toolkits/fable-kit/orchestrator.md
-(§2 loop, §5 cap, §6 model policy). Seat: Fable 5.1 (Ben's choice, 2026-11-05); say which model you are in your
+(§2 loop, §5 cap, §6 model policy). The seat model follows Ben's orchestrator rules, not this brief; say which model you are in your
 first message, echo the mission in one sentence, say what you do first, start.
 
 AUTHORITY: docs/superpowers/plans/2026-11-05-deimos-remainder.md, and nothing else. Read its headings

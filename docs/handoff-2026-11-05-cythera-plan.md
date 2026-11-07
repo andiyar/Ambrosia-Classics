@@ -17,7 +17,7 @@ the only part a new session reads.*
 
 ## The brief for the next session (wave 1, session A — paste into a fresh session)
 
-> You are the ORCHESTRATOR (Claude Opus 5.5) for **Cythera wave 1, session A: tasks C8 then C9**, in
+> You are the ORCHESTRATOR for **Cythera wave 1, session A: tasks C8 then C9**, in
 > `"/Users/andiyar/Developer/Ambrosia-Classics"`. Method: `~/Developer/Toolkits/fable-kit/orchestrator.md`. Ben's
 > rules: `~/.claude/CLAUDE.md` (plain English, numbers in tables).
 >
