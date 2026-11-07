@@ -1,3 +1,5 @@
+> Superseded by `docs/superpowers/plans/2026-11-04-ferazel-remainder.md` on 2026-11-08. Kept as history; nothing current reads it.
+
 # Ferazel's Wand on Windows — Phase W plan (contracts, not code)
 
 > **For agentic workers:** use `superpowers:subagent-driven-development`. One Opus `fk-implementer` + one Opus

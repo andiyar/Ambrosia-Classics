@@ -1,3 +1,5 @@
+> Superseded by `docs/superpowers/plans/2026-11-04-ferazel-remainder.md` on 2026-11-08. Kept as history; nothing current reads it.
+
 # Audit of the built Ferazel work against the remainder spec — 2026-11-04
 
 *Five read-only reviewers (Opus 5.5, `fk-reviewer`), dispatched in parallel by Claude Fable 5.1 in the seat, each with

@@ -1,250 +1,137 @@
-# STATE — Ambrosia Classics — 2026-11-07 night (Ferazel: re-planned 2026-11-04 (remainder spec/plan/audit under `docs/superpowers/`), Ben's answers D45 2026-11-07 — Phase 4 + Windows gates PASSED (Q11 Fireball-only, Q14 on Andrew's word), HectorKit follows kit main (ef2c341, floor 370), Phase 6 = three gates, release = one `ferazel-1.0`; **attended run 46 (Fable seat, 2026-11-08) closed wave 5.4: the enemy pipes + the renderer's traps as refusals — Core 607 = 605 + 2 opt-in skips, WinKit 81, Proof B 604/0/3/0**; next = run 47 (level 5's ogre + level 5), started by the re-plan repair session from its rebuilt chip — NOT chained by run 46 (Ben 2026-11-08); the loop stays stopped; BTX 1.1 gamepad; Cythera + Deimos re-planned 2026-11-05 (await Ben's go); Aki 1.0 + BTX 1.0 released)
+# STATE — Ambrosia Classics — 2026-11-08
 
-> Live state only. Dated; re-verify before acting. Narrative goes in handoffs, forks in DECISIONS.
+Settled history lives in docs/STATE-history.md.
 
-## Where we are
+> Live state only, one dated block per game. This file is the one live state for every game, Ferazel's included (the
+> chip `docs/NEXT.md` holds only the next run's instructions). Each close **replaces** its game's block with today's
+> numbers and open items and moves anything settled to the top of `docs/STATE-history.md`; it never appends a run story
+> here. Forks go in `docs/DECISIONS.md`, narrative in the handoff. Re-verify before acting.
 
-- **Bubble Trouble X gamepad — DONE, merged to local main, NOT pushed / not released (2026-10-22, D36, HectorKit D16).**
-  A controller (Switch Pro first; Xbox / PlayStation / Joy-Con) acts as BTX's original keys, Mac and Windows: layout
-  `BubbleTroubleX/Shared/BTXPadLayout.swift` (current key set in play, every face button pushes, + pauses via a Caps
-  Lock latch, − held 1 s = Esc; outside play face/+ = Return, − = Esc, d-pad = arrows), user notes
-  `BubbleTroubleX/GAMEPAD.md`. Kit: new Foundation-only `HectorInput` (translator, re-exported by HectorShell),
-  `ShellGamepad` (GameController), `ShellView.padMapping` (nil default — Aki/Deimos/Ferazel unchanged), HectorSDL
-  gamepads; HK floor **361** (was 328), HectorSDL 48/0. Classics: BTX core 261/0/0 (Core untouched), Windows package
-  126/0/0, cross-build OK; BubbleTroubleX/Aki/AkiPad/Deimos/Ferazel build. Every task Opus-implemented + Opus-reviewed;
-  Fable plan review + phase-end review (READY_TO_STAGE). Staged `~/Desktop/Bubble Trouble X.app` + GAMEPAD notes.
-  **Ben's real-controller check 2026-10-23 (Mac build): GAMEPAD.md steps 1–5 PASS** (title start, d-pad + stick,
-  push with all four face buttons, + pause/resume, hold-− to end). Step 6 (high-score dialog OK) untried, not failed.
-  **BTX 1.1 release (Ben's go, 2026-10-23): main + HectorKit PUSHED; GitHub release `btx-1.1` is a DRAFT** (target
-  8f804cc, HK 35a85ba): notarized+stapled universal `BubbleTroubleX-1.1.dmg` (sha 81c20fa3…) + `BubbleTroubleX-1.1-Windows.zip`
-  (sha cd83afb9…); downloads re-verified; copies in `releases/btx-1.1/`; notes `docs/release/btx-1.1.md`.
-  **Owed:** Ben tries the browser-downloaded DMG → publish → then update README's BTX download link/badge to 1.1.
-  The Windows pad path is still untested on hardware (his brother). Ferazel adopts via its own
-  plan (set `padMapping`, implement `padKeyDown`). Plan `docs/plans/2026-10-22-gamepad.md`.
-- **Ferazel's Wand is on the unattended session loop (2026-10-13, D34).** Live Ferazel state now lives in
-  `docs/NEXT.md` (the loop's chip; first line `STATUS: …`), `docs/LOOP-LOG.md` (one line per run) and
-  `docs/QUESTIONS.md` (what only Ben can answer — his phase gate cards queue there; he is away in Fiji). Each run
-  updates the Ferazel bullet below at its close. **Latest (attended run 46, 2026-11-08, Fable seat — D45.7 chain): the enemy pipes alive (`World/Movers/BoxSprite.swift` pipe arm; the shared run-time spawn now makes Walkers and Blobs as well as bats; a pipe waits for its child to die before the next — dump over card) → 607; the renderer's 18 traps → 7 refusals + 11 census-pinned traps, two level-header refusals at open (OmniPx rain/interlace, horizon strip) → 607; **wave 5.4 CLOSED**: G2 607 = 479 + 128 / 0 / 2 skips by name, G3 1,108/0, GE core 3,360/0 + 86,400/0, Proof B 604/0/3/0 of 607, GW4R identical, GW1–GW4 + G5 green, G1 ef2c341/370. **Method (Ben 2026-11-08, D44 as-built run 46):** STATE/NEXT hold only the current run (history moves out at close); the re-plan becomes one self-contained plan + a small chip (the repair session owns it); the seat never pre-reads source; sweep + bot only after level tasks and at phase ends. **Next: run 47 [OX LV5]** — started by the repair session, not chained here. Previous (attended run 45, 2026-11-07): the Dillo alive (`World/Enemies/Dillo.swift`: idles, walks its patrol band, curls and fires 5- or 7-spine volleys, lays egg bombs, jumps, rolls when a level asks; armour turns every shot from behind or while curled, Statue spell included; retaliates after a landed hit; the unplaced types 1872–1879 refused at Setup, ◇) → 596; geysers alive (`World/Movers/Geyser.swift`: the water / acid / lava column rises and falls on the level clock, its head and segments hurt by kind, spray particles in the binary's draw order, no sound as the original; §9 (b) NR 2–4 as settled; dump over bank: the head sorts at layer 2 and only the segments hurt enemies) → Core **603** = 601 + 2 opt-in skips (475 rules + 128 render), WinKit 81 = 79 + 2, Windows gates GW1–GW4 green, G5 green; ◈ none (no built level places either). HectorKit main ef2c341, zero-skip 370. **Next: run 46 [PI PT]** — the enemy pipes, then the renderer's traps into the refusal census; PT closes wave 5.4 (G3, GE core on levels 1–4, GWB by day). Previous (attended run 44, 2026-11-07): Blobs and Crabs alive (`World/Enemies/BlobCrab.swift`; the Multi Crystal is not lost to a Blob's touch; the Kill-proc arms for Crawler / Roach / Bat / Blob dropped per audit 4) → 584, wave 5.3 closed (census 1,108/0, visit sweep 3,360/0, bot 86,400 steps/0, Proof B 581/0/3/0 of 584, Mac SDL smoke identical); Gremlins (body + rider, radial paths admitted — `ProgrammedPath.makeRadial`'s first caller) and Wraiths alive (`World/Enemies/GremlinFloater.swift`; the unplaced Wraith variant 0x6fe–0x707 refused at Setup, ◇) → Core **591** = 589 + 2 opt-in skips (463 rules + 128 render), WinKit 81 = 79 + 2, Windows gates GW1–GW4 green; ◈ none (one BootFaces level-3 pin moved for the Blob turning on, switch-off held). HectorKit main ef2c341, zero-skip 370. **Next: run 45 [DL GY]** (NEXT.md re-seeded; the next attended session started at this close per D45.7). Previous (attended run 43, 2026-11-07): the Bat's fix round → 569; Frogs and Salamanders → 577 (the Frog's aim reads player X, bank §1.3 corrected); D45 Ben's answers. Previous: (loop run 41, 2026-10-31, 09:09 → day): CR ⚑◈ (Crawlers and Roaches alive) + WK2 ⚑◈ (the boulder-throwing goblin 1760 and the Ax goblin 1750) merged, wave 5.2 closed — Core 560 = 558 + 2 opt-in skips, WinKit 81 = 79 + 2, census 1,108/0; wave-end visit sweep (3,360 visits, 0 failures) and random-play bot (levels 1–4, 0 failures) clean, Proof B 557/0/3/0 of 560 and the Windows dev-build smoke clean by day (16:xx, muted); D44 "As built — run 41"; next run 42 = BA ⚑◈ → FR ⚑◈.** Start/stop: `.looper/config.sh` header. History per run: `docs/LOOP-LOG.md`. **Phase 2 "Ferazel moves"** machine-closed (loop run 7), staged d5586fb at `~/Desktop/Ferazel's Wand.app`, Ben's gate pending (QUESTIONS Q2). **Phase 3 "Front end + saves"** planned (loop run 8, `docs/plans/2026-10-14-ferazel-phase3.md`, D35; ladder 256 → 345, Q3 = Ben's four non-blocking choices). Waves 3.0–3.1 (runs 9–10: carry sweep, dialog parsers, G image + save block, prefs/saved-game files, front-end seam, fades, Options model) → 284/0. **Loop run 11 built L2 L1** (wave 3.2 closed: chapter card, stage-load popup + bar, stage-complete panel; `LevelRun` — level entry, 2-tick cadence, death/complete/abort exits — with tagged `.level`/`.screen` op segments for A1a) → 297/0. **Loop run 12 built RX M1 M2** (wave 3.3: Roach write-back, `WorldMapRun`, `MapRenderer`) → 308/0. **Loop run 13 (2026-10-24, after the pause 10-14 → 10-24)** applied Ben's answers (Q4 → D37: Ferazel gets controller support as Phase 3 task GP, ladder 345 → 349; Q3 defaults recorded in D35) and built **F1a D1 F1b** (wave 3.4 closed: `GameFlow` — boot logo + load bar, main menu, Quit, Credits, Options; the death screen; New Game ⇄ world map ⇄ level, Continue from a save, death → Continue/Abort) → Ferazel/Core **323/0**, census 1,108/0, Ferazel builds. **HectorKit pinned at 35a85ba, zero-skip floor 361** (moved by the BTX gamepad work; no Phase 3 task changes it). **Loop run 14 built S1 P1** (wave 3.5 closed: the resumable frame and the save point — hold, save prompt/reuse, success flash, statue faces, GameFlow carries the save state; `.CheckGameLoopKeys` ⌘Q/⌘W/⌘P/Esc and the Caps Lock `.Pause`; graphics-mode-3 black lines) → Ferazel/Core **335/0**, census 1,108/0, Ferazel builds. **Loop run 15 built EC C1 C2** (wave 3.6 closed: every save-error report carries its code; conversations and signs inside the suspended frame — NPC/sign arms, the Mcnv interpreter; `ConversationRenderer` with the boot-time system-clut frame) → Ferazel/Core **345/0**, census 1,108/0, Ferazel builds. **Loop run 16 built A1a A1b** (wave 3.7 closed: the app runs on `GameFlow` — title, menu, world map, levels, save points, conversations, death screen, saved-game files, Finder open — with the original's dialogs (confirm, reports, Options with key remapping, Credits) and MBAR 128 menus, live only at the main menu and in the pause) → Ferazel/Core **345/0** (unchanged by design), census 1,108/0, Ferazel builds. **Loop run 17 closed Phase 3 on the machine side:** GP (a game controller acts as the original keys, D37; − is a 1 s hold in a level, on the map and on the death screen) → Ferazel/Core **349/0**; A2 staged build 3553392 at `~/Desktop/Ferazel's Wand.app` + WHAT-TO-EXPECT (the Phase 3 gate card) — two clean boots (first launch of the new front end: reaches the main menu, quits clean), Fable phase-end review "stage as is" after doc fixes. **Ben's gate: QUESTIONS Q6** (and Q2 for Phase 2, Q5 the quit-wait). **Loop run 18 planned Phase 4 "Spells + items"** (`docs/plans/2026-10-24-ferazel-phase4.md`, D38: 24 tasks + phase end, 12 ⚑ MAJOR, ladder 349 → 481, levels 1–4 enterable at its end, no HectorKit change; two Opus legs + FABLE-GRADE leg, both fix rounds applied; Q7 = Ben's three non-blocking choices). **Loop run 19 built wave 4.0 [X1 VS LT]** (carry sweep; `SoundVoices` — the original's "is this sound playing?" query, fed by the app's mixer each tick; the light table moved into Core as `LightTable` + `DrawOp.lightTable`, no golden moved) → 357/0. **Loop run 20 built wave 4.1 [US IV HU]** (dying sprites cleared after four passes and positions saved back to the level's records as the original; the inventory operations; the status bar drawn from the live game state — inventory, counts, maxima, flashes, the selection step at every bar call, the health-bar clamps and the suffocation tick; no golden moved) → Ferazel/Core **374/0**, census 1,108/0, Ferazel builds, HK 35a85ba untouched. **Loop run 21 built wave 4.2 [TB BN PK]** (TB inserted by the seat: translucent sprites (draw mode 0xb) — the spheres need it once the Bonus sprites run; the Bonus sprites animate, glint, flicker and fall; touching a pickup collects it — Xichrons, crystals, coins, scrolls, items, upgrades with their 2-second animation; hurt coins fly out; goldens moved for those causes only, each confirmed) → Ferazel/Core **393/0**, census 1,108/0, Ferazel builds, HK 35a85ba untouched. **Ben 2026-10-25 passed Phases 2 and 3 with notes (Q2, Q6 → D39) and ruled that Apple system fonts may ship (Q8).** **Loop run 22 built wave 4.2F from his notes:** TX — text drawn smoothed as Mac OS 9 drew it (conversation text; sizes under 14 pt stay crisp as in the Let's Play) → Ferazel/Core **396/0**; SP — speed measured, no change: the port runs at the original's own cap (30 game steps a second), the Let's Play ~20 % slower because the emulator could not keep up → Ben decides in **Q9**. **Loop run 23 built wave 4.3 [EF CS]:** explosions and their lights, the big explosion's hurt, crate debris, the alternate-frame mask flash and the camera shake (carried across levels as the original; the shake zeroed only by New Game / Continue); casting — the USE gate, the wand animation, every spell's `.CastSpell` — and the shots in flight (followers, lights, the Boomerang homing, V Blade, fizzling in liquid); plus the original's shot-death routine (built early: springs kill shots through it) → Ferazel/Core **412/0**, census 1,108/0, Ferazel builds, no golden moved, HK 35a85ba untouched. Shots pass through walls until the next wave. **Loop run 24 built wave 4.4 [SH GL PU]:** shots now hit things — walls, crunchable cells, water, torches and rock piles that open (crystals fly out), the ice wall, the stalactite, the Boomerang caught back for magic, seeds that bounce then explode; the hang glider (deploy, glide with pitch and wind, steer, dive, land and stow); power-up timers that warn with ticks and a blink and then run out (Featherfall, High Jump, Double Speed with its trail, walk-on-liquid, Invincibility) → Ferazel/Core **431/0**, census 1,108/0, Ferazel builds, no golden moved, HK 35a85ba untouched. **Loop run 25 built wave 4.5 [IU MS]:** using an item — the dagger, Ice Pick and Vorpal Dirk stab, seeds are thrown, health and magic potions are drunk, the Smiting Ring strikes every enemy on screen, the Escape Ring leaves the level, and selecting a key, shield or Red Xichron makes Ferazel say why you don't need to (the hint talks inside the frame, also during a pause); the shield now needs a shield; the Mist potion turns Ferazel into a spirit that floats through walls and must get back to his body, the Resurrection Necklace revives him once, the Fire Charm blocks fire, a Multi Crystal is lost after being hurt → Ferazel/Core **444/0**, census 1,108/0, Ferazel builds, no golden moved, HK 35a85ba untouched. Ben answered Q9 (keep the original's speed; D39 addendum). **Loop run 26 built wave 4.6 [SD BX1]:** the Shadow Double (a ghost of Ferazel that copies his moves 14 frames behind and copies his spells) and the Pentashield orbs that circle him and break on things; crates that fall, settle, can be pushed and smashed (dropping their pickups, the explosive crate blowing up), the spin stomp that breaks crates, rolling boulders, mine carts and falling stalactites → Ferazel/Core **457/0**, census 1,108/0, Ferazel builds, no golden moved, HK 35a85ba untouched. Ben answered Q5 (a Dock/app-menu Quit during a level now shows the game's quit box at once; logout quits at once — a deliberate departure, D40) and Q7 (defaults stand). **Loop run 27 built QT + BX2 + BT:** a Dock or app-menu Quit during a level now shows the game's own quit box (also when pressed during the level's opening screens), a logout quits at once (D40); chests open (locked ones need their key, and drop their contents one every four frames), doors unlock with keys and open when walked into from the right side, thought balloons show the needed key near a locked chest or door; Buttons (momentary and latching, pressed by Ferazel, boxes or shots), gates that rise, switch blocks that appear and vanish, boulder spouts (their boulders come in Phase 5) → Ferazel/Core **472/0**, census 1,108/0, Ferazel builds, no golden moved, HK 35a85ba untouched. Ben answered Q10 (D41): a Ferazel Windows build straight after Phase 4, before Phase 5, then the Windows twin kept in lockstep. **Loop run 28 built TP + SW:** teleporters (stand on one until it charges, the screen breaks into a mosaic, Ferazel reappears at the partner teleporter, the mosaic clears) — wave 4.7 closed; the spells now change the world: the Ice Wall makes ice floes on water and ledges on walls, the Tree Trunk plants a trunk that grows when hit again and blinks out, the Statue spell freezes a moving platform for a few seconds (Ferazel can stand on it) → Ferazel/Core **482/0**, census 1,108/0, Ferazel builds, no golden moved, HK 35a85ba untouched. **Loop run 29 built LV3 + LV4:** levels 3 "Western Reaches" and 4 "Eastern Reaches" can now be entered from the map — every placed thing sets up, the retracting spikes stab and hurt, the level-load bar counts each level's pictures as the original, level 5 shows "not built yet (Phases 5-6)" — wave 4.8 closed → Ferazel/Core **490/0**, census 1,108/0, Ferazel builds, no golden moved, HK 35a85ba untouched. **Loop run 30 closed Phase 4 on the machine side:** the gate card `Ferazel/WHAT-TO-EXPECT.md` rewritten as built, staged at `~/Desktop/Ferazel's Wand.app` (build 4bca4bd; two clean boots), Fable phase review passed with card-only fixes (no code divergence from the original) → Ferazel/Core **490/0**, census 1,108/0, Ferazel builds, HK 35a85ba untouched. **Ben's gate: QUESTIONS Q11.** Two gaps handed to Phase 5: the underwater screen tint (missing since Phase 2) and the Magical Shield's crouch picture. **Ben's Q12 (2026-10-26, D42):** the loop launches a build only muted (a tested mute switch) and never 21:00–09:00. **Loop run 31 planned Phase W, the Windows twin** (`docs/plans/2026-10-26-ferazel-windows.md`, D43: WF0–WF6, 3 ⚑, Ferazel/Core stays 490, a new `Ferazel/Windows` package 0 → 77 macOS-hosted tests, Proof B 490 in CrossOver muted by day; no HectorKit change; two Opus legs + FABLE-GRADE leg, both rounds applied; Ben's six choices Q13, defaults (a)). **Loop run 32 (2026-10-26/27) built WF0 + WF1:** the game's core and its whole test suite now cross-build for Windows (the Windows-only differences removed — environment, links, the census tool's location, line endings, a text-replace trap; new `tools/windows/proof-b-ferazel.sh`, which refuses by night and forces no-sound); the Mac app's platform-neutral half moved to `Ferazel/Shared/` (`FerazelDriver`, `FerazelAudio`) unchanged in behaviour, with the mute switch `-FerazelMute YES` / `FERAZEL_MUTE=1` (no audio output, no beeps) and a silent stand-in mixer for headless frame runs; the new `Ferazel/Windows` package (FerazelWinKit, symlinked shared files) has **17/0** macOS-hosted tests → Ferazel/Core **490/0**, census 1,108/0, all five apps build, HK 35a85ba untouched. **Loop run 33 (2026-10-27, 01:34–06:xx, all night) built WF2 + WF3:** Windows draws the game's text from five baked font files (`Ferazel/Windows/Resources/Fonts/`), equal byte for byte to the Mac's text on every character, level name, score, item count and two whole routes; `FerazelWin`, the Windows game executable on HectorSDL (loop, keys, Ctrl shortcuts from the menus, pad, quit confirm, files, hidden switches, `--mute`, headless `--frames/--dump/--keys/--seed` with pinned seed and clock), cross-builds and links for Windows (GW3) and builds as a Mac SDL development build (GW4); `Ferazel/Shared/FerazelMenuRules.swift` holds the menu rules both shells use (Mac unchanged); `tools/windows/smoke-ferazel-win.sh --mac-only` written (refuses by night) → FerazelWinKit **46/0**, Ferazel/Core **490/0**, census 1,108/0, Ferazel app builds, HK 35a85ba untouched. **Loop run 34 (2026-10-27, 06:16–11:xx) built WF5, WF4a, WF4b ⚑ and a Proof B parity fix (WF0b):** saved games on Windows through the native Open / Save dialogs (compiled and linked, never run); the original's confirm and report dialogs, Options and Credits drawn inside the Windows game window, behaving as the original (Esc does nothing on the confirm; the Options keys follow the original's filter); the dialog font equals the Mac's exactly. **First daytime launch checks done:** the Mac SDL development build boots muted to a main menu identical to the reference; **Proof B (the whole core suite run in CrossOver, muted) = 489 passed / 0 failed / 1 skipped / 0 crashed (of 490), ~4 min 40 s** — CrossOver's Wine lacks one Windows function Foundation uses, so file sizes are read another way on Windows and the one test that launches the census tool skips under Wine only (it runs on a real PC) → FerazelWinKit **77/0** (the phase ladder's top), Ferazel/Core **490/0**, census 1,108/0, Ferazel app builds, HK 35a85ba untouched. **Loop run 35 (2026-10-27, by day) closed Phase W on the machine side:** a Windows stage script and a CrossOver smoke that checks three pictures (menu, level 1, level 1's text at full brightness) against the Mac's; both builds staged on the Desktop (`Ferazel's Wand.app`, `Ferazel's Wand (Windows).zip` + folder); booted muted by day — the Mac app quits clean, the Windows zip draws all three pictures identically in CrossOver, Proof B 489/0/1/0; Fable phase review passed with small script/card fixes. **Ben's and Andrew's Windows gate: QUESTIONS Q14** (card `Ferazel/WINDOWS-WHAT-TO-EXPECT.md`; please try a real save and restore). Next: the Phase 5 plan (enemies), lockstep Mac + Windows from its first task. **Ben's attended sessions (2026-10-27 → 10-30, not loop runs):** Andrew's Windows tests found the teleporter sparkle (draw mode 5) refused → the game quit on both shells; fixed (0fd056e, + mode 0xa), then the teleport/passage re-seat (78e81c3), the level-2 light shrink and level-3 rope faces (48a0620), every boot face loaded as the original (b535527), Continue refuses unbuilt-level saves (e9fa8b0); the port gap ledger `docs/ferazel/port-gap-ledger.md` (nothing game-ending left in levels 1–4; watch list for 5+) and the visit-every-object sweep `tools/ferazel-visit-sweep.sh` (opt-in test, skips in a normal run) → Ferazel/Core **502 = 501 passed + 1 opt-in skip**, FerazelWinKit **79 = 78 + 1**; Windows test builds 1–4 published; Andrew confirmed save, restore and level 1 → map → level 2 on a real PC; follow-ups = QUESTIONS Q15. **Loop run 36 (2026-10-30) planned Phase 5 "Enemies"** (`docs/plans/2026-10-30-ferazel-phase5.md`, D44): Q15's follow-ups first (Proof B fixed for the opt-in skips, sparkle scroll, draw-mode audit, random-play bot), then every enemy class, enemy shots, damage, pipes and geysers, the underwater tint and the shield crouch face, and level 5 open up to the Warrior's arena (the Warrior a stand-in until Phase 6); 22 tasks + phase end, 13 ⚑, ladder Core 502 → 617, WinKit 79 → 81, no HectorKit change; two Opus legs + FABLE-GRADE leg, all findings applied; Ben's five choices Q16. Next: run 37 = PB → SP → RV. **Loop run 37** built PB SP RV (509). **Loop run 38** built DK UT DA (516): a lit sprite at full darkness under the brightest light no longer quits the game; the screen tints under water as the original; a standing audit test proves no picture the port refuses can be reached in levels 1–4. **Loop run 39** built RB EC (526): a random-play bot plays every built level for minutes through both shells' real paths and fails on any quit, refusal, error box, freeze or crash (`tools/ferazel-random-play.sh`, with Ben's memory limits); the enemy foundation every enemy class will plug into — still switched off until each class's own task. **Loop run 40** built ES WK1 (546): enemies' shots exist — thrown axes, boulders that bounce and split, spit, the Wraith's homing shot — the shield blocks and reflects them (the Magical Shield turns a Wraith shot back), the boulder spouts on level 4 fire; the goblin Walkers (axe throwers and spear guards) now walk, throw, block, thrust, get hurt, die, drop coins and leave a corpse that floats as a raft. **Loop run 41** built CR WK2 (560): Crawlers drop from ceilings, wind up and leap, Roaches patrol, both flee, get crushed, hurt and killed; the level-4 goblin throws boulders (or bombs) and the Ax goblin (first placed on level 10) swings, jumps and lands — wave 5.2 closed; two level-1 golden pictures moved because a Crawler wakes on those routes.
+## Ferazel's Wand — 2026-11-08 (attended run 46 closed; main c8d9cf5, pushed)
 
-- **Phase 0 DONE (2026-10-03).** HectorKit **v0.1.0** (`~/Developer/HectorKit`, tag on f578925): HectorResources /
-  HectorGraphics / HectorAudio lifted from EV e23122f + the new banded-QuickTime decoder; machine gate
-  `tools/check-zero-skip.sh` PASS at **floor 119** (0 skips with the three `HECTORKIT_DATA_*` vars; EV Override
-  forks + Aki 1.1 data). Classics: `Aki/Core` (AkiCore + `aki-census` + 6 data-gated tests, 6/6) and
-  `docs/aki/data-census.md` (tool output: 82 PICT = 71 QuickTime + 11 raw, all decode to frame; 50 PNG; 14 + 15
-  audio files open; 0 `snd `). Plan: `docs/plans/2026-10-03-phase0-hectorkit-lift.md` (DONE).
-- **Replica target is 1.2.0** (Ben's ruling 2026-10-03, recorded by the RE lane in `docs/aki/INDEX.md`; all
-  1.1↔1.2 deltas resolve to 1.2). Art therefore comes from the 1.2.0 PNGs (same native sizes as the 1.1 PICTs;
-  `data-census.md` §3 maps them); the PICT path stays as oracle and for Bubble Trouble.
-- **RE-bank lane COMPLETE (2026-10-03, head 01cb120):** `docs/aki/`, `docs/bubble-trouble/`, `docs/cythera/`,
-  `docs/deimos/`, `docs/ferazel/` — each Opus-built, Fable-reviewed (all ACCEPT_WITH_FIXES), fix-passed;
-  handoff `docs/handoff-2026-10-03-re-bank.md`; optional deepening = RESUME Trigger A2.
-- **Deimos RE deepening CLOSED (2026-10-06):** waves 1–4 on main — 100 % of game code read (0 unread by census). Wave 3+4 fix pass (`docs/deimos/FIXPASS-wave3-2026-10-06.md`: review I1/M1–M7, critic C1–C9, stale NRs, label audit; one reversal seat-verified) + critic §6 micro-wave (`docs/deimos/micro-wave-2026-10-06.md`, every claim spot-checked HIGH) folded in: role table **938 rows = 716 HIGH / 222 MED / 0 LOW**; INDEX #40 #47 #48 #54 #58 #60 closed, #62–#64 new. Still open: #13, #59 residue, #62–#64, the 134 cross-file HIGH/MED label mismatches (critic), Ben's ear/eye items (handoff 2026-10-04-deimos-re-wave34 "Owed by Ben").
-- **Deimos Rising build (D27, Ben 2026-10-06): design + Phase 1 plan written** on branch `deimos-phase1` (5106149, unreviewed, not executed) — Phase 1 = gate 1 "level 1 look". Handoff `docs/handoff-2026-10-06-deimos-phase1.md`.
-- **Deimos Rising Phase 0 DONE (2026-10-06, on main; plan `docs/plans/2026-10-06-deimos-phase0-data.md`,
-  DECISIONS D22/D24):** original data in git (`Resources/Deimos/Data` four paks + Local film; app fork as
-  `Resources/Deimos/Deimos Rising.rsrc`); HectorKit `StoredZipArchive`/`AIFFAudio`/`WAVEAudio`/`SoundFile` + PICT 0x009B
-  (main `33d4dee`, floor 301); `Deimos/Core` 104/0/0; `deimos-census` 872 entries decoded, 0 failures, PICT 12/12,
-  DITL 6/6 (`docs/deimos/data-census.md`). **Phase 1 (the build plan) needs:** the game's continuous-IMA effect decode +
-  16-voice/8-audible mixer, music streamed from the pak range, the glyph map over `tesm`, the MED colour rules (plan
-  notes 15/21). **Ben's eyes:** INDEX #10 — `deimos-census --render out/deimos-render`, is `menu.png` upright?
-- **Deimos Rising Phase 1 — level 1 look: GATE 1 PASSED (Ben, 2026-10-07: "it looks okay!"; D30 — runs at OS X's
-  60 Hz tick, Ben played on OS X) (2026-10-07, Opus 5.5 orchestrator,
-  Opus implementers / Fable reviewers; plan `docs/plans/2026-10-06-deimos-phase1.md` + review record `…-phase1-REVIEW.md`;
-  DECISIONS D29 + as-built addendum):** K1 `ShellView.scalingPolicy` on HectorKit main 522feb8 (HK D13, floor **316**);
-  `Deimos/Core` grew DeimosRender + DeimosHost — suite **189/0/0** (plan ladder 177 + 13 from three review fix passes − 1
-  KeyTable moved to Core); census unchanged; Deimos + Aki + BubbleTroubleX BUILD SUCCEEDED. Every task Fable-reviewed
-  (MAJOR tasks two legs); one Critical found and fixed (held Esc hung the driver). Frame goldens independently re-derived
-  in Python. Staged **~/Desktop/Deimos Rising.app** + WHAT-TO-EXPECT (gate card). Q1 ruled 60 Hz (D30), restaged.
-  Next: the Phase 2 plan (level 1 plays; de01 film replay gate). Carries for Phase 2: `DeimosAudio`
-  target (design M6), `playerOps` return type, `HeadlessRun` film params, Phase-4 prefs file widening (C1 review m3).
-- **Deimos Rising Phase 2 — level 1 plays: RE-PLANNED (2026-11-05, Fable re-planning pass, `replan.md`; D45).** Branch
-  `deimos-phase2` (44 commits, pushed, unmerged; worktree `.claude/worktrees/inspiring-cannon-e97ccd`): waves 2.0–2.5
-  reviewed, 2.6 built; suite **313/0/0** against both HectorKit e595472 and current main ef2c341. Audit of the branch
-  (`docs/superpowers/audits/2026-11-05-deimos-phase2-audit.md`): 0 rules wrong, 0 redo, 23 change, 12 missing; the three
-  owed legs discharged. Spec `docs/superpowers/specs/2026-11-05-deimos-remainder-design.md`; plan
-  `docs/superpowers/plans/2026-11-05-deimos-remainder.md` (wave 2a: audit fix round → 318, merge to main, bank
-  corrections; wave 2b: C12 → 327, C18a → 335; then cards). Handoff `docs/handoff-2026-11-05-deimos-replan.md`.
-  **Waits for Ben's go.**
-- **Originals:** Aki 1.1.0 + 1.2.0 UB (symlinked as git-ignored `Resources/Aki/1.1.0.app`, `1.2.0.app`);
-  Bubble Trouble X 1.1 UB; Ferazel's Wand 1.0.3, Deimos Rising 1.0.6, Cythera 1.0.4 (PEF).
-  Archive map: `~/Developer/Ambrosia/docs/ARCHIVE-INDEX.md`.
-- **Local-path dependency:** `Aki/Core` → `../../../HectorKit`; a worktree needs the untracked symlink
-  `.claude/worktrees/HectorKit → ~/Developer/HectorKit` (Classics DECISIONS D1).
+- **Where it stands:** Phase 5 "Enemies" is under way. Waves 5.0–5.4 are done: every enemy class placed on levels 1–4
+  is alive (goblins of every kind, Crawlers, Roaches, Bats, Frogs, Blobs), and the classes first placed later are built
+  and machine-tested (Salamanders, Crabs, Gremlins, Wraiths, the Dillo, geysers, enemy pipes); enemy shots, damage,
+  shields, the underwater tint, the random-play bot and the visit sweep are in; the renderer's traps are refusals with
+  census rows, and a level whose header asks for rain, interlace or a horizon strip is refused at open. Levels 1–4 are
+  enterable on Mac and Windows; level 5 is not yet.
+- **Next:** run 47 = OX (level 5's moving sky, OmniPx modes 2/4/5) then LV5 (level 5 enterable up to the Warrior's
+  arena); run 48 = A5 + the Fable cross-check = the Phase 5 end, both builds staged, the gate card to QUESTIONS for Ben;
+  run 49 = the Phase 6 research and the 6A plan (does not wait for his verdict). Chip: `docs/NEXT.md` (`STATUS:` line
+  first). Attended sessions chain — each close starts the next; the unattended loop stays stopped unless Ben says
+  "start the loop".
+- **The plan:** `docs/superpowers/plans/2026-11-04-ferazel-remainder.md`, the one plan (self-contained since
+  2026-11-08); the design it builds: `docs/superpowers/specs/2026-11-04-ferazel-remainder-design.md`.
+- **Ben's gates:** Phase 1 passed; Phases 2 and 3 passed with notes; Phase 4 passed (Fireball note) and the Windows
+  twin passed on Andrew's word (2026-11-07). After Phase 5: three gated Phase 6 parts (6A to the Goblin Chief, 6B to the
+  Wizard and the fire, 6C the whole game), then one release `ferazel-1.0` (notarized DMG + Windows zip).
+- **Current numbers** (the seat's own runs at run 46's close):
 
-- **Aki Phase 1 DONE — Ben's verdict 2026-10-04: "yes it absolutely is Aki"** (splash + map gate passed). Plan
-  `docs/plans/2026-10-03-aki-phases-1-3.md` (contracts not code). P1.2–P1.13 all reviewed MERGEABLE (Opus
-  implementers, Opus/Fable reviews; fix round for P1.9/P1.10 at 5da2bf0); merged to main this session. AkiCore 31
-  tests / 0 skips; `xcodegen generate && xcodebuild -scheme Aki build` BUILD SUCCEEDED; `tools/stage-aki.sh` →
-  `out/Aki/Aki.app` (50 PNG + bundled `Fonts/OsakaMono.ttf`). HectorShell is the HectorKit session's (main
-  5a33384+, floor 167 at the gate). Rulings this session: DECISIONS D4. Handoff `docs/handoff-2026-10-04-aki-phase1-done.md`.
-- **Bubble Trouble X 1.0 — RELEASED 2026-10-06 (Ben tried the downloaded DMG, said "publish"; DECISIONS D25):** GitHub release `btx-1.0`
-  (tag on 47d7c98) carries `BubbleTroubleX-1.0.dmg` (12.6 MB, Developer ID + notarized + stapled, universal, built by
-  `tools/package-btx-release.sh`) and `BubbleTroubleX-1.0-Windows.zip` (36.9 MB, stamp 6832da1, unsigned) + .sha256s;
-  README + `docs/release/btx-1.0.md`. Next releases: bump `CFBundleVersion` in BubbleTroubleX/App/Info.plist, then
-  `tools/package-btx-release.sh --version X.Y --sign "Developer ID Application: Benjamin Thomas (5W72UJL332)" --notarize oniarm64-notarize`.
-- **Bubble Trouble X PLAYABLE WITH SOUND (2026-10-04/06, Opus 5.5 orchestrators, plan `docs/plans/2026-10-04-btx-playable.md`,
-  DECISIONS D12/D13/D14):** every plan task merged and Opus-reviewed (T0, C1–C8, R1, A1–A4), then 2026-10-06: K3
-  `ShellMixer` merged to HectorKit main d9fdfa4 (kit gate floor **222**, zero skips; C1 off-main-thread regression test
-  proven to trap pre-fix), A5 wires it in (4 effect voices + music, silent fallback without a device), A6 effects at the
-  Sound Tool's 0x80-unity law + `_StartMusic` carries on (sound audit `docs/bubble-trouble/sound-audit-2026-10-06.md`: all
-  146 registered effect sites and music per level set match the original). Gates at Classics main (seat-run): core
-  **258 / 0 / 0**; BubbleTroubleX + Aki BUILD SUCCEEDED, 0 warnings in our code; FILM replay traces 1–4 = baseline.
-  Staged **~/Desktop/Bubble Trouble X.app** (Release, with sound) — Ben: "feels so close", speed right; he is playtesting
-  "for a while"; unsure about music per set / missing effects (audit says both right; effects were half as loud — fixed
-  in the restaged build). Prefs domain `com.ambrosiaclassics.bubbletroublex` holds his play since Oct 5 — never clear it.
+| gate | value |
+|---|---|
+| Ferazel/Core suite (G2) | **607** = 479 rules + 128 render; 605 passed, 0 failed, 2 opt-in skips by name: `FerazelRenderTests.VisitSweepTests testVisitEveryObject`, `FerazelRenderTests.RandomPlayTests testRandomPlay` |
+| FerazelWinKit (GW2) | **81**; 79 passed, 0 failed, 2 opt-in skips: `WinVisitSweepTests testVisitEveryObjectThroughWinGame`, `WinRandomPlayTests testRandomPlayThroughWinGame` |
+| census (G3) | items 1,108 decoded, failures 0 |
+| visit sweep / random-play bot (core, levels 1–4) | 3,360 visits, 0 failures / 86,400 steps, 0 failures |
+| Proof B in CrossOver, muted (GWB) | 604 / 0 / 3 / 0 of 607 (one Wine-only skip + the two opt-in) |
+| Mac SDL smoke (GW4R) | main menu identical |
+| GW1 / GW3 / GW4 / G5 | 0 then 2 / 0 then 1 / Build complete! / BUILD SUCCEEDED |
+| HectorKit (G1) | main **ef2c341**, clean; zero-skip executed **370** (366 passed + 4 Aki 1.1 data-path skips); Ferazel follows HectorKit main |
+| ladder from here | 607 → OX 612 → LV5 618 → A5 618 (Proof B 615 / 0 / 3 / 0 of 618 at the phase end) |
 
-- **Bubble Trouble X on Windows — PLAYABLE, STAGED FOR TESTING (2026-10-06, Opus 5.5 orchestrator; plan
-  `docs/plans/2026-10-06-btx-windows.md` W0–W7 all done; DECISIONS D15/D16/D18/D19/D21).** Cross-compiled on this Mac
-  (`tools/windows/`, cache `~/Developer/Toolchains/windows-cross`), Mac app untouched. `BubbleTroubleX/Windows`:
-  BTXWinKit (driver port, baked fonts, in-window Carbon dialogs, prefs file under `%APPDATA%\Ambrosia
-  Classics\Bubble Trouble X\`) + `BubbleTroubleXWin` on HectorKit `SDL/` (HectorSDL). Tests: Windows package 113/0/0;
-  BTX core 261/0/0 on the Mac and 260/0/0 in CrossOver; HectorSDL 38/0; kit floor 252. **Staged:**
-  `~/Desktop/Bubble Trouble X (Windows)/` + `.zip` (37 MB; `tools/windows/stage-btx.sh`; stamp 83febbe) — Ben sends it
-  to his brother — **public link: GitHub pre-release `btx-windows-test-1` (repo now PUBLIC, D20)**; Ben heard it play with sound in CrossOver; fresh CrossOver bottle reaches the menu, level 1 and every dialog, dumps = the Mac SDL build. **Real PC verified 2026-10-06 by Ben's brother** (played to level 20, high-score entry, idle attract demo all work). Sound fine on the real PC (Ben, 2026-10-06). Esc ends the game with no "are you sure?" — original behaviour, kept. **Automation: `HECTOR_SDL_AUDIO_DRIVER=dummy`
-  (CrossOver strips `SDL_*`).** **D21 (Ben): no menu bar — game-only 640×480 window (2× on 1080p), Ctrl shortcuts kept, About gone; merged f482270, restaged and the release asset replaced in place.** Next: any fixes from the brother's play; then Aki on Windows.
+- **Goldens (◈, current; run 46 moved none):** Phase 1 level-1 first frame `9db8f32f7e3d88b4`, highest tie-break
+  `b80b0efd384ffdb9`, pan 30 `b1f4efcf3c34735f`, pan 60 `80d88efdc8fac27c`, chain `aaab15c0710cbcf7`; Phase 2 level 2
+  `565e867a02736c18` / `b310ef334de49c00`, jump `deb577ecdeb64c58`, swim `3e99f74fa10e87e2` (particles [67, 322]),
+  600-frame `0cce4b0446e2a48e` / cues `1b06b8a4117cf9dc` (cue words 3160, seed 1361095401, particles 150); Phase 3 FE0
+  `ed142fed9e3bdce7`, map first frame `38563faaa2276f05`, map RNG `0x7b052a62`, sign frame `c8e41941c1e4d6da`;
+  `BootFacesTests` level 3 f30 `0x56a7ccb0dd544488`, f120 `0xc43bacea46d2ff94`; Windows smoke references menu
+  `0xae2b1ee08c089b2a`, level 1 first frame `0xc99ce8e85b4bd8f7`, level-1 text `0xfbb2dd7a1d289726`.
+- **Staged builds:** the Phase 4 / Windows-twin stages on the Desktop (`Ferazel's Wand.app`, `Ferazel's Wand
+  (Windows).zip`) and Windows test builds 1–4 in `releases/ferazel-windows-test-*`; nothing staged since — A5 stages both.
+- **Waiting on Ben (QUESTIONS.md "Open"; nothing blocks):** Q17 (the Aki 1.1 original moved on his Mac — a note), Q16
+  (Phase 5 choices — defaults stand), Q15's follow-ups, Q13 (Windows plan choices — defaults).
+- **Worktrees:** `.claude/worktrees/ferazel-run-44-7428b3` and `ferazel-run-45-f94cf1` are finished runs' (merged) —
+  remove at the next close if clean. `inspiring-cannon-e97ccd` (Deimos) and `~/Developer/gamepad-wt/` are Ben's.
+- **Open carries** [LOW unless marked]:
+  - From run 46: a census row marked "trap: unreachable" is not checked to point at a trap
+    (`DrawModeAuditTests.swift:1257`); the failure message says "throw" for traps (`:1527`); `try!` ×3 and `assert`
+    (`FrameRenderer.swift:411`) are not counted by the census. `setupPipe` is not wired into level spawn, and the
+    pipe's throwaway Setup child (its random draws, its +1 on the enemy count) is not made — both land with level 21
+    (the plan's stand-ins table owns them).
+  - From runs 38–41: the ceiling Crawler keeps the stand-in face 0x6b0 from Setup; both Crawler/Roach Hits read the
+    shot-kill light slot before `.KillPlayerShot`'s cleanup; the `+0x160` audit row excludes `AxGoblin.swift` by file;
+    the Walker Hit's shot-kill light recolour may belong to the Walker's own light; the egg's 0.9 / −0.15 constants are
+    unchecked against the data section; the Setup-face fallback width for 0x6a5/0x6a6 is the whole picture; the airborne
+    face's `onSprite` term is unpinned; the Dillo coin count is asserted as a range; the bot saves once per 16 runs;
+    `try!` at `PlayerStates.swift:291`; the gap ledger's tint lines still call the tint unbuilt; the orb argument check
+    covers `Shots/` only.
+  - Readings the machine cannot prove [MED]: voice eviction is not modelled in Core's `SoundVoices`; the underwater tint
+    is applied as screen gamma; the text smoothing mix is linear and its 14 pt threshold read from the Let's Play; the
+    tint tables' colours [LOW].
+  - Older small carries from Phases 2–4 (front end, chests, teleporters, text, sounds): listed in the history file's
+    Snapshot B; each closes when a task next touches its file.
 
-- **Ferazel's Wand — DESIGNED AND PLANNED (2026-10-06, Fable orchestrator; DECISIONS D26):** Ben's brainstorm rulings
-  (whole game + Windows; first gate = level 1 look-and-feel; front end early; 640×480 integer scale; longplays + his
-  Let's Play link as the feel oracle). Design `docs/plans/2026-10-06-ferazel-design.md` (APPROVED); plan
-  `docs/plans/2026-10-06-ferazel-phase1.md` (Phases 0 + 1, 15 tasks K1/C0–C6/R1–R6/A1–A2, 7+1 ⚑ MAJOR; Opus planner,
-  Fable review ACCEPT_WITH_FIXES 3 Important / 12 Minor, all applied; ladder Ferazel/Core 6 → 100 tests, HectorKit floor
-  289 → 301). Planner probes found two bank gaps now in the plan's "Bank corrections": face pixels go through
-  Color2Index at load (sheets carry their own palettes) and 326 PICTs are 32-bit `ditherCopy` — both LOW, both on the
-  gate card. **Phase 0 K1 + C0 + C1 DONE (2026-10-06, Opus orchestrator):** HectorKit `PICT.decodePixels` (indices + public 16-bit `ColorTable`, v1 BitMaps, DirectBits RGB + mode; HK D12; HK main d38a541, **floor 313** — the plan said 301, Deimos had already added 12); data in git `Resources/Ferazel/` (6 `.rsrc` + 28 AIFC, `cmp`-identical; D26 as-built); `Ferazel/Core` package + `FerazelData`/`FerazelResources`/`ResourceChain`, **6/0** tests. **C2–C5 DONE (2026-10-07, Opus orchestrator; two Opus review legs per MAJOR):** world parsers
-  (Mlvl/Mwld/Mmap/Mcnv/STR#, placements, sprite class table) · ColorLUT / SoundBank / MusicTrack · TableRequests +
-  ColorSearch (`.ruled` default, `Prepared` fast path) + the Color2Index measurement · faces (PICT → indices, ditherCopy
-  model, 1-bit bypass, EncodeRect RLE, face/plain/water/blend sheets, tile sets); ladder 6 → 21 → 28 → 43 → **56/0**.
-  **Ben 2026-10-07: follow the binary** where plan/bank disagree with the PPC code — C4 water 1 / glow 014c / grey-pull
-  0144 keep the original's 32-bit overflow (Color2Index all-sixteen 1,178,146, not the plan's 1,178,143); C5 FG/FG-water
-  convert under the level CLUT (201 on L1), fixed sets 183/185 under clut 199 (D26 as-built C4 + C5; bank ⚑ Corrections in
-  lighting-tables and sprites-backgrounds-sounds). HectorKit untouched (main 522feb8, floor 316 — Deimos's
-  `ShellView.scalingPolicy` `.integerFit` is there; Ferazel A1 reuses it).
-  **C6 + R1 DONE (2026-10-07, Opus orchestrator; Opus-only legs):** `ferazel-census` + `docs/ferazel/data-census.md`
-  (1,108 items, 0 failures; **Phase 0 complete**) → **60/0**; R1 LOCKED seams (+ case `redrawEntireScrollGrid`), prefs,
-  LevelTables, ports, strip-incremental `.RedrawScrollGrid` into port 0004 (follow the binary; blend cells 1,560) → **69/0**.
-  **Ben 2026-10-07:** the duplicate-black tie-break (FG black → index 1 = light yellow under clut 202) is decided at the
-  Phase 1 gate — build lowest and highest selectable (D26). HectorKit untouched (main 4ca2e18 after Cythera K1).
-  **R2 + R3 DONE (2026-10-09, Opus orchestrator; Opus-only legs):** darkness on tiles inside `.RedrawScrollGrid`
-  (`LightAny*Tile`, Effects ≠ 3), light faces, `.DrawLightsOntoTiles` → **74/0**; parallax as written
-  (`.DoubleBlitPPCParallaxOneLayer`, ring split, row state machine) + `PxSprites` (N + 1 copies, follow the binary) →
-  **81/0**; Fire (52/55) and ripple (11/18) levels refused by name (D26 as-built R2 + R3).
-  **R4 DONE (2026-10-09, Opus orchestrator; two Opus legs + re-review):** placed sprites in their Setup faces (42
-  level-1 types), active list, idle activation (13 at the start window), `.WrapDrawSprites` + `.WrapEraseSprites` +
-  sprite light pass → **88/0**; level-1 Setups add 68 lights (exposed, not wired; R2's premise wrong); mode 0xb refused,
-  table 0148 still unbuilt (D26 as-built R4). **R5 DONE (2026-10-10, Opus orchestrator; one Opus leg + fix round):** `FerazelSession.step` in `.GameLoop` /
-  `.PaintFrameWrap` order, `Camera` = `.FindUpperLeftCorner`, Phase-1 pose + focus stubs, `DrawOp.wrapEraseSprites`.
-  Following the binary: level 1 opens at scroll **(0, 0)** and pans in (not the plan's (0, 10)), and a skipped
-  reduced-frame-rate iteration drops only the screen copy (D26 as-built R5). **94/0**. **R6 DONE (2026-10-10):**
-  status bar (magic bar at x 419 per the binary, not 214), Game Screen frame, FrameRenderer (68 Setup lights wired),
-  CLUT → RGBA, level-1 goldens (D26 as-built R6). **100/0, Phase 1 core complete.** **A1 DONE (2026-10-10, two Opus
-  legs + fix round):** `Ferazel's Wand` app on HectorShell (whole-number window scale, 240 Hz timer / 2-tick step clock
-  per `.GameLoop`, arrows + keypad, looped music via `.SetAIFFMusic` rules, CoreText status text, icon from `icl8` 128),
-  project.yml target via the `Ferazel/FerazelCore` symlink; duplicate-black tie-break built (hidden `ColorTieBreak`
-  default, Ben's ruling) (D26 as-built A1). **102/0**; all four app schemes build. Ben saw level 1 and heard the music.
-  Let's Play = https://www.youtube.com/watch?v=ESuyxMUEzDw (design §2, Ben 2026-10-10). At 02:12 its level-1 FG rock edges
-  show no yellow specks, so **Ben ruled the app tie-break default `highest`** (`ColorTieBreak lowest` selects the other).
-  **A2 DONE (2026-10-10, one Opus leg MERGEABLE + two fix rounds):** `tools/stage-ferazel.sh` (Release, data into
-  `Contents/Resources/Ferazel/`, ad-hoc sign, build stamp in the staged notes, Icon Composer previews) and
-  `Ferazel/WHAT-TO-EXPECT.md` with the corrected 16-line gate card (D26 as-built A2). Staged `out/Ferazel/` + `~/Desktop/Ferazel's Wand.app`.
-  **Ben's Phase 1 gate PASSED 2026-10-10 ("it looks good", D32).** Icon: Default render kept. Open: hidden gamma toggle, light-24 table
-  over-light [MED], music fade-in [LOW]. **Phase 2 "Ferazel moves" PLANNED (2026-10-10, Opus planner, two Opus review legs, fixes applied; D33):** `docs/plans/2026-10-10-ferazel-phase2.md` — 22 tasks (F1–F3 foundations, S2 Sound Tool mixer, E2 draw modes, P1a–P5 player + camera, W1–W4 platforms/radial/cannons/passages/boxes/ropes/level 2, E1a–E1b particles + water effects, S1 cues, GD goldens, A3 app, A4 stage), 13 ⚑ MAJOR, ladder 102 → **238**, HectorKit untouched. Ben ruled: exit loads level 2 + hidden `FerazelLevel` switch; death → wipe → restart level. **Ben approved the plan 2026-10-10.**
-  **Wave 2.0 DONE (2026-10-10, Opus orchestrator; all-Opus legs; D33 as built):** F1 `FastRand` + the 256 level-1 Setup draws
-  (item twinkle phase now drawn → three pan goldens re-measured), F2 `SpriteWorld` physics world (rider/carry, layer guard,
-  O(1) list), F3 `TileSolver` → `Ferazel/Core` **140/0** (base was 104, not 102); census 1,108/0; Ferazel app builds;
-  HectorKit untouched. Nothing visible changes in the app yet. Next: **[S2 E2]** (Sound Tool mixer; draw additions + the
-  carried level-start RNG draws: tint 0xa 510 + diffuse), ladder S2 → 145, E2 → 153.
-  **Wave 2.1 DONE (2026-10-11, Opus orchestrator; all-Opus legs; D33 as built wave 2.1):** S2 Sound Tool mixer
-  (8 audible of 16, ±127 clip, 22,050 Hz; every sound loses its first sample, as the original), E2 draw modes
-  (hurt flash, water split/ripple, scale, rotation), death wipe, screen gamma; tint table 0xa now drawn from the
-  session stream (level start = 766 draws on L1; the diffuse passes draw 0) → `Ferazel/Core` **154/0**, census
-  1,108/0, Ferazel builds, no golden moved. Nothing visible changes in the app yet. Next: **[P1a P1b P2]** (P1a → 160).
-  **Wave 2.2 first half DONE (2026-10-13, Opus orchestrator; all-Opus legs; D33 as built wave 2.2): P1a P1b P2 P3** —
-  the real player: jump/gravity, walk/run/turn/air, landing + ceiling effects, cling, pull-up, crumbling tiles
-  (`DrawOp.setTile`), dust, states/faces, breathing, footsteps; `PlayerPose` gone → `Ferazel/Core` **185/0**, census
-  1,108/0, Ferazel builds. **Wave 2.2 DONE (2026-10-13, loop run 2): P4 P5** — liquids/acid/healing/drowning,
-  damaging surfaces, below-map death, the death trigger, underwater light; `.PlayerScroll` replaces the focus driver
-  (the camera follows Ferazel; arrow-key pan gone) → `Ferazel/Core` **203/0**. **Wave 2.3 W1 W2a DONE (2026-10-13,
-  loop run 3; D33 as built wave 2.3 first part):** platforms in every mode (shuttles, rafts, rotors, pendulums, wheels +
-  siblings, chain spokes), spiked pendulums 1480–1489 + mace chains, `.HurtPlayer` → `Ferazel/Core` **215/0**, census
-  1,108/0, Ferazel builds, no golden moved. Mode-0xb finding (W1 precondition): not reachable through the L2 raft light
-  path (rafts → mode 0xc). No sound until A3. Next: **[W2b W3 (+W4)]** (→ 220, 228, 234).
-  **Colour MEASURED against the Let's Play (2026-10-10, Opus leg; `docs/ferazel/colour-measurement-2026-10-10.md`):** 7 level-1
-  frames, 48 combos each. Tie-break `highest`, error-diffusion dither and Effects 1 match. `.exactNearest` beats `.ruled` in 7/7 frames, so **Ben
-  ruled the app default model `.exactNearest`** (applied; G2 102/0, Ferazel builds). The video is about γ 0.76 brighter (classic Mac display gamma):
-  hidden toggle `MacGamma` BUILT (off by default, γ 1.8/2.2 on the palette, app shell only; D26).
-  **Light-24 table glow CLOSED (2026-10-10, Opus seat + one Opus review leg; D26 "As built (light-24 table glow)"):** the sprite light pass
-  was right. `.HandleBonusSprite` twinkles an item's light through faces 0x32a–0x32d, and the replica held the brightest. Built as
-  `BonusHandle` + seam case `DrawOp.changeLightFace`. The table's ΔE at 02:12 went from 21.6 to 6.9 on the matching phase, and the other
-  six LP frames are unchanged. Pan goldens re-measured (frame 1 unchanged); `Ferazel/Core` **104/0**. Carried: torch flicker, sphere cycles.
+## Deimos Rising — 2026-11-08 (re-planned; waits for Ben's go)
 
-## Open, ordered
-- **Cythera RE wave 1 DONE (2026-10-04):** eight rules banks Fable-reviewed ACCEPT_WITH_FIXES (1 Critical/2 Major/6 Minor, all fixed) and merged; binary decompiled to 100 % of traceback-named functions (1,994 across three git-ignored dumps, `tools/missing-addrs.txt`); open: `docs/cythera/INDEX.md` NOT RESOLVED 5/6/10/16/21–25 — handoff `docs/handoff-2026-10-04-cythera-re.md`.
-- **Cythera RE wave 2 DONE (2026-10-06, Opus 5.5 seat):** all 840 newly decompiled bodies read or identified into `docs/cythera/` (census + six new banks: ui-play, dialogue-ui, scripted-windows, app-shell, ui-toolkit, open-items-2026-10-06; appends to ten banks; the 95 builtins now carry their real names). Review ACCEPT_WITH_FIXES (0 Critical/3 Major/13 Minor, 82/84 claims pass; ran on Opus 5.5, so a Fable revision pass is owed), all fixed. NOT RESOLVED 5/6/10/14/19/21–25 closed (22: wave 1 had the ending branch inverted — crystal quality 1 = saved ending); still open: `Render__7TViewer` layer order (16) and small carried sub-points — handoff `docs/handoff-2026-10-06-cythera-re.md`.
-- **Cythera RE wave 3 DONE (2026-10-06, Opus 5.5 seat, Fable reviewer):** `docs/cythera/render.md` closes NOT RESOLVED 16 (draw order ground → passes 0/1/3 by tile flag → creatures → missiles → pass 5 → backdrops → roofs → filter/lighting; pass 2 never draws); open-items recipes banked as six tools. **Fable revision review** over wave 2 + 3: ACCEPT_WITH_FIXES (0 Critical/1 Major/11 Minor; 113/116 claims pass; every wave-2 closure and both wave-1 overturns hold), all 12 fixed. Still open (small): THood order within a pass, QTMA music events, over-encumbrance, 0x03/0x05 words, 0x0210 — handoff `docs/handoff-2026-10-06-cythera-re-wave3.md`.
-- **Cythera — DESIGNED AND PLANNED (2026-10-06, Opus 5.5 orchestrator; DECISIONS D28):** whole game Mac + Windows;
-  first gate = walking Catamarca; screen like the original (backdrop + floating game windows, 1 px = 1 pt); saves in the
-  original format; cheats + Documentation viewer IN; music via Apple's GM synth (recorded for Windows). Design
-  `docs/plans/2026-10-06-cythera-design.md` (APPROVED); Phase 0 plan `docs/plans/2026-10-06-cythera-phase0.md` (Fable
-  planner, 14 tasks K1/C0–C12, ladder Cythera/Core → 84 tests, HK floor 313 → 319, census `failures 0`). **Nothing
-  built.** Next: Phase 0 (chip issued).
-  **Phase 0 tranche 1 DONE (2026-10-07, Opus 5.5 orchestrator, all-Opus implementers + reviewers): K1 + C0 + C1 + C2.**
-  K1 on HectorKit main **4ca2e18** (HK D14; `decodePixels` takes 0x0099/0x009B regions as `maskRegion` + 16-bit DirectBits;
-  direct modes {0, 36, 64} as stored — plan's "mode 64" was wrong; floor **322**, plan said 319 from a stale 313 base).
-  Classics: `Resources/Cythera/` 20 files (D28 as-built), `Cythera/Core` CytheraData/CytheraResources + SegmentFile/
-  Cipher/Overlay, suite **14/0/0** (ladder on track). Handoff `docs/handoff-2026-10-07-cythera-phase0-t1.md`.
-  **Tranche 2 DONE (2026-10-07, same model policy): C3 LZ + C4 World records + C5 CytheraRender pixels** → suite
-  **44/0/0** (ladder exact); HectorKit untouched (4ca2e18, floor 322). C4 STOPPED once (Invariant 10): plan had map
-  0x8002 chunk 0 and the 0xF001 tail wrong — seat re-measured and ruled (D28 as-built tranche 2; plan "Tranche 2
-  corrections"). Next: C8 ⚑ → C9 ⚑ (script decoder + parity), then wave C (C6, C7 ⚑, C10) — chip. Handoff
-  `docs/handoff-2026-10-07-cythera-phase0-t2.md`.
-  **RE-PLANNED (2026-11-05, Fable seat, replan.md; DECISIONS D45):** spec `docs/superpowers/specs/2026-11-05-cythera-remainder-design.md`,
-  plan `docs/superpowers/plans/2026-11-05-cythera-remainder.md` (wave 1 = Phase 0b bite-sized: C8 → C9 · C6 ∥ C7 ∥ C10 ·
-  C13 → C11 → C12, ladder 44 → 91; wave 2 = R1 Phase 1 research; Phases 1–8 as cards), audit
-  `docs/superpowers/audits/2026-11-05-cythera-phase0-audit.md` (15 rulings, 0 redo). Seat's runs: Core **44/0/0** on
-  HectorKit **ef2c341** (new pin, floor 370; the gate needs `HECTORKIT_DATA_AKI11` overridden — stale default path).
-  Ben accepted all five questions (re-base, baked glyph sheets, three Opus sessions, "the player walks", gate split
-  1a/1b). Nothing built. **Next: wave 1 session A (C8 → C9) — chip in `docs/handoff-2026-11-05-cythera-plan.md`; waits for Ben's go.**
+- **Where it stands:** Phase 1 "level 1 look" gate passed 2026-10-07 (60 Hz tick; staged `~/Desktop/Deimos
+  Rising.app`). Phase 2 "level 1 plays" is on branch `deimos-phase2` (worktree `.claude/worktrees/inspiring-cannon-e97ccd`,
+  pushed, unmerged): waves 2.0–2.5 reviewed, 2.6 built; suite **313/0/0** on HectorKit ef2c341.
+- **The plan:** `docs/superpowers/plans/2026-11-05-deimos-remainder.md` (self-contained since 2026-11-08). Next = wave
+  2a (the audit's fix round → 318, merge the branch into local main, bank corrections), then 2b (C12 → 327, C18a → 335).
+  The session brief is in `docs/handoff-2026-11-05-deimos-replan.md`, "Brief for the next session". **Waits for Ben's go.**
+- **Data:** `Resources/Deimos/` in git; `deimos-census` 872 entries, 0 failures.
+- **Open:** RE bank `docs/deimos/INDEX.md` #13, #59 residue, #62–#64 and 134 cross-file label mismatches; Ben's ear/eye
+  items from the RE waves; Phase 1 carries for Phase 2 (a `DeimosAudio` target, the `playerOps` return type,
+  `HeadlessRun` film parameters, the prefs file widening) as the plan places them.
 
-1. **Aki Phase 2 — DONE, Ben's gate PASSED 2026-10-04 (DECISIONS D9): "the game works fine"; pairs fade.** P2.1–P2.12
-   as before (AkiCore 107 tests). Q24 fix 6603e55: `runFade` waits one full tick (1/60 s) after each of its two presents
-   per frame (plan Q24 ⚑; ~22/60 s fade). Gates from main (seat-run): M1 **107 / 0**, M2 BUILD SUCCEEDED (0 our
-   warnings), M3 floor **167**. Staged build on **~/Desktop/Aki.app** (+ WHAT-TO-EXPECT.md) — Ben plays that copy; never
-   delete prefs domain `com.ambrosiaclassics.aki`. Handoff `docs/handoff-2026-10-04-aki-q24-gate.md`.
-   **Aki on iPad + Remaster mode — both on main 2026-10-06** (Ben: iPad first, then Remaster). iPad (plan
-   `docs/plans/2026-10-04-aki-ipad.md`, rulings D7; AkiPad target, Aki/App split shared/Mac/iOS) merged 5e6755d; no formal
-   iPad gate is recorded in DECISIONS — Ben has been playing it on his iPad mini. **Remaster (D11, gate PASSED D17)** merged
-   on top. Toggle: Aki ▸ Remastered Art (⌘G, works in fullscreen) + Preferences checkbox; Mac + iPad. Art: regenerate
-   `Resources/Aki/hd-4x/` per worktree with `python3 tools/upscale-aki-art.py` (~2.5 min cold, Upscayl; then `--check`;
-   207 MB, git-ignored) — without it Remastered Art shows disabled. Gates from main (seat-run): AkiCore **123/0/0**; Aki,
-   AkiPad (sim), BubbleTroubleX BUILD SUCCEEDED, 0 our warnings; HectorKit floor **252**. Staged copies (~/Desktop/Aki.app,
-   Ben's mini) are the 2026-10-06 Remaster builds.
-   **Aki 1.0 RELEASED 2026-10-06 (D23)** — public GitHub release `aki-1.0` (tag on b5dd97a, HectorKit 0467025):
-   https://github.com/andiyar/Ambrosia-Classics/releases/tag/aki-1.0 — `Aki-1.0.dmg` 242 MB, sha256 `bd12e9d4…a6b5`,
-   Developer ID + notarized + stapled (app and DMG), universal, Remaster art in, no Osaka-Mono, About "1.2.0 (1.0)", new
-   macOS 26+ icon (`Aki/App/Mac/AppIcon.icon`, green felt). Next releases: `tools/package-aki-release.sh --version X.Y
-   --sign "Developer ID Application: Benjamin Thomas (5W72UJL332)" --notarize oniarm64-notarize` (bump `CFBundleVersion`
-   in `Aki/App/Mac/Info.plist` first; the script asserts it). Ben verified the notarized DMG 2026-10-06: sound, music, ⌘G all work. Untested: Intel, macOS 15/26. **Next: Aki Phase 3** (editor, `.aki`).
-2. **Bubble Trouble X — Ben's play gate (sound is in):** Ben 2026-10-06 played 3 levels: sound + music right, Q1/Q3/Q4/Q5/Q8/Q12/Q16/Q18 + text all yes (D14 addendum); NR-10 waived ("who cares about demos?"). Still open: his longer playtest; Q2 cheat memories, Q9/Q13/Q15 if he notices anything. Carried minors: core `musicPlaying` flag vs channel status (D14.5); deactivation during a carried-over pause; an event during the very first wipe acts one frame early; app activate/deactivate during dialogs (docs/bubble-trouble/review-carries-2026-10-04.md).
-3. RE chains: Deimos CLOSED; Ferazel wave 2 CLOSED (build planning session running 2026-10-06); Cythera waves 2–3 DONE 2026-10-06 (Fable revision pass + Render layer order landed), only small sub-points remain. Deimos Phase 0 on branch `deimos-phase0` (HectorKit v0.3.0 format layer landed; DeimosCore census in progress, unmerged).
-4. **Windows port** (Ben 2026-10-06) — BTX staged for his brother (above); await his report.
-5. Phase 3 Aki, then Bubble Trouble X shell on HectorShell (design §6). EV's adoption of HectorKit: separate task.
+## Cythera — 2026-11-08 (re-planned; waits for Ben's go)
 
-## Carried (not blockers)
+- **Where it stands:** Phase 0 half built (K1 on HectorKit, C0–C5); `Cythera/Core` **44/0/0** (34 core + 10 render) on
+  HectorKit ef2c341; `Resources/Cythera/` 20 files; the decompile committed at `ghidra/cythera/`; no Cythera branch.
+- **The plan:** `docs/superpowers/plans/2026-11-05-cythera-remainder.md` (self-contained since 2026-11-08). Next = wave 1
+  session A (C8 → C9, suite → 57), then B (C6 ∥ C7 ∥ C10) and C (C13 → C11 → C12). The brief is in
+  `docs/handoff-2026-11-05-cythera-plan.md`, "The brief for the next session". **Waits for Ben's go.**
+- **Open:** HectorKit's gate script has a stale default Aki path (one-line kit fix; until then set
+  `HECTORKIT_DATA_AKI11`); the PICT opcode-walk kit carry (an error naming the first bits opcode); small RE items (THood
+  order within a pass, QTMA music events, over-encumbrance, the 0x03/0x05 words, 0x0210).
 
-- Design doc §4 says 70 QuickTime / 12 raw PICTs; the data says 71 / 11 (PICT 135 is 32-bit cmpCount 4 — a
-  real alpha plane). Fix the design doc when it is next edited.
-- HectorKit carries EV-engine arithmetic in `SndSound` (`loadSoundsTicks`, `playbackDurationFrames`) by the
-  "rename prefixes only" rule; trim only with a ruling. Only data-gated tests cover `snd` format 1.
-- `quickTimeBands` returns a tuple, not a struct (API polish for v0.2). No dimension cap on codec images.
-- Ambrosia's 1996 installer format unreversed. HD-art packs late polish. Licence at the very end (EV D65).
-- **Aki, for Ben's HectorKit session:** (a) `ShellSoundBank.start` on a track at its end replays from 0; QuickTime left
-  `IsMovieDone` true for `_LoopMusic` — Phase-2 effect only (theme alternation window); (b) quitting from fullscreen:
-  `exitFullscreen()` re-shows the windowed window, so `windowDidBecomeMain` → `unpause` fires at quit — the original's
-  deferred step never ran; HectorShell needs an exit that only orders out (P1.12 review Minor 1); (c)
-  `ShellFullscreenWindow.canBecomeMain` true where the original allowed key only (no visible effect yet).
-- **Aki carried from Phase 1 reviews (not blockers):** Release Notes — Ben wants the replica's own notes at the very
-  end (with the licence); ASWAboutBox/ASWTextViewer-faithful windows after P3 (Q10); the Carbon dialog centres on the
-  MAIN display, not the game window's display (as the Carbon code did — Q6, multi-display);  one `fullscreen` accessor (ivar vs `shell.isFullscreen`); the Osaka-Mono guard's Menlo branch is only provable offline on this Mac
-  (the font is now installed system-wide); bundling Apple's font is for Ben's machine only (licence).
-- **Ferazel RE wave 2 (2026-10-04, CLOSED 2026-10-06, Fable orchestrator, cap waived by Ben):** Ben's "decompiled to 100 %" wave — ten Opus reader lanes wrote 11 new `docs/ferazel/` files (lighting-tables, draw-effects, particles, rendering-omnipx-titles, conversations-mcnv, bosses-3, enemies-ground-2, spells-detail-2, platforms-ropes-radial-2, enemy-shots-and-damage-2, pickups-boxes-2) + 17 in-place edits; eight Fable review legs A–H (`REVIEW-2026-10-04-wave2.md`; leg C 2 Critical: water-tint loops `ble` so entry 0xff is written → black, mode 0xa is a vertical squash) + spot-review 2i (0 C / 0 I / 5 M, all landed); two fix rounds + INDEX/coverage synthesis (`FIXPASS-2026-10-04-wave2.md`; 110 review markers, 100 corrections markers; labels HIGH 1100 / MED 291 / LOW 41; coverage 141/1/12). INDEX NOT-RESOLVED 2–29: all closed, UNDETERMINABLE with evidence, or narrowed; **still genuinely open:** palette-index choice of Color Manager `Color2Index` (LOW on every "→ idx"), geysers NR 2–4, follower slot-reuse frequency and whether enemy drops give items 8/21, the nil level-handle outcome in ContinueGame, and intent-only questions (music 21/27, vestigial boss fields, 2940 p1 = 0, tile oddities). Merged to main `--no-ff`. Nothing needs Ben's play check. Worktree `ferazel-wave2` still locked by the Oct-4 session (pid 42564) — remove it and the branch when that session closes.
-- **Ferazel RE deepening (2026-10-03, CLOSED 2026-10-04):** 11 Opus readers + 2 gap readers wrote 17 new `docs/ferazel/` files (~6,400 lines: enemies ×3, bosses ×2, enemy-shots-and-damage, pickups-boxes, triggers-background ×2, spells-detail, save-continue, platforms-ropes-radial, player-states ×2, geysers, held-item-melee, coverage, physics-sprites); three Fable review legs all ACCEPT_WITH_FIXES (1a 0/4/6, 1b 1 Critical/3/9, 1c 0/4/11; `REVIEW-2026-10-03-deepening.md`); fix passes 1a/1b landed; consolidated fix pass landed (`FIXPASS-2026-10-03-deepening.md`; labels HIGH 727 / MED 228 / LOW 27); merged to main at 5b15177. Fable spot-review 1d of the fix-pass diff (2026-10-04): ACCEPT_WITH_FIXES, 0 Critical / 0 Important / 6 Minor, 66/66 markers + 76 raw addresses confirmed; fixes + the held-item-melee carries (rows 3, 4, 6–8) landed at 02f29cc. Worktree and branch `recursing-rhodes-932ac0` removed. Still open in the bank: INDEX NOT-RESOLVED items 15–29 (`+0xb8` draw modes, tint/remap colours, NewParticle args, Xichra cannons, OmniPx/PxMid, Mcnv item 3, lighting item 10, Titles item 12). Nothing needs Ben's play check. Handoff `docs/handoff-2026-10-03-ferazel-re.md`.
+## Bubble Trouble X — 2026-10-23 (1.1 with controller support: release drafted)
+
+- **Where it stands:** 1.0 released 2026-10-06 (GitHub `btx-1.0`: notarized universal DMG + Windows zip); the Windows
+  build played to level 20 on a real PC by Ben's brother. **1.1 (game controllers, Mac and Windows):** main and
+  HectorKit pushed; GitHub release `btx-1.1` is a **draft** (notarized DMG + Windows zip; copies in `releases/btx-1.1/`;
+  notes `docs/release/btx-1.1.md`). Ben's controller check passed `BubbleTroubleX/GAMEPAD.md` steps 1–5 (step 6 untried).
+- **Numbers:** BTX core 261/0/0; Windows package 126/0/0; HectorKit 35a85ba at the release.
+- **Waiting on Ben:** try the browser-downloaded 1.1 DMG → publish → then point README's BTX link and badge at 1.1.
+  The Windows controller path is untested on hardware. His longer playtest (cheat memories and the rest if he notices).
+- **Carries:** core `musicPlaying` flag vs channel status; deactivation during a carried-over pause; an event during the
+  very first wipe acts one frame early; app activate/deactivate during dialogs (`docs/bubble-trouble/review-carries-2026-10-04.md`).
+  Never clear the prefs domain `com.ambrosiaclassics.bubbletroublex` (Ben's play since 2026-10-05).
+- **Next release:** bump `CFBundleVersion` in `BubbleTroubleX/App/Info.plist`, then `tools/package-btx-release.sh
+  --version X.Y --sign "Developer ID Application: Benjamin Thomas (5W72UJL332)" --notarize oniarm64-notarize`.
+
+## Aki — Mahjong Solitaire — 2026-10-06 (1.0 released)
+
+- **Where it stands:** 1.0 public (GitHub `aki-1.0`, notarized + stapled universal DMG, Remaster art in); Mac, iPad
+  (`AkiPad`) and Remaster mode on main; AkiCore **123/0/0**. Ben verified the notarized DMG (sound, music, ⌘G). Untested:
+  Intel, macOS 15/26. **Next: Phase 3** (the editor, `.aki` files) — not scheduled.
+- **Working notes:** Remastered Art needs `Resources/Aki/hd-4x/` regenerated per worktree (`python3
+  tools/upscale-aki-art.py`, then `--check`; git-ignored). Never delete the prefs domain `com.ambrosiaclassics.aki`.
+  Next release: bump `CFBundleVersion` in `Aki/App/Mac/Info.plist`, then `tools/package-aki-release.sh --version X.Y
+  --sign "Developer ID Application: Benjamin Thomas (5W72UJL332)" --notarize oniarm64-notarize`.
+- **Carries:** for HectorShell — a track started at its end replays from 0; quitting from fullscreen re-shows the
+  windowed window (needs an order-out-only exit); `ShellFullscreenWindow.canBecomeMain`. For Aki — the replica's own
+  release notes at the very end (with the licence); faithful About/text-viewer windows after Phase 3; the Carbon dialog
+  centres on the main display; one `fullscreen` accessor; the Osaka-Mono guard's Menlo branch is provable only offline.
+
+## Shared — HectorKit and the repository — 2026-11-08
+
+- **HectorKit** `~/Developer/HectorKit`: main ef2c341, zero-skip executed 370 (4 Aki 1.1 skips because the original
+  moved on Ben's Mac — run the gate with `HECTORKIT_DATA_AKI11="$REPO/Resources/Aki/1.1.0.app/Contents/Resources"`).
+  Local-path dependency: a worktree needs the untracked symlink `.claude/worktrees/HectorKit → ~/Developer/HectorKit`.
+- **Originals:** Aki 1.1.0 + 1.2.0 (git-ignored symlinks under `Resources/Aki/`), Bubble Trouble X 1.1, Ferazel's Wand
+  1.0.3, Deimos Rising 1.0.6, Cythera 1.0.4; archive map `~/Developer/Ambrosia/docs/ARCHIVE-INDEX.md`. Decompiles in
+  `ghidra/<game>/`.
+- **Carries:** the design doc says 70 QuickTime / 12 raw PICTs where the data says 71 / 11 (fix when next edited);
+  HectorKit keeps EV-engine arithmetic in `SndSound` (trim only with a ruling); `quickTimeBands` returns a tuple; no
+  dimension cap on codec images; Ambrosia's 1996 installer format unreversed; HD-art packs and the licence at the very end.

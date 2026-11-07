@@ -1,3 +1,5 @@
+> Superseded by `docs/superpowers/plans/2026-11-04-ferazel-remainder.md` on 2026-11-08. Kept as history; nothing current reads it.
+
 # Plan — Ferazel's Wand Phase 5 "Enemies": every enemy class, enemy shots, damage both ways, particles in full, the underwater tint, level 5 up to the Warrior's arena; Ben's Q15 safety checks first — 2026-10-30
 
 > Status: **DRAFT — planner Opus 5.5, loop run 36 (2026-10-30), unattended; two Opus review legs ACCEPT_WITH_FIXES,
