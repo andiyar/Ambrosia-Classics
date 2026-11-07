@@ -1481,8 +1481,9 @@ final class BatTests: XCTestCase {
         // `.KillCrate` with p1 0 and p2 1740 (M l. 61292–61320): p3 × `.GenerateSprite(x + 0x16, y + 0x15, 0x6cc, 0x200,
         // 1, layer + 1)` — `.SetupBatSprite` (no draw; record 0x200 reads zeros; not counted at run time), moved by the
         // hot-rect centre (−0x1b, −0x1f), the 24.8 position re-derived; then `+0xa6 = R(10) + 1`, vx, vy = R(700) − 0x15e.
-        // The debris draws before it are measured on a twin world whose crate drops a type `.GenerateSprite` makes
-        // nothing of (the Blob 0x6c2 — its run-time Setup is BL's): the stream there ends where the Bat's draws begin.
+        // The debris draws before it are measured on a twin world whose crate drops a type whose run-time Setup draws
+        // nothing (the Blob 0x6c2 — made since PI, `.SetupBlobSprite` has no draw): the stream there ends where the
+        // Bat's draws begin.
         func crateWorld(_ p2: Int16, seed: Int32) throws -> (SpriteWorld, Int, SpriteSlot) {
             let w = try world()
             let p = Placement(index: 0, flag: 1, byte1: 0, type: 0xc12, p1: 0, p2: p2, p3: 2, p4: 0, y: 200, x: 600)
@@ -1500,7 +1501,7 @@ final class BatTests: XCTestCase {
             let (twin, tid, _) = try crateWorld(0x6c2, seed: seed)
             var l = LightTable()
             BoxSprite.killCrate(twin, id: tid, lights: &l, effects: 1)
-            XCTAssertEqual(twin.active.sprites.filter { $0.type == 0x6c2 }.count, 0, "no Blob made at run time")
+            XCTAssertEqual(twin.active.sprites.filter { $0.type == 0x6c2 }.count, 2, "p3 2 Blobs, no draw")
             var r = twin.rng
             let (w, id, crate) = try crateWorld(0x6cc, seed: seed)
             let enemies = w.enemies

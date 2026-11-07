@@ -10,8 +10,9 @@ import Foundation
 /// BX2: the chest 0x51c and door 0xb5e / 0xb5f Handle arms (`chestArm`, `doorArm`) and the thought balloons
 /// (`createBalloon`, `destructBalloon`). BT: the gate 0xb7c (`gateArm`, with the 2941's move and clip), the switch
 /// blocks 0x4e2…0x4ff (`switchBlockArm`) and the spouts 0x5aa…0x5ad (`spoutArm`; ES: their boulders). GY: the geysers
-/// 0x5a0…0x5a9 (`Geyser`: the Setup arm, the eruption arm, the column and its head). Not built (named where they stand):
-/// the pipes 0x5d2…0x5d5 (Phase 5), the carpet 0x438 / 0x439, the spiked balls 0x5c3 / 0x5c4, the table
+/// 0x5a0…0x5a9 (`Geyser`: the Setup arm, the eruption arm, the column and its head). PI: the enemy pipes 0x5d2…0x5d5
+/// (`setupPipe`, `pipeArm`; their children through `generate`). Not built (named where they stand):
+/// the carpet 0x438 / 0x439, the spiked balls 0x5c3 / 0x5c4, the table
 /// 0xb71 and the snowball 0xbfe (Phase 6) — those types still return at once from the Handle (`handleBuilt`) and stand
 /// still; `.HitBoxSprite`'s carpet arm (Phase 6). SW: the tree trunk 0x2c8 / 0x2c9 (`newTrunk`, the Setup and Handle
 /// arms); `.HitBoxSprite` is also a Statue's hit (`StatueSprite`), and takes a Statue as a pair partner.
@@ -142,8 +143,8 @@ public enum BoxSprite {
     /// 0x20), one-way, no tile callback, gravity 0, push mass and sag 0 — made only by the column, `Geyser.newHead`). The
     /// geyser arm 0x5a0…0x5a8 draws `FastRand` and makes the triple's children: `Geyser.setup` runs this head and tail,
     /// then the arm (its `+0x189` and the children's `+0x188`, M l. 59127, 59174, 59181). The other arms (several make
-    /// sprites or draw `FastRand` at Setup) leave the head's fields — // later: Phase 5 (pipes 0x5d2…0x5d5), Phase 6
-    /// (carpet 0x438/0x439, spiked balls 0x5c3/0x5c4, the table 0xb71, the snowball 0xbfe).
+    /// sprites or draw `FastRand` at Setup) leave the head's fields — the pipes 0x5d2…0x5d5 take `setupPipe` (PI);
+    /// // later: Phase 6 (carpet 0x438/0x439, spiked balls 0x5c3/0x5c4, the table 0xb71, the snowball 0xbfe).
     public static func setup(_ s: inout SpriteSlot, record p: Placement, level: LevelFile) {
         let t = s.type
         s.oldPosition = SpriteSlot.Point(x: s.x, y: s.y)                       // the spawn copy `+8` / `+6`
@@ -425,19 +426,52 @@ public enum BoxSprite {
         s.pushForce = 0x80
     }
 
+    /// The enemy pipes 1490…1493 (0x5d2 up, 0x5d3 down, 0x5d4 right, 0x5d5 left; enemies-ground-2 §6, enemies-flyers
+    /// §7.4) and their cue 459 (`*_DAT_100a0364`, `SoundSlots`).
+    public static let pipes: ClosedRange<Int16> = 0x5d2...0x5d5
+    static let pipeSound: Int16 = 459
+
+    /// `.Deviation(n) @ 100452dc` (M l. 39497–39503): `(i16)(n + FastRand(n >> 1) − (n >> 2))` (the shifts arithmetic).
+    static func deviation(_ n: Int16, rng: inout FastRand) -> Int16 {
+        n &+ rng.next(n >> 1) &- (n >> 2)
+    }
+
+    /// `.SetupBoxSprite`'s pipe arm (M l. 59325–59356; PI): the head and tail (`setup`), then `+0x80 = 1`; the live
+    /// record's p2 0 → 100, **written back** (the returned record); `+0xa6 = .Deviation(p2)`; `+0x15c` = p1 (the child's
+    /// type); the class cache of the type marked and `+0xc0` = its face (`FaceRef(type, 0)`; no `SetupFaces` arm yet);
+    /// the hot rect = that face's `+0` rect (`faceRect`) inset by 3 on each side; `+0x110` (gravity), `+0x1f8`, `+0x5c` 0;
+    /// then `goto LAB_1006cf1c`. Not here: the arm's last call, `.GenerateSprite(+0xc, +0xa, +0x15c, 0x200, 1, +0x80 + 1)`
+    /// with the child's `+0xe9 = 1` (M l. 59347–59353) — a throwaway child (its class Setup's draws, and its count while
+    /// the Setup window is open) that needs the level spawn's world: // later: level 21's `SetupFaces` pipe arm.
+    public static func setupPipe(_ s: inout SpriteSlot, record p: Placement, level: LevelFile, rng: inout FastRand,
+                                 faceRect: IdleSprites.Rect) -> Placement {
+        setup(&s, record: p, level: level)
+        let rec = p.p2 != 0 ? p : Placement(index: p.index, flag: p.flag, byte1: p.byte1, type: p.type, p1: p.p1,
+                                            p2: 100, p3: p.p3, p4: p.p4, y: p.y, x: p.x)
+        s.layer = 1
+        s.counterA6 = deviation(rec.p2, rng: &rng)
+        s.classWord15c = Int32(rec.p1)
+        s.face = FaceRef(pict: s.type, index: 0, set: .encoded)
+        s.hotRect = IdleSprites.Rect(top: h(faceRect.top + 3), left: h(faceRect.left + 3), bottom: h(faceRect.bottom - 3),
+                                     right: h(faceRect.right - 3))
+        s.gravity = 0
+        s.hasTileHit = false
+        s.hasHit = false
+        return rec
+    }
+
     /// Whether the type's `.HandleBoxSprite` runs (the arm and the common tail). The types whose arm is not built yet
-    /// return at once and stand still: the pipes 0x5d2…0x5d5 (// later: Phase 5), the carpet
-    /// 0x438 / 0x439, the spiked
+    /// return at once and stand still: the carpet 0x438 / 0x439, the spiked
     /// balls 0x5c3 / 0x5c4, the table 0xb71 and the snowball 0xbfe (// later: Phase 6). Every other Box runs: the built
     /// arms (W3 trampoline and bridges, S1 save point, C1 NPCs, BX1 boulders and rocks, stalactite, mine cart, crates,
     /// the 2907 timer's countdown, the 2941's death; BX2 the chest and the doors; BT the gate 0xb7c with the 2941's
     /// move and clip, the switch blocks 0x4e2…0x4ff, the spouts 0x5aa…0x5ad; SW the tree trunk 0x2c8 / 0x2c9's
-    /// lifetime; GY the geysers 0x5a0 / 0x5a5) and the types with no arm (GY: the geyser head 0x5a9 among them)
+    /// lifetime; GY the geysers 0x5a0 / 0x5a5; PI the enemy pipes 0x5d2…0x5d5) and the types with no arm (GY: the geyser head 0x5a9 among them)
     /// (teleporters, signs, decorations, outcrops, mushrooms, furniture, the wheel, the crate range 0xc15…0xc1b), which
     /// go through the block chain's faces (M l. 61088–61151) to the tail.
     public static func handleBuilt(_ t: Int16) -> Bool {
         switch t {
-        case 0x5d2...0x5d5, 0x438, 0x439, 0x5c3, 0x5c4, 0xb71, 0xbfe:
+        case 0x438, 0x439, 0x5c3, 0x5c4, 0xb71, 0xbfe:
             return false
         default:
             return true
@@ -466,7 +500,8 @@ public enum BoxSprite {
     ///   the gate 0xb7c and the 2941 (M l. 61016–61064; `gateArm`); the spouts 0x5aa…0x5ad (M l. 60488–60547;
     ///   `spoutArm`); the chest 0x51c (M l. 60101–60187; `chestArm`); the doors 0xb5e / 0xb5f (M l. 60803–60868;
     ///   `doorArm`); the geysers 0x5a0 / 0x5a5 (`LAB_1006df20`, M l. 60379–60483; GY, `Geyser.erupt`: the eruption,
-    ///   the triple's re-targeting, `.HandleGeyserColumn`);
+    ///   the triple's re-targeting, `.HandleGeyserColumn`); the enemy pipes 0x5d2…0x5d5 (M l. 60624–60768; PI,
+    ///   `pipeArm`: `+0x15c == 0` returns without the tail);
     /// - every other type reaches the block chain (M l. 61088–61151): the switch blocks (`switchBlockArm`), then the face
     ///   from the class caches — decorations 0xaf5…0xb21 (`0x1009b500 + type·0x10` = the cache entry), outcrops
     ///   0xb22…0xb35, mushrooms 0xb36…0xb49, furniture 0xb68…0xb70 (each `cache[type − first] + 4`); the NPCs 0xb87…0xb99
@@ -530,6 +565,8 @@ public enum BoxSprite {
             spoutArm(w, id: id)
         case Geyser.base, Geyser.triple:
             Geyser.erupt(w, id: id, lights: &lights, effects: effects)
+        case pipes:
+            guard pipeArm(w, id: id, lights: &lights, effects: effects, faceBounds: faceBounds) else { return }
         case chest:
             chestArm(w, id: id, lights: &lights, effects: effects)
         case doors:
@@ -820,6 +857,131 @@ public enum BoxSprite {
         }
         let r = w.rng.next(0x1e)
         w.active.update(id: id) { $0.counterA6 = r &+ 0x32 }
+    }
+
+    /// The enemy pipes' arm of `.HandleBoxSprite` (M l. 60624–60768; raw `1006ec90..1006f060`; enemies-ground-2 §6,
+    /// enemies-flyers §7.4). Returns false for the arm's `return` (`+0x15c == 0`: no tail), true for `goto LAB_1006f948`.
+    /// 1. `+0xc0` = the type's class-cache face; `+0xa6 > 0` → − 1;
+    /// 2. `+0xa6 < 1`, no child (`+0x1d4` 0) and `+0x15c ≠ 0`: `+0xa6 = .Deviation(live record p2)`, `+0x150 = 1`, child =
+    ///    `.GenerateSprite(+0xc, +0xa, +0x15c, 0x200, now 1, +0x80 + 1)` (`generate`; the class Setup sets its own layer
+    ///    over the argument). With a face (`+0xc0`; its `+8` rect `faceBounds`, w × h): child `+0x1b2 = 1`; by type the
+    ///    child's position and `+0x154`: 0x5d2 x = centre x − w/2 − face left, y = y + 10, `+0x154` = hot bottom / 3 + 4;
+    ///    0x5d3 the same x, y = y + 0x1c − hot bottom, (hot bottom − hot top) / 3 + 4; 0x5d4 x = x + 0x1c − face right,
+    ///    y = centre y − h/2 − face top, (hot right − hot left) / 3 + 4; 0x5d5 x = x + 10, that y, hot right / 3 + 4 (the
+    ///    halves and thirds truncate toward 0; the "far edge" forms of 0x5d2 / 0x5d5 as written); `+0x1d4` = the child, its
+    ///    24.8 position from x / y;
+    /// 3. `+0x150 > 0`: + 1; at 3 `.STPlay3DSoundRand(459, 1, 0x100, centre)`; no child → `+0x150 = 0`; else the push
+    ///    3 px (0x5d2 up, 0x5d3 down, 0x5d4 right, 0x5d5 left) and the clip edge (`+0x1ba` bottom = y + 7 − child y,
+    ///    `+0x1bc` top = y + 0x1d − child y, `+0x1b6` left = x + 0x1d − child x, `+0x1b8` right = x + 7 − child x; below 1
+    ///    → 0), the 24.8 position; `+0x150 > +0x154` → child `+0x1b2 = 0`, its clip (0, 32000, 32000, 0), `+0x150 = 0`
+    ///    (**`+0x1d4` stays**);
+    /// 4. a child with `+0xe9` or `+0xea` → `+0x1d4 = 0`, `+0x150 = 0`, `+0xa6 = .Deviation(p2)` — the next interval
+    ///    starts only once the child is dead. The child is read through `record(id:)`, which answers an unlinked
+    ///    record as the original's pointer reads it (its `+0xe9` stays set); no record at all counts as dead.
+    static func pipeArm(_ w: SpriteWorld, id: Int, lights: inout LightTable, effects: Int16,
+                        faceBounds: ((FaceRef) -> IdleSprites.Rect)?) -> Bool {
+        guard let s0 = w.active.record(id: id), s0.classWord15c != 0 else { return false }
+        let t = s0.type
+        w.active.update(id: id) { s in
+            s.face = FaceRef(pict: t, index: 0, set: .encoded)
+            if 0 < s.counterA6 { s.counterA6 -= 1 }
+        }
+        let p2 = liveRecord(w, s0.recordIndex)?.p2 ?? 0
+        if let s = w.active.record(id: id), s.counterA6 < 1, s.siblings.first == nil, s.classWord15c != 0 {
+            let d = deviation(p2, rng: &w.rng)
+            w.active.update(id: id) { u in
+                u.counterA6 = d
+                u.classWord150 = 1
+            }
+            if let c = generate(w, type: Int16(truncatingIfNeeded: s.classWord15c), x: h(s.x), y: h(s.y),
+                                layer: s.layer &+ 1, lights: &lights, effects: effects),
+               let f = w.active.record(id: c)?.face {
+                let b = faceBounds?(f) ?? IdleSprites.Rect(top: 0, left: 0, bottom: 0, right: 0)
+                let halfW = Int(Int16(truncatingIfNeeded: b.right - b.left) / 2)
+                let halfH = Int(Int16(truncatingIfNeeded: b.bottom - b.top) / 2)
+                var len: Int32 = 0
+                w.active.update(id: c) { k in
+                    k.emerging = true                                       // `+0x1b2 = 1` (M l. 60648)
+                    let top = Int32(h(k.hotRect.top)), left = Int32(h(k.hotRect.left))
+                    let bottom = Int32(h(k.hotRect.bottom)), right = Int32(h(k.hotRect.right))
+                    switch t {
+                    case 0x5d2:
+                        k.x = h(s.centre.x - halfW - b.left)
+                        k.y = h(s.y + 10)
+                        len = bottom / 3 + 4
+                    case 0x5d3:
+                        k.x = h(s.centre.x - halfW - b.left)
+                        k.y = h(s.y + 0x1c - Int(bottom))
+                        len = (bottom - top) / 3 + 4
+                    case 0x5d4:
+                        k.x = h(s.x + 0x1c - b.right)
+                        k.y = h(s.centre.y - halfH - b.top)
+                        len = (right - left) / 3 + 4
+                    default:
+                        k.x = h(s.x + 10)
+                        k.y = h(s.centre.y - halfH - b.top)
+                        len = right / 3 + 4
+                    }
+                    k.x256 = Int32(k.x) << 8
+                    k.y256 = Int32(k.y) << 8
+                }
+                w.active.update(id: id) { u in
+                    u.classWord154 = len
+                    u.siblings.first = c
+                }
+            }
+        }
+        if let s = w.active.record(id: id), 0 < s.classWord150 {
+            let n = s.classWord150 &+ 1
+            w.active.update(id: id) { $0.classWord150 = n }
+            if n == 3 {
+                w.player.cue(PlayerCue(call: .threeDRand, snd: pipeSound, priority: 1, volume: 0x100, position: s.centre,
+                                       rate: w.rng.soundRate()))
+            }
+            if let c = s.siblings.first {
+                w.active.update(id: c) { k in
+                    func edge(_ v: Int) -> Int { v < 1 ? 0 : Int(Int16(truncatingIfNeeded: v)) }
+                    switch t {
+                    case 0x5d2:
+                        k.y = h(k.y - 3)
+                        k.clip.bottom = edge(h(s.y) + 7 - h(k.y))
+                    case 0x5d3:
+                        k.y = h(k.y + 3)
+                        k.clip.top = edge(h(s.y) + 0x1d - h(k.y))
+                    case 0x5d4:
+                        k.x = h(k.x + 3)
+                        k.clip.left = edge(h(s.x) + 0x1d - h(k.x))
+                    default:
+                        k.x = h(k.x - 3)
+                        k.clip.right = edge(h(s.x) + 7 - h(k.x))
+                    }
+                    k.x256 = Int32(k.x) << 8
+                    k.y256 = Int32(k.y) << 8
+                    if s.classWord154 < n {
+                        k.emerging = false                                  // M l. 60751–60755, in this order
+                        k.clip.right = 32000
+                        k.clip.bottom = 32000
+                        k.clip.left = 0
+                        k.clip.top = 0
+                    }
+                }
+                if s.classWord154 < n { w.active.update(id: id) { $0.classWord150 = 0 } }
+            } else {
+                w.active.update(id: id) { $0.classWord150 = 0 }
+            }
+        }
+        if let s = w.active.record(id: id), let c = s.siblings.first {
+            let k = w.active.record(id: c)
+            if k == nil || k!.dead || k!.killedForGood {
+                let d = deviation(p2, rng: &w.rng)
+                w.active.update(id: id) { u in
+                    u.siblings.first = nil
+                    u.classWord150 = 0
+                    u.counterA6 = d
+                }
+            }
+        }
+        return true
     }
 
     /// The switch blocks' part of the block chain (M l. 61088–61113; raw `1006f730..1006f7c0`; pickups-boxes §2.4.5): a
@@ -1177,8 +1339,12 @@ public enum BoxSprite {
     /// class Setup by `SpriteClassTable`, `MTNewSprite(type, x, y, layer (−1 → 0), 0x200, setup)` and `+0x48 = 0x200`.
     /// Built for the Bonus class (every crate drop on levels 1–4: the item 3219) and the Bat class (BA: `.SetupBatSprite`
     /// with record 0x200 — past the 511 records, read as zeros, `Bat.record`; no shipped crate drops a Bat, so the
-    /// `.KillCrate` 0x6cc arm, M l. 61312–61320, is reached by synthetic placements only); // later: Phase 5 — the other
-    /// classes' run-time Setups (the census's crate drops: the Blob 1731 ×8 on level 31) make nothing here.
+    /// `.KillCrate` 0x6cc arm, M l. 61312–61320, is reached by synthetic placements only). PI (the pipes' children,
+    /// `forceNow` 1, record 0x200): the Walker class (`.SetupWalkerSprite`, `Walker.setup` with the record read as zeros
+    /// and playerX `*_DAT_1009fd94`; its face as `SetupFaces` gives it, M l. 56955–56990) and the Blob class
+    /// (`.SetupBlobSprite`, `BlobCrab.setupBlob`; face cache 0x6c2 cell 0, M l. 67726); the insects 0x744…0x74c get the
+    /// face their Setup stores (cache 0x744 cell 3, M l. 68219). Each counts only while the window is open (closed at
+    /// run time: a pipe child is counted by no stat). // later: Phase 6 — the other classes' run-time Setups make nothing.
     static func generate(_ w: SpriteWorld, type: Int16, x: Int, y: Int, layer: Int32, lights: inout LightTable,
                          effects: Int16) -> Int? {
         guard let (cls, _) = SpriteClassTable.classify(type: type, p1Negative: false) else { return nil }
@@ -1201,6 +1367,29 @@ public enum BoxSprite {
                     w.newSprite(type: t, x: cx, y: cy, layer: Int16(truncatingIfNeeded: layer), handler: handler,
                                 record: 0x200, setup: setup)
                 }
+                if (0x744...0x74c).contains(type) { c.face = FaceRef(pict: Bat.insectSet, index: 3, set: .encoded) }
+            }
+        case .walker:
+            let px = Int(w.player.centreX)
+            return w.newSprite(type: type, x: x, y: y, layer: l, handler: .walker, record: 0x200) { c in
+                // `+0xc ← +8`, `+0xa ← +6` (M l. 56957–56958): `Walker.setup` reads the spawn point from x / y.
+                c.x = c.oldPosition.x
+                c.y = c.oldPosition.y
+                let zero = Bat.record(w.records, index: 0x200)!
+                Walker.setup(&c, record: zero, playerX: px, rng: &w.rng, counting: &w.enemies)
+                let f: Int16
+                switch type {
+                case 0x6a9: f = 0x6a9
+                case 0x6d6...0x6df: f = 0x6d6
+                case 0x6e0...0x6e9: f = 0x6e0
+                default: f = 0x6a4                                          // the single 0x6a4 (M l. 56955)
+                }
+                c.face = FaceRef(pict: f, index: 0, set: .encoded)
+            }
+        case .blob:
+            return w.newSprite(type: type, x: x, y: y, layer: l, handler: .blob, record: 0x200) { c in
+                BlobCrab.setupBlob(&c, counting: &w.enemies)
+                c.face = FaceRef(pict: BlobCrab.blobSet, index: 0, set: .encoded)
             }
         default:
             return nil

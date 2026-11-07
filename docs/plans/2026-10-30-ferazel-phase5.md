@@ -1372,6 +1372,29 @@ records the summary line.
   synthetic.
 - **Tests (4):** `testPipeSpawnsChild` · `testEmergingClipAndPush` · `testEmergingStillCollidable` · `testPipeChildNotCounted`.
 - **Gate:** G2 606. Wave 5.4 end: G3, GWB by day. **Commit:** `FerazelCore: enemy pipes; 4 tests`.
+- **As executed — PI (run 46):** Ferazel/Core 603 → 607. Re-read against the dump (dump over bank and card):
+  - **Setup (M l. 59325–59356):** layer 1 (`+0x80 = 1`, so the child's argument is 2); p2 0 → 100 **written back**;
+    `+0xa6 = .Deviation(p2)` = p2 + R(p2 >> 1) − (p2 >> 2) (M l. 39497–39503, new `BoxSprite.deviation`); `+0x15c` = p1; the
+    class-cache face; hot rect = face `+0` inset 3; gravity, tile callback and hit 0. The arm **does spawn a child at
+    Setup** — `.GenerateSprite(…, 0x200, 1, 2)` then child `+0xe9 = 1` (a throwaway: its Setup's draws, and +1 on the
+    level's enemy count while the Setup window is open, never taken back). Ported as `BoxSprite.setupPipe` (the stores);
+    the throwaway child and `SetupFaces`' pipe arm (which still refuses 1490…1493) belong to level 21's task.
+  - **Handle (M l. 60624–60768):** `+0x15c == 0` returns without the tail; else the tail runs. The spawn frame also
+    runs the step, so `+0x150` is **2** after it (card: 1) and the child is already pushed 3 px. `+0x154`: 0x5d2 hot
+    bottom / 3 + 4, 0x5d3 (bottom − top) / 3 + 4, 0x5d4 (right − left) / 3 + 4, 0x5d5 hot right / 3 + 4 (the bank's ⚑
+    far-edge forms, as written). Cue: `.STPlay3DSoundRand(459, 1, 0x100, centre)` at `+0x150 == 3`. Release at
+    `+0x150 > +0x154` clears `+0x1b2`, resets the clip to (0, 32000, 32000, 0) and `+0x150` — **`+0x1d4` is not cleared
+    there** (card): it clears, with a new `.Deviation` interval, only when the child has `+0xe9` / `+0xea`, so a pipe
+    waits for its child's death before the next one.
+  - **Child layer:** the class Setup stores its own `+0x80` after `.MTNewSprite`'s (Walker 4, Blob 8), not pipe + 1.
+  - **`generate`:** Walker arm (record 0x200 read as zeros, playerX, face as `SetupFaces`) and Blob arm added; the Bat arm
+    now gives the insects 0x744…0x74c their Setup face (cache 0x744 cell 3, M l. 68219) — without it the 1860 child has no
+    `+0xc0` and never emerges; no shipped crate drops an insect.
+  - **Collide rule / class guards:** `SpriteWorld.collideSprites` already matched (`+0x1b2` outer only, M l. 30253); the
+    Walker, Blob and Bat Handles already return while emerging — no change.
+  - **Other files:** DrawModeAudit re-anchored (BoxSprite rows moved) and gained the eight pipe-child clip rows (the
+    release written as the dump's four edge stores); `BatTests.testKillCrateBatDropArm`'s twin crate drops Blobs, which
+    `generate` now makes (two, no draw) — its assertion follows, its stream measurement is unchanged.
 
 ### Wave 5.5 — level 5, up to the Warrior's arena
 
