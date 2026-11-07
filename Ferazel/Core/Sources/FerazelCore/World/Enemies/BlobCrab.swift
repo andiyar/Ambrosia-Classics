@@ -410,7 +410,8 @@ public enum BlobCrab {
 
     /// `.HandleCrabSprite(s)` (M l. 74096–74293), unless `+0xe9` or `+0x1b2`: `.StandardSpriteHandles`; state 1 → the
     /// strike (`strike`); state 0 → d = `.FindDesiredDirectionGeneric(+0xe, the player sprite's +0xe)` (the claw's
-    /// stored centre to the player's; `BloodSpray.direction`, 0 right, 9 up, 18 left, 27 down) and the aim (`aim`);
+    /// stored centre to the player's; `BloodSpray.direction`, claw → player: 0 right, 9 up, 18 left, 27 down — its own
+/// labels, 0 left, 9 down, are of the player → claw vector) and the aim (`aim`);
     /// any other state nothing. Then every link i (0…n − 1) at `+0x150 + (+0xc − +0x150)·i / (n + 1) + 0x1e`, `+0x154
     /// + (+0xa − +0x154)·i / (n + 1) + 0x1e` (C division; `+0xc` / `+0xa` only — the links' 24.8 position is not
     /// written, M l. 74274–74286); HP < 1 → state 3 (nothing hurts it); `.StandardSpriteCleanup`. No gravity, no tile

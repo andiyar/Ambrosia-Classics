@@ -340,6 +340,28 @@ final class GeyserTests: XCTestCase {
         XCTAssertNil(try slot(w3f, f3).face, "cell 12")
     }
 
+    /// The period-0 guard in the eruption arm (`LAB_1006df20`, M l. 60379–60483): with on + off = −1 the divisor
+    /// on + off + 1 is 0, which `divwu` leaves undefined; the port takes the quotient as 0, so `+0xa6` = Int16(C) — the
+    /// level frame counter's low half — and nothing traps. Unreachable from shipped data: no geyser placement on levels
+    /// 10, 50 or 51 gives on + off = −1; the placement here is made by hand.
+    func testEruptionPeriodZeroGuard() throws {
+        let (w, _) = try world()
+        let (id, _, _) = try geyser(w, place(0x5a2, p2: 40, p3: -41))
+        XCTAssertEqual([try slot(w, id).geyserOn, try slot(w, id).geyserOff], [40, -41])
+        // C = 0x12345: Int16(C) = 0x2345 = 9029, not < on 40 → the falling branch.
+        let C1 = Int32(0x12345)
+        frame(w, id, C1)
+        XCTAssertEqual(try slot(w, id).counterA6, Int16(truncatingIfNeeded: C1))
+        XCTAssertEqual(try slot(w, id).counterA6, 0x2345)
+        // C = 0x80000010: Int16(C) = 16 < 40 → the rising branch stores `+0xf4 = target`.
+        let C2 = Int32(bitPattern: 0x8000_0010)
+        w.active.update(id: id) { s in s.geyserFall = 0x100 }
+        frame(w, id, C2)
+        XCTAssertEqual(try slot(w, id).counterA6, Int16(truncatingIfNeeded: C2))
+        XCTAssertEqual(try slot(w, id).counterA6, 16)
+        XCTAssertEqual(try slot(w, id).geyserFall, try slot(w, id).geyserTarget, "rising at t 16")
+    }
+
     func testColumnSegmentsAndHead() throws {
         let (w, _) = try world()
         let (id, _, _) = try geyser(w, place(0x5a2))
