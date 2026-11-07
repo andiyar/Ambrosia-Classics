@@ -90,7 +90,8 @@ final class EnemyCommonTests: XCTestCase {
     // MARK: - kills
 
     func testKillBookkeeping() throws {
-        // `.KillCrawler` M l. 56695–56701: `+0xe9 == 0 && +0x1b5` → live − 1, `G+0x306+2L` + 1; `+0xe9 = 1`; `+0xea = 1`.
+        // The Kill proc of a class whose Setup stores one — `.KillFrog` (M l. 70556–70602; `.SetupFrogSprite` stores it):
+        // `+0xe9 == 0 && +0x1b5` → live − 1, `G+0x306+2L` + 1; `+0xe9 = 1`; `+0xea = 1`; then the p1 score (p1 0: 500).
         let w = try world()
         w.levelIndex = 2
         w.enemies = EnemyCounting(live: 5)
@@ -102,19 +103,28 @@ final class EnemyCommonTests: XCTestCase {
             })
         }
         func slot(_ id: Int) throws -> SpriteSlot { try XCTUnwrap(w.active.record(id: id)) }
-        let crawler = try enemy(0x6b0, .crawler)
-        EnemyCommon.killProc(w, id: crawler)
+        let frog = try enemy(0x708, .frog)
+        EnemyCommon.killProc(w, id: frog)
+        XCTAssertEqual([w.enemies.live, Int32(w.globals.achieved[0][2]), w.globals.score], [4, 1, 500])
+        XCTAssertEqual([try slot(frog).killCount == 1, try slot(frog).killedForGood], [true, true])
+        EnemyCommon.killProc(w, id: frog)                       // counted once: `+0xe9` is set now
         XCTAssertEqual([w.enemies.live, Int32(w.globals.achieved[0][2])], [4, 1])
-        XCTAssertEqual([try slot(crawler).killCount == 1, try slot(crawler).killedForGood], [true, true])
-        EnemyCommon.killProc(w, id: crawler)                    // once: `+0xe9` is set now
-        XCTAssertEqual([w.enemies.live, Int32(w.globals.achieved[0][2])], [4, 1])
+        w.globals.score = 0
+        // ⚑ audit 4: the Crawler, Roach, Bat and Blob Setups store no `+0x50` (`.InitSprite` zeroes it, M l. 35571), so
+        // `.HandleBurn`'s no-Kill-proc arm: `+0xe9 = 1` only — no count, no stat, no `+0xea`, no score.
+        for (t, h) in [(Int16(0x6b0), SpriteHandler.crawler), (0x6b8, .roach), (0x6cc, .bat), (0x6c2, .blob)] {
+            let k = try enemy(t, h)
+            EnemyCommon.killProc(w, id: k)
+            XCTAssertEqual([w.enemies.live, Int32(w.globals.achieved[0][2]), w.globals.score], [4, 1, 0], "\(h)")
+            XCTAssertEqual([try slot(k).killCount == 1, try slot(k).killedForGood], [true, false], "\(h)")
+        }
         // `.KillWalker` (M l. 58624–58629) stores no `+0xea`.
         let walker = try enemy(0x6a4, .walker)
         EnemyCommon.killProc(w, id: walker)
         XCTAssertEqual([w.enemies.live, Int32(w.globals.achieved[0][2])], [3, 2])
         XCTAssertEqual([try slot(walker).killCount == 1, try slot(walker).killedForGood], [true, false])
         // An uncounted kill (a pipe child, a spawned or re-activated sprite: `+0x1b5` 0): no count, no stat, `+0xe9` 1.
-        let child = try enemy(0x6b8, .roach, counted: false)
+        let child = try enemy(0x712, .salamander, counted: false)
         EnemyCommon.killProc(w, id: child)
         XCTAssertEqual([w.enemies.live, Int32(w.globals.achieved[0][2])], [3, 2])
         XCTAssertEqual([try slot(child).killCount == 1, try slot(child).killedForGood], [true, true])

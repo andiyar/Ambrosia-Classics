@@ -349,7 +349,7 @@ public enum Walker {
     /// `+0x17c` 1, `+0x13a` 0x20, `+0x138` 0x3c — the hit, tile and Kill callbacks kept (`walkerCallbacks`).
     static func dying(_ w: SpriteWorld, id: Int) {
         guard var s = w.active.record(id: id) else { return }
-        s.killedForGood = true                                          // `+0xea = 1` (M l. 57752)
+        s.killedForGood = true                                          // `+0xea = 1` (M l. 57740)
         let b2 = s.subState
         var f = b2 / 3
         if b2 == 0x16 { s.vy &-= 800 }
@@ -367,7 +367,7 @@ public enum Walker {
             s.classWord15c &+= 1
             if 2 < s.classWord15c && s.burnRow < 1 { s.burnRow = 1 }
             w.active.update(id: id) { $0 = s }
-            let i = Int(s.recordIndex)                                  // the record's `+4 = 0` (M l. 57774)
+            let i = Int(s.recordIndex)                                  // the record's `+4 = 0` (M l. 57773)
             if w.records.indices.contains(i) {
                 let q = w.records[i]
                 w.records[i] = Placement(index: q.index, flag: 0, byte1: q.byte1, type: q.type, p1: q.p1, p2: q.p2,
@@ -375,7 +375,7 @@ public enum Walker {
             }
             let dx = Int(w.player.centreX) - h16(s.centre.x), dy = Int(w.player.centreY) - h16(s.centre.y)
             if abs(dx) < 0x1c3 && abs(dy) < 0x15f { return }
-            EnemyCommon.killProc(w, id: id)                             // `.KillWalker` (M l. 57784)
+            EnemyCommon.killProc(w, id: id)                             // `.KillWalker` (M l. 57785)
         } else {
             if s.killCount == 0 && s.countedInTotals {
                 w.enemies.live &-= 1

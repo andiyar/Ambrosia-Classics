@@ -198,8 +198,8 @@ final class DrawModeAuditTests: XCTestCase {
         W("Particles/Burn.swift:60", .clipTop, .range(1...0x100), "any", at: ["45", "50"],
           pins: ["s.burnRow = top", "s.burnRow &+= 1"]),
         // EC: the ground enemies' liquid hurt flash (`EnemyCommon.liquids`: 0xc for the Walker in water, else 0x11).
-        W("World/Enemies/EnemyCommon.swift:238", .flash, .range(0xc...0x11), "walker", "crawler", "roach", "dillo",
-          "blob", at: ["224", "229", "230", "231"], pins: ["(0xc, 0x96, 0xc)", "(0x13, 100, 0x11)"]),
+        W("World/Enemies/EnemyCommon.swift:244", .flash, .range(0xc...0x11), "walker", "crawler", "roach", "dillo",
+          "blob", at: ["230", "235", "236", "237"], pins: ["(0xc, 0x96, 0xc)", "(0x13, 100, 0x11)"]),
         // ES: the enemy shots — the egg's random facing (`R(100) > 0x32`) and its flash every 45 frames, the Warrior
         // shot's facing by vx, the Wraith shot's tint by age (`.HandleEnemyShotSprite` M l. 51711–51723).
         // BA: the Bat class — the spitters' tint 0x1000c (0x6ce / 0x73c retyped), the insects' 0xb0004, the swarm

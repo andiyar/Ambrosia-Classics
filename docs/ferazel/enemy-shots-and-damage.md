@@ -373,6 +373,9 @@ and the shield counter `PTR_DAT_100a05e8 > 2` (raised); the counter is set to 7.
   `vy −= 1500`, gravity 0x100 (so §3.5 step 1 makes them harmless thereafter); with the Magical
   Shield (item 0xf) also `+0x1a2 = 1` ~~[MED: presumably "hurts enemies now"; reader not traced]~~.
   ⚑ corrected (review 1c, 2026-10-03) #3 (adjudication A12): `+0x1a2` is the ordinary **burn-away row**, not a reflection flag — `.ShieldBlock` stores 1 (`10055550`, gated `bl 0x1004c0e0` = `.HasItem(0xf)`); `.HandleEnemyShotSprite` calls `.StandardSpriteCleanup` (`1005c844`), the only caller of `.HandleBurn` (`10036ed0 lha 0x1a2; cmpwi 0; beq` → `10036ee0 bl 0x10043cd8`). A Magical-Shield-reflected dart/spine therefore **burns away** from row 1 and dies through its `+0x50` Kill callback [HIGH].
+  ⚑ corrected (run 44, audit 4): `.SetupEnemyShotSprite` stores no `+0x50` (`.InitSprite` zeroes it, M l. 35571), so at
+  the burn's opaque bottom `.HandleBurn` takes its no-Kill-proc arm: a reflected dart / spine ends with `+0xe9 = 1` only
+  (M l. 38829–38831), never through `.KillEnemyShot` [HIGH].
 - 0x6f4 with the Magical Shield: once (`+0x160 == 0`): vx, vy negated, `vy += 0x140`,
   `+0x160 = 1`, particles. Without it, 0x6f4 is destroyed.
 - every other shot: `.KillEnemyShot`.

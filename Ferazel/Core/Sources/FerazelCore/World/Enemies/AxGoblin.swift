@@ -196,7 +196,7 @@ public enum AxGoblin {
         s.classWord15c &+= 1
         if 2 < s.classWord15c && s.burnRow < 1 { s.burnRow = 1 }
         w.active.update(id: id) { $0 = s }
-        let i = Int(s.recordIndex)                                      // the record's `+4 = 0` (M l. 58226)
+        let i = Int(s.recordIndex)                                      // the record's `+4 = 0` (M l. 58224)
         if w.records.indices.contains(i) {
             let q = w.records[i]
             w.records[i] = Placement(index: q.index, flag: 0, byte1: q.byte1, type: q.type, p1: q.p1, p2: q.p2,
@@ -204,7 +204,7 @@ public enum AxGoblin {
         }
         let dx = Int(w.player.centreX) - h16(s.centre.x), dy = Int(w.player.centreY) - h16(s.centre.y)
         if abs(dx) < 0x1c3 && abs(dy) < 0x15f { return }
-        EnemyCommon.killProc(w, id: id)                                 // `.KillWalker` (M l. 58237)
+        EnemyCommon.killProc(w, id: id)                                 // `.KillWalker` (M l. 58236)
     }
 
     // MARK: - the core logic

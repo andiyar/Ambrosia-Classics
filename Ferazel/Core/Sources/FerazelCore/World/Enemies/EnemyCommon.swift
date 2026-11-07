@@ -80,7 +80,12 @@ public enum EnemyCommon {
     }
 
     /// The Kill proc `+0x50` (`FUN_1009f80c(s)`, ptr-glue) for `s`'s class, as `.HandleBurn` calls it at the opaque
-    /// bottom: the enemy Kills' counting part (`EnemyCounting.kill`); with no Kill proc `+0xe9 = 1` (M l. 38834–38838).
+    /// bottom: the enemy Kills' counting part (`EnemyCounting.kill`); with no Kill proc `+0xe9 = 1` (M l. 38829–38834).
+    /// ⚑ audit 4 (BL): only the classes whose Setup stores a `+0x50` have an arm — the Walker, Dillo, Frog, Salamander,
+    /// Warrior and Gremlin. The Crawler, Roach, Bat and Blob Setups store `+0x4c` / `+0x5c` only (`.SetupCrawlerSprite`
+    /// M l. 56153–56246, `.SetupRoachSprite` 64899–64957, `.SetupBatSprite` 68108ff, `.SetupBlobSprite` 67671–67735;
+    /// `.InitSprite` zeroes `+0x50`, M l. 35571), so a burn on them ends in the default arm; the Blob dies through
+    /// `.KillBlob` from its dead puddle (`BlobCrab`).
     /// The classes' own parts (score `G+0`, sounds, children) are their tasks'. It runs against the world by id
     /// (`SpriteWorld` rule 2: a Kill tail writes other sprites and spawns) — a caller holding a copy of the slot writes
     /// it back first and re-reads after (`Burn.handle`).
@@ -90,7 +95,7 @@ public enum EnemyCommon {
         // `.KillWalker` (M l. 58624–58630) stores no `+0xea`, so `forGood` is read off the Kill proc, not the Handle.
         let killer = s.walkerCallbacks ? SpriteHandler.walker : s.handler
         switch killer {
-        case .walker, .crawler, .roach, .dillo, .bat, .frog, .salamander, .blob, .warrior:
+        case .walker, .dillo, .frog, .salamander, .warrior:
             switch killer {
             case .frog: FrogSalamander.killFrog(w, &s)              // `.KillFrog` (FR): the count, then its score
             case .salamander: FrogSalamander.killSalamander(w, &s)  // `.KillSalamander` (FR)
@@ -98,14 +103,15 @@ public enum EnemyCommon {
                 w.enemies.kill(&s, globals: &w.globals, level: w.levelIndex,
                                forGood: EnemyCounting.killsForGood(killer))
             }
-            // `.KillWalker` is the count alone (WK1). // later: CR / DL / BA / BL / LV5 — each other Kill's own tail
+            // `.KillWalker` is the count alone (WK1). // later: DL / LV5 — each other Kill's own tail
         case .gremlin:
             guard s.killCount == 0 else { return }      // `+0xe9 ≠ 0` → return (M l. 69736–69738, raw 100810e0 bnelr)
             w.enemies.kill(&s, globals: &w.globals, level: w.levelIndex, forGood: true)
             // later: GF — `.KillGremlinSprite`'s score and rider
         default:
-            // `+0x50 == 0` → `+0xe9 = 1` — the EnemyShot class too: `.SetupEnemyShotSprite` stores no `+0x50` (ES; a
-            // shield-reflected dart burns away to this, never to `.KillEnemyShot`).
+            // `+0x50 == 0` → `+0xe9 = 1` — the Crawler, Roach, Bat and Blob (audit 4) and the EnemyShot class too:
+            // `.SetupEnemyShotSprite` stores no `+0x50` (ES; a shield-reflected dart burns away to this, never to
+            // `.KillEnemyShot`).
             s.dead = true
         }
         w.active.update(id: id) { $0 = s }
