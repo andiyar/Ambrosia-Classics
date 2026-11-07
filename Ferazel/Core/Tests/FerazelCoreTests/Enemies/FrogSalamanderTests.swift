@@ -213,8 +213,8 @@ final class FrogSalamanderTests: XCTestCase {
                 continue
             }
             // The launch (l. 70333–70389): R(100) > 0x37 → frogjump 613 (vol 0x80, the frog's pitch); `+0xce = 0`;
-            // vx = −0x28a − R(200), vy = −0x514 − R(400); `+0x154 ≥ 0` → `+0x14c = −10 − R(10)`; near: R(100) > 0x50
-            // → vy −= 0x15e, vx −= 200; gravity 0x5a; facing left: vx kept; `+0x158 = vx`.
+            // vx = −0x28a − R(200), vy = −0x514 − R(400); `+0x154 ≥ 0` → `+0x14c = −10 − R(10)`; the aim; gravity 0x5a;
+            // facing left: vx kept; `+0x158 = vx`.
             XCTAssertEqual(before.phase, 8)
             let jump = x.next(100)
             var cues: [PlayerCue] = []
@@ -223,12 +223,13 @@ final class FrogSalamanderTests: XCTestCase {
                 cues.append(PlayerCue(call: .threeDPitched, snd: 613, priority: 1, volume: 0x80, position: before.centre,
                                       rate: rate))
             }
-            var vx = -0x28a - Int32(x.next(200)), vy = -0x514 - Int32(x.next(400))
+            let vx = -0x28a - Int32(x.next(200))
+            var vy = -0x514 - Int32(x.next(400))
             let timer = -10 - Int32(x.next(10))
-            if 0x50 < x.next(100) {
-                vy -= 0x15e
-                vx -= 200
-            }
+            // ⚑ The aim's "player above" test reads the player's centre X (M l. 70358, `_DAT_1009fd94`): x 450 < the
+            // frog's cy − 0x28 (≈ 573), so the "above" branch is taken though the player stands level with the frog:
+            // vy −= R(0x96) + 200, and no near-range R(100).
+            vy -= Int32(x.next(0x96)) + 200
             XCTAssertEqual(w.rng.seed, x.seed)
             XCTAssertEqual(w.player.cues, cues)
             XCTAssertEqual([Int(s.subtype), s.face?.index ?? -1, Int(s.gravity)], [10, 3, 0x5a])
@@ -237,7 +238,9 @@ final class FrogSalamanderTests: XCTestCase {
         }
         XCTAssertEqual(faces, [0, 0, 0, 1, 1, 1, 2, 2], "phases 0…7")
         // Airborne: three integrations of vx a frame (gravity call, `x += vx`, gravity call), face 3 rising, 4 falling,
-        // gravity 0x5a; on ground: face 5, state 0xb, gravity 400 (`.HitFrogTileSprite`, FG with `+0xce`).
+        // gravity 0x5a; on ground: face 5, state 0xb, gravity 0x5a — this "above" arc (the playerX aim, M l. 70358) lands
+        // in the frame before (the second gravity call: `.HitFrogTileSprite` stores 400), then the switch frame stores
+        // 0x5a and its second gravity call makes no FG tile hit (`+0xce` back to 0), so no 400 is stored after it.
         var airFaces: [Int] = []
         var n = 0
         while try slot(w, id).subtype == 10 && n < 120 {
@@ -253,15 +256,17 @@ final class FrogSalamanderTests: XCTestCase {
                 }
             }
         }
-        XCTAssertEqual([Int(s.subtype), s.face?.index ?? -1, Int(s.gravity)], [0xb, 5, 400])
+        XCTAssertEqual([Int(s.subtype), s.face?.index ?? -1, Int(s.gravity), Int(s.groundKind)], [0xb, 5, 0x5a, 0])
         XCTAssertEqual(Set(airFaces), [3, 4])
         XCTAssertEqual(airFaces.first, 3)
         XCTAssertEqual(airFaces.last, 4)
         XCTAssertLessThan(s.x, 600, "it hopped toward the player")
 
-        // Far (|dx| ≥ 250): state 9 with no draw; the launch scales vx / vy by 0.7 (f64 `0x100a1bd8`) and sets `+0x14c =
-        // −4 − R(4)`.
-        let v = try world(px: 100)
+        // Far (|dx| ≥ 250), the player on the right: state 9 with no draw, facing right (`+0x17e`); the launch scales vx /
+        // vy by 0.7 (f64 `0x100a1bd8`), sets `+0x14c = −4 − R(4)`, and the facing negates vx (l. 70384–70386). The
+        // player stands at x ≥ the frog's cy − 0x28: at x 100 (the player on the left) the aim's playerX test (M l.
+        // 70358) takes the "above" branch instead, so a far left launch from this frog is never far.
+        let v = try world(px: 1200)
         let (fid, _) = try enemy(v)
         let vs = TileSolver(world: v)
         try settle(v, fid, vs)
@@ -269,6 +274,7 @@ final class FrogSalamanderTests: XCTestCase {
         let seed0 = v.rng.seed
         frame(v, fid, vs)
         XCTAssertEqual([Int(try slot(v, fid).subtype), Int(v.rng.seed == seed0 ? 1 : 0)], [9, 1])
+        XCTAssertTrue(try slot(v, fid).mirrored, "the player right: facing right")
         for _ in 0..<8 { frame(v, fid, vs) }
         var y = v.rng
         frame(v, fid, vs)
@@ -279,8 +285,15 @@ final class FrogSalamanderTests: XCTestCase {
         let fx = Int32(Double(vx0) * far), fy = Int32(Double(vy0) * far)
         let ft = -4 - Int32(y.next(4))
         let t = try slot(v, fid)
-        XCTAssertEqual([t.classWord158, t.classTimer, t.vy], [fx, ft, fy + 0x5a])
+        XCTAssertEqual([t.classWord158, t.vx, t.classTimer, t.vy], [-fx, -fx, ft, fy + 0x5a], "facing right: vx negated")
         XCTAssertEqual(v.rng.seed, y.seed)
+        n = 0
+        while try slot(v, fid).subtype == 10 && n < 120 {
+            frame(v, fid, vs)
+            n += 1
+        }
+        XCTAssertEqual(try slot(v, fid).subtype, 0xb)
+        XCTAssertGreaterThan(try slot(v, fid).x, 600, "it hopped right, toward the player")
 
         // A hop chain: R(100) < 8 → state 9 with `+0x154 = −3 − R(3)`; each launch counts it up and sets `+0x14c = 0`
         // (no draw), so the landing re-decides at once — and `+0x154 < 0` sends it straight back to state 9.
@@ -310,6 +323,106 @@ final class FrogSalamanderTests: XCTestCase {
         _ = z.next(100)
         XCTAssertEqual([Int(try slot(u, cid).subtype), Int(try slot(u, cid).phase)], [9, 0])
         XCTAssertEqual(u.rng.seed, z.seed, "one R(100), and `+0x154 < 0` → state 9")
+
+        // The launch's aim (M l. 70356–70386), one launch frame at a time from one settled Frog (x 600) restored before
+        // each: state 9 at `+0x46` 8, `+0x154` 0, facing by `c.x < P.x`. ⚑ The "player above" test compares the
+        // player's centre X with the frog's centre y − 0x28 (M l. 70358 `(short)*puVar1 < *(short *)(s + 0xe) − 0x28`,
+        // `puVar1 = _DAT_1009fd94` = playerX, l. 70242; raw `100824bc lha r4,0x0(r30)` with r30 = `-0x7aac(r2)` at
+        // `1008215c`) — the bank's "playerY" was wrong; the port copies the binary.
+        let a = try world(px: 600)
+        let (aid, _) = try enemy(a)
+        let asolver = TileSolver(world: a)
+        try settle(a, aid, asolver, timer: -500)
+        let rest = try slot(a, aid)
+        let acx = rest.centre.x, acy = rest.centre.y, above = rest.centre.y - 0x28
+        func common(_ x: inout FastRand) -> (vx: Int32, vy: Int32, timer: Int32, cue: Bool) {
+            let cue = 0x37 < x.next(100)
+            if cue { _ = x.next(10000) }
+            let vx = -0x28a - Int32(x.next(200)), vy = -0x514 - Int32(x.next(400))
+            return (vx, vy, -10 - Int32(x.next(10)), cue)
+        }
+        func launch(px: Int, py: Int, seed sd: Int32 = 1, _ aim: String, _ msg: String) throws {
+            a.active.update(id: aid) { $0 = rest; $0.subtype = 9; $0.phase = 8; $0.mirrored = acx < px }
+            a.player.centreX = Int16(px)
+            a.player.centreY = Int16(py)
+            a.player.cues = []
+            a.rng = FastRand(seed: sd)
+            var x = a.rng
+            frame(a, aid, asolver)
+            let s = try slot(a, aid)
+            let c = common(&x)
+            var vx = c.vx, vy = c.vy, timer = c.timer
+            switch aim {
+            case "above":
+                vy -= Int32(x.next(0x96)) + 200
+            case "near":
+                if 0x50 < x.next(100) {
+                    vy -= 0x15e
+                    vx -= 200
+                }
+            default:                                                    // far
+                vx = Int32(Double(vx) * Double(bitPattern: 0x3fe6_6666_6666_6666))
+                vy = Int32(Double(vy) * Double(bitPattern: 0x3fe6_6666_6666_6666))
+                timer = -4 - Int32(x.next(4))
+            }
+            if acx < px { vx = -vx }
+            XCTAssertEqual([s.classWord158, s.vx, s.vy, s.classTimer], [vx, vx, vy + 0x5a, timer], "\(aim): \(msg)")
+            XCTAssertEqual(a.rng.seed, x.seed, "\(aim): \(msg)")
+            XCTAssertEqual(a.player.cues.map(\.snd), c.cue ? [613] : [], "\(aim): \(msg)")
+        }
+        // The quirk both ways: player x above the threshold with player y level → "above"; player y far above with
+        // player x past the threshold → the near-range arm (a playerY read would take "above" for this one).
+        try launch(px: above - 1, py: acy, "above", "x one below cy − 0x28")
+        try launch(px: above, py: acy, "near", "x at cy − 0x28: the test is strict")
+        try launch(px: acx, py: acy - 200, "near", "the player 200 px above the frog: y is never read here")
+        // The near range |c.x − P.x| < 0xfb (l. 70366), the player on the right (facing right negates vx).
+        try launch(px: acx + 0xfa, py: acy, "near", "|dx| 0xfa")
+        try launch(px: acx + 0xfb, py: acy, "far", "|dx| 0xfb")
+        // The near-range boost R(100) > 0x50 (l. 70367–70371) and the jump sound R(100) > 0x37 (l. 70334), at their edges.
+        for v in [Int16(0x50), 0x51] {
+            try launch(px: acx, py: acy, seed: seed { r in _ = common(&r); return r.next(100) == v }, "near",
+                       "boost draw \(v)")
+        }
+        for v in [Int16(0x37), 0x38] {
+            try launch(px: acx, py: acy, seed: seed { r in r.next(100) == v }, "near", "jump-sound draw \(v)")
+        }
+
+        // The idle decision (M l. 70406–70446) from the same Frog: `+0x14c` −1 → 0 decides. `+0x17e = c.x < P.x`
+        // (l. 70409–70411: equal x faces left). |dx| < 0xfa → R(100): 10 < R < 0x47 with P.y < c.y − 0x32 → 100 (the
+        // player-above override, which does read playerY, `_DAT_1009fd90`); R < 0x47 with `+0x154 ≥ 0` → R < 8: state 9,
+        // `+0x154 = −3 − R(3)`; else state 2; otherwise state 9. Every branch sets `+0x46 = 0`.
+        func decide(px: Int, py: Int, r v: Int16?, hops: Int32 = 0) throws -> (s: SpriteSlot, draws: FastRand) {
+            a.active.update(id: aid) { $0 = rest; $0.subtype = 0xb; $0.classTimer = -1; $0.classWord154 = hops; $0.phase = 5 }
+            a.player.centreX = Int16(px)
+            a.player.centreY = Int16(py)
+            if let v { a.rng = FastRand(seed: seed { r in r.next(100) == v }) }
+            let x = a.rng
+            frame(a, aid, asolver)
+            return (try slot(a, aid), x)
+        }
+        for (px, py, v, hops, state, msg) in [
+            (acx - 0xfa, acy, Int16?.none, Int32(0), Int16(9), "|dx| 0xfa: far, no draw"),
+            (acx - 0xf9, acy, 0x47, 0, 9, "|dx| 0xf9: near, R 0x47"),
+            (acx, acy - 0x33, 10, 0, 2, "above, R 10: not overridden"),
+            (acx, acy - 0x33, 11, 0, 9, "above, R 11: overridden to 100"),
+            (acx, acy - 0x33, 0x46, 0, 9, "above, R 0x46: overridden"),
+            (acx, acy - 0x32, 0x46, 0, 2, "P.y at c.y − 0x32: not above"),
+            (acx, acy, 8, 0, 2, "R 8: spit"),
+            (acx, acy, 0x46, -1, 9, "`+0x154` −1: state 9"),
+        ] {
+            let (s, x0) = try decide(px: px, py: py, r: v, hops: hops)
+            var x = x0
+            if v != nil { _ = x.next(100) }
+            XCTAssertEqual([Int(s.subtype), Int(s.phase), Int(s.classWord154)], [Int(state), 0, Int(hops)], msg)
+            XCTAssertEqual(a.rng.seed, x.seed, msg)
+        }
+        let (r7, x7) = try decide(px: acx, py: acy, r: 7)
+        var y7 = x7
+        _ = y7.next(100)
+        XCTAssertEqual([Int(r7.subtype), Int(r7.phase), Int(r7.classWord154)], [9, 0, -3 - Int(y7.next(3))], "R 7: hops")
+        XCTAssertEqual(a.rng.seed, y7.seed)
+        XCTAssertFalse(try decide(px: acx, py: acy, r: 0x47).s.mirrored, "c.x == P.x: facing left")
+        XCTAssertTrue(try decide(px: acx + 1, py: acy, r: 0x47).s.mirrored, "c.x < P.x: facing right")
     }
 
     func testFrogSpitAtStep6() throws {
@@ -392,6 +505,21 @@ final class FrogSalamanderTests: XCTestCase {
         XCTAssertEqual(w.player.cues.last, PlayerCue(call: .threeDPitched, snd: r < 0x2e ? 701 : 614, priority: 1,
                                                      volume: 0x100, position: s.centre, rate: rate))
         XCTAssertEqual(blood(w), 0x28, "alive: blood")
+        // HP exactly 1 lives on through a frame (M l. 70448 `+0xa4 < 1`): no state 4, no frogdie.
+        w.active.update(id: id) { $0.hp = 1 }
+        w.player.cues = []
+        frame(w, id, solver)
+        XCTAssertNotEqual(try slot(w, id).subtype, 4, "HP 1: alive")
+        XCTAssertFalse(w.player.cues.contains { $0.snd == 615 })
+        // The hurt sound's draw at its edge (l. 70494 `R(100) < 0x2e`): 0x2d → 701, 0x2e → froghit 614.
+        for v in [Int16(0x2d), 0x2e] {
+            let h = try world()
+            let (hid, _) = try enemy(h)
+            let hs = try other(h, over: hid)
+            h.rng = FastRand(seed: seed { r in r.next(100) == v })
+            FrogSalamander.hitFrog(h, id: hid, other: hs)
+            XCTAssertEqual(h.player.cues.last?.snd, v < 0x2e ? 701 : 614, "draw \(v)")
+        }
         // Airborne (state 10) stays 10; `+0x46 = 3` all the same. A killing shot: no blood.
         w.active.update(id: id) { $0.subtype = 10; $0.invulnerable = 0; $0.hp = 100 }
         let kill = try other(w, over: id, damage: 150)
@@ -441,6 +569,16 @@ final class FrogSalamanderTests: XCTestCase {
         let blast = try other(low, over: lid, type: 0x4b7, handler: .effect) { $0.phase = 0 }
         FrogSalamander.hitFrog(low, id: lid, other: blast)
         XCTAssertEqual(low.player.cues.map(\.snd), [702], "HP 150 < 201: 702")
+        // At the edge (l. 70530 `+0xa4 < 0xc9`): HP 200 after the blast → 702, 201 → 701.
+        for (hp, snd) in [(Int16(300), Int16(702)), (301, 701)] {
+            let e = try world()
+            let (eid, _) = try enemy(e)
+            e.active.update(id: eid) { $0.hp = hp }
+            e.player.cues = []
+            let b = try other(e, over: eid, type: 0x4b7, handler: .effect) { $0.phase = 0 }
+            FrogSalamander.hitFrog(e, id: eid, other: b)
+            XCTAssertEqual(e.player.cues.map(\.snd), [snd], "HP \(hp - 100)")
+        }
         // A Box falling on it from above (`.PlatformBounce` 2, the solid's vy > 0): crushed — HP 0, `+0x150 = 0x16`.
         let c = try world()
         let (cid, _) = try enemy(c)
@@ -472,12 +610,15 @@ final class FrogSalamanderTests: XCTestCase {
         let solver = TileSolver(world: w)
         try settle(w, id, solver, timer: -500)
         XCTAssertEqual(w.enemies.live, 1)
-        w.active.update(id: id) { $0.hp = 0; $0.vx = 1000 }
+        // It dies mid-leap (state 10, `+0x158` 1000): the death frame's state-10 arm stores vx = `+0x158` (l. 70399) before
+        // the HP test, so the dying frames slide from 1000 (the idle arm would zero vx, l. 70407).
+        w.active.update(id: id) { $0.hp = 0; $0.subtype = 10; $0.classWord158 = 1000 }
         var x = w.rng
         let before = try slot(w, id)
         frame(w, id, solver)
         var s = try slot(w, id)
         XCTAssertEqual([Int(s.subtype), Int(s.phase), Int(s.burnRow)], [4, 0, 0])
+        XCTAssertEqual(s.vx, 1000)
         let rate = before.voicePitch + Int32(x.next(10000)) - 5000
         XCTAssertEqual(w.player.cues, [PlayerCue(call: .threeDPitched, snd: 615, priority: 1, volume: 0x100,
                                                  position: before.centre, rate: rate)])
@@ -518,6 +659,13 @@ final class FrogSalamanderTests: XCTestCase {
         let l = try slot(lava, lid)
         XCTAssertTrue(inLava, "the frog stood in the lava")
         XCTAssertEqual([Int(l.hp), Int(l.invulnerable), Int(l.subtype)], [0x15e, 0, 0xb])
+        // `.HitFrogTileSprite`'s liquid branch runs only while `+0x140 == 0` (l. 70634; `.HandleUnderWater` sets it, the
+        // next `.StandardSpriteHandles` clears it): with it set, a lava cell leaves `+0x11c` alone.
+        for done in [true, false] {
+            lava.active.update(id: lid) { $0.waterRow = 0; $0.underwaterDone = done }
+            FrogSalamander.hitFrogTile(ls, id: lid, pos: TilePos(x: 640, y: 16 * 32), kind: 202, layer: .background)
+            XCTAssertEqual(try slot(lava, lid).waterRow != 0, !done, "`+0x140` \(done)")
+        }
     }
 
     // MARK: - the Salamander
@@ -550,7 +698,17 @@ final class FrogSalamanderTests: XCTestCase {
         try settle(w, id, solver)
         let x0 = try slot(w, id).x
         // State 0xc (l. 70826–70846): `+0x14c + 1 ≥ 0` and |dx| < 250 → `+0x46 = 0`, face 1, state 10, vy = −0xc80 −
-        // R(700).
+        // R(700). At the edges (l. 70833, l. 70838), from the settled Salamander restored each time:
+        let rest = try slot(w, id)
+        for (timer, dx, leaps) in [(Int32(-2), -100, false), (-1, -0xf9, true), (-1, -0xfa, false), (-1, 0xf9, true),
+                                   (-1, 0xfa, false)] {
+            w.active.update(id: id) { $0 = rest; $0.classTimer = timer }
+            w.player.centreX = Int16(rest.centre.x + dx)
+            frame(w, id, solver)
+            XCTAssertEqual(try slot(w, id).subtype, leaps ? 10 : 0xc, "`+0x14c` \(timer) + 1, dx \(dx)")
+        }
+        w.active.update(id: id) { $0 = rest }
+        w.player.centreX = 450
         x = w.rng
         let pre = try slot(w, id)
         frame(w, id, solver)
@@ -586,9 +744,9 @@ final class FrogSalamanderTests: XCTestCase {
         XCTAssertEqual(try slot(w, id).x, x0, "the Salamander never moves sideways")
         // k ≥ 6 (`+0x46` 18): R(10) < 7 → `+0x46 = 0` (then + 1), `+0x14c = −10 − R(10)` — the pause (face 0, `+0x46`
         // 0, `+0x14c + 1` a frame) then another fireball; else `+0x14c = −10 − R(10)`, state 0xb, face 1, vy = −0x708 −
-        // R(600).
-        let again = seed { r in r.next(10) < 7 }
-        let hop = seed { r in 7 <= r.next(10) }
+        // R(600). The draw at its edge (l. 70770 `R(10) < 7`): 6 spits again, 7 hops.
+        let again = seed { r in r.next(10) == 6 }
+        let hop = seed { r in r.next(10) == 7 }
         for (sd, spits) in [(again, true), (hop, false)] {
             w.active.update(id: id) { $0.subtype = 2; $0.phase = 18; $0.classTimer = 0 }
             w.rng = FastRand(seed: sd)
@@ -612,6 +770,19 @@ final class FrogSalamanderTests: XCTestCase {
             }
             XCTAssertEqual(w.rng.seed, x.seed)
         }
+        // Facing right (the player on the right: state 2 sets `+0x17e = c.x < P.x`, l. 70741): the fireball at c.x + 0x3c
+        // − 0x2d (l. 70757), vx 2000.
+        let r = try world(px: 1200)
+        let (rid, _) = try enemy(r, type: 0x712, x: 600, y: 500)
+        let rs = TileSolver(world: r)
+        try settle(r, rid, rs, timer: 0)
+        r.active.update(id: rid) { $0.subtype = 2; $0.phase = 12 }
+        let rb = try slot(r, rid)
+        frame(r, rid, rs)
+        XCTAssertTrue(try slot(r, rid).mirrored)
+        let fb = try XCTUnwrap(enemyShots(r).first)
+        XCTAssertEqual(fb.oldPosition, SpriteSlot.Point(x: rb.centre.x + 0x3c - 0x2d, y: rb.centre.y - 0x19))
+        XCTAssertEqual(fb.vx, 2000)
     }
 
     func testSalamanderWater() throws {
@@ -631,7 +802,10 @@ final class FrogSalamanderTests: XCTestCase {
                 frame(w, id, solver)
                 n += 1
                 let s = try slot(w, id)
-                guard s.subtype != 10 else { continue }
+                guard s.subtype != 10 else {
+                    XCTAssertEqual(s.gravity, 0xaa, "the leap's gravity (l. 70800)")
+                    continue
+                }
                 XCTAssertEqual(s.face?.index, 0)
                 if deep {
                     XCTAssertEqual(s.waterRow, 1)
@@ -643,6 +817,19 @@ final class FrogSalamanderTests: XCTestCase {
                 if waterRow == nil || deep { XCTAssertEqual(w.rng.seed, x.seed) }
             }
             XCTAssertNotEqual(try slot(w, id).subtype, 10)
+        }
+        // The landing's depth test reads `+0x11c` as stored (l. 70803 `== 0 || 1 < +0x11c`): depth 2 (the surface 2 px
+        // below the sprite's top) lands like a dry one. The FG floor here only gives the landing depths 1, 9, 41 and 73,
+        // so the state arm is called directly on a grounded state-10 record.
+        for (depth, state) in [(Int32(0), Int16(2)), (1, 0xc), (2, 2)] {
+            let w = try world(px: 450)
+            let (id, _) = try enemy(w, type: 0x712)
+            var s = try slot(w, id)
+            s.subtype = 10
+            s.groundKind = 1
+            s.waterRow = depth
+            FrogSalamander.salamanderState(w, id: id, &s)
+            XCTAssertEqual([Int(s.subtype), s.face?.index ?? -1], [Int(state), 0], "depth \(depth)")
         }
         // The dead water block (§2.2, §7.4): lava (kind 2) costs nothing, standing in it fully submerged.
         let lava = try world(px: 1800, waterRow: 10, liquid: 2)
@@ -724,6 +911,17 @@ final class FrogSalamanderTests: XCTestCase {
         XCTAssertEqual([s.vx, s.vy], [Int32(1000 >> 5), Int32(-200 >> 3)])
         XCTAssertEqual(w.player.cues, [PlayerCue(call: .threeD, snd: 701, priority: 1, volume: 0x100, position: s.centre)])
         XCTAssertEqual(blood(w), 0x28)
+        // HP exactly 1 lives on through a frame (l. 70847 `+0xa4 < 1`); HP 0 → state 4, `+0x46 = 0`, no sound.
+        let ss = TileSolver(world: w)
+        for (hp, dies) in [(Int16(1), false), (0, true)] {
+            w.active.update(id: id) { $0.hp = hp; $0.phase = 7; $0.subtype = 0xc; $0.classTimer = -500 }
+            w.player.cues = []
+            FrogSalamander.handleSalamander(world: w, id: id, solver: ss)
+            let t = try slot(w, id)
+            XCTAssertEqual([Int(t.subtype), Int(t.phase)], dies ? [4, 0] : [0xc, 7], "HP \(hp)")
+            XCTAssertEqual(w.player.cues, [])
+        }
+        w.active.update(id: id) { $0.hp = 350 }
         // Dying (state 4) and hit again: hurt all the same; HP 150 → 702; `+0xa6` already ≥ 2 stays.
         w.active.update(id: id) { $0.subtype = 4; $0.invulnerable = 0; $0.counterA6 = 5 }
         w.player.cues = []
@@ -737,6 +935,15 @@ final class FrogSalamanderTests: XCTestCase {
         let blast = try other(w, over: id, type: 0x4b7, handler: .effect) { $0.phase = 0 }
         FerazelSession.hitCallback(w, id, blast)
         XCTAssertEqual(try slot(w, id).hp, 150)
+        // At the edge (l. 70889 `+0xa4 < 0xc9`): HP 200 after the hit → 702, 201 → 701.
+        for (hp, snd) in [(Int16(350), Int16(702)), (351, 701)] {
+            let e = try world()
+            let (eid, _) = try enemy(e, type: 0x712)
+            e.active.update(id: eid) { $0.hp = hp }
+            e.player.cues = []
+            FerazelSession.hitCallback(e, eid, try other(e, over: eid, damage: 150))
+            XCTAssertEqual(e.player.cues.map(\.snd), [snd], "HP \(hp - 150)")
+        }
         // The Statue spell: `.TurnIntoStatue`. The Kill proc `.KillSalamander` (M l. 70913–70937): the count; score
         // + 400 only while `+0xe9 == 0`; `+0xe9 = +0xea = 1`.
         let u = try world()

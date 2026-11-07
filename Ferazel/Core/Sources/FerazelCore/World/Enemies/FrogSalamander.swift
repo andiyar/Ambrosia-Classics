@@ -61,9 +61,9 @@ public enum FrogSalamander {
     /// HP 500; `+0xb0 = 0xb`; `+0x14c = −0x14 − R(0x1e)`; `+0xc ← +8`, `+0xa ← +6`; rect SetRect(0xb, 0x14, 0x48,
     /// 0x49); `+0x150 = −1`; `+0xa6 = 0`; gravity 0x8c; `+0x15c` = the live record's p1; `+0xf0 = R(0x5fff)·2 +
     /// 0xbfff`; by p1 (HP, `+0xb8`): 0 (0x15e, 0), 1 (500, 0x1000c), 2 (0x15e, 0x10017), 3 (0x5dc, 0x1000f), 4 (1000,
-    /// 0x1000b), any other none; hdr+0x26cd ≠ 0 (`freezing`) → `+0x8e = 1`; the set 0x708 marked and `+0xc0` = its
+    /// 0x1000b), any other none; hdr+0x26cd ≠ 0 (`inLiquid`) → `+0x8e = 1`; the set 0x708 marked and `+0xc0` = its
     /// face 0 (the caller's); the counting window; the 24.8 position from `+8` / `+6`. No save flag.
-    public static func setupFrog(_ s: inout SpriteSlot, record p: Placement, freezing: Bool, rng: inout FastRand,
+    public static func setupFrog(_ s: inout SpriteSlot, record p: Placement, inLiquid: Bool, rng: inout FastRand,
                                  counting: inout EnemyCounting) {
         s.particleOffsetY = 0
         s.particleOffsetX = 0
@@ -92,7 +92,7 @@ public enum FrogSalamander {
         case 4: s.hp = 1000; s.mode = 0x1000b
         default: break
         }
-        if freezing { s.burnStyle = true }                              // `+0x8e = 1` (M l. 70207–70208)
+        if inLiquid { s.burnStyle = true }                              // `+0x8e = 1` (M l. 70207–70208)
         counting.countIfWindow(&s)                                      // M l. 70212–70215
         s.x256 = Int32(Int16(truncatingIfNeeded: s.oldPosition.x)) << 8
         s.y256 = Int32(Int16(truncatingIfNeeded: s.oldPosition.y)) << 8
@@ -121,7 +121,7 @@ public enum FrogSalamander {
         s.classWord150 = -1
         s.counterA6 = 0
         s.gravity = 0x8c
-        counting.countIfWindow(&s)                                      // M l. 70692–70698
+        counting.countIfWindow(&s)                                      // M l. 70695–70698
         s.x256 = Int32(Int16(truncatingIfNeeded: s.oldPosition.x)) << 8
         s.y256 = Int32(Int16(truncatingIfNeeded: s.oldPosition.y)) << 8
     }
@@ -187,9 +187,10 @@ public enum FrogSalamander {
     /// - 4 (dying): vx × 0.9; face 4; `+0x1a2 < 1` → 1 (the burn, from the Cleanup).
     /// - 9 (crouch): face min(`+0x46 / 3`, 2), vx 0; `+0x46 > 7` → the launch: face 3, state 10; R(100) > 0x37 →
     ///   frogjump 613 (vol 0x80, the frog's pitch); `+0xce = 0`; vx = −0x28a − R(200), vy = −0x514 − R(400); `+0x154 <
-    ///   0` → + 1 and `+0x14c = 0`, else `+0x14c = −10 − R(10)`; the aim: P.y < c.y − 0x28 → vy −= R(0x96) + 200; else
-    ///   |c.x − P.x| < 0xfb → R(100) > 0x50 → vy −= 0x15e, vx −= 200; else vx, vy × 0.7 and `+0x14c = −4 − R(4)`;
-    ///   gravity 0x5a; facing right → vx = −vx; `+0x158 = vx`. `+0x46` + 1.
+    ///   0` → + 1 and `+0x14c = 0`, else `+0x14c = −10 − R(10)`; the aim: ⚑ P.x < c.y − 0x28 (playerX against the
+    ///   centre y, M l. 70358) → vy −= R(0x96) + 200; else |c.x − P.x| < 0xfb → R(100) > 0x50 → vy −= 0x15e, vx −=
+    ///   200; else vx, vy × 0.7 and `+0x14c = −4 − R(4)`; gravity 0x5a; facing right → vx = −vx; `+0x158 = vx`.
+    ///   `+0x46` + 1.
     /// - 10 (airborne): face 3 while vy < 0, else 4; vx = `+0x158`; gravity 0x5a; on ground → face 5, state 0xb.
     /// - 0xb (idle): vx 0; `+0x14c` + 1; `+0x17e = c.x < P.x` (signed); face 0; `+0x14c ≥ 0`: |c.x − P.x| < 0xfa → R =
     ///   R(100); 10 < R < 0x47 with P.y < c.y − 0x32 → R = 100; R < 0x47 with `+0x154 ≥ 0` → R < 8: state 9, `+0x154
@@ -234,7 +235,11 @@ public enum FrogSalamander {
                     s.classTimer = -10 - Int32(w.rng.next(10))
                 }
                 let cx = h16(s.centre.x), cy = h16(s.centre.y)
-                if py < cy - 0x28 {
+                // ⚑ The "player above" test reads the player's centre X against the frog's centre y − 0x28, as written
+                // (M l. 70358, `puVar1 = _DAT_1009fd94` = playerX, l. 70242; raw `1008215c lwz r30,-0x7aac(r2)`,
+                // `100824b8 lha r3,0xe(r29)`, `100824bc lha r4,0x0(r30)`, `100824c0 subi r0,r3,0x28`, `100824c4 cmpw
+                // r4,r0`); the idle state reads playerY through the other slot (`10082314 lwz r5,-0x7ab0(r2)`).
+                if px < cy - 0x28 {
                     s.vy &-= Int32(w.rng.next(0x96)) + 200
                 } else if abs32(cx - px) < 0xfb {
                     if 0x50 < w.rng.next(100) {
@@ -539,7 +544,7 @@ public enum FrogSalamander {
         let runs = BackgroundSprite.runs
         if runs(o, .playerShot) && o.counterA6 == 0 {
             PlayerShotHits.kill(w, shot: oID, sound: false, effect: false, effects: effects, lights: &lights,
-                                faceWidth: faceWidth, faceBounds: faceBounds, staleSlot: nil)
+                                faceWidth: faceWidth, faceBounds: faceBounds, staleSlot: nil) // nil: unverified [LOW]
             guard let shot = w.active.record(id: oID) else { return }
             if shot.type == 1 {
                 EnemyCommon.turnIntoStatue(w, id: id)

@@ -210,6 +210,14 @@ Gravity: 140 until first ground contact; **400** while touching FG ground (`.Hit
 - **4 dying**: `vx ×= 0.9` (double `0x100a1bd0`, `@100827bc..100827f0`); face 4;
   `+0x1a2 = max(+0x1a2, 1)` → burn dissolve (§0.3), then `.KillFrog`.
 
+⚑ run 43 (FR) correction: the launch's first aim test reads **playerX**, not playerY — "playerX < frog cy − 40"
+(the player's centre x against the frog's centre y; a quirk or bug of the original, ported as written). M l. 70358
+`(int)(short)*puVar1 < *(short *)(param_1 + 0xe) + -0x28` with `puVar1 = _DAT_1009fd94` (M l. 70242, playerX); raw
+`1008215c lwz r30,-0x7aac(r2)` (the playerX slot), `100824b8 lha r3,0xe(r29)`, `100824bc lha r4,0x0(r30)`,
+`100824c0 subi r0,r3,0x28`, `100824c4 cmpw r4,r0`. The idle state's "playerY < cy − 50" does read playerY (the other
+slot, `10082314 lwz r5,-0x7ab0(r2)` = `_DAT_1009fd90`). So a player left of x ≈ cy − 40 always draws the high hop,
+whatever their height.
+
 ### 1.4 Spit (enemy shot type 0x709 = 1801)  [HIGH]
 `MTNewSprite(0x709, cx + flip·90 − 45, cy − 20, layer + 1, −1, .SetupEnemyShotSprite)`
 (`@100826c8..100826f8`), `vx = +2000` if facing right else −2000 (`@1008270c/18`). The p1 switch

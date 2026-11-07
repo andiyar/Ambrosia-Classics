@@ -1187,9 +1187,11 @@ records the summary line.
   golden route (a temporary print over `Phase2GoldenTests` and `FrameGoldenTests` saw none — the level-2 Frogs start
   idled), so no golden moved and the Windows references are untouched; with the Frog's Handle and Hit stubbed the
   goldens pass unchanged. One Frog (level 3 or 4, rec 161) runs one Handle in `BootFacesTests`' 120-frame sessions and
-  turns to face the player: no pinned row reads the flip. No dump-vs-bank contradiction; two bank omissions, not
-  corrected: the Salamander's idle exit also sets `+0x46 = 0` (M l. 70839), and its spit restart sets `+0x46 = 0` then
-  `+ 1` (M l. 70771, 70785). A headless session has no face pixels, so the burn — and with it every Frog / Salamander
+  turns to face the player: no pinned row reads the flip. One dump-vs-bank contradiction, found by the spec review and fixed in the fix round: the launch's
+  first aim test reads playerX, not the bank's playerY (M l. 70358, `_DAT_1009fd94`, l. 70242; raw `100824bc lha
+  r4,0x0(r30)`, r30 = `-0x7aac(r2)` at `1008215c`) — ported as written, bank §1.3 corrected (⚑ run 43). Two bank
+  omissions, not corrected: the Salamander's idle exit also sets `+0x46 = 0` (M l. 70839), and its spit restart sets `+0x46 = 0` then
+  `+ 1` (M l. 70771, 70784). A headless session has no face pixels, so the burn — and with it every Frog / Salamander
   death — never ends there (EC's burn rule, `Burn.handle`'s guard).
 
 #### BL — ⚑ MAJOR — Blob and Crab; the Multi Crystal's Blob-attacker exception (→ 583)

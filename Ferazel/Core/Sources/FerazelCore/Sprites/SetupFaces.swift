@@ -587,7 +587,7 @@ public enum SetupFaces {
             // (l. 70211).
             guard (0x708...0x711).contains(t) else { throw Error.notTranscribed(type: p.type) }
             s.oldPosition = SpriteSlot.Point(x: s.x, y: s.y)           // `.MTNewSprite`'s `+8` / `+6`
-            FrogSalamander.setupFrog(&s, record: p, freezing: c.level.header.inLiquid != 0, rng: &rng,
+            FrogSalamander.setupFrog(&s, record: p, inLiquid: c.level.header.inLiquid != 0, rng: &rng,
                                      counting: &counting)
             face(FrogSalamander.frogSet, 0, .setupCached)               // `+0xc0 = cache 0x708 + 4` (l. 70211)
 
