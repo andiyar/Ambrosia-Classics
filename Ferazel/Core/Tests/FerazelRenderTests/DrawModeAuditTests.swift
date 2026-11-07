@@ -198,8 +198,8 @@ final class DrawModeAuditTests: XCTestCase {
         W("Particles/Burn.swift:60", .clipTop, .range(1...0x100), "any", at: ["45", "50"],
           pins: ["s.burnRow = top", "s.burnRow &+= 1"]),
         // EC: the ground enemies' liquid hurt flash (`EnemyCommon.liquids`: 0xc for the Walker in water, else 0x11).
-        W("World/Enemies/EnemyCommon.swift:237", .flash, .range(0xc...0x11), "walker", "crawler", "roach", "dillo",
-          at: ["223", "228", "229", "230"], pins: ["(0xc, 0x96, 0xc)", "(0x13, 100, 0x11)"]),
+        W("World/Enemies/EnemyCommon.swift:238", .flash, .range(0xc...0x11), "walker", "crawler", "roach", "dillo",
+          "blob", at: ["224", "229", "230", "231"], pins: ["(0xc, 0x96, 0xc)", "(0x13, 100, 0x11)"]),
         // ES: the enemy shots — the egg's random facing (`R(100) > 0x32`) and its flash every 45 frames, the Warrior
         // shot's facing by vx, the Wraith shot's tint by age (`.HandleEnemyShotSprite` M l. 51711–51723).
         // BA: the Bat class — the spitters' tint 0x1000c (0x6ce / 0x73c retyped), the insects' 0xb0004, the swarm
@@ -237,6 +237,29 @@ final class DrawModeAuditTests: XCTestCase {
         W("World/Enemies/FrogSalamander.swift:361", .flash, .range(0x11...0x11), "salamander"),
         W("World/Enemies/FrogSalamander.swift:398", .mirrored, .flags([false, true]), "salamander"),
         W("World/Enemies/FrogSalamander.swift:443", .mirrored, .flags([false, true]), "salamander"),
+        // BL: the Blob's type tints (`.SetupBlobSprite` M l. 67699–67718), its facing by the player's side and state 6's
+        // face-left (M l. 67792–67797, 67886), the dead puddle's flash reset and translucency steps (`.HandleDeadBlobSprite`
+        // M l. 67744, 67749–67757); the Crab's water tint on the claw and the links (`.SetupCrabSprite` M l. 74054–74065),
+        // the 0x763's flip and the claw's face rotation, the angle wrapped into 0…359 (`.HandleCrabSprite` M l.
+        // 74230–74256).
+        W("World/Enemies/BlobCrab.swift:66", .mode, .words([0x1000c]), "blob"),
+        W("World/Enemies/BlobCrab.swift:67", .mode, .words([0]), "blob"),
+        W("World/Enemies/BlobCrab.swift:68", .mode, .words([0x10004]), "blob"),
+        W("World/Enemies/BlobCrab.swift:69", .mode, .words([0x1000f]), "blob"),
+        W("World/Enemies/BlobCrab.swift:113", .mirrored, .flags([true]), "blob"),
+        W("World/Enemies/BlobCrab.swift:115", .mirrored, .flags([false]), "blob"),
+        W("World/Enemies/BlobCrab.swift:197", .mirrored, .flags([false]), "blob"),
+        W("World/Enemies/BlobCrab.swift:245", .flash, .range(0...0), "blob.dead"),
+        W("World/Enemies/BlobCrab.swift:248", .mode, .words([0xb0001]), "blob.dead"),
+        W("World/Enemies/BlobCrab.swift:249", .mode, .words([0xb0000]), "blob.dead"),
+        W("World/Enemies/BlobCrab.swift:250", .mode, .words([0xb0002]), "blob.dead"),
+        W("World/Enemies/BlobCrab.swift:368", .mode, .words([0x90000]), "crab"),
+        W("World/Enemies/BlobCrab.swift:392", .mode, .words([0x90000]), "crab.link"),
+        W("World/Enemies/BlobCrab.swift:478", .mirrored, .flags([true]), "crab"),
+        W("World/Enemies/BlobCrab.swift:479", .rotation, .range(0...359), "crab", at: ["472", "474"],
+          pins: ["(Int(s.phase) + 0xb4) % 0x168", "s.phase &+= 0x168", "s.phase &-= 0x168"]),
+        W("World/Enemies/BlobCrab.swift:481", .rotation, .range(0...359), "crab", at: ["472", "474"],
+          pins: ["s.rotation = s.phase", "s.phase &+= 0x168", "s.phase &-= 0x168"]),
         W("World/Enemies/EnemyShot.swift:154", .mirrored, .flags([false, true]), "enemyShot.egg"),
         W("World/Enemies/EnemyShot.swift:314", .mode, .words([0xb0002, 0xb0000, 0xb0001, 0]), "enemyShot.wraith"),
         W("World/Enemies/EnemyShot.swift:339", .mirrored, .flags([false, true]), "enemyShot.warrior"),
@@ -302,14 +325,14 @@ final class DrawModeAuditTests: XCTestCase {
         W("Player/HitPlayerSprite.swift:96", .flash, .range(0xc...0xc), "player"),
         W("Player/HitPlayerSprite.swift:911", .flash, .range(0x1e...0x1e), "player"),
         // `.HurtSprite`'s callers: the player's two (0xc) and, from WK1, the Walker's Hit and its `.HurtGoblin`s (8).
-        W("Player/HitPlayerSprite.swift:1191", .flash, .range(8...0xc), "player", "walker", "crawler", "roach", "bat",
-          "bat.swarmMember", "frog", "salamander",
-          at: ["1043", "1173", "World/Enemies/Walker.swift:827", "World/Enemies/Walker.swift:851",
+        W("Player/HitPlayerSprite.swift:1193", .flash, .range(8...0xc), "player", "walker", "crawler", "roach", "bat",
+          "bat.swarmMember", "frog", "salamander", "blob",
+          at: ["1044", "1175", "World/Enemies/Walker.swift:827", "World/Enemies/Walker.swift:851",
                "World/Enemies/Walker.swift:856", "World/Enemies/CrawlerRoach.swift:453",
                "World/Enemies/CrawlerRoach.swift:459", "World/Enemies/CrawlerRoach.swift:480",
                "World/Enemies/CrawlerRoach.swift:486", "World/Enemies/Bat.swift:662", "World/Enemies/Bat.swift:699",
                "World/Enemies/FrogSalamander.swift:502", "World/Enemies/FrogSalamander.swift:513",
-               "World/Enemies/FrogSalamander.swift:552"],
+               "World/Enemies/FrogSalamander.swift:552", "World/Enemies/BlobCrab.swift:291"],
           pins: ["flash: 0xc", "flash: 8", "flash: 10"]),
         W("Player/Player.swift:126", .mirrored, .flags([false, true]), "player"),
         W("Player/Player.swift:332", .mirrored, .flags([false, true]), "player"),
@@ -353,15 +376,14 @@ final class DrawModeAuditTests: XCTestCase {
         W("Shots/PlayerShot.swift:474", .mode, .words([0x10004]), "shot.gravity"),        // the seed (gravity 0xfa)
         W("Shots/PlayerShotHits.swift:109", .mode, .words([0x10004]), "shot.gravity"),    // the seed
         W("Shots/PlayerShotHits.swift:221", .flash, .range(10...10), "box"),
-        W("Sprites/SetupFaces.swift:380", .mirrored, .flags([true]), "background.plant"),
-        W("Sprites/SetupFaces.swift:381", .mode, .placedTint(0xa8c...0xaef), "background.plant",
+        W("Sprites/SetupFaces.swift:383", .mirrored, .flags([true]), "background.plant"),
+        W("Sprites/SetupFaces.swift:384", .mode, .placedTint(0xa8c...0xaef), "background.plant",
           pins: ["if p.p2 != 0 { s.mode = UInt32(truncatingIfNeeded: Int(p.p2) + 0x10000) }"]),
-        W("Sprites/SetupFaces.swift:432", .mode, .words([0x90000]), "box.teleporter"),
-        W("Sprites/SetupFaces.swift:450", .mode, .words([0x90000]), "box.chest"),
-        W("Sprites/SetupFaces.swift:576", .mode, .words([0]), "blob"),
-        W("Sprites/SpriteSlot.swift:521", .mode, .words([0]), "platform.raft", "box.boulder", "background.maceBall",
+        W("Sprites/SetupFaces.swift:435", .mode, .words([0x90000]), "box.teleporter"),
+        W("Sprites/SetupFaces.swift:453", .mode, .words([0x90000]), "box.chest"),
+        W("Sprites/SpriteSlot.swift:536", .mode, .words([0]), "platform.raft", "box.boulder", "background.maceBall",
           "chain.maceChain"),
-        W("Sprites/SpriteSlot.swift:523", .mode, .levelLight, "platform.raft", "box.boulder", "background.maceBall",
+        W("Sprites/SpriteSlot.swift:538", .mode, .levelLight, "platform.raft", "box.boulder", "background.maceBall",
           "chain.maceChain", pins: ["mode = UInt32(truncatingIfNeeded: L * 0x100 + 0xc0000 + F)"]),
         // (angle >> 8) + 0x5a with the angle wrapped into 0…0x167ff (`RadialMotion.updatePosition`), − 360 once.
         W("World/Movers/BackgroundSprite.swift:194", .rotation, .range(0...359), "background.maceBall", at: ["192", "193"],

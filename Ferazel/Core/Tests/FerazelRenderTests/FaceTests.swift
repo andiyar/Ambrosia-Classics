@@ -606,6 +606,18 @@ final class FaceTests: XCTestCase {
         XCTAssertEqual(salamander.count, 9)
         XCTAssertNil(one.sprites.faces.face(FaceRef(pict: 0x712, index: 0, set: .encoded)), "level 1 places no salamander")
         XCTAssertNil(one.sprites.faces.face(FaceRef(pict: 0x708, index: 0, set: .encoded)), "level 1 places no frog")
+        // BL: the Blob Handle faces all 16 cells of its cache set 0x6c2 on levels 3 and 4 (below; its Setup marks it for
+        // every type 0x6c2…0x6cb). The Crab's claw set 0x762 (6 cells) and its links' single 0x767 (the spawned type
+        // 0x767's face, `.HandleCrabSegSprite`) load only where a Crab Setup marks them — first placed on level 62: the
+        // data holds them, no level-1 renderer loads them.
+        for (p, cells) in [(BlobCrab.clawSet, 6), (BlobCrab.linkFace, 1)] {
+            let sh = try XCTUnwrap(SetupFaces.sheet(pict: p))
+            XCTAssertNotNil(r.resource(type: "PICT", id: p, chain: .frontEnd), "Crab PICT \(p)")
+            XCTAssertEqual(sh.count, cells, "Crab PICT \(p) cells")
+            XCTAssertNil(one.sprites.faces.face(FaceRef(pict: p, index: 0, set: .encoded)), "level 1 places no crab")
+        }
+        XCTAssertEqual(CachedFaces.sheets(markedBy: [BlobCrab.crab]).map(\.pict), [0x762, 0x767])
+        XCTAssertNil(one.sprites.faces.face(FaceRef(pict: 0x6c2, index: 0, set: .encoded)), "level 1 places no blob")
         // The drops of every chest and crate on levels 1–4 and the key faces their locks show — each in its own
         // level's renderer. The original loads every Bonus face at boot (`.InitBonusSprite` M l. 52261–52337); the
         // replica's per-level load (`BoxSprite.dropSheets`) is a seam, so the faces are named here, not derived from it.
@@ -624,6 +636,7 @@ final class FaceTests: XCTestCase {
             want("level \(n) balloon", BoxSprite.balloon, in: frame)
             if 1 < n { want("level \(n) bat set", Bat.batSet, cells: 11, in: frame) }
             if 1 < n { want("level \(n) frog set", FrogSalamander.frogSet, cells: 8, in: frame) }
+            if 2 < n { want("level \(n) blob set", BlobCrab.blobSet, cells: 16, in: frame) }
             for k in keys[n]! { want("level \(n) key face", k, in: frame) }
             for (pict, cells) in drops[n]! { want("level \(n) drop", pict, cells: cells, in: frame) }
             for sh in BoxSprite.dropSheets(frame.level.placements) {

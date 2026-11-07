@@ -563,8 +563,19 @@ public final class FerazelSession {
             FrogSalamander.handleSalamander(world: world, id: id, solver: solver) {
                 Self.frameRect($0, resources: res).right
             }
-        case .dillo, .gremlin, .floater,
-             .blob, .deadBlob, .crab, .crabSegment, .geyserSegment, .warrior:
+        case .blob:
+            // `.HandleBlobSprite @ 1007d044` (BL, `BlobCrab.handleBlob`).
+            BlobCrab.handleBlob(world: world, id: id, solver: solver) { Self.frameRect($0, resources: res).right }
+        case .deadBlob:
+            // `.HandleDeadBlobSprite @ 1007cf64` (BL): no `+0xe9` test, no motion; its `+0x5c` is 0.
+            BlobCrab.handleDeadBlob(world: world, id: id)
+        case .crab:
+            // `.HandleCrabSprite @ 10089828` (BL, `BlobCrab.handleCrab`): the claw and its links' places.
+            BlobCrab.handleCrab(world: world, id: id) { Self.frameRect($0, resources: res).right }
+        case .crabSegment:
+            // `.HandleCrabSegSprite @ 10089dec` (BL): the face only; no hit (`+0x5c` 0).
+            BlobCrab.handleCrabSegment(world: world, id: id)
+        case .dillo, .gremlin, .floater, .geyserSegment, .warrior:
             // EC: the enemy Handles — the `+0x1b2` early return, then each a named no-op until its task
             // (`EnemyCommon.handle`).
             EnemyCommon.handle(world: world, id: id)
@@ -1139,7 +1150,8 @@ public final class FerazelSession {
     /// the stalactite's shot case; BX1 the rest; SW: a Statue's hit is the Box class's, `.TurnIntoStatue`);
     /// `.HitButtonSprite` (BT); `.HitEnemyShotSprite` (ES); `.HitWalkerSprite` (WK1; also the corpse raft's, kept
     /// under the Platform Handle); `.HitCrawlerSprite` / `.HitRoachSprite` (CR); `.HitBatSprite` /
-    /// `.HitSwarmMemberSprite` (BA); `.HitFrogSprite` / `.HitSalamanderSprite` (FR). // later: Phase 5 (the other enemy
+    /// `.HitSwarmMemberSprite` (BA); `.HitFrogSprite` / `.HitSalamanderSprite` (FR); `.HitBlobSprite` / `.HitCrabSprite`
+    /// (BL). // later: Phase 5 (the other enemy
     /// classes). The session's form:
     /// `hitCallback` on `lightTable`.
     private func hit(_ w: SpriteWorld, _ a: Int, _ b: Int) {
@@ -1186,6 +1198,13 @@ public final class FerazelSession {
         case .salamander:                                                               // `.HitSalamanderSprite` (FR)
             FrogSalamander.hitSalamander(w, id: a, other: b, lights: &lights, effects: effects, faceWidth: faceWidth,
                                          faceBounds: faceBounds)
+        case .blob:                                                                     // `.HitBlobSprite` (BL)
+            BlobCrab.hitBlob(w, id: a, other: b, lights: &lights, effects: effects, faceWidth: faceWidth,
+                             faceBounds: faceBounds)
+        case .crab:                                                                     // `.HitCrabSprite` (BL)
+            BlobCrab.hitCrab(w, id: a, other: b, lights: &lights, effects: effects, faceWidth: faceWidth,
+                             faceBounds: faceBounds)
+            // The dead Blob (`+0x5c` cleared in state 4) and the Crab's links (`+0x5c` 0) have no hit callback.
         case .background:                                                               // `.HitBackgroundSprite` (W2b)
             BackgroundSprite.hit(w, id: a, other: b, lights: &lights, effects: effects, faceWidth: faceWidth,
                                  faceBounds: faceBounds)

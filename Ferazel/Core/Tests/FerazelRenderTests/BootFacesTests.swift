@@ -176,6 +176,16 @@ final class BootFacesTests: XCTestCase {
         }
         XCTAssertNotNil(boot[0x454])
         XCTAssertNotNil(boot[0x455])
+        // BL: `.InitBlobSprite`'s 0x6c2 (M l. 67666) and `.InitCrabSprite`'s set 0x762 and single 0x767 (M l.
+        // 73964–73965) are level-load caches, defined once in the Setup-face table; the spawned link type 0x767 faces
+        // from that single.
+        for p in [BlobCrab.blobSet, BlobCrab.clawSet, BlobCrab.linkFace] {
+            XCTAssertNil(boot[p], "cache PICT \(p)")
+            XCTAssertNotNil(SetupFaces.sheet(pict: p), "cache PICT \(p) geometry")
+            XCTAssertFalse(CachedFaces.handleSets.contains { $0.pict == p }, "cache PICT \(p) defined twice")
+        }
+        XCTAssertEqual(SetupFaces.sheet(pict: BlobCrab.linkFace), .single(0x767))
+        XCTAssertEqual(CachedFaces.sheets(markedBy: [BlobCrab.linkType]).map(\.pict), [0x762, 0x767])
     }
 
     /// Levels 1–4: every boot face the data holds, every class sheet Core declares and every Setup sheet of the level's
@@ -294,11 +304,13 @@ final class BootFacesTests: XCTestCase {
         // (counts unchanged): level 3's path bat 1741 (rec 189) runs one Handle at frame 1 before it idles — its
         // animation takes `+0xa6` 1 → 2, face 0x6cc cell 0 → 1 (M l. 68826–68832), which its idle entry keeps; with that
         // one type's Handle switched back off (every other Bat's left on) the CR values return (was 0xd4f7e113045d39a2 /
-        // 0x5a2e3d4e64f7c1ee).
+        // 0x5a2e3d4e64f7c1ee). BL (run 44) re-pinned L3 f30 / f120 (counts unchanged): the level-3 Blob rec 15 runs one
+        // Handle at start then idles (BL, run 44); with the Blob Handle stubbed (switch-off check) every old value
+        // returned — was f30 0x07212368c70e3f4a, f120 0x521fd141e046a4d6; now 0x56a7ccb0dd544488 / 0xc43bacea46d2ff94.
         let pinned: [String: (rows: Int, fnv: UInt64)] = [
             "L1 init": (190, 0x157d6742ce800e1f), "L1 f30": (240, 0x8190d7eb68896260), "L1 f120": (240, 0xcda33ae9706a4618),
             "L2 init": (229, 0x8fb8d314f8d35783), "L2 f30": (278, 0x7e9c0511f07e745d), "L2 f120": (278, 0x35c9c2eb3280e4b0),
-            "L3 init": (234, 0x9ee49e49aaa668a4), "L3 f30": (310, 0x07212368c70e3f4a), "L3 f120": (310, 0x521fd141e046a4d6),
+            "L3 init": (234, 0x9ee49e49aaa668a4), "L3 f30": (310, 0x56a7ccb0dd544488), "L3 f120": (310, 0xc43bacea46d2ff94),
             "L4 init": (264, 0x1d9360dec485c68b), "L4 f30": (342, 0x96ede8588083992a), "L4 f120": (342, 0xc6e32956a351c41f),
         ]
         func rect(_ x: IdleSprites.Rect) -> String { "(\(x.top),\(x.left),\(x.bottom),\(x.right))" }

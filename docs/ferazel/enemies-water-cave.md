@@ -390,6 +390,11 @@ and no shipped crab is in water (§7.3); links: `n = min((reach + 23)/24, 12)` s
 zero rect, no callbacks, handler `.HandleCrabSegSprite` (face only). In water, claw and links
 get `+0xb8 = 0x90000`. Start angle `+0x46` by type: 1890 → 0, 1891 → 180, 1892 → **90**,
 1893 → 270, 1894 → 90. State 0, `+0xa6 = 0`.
+⚑ corrected (run 44, BL): the links sit on layer **8**, not 7 — `.MTNewSprite` stores the `layer − 1` passed, then
+calls the Setup, whose `+0x80 = 8` (M l. 73992) is the layer `.MTInsertSprite` uses (M l. 30711, 30716, 30719); each link's own
+Setup also stores its own in-water flag `+0x16c` from its own cell `((x + 30) >> 5, (y + 30) >> 5)` before its 0x767
+arm (M l. 74010–74028), HP 1000, `+0x46 = 2`, `+0x150 = −1`, record `+0x48 = 0x1ff`. Types 1896…1899 (0x768…0x76b)
+take the `0x766 <` side with no block, no reach and the claw's Handle (unplaced; the port refuses them).
 
 ### 4.2 Aiming (state 0)  [HIGH]
 `d = .FindDesiredDirectionGeneric(crab centre, player sprite centre)` — 36 sectors of 10°,

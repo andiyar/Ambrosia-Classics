@@ -212,6 +212,9 @@ public enum SetupFaces {
         // ES: the dart traps' cache sets 0x76c, 0x76e, 0x76f (`.InitBackgroundSprite` M l. 61886–61888: 6 × 0x5c×0x5c,
         // 6 per row, flag 0).
         all += [set(0x76c, 6, 0x5c, 0x5c, 6), set(0x76e, 6, 0x5c, 0x5c, 6), set(0x76f, 6, 0x5c, 0x5c, 6)]
+        // BL: the Crab's claw set 0x762 (`.InitCrabSprite` M l. 73964: cache, 6 × 100×100, 6 per row, flag 0) and its
+        // link single 0x767 (M l. 73965: `.Cache1EncFaceFromPICT`, flag 0) — level-load caches its Setup marks.
+        all += [set(BlobCrab.clawSet, 6, 100, 100, 6), one(BlobCrab.linkFace)]
         // BA: `.InitBatSprite`'s other four cache sets (M l. 68100–68103, flag 0, one row each): the insects 0x744 (9 ×
         // 0x30×0x2c), the swarm members 0x74d (8 × 0x18×0x16), the 1850 family 0x73a / 0x73b (12 × 0x40×0x50).
         all += [set(0x744, 9, 0x30, 0x2c, 9), set(0x74d, 8, 0x18, 0x16, 8), set(0x73a, 0xc, 0x40, 0x50, 0xc),
@@ -564,22 +567,33 @@ public enum SetupFaces {
             }
 
         case .blob:
-            // LV3 — `.SetupBlobSprite @ 1007cdb0` (M l. 67671–67736), the Phase-1 ◇ shape (inert, no Handle, no hit
-            // callback — D38 Ruling 3): layer 8, gravity 0xfa, `+0xc0 = 0`; 0x6c2: HP 700, `+0xb8 = 0`; SetRect(0xe, 0xc,
-            // 0x2f, 0x21); `+0x150 = −1`, `+0xb0 = 6`, `+0xb2 = 0`, `+0x46 = 2`, `+0x14c = 0`; `+0xc0` = cache 0x6c2 face 0;
-            // counted in the totals (`+0x1b5`, `_DAT_1009ffb4`, M l. 67728–67730 — `Tallies`); no draw. Only 1730 (0x6c2)
-            // is placed on levels 1–4. // later: Phase 5 (the Blob Handle, Hit, tile hit).
-            guard t == 0x6c2 else { throw Error.notTranscribed(type: p.type) }
-            s.layer = 8
-            s.gravity = 0xfa
-            s.hp = 700
-            s.mode = 0
-            s.hotRect = IdleSprites.Rect(top: 0xc, left: 0xe, bottom: 0x21, right: 0x2f)
-            s.classWord150 = -1
-            s.subtype = 6
-            s.phase = 2
-            counting.countIfWindow(&s)                         // `+0x1b5 = 1`, live + 1 in the window (M l. 67728–67730)
-            face(0x6c2, 0, .setupCached)
+            // `.SetupBlobSprite @ 1007cdb0` (M l. 67671–67735; BL, `BlobCrab.setupBlob`): the class fields, HP and
+            // `+0xb8` by type (0x6c2…0x6c5; 0x6c6…0x6cb none), the counting window; `+0xc0` = cache 0x6c2 face 0 (M l.
+            // 67726–67727) for every type. No draw.
+            s.oldPosition = SpriteSlot.Point(x: s.x, y: s.y)           // `.MTNewSprite`'s `+8` / `+6`
+            BlobCrab.setupBlob(&s, counting: &counting)
+            face(BlobCrab.blobSet, 0, .setupCached)
+
+        case .crab:
+            // `.SetupCrabSprite @ 100894e4` (M l. 73970–74093; BL, `BlobCrab.setupCrab`): the claw, its reach (the live
+            // record's p1), the in-water flag from the level's own BG (`.GetBGTile(x >> 5, y >> 5)`, enemies-water-cave
+            // §7.3), and its links — the Setup's own `.MTNewSprite(0x767, …, 0x1ff, .SetupCrabSprite)`s, made before the
+            // claw is inserted or idled (`Entry.children`; the claw's block holds indices into them until the spawn).
+            // `+0xc0 = 0`: the Handle faces the claw from the cache set 0x762 (marked, M l. 74007), the links from the
+            // single 0x767. 0x768…0x76b (unplaced) keep the claw Handle with no block: refused. First placed on level 62.
+            guard (0x762...0x766).contains(t) else { throw Error.notTranscribed(type: p.type) }
+            s.oldPosition = SpriteSlot.Point(x: s.x, y: s.y)
+            let level = c.level
+            let water: (Int, Int) -> Bool = { col, row in
+                UnderWater.isWaterTile(level.bgKind(tile: level.bgTile(col: col, row: row)))
+            }
+            var kids: [SpriteSlot] = []
+            BlobCrab.setupCrab(&s, reach: p.p1, water: water) { x, y, layer, wet in
+                kids.append(BlobCrab.makeLink(x: x, y: y, layer: layer, clawInWater: wet, water: water))
+                return kids.count - 1
+            }
+            children = kids
+            face(BlobCrab.clawSet, 0, .handle)
 
         case .frog:
             // `.SetupFrogSprite @ 10081f14` (M l. 70137–70220; FR, `FrogSalamander.setupFrog`): the class fields, the p1
@@ -641,7 +655,8 @@ public enum SetupFaces {
     /// (M l. 64947–64951) at their ends (no early return), `.SetupBatSprite`'s arms (M l. 68210–68213, 68234–68237,
     /// 68270–68273, 68282–68285; BA),
     /// `.SetupFrogSprite` at its end (M l. 70211–70215), `.SetupSalamanderSprite` at its end (M l. 70692–70698; FR),
-    /// `.SetupBlobSprite` at its end for every type (M l. 67728–67730; LV3). // later: Phase 5–6 — the other enemy
+    /// `.SetupBlobSprite` at its end for every type (M l. 67728–67731; LV3, BL). The Crab counts nothing (BL).
+    /// // later: Phase 5–6 — the other enemy
     /// classes' sites (Gremlin 69229, Floater 69899, Dillo 72370, Warrior 73069, Demon 74493, Chief 75110, Wizard
     /// 75676, Xichra 76435), some branch-gated, are not transcribed (their Setups throw `notTranscribed` before any
     /// tally). EC: the enemies are `EnemyCounting.live` — each counted Setup's `countIfWindow` — copied here after the
@@ -749,13 +764,18 @@ public enum SetupFaces {
             if !e.children.isEmpty {
                 // BA: the Bat Setup's own `.MTNewSprite`s (M l. 68186–68196, 68228–68233) — the swarm's members and the
                 // insect's body, record 0x200 — are inserted before the parent is inserted or idled; they stay active
-                // whether the parent spawns or idles (enemies-flyers §7.5). The parent's links become their ids.
+                // whether the parent spawns or idles (enemies-flyers §7.5). The parent's links become their ids. BL: the
+                // Crab's links (record 0x1ff) likewise.
                 let ids = e.children.map { out.active.insert($0) }
                 var parent = e.slot
                 if let f = parent.siblings.first { parent.siblings.first = ids[f] }
                 if var block = parent.swarm {
                     block.members = block.members.map { $0.map { ids[$0] } }
                     parent.swarm = block
+                }
+                if var block = parent.crabLinks {                      // BL: the Crab's links (M l. 74046–74058)
+                    block.links = block.links.map { $0.map { ids[$0] } }
+                    parent.crabLinks = block
                 }
                 e = Entry(type: e.type, spriteClass: e.spriteClass, spawn: e.spawn, sheet: e.sheet,
                           faceIndex: e.faceIndex, source: e.source, slot: parent, light: e.light, record: e.record)

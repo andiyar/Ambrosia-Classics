@@ -69,6 +69,18 @@ public struct SpriteSlot: Equatable, Sendable {
         }
     }
 
+    /// BL: the Crab claw's 0x34-byte link block (`+0x9c`, `.SetupCrabSprite` M l. 74018–74044, `AllocateGameMem(0x34)`):
+    /// 12 link pointers at `+0` (`ActiveList` ids; nil = 0) and the link count `+0x30` (i16, min((reach + 23) / 24,
+    /// 12) — a negative reach makes it negative and no link is made).
+    public struct CrabBlock: Equatable, Sendable {
+        public var links: [Int?]
+        public var count: Int16
+
+        public init(links: [Int?], count: Int16) {
+            self.links = links; self.count = count
+        }
+    }
+
     /// Identity in the `ActiveList` (the original's record pointer); assigned by `ActiveList.insert`.
     public internal(set) var id: Int = 0
     /// `+0x04`.
@@ -164,6 +176,9 @@ public struct SpriteSlot: Equatable, Sendable {
     /// BA (added, Invariant 9): `+0x9c` the swarm centre's member block (`.SetupBatSprite` 0x74d, `AllocateGameMem(0x54)`,
     /// M l. 68160–68207): nil = 0.
     public var swarm: SwarmBlock?
+    /// BL (added, Invariant 9): `+0x9c` the Crab claw's link block (`CrabBlock`; nil = 0 — the links and every other
+    /// sprite).
+    public var crabLinks: CrabBlock?
     /// `+0xb0` (i16): a class's sub-type word — the Background's p1, a Platform's base type (0x58c = springboard,
     /// read through the ridden `+0xdc` by `.CheckGroundCeilingHitEffects` and `.HandleKeys`; W1 writes it).
     public var subtype: Int16 = 0
@@ -617,6 +632,8 @@ public enum SpriteHandler: Equatable, Hashable, Sendable {
         case .crawler: return .crawler      // CR: the Crawler 1712
         case .roach: return .roach          // CR: the Roach 1720
         case .bat: return .bat              // BA: the Bat class 1740…1749, 1850…1854, 1860…1869
+        case .blob: return .blob            // BL: the Blob 1730…1739
+        case .crab: return .crab            // BL: the Crab 1890…1899 (its Setup gives the links 0x767 `.crabSegment`)
         default: return .inert
         }
     }

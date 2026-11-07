@@ -72,7 +72,7 @@ public enum EnemyCommon {
         case .bat, .swarmMember, .insectBody: break     // the session dispatches `Bat` (BA)
         case .gremlin, .floater: break                  // later: GF — `.HandleGremlinSprite` / `.HandleFloaterSprite`
         case .frog, .salamander: break                  // the session dispatches `FrogSalamander` (FR)
-        case .blob, .deadBlob, .crab, .crabSegment: break   // later: BL — the Blob, the dead Blob, the Crab, its segments
+        case .blob, .deadBlob, .crab, .crabSegment: break   // the session dispatches `BlobCrab` (BL)
         case .geyserSegment: break                      // later: GY — `.HandleGeyserSegSprite`
         case .warrior: break                            // later: LV5 ◇ — the Warrior stand-in (Ruling 3)
         default: break
@@ -207,13 +207,14 @@ public enum EnemyCommon {
     }
 
     /// The liquids rows of the ground classes (enemies-ground §2.4), after `.ApplyGravityAndSeparateFromTiles`.
-    public enum LiquidClass: Sendable { case walker, crawler, roach, dillo }
+    public enum LiquidClass: Sendable { case walker, crawler, roach, dillo, blob }
 
-    /// The liquids test (Walker M l. 58426–58450, Crawler 56497–56512, Roach 65103–65110, Dillo 72828–72842):
+    /// The liquids test (Walker M l. 58426–58450, Crawler 56497–56512, Roach 65103–65110, Dillo 72828–72842; BL: the
+    /// Blob M l. 67950–67966, the Dillo's rows):
     /// in liquid (`+0x11c ≠ 0`) and fully under plain water (`+0x11c == 1`, kind `+0x128 == 0`) or in any other liquid
     /// (kind > 0). Kind 3 (brine) heals 4 a frame below 500 HP (not the Roach); a hurt (with `+0x116 == 0`) sets
     /// `+0x116`, HP and `+0xaa` and plays 701 vol 0x55 (`.STPlay3DSound`, no draw): Walker kind 0 → 0xc / −0x96 / 0xc;
-    /// Walker and Crawler kinds 1–2, Dillo kind 2, Roach every kind → 0x13 / −100 / 0x11.
+    /// Walker and Crawler kinds 1–2, Dillo and Blob kind 2, Roach every kind → 0x13 / −100 / 0x11.
     public static func liquids(_ w: SpriteWorld, id: Int, class c: LiquidClass) {
         guard var s = w.active.record(id: id) else { return }
         guard s.waterRow != 0, (s.waterRow == 1 && s.waterKind == 0) || 0 < s.waterKind else { return }
@@ -227,7 +228,7 @@ public enum EnemyCommon {
             switch c {
             case .walker: hurt = k == 0 ? (0xc, 0x96, 0xc) : (0x13, 100, 0x11)
             case .crawler: if 0 < k { hurt = (0x13, 100, 0x11) }
-            case .dillo: if 1 < k { hurt = (0x13, 100, 0x11) }
+            case .dillo, .blob: if 1 < k { hurt = (0x13, 100, 0x11) }
             case .roach: break
             }
         }

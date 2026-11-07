@@ -1002,8 +1002,9 @@ extension HitPlayerSprite {
 ///    all (0, no draw). [Plan W2a named "Platform / Background" — the dump and the bank (review A3) say EnemyShot /
 ///    Box.] EC: the EnemyShot Handle is `.enemyShot` (its class is ES's).
 /// 2. `.HurtSprite(player, damage, (i16) attacker vx, −1000, invul, 0xc)` (`HurtSprite.apply`); 0 → return 0.
-/// 3. The Multi Crystal (M l. 47989–48032; MS): the attacker's Handle not the Blob's (`PTR_PTR_100a04c0` — // later:
-///    Phase 5, no Blob in Core) and not a Background (`runs`) of type 0x730…0x733, and `.HasItemWhichSlot(0x13)` → the
+/// 3. The Multi Crystal (M l. 47989–48032; MS): the attacker's Handle not the Blob's (`PTR_PTR_100a04c0` =
+///    `.HandleBlobSprite`, BL — the dead Blob's `PTR_PTR_100a0c58` is another pointer, and an idled record's Handle
+///    is 0) and not a Background (`runs`) of type 0x730…0x733, and `.HasItemWhichSlot(0x13)` → the
 ///    loss timer `_DAT_100a073c = 0xf` (row 13 removes one crystal at 0), `.STPlayRegSound(507, 1, 0x100)`
 ///    (`_DAT_100a02bc`), the item flash `PTR_DAT_1009fda8 = 0xf` on the crystal's slot `_DAT_1009fda4` in red
 ///    (`_DAT_1009fda0 = 1`); four shards i = 0…3, `.MTNewSprite(0x4bf + i, x, y, 0x14, −1, .SetupBonusSprite)` at x =
@@ -1041,7 +1042,8 @@ public enum HurtPlayer {
         if a.hp < 1 && a.handler != .box && a.handler != .enemyShot { return false }
         guard HurtSprite.apply(w, id: pID, damage: damage, dvx: Int16(truncatingIfNeeded: a.vx), dvy: -1000,
                                invulnerable: invulnerable, flash: 0xc) else { return false }
-        if !(BackgroundSprite.runs(a, .background) && (0x730...0x733).contains(a.type)),
+        if !BackgroundSprite.runs(a, .blob),
+           !(BackgroundSprite.runs(a, .background) && (0x730...0x733).contains(a.type)),
            let slot = w.globals.hasItemWhichSlot(0x13) {
             crystalShards(w, player: pID, slot: slot)
         }

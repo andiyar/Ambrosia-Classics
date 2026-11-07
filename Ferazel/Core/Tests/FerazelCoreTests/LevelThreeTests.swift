@@ -92,15 +92,18 @@ final class LevelThreeTests: XCTestCase {
 
         func entry(_ rec: Int) throws -> SetupFaces.Entry { try SetupFaces.setup(L.placements[rec], context: c) }
         func f(_ pict: Int16, _ i: Int = 0) -> FaceRef { FaceRef(pict: pict, index: i, set: .encoded) }
-        // Blob 1730 (rec 15; `.SetupBlobSprite` M l. 67671–67736): layer 8, gravity 0xfa, HP 700, SetRect(0xe, 0xc, 0x2f,
-        // 0x21), `+0x150 = −1`, `+0xb0 = 6`, `+0x46 = 2`, the cache face 0x6c2 cell 0, counted; inert (Ruling 3).
+        // Blob 1730 (rec 15; `.SetupBlobSprite` M l. 67671–67735): layer 8, gravity 0xfa, HP 700, SetRect(0xe, 0xc, 0x2f,
+        // 0x21), `+0x150 = −1`, `+0xb0 = 6`, `+0xb2 = 0`, `+0x46 = 2`, `+0x14c = 0`, the cache face 0x6c2 cell 0, counted;
+        // BL: the Blob Handle `.HandleBlobSprite`, hit `.HitBlobSprite` and tile callback `.HitBlobTileSprite` (M l.
+        // 67693–67695) — was inert (Ruling 3 of Phase 1).
         var e = try entry(15)
         XCTAssertEqual([e.slot.layer, Int32(e.slot.gravity), Int32(e.slot.hp), e.slot.classWord150, Int32(e.slot.subtype),
                         Int32(e.slot.phase)], [8, 0xfa, 700, -1, 6, 2])
         XCTAssertEqual(e.slot.mode, 0)                                   // `+0xb8 = 0` for 0x6c2 (M l. 67707)
         XCTAssertEqual(e.slot.hotRect, rect(0xe, 0xc, 0x2f, 0x21))
-        XCTAssertEqual([e.slot.countedInTotals, e.slot.hasHit], [true, false])
-        XCTAssertEqual(e.slot.handler, .inert)
+        XCTAssertEqual([e.slot.countedInTotals, e.slot.hasHit, e.slot.hasTileHit], [true, true, true])
+        XCTAssertEqual([Int32(e.slot.subState), e.slot.classTimer], [0, 0])
+        XCTAssertEqual(e.slot.handler, .blob)
         XCTAssertEqual(e.slot.face, f(0x6c2))
         XCTAssertEqual(e.source, .setupCached)
         XCTAssertEqual(e.sheet, SetupFaces.Sheet(pict: 0x6c2, count: 16, cellWidth: 0x40, cellHeight: 0x2c, columns: 16,

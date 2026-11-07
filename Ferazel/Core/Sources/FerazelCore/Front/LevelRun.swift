@@ -1052,7 +1052,7 @@ public struct CachedFaces: Equatable, Sendable {
     /// (Crawler M l. 56142–56144, Roach 64893–64894, Walker 56757–56768 (WK2: the 1750's four, 56764–56767), Box
     /// 58785–58786 (LV3: the mine cart's 0xb72 /
     /// 0xb73) and 58806, Background 61864 (LV3: the wall spikes' 0x730) and 61875, Bat 68099, Blob 67666 (LV3), Frog
-    /// 70116). BA: `.InitBatSprite`'s five in its order — 0x6cc (11), 0x744 (9), 0x74d (8), 0x73a (12), 0x73b (12)
+    /// 70116; BL: Crab 73964 — 0x762, after the Blob's). BA: `.InitBatSprite`'s five in its order — 0x6cc (11), 0x744 (9), 0x74d (8), 0x73a (12), 0x73b (12)
     /// (M l. 68099–68103, flag 0). ES: the dart traps' three (Background M l. 61886–61888, after 0x442; marked only
     /// from level 22 on);
     /// `.InitEnemyShotSprite`'s four (M l. 51434–51437, after the Background's, flag 0 — `.InitBackgroundSprite`
@@ -1082,6 +1082,7 @@ public struct CachedFaces: Equatable, Sendable {
         Record(pict: 0x6cc, faces: 11, flag: 0), Record(pict: 0x744, faces: 9, flag: 0),
         Record(pict: 0x74d, faces: 8, flag: 0), Record(pict: 0x73a, faces: 12, flag: 0),
         Record(pict: 0x73b, faces: 12, flag: 0), Record(pict: 0x6c2, faces: 16, flag: 0),
+        Record(pict: 0x762, faces: 6, flag: 0),
         Record(pict: 0x708, faces: 8, flag: 0), Record(pict: 0x712, faces: 9, flag: 0),
     ]
 
@@ -1091,7 +1092,8 @@ public struct CachedFaces: Equatable, Sendable {
     /// 0xb22+i (flag 1, 58818–58823), 0xb36+i (58825), 0xb68+i (58830); Background 0xb54 (61862), the spikes' 0x732 /
     /// 0x733 (61865–61866; LV3), 3000+i (flag 1, 61899), 0x5c8+i (61905), 0xa8c+i (flag 1, 61911). LV3 adds the
     /// decorations 0xafc, 0xafd, 0xb04, 0xb05, 0xb10, 0xb1b, the outcrops 0xb34 / 0xb35 (flag 1) and the mushroom 0xb44
-    /// at their places in the loops.
+    /// at their places in the loops. BL: the Crab's link single 0x767 (`.InitCrabSprite` M l. 73965, flag 0 —
+    /// `.InitBackgroundSprite` leaves `*_DAT_100a0a48` 0, M l. 61912), registered after every Background single.
     static let singles: [Record] = [
         Record(pict: 0x6a4, faces: 1, flag: 0), Record(pict: 0x6d6, faces: 1, flag: 0),
         Record(pict: 0xafc, faces: 1, flag: 0), Record(pict: 0xafd, faces: 1, flag: 0),
@@ -1116,6 +1118,7 @@ public struct CachedFaces: Equatable, Sendable {
         Record(pict: 0x5cd, faces: 1, flag: 0),
         Record(pict: 0xa96, faces: 1, flag: 1), Record(pict: 0xa99, faces: 1, flag: 1),
         Record(pict: 0xa9a, faces: 1, flag: 1),
+        Record(pict: 0x767, faces: 1, flag: 0),
     ]
 
     /// What a level's Setups mark needed: (sets, singles) by PICT.
@@ -1134,7 +1137,8 @@ public struct CachedFaces: Equatable, Sendable {
     /// decoration, outcrop, mushroom, furniture and NPC singles of the same id; BA: every Bat type 0x6cc…0x6d5 → set
     /// 0x6cc (`PTR_DAT_100a0c90[1] = 1`, M l. 68286 — the whole arm), 0x73a…0x73e → set 0x73a (M l. 68241) and with
     /// record p1 < 0 also 0x73b (M l. 68267; `p1`), 0x74d → set 0x74d (M l. 68158), 0x744…0x74c → set 0x744 (M l.
-    /// 68218); Frog 0x708…0x711 → set 0x708 (70211); FR: Salamander 0x712…0x71b → set 0x712 (70680). LV3: Blob 0x6c2 → set 0x6c2 (67726);
+    /// 68218); Frog 0x708…0x711 → set 0x708 (70211); FR: Salamander 0x712…0x71b → set 0x712 (70680).
+    /// LV3, BL: every Blob type 0x6c2…0x6cb → set 0x6c2 (67726); BL: every Crab type 0x762…0x76b → set 0x762 and single 0x767 (74007–74008);
     /// the spikes 0x730 / 0x731 → set 0x730 (61984, 62281), 0x732 / 0x733 → **both** singles 0x732 and 0x733 (62460–
     /// 62461); the mine cart 0xb72 / 0xb73 with a record → sets 0xb72, 0xb73 (59434–59435); the level-3 decoration,
     /// outcrop and mushroom singles of the same id (59647, 59699, 59709). ES (unplaced before level 22): the dart traps
@@ -1158,7 +1162,8 @@ public struct CachedFaces: Equatable, Sendable {
         case 0x73a...0x73e: return (p1 < 0 ? [0x73a, 0x73b] : [0x73a], [])
         case 0x74d: return ([0x74d], [])
         case 0x744...0x74c: return ([0x744], [])
-        case 0x6c2: return ([0x6c2], [])
+        case 0x6c2...0x6cb: return ([0x6c2], [])
+        case 0x762...0x76b: return ([0x762], [0x767])
         case 0x730, 0x731: return ([0x730], [])
         case 0x76c, 0x76d: return ([0x76c], [])
         case 0x76e, 0x76f: return ([t], [])
