@@ -1206,6 +1206,34 @@ records the summary line.
 - **Tests (7):** `testBlobVariantsByType` · `testBlobStates` · `testBlobDeadSprite` · `testBlobAttackerKeepsMultiCrystal`
   · `testCrabAims` · `testCrabStrike30Frames` · `testCrabInvulnerable`.
 - **Gate:** G2 583. Wave 5.3 end: G3, GWB by day, bot + visit sweep `core` on levels 1–4. **Commit:** `FerazelCore: Blobs and Crabs; 7 tests`.
+- **As executed (2026-11-07 attended run 44, Fable seat, Opus implementer + two Opus legs, D44; ladder 584):**
+  `World/Enemies/BlobCrab.swift` holds both classes (Blob Setup / Handle / dead puddle / Hit / tile hit / `.KillBlob`;
+  Crab Setup with its chain of 0x767 links, Handle, segment Handle, Hit). Commits 472e424 (the classes, 7 tests),
+  595892a (audit 4 + 20 + bank §3.6), 71b1431 (the tests-only fix round: 13 asserts from leg 2's mutation table — 282
+  mutants, 253 killed, 12 equivalent, 17 real gaps), a515415 (the re-review's one row: the strike's y truncation pinned
+  at angle 50 → index 23, since the table stores sin 70° as exactly 0.94 at raw `100a18b8` and index 22's −64.27 tells
+  truncation only from a floor). Files beyond the card: `Session/FerazelSession.swift` (Handle + hit dispatch rows for
+  `.blob`, `.deadBlob`, `.crab`, `.crabSegment`), `Front/LevelRun.swift` (the Crab's 0x762 set and the single 0x767
+  link face in the level-load cache, not the boot list), `Tests/FerazelRenderTests/DrawModeAuditTests.swift` (17 new
+  BlobCrab writer rows; 9 re-anchored across EnemyCommon, HitPlayerSprite, SetupFaces ×4, SpriteSlot ×2; the old
+  SetupFaces Blob row dropped; the audit-4 comment moved the liquids flash row 238 → 244), `FaceTests` /
+  `BootFacesTests` (asserts). **Moved pin (class turning on, switch-off check held — seat ruling, run 42's Bat precedent):**
+  `BootFacesTests.testHotRectsAndEmittersUnchangedByBootFaces` level 3 f30 `0x07212368c70e3f4a` → `0x56a7ccb0dd544488`,
+  f120 `0x521fd141e046a4d6` → `0xc43bacea46d2ff94` — the level-3 Blob rec 15 runs one Handle at start then idles; with
+  `handleBlob` and the Blob hit stubbed every old value returns (implementer and leg 1 independently). No golden moved
+  (probe: 0 Blob Handle calls in `FrameGoldenTests` / `Phase2GoldenTests`); Windows references unchanged (GW4R identical).
+  `LevelThreeTests` rec 15 retargeted `.inert` → `.blob` (hasHit / hasTileHit true; `+0xb2`, `+0x14c` = 0 added).
+  Dump over plan/bank: the plan's Smite "0x4b7 arm" does not exist for the Blob — Smiting seeds hit as player shots;
+  the Crab's links are on layer 8, not the bank's 7 (bank §4 corrected); types 0x768–0x76b take the claw Handle with no
+  block; `killProc`'s cite 38834 → 38829; the Ax goblin's `.KillWalker` is M l. 58236. The Multi Crystal skip keys on
+  `.HandleBlobSprite` only (M l. 47991), not the dead puddle. Audit 4: the `.crawler` / `.roach` / `.bat` / `.blob`
+  Kill-proc arms dropped (default arm `+0xe9 = 1`), `testKillBookkeeping` retargeted to the Walker plus a Crawler
+  assert; `.frog` / `.salamander` arms kept. Leg 1 carried [LOW]: an extra bounds guard in the unreachable dying block
+  (`BlobCrab.swift:152`); the Crab's distance computed every frame where the binary computes it only on target (pure);
+  no player sprite → aims at (0, 0) where the binary reads low memory; a reach ≤ −47 would write before the link block
+  in the original (unreachable with shipped data); `staleSlot: nil` in the hits unverified. Quick bot: level 3 7,200
+  steps 0 failures, level 4 0 failures. Wave 5.3 end: G3 1,108/0; GE core levels 1–4 visit sweep 3,360 visits 0 rows,
+  bot 86,400 steps 0 failures; GWB 581 / 0 / 3 / 0 (of 584) at 16:3x muted; GW4R main menu identical.
 
 ### Wave 5.4 — the classes first placed after level 5, geysers, pipes
 
@@ -1218,6 +1246,34 @@ records the summary line.
 - **Tests (7):** `testGremlinCompositeSetup` · `testGremlinBody` · `testGremlinRiderSpit` · `testGremlinHits` ·
   `testFloaterCycle` · `testFloaterShotAtStep0x1d` · `testFloaterHurtsOnlyAfterFrame12`.
 - **Gate:** G2 590. **Commit:** `FerazelCore: Gremlins and Wraiths; 7 tests`.
+- **As executed (2026-11-07 attended run 44, Fable seat, Opus implementer + two Opus legs, D44; ladder 591):**
+  `World/Enemies/GremlinFloater.swift` holds both classes (the Gremlin's composite Setup — body, back layer, rider —
+  its body / rider Handle arms, Hit, tile hit, `.KillGremlinSprite` through `killProc`'s `.gremlin` arm; the Floater's
+  Setup, cycle, Hit, tile hit). Commits a068854 (the classes, 7 tests), b6afbc6 (the tests-only fix round: leg 2's
+  mutation table — 324 mutants, 276 killed, 15 equivalent, 33 real gaps, 30 pinned; re-review MERGEABLE). **Path modes
+  10/11 are admitted for the Gremlin:** `.SetupProgrammedPath` reads the record's p1 with no filter (M l. 39302–39311,
+  39354–39378) and the Gremlin Setup calls it at M l. 69226, so the spawn runs `ProgrammedPath.makeRadial` after inserting
+  the body — its first caller (audit ruling 3 closed); the Bat's refusal is unchanged. Files beyond the card:
+  `Session/FerazelSession.swift` (Handle + hit dispatch rows for `.gremlin` / `.floater`), `EnemyCommon.swift` (the Kill
+  arm completed: +2000, stat, back layer killed, mounted rider killed, backlink cleared), `Front/LevelRun.swift` (cache
+  registration per `.InitSprites` M l. 106–145: 0x6f4, 0x6fe, 0x6ff after the Crab's set; 0x6ea, 0x6eb, 0x6ec between
+  the Frog's and the Salamander's; no boot faces), `DrawModeAuditTests` (21 new GremlinFloater writer rows; 7
+  re-anchored — EnemyCommon:245, SetupFaces 388/389/440/458, SpriteSlot 540/542; `SetupFaces`' `notTranscribed` throw
+  count 12 → 13 for the refused Wraith variant), `FaceTests` / `BootFacesTests` (asserts), bank `enemies-flyers.md` §7.7
+  (run-44 corrections). Not ◈: no built level places either class (first on levels 15 and 62); no golden moved; the quick
+  bot does not apply. **The unplaced Wraith variant 0x6fe–0x707 is refused at Setup** (its sheets 1790/1791 do not exist in
+  the data and its Handle would call `FastRand(0)`; the bank places it on no level — leg 1 accepted the refusal, census not
+  re-run). Dump over bank (§7.7): §4.2's "second" `.StandardSpriteHandles` is the only call (the water block stays dead);
+  the hurt sound 701 is the random-pitch call at volume 0x55; the tile callback's vx × 0.8 runs on every call (open
+  background cells, kind −1, trigger it); on a flat floor the rider's 0xa0 bounce turns vy negative before the landing
+  check, so its vx × 0.5 fires only on slopes 0x2c–0x2f; the rider's death particles' v offset is +0x10; the saddle-blood
+  delay is R(3) when non-zero (M l. 69447); the Floater shows frame 0 at phase 74 and faces the player only in phases 0–19
+  (M l. 69949–69960); the facing read at M l. 69932 (Ghidra's `>> 7`) is the signed-compare idiom (raw 10081814–20).
+  Carried [LOW]: the Floater's aim `P.y + 8` unpinned at a direction boundary; the slope-grounded rider's halving unpinned
+  (leg 2's setup: a rider at rest on one 0x2c tile, vx 1000, one frame, counting tile calls); the hit arms return early
+  when `.KillPlayerShot` removes the shot's record where the dump still reads the dead shot's type (same pattern as the
+  Bat; low confidence); `docs/ferazel/tools/pef.py` defaults to `ghidra/Ferazel_pef` — the binary is `ghidra/ferazel/…`
+  (set `FZ_PEF`); the stale "refused" comment in `World/Movers/ProgrammedPath.swift`.
 
 #### DL — minor — the Dillo (→ 595)
 - **Files:** `Sources/FerazelCore/World/Enemies/Dillo.swift` (new), `Sources/FerazelCore/Sprites/SetupFaces.swift`,

@@ -1923,6 +1923,35 @@ references untouched. Carried [LOW]: a headless session has no face pixels, so t
 never ends there (EC's burn rule; shells pass the renderer); the Salamander's stale register on `.KillPlayerShot` is nil
 (unverified); two bank omissions noted in "As executed" (`+0x46 = 0` at M l. 70839; the spit restart M l. 70771/70784).
 
+**As built — attended run 44 (2026-11-07, Fable seat, D45.7 chain), BL ⚑ (Blobs and Crabs; the Multi Crystal's Blob
+exception; audit deltas 4 + 20) — wave 5.3 END.** Ladder: BL **584** / 2 opt-in skips (456 rules + 128 render; the seat's
+whole-suite number at the fix-round head 71b1431, rules re-run at a515415). `World/Enemies/BlobCrab.swift` (both classes;
+the session's Handle/hit dispatch; the Crab's 0x762 set and 0x767 link face in the level-load cache), 7 tests. Two Opus
+legs: leg 1 MERGEABLE (no departure from the binary; independent switch-off check held), leg 2 MERGEABLE WITH FIXES (282
+mutants, 253 killed, 17 real gaps) → tests-only fix round 71b1431 + the re-review's one row a515415 (the strike's y
+truncation pinned at angle 50, since the binary's table stores sin 70° as exactly 0.94). **Seat ruling — a moved pin:**
+`BootFacesTests` level 3 f30 / f120 moved because the level-3 Blob (rec 15) now runs one Handle at level start then idles
+— the class turning on, the switch-off check held twice (implementer, leg 1), run 42's Bat precedent; no golden moved
+(probe), Windows references unchanged. Audit 4 landed: `killProc` has no Crawler / Roach / Bat / Blob arm (default `+0xe9
+= 1`), the Frog / Salamander arms kept; audit 20's five cites fixed; bank: enemy-shots §3.6 (a reflected dart ends with
+`+0xe9 = 1`), enemies-water-cave §4 (links on layer 8). Dump over plan: the Blob has no Smite "0x4b7 arm" — Smiting seeds
+hit as player shots; types 0x768–0x76b take the claw Handle. Wave 5.3 end gates: G3 1,108/0; GE core levels 1–4 (visit
+sweep 3,360 visits 0 rows; bot 86,400 steps 0 failures); GWB **581 / 0 / 3 / 0 of 584** (16:3x, muted); GW4R main menu
+identical. Carried [LOW]: see the plan's "As executed" (five leg-1 minors).
+
+**As built — attended run 44 (2026-11-07, Fable seat), GF ⚑ (Gremlins — body, back layer, rider — and Wraiths; wave 5.4
+start).** Ladder: GF **591** / 2 opt-in skips (463 rules + 128 render; the seat's whole-suite number at the fix-round head
+b6afbc6). `World/Enemies/GremlinFloater.swift`, 7 tests. Two Opus legs: leg 1 MERGEABLE (every field, random draw and
+phase as the binary; the rider-shot prediction d 22 → dir 4 / `+0x1aa` 0xdc / `+0x17e` 1, d 32 → 14 / 0x140 / 0 matched),
+leg 2 MERGEABLE WITH FIXES (324 mutants, 276 killed, 33 real gaps) → tests-only fix round b6afbc6 (30 pinned; re-review
+MERGEABLE). **Seat rulings:** (1) path modes 10/11 are admitted for the Gremlin — `.SetupProgrammedPath` filters nothing
+(M l. 39302–39378), `ProgrammedPath.makeRadial` gets its first caller (audit ruling 3 closed); (2) the unplaced Wraith
+variant 0x6fe–0x707 is refused at Setup (no sheets 1790/1791 in the data; `FastRand(0)` in its Handle) — a named ◇, not a
+port gap, revisited only if a later level census places it. Not ◈ (first placed on levels 15 / 62): no golden moved.
+Bank §7.7 corrections as the plan's "As executed" lists. Carried [LOW]: the Floater aim's `P.y + 8` at a direction boundary
+and the slope-grounded rider's halving (both test gaps with a known setup), the early return after `.KillPlayerShot` (Bat
+pattern), `pef.py`'s default path, the stale "refused" comment in `ProgrammedPath.swift`.
+
 ## D45 — Cythera re-planning pass: Ben's five answers + the seat's rulings (2026-11-05)
 
 **Context.** Phase 0 half built (K1, C0–C5, 44 tests) and stalled since 2026-10-07; nothing planned beyond it. Fable
