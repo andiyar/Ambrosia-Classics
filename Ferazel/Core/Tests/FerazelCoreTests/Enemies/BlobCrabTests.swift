@@ -786,7 +786,7 @@ final class BlobCrabTests: XCTestCase {
         BlobCrab.handleCrab(world: w, id: id)
         XCTAssertEqual(try slot(w, id).subtype, 1, "cooled down, in reach, on target: strikes")
         // A diagonal (angle 40 → index 22: (sin 50°·r, −sin 40°·r) truncated) and straight right (angle 0 → 18: (r, 0)).
-        for (angle, idx) in [(Int16(40), 22), (0, 18), (350, 17), (270, 9), (170, 35), (70, 25), (180, 0)] {
+        for (angle, idx) in [(Int16(40), 22), (0, 18), (350, 17), (270, 9), (170, 35), (70, 25), (180, 0), (50, 23)] {
             let v = try crabWorld()
             let (vid, _, _) = try enemy(v, type: 0x766, x: 600, y: 500)
             v.active.update(id: vid) { $0.subtype = 1; $0.counterA6 = 5; $0.phase = angle }
@@ -797,7 +797,7 @@ final class BlobCrabTests: XCTestCase {
             XCTAssertEqual([t.x, t.y], [600 + Int(Int32(vec.x)) / 144, 500 + Int(Int32(vec.y)) / 144])
         }
         // Angle 70 → index 25: y = −0.94·100 — the table's stored sin 70° is 0.94 (`100a18b8` = 0x3fee147ae147ae14), so
-        // −94 exactly; the y truncation is pinned by index 22 below (−64.27 → −64, a floor gives −65). Angle 180 → index
+        // −94 exactly; the y truncation is pinned by angle 50 → index 23 (−76.6 → −76 truncated, −77 rounded; index 22’s −64.27 tells truncation only from a floor). Angle 180 → index
         // (18 + 18) mod 36 = 0: (−100, 0), x = 600 + (−100) / 144 = 600 (C division; a floor would give 599); angle 170 →
         // index 35.
         XCTAssertEqual(Int32(BloodSpray.vector(25, magnitude: 100).y), -94)
