@@ -198,7 +198,7 @@ final class DrawModeAuditTests: XCTestCase {
         W("Particles/Burn.swift:60", .clipTop, .range(1...0x100), "any", at: ["45", "50"],
           pins: ["s.burnRow = top", "s.burnRow &+= 1"]),
         // EC: the ground enemies' liquid hurt flash (`EnemyCommon.liquids`: 0xc for the Walker in water, else 0x11).
-        W("World/Enemies/EnemyCommon.swift:245", .flash, .range(0xc...0x11), "walker", "crawler", "roach", "dillo",
+        W("World/Enemies/EnemyCommon.swift:246", .flash, .range(0xc...0x11), "walker", "crawler", "roach", "dillo",
           "blob", at: ["231", "236", "237", "238"], pins: ["(0xc, 0x96, 0xc)", "(0x13, 100, 0x11)"]),
         // ES: the enemy shots — the egg's random facing (`R(100) > 0x32`) and its flash every 45 frames, the Warrior
         // shot's facing by vx, the Wraith shot's tint by age (`.HandleEnemyShotSprite` M l. 51711–51723).
@@ -289,6 +289,21 @@ final class DrawModeAuditTests: XCTestCase {
         W("World/Enemies/GremlinFloater.swift:729", .mode, .words([0]), "floater"),
         W("World/Enemies/GremlinFloater.swift:733", .mode, .words([0]), "floater"),
         W("World/Enemies/GremlinFloater.swift:781", .flash, .range(10...10), "floater"),
+        // DL: the Dillo — 1871's grey tint 0x1000b (`.SetupDilloSprite` M l. 72340), its facing draw (M l. 72368), the
+        // walk's turn at the bounds (M l. 72595–72601) and the roll's facing by the player's side (M l. 72522–72524); the
+        // roll's spin angle `+0x1aa` ± 15 a frame, wrapped into 0…359, and its clear in the uncurl (M l. 72635, 72723–72739);
+        // the spines' `+0xb8` 0 / 0x1000b (`.ShootSpines` M l. 72400–72409) and the 1871 egg's 0x1000b (M l. 72696).
+        W("World/Enemies/Dillo.swift:70", .mode, .words([0x1000b]), "dillo"),
+        W("World/Enemies/Dillo.swift:92", .mirrored, .flags([false, true]), "dillo"),
+        W("World/Enemies/Dillo.swift:162", .mirrored, .flags([false]), "dillo"),
+        W("World/Enemies/Dillo.swift:164", .mirrored, .flags([true]), "dillo"),
+        W("World/Enemies/Dillo.swift:222", .rotation, .range(0...0), "dillo"),
+        W("World/Enemies/Dillo.swift:305", .mode, .words([0x1000b]), "enemyShot.egg"),
+        W("World/Enemies/Dillo.swift:325", .rotation, .range(0...359), "dillo", at: ["320", "323"],
+          pins: ["s.rotation = Int16(truncatingIfNeeded: a)", "a = h16(a - 0x168)", "a = h16(a + 0x168)"]),
+        W("World/Enemies/Dillo.swift:354", .mode, .words([0, 0x1000b]), "enemyShot.spine", at: ["337"],
+          pins: ["let mode: UInt32 = walker ? 0 : 0x1000b"]),
+        W("World/Enemies/Dillo.swift:394", .mirrored, .flags([false, true]), "dillo"),
         W("World/Enemies/EnemyShot.swift:154", .mirrored, .flags([false, true]), "enemyShot.egg"),
         W("World/Enemies/EnemyShot.swift:314", .mode, .words([0xb0002, 0xb0000, 0xb0001, 0]), "enemyShot.wraith"),
         W("World/Enemies/EnemyShot.swift:339", .mirrored, .flags([false, true]), "enemyShot.warrior"),
@@ -405,11 +420,11 @@ final class DrawModeAuditTests: XCTestCase {
         W("Shots/PlayerShot.swift:474", .mode, .words([0x10004]), "shot.gravity"),        // the seed (gravity 0xfa)
         W("Shots/PlayerShotHits.swift:109", .mode, .words([0x10004]), "shot.gravity"),    // the seed
         W("Shots/PlayerShotHits.swift:221", .flash, .range(10...10), "box"),
-        W("Sprites/SetupFaces.swift:388", .mirrored, .flags([true]), "background.plant"),
-        W("Sprites/SetupFaces.swift:389", .mode, .placedTint(0xa8c...0xaef), "background.plant",
+        W("Sprites/SetupFaces.swift:392", .mirrored, .flags([true]), "background.plant"),
+        W("Sprites/SetupFaces.swift:393", .mode, .placedTint(0xa8c...0xaef), "background.plant",
           pins: ["if p.p2 != 0 { s.mode = UInt32(truncatingIfNeeded: Int(p.p2) + 0x10000) }"]),
-        W("Sprites/SetupFaces.swift:440", .mode, .words([0x90000]), "box.teleporter"),
-        W("Sprites/SetupFaces.swift:458", .mode, .words([0x90000]), "box.chest"),
+        W("Sprites/SetupFaces.swift:444", .mode, .words([0x90000]), "box.teleporter"),
+        W("Sprites/SetupFaces.swift:462", .mode, .words([0x90000]), "box.chest"),
         W("Sprites/SpriteSlot.swift:540", .mode, .words([0]), "platform.raft", "box.boulder", "background.maceBall",
           "chain.maceChain"),
         W("Sprites/SpriteSlot.swift:542", .mode, .levelLight, "platform.raft", "box.boulder", "background.maceBall",
@@ -1380,7 +1395,7 @@ final class DrawModeAuditTests: XCTestCase {
           "the session is built at each level start, every built level's run included"),
         R("Sprites/SetupFaces.swift", "Error.unmapped", 1, .loadsClean, [.levelsLoad],
           "every active placement of every built level sets up (the audit runs each one, and the level start does)"),
-        R("Sprites/SetupFaces.swift", "Error.notTranscribed", 13, .loadsClean, [.levelsLoad], "the same Setups"),
+        R("Sprites/SetupFaces.swift", "Error.notTranscribed", 14, .loadsClean, [.levelsLoad], "the same Setups"),
         R("Sprites/SetupFaces.swift", "Error.autoScrollSprites", 1, .headerZero, [.headerCamera],
           "header `autoScrollEnable` = 0 on every built level"),
         R("World/Movers/BonusSprite.swift", "SetupFaces.Error.notTranscribed", 2, .loadsClean,
@@ -1475,11 +1490,13 @@ final class DrawModeAuditTests: XCTestCase {
             // WK2: the Ax goblin's jump budget (`.AxGoblinCoreLogic`, made negative by its retreats) — written only on the
             // sprite `AxGoblin.arm` runs for, a Walker 0x6d6 (`Walker.handle`'s exact-type arm), never on a Box.
             // BA: the 1850 family's background flag (`.SetupBatSprite` 0 / 1 by the record p1 sign, M l. 68263–68275) —
-            // on Bat sprites only, never negative.
+            // on Bat sprites only, never negative. DL: the Dillo's right patrol bound (`.SetupDilloSprite` M l. 72368–72363) — on
+            // Dillo sprites only.
             XCTAssertEqual(writes.filter { !$0.hasPrefix("World/Enemies/AxGoblin.swift ") }.sorted(),
                            ["Shots/PlayerShot.swift s.stepX = sx",
                             "World/Enemies/Bat.swift s.classWord160 = 0",
                             "World/Enemies/Bat.swift s.classWord160 = 1",
+                            "World/Enemies/Dillo.swift s.classWord160 = x + w",
                             "World/Enemies/EnemyShot.swift u.classWord160 = 1",
                             "World/Movers/BoxSprite.swift s.classWord160 &+= 1"], "\(c): +0x160 writers")
             let axCallers = core.filter { Self.has($0.code, "AxGoblin.") }.map { "\($0.file) \(Self.trim($0.code))" }

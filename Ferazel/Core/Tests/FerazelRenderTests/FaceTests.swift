@@ -628,6 +628,15 @@ final class FaceTests: XCTestCase {
             XCTAssertEqual(sh.count, cells, "GF PICT \(p) cells")
             XCTAssertNil(one.sprites.faces.face(FaceRef(pict: p, index: 0, set: .encoded)), "level 1 places no \(p)")
         }
+        // DL: the Dillo Handle faces its walk 0x74e (6 cells), curl 0x74f (5), death 0x750 (5) and jump 0x751 (2) cache
+        // sets — loaded only where its Setup marks them (placed on levels 15 and 22): the data holds them, no level-1
+        // renderer loads them.
+        for (p, cells) in [(Dillo.walkType, 6), (Dillo.curlType, 5), (Dillo.deathType, 5), (Dillo.jumpType, 2)] {
+            let sh = try XCTUnwrap(SetupFaces.sheet(pict: p))
+            XCTAssertNotNil(r.resource(type: "PICT", id: p, chain: .frontEnd), "Dillo PICT \(p)")
+            XCTAssertEqual(sh.count, cells, "Dillo PICT \(p) cells")
+            XCTAssertNil(one.sprites.faces.face(FaceRef(pict: p, index: 0, set: .encoded)), "level 1 places no \(p)")
+        }
         // The drops of every chest and crate on levels 1–4 and the key faces their locks show — each in its own
         // level's renderer. The original loads every Bonus face at boot (`.InitBonusSprite` M l. 52261–52337); the
         // replica's per-level load (`BoxSprite.dropSheets`) is a seam, so the faces are named here, not derived from it.

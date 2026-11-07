@@ -245,13 +245,15 @@ final class GremlinFloaterTests: XCTestCase {
             XCTAssertEqual(CachedFaces.marks(type: t).singles, [])
             XCTAssertEqual(SpriteHandler.forClass(type: t), .gremlin)
         }
-        // The cache registration (`.InitSprites` M l. 106–145: … Crab, …, Floater, Frog, Gremlin, Salamander): the
-        // Floater's three (M l. 69827–69829) after the Crab's, the Gremlin's three (M l. 69118–69120) after the Frog's.
+        // The cache registration (`.InitSprites` M l. 106–145: … Crab, Dillo, …, Floater, Frog, Gremlin, Salamander): the
+        // Floater's three (M l. 69827–69829) after the Crab's and the Dillo's four (DL, M l. 72283–72286), the Gremlin's
+        // three (M l. 69118–69120) after the Frog's.
         let picts = CachedFaces.sets.map(\.pict)
         let at = try XCTUnwrap(picts.firstIndex(of: 0x762))
-        XCTAssertEqual(Array(picts[at...at + 8]), [0x762, 0x6f4, 0x6fe, 0x6ff, 0x708, 0x6ea, 0x6eb, 0x6ec, 0x712])
-        XCTAssertEqual(CachedFaces.sets[at...at + 8].map(\.faces), [6, 6, 8, 8, 8, 10, 10, 4, 9])
-        XCTAssertEqual(CachedFaces.sets[at...at + 8].map(\.flag), [0, 0, 0, 0, 0, 0, 0, 0, 0])
+        XCTAssertEqual(Array(picts[at...at + 12]), [0x762, 0x74e, 0x74f, 0x750, 0x751, 0x6f4, 0x6fe, 0x6ff, 0x708, 0x6ea,
+                                                    0x6eb, 0x6ec, 0x712])
+        XCTAssertEqual(CachedFaces.sets[at...at + 12].map(\.faces), [6, 6, 5, 5, 2, 6, 8, 8, 8, 10, 10, 4, 9])
+        XCTAssertEqual(CachedFaces.sets[at...at + 12].map(\.flag), [Int16](repeating: 0, count: 13))
         XCTAssertEqual(SetupFaces.sheet(pict: 0x6ea), SetupFaces.Sheet(pict: 0x6ea, count: 10, cellWidth: 0x84,
                                                                      cellHeight: 0x78, columns: 10, clut: 200))
         XCTAssertEqual(SetupFaces.sheet(pict: 0x6eb), SetupFaces.Sheet(pict: 0x6eb, count: 10, cellWidth: 0x84,

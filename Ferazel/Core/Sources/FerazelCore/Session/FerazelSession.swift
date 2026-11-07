@@ -583,7 +583,11 @@ public final class FerazelSession {
         case .floater:
             // `.HandleFloaterSprite @ 100816d8` (GF, `GremlinFloater.handleFloater`).
             GremlinFloater.handleFloater(world: world, id: id, solver: solver) { Self.frameRect($0, resources: res).right }
-        case .dillo, .geyserSegment, .warrior:
+        case .dillo:
+            // `.HandleDilloSprite @ 1008697c` (DL, `Dillo.handle`): the egg's x reads the face bounds.
+            Dillo.handle(world: world, id: id, solver: solver, faceWidth: { Self.frameRect($0, resources: res).right },
+                         faceBounds: bounds)
+        case .geyserSegment, .warrior:
             // EC: the enemy Handles — the `+0x1b2` early return, then each a named no-op until its task
             // (`EnemyCommon.handle`).
             EnemyCommon.handle(world: world, id: id)
@@ -1159,7 +1163,7 @@ public final class FerazelSession {
     /// `.HitButtonSprite` (BT); `.HitEnemyShotSprite` (ES); `.HitWalkerSprite` (WK1; also the corpse raft's, kept
     /// under the Platform Handle); `.HitCrawlerSprite` / `.HitRoachSprite` (CR); `.HitBatSprite` /
     /// `.HitSwarmMemberSprite` (BA); `.HitFrogSprite` / `.HitSalamanderSprite` (FR); `.HitBlobSprite` / `.HitCrabSprite`
-    /// (BL); `.HitGremlinSprite` / `.HitFloaterSprite` (GF). // later: Phase 5 (the other enemy
+    /// (BL); `.HitGremlinSprite` / `.HitFloaterSprite` (GF); `.HitDilloSprite` (DL). // later: Phase 5 (the other enemy
     /// classes). The session's form:
     /// `hitCallback` on `lightTable`.
     private func hit(_ w: SpriteWorld, _ a: Int, _ b: Int) {
@@ -1219,6 +1223,8 @@ public final class FerazelSession {
         case .floater:                                                                  // `.HitFloaterSprite` (GF)
             GremlinFloater.hitFloater(w, id: a, other: b, lights: &lights, effects: effects, faceWidth: faceWidth,
                                       faceBounds: faceBounds)
+        case .dillo:                                                                    // `.HitDilloSprite` (DL)
+            Dillo.hit(w, id: a, other: b, lights: &lights, effects: effects, faceWidth: faceWidth, faceBounds: faceBounds)
         case .background:                                                               // `.HitBackgroundSprite` (W2b)
             BackgroundSprite.hit(w, id: a, other: b, lights: &lights, effects: effects, faceWidth: faceWidth,
                                  faceBounds: faceBounds)

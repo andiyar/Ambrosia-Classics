@@ -640,6 +640,7 @@ public enum SpriteHandler: Equatable, Hashable, Sendable {
         case .crab: return .crab            // BL: the Crab 1890…1899 (its Setup gives the links 0x767 `.crabSegment`)
         case .gremlin: return .gremlin      // GF: the Gremlin 1770…1779 (every part, the back layer and rider too)
         case .floater: return .floater      // GF: the Floater (the Wraith) 1780…1799
+        case .dillo: return .dillo          // DL: the Dillo 1870…1879
         default: return .inert
         }
     }

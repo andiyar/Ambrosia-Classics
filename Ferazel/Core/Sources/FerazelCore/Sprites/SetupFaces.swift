@@ -224,6 +224,10 @@ public enum SetupFaces {
         // 100×0x50, M l. 69827). Its 0x6fe / 0x6ff (M l. 69828–69829) are absent from the data: the variant is refused.
         all += [set(GremlinFloater.bodySet, 10, 0x84, 0x78, 10), set(GremlinFloater.backSet, 10, 0x84, 0x78, 10),
                 set(GremlinFloater.riderSet, 4, 0x20, 0x20, 4), set(GremlinFloater.wraithSet, 6, 100, 0x50, 6)]
+        // DL: `.InitDilloSprite`'s four cache sets (M l. 72283–72286, flag 0, one row each, 100×0x50): walk 0x74e (6),
+        // curl 0x74f (5), death 0x750 (5), jump 0x751 (2).
+        all += [set(Dillo.walkType, 6, 100, 0x50, 6), set(Dillo.curlType, 5, 100, 0x50, 5),
+                set(Dillo.deathType, 5, 100, 0x50, 5), set(Dillo.jumpType, 2, 100, 0x50, 2)]
         all.append(one(placeholderPict))
         // BN: every face `.InitBonusSprite` loads (`BonusSprite.sheets`; the level-1/2 entries above are the same sheets).
         var table = Dictionary(uniqueKeysWithValues: all)
@@ -655,6 +659,18 @@ public enum SetupFaces {
             GremlinFloater.setupFloater(&s, record: p, counting: &counting)
             face(GremlinFloater.wraithSet, 0, .handle)
 
+        case .dillo:
+            // `.SetupDilloSprite @ 1008622c` (M l. 72291–72378; DL, `Dillo.setup`): the class fields, HP by type, `+0x188`,
+            // the live record's p2 0 → 150 (written back), the bounds, the facing draw, the counting window. `+0xc0` = the
+            // global `PTR_DAT_100a0d1c` — the walk set's face 0 once any Dillo Handle has run (M l. 72562–72563), 0 before: the
+            // first Handle faces it; the entry names that face (`.handle`). 1872…1879 (unplaced) get HP 0 and max 0 —
+            // the first decision divides by the max (`divw` by 0, raw 10086a48, result undefined): refused before any
+            // tally. Placed on levels 15 and 22.
+            guard t == Int(Dillo.walkType) || t == Int(Dillo.curlType) else { throw Error.notTranscribed(type: p.type) }
+            s.oldPosition = SpriteSlot.Point(x: s.x, y: s.y)           // `.MTNewSprite`'s `+8` / `+6`
+            record = Dillo.setup(&s, record: p, rng: &rng, counting: &counting)
+            face(Dillo.walkType, 0, .handle)
+
         default:
             throw Error.notTranscribed(type: p.type)
         }
@@ -698,8 +714,8 @@ public enum SetupFaces {
     /// `.SetupFrogSprite` at its end (M l. 70211–70215), `.SetupSalamanderSprite` at its end (M l. 70692–70698; FR),
     /// `.SetupBlobSprite` at its end for every type (M l. 67728–67731; LV3, BL). The Crab counts nothing (BL).
     /// `.SetupGremlinSprite` in the body arm (M l. 69227–69230), `.SetupFloaterSprite` for every type (M l. 69900–69903;
-    /// GF). // later: Phase 5–6 — the other enemy
-    /// classes' sites (Dillo 72370, Warrior 73069, Demon 74493, Chief 75110, Wizard
+    /// GF), `.SetupDilloSprite` at its end for 1870 / 1871 (M l. 72371–72374; DL). // later: Phase 5–6 — the other enemy
+    /// classes' sites (Warrior 73069, Demon 74493, Chief 75110, Wizard
     /// 75676, Xichra 76435), some branch-gated, are not transcribed (their Setups throw `notTranscribed` before any
     /// tally). EC: the enemies are `EnemyCounting.live` — each counted Setup's `countIfWindow` — copied here after the
     /// spawn; the secrets and Xichrons are counted here by type, while the window is set.

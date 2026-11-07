@@ -68,7 +68,7 @@ public enum EnemyCommon {
         switch s.handler {
         case .walker: break                             // the session dispatches `Walker.handle` (WK1)
         case .crawler, .roach: break                    // the session dispatches `CrawlerRoach` (CR)
-        case .dillo: break                              // later: DL — `.HandleDilloSprite`
+        case .dillo: break                              // the session dispatches `Dillo` (DL)
         case .bat, .swarmMember, .insectBody: break     // the session dispatches `Bat` (BA)
         case .gremlin, .floater: break                  // the session dispatches `GremlinFloater` (GF)
         case .frog, .salamander: break                  // the session dispatches `FrogSalamander` (FR)
@@ -99,11 +99,12 @@ public enum EnemyCommon {
             switch killer {
             case .frog: FrogSalamander.killFrog(w, &s)              // `.KillFrog` (FR): the count, then its score
             case .salamander: FrogSalamander.killSalamander(w, &s)  // `.KillSalamander` (FR)
+            case .dillo: Dillo.killDillo(w, &s)                     // `.KillDillo` (DL): the count, then + 1500
             default:
                 w.enemies.kill(&s, globals: &w.globals, level: w.levelIndex,
                                forGood: EnemyCounting.killsForGood(killer))
             }
-            // `.KillWalker` is the count alone (WK1). // later: DL / LV5 — each other Kill's own tail
+            // `.KillWalker` is the count alone (WK1). // later: LV5 — the Warrior's Kill tail
         case .gremlin:
             // `.KillGremlinSprite` (GF): `+0xe9 ≠ 0` → return (M l. 69736–69738, raw 100810e0 bnelr); the count, score
             // + 2000, the back layer and a mounted rider killed, the rider's backlink cleared.

@@ -201,6 +201,16 @@ final class BootFacesTests: XCTestCase {
             XCTAssertNil(boot[p])
         }
         XCTAssertEqual(CachedFaces.sheets(markedBy: [Int16(0x6ea), 0x6f4, 0x6fe]).map(\.pict), [0x6ea, 0x6eb, 0x6ec, 0x6f4])
+        // DL: `.InitDilloSprite`'s 0x74e…0x751 (M l. 72283–72286) are level-load caches, defined once in the Setup-face
+        // table, all four marked by the Setup; the egg 0x753 and the spines 0x754 face from the enemy-shot boot sets.
+        for p in [Dillo.walkType, Dillo.curlType, Dillo.deathType, Dillo.jumpType] {
+            XCTAssertNil(boot[p], "cache PICT \(p)")
+            XCTAssertNotNil(SetupFaces.sheet(pict: p), "cache PICT \(p) geometry")
+            XCTAssertFalse(CachedFaces.handleSets.contains { $0.pict == p }, "cache PICT \(p) defined twice")
+        }
+        XCTAssertNotNil(boot[0x753])
+        XCTAssertNotNil(boot[0x754])
+        XCTAssertEqual(CachedFaces.sheets(markedBy: [Dillo.curlType]).map(\.pict), [0x74e, 0x74f, 0x750, 0x751])
     }
 
     /// Levels 1–4: every boot face the data holds, every class sheet Core declares and every Setup sheet of the level's
