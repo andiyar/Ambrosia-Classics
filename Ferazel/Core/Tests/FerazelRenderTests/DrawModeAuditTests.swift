@@ -504,7 +504,7 @@ final class DrawModeAuditTests: XCTestCase {
         W("World/Movers/BoxSprite.swift:896", .mirrored, .copy, "box.balloon"),
         // GY: the geyser head's tint by liquid kind (`.HandleGeyserColumn` M l. 59811–59821: kind 1 → 0x10017, 0 → 0, 2 →
         // 0x1000c — mode-1 remaps through tint tables 0x17 / 0xc; kinds 3 / 4 unchanged), the segments' copy of it (M l.
-        // 59842) and the top segment's clipped rows `+0x1bc` = 32·n − h_px, 0…31 (M l. 59846–59852).
+        // 59842) and the top segment's clipped rows `+0x1bc` = 32·n − h_px, 0…31 (M l. 59844–59850).
         W("World/Movers/Geyser.swift:248", .mode, .words([0x10017]), "box.geyserHead"),
         W("World/Movers/Geyser.swift:250", .mode, .words([0]), "box.geyserHead"),
         W("World/Movers/Geyser.swift:252", .mode, .words([0x1000c]), "box.geyserHead"),

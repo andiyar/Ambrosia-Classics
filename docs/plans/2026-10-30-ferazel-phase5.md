@@ -1331,6 +1331,38 @@ records the summary line.
   `+0xa8` = the idle index it came back from).
 - **Gate:** G2 602. **Commit:** `FerazelCore: geysers — setup, eruption, column, head and segment hurt; §9 (b) as read; 7 tests`.
 
+- **As executed (2026-11-07 attended run 45, Fable seat, Opus implementer + two Opus legs + re-review, D44; ladder 603):**
+  `World/Movers/Geyser.swift` — the geyser Setup arm (defaults 0x6400 / 60 / 60, the 0x44-byte block, the type / kind
+  renaming, the triple's two children), the eruption cycle (unsigned `divwu` phase, rise capped 0x600, fall clamped
+  [−0x700, −0x100], the dead `CalcStereoVolume` — no sound), the triple re-targeting, `.HandleGeyserColumn` (head, segments,
+  clipping, the spray's RNG order), `.KillBox`'s cleanup; `BoxSprite.swift` (the head 0x5a9 arm, `handleBuilt`, the Handle
+  call), `Player/GroundCeilingEffects.swift` (the 0x5a0 segment's Effect-Setup arm), `Player/HitPlayerSprite.swift` (the
+  head landing hurt by kind; the segment's part of the Effect test), `EnemyCommon.swift` (`.geyserSegment` row; enemies vs
+  geysers unchanged — see below), `SpriteSlot.swift`, `Session/FerazelSession.swift` (the eruption + column through the Box
+  Handle path, the `.geyserSegment` row, the player hit rows). Commits 76fd6b9 (the task, 7 tests) and 4639d9a (the
+  tests-only fix round). Leg 1 MERGEABLE WITH FIXES (every routine as the binary; predictions 100/60/60 frames 9–10 =
+  15237 / 16480, top segment `+0x1bc` 28 at 100 px matched), leg 2 MERGEABLE WITH FIXES (305 mutants, 250 killed, 21
+  equivalent, 34 real gaps → all 34 pinned by 4639d9a, plus the head hurt through the session, the Ruling-16 no-free-record
+  path, a 400-frame loop cap, one spray frame hard-coded from an independent Python run of the dump's draw order).
+  **§9 (b) as landed:** NR 2 — `.IdleToActiveSprite` (M l. 4215ff) copies the whole record back and runs no Setup,
+  `.MTKillSprite` (30739) frees nothing: the `+0x9c` block survives idling and is reused (pinned: no RNG draw on
+  reactivation, `+0xa8` = the idle index); NR 3 — kinds 3/4 as read, their base face past the 12-face cache draws nothing
+  (◇, never a refusal); NR 4 — p4 stored then overwritten; no sound. Files beyond the card: `SetupFaces.swift` (the three
+  cache sets, the Setup route, a placed 1449 allowed), `Front/LevelRun.swift` (cache registration), the render tests.
+  **Dump over bank (appended to `geysers.md` as "run-45 corrections"):** the head sorts at **layer 2**, not 11
+  (`.MTNewSprite` stores the argument, then `.SetupBoxSprite`'s own store at M l. 58938 replaces it before the insert);
+  the collapse (M l. 59767–59770) kills the head but clears no face on it — only the segments lose theirs; **only the
+  segments hurt enemies, never the base** — every enemy hit routine tests the Box handler first (Walker 58578, Crawler
+  56625, Roach 65136, Frog 70510), and a segment's `+0x150` is 0, so lava segments pass the Crawler and Frog by (no code
+  change: `EnemyCommon.environmentalHazard` already reads it so); kinds 3/4 hurt 0x70 (the default of both hurt paths,
+  M l. 49311 / 49771); the 190/60/40 column's "≥ 50 % at frame 13 / ~21 px" is the steady state — the first cycle reaches
+  50 % at frame 16 and bottoms at 5106 (19.9 px). Ruling-16 guards (each a null-pointer write in the original, none
+  reachable from the 27 shipped placements — 2 water on level 10, 25 lava on 50/51, no triples): a missing head / segment
+  record (all 700 in use), a triple's missing child, a period of 0 (p2 + p3 = −1). Not ◈: no golden or BootFaces value moved;
+  the quick bot does not apply. Carried [LOW]: the segment's session row is indistinguishable from the old enemy no-op
+  (correct as read — `.HandleGeyserSegSprite` is empty, M l. 53891); if a head ever left the active list while the base held
+  its id the port would not re-make it (comment in `Geyser.swift`; nothing kills or idles a head).
+
 #### PI — minor — the enemy pipes (→ 606)
 - **Files:** `Sources/FerazelCore/World/Movers/BoxSprite.swift` (the pipe arm 0x5d2…0x5d5), `Sources/FerazelCore/Session/SpriteWorld.swift`
   (`+0x1b2` collision rule: skipped as the outer sprite only), `Tests/FerazelCoreTests/EnemyPipeTests.swift` (new).

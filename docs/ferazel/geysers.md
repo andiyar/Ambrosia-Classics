@@ -200,3 +200,20 @@ indirect load of those handles was not seen].
 | enemy-shots §3.4 (last para), enemies-ground §2.3 | Box 0x5a0 = "lava/acid pool(s)" | Box 0x5a0 is the geyser base (nozzle); no pool object exists in this range (physics §5.1 already struck it) | §1–2 |
 | triggers-background-2 NOT RESOLVED 5 | "geyser kinds 200+" unknown | narrowed: colour rows 200/201/202 by liquid kind (§4.5) | main l. 29291–29320 |
 | INDEX NOT RESOLVED 1 | params of 1440..1449 unknown | closed for this range (§2) | raw 1006bc44–1006bcf4 |
+
+## Run-45 corrections (2026-11-07, attended run 45; the committed dump `ghidra/ferazel/Ferazel_pef.decompiled.c`, M l. N)
+Read while building the geysers (Phase 5 task GY; the dump beats this file):
+1. §4 head "layer 11": the head sorts at **layer 2**. `.MTNewSprite` stores the layer argument, then runs the Setup, then
+   inserts (M l. 30700–30710); `.SetupBoxSprite`'s common part stores layer 2 (M l. 58938) and the 0x5a9 arm keeps it.
+2. §4 "h < 1: kill head and every segment (`+0xe9 = 1`, face 0, slot 0)": the head is killed but **its face is not
+   cleared** (M l. 59767–59770); only the segment loop writes face 0.
+3. §7 "Enemies: any type-0x5a0 sprite — base or segment — … hurts": **segments only**. Every enemy hit routine tests the
+   Box handler before the 0x5a0 type (Walker M l. 58578, Crawler 56625, Roach 65136, Frog 70510), so the base takes the
+   Box branch; and a segment's `+0x150` is 0 (the Effect Setup never writes it), so the Crawler / Frog form
+   (`+0x14c == 1 || +0x150 == 2`) never fires on a lava segment either.
+4. §1 / NR 3: kinds 3 and 4 hurt **0x70** on both the head and the segment path (the default of M l. 49311 / 49771).
+5. §3 worked-cycles row 190/60/40: "≥ 50 % at frame 13" and "bottoms at ~21 px" describe the steady state; the first cycle
+   reaches 50 % at frame 16 and bottoms at 5106 (19.9 px); the steady-state low is 5416 and the peak 48560.
+6. NR 2 closed: `.IdleToActiveSprite` (M l. 4215ff) copies the whole 0x1fc-byte record back and runs no Setup;
+   `.MTKillSprite` (M l. 30739ff) only unlinks — the `+0x9c` block survives idling and is reused.
+7. §4 step 5: raw `1006d240..1006d258` shows the column rect's bottom is y (the decompile drops the fourth `SetRect` argument).

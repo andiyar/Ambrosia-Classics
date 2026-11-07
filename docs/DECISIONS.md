@@ -1952,6 +1952,25 @@ Bank §7.7 corrections as the plan's "As executed" lists. Carried [LOW]: the Flo
 and the slope-grounded rider's halving (both test gaps with a known setup), the early return after `.KillPlayerShot` (Bat
 pattern), `pef.py`'s default path, the stale "refused" comment in `ProgrammedPath.swift`.
 
+**As built — attended run 45 (2026-11-07, Fable seat, D45.7 chain), DL (the Dillo) and GY ⚑ (geysers; wave 5.4
+continues).** Ladder: DL **596** (8fd9fe8; one Opus leg MERGEABLE WITH FIXES — 67 mutants, 64 killed, 3 real gaps → 2 pinned
+by 8431831, the jump's `+0xce = 0` indistinguishable), GY **603** / 2 opt-in skips (475 rules + 128 render; the seat's
+whole-suite number at the fix-round head 4639d9a; two Opus legs MERGEABLE WITH FIXES — leg 1 every routine as the binary,
+leg 2 305 mutants / 250 killed / 21 equivalent / 34 real gaps → all pinned by 4639d9a; re-review on a clean copy).
+`World/Enemies/Dillo.swift` (5 tests), `World/Movers/Geyser.swift` (7 tests). **Seat rulings:** (1) the unplaced Dillo
+types 1872–1879 (HP 0, max HP 0) are refused at Setup — the original always dies on frame 1 but a `FastRand(10)` timer of
+0 or 1 divides by max HP 0 first (raw 10086a48, undefined) — a named ◇, the Wraith-variant precedent; (2) §9 (b) NR 2–4
+land as settled (no Setup re-run on reactivation, the `+0x9c` block reused, kinds 3/4 draw no base face, p4 inert, no
+sound); (3) the geyser head sorts at layer 2 and only the segments hurt enemies — the bank's "layer 11" and "base or
+segment" were wrong (`geysers.md` run-45 corrections 1, 3), `EnemyCommon.environmentalHazard` unchanged; (4) a Ruling-16
+guard that skips a null-pointer write (missing head / segment / child record, a zero period) stays silent — none is reachable
+from the 27 shipped placements. Neither task is ◈ (the Dillo is placed on levels 15 / 22, geysers on 10 / 50 / 51): no golden
+or BootFaces value moved; the quick bot does not apply. Bank corrections: `enemies-ground.md` item 12, `geysers.md` run-45
+corrections. Carried [LOW]: the Dillo's stale `KillPlayerShot` register (nil), the crush's ground side pinned only through
+the Crawler tests; the geyser segment's session row indistinguishable from the old no-op (empty handler, correct as read),
+the stale-head comment in `Geyser.swift`; the re-review (305 mutants on a clean copy: 285 killed, 20 survivors all equivalent — leg 2's
+table was not contaminated) confirmed the clip-row cite as 59844–59850 (fixed in the docs-close commit).
+
 ## D45 — Cythera re-planning pass: Ben's five answers + the seat's rulings (2026-11-05)
 
 **Context.** Phase 0 half built (K1, C0–C5, 44 tests) and stalled since 2026-10-07; nothing planned beyond it. Fable
