@@ -1972,8 +1972,8 @@ the stale-head comment in `Geyser.swift`; the re-review (305 mutants on a clean 
 table was not contaminated) confirmed the clip-row cite as 59844–59850 (fixed in the docs-close commit).
 
 **As built — attended run 46 (2026-11-08, Fable seat, D45.7 chain), PI (the enemy pipes) and PT (the renderer's traps into
-the refusal census; wave 5.4 CLOSED).** Ladder: PI **607** (50de2d3 + tests-only fix round c511d4c; one Opus leg MERGEABLE WITH
-FIXES — 42 mutants, 28 killed, 4 equivalent, 10 real gaps → all 10 pinned), PT **607** (582069d (abf08f9 in the pt-lane clone), asserts only; one Opus leg
+the refusal census; wave 5.4 CLOSED).** Ladder: PI **607** (43b2842 + tests-only fix round cab8d5c; one Opus leg MERGEABLE WITH
+FIXES — 42 mutants, 28 killed, 4 equivalent, 10 real gaps → all 10 pinned), PT **607** (178788f (abf08f9 in the pt-lane clone), asserts only; one Opus leg
 MERGEABLE). `World/Movers/BoxSprite.swift` pipe arm + `generate` grew Walker and Blob arms (4 tests, `EnemyPipeTests`).
 **Dump over card/bank (PI):** `.SetupBoxSprite` spawns a first child and kills it at once (M l. 59347–59353; ported as the
 Setup's field stores only, the throwaway spawn deferred to level 21's spawn code); the release does NOT clear the pipe's child

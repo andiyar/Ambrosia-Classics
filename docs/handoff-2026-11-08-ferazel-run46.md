@@ -5,11 +5,11 @@
 ## TL;DR
 | what | state |
 |---|---|
-| PI (enemy pipes) | merged — 50de2d3 + tests-only fix round c511d4c; one Opus leg MERGEABLE WITH FIXES (42 mutants, 10 real gaps → all pinned) |
-| PT (renderer traps → refusals) | merged — 582069d (abf08f9 in the pt-lane clone) (built in a scratch clone, cherry-picked); one Opus leg MERGEABLE; two minor census wording notes carried |
+| PI (enemy pipes) | merged — 43b2842 + tests-only fix round cab8d5c; one Opus leg MERGEABLE WITH FIXES (42 mutants, 10 real gaps → all pinned) |
+| PT (renderer traps → refusals) | merged — 178788f (abf08f9 in the pt-lane clone) (built in a scratch clone, cherry-picked); one Opus leg MERGEABLE; two minor census wording notes carried |
 | Ladder | Core **607** = 479 rules + 128 render, 0 failed, 2 opt-in skips by name; WinKit 81/0/2 |
 | Wave 5.4 END | G3 1,108/0; GE core levels 1–4: visit 3,360/0, bot 86,400/0; **Proof B 604/0/3/0 of 607** (10:00, muted); GW4R main menu identical; GW1 0/2, GW3 0/1, GW4 ok, G5 ok, greps empty, G1 ef2c341/370 |
-| main | 50de2d3 → c511d4c → 582069d (abf08f9 in the pt-lane clone) → docs close; pushed |
+| main | 43b2842 → cab8d5c → 178788f (abf08f9 in the pt-lane clone) → docs close; pushed |
 | Next | run 47 [OX LV5] — the repair session's rebuilt chip; **not started by this session** |
 
 ## As-executed notes (for the repair session to fold into the new plan)
