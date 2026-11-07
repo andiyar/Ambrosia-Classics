@@ -605,4 +605,13 @@ sprites. 1751..1759 additionally get the 1750 sheets/rect and state 1. Dillo 187
     the blink frames (`+0xb4 < −20`) draw nothing — R(25) is drawn only on the other frames (M l. 58010–58023); the
     re-arm's `−(40 + R(80))` is then stepped once (stored −39 − R(80), M l. 58073–58077); (f) neither arm nor the 1750
     death path stores `+0x188…+0x18b` or `+0xea`.
-
+12. ⚑ DL (2026-11-07, attended run 45; the committed dump, M l. N) — read while building the Dillo (§6): (a) Setup also
+    stores `+0x150 = −1` (M l. 72347) and `+0x164 = 0`; (b) the 1871 egg's `+0xa4` is **0x1c0** with the grey tint
+    `+0xb8 = 0x1000b` (M l. 72694–72696), not "448 + remap 11"; (c) `.HitDilloSprite` has **no** Smiting-explosion (0x4b7)
+    or geyser arm — the Ring's seeds are player shots and hit the armour like any shot; (d) the volley count `+0x14c`
+    (1 + R(2)) fires one volley at 2 and two at 3 (the `+0x14c > 1` test runs before the decrement), and the roll does one
+    full turn fewer than its count; (e) the idle vx halving is `× 0.5` **truncated toward zero on both signs** (M l.
+    72607–72608), not a shift; (f) spans: `.InitDilloSprite` 72283–72286, `.KillDillo` 72916–72937; (g) write-back: only
+    `+0x188 = 1` at Setup and `+0xea` at the Kill; (h) types 1872–1879 (HP 0, max 0): the death test (M l. 72819) follows
+    the state switch, so they always die on frame 1, but a `FastRand(10)` timer of 0 or 1 makes the idle decision divide
+    by max HP 0 first (raw 10086a48, plain `divw`, undefined) — the port refuses them at Setup (◇; §8 variants).

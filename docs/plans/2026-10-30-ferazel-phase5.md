@@ -1284,6 +1284,30 @@ records the summary line.
 - **Tests (5):** `testDilloSetup` · `testDilloSpines5And7` · `testDilloEggBomb` · `testDilloArmourBlock` · `testDilloKillScore1500`.
 - **Gate:** G2 595. **Commit:** `FerazelCore: the Dillo — spines, egg bombs, armour; 5 tests`.
 
+- **As executed (2026-11-07 attended run 45, Fable seat, Opus implementer + one Opus leg, D44; ladder 596):**
+  `World/Enemies/Dillo.swift` — Setup, the idle decision, slow / fast walk, `.RandomDilloAttack`, the curl / mode run /
+  uncurl phases, the 5- and 7-spine volleys, the egg, the jump, the roll, `.HitDilloSprite` (front-only vulnerability in
+  states 6/7, armour `KillPlayerShot(0,1)` + snd 303 for everything else incl. the Statue spell, the crush, retaliation),
+  death and `.KillDillo` through `killProc`'s `.dillo` arm (+1500). Commits 8fd9fe8 (the class, 5 tests; merged to main)
+  and 8431831 (the tests-only fix round: the retaliation gated on a landed hurt, the idle vx × 0.5 truncation toward zero
+  on both signs, comment corrections). One Opus leg MERGEABLE WITH FIXES (67 mutants, 64 killed, 3 real gaps → 2 pinned;
+  the jump's `+0xce = 0` is indistinguishable — the gravity step clears it before any read). Files beyond the card:
+  `Session/FerazelSession.swift` (Handle + hit rows; a reverted row fails `testDilloSetup` / `testDilloKillScore1500` /
+  `testDilloArmourBlock`), `EnemyCommon.swift` (the Kill arm), `Front/LevelRun.swift` (four picture-cache sets registered
+  between the Crab's and the Wraith's, per `.InitSprites` M l. 106–145), `GremlinFloaterTests` (its registration-order pin),
+  `BootFacesTests` / `FaceTests` (asserts), `DrawModeAuditTests` (rows + re-anchors). **Dump over bank §6** (appended there as
+  item 12): Setup stores `+0x150 = −1` (M l. 72347) and `+0x164 = 0`; 1871's egg damage is 0x1c0 with the grey tint
+  0x1000b (M l. 72694–72696), not "448 + remap"; `.HitDilloSprite` has no Smiting-explosion or geyser arm (the Ring's seeds
+  are player shots and hit the armour like any shot); a volley count of 2 fires one volley and 3 two; the roll does one
+  full turn fewer than its count; the idle vx halving is `× 0.5` truncated toward zero (M l. 72607–72608), not a shift;
+  spans: Init 72283–72286, Kill 72916–72937. Write-back flags: `+0x188 = 1` at Setup, `+0xea` at the Kill, nothing else.
+  **Seat ruling (◇ named):** the unplaced types 1872–1879 are refused at Setup — the original gives them HP 0 and max HP 0
+  and always dies on frame 1 (the death test M l. 72819 follows the state switch), but when the `FastRand(10)` timer starts
+  at 0 or 1 the idle decision divides by max HP 0 first (raw 10086a48, plain `divw`, undefined, no trap) — bank §8 variants,
+  the Wraith-variant precedent. Not ◈ (placed only on levels 15 / 22): no golden or BootFaces value moved; the quick bot does
+  not apply. Carried [LOW]: the stale register passed to `KillPlayerShot` left nil (Salamander precedent); the crush's
+  "Dillo on the ground" side is pinned only through `EnemyCommon.crushesSmall`'s Crawler tests.
+
 #### GY — ⚑ MAJOR — geysers (design §9 (b)) (→ 602)
 - **Files:** `Sources/FerazelCore/World/Movers/Geyser.swift` (new), `Sources/FerazelCore/World/Movers/BoxSprite.swift`
   (`:14`, `:142`, `:421`, `:1172` — the geyser Setup arm, the eruption cycle, the column buffer `+0x9c`),
