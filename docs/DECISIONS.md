@@ -2014,9 +2014,12 @@ with the skipped tests checked by name (rulings 11, 15); D44's ladder (+1) stand
 (two review legs already passed it); one whole-game gate for Phase 6 (too long between things Ben can play).
 7. **Sessions chain automatically (Ben, 2026-11-07, mid-run 43): "as long as no hard stop questions for me at the end of
    this session, happy for next session to start … auto trigger new sessions as we go as well pending hard stop questions
-   for me."** Rule (CLAUDE.md "Workflow"): a session that closes a run or a wave re-seeds `docs/NEXT.md` and restarts the
-   unattended loop itself (`looper-start.sh`) without asking; it leaves the loop stopped only when a question only Ben can
-   answer blocks the next step (`STATUS: BLOCKED` + a `Blocks: everything` item in QUESTIONS, named in the closing message).
-   Non-blocking questions queue and never stop the chain. The loop's own stop conditions (D34: STOP file, BLOCKED, stall,
-   night launch rule D42) stand. Run 43 applies it at its close: NEXT → run 44 [BL GF], loop restarted.
+   for me." — and, after the seat restarted the LOOP: "I didn't say loop. I said trigger a new session."** Rule
+   (CLAUDE.md "Workflow"): a session that closes a run or a wave re-seeds `docs/NEXT.md` and **starts the next attended
+   session itself** (`start_session`, same seat model, fresh context, brief "read docs/NEXT.md and run it"), without
+   asking. The unattended loop is NOT restarted by this rule — it stays stopped until Ben says "start the loop" (the
+   loop the seat started at run 43's close was stopped a minute in, nothing landed). It leaves no new session only when
+   a question only Ben can answer blocks the next step (`STATUS: BLOCKED` + a `Blocks: everything` item in QUESTIONS,
+   named in the closing message). Non-blocking questions queue and never stop the chain. Run 43 applies it at its
+   close: NEXT → run 44 [BL GF], the next attended session started.
 **Approved by:** Ben (1 in his words, 2–5 "yes, all recommended", 6 by his resume request, 7 in his words, 2026-11-07).

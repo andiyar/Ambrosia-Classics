@@ -45,9 +45,9 @@ never per task. Reviewers report everything with confidence, no self-filtering.
 **Unattended loop (D34):** `.looper/config.sh` adapts fable-kit's session looper; its chip is `docs/NEXT.md`
 (first line `STATUS: …`), Ben's queue `docs/QUESTIONS.md`, ledger `docs/LOOP-LOG.md`; stop with `touch STOP`
 (git-ignored). The loop merges to LOCAL main only and never pushes — a human session pushes.
-**Sessions chain automatically (Ben 2026-11-07, D45.7):** every session that closes a run or a wave re-seeds `docs/NEXT.md`
-with the next wave and **restarts the loop itself** (`looper-start.sh`, no need to ask) — unless a question only Ben can
-answer blocks the next step: then `STATUS: BLOCKED` in NEXT, the item in QUESTIONS with `Blocks: everything`, loop stopped,
-and the session's closing message names that one question. Non-blocking questions queue in QUESTIONS and never stop the chain.
-Portability shape (HectorKit D6): every game's `*Core` target is Foundation-only; Apple frameworks only in
-the app shell (HectorShell) and census oracles — keeps a later SDL/Windows shell possible. Mac stays native.
+**Sessions chain automatically (Ben 2026-11-07, D45.7 as corrected):** every attended session that closes a run or a wave
+re-seeds `docs/NEXT.md` with the next wave and **starts the next attended session itself** (`start_session`, same seat
+model, fresh context, brief = "read docs/NEXT.md and run it"; never ask) — NOT the unattended loop, which stays stopped
+unless Ben says "start the loop". The one exception: a question only Ben can answer blocks the next step — then
+`STATUS: BLOCKED` in NEXT, the item in QUESTIONS with `Blocks: everything`, no new session, and the closing message
+names that one question. Non-blocking questions queue in QUESTIONS and never stop the chain.

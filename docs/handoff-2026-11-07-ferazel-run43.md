@@ -10,8 +10,8 @@
 | BAf (Bat fix round) | merged — 60d92f7 + 54964b6 (+ docs 37dddf5); re-review MERGEABLE 26/26; **the 1xx path form zeroes the swing speed, not the radius** (audit ruling 3 was wrong; plan/audit/spec corrected) |
 | FR (Frogs + Salamanders) | merged — 1f052b4 + fix round 8fa5ca2; two legs + re-review MERGEABLE 25/25; **the Frog's aim test reads playerX** (binary quirk; bank §1.3 ⚑); ◈ none moved |
 | Ladder | Core **577** = 449 rules + 128 render, 0 failed, 2 opt-in skips; WinKit 81/0/2; GW1 0/2, GW3 0/1, GW4 ok |
-| New standing rule | **D45.7 sessions chain automatically** — a closing session re-seeds NEXT and restarts the loop unless a Ben-only question blocks (CLAUDE.md "Workflow") |
-| Next | loop run 44 **[BL GF]** (NEXT.md re-seeded; the loop restarted at this close) |
+| New standing rule | **D45.7 sessions chain automatically** — a closing session re-seeds NEXT and starts the next attended session (not the loop) unless a Ben-only question blocks (CLAUDE.md "Workflow") |
+| Next | run 44 **[BL GF]** in a chained attended session (NEXT.md re-seeded) |
 
 ## Root causes / rulings with evidence (do not re-chase)
 - **"No radius" flag (BAf):** M l. 39354–39378 zeroes the path record's p3 = `.MakeRadial`'s fifth argument; M l. 35737–35767
@@ -36,7 +36,7 @@
 - Ben's RAM rule held: one whole suite at a time beside at most one reviewer's filtered builds.
 
 ## Open (ordered)
-1. Loop run 44 [BL GF] — the chip. BL closes wave 5.3 (G3, GE levels 1–4, GWB by day).
+1. Run 44 [BL GF] — the chip, in the chained attended session. BL closes wave 5.3 (G3, GE levels 1–4, GWB by day).
 2. QUESTIONS: Q17 (Aki data path, note), Q16 (Phase 5 defaults, Ben's later read), Q15 items, Q13.
 3. Carried [LOW]: `ProgrammedPath.makeRadial` has no caller yet (GF); headless burns never end (EC rule); the Salamander's
    stale register nil on `.KillPlayerShot`.
