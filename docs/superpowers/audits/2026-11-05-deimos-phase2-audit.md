@@ -1,3 +1,5 @@
+> Superseded by `docs/superpowers/plans/2026-11-05-deimos-remainder.md` on 2026-11-08. Kept as history; nothing current reads it.
+
 # Audit — Deimos Rising Phase 2, branch `deimos-phase2` (44 commits) against the remainder spec — 2026-11-05
 
 > Seat: Claude Fable 5.1 (re-planning pass, `replan.md` step 4). Five read-only `fk-reviewer` legs (Opus 5.5) ran in
