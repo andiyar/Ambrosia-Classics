@@ -1367,7 +1367,6 @@ public enum BoxSprite {
                     w.newSprite(type: t, x: cx, y: cy, layer: Int16(truncatingIfNeeded: layer), handler: handler,
                                 record: 0x200, setup: setup)
                 }
-                if (0x744...0x74c).contains(type) { c.face = FaceRef(pict: Bat.insectSet, index: 3, set: .encoded) }
             }
         case .walker:
             let px = Int(w.player.centreX)

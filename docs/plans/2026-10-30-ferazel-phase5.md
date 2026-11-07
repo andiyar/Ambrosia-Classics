@@ -1387,9 +1387,10 @@ records the summary line.
     there** (card): it clears, with a new `.Deviation` interval, only when the child has `+0xe9` / `+0xea`, so a pipe
     waits for its child's death before the next one.
   - **Child layer:** the class Setup stores its own `+0x80` after `.MTNewSprite`'s (Walker 4, Blob 8), not pipe + 1.
-  - **`generate`:** Walker arm (record 0x200 read as zeros, playerX, face as `SetupFaces`) and Blob arm added; the Bat arm
-    now gives the insects 0x744…0x74c their Setup face (cache 0x744 cell 3, M l. 68219) — without it the 1860 child has no
-    `+0xc0` and never emerges; no shipped crate drops an insect.
+  - **`generate`:** Walker arm (record 0x200 read as zeros, playerX, face as `SetupFaces`) and Blob arm added; the insects
+    0x744…0x74c already get their Setup face from `Bat.setup` (cache 0x744 cell 3, M l. 68219), so the 1860 child has its
+    `+0xc0` and emerges with no extra store (a redundant one was dropped in the review fix round); no shipped crate drops
+    an insect.
   - **Collide rule / class guards:** `SpriteWorld.collideSprites` already matched (`+0x1b2` outer only, M l. 30253); the
     Walker, Blob and Bat Handles already return while emerging — no change.
   - **Other files:** DrawModeAudit re-anchored (BoxSprite rows moved) and gained the eight pipe-child clip rows (the

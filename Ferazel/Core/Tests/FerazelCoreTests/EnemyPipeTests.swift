@@ -75,6 +75,17 @@ final class EnemyPipeTests: XCTestCase {
         // p2 0 → 100, written back into the record (M l. 59328–59330).
         let w0 = try world()
         XCTAssertEqual(pipe(w0, 0x5d3, p2: 0).1.p2, 100)
+        // p1 0: the arm returns before the face store, the countdown and the tail (M l. 60625–60627) — nothing moves.
+        let w1 = try world()
+        let (id1, _) = pipe(w1, 0x5d3, p1: 0)
+        w1.active.update(id: id1) { u in
+            u.face = nil
+            u.vy = 0x100
+            u.counterA6 = 5
+        }
+        let before1 = try slot(w1, id1)
+        frame(w1, id1)
+        XCTAssertEqual(try slot(w1, id1), before1)
 
         try runToSpawn(w, id)
         s = try slot(w, id)
@@ -108,6 +119,15 @@ final class EnemyPipeTests: XCTestCase {
         XCTAssertEqual(c.y256, Int32(c.y) << 8)
         XCTAssertEqual(c.clip.top, 600 + 0x1d - c.y)
         XCTAssertTrue(w.player.cues.isEmpty)
+        // The clip edge at its boundary (0x5d3, M l. 60715–60722: `iVar15 < 1` → 0): 1 px short of the pipe's far edge
+        // keeps 1; exactly on it, 0. `+0x150` 2 → 4 here, under `+0x154` 23: still emerging.
+        w.active.update(id: cID) { $0.y = 600 + 0x1d - 1 - 3 }
+        frame(w, id)
+        XCTAssertEqual(try slot(w, cID).clip.top, 1)
+        w.active.update(id: cID) { $0.y = 600 + 0x1d - 3 }
+        frame(w, id)
+        XCTAssertEqual(try slot(w, cID).clip.top, 0)
+        XCTAssertTrue(try slot(w, cID).emerging)
 
         // The other children `.GenerateSprite` makes for the shipped pipes: the Blob 1730 and the insect bat 1860.
         var lights = LightTable()
@@ -122,6 +142,23 @@ final class EnemyPipeTests: XCTestCase {
         XCTAssertEqual(bat.handler, .bat)
         XCTAssertEqual(bat.recordIndex, 0x200)
         XCTAssertEqual(bat.face, FaceRef(pict: Bat.insectSet, index: 3, set: .encoded))
+        // The Walker children: spawn point `+0xc ← +8`, `+0xa ← +6` (M l. 56957–56958); the flip from playerX
+        // (`*_DAT_1009fd94`): 0x6a9 playerX < x + 0x32 (M l. 56982), 0x6d6… the same (M l. 57008), 0x6e0… x + 0x32 <
+        // playerX (M l. 56991; 0x6e0 itself starts flipped, M l. 56947, so 0x6e1); the face by family (M l. 56981, 57007,
+        // 56990).
+        let walkers: [(Int16, Int16, Int16, Bool)] = [
+            (0x6a9, 0x6a9, 149, true), (0x6a9, 0x6a9, 150, false),
+            (0x6d6, 0x6d6, 149, true), (0x6df, 0x6d6, 150, false),
+            (0x6e1, 0x6e0, 151, true), (0x6e9, 0x6e0, 150, false),
+        ]
+        for (t, face, px, flip) in walkers {
+            w.player.centreX = px
+            let k = try slot(w, BoxSprite.generate(w, type: t, x: 100, y: 200, layer: 2, lights: &lights, effects: 1))
+            XCTAssertEqual(SpriteSlot.Point(x: k.x, y: k.y), SpriteSlot.Point(x: 100, y: 200), "\(t)")
+            XCTAssertEqual(k.oldPosition, SpriteSlot.Point(x: 100, y: 200), "\(t)")
+            XCTAssertEqual(k.mirrored, flip, "\(t) \(px)")
+            XCTAssertEqual(k.face, FaceRef(pict: face, index: 0, set: .encoded), "\(t)")
+        }
     }
 
     func testEmergingClipAndPush() throws {
@@ -188,8 +225,11 @@ final class EnemyPipeTests: XCTestCase {
             frame(w, id)
             XCTAssertEqual(try slot(w, cID).x, c.x)
             XCTAssertEqual(try slot(w, id).siblings.first, cID)
-            // The child's kill request: `+0x1d4` and `+0x150` 0, `+0xa6 = .Deviation(p2)` (M l. 60760–60767).
-            w.active.update(id: cID) { $0.dead = true }
+            // The child's kill request: `+0x1d4` and `+0x150` 0, `+0xa6 = .Deviation(p2)` (M l. 60760–60767) — on `+0xe9`
+            // (dead), or on `+0xea` alone (killed for good: the 0x5d4 row; M l. 60762).
+            w.active.update(id: cID) { k in
+                if t == 0x5d4 { k.killedForGood = true } else { k.dead = true }
+            }
             r = w.rng
             let a6 = deviation(150, &r)
             frame(w, id)
@@ -260,11 +300,29 @@ final class EnemyPipeTests: XCTestCase {
         w.active.update(id: cID) { $0.dead = true }
         frame(w, id)                                                   // the pipe lets go of it (a new interval)
         XCTAssertNil(try slot(w, id).siblings.first)
+        // Dead while still emerging (`+0x150` 2 → 3 this frame): `+0x150 = 0` with the release (M l. 60764).
+        XCTAssertEqual(try slot(w, id).classWord150, 0)
+        // `+0x150 > 0` with no child: `+0x150 = 0` (M l. 60701–60703), no step and no cue.
+        w.active.update(id: id) { $0.classWord150 = 5 }
+        w.player.cues = []
+        frame(w, id)
+        XCTAssertEqual(try slot(w, id).classWord150, 0)
+        XCTAssertNil(try slot(w, id).siblings.first)
+        XCTAssertTrue(w.player.cues.isEmpty)
         for _ in 0..<5 { w.updateSprites(lights: &lights) }
         XCTAssertNil(w.active.sprite(id: cID))                         // unlinked
         XCTAssertEqual(w.records, [Placement(index: 0, flag: 1, byte1: 0, type: 0x5d4, p1: 0x6a4, p2: 60, p3: 0, p4: 0,
                                              y: 600, x: 400)])
         XCTAssertEqual(w.records, [rec])
         XCTAssertEqual(w.enemies.live, 0)
+        // A Blob child counts only while the window is open (`.SetupBlobSprite` M l. 67728–67731: `+0x1b5 = 1`, live
+        // + 1): closed, nothing; open, both.
+        let shut = try slot(w, BoxSprite.generate(w, type: 0x6c2, x: 100, y: 200, layer: 2, lights: &lights, effects: 1))
+        XCTAssertFalse(shut.countedInTotals)
+        XCTAssertEqual(w.enemies.live, 0)
+        w.enemies.window = true
+        let open = try slot(w, BoxSprite.generate(w, type: 0x6c2, x: 100, y: 200, layer: 2, lights: &lights, effects: 1))
+        XCTAssertTrue(open.countedInTotals)
+        XCTAssertEqual(w.enemies.live, 1)
     }
 }
