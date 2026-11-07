@@ -1,3 +1,5 @@
+> Superseded by `docs/superpowers/plans/2026-11-05-deimos-remainder.md` on 2026-11-08. Kept as history; nothing current reads it.
+
 # Handoff — 2026-10-07 — Deimos Rising Phase 2: plan reviewed, waves 2.0–2.5 done, 2.6 built (review pending)
 
 **TL;DR.** The Phase 2 plan (`docs/plans/2026-10-07-deimos-phase2.md`) was written by an Opus planner, reviewed by two Opus

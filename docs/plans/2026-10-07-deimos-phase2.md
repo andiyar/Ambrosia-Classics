@@ -1,3 +1,5 @@
+> Superseded by `docs/superpowers/plans/2026-11-05-deimos-remainder.md` on 2026-11-08. Kept as history; nothing current reads it.
+
 # Plan — Deimos Rising Phase 2: level 1 plays (gate 2) — 2026-10-07
 
 > Status: **REVIEWED (two Opus legs) — ACCEPT_WITH_FIXES, fixes applied** (planner: Claude Opus 5.5, 2026-10-07;
