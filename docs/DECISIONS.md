@@ -1971,6 +1971,28 @@ the Crawler tests; the geyser segment's session row indistinguishable from the o
 the stale-head comment in `Geyser.swift`; the re-review (305 mutants on a clean copy: 285 killed, 20 survivors all equivalent — leg 2's
 table was not contaminated) confirmed the clip-row cite as 59844–59850 (fixed in the docs-close commit).
 
+**As built — attended run 46 (2026-11-08, Fable seat, D45.7 chain), PI (the enemy pipes) and PT (the renderer's traps into
+the refusal census; wave 5.4 CLOSED).** Ladder: PI **607** (50de2d3 + tests-only fix round c511d4c; one Opus leg MERGEABLE WITH
+FIXES — 42 mutants, 28 killed, 4 equivalent, 10 real gaps → all 10 pinned), PT **607** (582069d (abf08f9 in the pt-lane clone), asserts only; one Opus leg
+MERGEABLE). `World/Movers/BoxSprite.swift` pipe arm + `generate` grew Walker and Blob arms (4 tests, `EnemyPipeTests`).
+**Dump over card/bank (PI):** `.SetupBoxSprite` spawns a first child and kills it at once (M l. 59347–59353; ported as the
+Setup's field stores only, the throwaway spawn deferred to level 21's spawn code); the release does NOT clear the pipe's child
+link `+0x1d4` — it clears only when the child dies (`+0xe9`/`+0xea`, M l. 60758–60767), so a pipe waits for its child to die
+before the next; `+0x150` is 2 after the spawn frame (the step runs in the same frame); the child keeps its own Setup's layer
+(Walker 4, Blob 8), not pipe + 1; cue 459 at step 3. **PT:** 18 trap sites (17 `precondition(` + 1 `preconditionFailure()`
+`SpriteBlitter.swift:486`); 7 became refusals (water table w ≥ 6, status-bar PICT size, parallax face slot, light-pass darkness
+×2, light-table index, overlay face), 11 stay traps with census rows "unreachable from any data" (the census now scans traps as
+well as throws); `LevelRun` refuses a level whose header has OmniPx mode ∉ {0, 2, 4, 5} or a horizon strip (`0x2716` ≠ 0),
+caught by GameFlow as "level could not be loaded" (asserted in `GameFlowGameTests.testNewGameStartsLevel1`). **Wave 5.4 end
+gates:** G2 607 = 479 + 128, 0 failed, 2 opt-in skips by name; G3 1,108/0; GE core levels 1–4 visit sweep 3,360/0, bot
+86,400/0; GWB Proof B **604/0/3/0 of 607** (10:00, muted); GW4R main menu identical; GW1 0/2, GW3 0/1, GW4 ok, GW2 81/0/2,
+G5 ok, greps empty, G1 ef2c341/370. **Method rulings (Ben, 2026-11-08, in chat):** (1) STATE.md and NEXT.md hold only the
+current state / current run; history moves out at every close; (2) the re-plan must be one self-contained plan file, not
+pointers at the October plan + the audit (the repair session owns this and the chip rebuild); (3) the seat hands a leg the
+card + a line RANGE, never pre-reads source (fable-kit orchestrator.md §3 corrected, c5f706d); (4) the superpowers skill line
+in the chip was for the planning session only — drop it; (5) the visit sweep + bot run after level tasks and at phase ends,
+not every wave end; (6) run 47 is NOT chained by this session (Ben's word; the repair session starts it).
+
 ## D45 — Cythera re-planning pass: Ben's five answers + the seat's rulings (2026-11-05)
 
 **Context.** Phase 0 half built (K1, C0–C5, 44 tests) and stalled since 2026-10-07; nothing planned beyond it. Fable
