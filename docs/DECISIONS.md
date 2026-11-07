@@ -1996,4 +1996,11 @@ pass itself landed 2026-11-04 at f07e2f8 with nothing built):**
 with the skipped tests checked by name (rulings 11, 15); D44's ladder (+1) stands: BA 569, FR 577.
 **Rejected:** pinning HectorKit through a worktree (one kit, one truth; the drift is Shell-only); rebuilding the Bat
 (two review legs already passed it); one whole-game gate for Phase 6 (too long between things Ben can play).
-**Approved by:** Ben (1 in his words, 2–5 "yes, all recommended", 6 by his resume request, 2026-11-07).
+7. **Sessions chain automatically (Ben, 2026-11-07, mid-run 43): "as long as no hard stop questions for me at the end of
+   this session, happy for next session to start … auto trigger new sessions as we go as well pending hard stop questions
+   for me."** Rule (CLAUDE.md "Workflow"): a session that closes a run or a wave re-seeds `docs/NEXT.md` and restarts the
+   unattended loop itself (`looper-start.sh`) without asking; it leaves the loop stopped only when a question only Ben can
+   answer blocks the next step (`STATUS: BLOCKED` + a `Blocks: everything` item in QUESTIONS, named in the closing message).
+   Non-blocking questions queue and never stop the chain. The loop's own stop conditions (D34: STOP file, BLOCKED, stall,
+   night launch rule D42) stand. Run 43 applies it at its close: NEXT → run 44 [BL GF], loop restarted.
+**Approved by:** Ben (1 in his words, 2–5 "yes, all recommended", 6 by his resume request, 7 in his words, 2026-11-07).
