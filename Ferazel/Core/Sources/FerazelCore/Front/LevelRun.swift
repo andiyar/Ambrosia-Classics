@@ -17,6 +17,16 @@ public enum LevelEnd: Equatable, Sendable {
     case quit
 }
 
+/// PT (audit ruling 9): a level whose header asks for a backdrop the renderer does not draw yet, refused at level open
+/// (`LevelRun.setupLevel`, before the renderer and the session) — `GameFlow` reports it as every level-run error, the
+/// level-load report, never a quit. No built level has either; the census row and its check are `DrawModeAuditTests`'.
+public enum LevelOpenRefusal: Error, Equatable, Sendable {
+    /// Header `0x26c7` (OmniPx) outside 0, 2, 4, 5: the rain and interlace modes 1, 3, 6, 7, ≥ 8 (6A-RN draws them).
+    case omniPxMode(UInt8)
+    /// Header `0x2716` ≠ 0: the parallax horizon strip's PICT (levels 10, 30, 40, 45, 62, 67; 6A-S8 draws it).
+    case horizonStrip(Int16)
+}
+
 /// Which renderer executes a `LevelRunOutput` segment's draws (A1a): both draw on the one shared `ScreenSurface`.
 public enum LevelRunTarget: Equatable, Sendable {
     /// The level `FrameRenderer` (`apply(FrameOps(draws: …))`): the grid, lights, sprites, copy / erase, status bar,
@@ -563,11 +573,18 @@ public final class LevelRun {
         }
     }
 
+    /// PT: the level-open refusals (`LevelOpenRefusal`) for header `h`.
+    static func refuseUndrawnHeader(_ h: LevelHeader) throws {
+        guard [0, 2, 4, 5].contains(h.omniPxMode) else { throw LevelOpenRefusal.omniPxMode(h.omniPxMode) }
+        guard h.stripPict == 0 else { throw LevelOpenRefusal.horizonStrip(h.stripPict) }
+    }
+
     /// `.SetupLevel`'s body up to `.LoadCachedSpriteFaces` (M l. 2252–2568): the bars, the G writes, the session
     /// init (crunch re-apply, records, the Setups, the player), the totals, the cached-face bars.
     private func setupLevel(input: FrontInput, out: inout LevelRunOutput) throws {
         let h = levelFile.header
         let L = levelNumber
+        try Self.refuseUndrawnHeader(h)
         // `if (*psVar6 == _DAT_100a267e && DAT_100a267d == 0)` (M l. 2252): the restart fast path → 25 % (M l. 2270);
         // else `.LoadLevelTilesets` (M l. 2359) → 15, 20, 25, 35, 40 % (M l. 1588–1629), then `_DAT_100a267e = L`,
         // `DAT_100a267d = 0` (M l. 2360–2361). Data-section initial 267d = 1, 267e = −1 (`const.py 100a267c`:

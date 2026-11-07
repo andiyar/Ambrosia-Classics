@@ -360,12 +360,12 @@ public final class FrameRenderer {
                 executed.append(.picture(id))
             case .redrawScrollGrid(let h, let v):
                 grid.lights = lights
-                grid.setScrollLocation(h: h, v: v, ports: &ports)
+                try grid.setScrollLocation(h: h, v: v, ports: &ports)
                 scroll = (h, v)
                 executed.append(.strip(h: h, v: v))
             case .redrawEntireScrollGrid(let h, let v):
                 grid.lights = lights
-                grid.redrawEntireScrollGrid(h: h, v: v, ports: &ports)
+                try grid.redrawEntireScrollGrid(h: h, v: v, ports: &ports)
                 scroll = (h, v)
                 executed.append(.entireGrid(h: h, v: v))
             case .setDrawnScroll(let h, let v):
@@ -374,7 +374,7 @@ public final class FrameRenderer {
                 grid.setDrawnScroll(h: h, v: v)
             case .drawLightsOntoTiles:
                 grid.lights = lights
-                grid.drawLightsOntoTiles(h: scroll.h, v: scroll.v, ports: &ports)
+                try grid.drawLightsOntoTiles(h: scroll.h, v: scroll.v, ports: &ports)
                 executed.append(.lightsOntoTiles)
             case .wrapDrawSprites(let draws):
                 sprites.lights = lights
@@ -386,17 +386,17 @@ public final class FrameRenderer {
                     where n + 1 < ops.draws.count && Self.isMosaic(ops.draws[n + 1]):
                 // TP: `.MosaicTransition`'s `.WrapCopyToScreen` (M l. 12977–12983) — the screen base pointed at port
                 // `_DAT_100a0004`, so the copy goes into that port; its blits read it (`DrawOp.mosaic`).
-                parallax.copyToScreen(ports: ports, h: h, v: v, graphicsMode: graphicsMode, backdrop: backdrop,
-                                      parallax: Int(prefs.parallax), screen: &mosaicPort)
+                try parallax.copyToScreen(ports: ports, h: h, v: v, graphicsMode: graphicsMode, backdrop: backdrop,
+                                          parallax: Int(prefs.parallax), screen: &mosaicPort)
                 executed.append(.mosaicCopy(h: h, v: v))
             case .copyToScreen(let h, let v, let graphicsMode, let backdrop):
-                parallax.copyToScreen(ports: ports, h: h, v: v, graphicsMode: graphicsMode, backdrop: backdrop,
-                                      parallax: Int(prefs.parallax), screen: &screen.pixels)
+                try parallax.copyToScreen(ports: ports, h: h, v: v, graphicsMode: graphicsMode, backdrop: backdrop,
+                                          parallax: Int(prefs.parallax), screen: &screen.pixels)
                 executed.append(.copy(h: h, v: v))
             case .copyMaskToScreen(let h, let v, let graphicsMode, let backdrop):
                 // `.WrapCopyToScreen(*_DAT_100a0008, …)` (M l. 9441–9447): `ParallaxBlitter.copyMaskToScreen`.
-                parallax.copyMaskToScreen(ports: ports, h: h, v: v, graphicsMode: graphicsMode, backdrop: backdrop,
-                                          parallax: Int(prefs.parallax), screen: &screen.pixels)
+                try parallax.copyMaskToScreen(ports: ports, h: h, v: v, graphicsMode: graphicsMode,
+                                              backdrop: backdrop, parallax: Int(prefs.parallax), screen: &screen.pixels)
                 executed.append(.copyMask(h: h, v: v))
             case .changeLightFace(let slot, let pict, let width, let height):
                 // `.ChangeLightFace @ 1001bdbc`: slots outside 0…199 are ignored; `+4` face, `+0x14` = width >> 1.
@@ -494,7 +494,7 @@ public final class FrameRenderer {
                                     lights: light)
         blitter.ripplePhase = sprites.ripplePhase
         sprites = blitter
-        grid.redrawScrollGrid(top: row, left: col, right: col, bottom: row, h: scroll.h, v: scroll.v, ports: &ports)
+        try grid.redrawScrollGrid(top: row, left: col, right: col, bottom: row, h: scroll.h, v: scroll.v, ports: &ports)
     }
 
     /// `.DrawPICTToBackScreen(id, (0, 0, 480, 640))` + `.MTRedraw`, the picture at (h, v).

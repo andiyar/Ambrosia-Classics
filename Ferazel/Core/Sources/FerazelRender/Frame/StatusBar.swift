@@ -1,6 +1,11 @@
 import Foundation
 import FerazelCore
 
+/// What `StatusBar.init` refuses (PT): the data's PICT 132 is not the 640×88 status port it is copied into.
+public enum StatusBarError: Error, Equatable {
+    case backSize(width: Int, height: Int)
+}
+
 /// The status bar: the 640×88 status port `0x100ab9d8` and `.UpdateStatusBar @ 100095dc` (decompile l. 4842) with
 /// `.UpdateHealthMagic @ 10008430` (l. 4361), `.UpdateTextStats @ 10008c6c` (l. 4594) and `.UpdateItemStat @
 /// 10008f90` (l. 4674), as read in spells-items §6 "⚑ Phase-1 note (R6)":
@@ -79,7 +84,9 @@ public struct StatusBar {
                                  search: search, dither: dither)
         }
         let back = try picture(132, c199)
-        precondition(back.width == Self.width && back.height == Self.height, "PICT 132 is the 640×88 status port")
+        guard back.width == Self.width && back.height == Self.height else {
+            throw StatusBarError.backSize(width: back.width, height: back.height)
+        }
         hud = try picture(133, c200)
         itemBig = try picture(702, c200)
         itemSmall = try picture(703, c200)

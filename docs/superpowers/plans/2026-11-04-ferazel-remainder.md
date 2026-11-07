@@ -218,6 +218,47 @@ and `AxGoblin.swift:199/:207` (⚑ audit 4, 20). **GF** calls `ProgrammedPath` f
   test. **Gate:** G2 607 / 2 skips; GWB by day. **Commit:** `FerazelRender: the 18 traps become refusals with census
   rows; the horizon-strip and OmniPx header checks`.
 
+**As executed — PT (run 46).** `grep -rn "precondition(" Ferazel/Core/Sources/FerazelRender` finds **17**; the audit's
+18 is that grep without the parenthesis, which also matches `preconditionFailure()` at `SpriteBlitter.swift:486` — so
+18 traps, all decided below. The census now counts FerazelRender's `precondition(` / `preconditionFailure(` per file
+like a throw (`scannedTraps`, new `Reason.trapUnreachable`); FerazelCore's traps are not scanned (outside PT). **7
+converted, 11 kept.** The census grows by 6 FerazelRender refusal rows (the 7 converted sites), 8 kept-trap rows (the
+11 kept sites) and 2 FerazelCore rows (the card's "+18" counted sites, not rows). No new test: DrawModeAuditTests stays
+2 tests; Ferazel/Core stays 607.
+
+| site (base 44f6919) | reachable from data? | result | reason | check |
+|---|---|---|---|---|
+| `Color/InverseTable.swift:21`, `Color/ColorSearch.swift:39` (bits 1…6) | no — `bits` is the `ColorSearch.Model` the shells choose in code (`.exactNearest`; `.ruled` uses 4) | kept | trapUnreachable | — |
+| `Frame/TileGridRenderer.swift:286` (water table w ≥ 6) | yes — BG kinds 206–209 | `TileGridRenderer.Refusal.waterTable` | dataAbsent | new `waterKindsInTables` (every BG cell's kind of levels 1–4) |
+| `Frame/StatusBar.swift:82` (PICT 132 size) | yes — the data's PICT | `StatusBarError.backSize` (init already threw) | loadsClean | `levelsLoad` |
+| `Frame/Mosaic.swift:16` (buffer sizes) | no — the renderer's fixed 640×480 port and screen | kept | trapUnreachable | — |
+| `Frame/ParallaxBlitter.swift:123` (60 slots) | no — the public inits build the array | kept | trapUnreachable | — |
+| `Frame/ParallaxBlitter.swift:141` (cell 128×128) | no — `PlainFaceSheet` cuts fixed 128×128 arguments; `ConvertedPicture.cell` returns w·h bytes whatever the PICT | kept | trapUnreachable | — |
+| `Frame/ParallaxBlitter.swift:236/:238` (ports / screen sizes) | no — fixed `FramePorts` / screen | kept (2) | trapUnreachable | — |
+| `Frame/ParallaxBlitter.swift:553` (`faceBase`, slot unloaded) | yes — PxBack / PxMid map cells | `ParallaxBlitter.Refusal.cellSlot` (`compose` → `copyToScreen` / `copyMaskToScreen` throw) | dataAbsent | `pxBackSlotsLoaded` + new `pxMidSlotsLoaded` |
+| `Frame/LightRenderer.swift:91` (ambient D ≠ −1), `:252` (D over the ambient rows) | yes — light bytes | `LightRenderer.Refusal.darkness` (2) | dataAbsent | `lightBytesInRange` |
+| `Frame/LightRenderer.swift:298` (light-table index) | yes — light bytes, light-face pixels, colours | `LightRenderer.Refusal.lightIndex` | dataAbsent | `lightBytesInRange`, `lightIndexInRange` |
+| `Frame/LightRenderer.swift:398` (overlay o1 / o2) | yes — the overlay map | `TileGridRenderer.Refusal.overlay` (thrown in `LightRenderer.swift`'s grid extension) | dataAbsent | new `overlaysInSet` |
+| `Frame/TextRasterizer.swift:52` (glyph mask size) | no — both shells' rasterizers allocate w × h | kept | trapUnreachable | — |
+| `Effects/DeathEffect.swift:66` (step k) | no — `LevelRun`'s loop counter; `FrameRenderer.deathEffectStep` refuses first | kept | trapUnreachable | `deathSteps` |
+| `Faces/LightFaces.swift:54` (light face size) | no — w, h are Core's light-face constants; the pixels are the picture at its own size (`ConvertedPicture` throws on a mismatch) or the w × h sample | kept | trapUnreachable | — |
+| `Frame/SpriteBlitter.swift:486` (`preconditionFailure`) | no — the fetch is set on the line above or it threw | kept | trapUnreachable | — |
+
+The plumbing: the grid's redraws (`setScrollLocation`, `redrawEntireScrollGrid`, `redrawScrollGrid`, `apply`,
+`drawLightsOntoTiles`, the plain-wrap tiles), the tile light pass (`lightTile`, `lightOpTile`, `ambientSlab`, the
+blitters; `forEachCopyRun` rethrows) and the parallax copies became `throws`; `FrameRenderer.apply` already threw;
+`ConversationRenderer`'s view restore adds a `try`; `SpriteBlitter` reads `ambientSlab` with `try?` behind its own
+darkness guard (no new throw there). `skippedOpsCannotThrow` now admits exactly the four `try` calls of the skipped copy
+and light arms (`skippedTries`): their throws are the rows above, checked over the data, so the run may still skip
+them. The header checks (⚑ audit 9): `LevelOpenRefusal.omniPxMode` / `.horizonStrip` thrown by
+`LevelRun.refuseUndrawnHeader` at the top of `setupLevel` (before `services.prepare`); census rows `headerZero` with the
+new check `headerOmniPxStrip` (built levels, a synthetic level-1 header by value, the call's place in `setupLevel`, and
+`GameFlow`'s level arm catching to `levelFailed`). The behavioural GameFlow assert lives in
+`GameFlowGameTests.testNewGameStartsLevel1` (FerazelCoreTests — `DrawModeAuditTests` has no access to that test's flow
+rig): level 1 patched with OmniPx 1 or a strip → the level-load report, no `prepare`, no quit. Minimal `try` edits in
+ParallaxTests, LightingTests, TileGridTests, SpriteDrawTests, DrawEffectTests and the Windows `TeleportRedrawTests`
+(compile only). The existing `omniPxMode == 0` assert (`testEveryWrittenModeIsDrawable`) is unchanged and consistent.
+
 Every card carries "Every class task also" (plan l. 414–421): Statue arm, Smite reaction, liquids/hazards, Kill
 bookkeeping, idle margins, cache marks, write-back flags, the quick bot. ⚑ audit rulings that touch these classes
 are listed in the audit file's rulings table by task code; the run applies them as deltas.

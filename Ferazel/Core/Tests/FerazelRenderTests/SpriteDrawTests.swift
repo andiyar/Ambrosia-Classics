@@ -148,19 +148,19 @@ final class SpriteDrawTests: XCTestCase {
         try lit1.wrapDrawSprites([SpriteDraw(face: Self.ref, x: 100, y: 50, clip: open, lightOverlay: true)], h: 0,
                                  v: 0, ports: &dark)
         let D = f.level.lightByte(col: (100 + Self.w / 2) >> 5, row: (50 + Self.h / 2) >> 5)
-        let slab = lit1.lights.ambientSlab(D)
+        let slab = try lit1.lights.ambientSlab(D)
         assertDrawn(dark, x0: 100, y0: 50, rows: 0..<6, cols: 0..<8, flip: false, fill: fill, value: { slab[Int($0)] })
         // D is sampled at the clipped face's centre, not its corner: a face straddling two cells of different darkness.
         let (dc, dr) = try XCTUnwrap((0..<14).lazy.flatMap { r in (1..<20).lazy.map { (col: $0, row: r) } }.first {
             let a = f.level.lightByte(col: $0.col - 1, row: $0.row), b = f.level.lightByte(col: $0.col, row: $0.row)
-            return a != b && (0..<16).contains(a) && (0..<16).contains(b)
+            return try a != b && (0..<16).contains(a) && (0..<16).contains(b)
                 && lit1.lights.ambientSlab(a)[0x20...0x50] != lit1.lights.ambientSlab(b)[0x20...0x50]
         }.map { ($0.col, $0.row) })
         let sx = dc * 32 - 3, sy = dr * 32 + 10   // corner in cell dc − 1, centre (sx + 4) in cell dc
         var straddle = FramePorts(fill: fill)
         try lit1.wrapDrawSprites([SpriteDraw(face: Self.ref, x: sx, y: sy, clip: open, lightOverlay: true)], h: 0, v: 0,
                                  ports: &straddle)
-        let centre = lit1.lights.ambientSlab(f.level.lightByte(col: dc, row: dr))
+        let centre = try lit1.lights.ambientSlab(f.level.lightByte(col: dc, row: dr))
         assertDrawn(straddle, x0: sx, y0: sy, rows: 0..<6, cols: 0..<8, flip: false, fill: fill,
                     value: { centre[Int($0)] })
 
@@ -192,7 +192,7 @@ final class SpriteDrawTests: XCTestCase {
                     XCTAssertEqual(at(lp.frame, x, 50 + r), want, "lit (\(r), \(c)) flip \(flip)")
                 }
             }
-            let farSlab = withLight.lights.ambientSlab(f.level.lightByte(col: 404 >> 5, row: 203 >> 5))
+            let farSlab = try withLight.lights.ambientSlab(f.level.lightByte(col: 404 >> 5, row: 203 >> 5))
             assertDrawn(lp, x0: 400, y0: 200, rows: 0..<6, cols: 0..<8, flip: false, fill: fill,
                         value: { farSlab[Int($0)] })
         }
@@ -254,7 +254,7 @@ final class SpriteDrawTests: XCTestCase {
         // the full redraw left it (start window, scroll (0, 10); a sprite over the level-1 tiles at (64, 288)).
         let grid = f.renderer(drawnH: 0, drawnV: 10)
         var full = FramePorts()
-        grid.redrawEntireScrollGrid(h: 0, v: 10, ports: &full)
+        try grid.redrawEntireScrollGrid(h: 0, v: 10, ports: &full)
         var drawnOver = full
         let big = SpriteDraw(face: Self.ref, x: 64, y: 288, clip: open)
         try b.wrapDrawSprites([big], h: 0, v: 10, ports: &drawnOver)

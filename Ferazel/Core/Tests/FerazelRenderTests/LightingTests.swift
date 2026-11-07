@@ -27,9 +27,9 @@ final class LightingTests: XCTestCase {
     }
 
     /// The whole window at scroll (0, 10) (`.RedrawEntireScrollGrid`).
-    private func startFrame(_ grid: TileGridRenderer) -> FramePorts {
+    private func startFrame(_ grid: TileGridRenderer) throws -> FramePorts {
         var ports = FramePorts()
-        grid.redrawEntireScrollGrid(h: 0, v: 10, ports: &ports)
+        try grid.redrawEntireScrollGrid(h: 0, v: 10, ports: &ports)
         return ports
     }
 
@@ -91,9 +91,9 @@ final class LightingTests: XCTestCase {
         XCTAssertTrue(grid.lights.slots.allSatisfy { !$0.active })
         XCTAssertEqual(grid.lights.slots.count, 200)
         XCTAssertTrue(grid.lights.calcLightOps(h: 0, v: 10).isEmpty)
-        let lit = startFrame(grid)
+        let lit = try startFrame(grid)
         var after = lit
-        grid.drawLightsOntoTiles(h: 0, v: 10, ports: &after)
+        try grid.drawLightsOntoTiles(h: 0, v: 10, ports: &after)
         XCTAssertEqual(after, lit)
 
         // The darkened frame: `.RedrawEntireScrollGrid` at (0, 10), Effects 1 (`.InitPrefs` on a modern Mac), no
@@ -108,7 +108,7 @@ final class LightingTests: XCTestCase {
         // face's copy pixels when the BG was drawn (`.LightAnyBGTile`, before the FG draws) unless a later draw
         // replaced them (FG face, pattern tile); a blend pixel outside the FG face read a darkened screen pixel and
         // is not checked here. D = 0 leaves the cell alone.
-        let r1 = startFrame(renderer(f, effects: 3))
+        let r1 = try startFrame(renderer(f, effects: 3))
         XCTAssertEqual(fnv1a(r1.frame), Self.r1Frame)
         var checked = 0, darkened = 0, skipped = 0
         for row in 0...12 {
@@ -160,12 +160,12 @@ final class LightingTests: XCTestCase {
         let grid = renderer(f, level: off, effects: 1)
         // `.GetAmbDarkVal` returns 0 for every cell, so `.DrawLightOverTile` never darkens: the R1 tile layer.
         for row in 0...13 { for col in 0...19 { XCTAssertEqual(grid.lights.darkness(x: col * 32, y: row * 32), 0) } }
-        let ports = startFrame(grid)
+        let ports = try startFrame(grid)
         XCTAssertEqual(fnv1a(ports.frame), Self.r1Frame)
         XCTAssertEqual(fnv1a(ports.mask), Self.r1Mask)
         // Any non-zero value enables (L1 = 5; 1 and 2 elsewhere): the same darkened frame as 5.
-        XCTAssertEqual(startFrame(renderer(f, level: try level1(darknessEnable: 1, f), effects: 1)),
-                       startFrame(renderer(f, effects: 1)))
+        XCTAssertEqual(try startFrame(renderer(f, level: try level1(darknessEnable: 1, f), effects: 1)),
+                       try startFrame(renderer(f, effects: 1)))
     }
 
     func testEffectsReducedSkipsLights() throws {
@@ -207,11 +207,11 @@ final class LightingTests: XCTestCase {
         // skips `.DrawLightsOntoTiles` (l. 9202) — the R1 tile layer even with a light and darkness present.
         var reduced = renderer(f, effects: 3)
         reduced.lights.slots[0] = slot
-        var ports = startFrame(reduced)
+        var ports = try startFrame(reduced)
         XCTAssertEqual(fnv1a(ports.frame), Self.r1Frame)
         XCTAssertEqual(fnv1a(ports.mask), Self.r1Mask)
         let before = ports
-        reduced.drawLightsOntoTiles(h: 0, v: 10, ports: &ports)
+        try reduced.drawLightsOntoTiles(h: 0, v: 10, ports: &ports)
         XCTAssertEqual(ports, before)
 
         // Effects 1: `.CalcLightOps` marks the cells the light's rect (top 104, left 224, bottom 296, right 416)
@@ -223,9 +223,9 @@ final class LightingTests: XCTestCase {
                        Set((3...9).flatMap { r in (7...13).map { [$0, r] } }))
         XCTAssertTrue(ops.allSatisfy { $0.lights == [0] && $0.changed })
         // The light arrives after a frame drawn without it: `.DrawLightsOntoTiles` changes only op-marked cells.
-        var lit = startFrame(renderer(f, effects: 1))
+        var lit = try startFrame(renderer(f, effects: 1))
         let unlit = lit
-        enhanced.drawLightsOntoTiles(h: 0, v: 10, ports: &lit)
+        try enhanced.drawLightsOntoTiles(h: 0, v: 10, ports: &lit)
         var changedCells = Set<[Int]>()
         for row in 0...12 {
             for col in 0...19 where cell(lit.frame, col: col, row: row) != cell(unlit.frame, col: col, row: row) {
@@ -237,7 +237,7 @@ final class LightingTests: XCTestCase {
         XCTAssertEqual(lit.frame, lit.tiles)
         // A grid redrawn with the light present (`.RedrawScrollGrid`'s per-cell `.DrawLightOverTile` sees every active
         // slot) agrees with the op path on this window (self-derived: 0 differing pixels).
-        let whole = startFrame(enhanced)
+        let whole = try startFrame(enhanced)
         XCTAssertEqual(zip(whole.frame, lit.frame).filter { $0 != $1 }.count, 0)
         XCTAssertEqual(whole.mask, lit.mask)
     }

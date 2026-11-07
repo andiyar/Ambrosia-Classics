@@ -137,7 +137,8 @@ enemy-shot part is Phase 5), `StatusBarCalls.swift:65` (callers built at `Handle
 **Maintained by DrawModeAuditTests** (`Ferazel/Core/Tests/FerazelRenderTests/DrawModeAuditTests.swift`, Phase 5 DA,
 in the normal suite): its writer table (one row per writer site of a draw input in Core) and its refusal table (every
 `throw` in FerazelRender, each with a code-checked reason it is unreachable in `BuiltLevels.range`) supersede the
-table below as the levels in scope grow; a new writer or throw without a row fails the suite. Since DK, A13 is drawn
+table below as the levels in scope grow; a new writer or throw without a row fails the suite — since PT a new
+`precondition` in FerazelRender too (the kept traps are counted per file like the throws). Since DK, A13 is drawn
 (the ambient table that follows the light table); A14 stays refused and is pinned unreachable there (no built level
 has a BG cell with light byte −1).
 
@@ -152,7 +153,10 @@ was traced to its writer and checked against the placements:
 | mode 5 rotated/scaled, mode 0xa mirrored/transformed, mode 0xb rotated | no writer in scope | refused | d |
 | mode 0xc at full darkness under the brightest light; light byte −1 | no (level 4 only dark spots, no lit sprite there) | refused | d (latent quit) |
 | modes 2, 7, 8, 0xd, 0xe, ≥0xf | only the never-active parallax sprites | refused | d |
-| backdrop fire / ripple / OmniPx; water kinds ≥ 6 | no (header 0 on levels 1–4) | refused at level open | d |
+| backdrop fire / ripple | no (header 0 on levels 1–4) | refused at level open | d |
+| OmniPx rain / interlace (header `0x26c7` = 1, 3, 6, 7, ≥ 8) and the horizon strip (header `0x2716` ≠ 0) — PT | no (header 0 on levels 1–4) | refused at level open (`LevelOpenRefusal`, `LevelRun.setupLevel`, before the renderer; the level-load report, never a quit) | d |
+| water kinds ≥ 6 (BG kinds 206–209), the tile light pass's darkness / light index / overlay face, a parallax cell slot with no face, PICT 132 not 640×88 — PT: were `precondition` traps (a Proof B crash), now refusals with census rows | no (checked over the level data of levels 1–4) | refused | d |
+| the renderer's other 11 traps (inverse-table bits, the mosaic / parallax buffer sizes, the parallax slot array and 128×128 cells, a glyph mask's size, the death-effect step, a light face's size, the translucency fetch) — PT | no data reaches them (code constants and buffers the code sized) | trap, unreachable from any data (census rows) | n |
 | sparkle random walk at the camera scroll vs the drawn grid scroll | yes (teleport/passage frames) | draws, slightly different | c (MED) |
 
 ## 3. Original routines — every routine × where the port has it

@@ -65,7 +65,8 @@ public final class ConversationRenderer {
 
     /// Executes the conversation's ops in order.
     /// - Throws: `ScreenRenderer.Refusal.levelOp` for a level op other than `drawBlackLines`; `ColorLUTError` /
-    ///   `PictureSourceError` for a missing CLUT or picture; `FrameRenderer.Refusal` from `drawBlackLines`.
+    ///   `PictureSourceError` for a missing CLUT or picture; `FrameRenderer.Refusal` from `drawBlackLines`;
+    ///   `ParallaxBlitter.Refusal.cellSlot` from the view restore's copy.
     public func apply(_ ops: [DrawOp]) throws {
         for op in ops {
             switch op {
@@ -73,9 +74,9 @@ public final class ConversationRenderer {
                 drawText(run)
             case .restoreView:
                 let f = frame, p = prefs
-                f.parallax.copyToScreen(ports: f.ports, h: f.scroll.h, v: f.scroll.v, graphicsMode: Int(p.graphics),
-                                        backdrop: p.plainCopy == 0, parallax: Int(p.parallax),
-                                        screen: &f.surface.frame.pixels)
+                try f.parallax.copyToScreen(ports: f.ports, h: f.scroll.h, v: f.scroll.v,
+                                            graphicsMode: Int(p.graphics), backdrop: p.plainCopy == 0,
+                                            parallax: Int(p.parallax), screen: &f.surface.frame.pixels)
             case .drawBlackLines:
                 try frame.apply(FrameOps(draws: [.drawBlackLines]))
             case .copyPicture(let id, let chain, let source, let dest, nil, true):

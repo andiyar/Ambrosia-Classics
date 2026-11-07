@@ -70,10 +70,10 @@ final class TileGridTests: XCTestCase {
     }
 
     /// Render one cell alone into fresh ports.
-    private func renderCell(_ f: Fixture, col: Int, row: Int, fill: UInt8 = 0) -> FramePorts {
+    private func renderCell(_ f: Fixture, col: Int, row: Int, fill: UInt8 = 0) throws -> FramePorts {
         let s = scroll(showing: col, row)
         var ports = FramePorts(fill: fill)
-        f.renderer(drawnH: s.h, drawnV: s.v)
+        try f.renderer(drawnH: s.h, drawnV: s.v)
             .redrawScrollGrid(top: row, left: col, right: col, bottom: row, h: s.h, v: s.v, ports: &ports)
         return ports
     }
@@ -186,8 +186,8 @@ final class TileGridTests: XCTestCase {
         // The whole grid at (630, 410): world cell (20, 13) = (640, 416) lands at ring (0, 0), and the frame port
         // holds the tiles port's copy (`.WrapRectBlitX`) everywhere the view reads.
         var ports = FramePorts()
-        f.renderer(drawnH: 630, drawnV: 410).redrawEntireScrollGrid(h: 630, v: 410, ports: &ports)
-        let alone = renderCell(f, col: 20, row: 13)
+        try f.renderer(drawnH: 630, drawnV: 410).redrawEntireScrollGrid(h: 630, v: 410, ports: &ports)
+        let alone = try renderCell(f, col: 20, row: 13)
         XCTAssertEqual(cell(ports.tiles, col: 20, row: 13), cell(alone.tiles, col: 20, row: 13))
         XCTAssertEqual((0..<32).flatMap { j in (0..<32).map { ports.tiles[j * 640 + $0] } }, cell(alone.tiles, col: 20, row: 13))
         for y in stride(from: 410, to: 410 + 384, by: 7) {
@@ -219,7 +219,7 @@ final class TileGridTests: XCTestCase {
         // A level-1 pattern cell (FG tile 95) draws pattern face (col mod 8) + 8·(row mod 8).
         let (col, row) = try XCTUnwrap((0..<50).lazy.flatMap { r in (0..<200).lazy.map { ($0, r) } }
             .first { f.level.fgTile(col: $0.0, row: $0.1) == 95 && f.level.overlay1(col: $0.0, row: $0.1) < 100 })
-        let ports = renderCell(f, col: col, row: row)
+        let ports = try renderCell(f, col: col, row: row)
         let face = f.sets.pattern.faces[(col % 8) + 8 * (row % 8)]
         let got = cell(ports.tiles, col: col, row: row)
         for (i, (c, v)) in zip(try copied(face), try face.decode()).enumerated() where c {
@@ -251,7 +251,7 @@ final class TileGridTests: XCTestCase {
 
         var ports = FramePorts()
         var grid = f.renderer(drawnH: 0, drawnV: 10)
-        grid.apply(.redrawEntireScrollGrid(h: 0, v: 10), ports: &ports)   // the seam case → the whole-window path
+        try grid.apply(.redrawEntireScrollGrid(h: 0, v: 10), ports: &ports)   // the seam case → the whole-window path
         XCTAssertEqual(ports.frame, ports.tiles)
         // Self-derived by the R1 implementer, 2026-10-07 (`.ruled`, `.errorDiffusion`, no lights — the Effects = 3
         // tile layer): FNV-1a 64 of the 640×416 frame and mask ports.
@@ -261,10 +261,10 @@ final class TileGridTests: XCTestCase {
         // Strip-incremental: `.SetScrollLocation(40, 45)` after that frame redraws only row 13 (old h's 21 columns)
         // and columns 20...21 (old v's 14 rows); the view then reads what a whole redraw at (40, 45) draws.
         var renderer = f.renderer(drawnH: 0, drawnV: 10)
-        renderer.setScrollLocation(h: 40, v: 45, ports: &ports)
+        try renderer.setScrollLocation(h: 40, v: 45, ports: &ports)
         XCTAssertEqual([renderer.drawnH, renderer.drawnV], [40, 45])
         var whole = FramePorts()
-        f.renderer(drawnH: 40, drawnV: 45).redrawEntireScrollGrid(h: 40, v: 45, ports: &whole)
+        try f.renderer(drawnH: 40, drawnV: 45).redrawEntireScrollGrid(h: 40, v: 45, ports: &whole)
         for y in 45..<(45 + 384) {
             for x in 40..<(40 + 608) {
                 let o = FramePorts.ringOffset(x: x, y: y)
@@ -284,15 +284,15 @@ final class TileGridTests: XCTestCase {
         let f = try fixture()
         var ports = FramePorts()
         var grid = f.renderer(drawnH: 0, drawnV: 10)
-        grid.apply(.redrawEntireScrollGrid(h: 0, v: 10), ports: &ports)
+        try grid.apply(.redrawEntireScrollGrid(h: 0, v: 10), ports: &ports)
         let to = (h: 2185, v: 1216)
         let drawnBefore = ports
-        grid.apply(.setDrawnScroll(h: to.h, v: to.v), ports: &ports)
+        try grid.apply(.setDrawnScroll(h: to.h, v: to.v), ports: &ports)
         XCTAssertEqual([grid.drawnH, grid.drawnV], [to.h, to.v])
         XCTAssertEqual(ports, drawnBefore, "the copy draws nothing")
-        grid.apply(.redrawEntireScrollGrid(h: to.h, v: to.v), ports: &ports)
+        try grid.apply(.redrawEntireScrollGrid(h: to.h, v: to.v), ports: &ports)
         var fresh = FramePorts()
-        f.renderer(drawnH: to.h, drawnV: to.v).redrawEntireScrollGrid(h: to.h, v: to.v, ports: &fresh)
+        try f.renderer(drawnH: to.h, drawnV: to.v).redrawEntireScrollGrid(h: to.h, v: to.v, ports: &fresh)
         // Every pixel the view reads (cells outside it are culled, so the rest of the ring keeps the old view).
         var stale = 0
         for y in to.v..<(to.v + 384) {
@@ -324,7 +324,7 @@ final class TileGridTests: XCTestCase {
         }
         let (col, row) = try XCTUnwrap(pick)
         let t = L.fgTile(col: col, row: row), b = L.bgTile(col: col, row: row), k = L.fgKind(tile: t) % 100
-        let ports = renderCell(f, col: col, row: row)
+        let ports = try renderCell(f, col: col, row: row)
 
         // Oracle: BG/FG, the blend (dry blitter: 0x26c6 = 0), then the FG-water face through water table 0.
         var want = try preBlend(f, t: t, b: b)
@@ -375,7 +375,7 @@ final class TileGridTests: XCTestCase {
         }
         let (col, row) = try XCTUnwrap(pick)
         let t = L.fgTile(col: col, row: row), b = L.bgTile(col: col, row: row), k = L.fgKind(tile: t) % 100
-        let ports = renderCell(f, col: col, row: row)
+        let ports = try renderCell(f, col: col, row: row)
         let got = cell(ports.tiles, col: col, row: row)
         let d = try preBlend(f, t: t, b: b)
         let p = f.sets.patternPlain.faces[TileGridRenderer.patternTile(col: col, row: row, periodSix: false)]
@@ -408,7 +408,7 @@ final class TileGridTests: XCTestCase {
         XCTAssertEqual(overlay.filter { L.overlay2(col: $0.0, row: $0.1) == 95 }.count, 12)
         for (col, row) in overlay {
             let o2 = L.overlay2(col: col, row: row)
-            let ports = renderCell(f, col: col, row: row)
+            let ports = try renderCell(f, col: col, row: row)
             let drawn = o2 == 95 ? f.sets.pattern.faces[TileGridRenderer.patternTile(col: col, row: row, periodSix: false)]
                                  : f.sets.fg.faces[o2]
             let tiles = cell(ports.tiles, col: col, row: row), mask = cell(ports.mask, col: col, row: row)
@@ -429,7 +429,7 @@ final class TileGridTests: XCTestCase {
         // 0x00; every boolean stamp writes 0x00 over the face's opaque pixels. Ports start at a sentinel to show both
         // values are written, not inherited.
         var ports = FramePorts(fill: 0x5a)
-        f.renderer(drawnH: 0, drawnV: 10).redrawEntireScrollGrid(h: 0, v: 10, ports: &ports)
+        try f.renderer(drawnH: 0, drawnV: 10).redrawEntireScrollGrid(h: 0, v: 10, ports: &ports)
         XCTAssertFalse(ports.mask.contains(0x5a))
         XCTAssertEqual(Set(ports.mask), [0x00, 0xff])
 

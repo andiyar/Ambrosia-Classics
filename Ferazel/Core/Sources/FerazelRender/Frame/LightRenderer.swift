@@ -60,6 +60,15 @@ public struct LightOp: Sendable, Equatable {
 /// high byte − 1 (cell (x >> 5, y >> 5), clamped by `.ConstrainXY`). Tables: ambient `_DAT_100a0130[D·0x100 + i]`,
 /// light `_DAT_100a0134[D·0x6e00 + t·0x100 + i]` (`LevelTables`).
 public struct LightRenderer: Sendable {
+    /// What the tile light pass refuses instead of reading memory the original would have (PT; each has its census
+    /// row in `DrawModeAuditTests`).
+    public enum Refusal: Error, Equatable {
+        /// Darkness D outside the ambient rows 0…15 (and −1 for the ambient darken).
+        case darkness(Int)
+        /// A light-table read outside the table.
+        case lightIndex(Int)
+    }
+
     public static let slotCount = 200
     /// The op grid: 20 columns × 13 rows (`FUN_1001c1cc`, `.DrawLightOps`).
     public static let opColumns = 0x14
@@ -86,9 +95,9 @@ public struct LightRenderer: Sendable {
     /// The 256 bytes at `_DAT_100a0130 + D·0x100`. D = −1 reads the 256 bytes before the ambient table, which is the
     /// light table's last row (`10169d6c` = `100fbd6c` + 16·0x6e00: slab 15, group 9, k 10) [HIGH arithmetic]; any
     /// other D outside 0…15 reads past it and is refused (no shipped level enables darkness over such a byte).
-    func ambientSlab(_ D: Int) -> [UInt8] {
+    func ambientSlab(_ D: Int) throws -> [UInt8] {
         if (0..<ambient.count).contains(D) { return ambient[D] }
-        precondition(D == -1, "ambient darkness D = \(D) is outside the census")
+        guard D == -1 else { throw Refusal.darkness(D) }
         let base = light.count - 0x100
         return Array(light[base..<(base + 0x100)])
     }
@@ -97,9 +106,9 @@ public struct LightRenderer: Sendable {
 
     /// `.WrapLightTile(face, port, (0,0), point, 0x20, 0x20, point, 10)`: the tile cull, then `.DrawLightOverTile` at
     /// the ring position only.
-    func lightTile(_ face: EncodedFace, into port: inout [UInt8], x: Int, y: Int, scroll: TileBlitters.Scroll) {
+    func lightTile(_ face: EncodedFace, into port: inout [UInt8], x: Int, y: Int, scroll: TileBlitters.Scroll) throws {
         guard TileBlitters.visible(x: x, y: y, scroll: scroll) else { return }
-        drawLightOverTile(face, into: &port, ringX: FramePorts.ringX(x), ringY: FramePorts.ringY(y), x: x, y: y)
+        try drawLightOverTile(face, into: &port, ringX: FramePorts.ringX(x), ringY: FramePorts.ringY(y), x: x, y: y)
     }
 
     /// `.DrawLightOverTile(face, port, (0,0), ring, 0x20, 0x20, (x, y), 10)`: D of the cell; with the last argument
@@ -107,32 +116,34 @@ public struct LightRenderer: Sendable {
     /// whose face rect, centred on the light, meets the tile face's bounds `+0x08` at (x, y) is blitted — the first
     /// with `.BlitLightOverFaceClip`, the rest with `.BlitAfterLightOverFaceClip`. None and D ≠ 0:
     /// `.BlitAmbDarkenOverFaceNoClip` (the copy-run pixels of the port remapped through ambient slab D).
-    func drawLightOverTile(_ face: EncodedFace, into port: inout [UInt8], ringX: Int, ringY: Int, x: Int, y: Int) {
+    func drawLightOverTile(_ face: EncodedFace, into port: inout [UInt8], ringX: Int, ringY: Int, x: Int,
+                           y: Int) throws {
         let D = darkness(x: x, y: y)
         var lit = false
         for slot in slots where slot.active {
             guard let lf = slot.face else { continue }
-            lit = blitLight(slot, lf, face, into: &port, ringX: ringX, ringY: ringY, x: x, y: y, D: D, after: lit) || lit
+            lit = try blitLight(slot, lf, face, into: &port, ringX: ringX, ringY: ringY, x: x, y: y, D: D,
+                                after: lit) || lit
         }
         if !lit && D != 0 {
-            Self.ambientDarken(face, ambientSlab(D), into: &port, x: ringX, y: ringY)
+            Self.ambientDarken(face, try ambientSlab(D), into: &port, x: ringX, y: ringY)
         }
     }
 
     /// The intersection test and the first/after blit of one light over a tile face at world (x, y); true when the
     /// rects met.
     private func blitLight(_ slot: LightSlot, _ lf: LightFace, _ face: EncodedFace, into port: inout [UInt8],
-                           ringX: Int, ringY: Int, x: Int, y: Int, D: Int, after: Bool) -> Bool {
+                           ringX: Int, ringY: Int, x: Int, y: Int, D: Int, after: Bool) throws -> Bool {
         let top = slot.y - slot.radius, left = slot.x - slot.radius
         let lightRect = Self.offset(lf.rect, dh: left, dv: top)
         let tileRect = Self.offset(face.bounds, dh: x, dv: y)
         guard Self.sect(lightRect, tileRect) != nil else { return false }
         if after {
-            blitAfterLight(face, lf, colour: slot.colour, into: &port, x: ringX, y: ringY, offRow: y - top,
-                           offCol: x - left)
+            try blitAfterLight(face, lf, colour: slot.colour, into: &port, x: ringX, y: ringY, offRow: y - top,
+                               offCol: x - left)
         } else {
-            blitLight(face, lf, colour: slot.colour, D: D, into: &port, x: ringX, y: ringY, offRow: y - top,
-                      offCol: x - left)
+            try blitLight(face, lf, colour: slot.colour, D: D, into: &port, x: ringX, y: ringY, offRow: y - top,
+                          offCol: x - left)
         }
         return true
     }
@@ -194,17 +205,17 @@ public struct LightRenderer: Sendable {
     /// `.WrapLightOpTile @ 10016d80`: the tile cull, then `.DrawLightOpOverTile` at the ring position and at the up
     /// to three wrapped copies (as `.WrapDrawTile`).
     func lightOpTile(_ face: EncodedFace, into port: inout [UInt8], x: Int, y: Int, scroll: TileBlitters.Scroll,
-                     grid: [LightOp]) {
+                     grid: [LightOp]) throws {
         guard TileBlitters.visible(x: x, y: y, scroll: scroll) else { return }
         let rx = FramePorts.ringX(x), ry = FramePorts.ringY(y), n = TileBlitters.cell
         let wrapsY = ry - FramePorts.height + n > 0, wrapsX = rx - FramePorts.width + n > 0
-        func draw(_ px: Int, _ py: Int) {
-            drawLightOpOverTile(face, into: &port, ringX: px, ringY: py, x: x, y: y, scroll: scroll, grid: grid)
+        func draw(_ px: Int, _ py: Int) throws {
+            try drawLightOpOverTile(face, into: &port, ringX: px, ringY: py, x: x, y: y, scroll: scroll, grid: grid)
         }
-        draw(rx, ry)
-        if wrapsY { draw(rx, ry - FramePorts.height) }
-        if wrapsX { draw(rx - FramePorts.width, ry) }
-        if wrapsX && wrapsY { draw(rx - FramePorts.width, ry - FramePorts.height) }
+        try draw(rx, ry)
+        if wrapsY { try draw(rx, ry - FramePorts.height) }
+        if wrapsX { try draw(rx - FramePorts.width, ry) }
+        if wrapsX && wrapsY { try draw(rx - FramePorts.width, ry - FramePorts.height) }
     }
 
     /// `.DrawLightOpOverTile @ 1001cc70`: D of the cell; the lights listed in its op cell (grid cell (x >> 5) −
@@ -212,7 +223,7 @@ public struct LightRenderer: Sendable {
     /// are blitted first/after as in `.DrawLightOverTile`; none and header `0x2706` > 0:
     /// `.BlitAmbDarkenOverFaceClip` through slab D — D = 0 included.
     func drawLightOpOverTile(_ face: EncodedFace, into port: inout [UInt8], ringX: Int, ringY: Int, x: Int, y: Int,
-                             scroll: TileBlitters.Scroll, grid: [LightOp]) {
+                             scroll: TileBlitters.Scroll, grid: [LightOp]) throws {
         let D = darkness(x: x, y: y)
         let gc = (x >> 5) - (scroll.h >> 5), gr = (y >> 5) - (scroll.v >> 5)
         guard (0..<Self.opColumns).contains(gc), (0..<Self.opRows).contains(gr) else { return }
@@ -220,10 +231,11 @@ public struct LightRenderer: Sendable {
         for i in grid[gc * Self.opRows + gr].lights where (0..<Self.slotCount).contains(i) {
             let slot = slots[i]
             guard slot.active, let lf = slot.face else { continue }
-            lit = blitLight(slot, lf, face, into: &port, ringX: ringX, ringY: ringY, x: x, y: y, D: D, after: lit) || lit
+            lit = try blitLight(slot, lf, face, into: &port, ringX: ringX, ringY: ringY, x: x, y: y, D: D,
+                                after: lit) || lit
         }
         if !lit && level.header.darknessEnable > 0 {
-            Self.ambientDarken(face, ambientSlab(D), into: &port, x: ringX, y: ringY)
+            Self.ambientDarken(face, try ambientSlab(D), into: &port, x: ringX, y: ringY)
         }
     }
 
@@ -248,12 +260,12 @@ public struct LightRenderer: Sendable {
     /// pixel: column < 0 or ≥ width → ambient; light pixel p = 0 → ambient; else `light[D][(p + colour − 0xf5)·0x100
     /// + dst]` (colour = `+0x18` low byte).
     func blitLight(_ face: EncodedFace, _ lf: LightFace, colour: Int, D: Int, into port: inout [UInt8], x: Int, y: Int,
-                   offRow: Int, offCol: Int) {
-        precondition((0..<ambient.count).contains(D), "light over darkness D = \(D) is outside the census")
+                   offRow: Int, offCol: Int) throws {
+        guard (0..<ambient.count).contains(D) else { throw Refusal.darkness(D) }
         let amb = ambient[D], base = D * 0x6e00, colour = colour & 0xff
         let table = light
-        port.withUnsafeMutableBufferPointer { out in
-            Self.forEachCopyRun(face, x: x, y: y) { o, n, r, c in
+        try port.withUnsafeMutableBufferPointer { out in
+            try Self.forEachCopyRun(face, x: x, y: y) { o, n, r, c in
                 let lr = offRow + r
                 if lr <= 0 || lr + 1 >= lf.height || offCol + c >= lf.width {
                     for j in 0..<n { out[o + j] = amb[Int(out[o + j])] }
@@ -263,7 +275,8 @@ public struct LightRenderer: Sendable {
                     let lc = offCol + c + j, d = Int(out[o + j])
                     guard lc >= 0, lc < lf.width else { out[o + j] = amb[d]; continue }
                     let p = Int(lf.pixel(row: lr, col: lc))
-                    out[o + j] = p == 0 ? amb[d] : table[Self.lightIndex(base + (p + colour - 0xf5) * 0x100 + d, table)]
+                    out[o + j] = try p == 0 ? amb[d]
+                        : table[Self.lightIndex(base + (p + colour - 0xf5) * 0x100 + d, table)]
                 }
             }
         }
@@ -274,11 +287,11 @@ public struct LightRenderer: Sendable {
     /// in light columns 0 … width − 1: p (0 read as 0xf5) → `light[0][(p + colour − 0xf5)·0x100 + dst]`; the rest is
     /// left alone.
     func blitAfterLight(_ face: EncodedFace, _ lf: LightFace, colour: Int, into port: inout [UInt8], x: Int, y: Int,
-                        offRow: Int, offCol: Int) {
+                        offRow: Int, offCol: Int) throws {
         let colour = colour & 0xff
         let table = light
-        port.withUnsafeMutableBufferPointer { out in
-            Self.forEachCopyRun(face, x: x, y: y) { o, n, r, c in
+        try port.withUnsafeMutableBufferPointer { out in
+            try Self.forEachCopyRun(face, x: x, y: y) { o, n, r, c in
                 let lr = offRow + r
                 guard lr >= 0, lr < lf.height else { return }   // rows only grow: ≥ height ends the blit
                 for j in 0..<n {
@@ -286,7 +299,7 @@ public struct LightRenderer: Sendable {
                     guard lc >= 0, lc < lf.width else { continue }
                     var p = Int(lf.pixel(row: lr, col: lc))
                     if p == 0 { p = 0xf5 }
-                    out[o + j] = table[Self.lightIndex((p + colour - 0xf5) * 0x100 + Int(out[o + j]), table)]
+                    out[o + j] = table[try Self.lightIndex((p + colour - 0xf5) * 0x100 + Int(out[o + j]), table)]
                 }
             }
         }
@@ -294,17 +307,18 @@ public struct LightRenderer: Sendable {
 
     /// A light-table index the original reads inside the table; anything else (a light pixel below 0xf5 with a
     /// small colour, or past slab 15) reads other memory and is refused.
-    @inline(__always) private static func lightIndex(_ i: Int, _ table: [UInt8]) -> Int {
-        precondition(i >= 0 && i < table.count, "light-table index \(i) is outside the table")
+    @inline(__always) private static func lightIndex(_ i: Int, _ table: [UInt8]) throws -> Int {
+        guard i >= 0 && i < table.count else { throw Refusal.lightIndex(i) }
         return i
     }
 
     /// Walks a face's token stream in place and calls `run(portIndex, count, faceRow, faceCol)` for each copy run
     /// when the face sits at port position (x, y), clipped to the 640×416 port (the 8-px slop is not modelled; a
     /// 32-px tile at a ring position never reaches past the port: 640 and 416 are multiples of 32).
-    static func forEachCopyRun(_ face: EncodedFace, x: Int, y: Int, _ run: (Int, Int, Int, Int) -> Void) {
+    static func forEachCopyRun(_ face: EncodedFace, x: Int, y: Int,
+                               _ run: (Int, Int, Int, Int) throws -> Void) rethrows {
         let W = FramePorts.width, H = FramePorts.height
-        face.data.withUnsafeBufferPointer { data in
+        try face.data.withUnsafeBufferPointer { data in
             var p = 0, row = -1, col = 0
             while p + 4 <= data.count {
                 let op = data[p], n = Int(data[p + 1]) << 16 | Int(data[p + 2]) << 8 | Int(data[p + 3])
@@ -319,7 +333,7 @@ public struct LightRenderer: Sendable {
                     let py = y + row
                     if py >= 0 && py < H {
                         let x0 = max(x + col, 0), x1 = min(x + col + n, W)
-                        if x0 < x1 { run(py * W + x0, x1 - x0, row, x0 - x) }
+                        if x0 < x1 { try run(py * W + x0, x1 - x0, row, x0 - x) }
                     }
                     col += n
                     p += (n + 3) & ~3
@@ -363,7 +377,7 @@ extension TileGridRenderer {
     /// value on entry is the caller's]) is redrawn into `0004` without clearing it — `.PlainWrapBGTile` +
     /// `.DrawLightOpBGTile`, `.PlainWrapFGTile` + `.DrawLightOpFGTile`, `.PlainWrapFGOverlayTile` +
     /// `.DrawLightOpFGOverlayTile` — and copied to `000c` (`.WrapRectBlitX`). With no light, nothing.
-    public func drawLightsOntoTiles(h: Int, v: Int, ports: inout FramePorts) {
+    public func drawLightsOntoTiles(h: Int, v: Int, ports: inout FramePorts) throws {
         guard effects != 3 else { return }
         let scroll = TileBlitters.Scroll(h: h, v: v)
         let grid = lights.opGrid(h: h, v: v)
@@ -377,13 +391,17 @@ extension TileGridRenderer {
             guard t != -1 || b >= 0 || o2 != -1 else { continue }
             let x = col << 5, y = row << 5
             plainWrapBGTile(col: col, row: row, scroll: scroll, ports: &ports)
-            if b >= 0 { lights.lightOpTile(sets.bg.faces[b], into: &ports.tiles, x: x, y: y, scroll: scroll, grid: grid) }
-            plainWrapFGTile(col: col, row: row, scroll: scroll, ports: &ports)
-            if t >= 0 { lights.lightOpTile(sets.fg.faces[t], into: &ports.tiles, x: x, y: y, scroll: scroll, grid: grid) }
-            plainWrapFGOverlayTile(col: col, row: row, scroll: scroll, ports: &ports)
+            if b >= 0 {
+                try lights.lightOpTile(sets.bg.faces[b], into: &ports.tiles, x: x, y: y, scroll: scroll, grid: grid)
+            }
+            try plainWrapFGTile(col: col, row: row, scroll: scroll, ports: &ports)
+            if t >= 0 {
+                try lights.lightOpTile(sets.fg.faces[t], into: &ports.tiles, x: x, y: y, scroll: scroll, grid: grid)
+            }
+            try plainWrapFGOverlayTile(col: col, row: row, scroll: scroll, ports: &ports)
             if o1 > 99 {
-                lights.lightOpTile(overlayFace(o1: o1, o2: level.overlay2(col: col, row: row)), into: &ports.tiles,
-                                   x: x, y: y, scroll: scroll, grid: grid)
+                try lights.lightOpTile(try overlayFace(o1: o1, o2: level.overlay2(col: col, row: row)),
+                                       into: &ports.tiles, x: x, y: y, scroll: scroll, grid: grid)
             }
             TileBlitters.wrapRectBlit(from: ports.tiles, to: &ports.frame, top: y, left: x, bottom: y + 0x20,
                                       right: x + 0x20, scroll: scroll)
@@ -393,9 +411,9 @@ extension TileGridRenderer {
     /// The overlay face of o1 (100 → FG set, 101 → BG set) — what `.PlainWrapFGOverlayTile @ 10012f84` and
     /// `.DrawLightOpFGOverlayTile @ 10013358` index without a range check; any other o1 or an o2 outside the set reads
     /// an unset register / outside the array and is refused (no shipped level has one).
-    private func overlayFace(o1: Int, o2: Int) -> EncodedFace {
+    private func overlayFace(o1: Int, o2: Int) throws -> EncodedFace {
         let set = o1 == 100 ? sets.fg.faces : o1 == 101 ? sets.bg.faces : []
-        precondition((0..<set.count).contains(o2), "overlay o1 \(o1) / o2 \(o2) is outside the census")
+        guard (0..<set.count).contains(o2) else { throw Refusal.overlay(o1: o1, o2: o2) }
         return set[o2]
     }
 
@@ -418,7 +436,7 @@ extension TileGridRenderer {
     /// 0 ≤ k < 95 the blend face k with mode (w + 0x15) (the dry blitter unless `0x26c6` ≠ 0); t = 95: the pattern
     /// tile (tinted in water when `0x26c6` ≠ 0); then, when the BG face has a transparent pixel, the FG face's
     /// boolean stamp into `0008`. No cell clear.
-    func plainWrapFGTile(col: Int, row: Int, scroll: TileBlitters.Scroll, ports: inout FramePorts) {
+    func plainWrapFGTile(col: Int, row: Int, scroll: TileBlitters.Scroll, ports: inout FramePorts) throws {
         let t = level.fgTile(col: col, row: row), b = level.bgTile(col: col, row: row)
         guard (-1...0x5f).contains(t), (-1...0x5f).contains(b), t >= 0 else { return }
         let x = col << 5, y = row << 5
@@ -435,17 +453,17 @@ extension TileGridRenderer {
                 draw(fgFace)
             } else if !submerged {
                 draw(fgFace)
-                draw(sets.fgWater.sheet.faces[t], .table(water(w)))
+                draw(sets.fgWater.sheet.faces[t], .table(try water(w)))
             } else {
-                draw(fgFace, .table(water(w)))
+                draw(fgFace, .table(try water(w)))
             }
             if k >= 0, k < 0x5f {
-                draw(blend.faces[k], blendOp(pattern: pattern, water: w >= 0 && submerged ? water(w) : nil))
+                try draw(blend.faces[k], blendOp(pattern: pattern, water: w >= 0 && submerged ? water(w) : nil))
             }
         } else if w == -1 || !submerged {
             draw(sets.pattern.faces[pattern])
         } else {
-            draw(sets.pattern.faces[pattern], .table(water(w)))
+            draw(sets.pattern.faces[pattern], .table(try water(w)))
         }
         if b >= 0, sets.bg.faces[b].hasTransparentPixel {
             TileBlitters.wrapDraw(sets.fg.faces[t], .bool, into: &ports.mask, x: x, y: y, scroll: scroll)
@@ -455,7 +473,7 @@ extension TileGridRenderer {
     /// `.PlainWrapFGOverlayTile @ 10012f84` (l. 9679–9740): o1 > 99: o2 < 95 → the overlay face, through water table
     /// w whenever the cell is water (header `0x26c6` not consulted); o2 ≥ 95 → the pattern tile (tinted in water when
     /// `0x26c6` ≠ 0). No mask stamp.
-    func plainWrapFGOverlayTile(col: Int, row: Int, scroll: TileBlitters.Scroll, ports: inout FramePorts) {
+    func plainWrapFGOverlayTile(col: Int, row: Int, scroll: TileBlitters.Scroll, ports: inout FramePorts) throws {
         let o1 = level.overlay1(col: col, row: row)
         guard o1 > 99 else { return }
         let o2 = level.overlay2(col: col, row: row)
@@ -465,11 +483,11 @@ extension TileGridRenderer {
             TileBlitters.wrapDraw(face, op, into: &ports.tiles, x: x, y: y, scroll: scroll)
         }
         if o2 < 0x5f {
-            let face = overlayFace(o1: o1, o2: o2)
-            draw(face, w == -1 ? .copy : .table(water(w)))
+            let face = try overlayFace(o1: o1, o2: o2)
+            try draw(face, w == -1 ? .copy : .table(water(w)))
         } else {
             let p = sets.pattern.faces[Self.patternTile(col: col, row: row, periodSix: level.header.patternPeriodSix != 0)]
-            draw(p, w == -1 || level.header.submergedFaces == 0 ? .copy : .table(water(w)))
+            try draw(p, w == -1 || level.header.submergedFaces == 0 ? .copy : .table(water(w)))
         }
     }
 }

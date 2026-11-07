@@ -57,6 +57,9 @@ public struct ParallaxBlitter: Sendable {
         case fireVariant(flameMode: Int16)
         /// Header `0x26ca ≠ 0` (levels 11, 18): the rows need the ripple table, whose producer is not built.
         case ripple(flag: UInt8)
+        /// PT: a cell-table slot with no face (a PxBack / PxMid map cell outside the loaded set): the binary reads an
+        /// unloaded pointer (§2.4–§2.5).
+        case cellSlot(Int)
     }
 
     /// One drawn row of a compositor call, for tests and inspection.
@@ -203,17 +206,17 @@ public struct ParallaxBlitter: Sendable {
     /// `.WrapCopyToScreen` for the `DrawOp.copyToScreen` of a frame: `source` is the port copied (the frame `000c`),
     /// `mask` the mask port `0008`; `graphicsMode` prefs+2, `parallax` prefs+4, `backdrop` = prefs+9 == 0.
     public func copyToScreen(source: [UInt8], mask: [UInt8], h: Int, v: Int, graphicsMode: Int, backdrop: Bool,
-                             parallax: Int, screen: inout [UInt8]) {
+                             parallax: Int, screen: inout [UInt8]) throws {
         var none: [[RowTrace]]? = nil
-        copyToScreen(source: source, mask: mask, h: h, v: v, graphicsMode: graphicsMode, backdrop: backdrop,
-                     parallax: parallax, screen: &screen, trace: &none)
+        try copyToScreen(source: source, mask: mask, h: h, v: v, graphicsMode: graphicsMode, backdrop: backdrop,
+                         parallax: parallax, screen: &screen, trace: &none)
     }
 
     /// As above, from the ports (`frame` copied, `mask` gating).
     public func copyToScreen(ports: FramePorts, h: Int, v: Int, graphicsMode: Int, backdrop: Bool, parallax: Int,
-                             screen: inout [UInt8]) {
-        copyToScreen(source: ports.frame, mask: ports.mask, h: h, v: v, graphicsMode: graphicsMode,
-                     backdrop: backdrop, parallax: parallax, screen: &screen)
+                             screen: inout [UInt8]) throws {
+        try copyToScreen(source: ports.frame, mask: ports.mask, h: h, v: v, graphicsMode: graphicsMode,
+                         backdrop: backdrop, parallax: parallax, screen: &screen)
     }
 
     /// EF: `.WrapCopyToScreen(*_DAT_100a0008, …)`, the flash's copy (`DrawOp.copyMaskToScreen`): the port argument
@@ -222,24 +225,24 @@ public struct ParallaxBlitter: Sendable {
     /// as M); the plain `CopyBits` pieces copy `*(_DAT_1009ff58 + 8)`, the frame port, whatever the argument (M l.
     /// 11811–11836).
     public func copyMaskToScreen(ports: FramePorts, h: Int, v: Int, graphicsMode: Int, backdrop: Bool, parallax: Int,
-                                 screen: inout [UInt8]) {
+                                 screen: inout [UInt8]) throws {
         var none: [[RowTrace]]? = nil
-        copyToScreen(source: ports.mask, mask: ports.mask, h: h, v: v, graphicsMode: graphicsMode, backdrop: backdrop,
-                     parallax: parallax, screen: &screen, plain: ports.frame, trace: &none)
+        try copyToScreen(source: ports.mask, mask: ports.mask, h: h, v: v, graphicsMode: graphicsMode,
+                         backdrop: backdrop, parallax: parallax, screen: &screen, plain: ports.frame, trace: &none)
     }
 
     /// With `trace` non-nil, one `[RowTrace]` per compositor call that drew is appended. `plain` (EF) is the port the
     /// plain `CopyBits` pieces copy — `source` when nil.
     func copyToScreen(source: [UInt8], mask: [UInt8], h: Int, v: Int, graphicsMode: Int, backdrop: Bool,
-                      parallax: Int, screen: inout [UInt8], plain: [UInt8]? = nil, trace: inout [[RowTrace]]?) {
+                      parallax: Int, screen: inout [UInt8], plain: [UInt8]? = nil, trace: inout [[RowTrace]]?) throws {
         let plain = plain ?? source
         precondition(source.count == FramePorts.width * FramePorts.height && mask.count == source.count
                      && plain.count == source.count, "ParallaxBlitter: ports are 640×416")
         precondition(screen.count == Self.screenWidth * Self.screenHeight, "ParallaxBlitter: screen is 640×480")
         for call in Self.calls(h: h, v: v, backdrop: backdrop) {
             if call.composited {
-                doubleBlitUniversal(call, source: source, mask: mask, h: h, v: v, graphicsMode: graphicsMode,
-                                    parallax: parallax, screen: &screen, trace: &trace)
+                try doubleBlitUniversal(call, source: source, mask: mask, h: h, v: v, graphicsMode: graphicsMode,
+                                        parallax: parallax, screen: &screen, trace: &trace)
             } else {
                 copyBits(call.src, call.dst, source: plain, screen: &screen)
             }
@@ -263,7 +266,7 @@ public struct ParallaxBlitter: Sendable {
     /// parallax gate (prefs+4 = 3 → nothing, `10022f8c..10022fa8`), then by graphics (prefs+2, `10023024..1002307c`)
     /// 1 → (lineSkip 0, doubled 0), 2 → (0, 1), 3 → (1, 0), anything else → nothing.
     func doubleBlitUniversal(_ call: Call, source: [UInt8], mask: [UInt8], h: Int, v: Int, graphicsMode: Int,
-                             parallax: Int, screen: inout [UInt8], trace: inout [[RowTrace]]?) {
+                             parallax: Int, screen: inout [UInt8], trace: inout [[RowTrace]]?) throws {
         let rects = [call.src, call.dst] + [call.src2, call.dst2].compactMap { $0 }
         guard rects.allSatisfy({ $0.left >= 0 && $0.top >= 0 && $0.bottom >= 0 && $0.bottom < 0x1e1 }) else { return }
         guard parallax != 3 else { return }                 // flame mode ≤ 0: refused at init otherwise
@@ -275,8 +278,8 @@ public struct ParallaxBlitter: Sendable {
         default: return
         }
         var rows: [RowTrace]? = trace == nil ? nil : []
-        blitOneLayer(source: source, mask: mask, src: call.src, src2: call.src2, dst: call.dst, dst2: call.dst2,
-                     lineSkip: lineSkip, doubled: doubled, h: h, v: v, screen: &screen, trace: &rows)
+        try blitOneLayer(source: source, mask: mask, src: call.src, src2: call.src2, dst: call.dst, dst2: call.dst2,
+                         lineSkip: lineSkip, doubled: doubled, h: h, v: v, screen: &screen, trace: &rows)
         if let rows { trace?.append(rows) }
     }
 
@@ -331,7 +334,7 @@ public struct ParallaxBlitter: Sendable {
     /// r8 `lineSkip`, r9 `doubled`), §1.3 step by step.
     func blitOneLayer(source: [UInt8], mask: [UInt8], src: Rect, src2: Rect?, dst: Rect, dst2: Rect?,
                       lineSkip: Bool, doubled: Bool, h: Int, v: Int, screen: inout [UInt8],
-                      trace: inout [RowTrace]?) {
+                      trace: inout [RowTrace]?) throws {
         // Prologue (`10017950..10017a78`): parity of the top as passed, clamps, then the line-skip top made even.
         let parity = dst.top & 1
         var top = dst.top, bottom = dst.bottom
@@ -388,21 +391,21 @@ public struct ParallaxBlitter: Sendable {
         var redecided = false
         var line = [UInt8](repeating: 0, count: Self.screenWidth + 8)
 
-        source.withUnsafeBufferPointer { sourceBytes in
-        mask.withUnsafeBufferPointer { maskBytes in
-        faces.withUnsafeBufferPointer { faceBytes in
+        try source.withUnsafeBufferPointer { sourceBytes in
+        try mask.withUnsafeBufferPointer { maskBytes in
+        try faces.withUnsafeBufferPointer { faceBytes in
             while UInt32(truncatingIfNeeded: y) < UInt32(truncatingIfNeeded: bottom) {
                 trace?.append(RowTrace(y: y, viewRow: r, tableRow: t, subRow: s, mid: mid, redecided: redecided,
                                        cellRow: cellRows[t]))
                 // Step 5: the row, piece 1 then piece 2 (the cell column carries over).
                 var column = 0
-                compose(row: src.top + (y - top), srcLeft: src.left, lineOffset: 0, split: split1,
-                        column: &column, t: t, s: s, mid: mid, tableI: tableI, tableK: tableK,
-                        source: sourceBytes, mask: maskBytes, faces: faceBytes, line: &line)
-                if let src2 {
-                    compose(row: src2.top + (y - top2), srcLeft: src2.left, lineOffset: left2 - left, split: split2,
+                try compose(row: src.top + (y - top), srcLeft: src.left, lineOffset: 0, split: split1,
                             column: &column, t: t, s: s, mid: mid, tableI: tableI, tableK: tableK,
                             source: sourceBytes, mask: maskBytes, faces: faceBytes, line: &line)
+                if let src2 {
+                    try compose(row: src2.top + (y - top2), srcLeft: src2.left, lineOffset: left2 - left,
+                                split: split2, column: &column, t: t, s: s, mid: mid, tableI: tableI, tableK: tableK,
+                                source: sourceBytes, mask: maskBytes, faces: faceBytes, line: &line)
                 }
                 for chunk in 0..<max(0, copyChunks) {
                     let o = y * Self.screenWidth + left + chunk * 0x20
@@ -472,28 +475,28 @@ public struct ParallaxBlitter: Sendable {
     // swiftlint:disable:next function_parameter_count
     func compose(row: Int, srcLeft: Int, lineOffset: Int, split: Split, column: inout Int, t: Int, s: Int, mid: Bool,
                  tableI: [Int], tableK: [Int], source: UnsafeBufferPointer<UInt8>, mask: UnsafeBufferPointer<UInt8>,
-                 faces: UnsafeBufferPointer<UInt8>, line: inout [UInt8]) {
+                 faces: UnsafeBufferPointer<UInt8>, line: inout [UInt8]) throws {
         var xi = split.phase
         var src = row * FramePorts.width + srcLeft
         var out = lineOffset
-        var faceI = faceBase(tableI[column * 6 + t]) + s * Self.cell
-        var faceK = mid ? faceBase(tableK[column * 6 + t]) + s * Self.cell : 0
-        func nextCell() {
+        var faceI = try faceBase(tableI[column * 6 + t]) + s * Self.cell
+        var faceK = try mid ? faceBase(tableK[column * 6 + t]) + s * Self.cell : 0
+        func nextCell() throws {
             column += 1
             xi = 0
-            faceI = faceBase(tableI[column * 6 + t]) + s * Self.cell
-            if mid { faceK = faceBase(tableK[column * 6 + t]) + s * Self.cell }
+            faceI = try faceBase(tableI[column * 6 + t]) + s * Self.cell
+            if mid { faceK = try faceBase(tableK[column * 6 + t]) + s * Self.cell }
         }
-        func byte() {
+        func byte() throws {
             let f = source[src], i = faces[faceI + xi]
             line[out] = mid ? Self.midByte(k: faces[faceK + xi], f: f, i: i) : Self.backByte(m: mask[src], f: f, i: i)
             src += 1; out += 1; xi += 1
-            if xi > 0x7f { nextCell() }
+            if xi > 0x7f { try nextCell() }
         }
         func word(_ p: UnsafeBufferPointer<UInt8>, _ o: Int) -> UInt32 {
             UInt32(p[o]) << 24 | UInt32(p[o + 1]) << 16 | UInt32(p[o + 2]) << 8 | UInt32(p[o + 3])
         }
-        for _ in 0..<split.lead { byte() }
+        for _ in 0..<split.lead { try byte() }
         var edge = split.edge
         for _ in 0..<split.words {
             let f = word(source, src), i = word(faces, faceI + xi)
@@ -503,9 +506,9 @@ public struct ParallaxBlitter: Sendable {
             line[out + 2] = UInt8(w >> 8 & 0xff); line[out + 3] = UInt8(w & 0xff)
             src += 4; out += 4; xi += 4
             edge -= 1
-            if edge == 0 { nextCell(); edge = 0x20 }
+            if edge == 0 { try nextCell(); edge = 0x20 }
         }
-        for _ in 0..<split.tail { byte() }
+        for _ in 0..<split.tail { try byte() }
     }
 
     // MARK: .CalcPxRowContents
@@ -548,10 +551,10 @@ public struct ParallaxBlitter: Sendable {
     /// column on a cell's row 0): unknown in the original, 0 here.
     static let beforePixelBase: UInt8 = 0
 
-    /// The byte offset of a face slot; a slot the binary would read as an unloaded pointer stops here.
-    func faceBase(_ slot: Int) -> Int {
-        precondition((0..<Self.slotCount).contains(slot) && slotLoaded[slot],
-                     "ParallaxBlitter: cell table slot \(slot) has no face (unreached with shipped data, §2.4–§2.5)")
+    /// The byte offset of a face slot; a slot the binary would read as an unloaded pointer is refused (unreached with
+    /// shipped data, §2.4–§2.5; PT: a refusal, not a trap).
+    func faceBase(_ slot: Int) throws -> Int {
+        guard (0..<Self.slotCount).contains(slot) && slotLoaded[slot] else { throw Refusal.cellSlot(slot) }
         return slot * Self.cellBytes
     }
 }

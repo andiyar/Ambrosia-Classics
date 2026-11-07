@@ -664,8 +664,9 @@ public struct SpriteBlitter: Sendable {
                 lit = true
             }
             guard !lit, level.header.darknessEnable > 0 else { return }
-            guard D == -1 || tables.ambient.indices.contains(D) else { failure = .darkness(D); return }
-            let slab = lights.ambientSlab(D)
+            guard D == -1 || tables.ambient.indices.contains(D), let slab = try? lights.ambientSlab(D) else {
+                failure = .darkness(D); return
+            }
             func darken(_ s: (Int, Int), _ t: (Int, Int), _ height: Int, _ under: Bool) {
                 Self.blit(face, into: &ports.frame, src: s, dst: t, w: ww, h: height, flip: flip, reject: false,
                           rowShift: under ? shift : nil) { _, p in slab[Int(p)] }
@@ -709,7 +710,7 @@ public struct SpriteBlitter: Sendable {
                            h: Int, flip: Bool, after: Bool, light lf: LightFace, colour: Int, D: Int, offRow: Int,
                            offCol: Int, rowShift: ((Int) -> Int)? = nil) -> Refusal? {
         let LW = lf.width, LH = lf.height, fw = face.width
-        let amb = after ? [] : lights.ambientSlab(D)
+        guard let amb = after ? [] : try? lights.ambientSlab(D) else { return .darkness(D) }   // the caller checked D
         let base = after ? 0 : D * 0x6e00
         let table = tables.light
         var failure: Refusal?

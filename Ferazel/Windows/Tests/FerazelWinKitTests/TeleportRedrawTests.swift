@@ -25,12 +25,12 @@ import XCTest
     /// The renderer's tile port against the window drawn fresh at the scroll point (h, v), over the pixels the view
     /// reads (608×384 from (h, v)): the number that differ. A copy of the live grid (same level, faces, lights) is
     /// moved to (h, v) on scratch ports, then `.RedrawEntireScrollGrid` draws the whole window there.
-    static func staleTilePixels(_ r: FrameRenderer, h: Int, v: Int) -> Int {
+    static func staleTilePixels(_ r: FrameRenderer, h: Int, v: Int) throws -> Int {
         var grid = r.grid
         var scratch = FramePorts()
-        grid.setScrollLocation(h: h, v: v, ports: &scratch)
+        try grid.setScrollLocation(h: h, v: v, ports: &scratch)
         var fresh = FramePorts()
-        grid.redrawEntireScrollGrid(h: h, v: v, ports: &fresh)
+        try grid.redrawEntireScrollGrid(h: h, v: v, ports: &fresh)
         var stale = 0
         for y in v..<(v + 384) {
             for x in h..<(h + 608) {
@@ -63,11 +63,11 @@ import XCTest
                              "a jump across the level")
         let renderer = try XCTUnwrap(game.driver.levelRenderer)
         // Measured without the fix: 220,460 of the view's 233,472 pixels differ (220,579 fifty frames on).
-        XCTAssertEqual(Self.staleTilePixels(renderer, h: s.camera.scrollH, v: s.camera.scrollV), 0, "the arrival frame")
+        XCTAssertEqual(try Self.staleTilePixels(renderer, h: s.camera.scrollH, v: s.camera.scrollV), 0, "the arrival frame")
         let start = game.flowSteps
         for k in [1, 30, 50] {
             WinGameTests.run(game, host, max: 100_000) { $0.flowSteps >= start + k && $0.lastOutput.present }
-            XCTAssertEqual(Self.staleTilePixels(renderer, h: s.camera.scrollH, v: s.camera.scrollV), 0, "arrival + \(k)")
+            XCTAssertEqual(try Self.staleTilePixels(renderer, h: s.camera.scrollH, v: s.camera.scrollV), 0, "arrival + \(k)")
         }
     }
 }

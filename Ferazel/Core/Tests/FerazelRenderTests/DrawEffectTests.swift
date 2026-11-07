@@ -202,7 +202,7 @@ final class DrawEffectTests: XCTestCase {
         let lb = try blitter(effects: 1)
         var p = FramePorts(fill: 0x33)
         try lb.wrapDrawSprites([lit], h: 0, v: 0, ports: &p)
-        let slab = lb.lights.ambientSlab(lb.lights.darkness(x: 300 + 6, y: 140 + 20))
+        let slab = try lb.lights.ambientSlab(lb.lights.darkness(x: 300 + 6, y: 140 + 20))
         XCTAssertNotEqual(slab[0x33], 0x33)
         for c in 0..<12 {
             XCTAssertEqual(p.frame[145 * FramePorts.width + 300 + c], slab[Int(f.tables.tint[8][Int(Self.pixel(5, c))])])
@@ -229,7 +229,7 @@ final class DrawEffectTests: XCTestCase {
         var unlit = low
         unlit.lightOverlay = false
         try lb.wrapDrawSprites([unlit], h: 0, v: 0, ports: &pd)
-        let lowSlab = lb.lights.ambientSlab(lb.lights.darkness(x: 300 + 6, y: 370 + 7))
+        let lowSlab = try lb.lights.ambientSlab(lb.lights.darkness(x: 300 + 6, y: 370 + 7))
         XCTAssertEqual(footprint(pd).maxY, 383)
         XCTAssertEqual(darkened(pd, pl, lowSlab), 0)
         for row in 384..<390 { XCTAssertEqual(pl.frame[row * FramePorts.width + 305], 0x33, "row \(row)") }

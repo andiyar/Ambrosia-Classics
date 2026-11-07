@@ -738,6 +738,10 @@ final class DrawModeAuditTests: XCTestCase {
     /// the run skips them to stay fast — they cannot refuse.
     static let skippedOps = ["copyToScreen", "copyMaskToScreen", "drawLightsOntoTiles", "statusBar", "mosaic",
                              "drawParticles", "eraseParticles", "drawBlackLines", "gammaStep"]
+    /// PT: the throwing calls a skipped op's arm may make (`skippedOpsCannotThrow`).
+    static let skippedTries = ["copyToScreen": ["try parallax.copyToScreen("],
+                               "copyMaskToScreen": ["try parallax.copyMaskToScreen("],
+                               "drawLightsOntoTiles": ["try grid.drawLightsOntoTiles("]]
 
     /// The op's case name (a switch: `String(describing:)` of a sprite list is far too slow for the run).
     static func name(_ op: DrawOp) -> String {
@@ -1265,6 +1269,9 @@ final class DrawModeAuditTests: XCTestCase {
         case byConstruction = "by construction"
         /// Reachable only after the stated play time in one level (counter wrap).
         case timeBound = "time bound"
+        /// PT: a kept `precondition` (not a throw) whose condition no data file can break — its inputs are the code's
+        /// own constants or buffers it sized itself (the row's `why` says which).
+        case trapUnreachable = "trap: unreachable from any data"
     }
 
     enum Check: Hashable {
@@ -1274,6 +1281,7 @@ final class DrawModeAuditTests: XCTestCase {
         case deathSteps, waterTilesInSheet, levelOpsRouted, skippedOpsCannotThrow, ripplePhaseHours
         case rotationRanges, notNamedByLevelFrame(String)
         case headerCamera, coreNotNamed(String), callersTry([String])
+        case waterKindsInTables, overlaysInSet, pxMidSlotsLoaded, headerOmniPxStrip
     }
 
     struct Refusal {
@@ -1325,6 +1333,41 @@ final class DrawModeAuditTests: XCTestCase {
           "header 0x2722 ≤ 0 on every built level (levels 52, 55 only)"),
         R("Frame/ParallaxBlitter.swift", "Refusal.ripple", 1, .headerZero, [.headerRipple],
           "header 0x26ca = 0 on every built level (levels 11, 18 only)"),
+        // PT: the renderer's traps a level's data can reach, now refusals (the skipped copy / light ops reach them
+        // too: `skippedOpsCannotThrow` admits those calls because these checks read the data, not the run).
+        R("Frame/ParallaxBlitter.swift", "Refusal.cellSlot", 1, .dataAbsent, [.pxBackSlotsLoaded, .pxMidSlotsLoaded],
+          "every PxBack cell of every built level names a loaded slot (OmniPx's 0 included), and every PxMid cell of a "
+          + "level with header 0x3268 = 1 names a loaded image and mask slot"),
+        R("Frame/TileGridRenderer.swift", "Refusal.waterTable", 1, .dataAbsent, [.waterKindsInTables],
+          "no built level has a BG tile of kind 206…209 (water tables 6…9, never built by the original)"),
+        R("Frame/LightRenderer.swift", "Refusal.darkness", 2, .dataAbsent, [.lightBytesInRange],
+          "the tile light pass's D is a light byte, 0…15 on every built level (the ambient rows)"),
+        R("Frame/LightRenderer.swift", "Refusal.lightIndex", 1, .dataAbsent, [.lightBytesInRange, .lightIndexInRange],
+          "the tile light pass's index stays in the table: D 0…15, light-face pixels 0 or 0xf5…0xff, colours ≤ 99"),
+        R("Frame/LightRenderer.swift", "Refusal.overlay", 1, .dataAbsent, [.overlaysInSet],
+          "every overlay cell of every built level with o1 > 99 has o1 100 or 101 and o2 inside that face set"),
+        R("Frame/StatusBar.swift", "StatusBarError.backSize", 1, .loadsClean, [.levelsLoad],
+          "PICT 132 is 640×88 (every built level's renderer builds its status bar)"),
+        // PT: the kept traps — their conditions read only the code's constants or buffers the code sized.
+        R("Color/InverseTable.swift", "precondition", 1, .trapUnreachable, [],
+          "inverse-table bits come from a `ColorSearch.Model` the shells pick in code (`.exactNearest`; `.ruled` "
+          + "uses 4), never from a file"),
+        R("Color/ColorSearch.swift", "precondition", 1, .trapUnreachable, [], "the same model bits"),
+        R("Frame/Mosaic.swift", "precondition", 1, .trapUnreachable, [],
+          "both buffers are the renderer's fixed 640×480 port and screen"),
+        R("Frame/ParallaxBlitter.swift", "precondition", 4, .trapUnreachable, [],
+          "the slot array the init builds (60 entries); each face a `PlainFaceSheet` cell cut at the fixed 128×128 "
+          + "arguments (whatever the PICT, `ConvertedPicture.cell` returns w·h bytes); the fixed 640×416 ports and "
+          + "640×480 screen"),
+        R("Frame/SpriteBlitter.swift", "preconditionFailure", 1, .trapUnreachable, [],
+          "`background`'s fetch: set on the line above it or it threw"),
+        R("Frame/TextRasterizer.swift", "precondition", 1, .trapUnreachable, [],
+          "a rasterizer's mask: both shells' rasterizers allocate exactly width × height bytes"),
+        R("Effects/DeathEffect.swift", "precondition", 1, .trapUnreachable, [.deathSteps],
+          "k is `LevelRun`'s loop counter 0…49 (`FrameRenderer.deathEffectStep` also refuses before it)"),
+        R("Faces/LightFaces.swift", "precondition", 1, .trapUnreachable, [],
+          "`LightFace.load`'s pixels: the converted picture at its own size (`ConvertedPicture` throws on a count "
+          + "mismatch) or the w × h sample; w and h are Core's light-face constants, never a file's"),
         // FrameRenderer.
         R("Frame/FrameRenderer.swift", "WorldDataError.missing", 1, .loadsClean, [.levelsLoad],
           "every built level's Mlvl is in the data"),
@@ -1409,6 +1452,12 @@ final class DrawModeAuditTests: XCTestCase {
           "the same CLUT loads"),
         R("Data/FerazelData.swift", "FerazelDataError.missing", 5, .offLevelFrame, [.coreNotNamed("FerazelData")],
           "opening the data folder (the shells, at launch)"),
+        // PT (audit ruling 9): the backdrops the renderer does not draw yet, refused at level open (`setupLevel`,
+        // before the session) — `GameFlow` reports a level-run error as the level-load error, never a quit.
+        R("Front/LevelRun.swift", "LevelOpenRefusal.omniPxMode", 1, .headerZero, [.headerOmniPxStrip],
+          "header 0x26c7 = 0 on every built level (rain / interlace modes 1, 3, 6, 7, ≥ 8 refused until 6A-RN)"),
+        R("Front/LevelRun.swift", "LevelOpenRefusal.horizonStrip", 1, .headerZero, [.headerOmniPxStrip],
+          "header 0x2716 = 0 on every built level (the horizon strip, levels 10, 30, 40, 45, 62, 67, until 6A-S8)"),
         R("Front/DialogResources.swift", "WorldDataError.missing", 1, .byConstruction,
           [.callersTry(["DialogTemplate.load(", "DialogItemList.load(", "ControlTemplate.load(", "MenuTemplate.load(",
                         "MenuBarTemplate.load("])],
@@ -1443,6 +1492,24 @@ final class DrawModeAuditTests: XCTestCase {
         R("World/WorldMap.swift", "WorldDataError.wrongLength", 1, .loadsClean, [.levelsLoad], "the session's Mmap"),
     ]
 
+    /// PT: every kept trap in `lines` — (file, `precondition` / `preconditionFailure`) → count, as a throw is counted.
+    private static func scannedTraps(_ lines: [SourceLine]) -> [String: Int] {
+        var out: [String: Int] = [:]
+        for l in lines {
+            let c = Array(l.code)
+            for name in ["precondition", "preconditionFailure"] {
+                let pat = Array(name + "(")
+                var i = 0
+                while i + pat.count <= c.count {
+                    defer { i += 1 }
+                    guard Array(c[i..<(i + pat.count)]) == pat, i == 0 || !isWord(c[i - 1]) else { continue }
+                    out["\(l.file) \(name)", default: 0] += 1
+                }
+            }
+        }
+        return out
+    }
+
     /// Every `throw <name>` in `lines`: (file, name) → count.
     private static func scannedThrows(_ lines: [SourceLine]) -> [String: Int] {
         var out: [String: Int] = [:]
@@ -1466,7 +1533,9 @@ final class DrawModeAuditTests: XCTestCase {
     func testEveryRefusalIsUnreachable() throws {
         for (module, lines, rows) in [("FerazelRender", try Self.renderLines.get(), Self.refusals),
                                       ("FerazelCore", try Self.coreLines.get(), Self.coreRefusals)] {
-            let scanned = Self.scannedThrows(lines)
+            // FerazelRender's kept traps are counted with its throws (PT): a new trap without a row fails as a throw.
+            let traps = module == "FerazelRender" ? Self.scannedTraps(lines) : [:]
+            let scanned = Self.scannedThrows(lines).merging(traps) { a, b in a + b }
             let table = Dictionary(rows.map { ("\($0.file) \($0.thrown)", $0.count) }, uniquingKeysWith: +)
             XCTAssertEqual(table.count, rows.count, "\(module): a refusal row twice")
             for (key, n) in scanned.sorted(by: { $0.key < $1.key }) where table[key] != n {
@@ -1729,9 +1798,15 @@ final class DrawModeAuditTests: XCTestCase {
             for a in audits { XCTAssertEqual(a.seen.levelOpsOffLevel, [], "\(c): level \(a.level.number)") }
         case .skippedOpsCannotThrow:
             // Each skipped op's arm in `FrameRenderer.apply` (from its `case .<op>` to the next line indented no
-            // deeper) holds no `try`.
+            // deeper) holds no `try` — but the calls `skippedTries` names (PT): their throws are census rows whose
+            // checks read the level data, not the run (`Refusal.cellSlot`, the light pass's `Refusal.darkness` /
+            // `lightIndex` / `overlay`, the grid's `Refusal.waterTable`), so skipping the op loses no refusal.
             let lines = render.filter { $0.file == "Frame/FrameRenderer.swift" }
             func indent(_ s: String) -> Int { s.prefix { $0 == " " }.count }
+            func admitted(_ code: String, _ op: String) -> Bool {
+                (Self.skippedTries[op] ?? []).contains { Self.has(code, $0) }
+            }
+            var tries = 0
             for op in Self.skippedOps {
                 var arms = 0
                 for (i, l) in lines.enumerated() {
@@ -1744,11 +1819,15 @@ final class DrawModeAuditTests: XCTestCase {
                     for m in lines[(i + 1)...] {
                         let u = Self.trim(m.code)
                         if !u.isEmpty && indent(m.code) <= d { break }
-                        XCTAssertFalse(Self.has(m.code, "try "), "\(c): \(op)'s arm, line \(m.line)")
+                        guard Self.has(m.code, "try ") else { continue }
+                        if admitted(m.code, op) { tries += 1; continue }
+                        XCTFail("\(c): \(op)'s arm, line \(m.line)")
                     }
                 }
                 XCTAssertGreaterThan(arms, 0, "\(c): no `case .\(op)` arm")
             }
+            // Each admitted call is made (the mosaic copy and the plain copy: two `copyToScreen` arms).
+            XCTAssertEqual(tries, 4, "\(c): the admitted calls")
         case .ripplePhaseHours:
             // 0x200 + 0x100·k stays non-negative for k < 2^23 − 2 frames: over 77 hours at 30 frames a second in one
             // level (a level start resets it: one renderer per level start).
@@ -1787,6 +1866,97 @@ final class DrawModeAuditTests: XCTestCase {
             for w in Self.writers where w.input == .rotation {
                 guard case .range(let r) = w.values else { XCTFail("\(c): \(w.site)"); continue }
                 XCTAssertTrue(r.lowerBound >= 0 && r.upperBound <= 359, "\(c): \(w.site)")
+            }
+        case .waterKindsInTables:
+            // `water(w)`, w = BG kind − 200 for kinds 200…209 (`.RedrawScrollGrid`, `.PlainWrapFG(Overlay)Tile`): every
+            // BG cell's kind of every built level leaves w inside the tables built (0…5).
+            for a in audits {
+                let L = a.level.file, n = a.level.renderer.tables.water.count
+                XCTAssertEqual(n, 6, "\(c): level \(a.level.number) water tables")
+                var kinds = Set<Int>()
+                for row in 0..<L.bg.height {
+                    for col in 0..<L.bg.width { kinds.insert(L.bgKind(tile: L.bgTile(col: col, row: row))) }
+                }
+                for k in kinds where LiquidTiles.range.contains(k) {
+                    XCTAssertLessThan(k - 200, n, "\(c): level \(a.level.number) BG kind \(k)")
+                }
+            }
+        case .overlaysInSet:
+            // `overlayFace(o1:o2:)` (`.DrawLightsOntoTiles`, `.PlainWrapFGOverlayTile`): o1 > 99 → 100 / 101, o2 in
+            // that set.
+            for a in audits {
+                let L = a.level.file, sets = a.level.renderer.grid.sets
+                for row in 0..<L.overlay.height {
+                    for col in 0..<L.overlay.width {
+                        let o1 = L.overlay1(col: col, row: row)
+                        guard o1 > 99 else { continue }
+                        let o2 = L.overlay2(col: col, row: row)
+                        let n = o1 == 100 ? sets.fg.faces.count : o1 == 101 ? sets.bg.faces.count : 0
+                        XCTAssertTrue((0..<n).contains(o2),
+                                      "\(c): level \(a.level.number) (\(col), \(row)) o1 \(o1) o2 \(o2)")
+                    }
+                }
+            }
+        case .pxMidSlotsLoaded:
+            // A mid row (`xmRows[r] ≠ 0 && 0x3268 == 1`) reads the image and mask slots of the PxMid cells.
+            for a in audits where a.level.file.header.pxMidEnable == 1 {
+                let L = a.level.file, p = a.level.renderer.parallax
+                for row in 0..<L.pxMid.height {
+                    for col in 0..<L.pxMid.width {
+                        let cell = L.pxMidTile(col: col, row: row)
+                        for slot in [ParallaxBlitter.midImageBase + cell, ParallaxBlitter.midMaskBase + cell] {
+                            XCTAssertTrue((0..<ParallaxBlitter.slotCount).contains(slot) && p.slotLoaded[slot],
+                                          "\(c): level \(a.level.number) PxMid (\(col), \(row)) slot \(slot)")
+                        }
+                    }
+                }
+            }
+        case .headerOmniPxStrip:
+            // Every built level opens: OmniPx 0 / 2 / 4 / 5 (built: 0) and no horizon strip.
+            for a in audits {
+                let h = a.level.file.header
+                XCTAssertTrue([0, 2, 4, 5].contains(h.omniPxMode),
+                              "\(c): level \(a.level.number) OmniPx \(h.omniPxMode)")
+                XCTAssertEqual(h.stripPict, 0, "\(c): level \(a.level.number) strip")
+                XCTAssertNoThrow(try LevelRun.refuseUndrawnHeader(h), "\(c): level \(a.level.number)")
+            }
+            // A synthetic header (level 1's Mlvl, one byte changed) is refused by value.
+            let mlvl = try XCTUnwrap(res.world.resources(of: "Mlvl").first { $0.id == 1 })
+            func header(_ patch: (inout Data) -> Void) throws -> LevelHeader {
+                var d = mlvl.data
+                patch(&d)
+                return try LevelFile(id: 1, data: d).header
+            }
+            for m: UInt8 in [0, 1, 2, 3, 4, 5, 6, 7, 8, 0xff] {
+                let h = try header { $0[$0.startIndex + 0x26c7] = m }
+                if [0, 2, 4, 5].contains(m) {
+                    XCTAssertNoThrow(try LevelRun.refuseUndrawnHeader(h), "\(c): OmniPx \(m)")
+                } else {
+                    XCTAssertThrowsError(try LevelRun.refuseUndrawnHeader(h), "\(c): OmniPx \(m)") {
+                        XCTAssertEqual($0 as? LevelOpenRefusal, .omniPxMode(m))
+                    }
+                }
+            }
+            let strip = try header { $0[$0.startIndex + 0x2716] = 0x13; $0[$0.startIndex + 0x2717] = 0x88 }
+            XCTAssertThrowsError(try LevelRun.refuseUndrawnHeader(strip), "\(c): strip") {
+                XCTAssertEqual($0 as? LevelOpenRefusal, .horizonStrip(0x1388))
+            }
+            // In code: `setupLevel` refuses before `services.prepare` (no renderer, no session); `GameFlow`'s level arm
+            // catches a tick's error as `levelFailed` (the level-load report —
+            // `GameFlowGameTests.testNewGameStartsLevel1` drives a patched header to it).
+            let run = core.filter { $0.file == "Front/LevelRun.swift" }
+            let refuse = run.indices.filter { Self.trim(run[$0].code) == "try Self.refuseUndrawnHeader(h)" }
+            let prepare = run.indices.filter { Self.has(run[$0].code, "services.prepare(level:") }
+            XCTAssertEqual(refuse.count, 1, "\(c): the level-open call")
+            if let r = refuse.first, let p = prepare.first {
+                XCTAssertLessThan(r, p, "\(c): refused before the renderer")
+                XCTAssertTrue(Self.enclosing(run, r).contains { $0.hasPrefix("private func setupLevel(") }, "\(c)")
+            }
+            let flow = core.filter { $0.file == "Front/GameFlow.swift" }.map { Self.trim($0.code) }
+            let tick = flow.firstIndex(of: "emit(try run.tick(now: now, input: input), &out)")
+            XCTAssertNotNil(tick, "\(c): GameFlow's level tick")
+            if let t = tick {
+                XCTAssertEqual(Array(flow[(t + 1)...].prefix(2)), ["} catch {", "levelFailed = true"], "\(c)")
             }
         case .headerCamera:
             for a in audits {

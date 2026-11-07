@@ -32,6 +32,16 @@ import FerazelCore
 /// cmpwi r0,3; beq` (e.g. `100137ac..100137b4`). Effects = 3 is R1's tile layer.
 /// The `param_2 ≠ 0` (mask-only) mode of `.RedrawScrollGrid` is not built (its one caller is outside R1).
 public struct TileGridRenderer: Sendable {
+    /// What the grid refuses instead of reading memory the original would have (PT; each has its census row in
+    /// `DrawModeAuditTests`).
+    public enum Refusal: Error, Equatable {
+        /// Water table w ≥ 6 (BG kinds 206…209): the original indexes `_DAT_100a0170[w]` but builds only w 0…5.
+        case waterTable(Int)
+        /// An overlay face (`.PlainWrapFGOverlayTile` / `.DrawLightOpFGOverlayTile`, no range check in the original)
+        /// with o1 other than 100 / 101 or o2 outside that set (`LightRenderer.swift`'s `overlayFace`).
+        case overlay(o1: Int, o2: Int)
+    }
+
     public let level: LevelFile
     public let sets: TileSets
     /// `_DAT_1009ffc8`: PICT 185 after `.ProcessFGBlendTileFaces` (weights 0..3).
@@ -85,10 +95,10 @@ public struct TileGridRenderer: Sendable {
     /// The tile-grid ops of the seam: `.redrawScrollGrid` → `setScrollLocation` (strip-incremental),
     /// `.redrawEntireScrollGrid` → `redrawEntireScrollGrid` (the whole window), `.setDrawnScroll` → `setDrawnScroll`.
     /// Every other op is not the grid's.
-    mutating func apply(_ op: DrawOp, ports: inout FramePorts) {
+    mutating func apply(_ op: DrawOp, ports: inout FramePorts) throws {
         switch op {
-        case .redrawScrollGrid(let h, let v): setScrollLocation(h: h, v: v, ports: &ports)
-        case .redrawEntireScrollGrid(let h, let v): redrawEntireScrollGrid(h: h, v: v, ports: &ports)
+        case .redrawScrollGrid(let h, let v): try setScrollLocation(h: h, v: v, ports: &ports)
+        case .redrawEntireScrollGrid(let h, let v): try redrawEntireScrollGrid(h: h, v: v, ports: &ports)
         case .setDrawnScroll(let h, let v): setDrawnScroll(h: h, v: v)
         default: break
         }
@@ -98,7 +108,7 @@ public struct TileGridRenderer: Sendable {
     /// → v = 16000), then redraw the row strip exposed by the v change (at the old h's 21 columns) and the column strip
     /// exposed by the h change (at the old v's 14 rows), and remember (h, v) as drawn. Cells are culled against the
     /// scroll point as passed (`PTR_DAT_1009fe78`).
-    public mutating func setScrollLocation(h: Int, v: Int, ports: inout FramePorts) {
+    public mutating func setScrollLocation(h: Int, v: Int, ports: inout FramePorts) throws {
         let scroll = TileBlitters.Scroll(h: h, v: v)
         var h = max(h, 0), v = max(v, 0)
         if (h + 0x280) >> 5 > 0x200 { h = 0x3da0 }
@@ -132,12 +142,12 @@ public struct TileGridRenderer: Sendable {
         drawnH = h
         drawnV = v
         if rowStrip.top <= rowStrip.bottom {
-            redraw(top: rowStrip.top, left: rowStrip.left, right: rowStrip.right, bottom: rowStrip.bottom, scroll: scroll,
-                   ports: &ports)
+            try redraw(top: rowStrip.top, left: rowStrip.left, right: rowStrip.right, bottom: rowStrip.bottom,
+                       scroll: scroll, ports: &ports)
         }
         if colStrip.left <= colStrip.right {
-            redraw(top: colStrip.top, left: colStrip.left, right: colStrip.right, bottom: colStrip.bottom, scroll: scroll,
-                   ports: &ports)
+            try redraw(top: colStrip.top, left: colStrip.left, right: colStrip.right, bottom: colStrip.bottom,
+                       scroll: scroll, ports: &ports)
         }
     }
 
@@ -150,20 +160,23 @@ public struct TileGridRenderer: Sendable {
 
     /// `.RedrawEntireScrollGrid @ 10013fd0` (`DrawOp.redrawEntireScrollGrid`): rows drawnV/32 ... +13, cols
     /// drawnH/32 ... +20, culled against the scroll point (h, v).
-    public func redrawEntireScrollGrid(h: Int, v: Int, ports: inout FramePorts) {
+    public func redrawEntireScrollGrid(h: Int, v: Int, ports: inout FramePorts) throws {
         let top = drawnV / 32, left = drawnH / 32
-        redrawScrollGrid(top: top, left: left, right: left + 0x14, bottom: top + 0xd, h: h, v: v, ports: &ports)
+        try redrawScrollGrid(top: top, left: left, right: left + 0x14, bottom: top + 0xd, h: h, v: v, ports: &ports)
     }
 
     /// `.RedrawScrollGrid(rect, 0)`: rows top ... bottom, cols left ... right (inclusive; empty when top > bottom or
     /// left > right), culled against the scroll point (h, v).
-    func redrawScrollGrid(top: Int, left: Int, right: Int, bottom: Int, h: Int, v: Int, ports: inout FramePorts) {
-        redraw(top: top, left: left, right: right, bottom: bottom, scroll: TileBlitters.Scroll(h: h, v: v), ports: &ports)
+    func redrawScrollGrid(top: Int, left: Int, right: Int, bottom: Int, h: Int, v: Int,
+                          ports: inout FramePorts) throws {
+        try redraw(top: top, left: left, right: right, bottom: bottom, scroll: TileBlitters.Scroll(h: h, v: v),
+                   ports: &ports)
     }
 
     // MARK: - the transcription
 
-    func redraw(top: Int, left: Int, right: Int, bottom: Int, scroll: TileBlitters.Scroll, ports: inout FramePorts) {
+    func redraw(top: Int, left: Int, right: Int, bottom: Int, scroll: TileBlitters.Scroll,
+                ports: inout FramePorts) throws {
         guard top <= bottom, left <= right else { return }
         let header = level.header
         let width = Int(header.gridWidth), height = Int(header.gridHeight)
@@ -172,7 +185,7 @@ public struct TileGridRenderer: Sendable {
             for col in left...right {
                 let x = col << 5, y = row << 5
                 if col < width, col >= 0, row < height, row >= 0 {
-                    guard drawCell(col: col, row: row, x: x, y: y, scroll: scroll, ports: &ports) else { return }
+                    guard try drawCell(col: col, row: row, x: x, y: y, scroll: scroll, ports: &ports) else { return }
                 }
                 let r = (top: y, left: x, bottom: y + 0x20, right: x + 0x20)
                 union = union.map { (min($0.top, r.top), min($0.left, r.left), max($0.bottom, r.bottom), max($0.right, r.right)) } ?? r
@@ -185,7 +198,8 @@ public struct TileGridRenderer: Sendable {
     }
 
     /// One cell of `.RedrawScrollGrid`; false where the original reports "FGTileKind out of range" and returns.
-    private func drawCell(col: Int, row: Int, x: Int, y: Int, scroll: TileBlitters.Scroll, ports: inout FramePorts) -> Bool {
+    private func drawCell(col: Int, row: Int, x: Int, y: Int, scroll: TileBlitters.Scroll,
+                          ports: inout FramePorts) throws -> Bool {
         let header = level.header
         let t = level.fgTile(col: col, row: row), b = level.bgTile(col: col, row: row)
         let o1 = level.overlay1(col: col, row: row)
@@ -201,8 +215,8 @@ public struct TileGridRenderer: Sendable {
         }
         let lit = effects != 3
         /// `.LightAny*Tile(…, 10)` → `.WrapLightTile` → `.DrawLightOverTile` into `0004`.
-        func light(_ face: EncodedFace) {
-            lights.lightTile(face, into: &ports.tiles, x: x, y: y, scroll: scroll)
+        func light(_ face: EncodedFace) throws {
+            try lights.lightTile(face, into: &ports.tiles, x: x, y: y, scroll: scroll)
         }
         /// The overlay o2 face of o1 (100 → FG set, 101 → BG set); nil past the set (no shipped level reaches it).
         func overlayFace() -> EncodedFace? {
@@ -221,7 +235,7 @@ public struct TileGridRenderer: Sendable {
             if b >= 0 {
                 draw(bg[b])
                 stamp(bg[b])
-                if lit { light(bg[b]) }   // `.LightAnyBGTile` (l. 10002)
+                if lit { try light(bg[b]) }   // `.LightAnyBGTile` (l. 10002)
                 if let o = overlayFace() { stamp(o) }
             }
         } else {
@@ -232,7 +246,7 @@ public struct TileGridRenderer: Sendable {
                 draw(bg[b])
                 stamp(bg[b])
                 if bg[b].hasTransparentPixel { stamp(fgFace) }
-                if lit { light(bg[b]) }   // `.LightAnyBGTile` (l. 9919)
+                if lit { try light(bg[b]) }   // `.LightAnyBGTile` (l. 9919)
             }
             if let o = overlayFace() { stamp(o) }
 
@@ -246,21 +260,21 @@ public struct TileGridRenderer: Sendable {
                 if w == -1 || !submerged {
                     draw(fgFace)
                 } else {
-                    draw(fgFace, .table(water(w)))
+                    draw(fgFace, .table(try water(w)))
                 }
                 if k >= 0, k < 0x5f {
                     // mode 0x14 | pattern (dry) or (w + 0x15) << 16 | pattern; `.BlitEncFaceX` sends the latter to the
                     // dry blitter unless 0x26c6 ≠ 0 (decompile l. 27043–27050).
-                    draw(blend.faces[k], blendOp(pattern: pattern, water: w >= 0 && submerged ? water(w) : nil))
+                    try draw(blend.faces[k], blendOp(pattern: pattern, water: w >= 0 && submerged ? water(w) : nil))
                     if w >= 0, !submerged {
-                        draw(sets.fgWater.sheet.faces[t], .table(water(w)))
+                        draw(sets.fgWater.sheet.faces[t], .table(try water(w)))
                     }
                 }
             } else {
                 let p = sets.pattern.faces[pattern]
-                if w == -1 || !submerged { draw(p) } else { draw(p, .table(water(w))) }
+                if w == -1 || !submerged { draw(p) } else { draw(p, .table(try water(w))) }
             }
-            if lit { light(fgFace) }   // `.LightAnyFGTile` (l. 10020): FG face t, the pattern cell's face 95 too
+            if lit { try light(fgFace) }   // `.LightAnyFGTile` (l. 10020): FG face t, the pattern cell's face 95 too
         }
 
         // 3. overlay.
@@ -270,11 +284,11 @@ public struct TileGridRenderer: Sendable {
                                                                        periodSix: header.patternPeriodSix != 0)]
                                 : fg[o2])
                 stamp(fg[o2])
-                if lit { light(fg[o2]) }   // `.LightAnyFGOverlayFGTile` (l. 10044)
+                if lit { try light(fg[o2]) }   // `.LightAnyFGOverlayFGTile` (l. 10044)
             } else if o1 == 101, o2 < bg.count {
                 draw(bg[o2])
                 stamp(bg[o2])
-                if lit { light(bg[o2]) }   // `.LightAnyFGOverlayBGTile` (l. 10047)
+                if lit { try light(bg[o2]) }   // `.LightAnyFGOverlayBGTile` (l. 10047)
             }
         }
         return true
@@ -282,8 +296,8 @@ public struct TileGridRenderer: Sendable {
 
     /// Water table w (`_DAT_100a0170`). The original indexes w = BG kind − 200 for kinds 200..209 but builds only
     /// w 0..5; no shipped level has a BG kind 206..209 under a drawn FG cell — refused, not invented.
-    func water(_ w: Int) -> [UInt8] {
-        precondition(w < tables.water.count, "water table w ≥ 6 is outside the census (w = \(w))")
+    func water(_ w: Int) throws -> [UInt8] {
+        guard tables.water.indices.contains(w) else { throw Refusal.waterTable(w) }
         return tables.water[w]
     }
 

@@ -55,11 +55,11 @@ final class ParallaxTests: XCTestCase {
 
     /// Rows of the composited screen: [(view row, mode, cell row, table row, sub-row)] for one copy-to-screen.
     private func trace(_ b: ParallaxBlitter, h: Int, v: Int, graphicsMode: Int = 1,
-                       source: [UInt8]? = nil, mask: [UInt8]? = nil, screen: inout [UInt8]) -> [[ParallaxBlitter.RowTrace]] {
+                       source: [UInt8]? = nil, mask: [UInt8]? = nil, screen: inout [UInt8]) throws -> [[ParallaxBlitter.RowTrace]] {
         let zero = [UInt8](repeating: 0, count: FramePorts.width * FramePorts.height)
         var traces: [[ParallaxBlitter.RowTrace]]? = []
-        b.copyToScreen(source: source ?? zero, mask: mask ?? zero, h: h, v: v, graphicsMode: graphicsMode,
-                       backdrop: true, parallax: 2, screen: &screen, trace: &traces)
+        try b.copyToScreen(source: source ?? zero, mask: mask ?? zero, h: h, v: v, graphicsMode: graphicsMode,
+                           backdrop: true, parallax: 2, screen: &screen, trace: &traces)
         return traces ?? []
     }
 
@@ -92,7 +92,7 @@ final class ParallaxTests: XCTestCase {
         let source = port { x, y in UInt8((x * 7 + y) & 0xff) | 0x80 }
         let mask = port { x, _ in [0x00, 0x00, 0x0f, 0xff, 0x80, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00][x % 12] }
         var screen = blankScreen()
-        let traces = trace(b, h: 2, v: 10, source: source, mask: mask, screen: &screen)
+        let traces = try trace(b, h: 2, v: 10, source: source, mask: mask, screen: &screen)
         XCTAssertEqual(traces.count, 1, "v' = 10 ≤ 32: one call")
         let first = try XCTUnwrap(traces.first?.first)
         XCTAssertEqual(first.y, 8)
@@ -138,7 +138,7 @@ final class ParallaxTests: XCTestCase {
         let b = try blitter(f.level10, back: back, image: image, mask: mask)
         let source = port { x, y in UInt8((x + 5 * y) & 0xff) }
         var screen = blankScreen()
-        let traces = trace(b, h: 1, v: 1400, source: source, screen: &screen)
+        let traces = try trace(b, h: 1, v: 1400, source: source, screen: &screen)
         let rows = traces.flatMap { $0 }
         let mid = try XCTUnwrap(rows.first { $0.mid }, "level 10 at v 1400 draws a mid row")
         // Sub-row from §1.3 (`10018b40..10018bdc`), not the trace: s = (view row + v0m) & 0x7f, v0m = V·ym >> 8.
@@ -184,7 +184,7 @@ final class ParallaxTests: XCTestCase {
         let f = try fixture()
         let b = try blitter(f.level1, back: face { _, _ in 0 })
         var screen = blankScreen()
-        let traces = trace(b, h: 100, v: 100, screen: &screen)
+        let traces = try trace(b, h: 100, v: 100, screen: &screen)
         XCTAssertEqual(traces.count, 2)
         XCTAssertEqual(traces[0].map(\.viewRow), Array(0...315))
         XCTAssertEqual(traces[1].map(\.viewRow), Array(316...383))
@@ -215,7 +215,7 @@ final class ParallaxTests: XCTestCase {
         let slots: [[UInt8]?] = (0..<ParallaxBlitter.slotCount).map { slot in face { row, x in pixel(slot, row, x) } }
         let b = try ParallaxBlitter(level: level, faceSlots: slots)
         var screen = blankScreen()
-        let rows = trace(b, h: h, v: v, mask: port { _, _ in 0xff }, screen: &screen).flatMap { $0 }
+        let rows = try trace(b, h: h, v: v, mask: port { _, _ in 0xff }, screen: &screen).flatMap { $0 }
         XCTAssertEqual(rows.map(\.viewRow), Array(0...383))
         XCTAssertEqual(rows.filter(\.redecided).map(\.viewRow), [274])
         XCTAssertFalse(rows.contains { $0.mid }, "level 1: PxMid disabled (0x3268 = 0)")
@@ -245,13 +245,13 @@ final class ParallaxTests: XCTestCase {
         var drawn = Set<Int>()
         for v in 1392...1536 {
             var screen = blankScreen()
-            let rows = trace(b, h: 0, v: v, screen: &screen).flatMap { $0 }.filter(\.mid)
+            let rows = try trace(b, h: 0, v: v, screen: &screen).flatMap { $0 }.filter(\.mid)
             XCTAssertFalse(rows.isEmpty, "v \(v) shows the band")
             drawn.formUnion(rows.map(\.cellRow))
         }
         XCTAssertEqual(drawn, [16, 17])
         var screen = blankScreen()
-        XCTAssertFalse(trace(b, h: 0, v: 1391, screen: &screen).flatMap { $0 }.contains { $0.mid })
+        XCTAssertFalse(try trace(b, h: 0, v: 1391, screen: &screen).flatMap { $0 }.contains { $0.mid })
 
         // The named refusals through the public init (an empty PxBack sheet: the header gates come first).
         // Fire variant hdr+0x2722 > 0 (52 → 1, 55 → 2); ripple hdr+0x26ca ≠ 0 (11, 18); level 10 builds.
@@ -277,30 +277,30 @@ final class ParallaxTests: XCTestCase {
         let b = try blitter(f.level1, back: face { _, _ in 0 })
         let source = port { _, y in UInt8(y & 0xff) }
         let mask = port { _, _ in 0 }                                   // F everywhere
-        func run(_ mode: Int, v: Int) -> [UInt8] {
+        func run(_ mode: Int, v: Int) throws -> [UInt8] {
             var screen = blankScreen()
-            b.copyToScreen(source: source, mask: mask, h: 0, v: v, graphicsMode: mode, backdrop: true, parallax: 2,
-                           screen: &screen)
+            try b.copyToScreen(source: source, mask: mask, h: 0, v: v, graphicsMode: mode, backdrop: true,
+                               parallax: 2, screen: &screen)
             return screen
         }
         func row(_ s: [UInt8], _ y: Int) -> Set<UInt8> { Set(s[(y * Self.sw + 16)..<(y * Self.sw + 624)]) }
 
-        let m1 = run(1, v: 10)
+        let m1 = try run(1, v: 10)
         for y in 8..<392 { XCTAssertEqual(row(m1, y), [UInt8((10 + y - 8) & 0xff)], "mode 1 row \(y)") }
-        let m2 = run(2, v: 10)
+        let m2 = try run(2, v: 10)
         for y in stride(from: 8, to: 392, by: 2) {
             XCTAssertEqual(row(m2, y), [UInt8((10 + y - 8) & 0xff)], "mode 2 row \(y)")
             XCTAssertEqual(row(m2, y + 1), [UInt8((10 + y - 8) & 0xff)], "mode 2 row \(y + 1) doubles \(y)")
         }
-        let m3 = run(3, v: 10)
+        let m3 = try run(3, v: 10)
         for y in stride(from: 8, to: 392, by: 2) {
             XCTAssertEqual(row(m3, y), [UInt8((10 + y - 8) & 0xff)], "mode 3 row \(y)")
             XCTAssertEqual(row(m3, y + 1), [0xee], "mode 3 row \(y + 1) skipped")
         }
         // Graphics outside 1..3: DoubleBlitUniversal draws nothing.
-        XCTAssertEqual(Set(run(4, v: 10)), [0xee])
+        XCTAssertEqual(Set(try run(4, v: 10)), [0xee])
         // v 101: second call top 8 + 416 − 101 = 323 (odd) → 324, showing source row 0 there (geometric: row 1).
-        let odd = run(3, v: 101)
+        let odd = try run(3, v: 101)
         XCTAssertEqual(row(odd, 323), [0xee])
         XCTAssertEqual(row(odd, 324), [0])
         XCTAssertEqual(row(odd, 322), [UInt8((101 + 314) & 0xff)])
