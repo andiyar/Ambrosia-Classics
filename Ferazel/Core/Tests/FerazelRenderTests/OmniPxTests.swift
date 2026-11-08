@@ -53,7 +53,7 @@ final class OmniPxTests: XCTestCase {
         }
         XCTAssertEqual(OmniPx.facePicts(omniPxMode: 3), [], "mode 3 loads no face")
         XCTAssertEqual(OmniPx.facePicts(omniPxMode: 6), [])
-        XCTAssertEqual(OmniPx.facePicts(omniPxMode: 1), [6000, 0x1771])
+        XCTAssertEqual(OmniPx.facePicts(omniPxMode: 1), [0x1770, 0x1771])
 
         // Mode 0 (levels 1–4): `G+0x174 = 0` and return — no faces, nothing on.
         var L1 = try level(1)
@@ -130,8 +130,10 @@ final class OmniPxTests: XCTestCase {
     /// (M l. 13019–13060): modes ∉ 4…7 back up and zero the header's PxBack factors — Core's copy.
     func testFaceWrapToroidal() throws {
         var L = try level(5)
+        if L.header.pxBackYFactor == 0 { L.header.pxBackYFactor = 0x40 }  // a non-zero yb to back up
         let factors = L.backFactors, yb = L.header.pxBackYFactor
-        XCTAssertTrue(factors.contains { $0 != 0 } || yb != 0, "level 5 has backdrop factors to zero")
+        XCTAssertTrue(factors.contains { $0 != 0 }, "level 5 has backdrop factors to zero")
+        XCTAssertNotEqual(yb, 0)
         var g = GameGlobals(header: L.header)
         var o = OmniPx()
         o.setup(level: &L, globals: &g)
@@ -153,6 +155,10 @@ final class OmniPxTests: XCTestCase {
         // Face 1: acc 0; x = −((300·0x80 >> 8) rem 128) = −(150 rem 128) = −22; y = −(50·0x80 >> 8) = −25.
         XCTAssertEqual(f.faces[1], OmniPxFrame.Face(pict: 0x1838, x: -22, y: -25))
 
+        // Exactly one offset 0 still wraps: the test is x ≠ 0 or y ≠ 0 (M l. 13498).
+        XCTAssertEqual(OmniPxFrame.Face(pict: 0x1839, x: 0, y: -11).draws, [[0, -11], [128, -11], [128, 117], [0, 117]])
+        XCTAssertEqual(OmniPxFrame.Face(pict: 0x1839, x: -75, y: 0).draws, [[-75, 0], [53, 0], [53, 128], [-75, 128]])
+
         // Both 0: one draw only.
         o.accX = [Int16](repeating: 0, count: 16); o.accY = o.accX; o.vx = o.accX; o.vy = o.accX
         let z = try XCTUnwrap(o.update(globals: g, h: 0, v: 0))
@@ -171,16 +177,17 @@ final class OmniPxTests: XCTestCase {
         var o4 = OmniPx()
         o4.setup(level: &L4, globals: &g4)
         XCTAssertEqual(L4.backFactors, factors)
-        XCTAssertEqual(L4.header.pxBackYFactor, yb)
+        XCTAssertEqual(L4.header.pxBackYFactor, try level(5).header.pxBackYFactor)
         XCTAssertFalse(OmniPx.turnOnZeroesFactors(omniPxMode: 5))
         XCTAssertTrue(OmniPx.turnOnZeroesFactors(omniPxMode: 2))
         XCTAssertTrue(OmniPx.turnOnZeroesFactors(omniPxMode: 8))
 
-        // `.TurnOffOmniPx` (M l. 13063–13121): off, and the backup copied back; `.KillOmniPx`: no faces.
+        // `.TurnOffOmniPx` (M l. 13063–13121): off, and the backup copied back — the x-factors as they were, `yb` as 0
+        // (`.TurnOnOmniPx` re-saves the zeroed field on every pass, M l. 13048–13050); `.KillOmniPx`: no faces.
         o.turnOff(level: &L, globals: &g)
         XCTAssertEqual(g.omniPxActive, 0)
         XCTAssertEqual(L.backFactors, factors)
-        XCTAssertEqual(L.header.pxBackYFactor, yb)
+        XCTAssertEqual(L.header.pxBackYFactor, 0, "yb comes back 0, as the binary restores it")
         XCTAssertNil(o.update(globals: g, h: 0, v: 0))
         o.kill()
         XCTAssertEqual(o.faces.compactMap { $0 }, [])
@@ -215,14 +222,11 @@ final class OmniPxTests: XCTestCase {
         XCTAssertEqual(o.counter, 9, "turning off and killing leave c")
     }
 
-    /// A level-5 `FrameRenderer` executes a first frame's ops with the `.omniPx` op: no refusal, the port is PxBack slot
-    /// 0 (cell 6 under faces 6201 then 6200, each wrapped toroidally), `.GetPxBackTile` answers 0, the factors are
-    /// zeroed (mode 2), and every backdrop pixel of the copy is the port's at (view x mod 128, view row mod 128).
-    /// Level 5's placements of six types have no transcribed Setup until LV5 (the Warrior 1820; 2822, 2826, 2829, 2840,
-    /// 2841), so the renderer is built on level 5 with exactly those switched off (their records' flag byte 0) — the
-    /// backdrop reads no placement.
-    func testLevel5FirstFrameDraws() throws {
-        let data = try Self.resources.get()
+    /// A level-5 `FrameRenderer` with its tint table built. Level 5's placements of six types have no transcribed Setup
+    /// until LV5 (the Warrior 1820; 2822, 2826, 2829, 2840, 2841), so it is built with exactly those switched off (their
+    /// records' flag byte 0) — the backdrop reads no placement. The audit's OmniPx row builds the same renderer.
+    static func level5Renderer() throws -> (renderer: FrameRenderer, resources: FerazelResources) {
+        let data = try resources.get()
         let mlvl = try XCTUnwrap(data.world.resource(type: "Mlvl", id: 5))
         let L5 = try LevelFile(id: 5, data: mlvl.data)
         let ctx = SetupFaces.Context(level: L5, playerX: SetupFaces.Context.levelStartPlayerX(L5.header),
@@ -241,48 +245,81 @@ final class OmniPxTests: XCTestCase {
         let r = try FrameRenderer(resources: res, level: 5, search: ColorSearch(model: .ruled, tieBreak: .lowest),
                                   dither: .errorDiffusion, text: StatusBarTests.BoxRasterizer(), prefs: FerazelPrefs())
         try r.buildTintTable([Int16](repeating: 0, count: 0xff * 2))
+        return (r, res)
+    }
+
+    /// A level-5 `FrameRenderer`: the level start's `.omniPx(.turnOn)` (`.SetupOmniPx(0)`, M l. 2540) turns OmniPx on
+    /// before any frame — `.GetPxBackTile` answers 0, the factors are zeroed (mode 2), the 0-filled port is PxBack slot
+    /// 0; then a first frame's ops with the `.omniPx(.update)` op: no refusal, the port is cell 6 under faces 6201 then
+    /// 6200, each wrapped toroidally, and every backdrop pixel of the copy is the port's at (view x mod 128, view row
+    /// mod 128).
+    func testLevel5FirstFrameDraws() throws {
+        let (r, res) = try Self.level5Renderer()
         XCTAssertFalse(r.parallax.omniPxActive)
         let cell6 = Array(r.parallax.faces[(6 * 0x4000)..<(7 * 0x4000)])
         var L = try level(5)
         var g = GameGlobals(header: L.header)
         var o = OmniPx()
         o.setup(level: &L, globals: &g)
+
+        // The level start: on before the first sprite pass.
+        XCTAssertNoThrow(try r.apply(FrameOps(draws: [.omniPx(.turnOn(omniPxMode: 2))])))
+        XCTAssertEqual(r.executed, [.omniPxOn(2)])
+        XCTAssertTrue(r.parallax.omniPxActive)
+        XCTAssertEqual(r.parallax.pxBackTile(3, 7), 0)
+        XCTAssertEqual(r.parallax.backFactors, [Int16](repeating: 0, count: LevelFile.factorRows))
+        XCTAssertEqual(r.parallax.backYFactor, 0)
+        XCTAssertEqual(Array(r.parallax.faces[0..<0x4000]), [UInt8](repeating: 0, count: 0x4000), "the new port")
+        XCTAssertTrue(r.parallax.slotLoaded[0])
+
         let h = 0x123, v = 0x45
         let frame = try XCTUnwrap(o.update(globals: g, h: h, v: v))
         XCTAssertEqual(frame.baseCell, 6)
         let ops = FrameOps(draws: [
             .redrawEntireScrollGrid(h: h, v: v), .redrawScrollGrid(h: h, v: v), .wrapDrawWaterEffects([]),
-            .wrapDrawSprites([]), .drawParticles([]), .omniPx(frame),
+            .wrapDrawSprites([]), .drawParticles([]), .omniPx(.update(frame)),
             .copyToScreen(h: h, v: v, graphicsMode: 1, backdrop: true), .eraseParticles,
         ])
         XCTAssertNoThrow(try r.apply(ops))
         XCTAssertTrue(r.executed.contains(.omniPx(2)))
-        XCTAssertTrue(r.parallax.omniPxActive)
-        XCTAssertEqual(r.parallax.pxBackTile(3, 7), 0)
-        XCTAssertEqual(r.parallax.backFactors, [Int16](repeating: 0, count: LevelFile.factorRows))
-        XCTAssertEqual(r.parallax.backYFactor, 0)
+        XCTAssertFalse(r.executed.contains(.omniPxOn(2)), "the frame turns nothing on")
 
         // The port, built independently: cell 6, then each face's opaque pixels (index 0 is transparent).
-        var port = cell6
-        for face in frame.faces {
-            let sheet = try FaceSheet.load(.single(pict: face.pict), from: res, chain: .frontEnd,
-                                           clut: try ColorLUT.load(id: ColorLUT.screenClutId(L.header), from: res,
-                                                                   chain: .level),
-                                           search: ColorSearch(model: .ruled, tieBreak: .lowest), dither: .errorDiffusion)
-            let f = sheet.faces[0], px = try f.decode()
-            for d in face.draws {
-                for row in 0..<min(f.height, 128) {
-                    for col in 0..<min(f.width, 128) where px[row * f.width + col] != 0 {
-                        let x = d[0] + col, y = d[1] + row
-                        guard (0..<128).contains(x), (0..<128).contains(y) else { continue }
-                        port[y * 128 + x] = px[row * f.width + col]
+        func buildPort(clut: ColorLUT) throws -> [UInt8] {
+            var port = cell6
+            for face in frame.faces {
+                let sheet = try FaceSheet.load(.single(pict: face.pict), from: res, chain: .frontEnd, clut: clut,
+                                               search: ColorSearch(model: .ruled, tieBreak: .lowest),
+                                               dither: .errorDiffusion)
+                let f = sheet.faces[0], px = try f.decode()
+                for d in face.draws {
+                    for row in 0..<min(f.height, 128) {
+                        for col in 0..<min(f.width, 128) where px[row * f.width + col] != 0 {
+                            let x = d[0] + col, y = d[1] + row
+                            guard (0..<128).contains(x), (0..<128).contains(y) else { continue }
+                            port[y * 128 + x] = px[row * f.width + col]
+                        }
                     }
                 }
             }
+            return port
         }
+        let port = try buildPort(clut: try ColorLUT.load(id: ColorLUT.screenClutId(L.header), from: res, chain: .level))
         XCTAssertNotEqual(port, cell6, "the faces drew")
         XCTAssertEqual(Array(r.parallax.faces[0..<0x4000]), port, "slot 0 = the port")
         XCTAssertTrue(r.parallax.slotLoaded[0])
+        // Pinned values, recorded once (not re-derived through the CLUT the code picks): level 5's CLUT id (236), the
+        // port's FNV-1a hash, how many port pixels the faces drew over cell 6, and the first three of them (offset,
+        // index). Faces loaded under the sprite CLUT 801 instead give a different port, so a wrong CLUT choice in the
+        // renderer fails here.
+        func fnv(_ b: [UInt8]) -> UInt32 { b.reduce(2166136261) { ($0 ^ UInt32($1)) &* 16777619 } }
+        let slot0 = Array(r.parallax.faces[0..<0x4000])
+        XCTAssertEqual(ColorLUT.screenClutId(L.header), 236)
+        XCTAssertEqual(fnv(slot0), 2847859016)
+        let drawnAt = slot0.indices.filter { slot0[$0] != cell6[$0] }
+        XCTAssertEqual(drawnAt.count, 6985)
+        XCTAssertEqual(drawnAt.prefix(3).map { [$0, Int(slot0[$0])] }, [[4, 74], [5, 215], [6, 226]])
+        XCTAssertNotEqual(try buildPort(clut: try ColorLUT.load(id: 801, from: res, chain: .level)), slot0)
 
         // The copy: where the mask is 0xFF over an empty frame pixel, the screen shows the port (factors zeroed:
         // the grid is fixed to the view).

@@ -563,8 +563,8 @@ public struct ParallaxBlitter: Sendable {
 // MARK: - OmniPx (rendering-omnipx-titles §3; OX)
 
 extension ParallaxBlitter {
-    /// The renderer's half of `.TurnOnOmniPx @ 10019ac4` (M l. 13019–13060) — the first `DrawOp.omniPx` after the level
-    /// start: G+0x174 set (`.GetPxBackTile` answers 0); for a mode outside 4…7 the PxBack x-factors (hdr+0x326c) and
+    /// The renderer's half of `.TurnOnOmniPx @ 10019ac4` (M l. 13019–13060) — `DrawOp.omniPx(.turnOn)`, in the level-start
+    /// ops (`.SetupOmniPx(0)`, M l. 2540): G+0x174 set (`.GetPxBackTile` answers 0); for a mode outside 4…7 the PxBack x-factors (hdr+0x326c) and
     /// `yb` (hdr+0xb26c) zeroed (`OmniPx.turnOnZeroesFactors`, as Core's copy), so the grid is fixed to the view
     /// (§3.5); PxBack slot 0 saved (`0x100f97e0`) and the port (`NewBlitPort(128, 128, level+sprite CLUT)` at
     /// `.SetupOmniPx`, M l. 13176; here 0-filled) stored there (M l. 13055–13056). The renderer lives one level, so

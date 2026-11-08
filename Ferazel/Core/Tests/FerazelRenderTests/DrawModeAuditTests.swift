@@ -402,7 +402,7 @@ final class DrawModeAuditTests: XCTestCase {
         W("Player/ShadowDouble.swift:156", .mirrored, .copy, "player.shadowDouble"),
         W("Player/ShadowDouble.swift:157", .mode, .words([0x1000b]), "player.shadowDouble",
           at: ["Player/ShadowDouble.swift:13"]),
-        W("Session/FerazelSession.swift:207", .mirrored, .copy, "player.shadowRing"),
+        W("Session/FerazelSession.swift:211", .mirrored, .copy, "player.shadowRing"),
         W("Shots/CastSpell.swift:164", .mirrored, .flags([false]), "shot"),
         // 10·dir, dir 0…0x23, only for a shot with gravity (`0 < +0x110`: ids 0, 1, 3, 4, 7 and the seed 0x5a); the
         // followers take their main's angle (the orb 0x50 has gravity 0, PlayerShot.setup, so its followers get 0).
@@ -1283,7 +1283,7 @@ final class DrawModeAuditTests: XCTestCase {
         case deathSteps, waterTilesInSheet, levelOpsRouted, skippedOpsCannotThrow, ripplePhaseHours
         case rotationRanges, notNamedByLevelFrame(String)
         case headerCamera, coreNotNamed(String), callersTry([String])
-        case waterKindsInTables, overlaysInSet, pxMidSlotsLoaded, headerOmniPxStrip
+        case waterKindsInTables, overlaysInSet, pxMidSlotsLoaded, headerOmniPxStrip, omniPxPortDraws
     }
 
     struct Refusal {
@@ -1337,9 +1337,11 @@ final class DrawModeAuditTests: XCTestCase {
           "header 0x26ca = 0 on every built level (levels 11, 18 only)"),
         // PT: the renderer's traps a level's data can reach, now refusals (the skipped copy / light ops reach them
         // too: `skippedOpsCannotThrow` admits those calls because these checks read the data, not the run).
-        R("Frame/ParallaxBlitter.swift", "Refusal.cellSlot", 1, .dataAbsent, [.pxBackSlotsLoaded, .pxMidSlotsLoaded],
+        R("Frame/ParallaxBlitter.swift", "Refusal.cellSlot", 1, .dataAbsent,
+          [.pxBackSlotsLoaded, .pxMidSlotsLoaded, .omniPxPortDraws],
           "every PxBack cell of every built level names a loaded slot (OmniPx's 0 included), and every PxMid cell of a "
-          + "level with header 0x3268 = 1 names a loaded image and mask slot"),
+          + "level with header 0x3268 = 1 names a loaded image and mask slot; OX: OmniPx's base cells 6…14 (all "
+          + "`6 + (c >> 1)` can name, c ≤ 0x11) are loaded slots on level 5"),
         R("Frame/TileGridRenderer.swift", "Refusal.waterTable", 1, .dataAbsent, [.waterKindsInTables],
           "no built level has a BG tile of kind 206…209 (water tables 6…9, never built by the original)"),
         R("Frame/LightRenderer.swift", "Refusal.darkness", 2, .dataAbsent, [.lightBytesInRange],
@@ -1431,7 +1433,8 @@ final class DrawModeAuditTests: XCTestCase {
           "face encode"),
         R("Faces/FaceEncoder.swift", "FaceEncodeError.rectTooLarge", 1, .loadsClean, [.levelsLoad], "face encode"),
         R("Faces/TileSets.swift", "PictureSourceError.missing", 1, .loadsClean, [.levelsLoad], "tile-set load"),
-        R("Faces/FaceSheet.swift", "refuse", 6, .loadsClean, [.levelsLoad], "face-set arguments"),
+        R("Faces/FaceSheet.swift", "refuse", 6, .loadsClean, [.levelsLoad, .omniPxPortDraws],
+          "face-set arguments (OX: the OmniPx faces 6200 / 6201 / 6300 / 6301 load under level 5's CLUT)"),
         R("Faces/FaceSheet.swift", "FaceSheetError.cellOutOfRange", 1, .loadsClean, [.levelsLoad], "face-set load"),
         R("Faces/FaceSheet.swift", "FaceSheetError.singleFrameNotAtOrigin", 1, .loadsClean, [.levelsLoad],
           "face load"),
@@ -1790,10 +1793,10 @@ final class DrawModeAuditTests: XCTestCase {
                 .changeLightFace(slot: 0, pict: 0x32a, width: 0x48, height: 0x48), .lightTable(LightTable()),
                 .wrapEraseSprites(sprites: [], h: 0, v: 0), .statusBar(StatusBarState()), .setTile(col: 0, row: 0, fg: 0),
                 .wrapDrawWaterEffects([]), .drawParticles([]), .eraseParticles, .drawBlackLines,
-                .omniPx(OmniPxFrame(omniPxMode: 2, baseCell: 6, faces: [])),
+                .omniPx(.update(OmniPxFrame(omniPxMode: 2, baseCell: 6, faces: []))),
             ]
             XCTAssertEqual(levelOps.count, 18)
-            for op in levelOps {
+            for op in levelOps + [.omniPx(.turnOn(omniPxMode: 2))] {
                 for owner in [LevelRunTarget.level, .screen] {
                     XCTAssertEqual(LevelRunOutput.target(of: op, levelClut: 202, owner: owner), .level, "\(c): \(op)")
                 }
@@ -1914,6 +1917,25 @@ final class DrawModeAuditTests: XCTestCase {
                     }
                 }
             }
+        case .omniPxPortDraws:
+            // OX: OmniPx's port on level 5 (mode 2; level 25's mode 5 shares the base path): every base cell the
+            // counter can name (6 + (c >> 1), c reset above 0x11 before the copy: 6…14) is a loaded PxBack slot, and
+            // every face `.SetupOmniPx` loads for modes 2 / 4 / 5 loads under the level+sprite CLUT and draws into the
+            // port — the level start's turn-on, then one update per base cell with all four faces, no refusal.
+            let r = try OmniPxTests.level5Renderer().renderer
+            for cell in 6...14 {
+                XCTAssertTrue(r.parallax.slotLoaded[ParallaxBlitter.backBase + cell], "\(c): level 5 base cell \(cell)")
+            }
+            let picts = OmniPx.facePicts(omniPxMode: 2) + OmniPx.facePicts(omniPxMode: 5)
+            XCTAssertEqual(Set(picts), [6200, 6201, 6300, 6301], "\(c)")
+            XCTAssertEqual(OmniPx.facePicts(omniPxMode: 4), OmniPx.facePicts(omniPxMode: 2), "\(c)")
+            var ops: [DrawOp] = [.omniPx(.turnOn(omniPxMode: 2))]
+            for cell in 6...14 {
+                let faces = picts.map { OmniPxFrame.Face(pict: $0, x: -(cell * 7), y: -(cell * 5)) }
+                ops.append(.omniPx(.update(OmniPxFrame(omniPxMode: 2, baseCell: cell, faces: faces))))
+            }
+            XCTAssertNoThrow(try r.apply(FrameOps(draws: ops)), "\(c)")
+            XCTAssertEqual(r.executed, [.omniPxOn(2)] + Array(repeating: .omniPx(4), count: 9), "\(c)")
         case .headerOmniPxStrip:
             // Every built level opens: OmniPx 0 / 2 / 4 / 5 (built: 0; level 5's 2 arrives with LV5) and no horizon strip.
             for a in audits {

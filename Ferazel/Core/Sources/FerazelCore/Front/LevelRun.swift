@@ -641,9 +641,9 @@ public final class LevelRun {
         }
         emit(&out, StageScreens.updateStageLoad(100, of: 100))
         // `*(char *)(G + 0x174) = 0` (M l. 2539), then `.SetupOmniPx(0)` (M l. 2540; OX: modes 0, 2, 4, 5 — the
-        // others were refused above).
-        s.world.globals.omniPxActive = 0
-        s.setupOmniPx()
+        // others were refused above): both ran in the session init, before the player spawn (M l. 5181) as in the
+        // binary; here, at their place in the level-start ops, the renderer's turn-on (none on a mode-0 level).
+        emit(&out, FrontOutput(draws: s.omniPxStartOps))
     }
 
     // MARK: The loop

@@ -393,6 +393,49 @@ final class SessionTests: XCTestCase {
                                                "lightFace", "lightFace", "lightFace", "erase", "status"])
         XCTAssertEqual(kinds(steps[2].draws), ["grid", "lights", "water", "sprites", "lightFace", "lightFace", "lightFace", "erase", "status"])
 
+        // OX: OmniPx on — level 1 with its header patched in memory to mode 2 (level 5 opens with LV5). `.SetupLevel`'s
+        // `.SetupOmniPx(0)` (M l. 2540) runs in the session init: G+0x174 set and Core's PxBack factors zeroed before
+        // the first step; its renderer turn-on heads the level-start ops, once. Each drawn iteration's `.UpdateOmniPx`
+        // sits between `.DrawParticles` and `.WrapCopyToScreen` (M l. 9433–9447); a skipped iteration has none.
+        let mlvl = try XCTUnwrap(r.world.resource(type: "Mlvl", id: 1))
+        var patched = mlvl.data
+        patched[patched.startIndex + 0x26c7] = 2
+        var world = r.world
+        world.add(Resource(type: "Mlvl", id: 1, name: mlvl.name, data: patched))
+        let omni = FerazelResources(app: r.app, world: world, backgrounds: r.backgrounds, sprites: r.sprites,
+                                    sounds: r.sounds, titles: r.titles, musicDirectory: r.musicDirectory)
+        var carry = LevelCarry()
+        carry.omniPxCounter = 7
+        let o = try FerazelSession(resources: omni, prefs: FerazelPrefs(), level: 1, carry: carry)
+        XCTAssertEqual(o.globals.omniPxActive, 1, "turned on at the level's set-up")
+        XCTAssertTrue(try level1().backFactors.contains { $0 != 0 })
+        XCTAssertEqual(o.level.backFactors, [Int16](repeating: 0, count: LevelFile.factorRows), "zeroed at set-up")
+        XCTAssertEqual(o.omniPxStartOps, [.omniPx(.turnOn(omniPxMode: 2))])
+        let o1 = o.step(keys: KeyState())
+        XCTAssertEqual(kinds(o1.draws), ["omniPx", "clut", "picture", "entire", "grid", "entire", "status",
+                                         "grid", "lights", "water", "sprites", "particles", "omniPx", "copy", "eraseP",
+                                         "lightFace", "lightFace", "lightFace", "erase", "status"])
+        XCTAssertEqual(calls(o1.draws)[0], .omniPx(.turnOn(omniPxMode: 2)))
+        guard case .omniPx(.update(let f1)) = calls(o1.draws)[12] else { return XCTFail("update") }
+        XCTAssertEqual(f1.baseCell, 6 + (7 >> 1), "c runs on from the carry")
+        XCTAssertEqual(f1.faces.map(\.pict), [0x1839, 0x1838])
+        let o2 = o.step(keys: KeyState())
+        XCTAssertEqual(kinds(o2.draws), ["grid", "lights", "water", "sprites", "particles", "omniPx", "copy", "eraseP",
+                                         "lightFace", "lightFace", "lightFace", "erase", "status"])
+        guard case .omniPx(.update(let f2)) = calls(o2.draws)[5] else { return XCTFail("update 2") }
+        XCTAssertEqual(f2.baseCell, 6 + (9 >> 1))
+        let os = try FerazelSession(resources: omni, prefs: slow, level: 1)
+        let oSteps = (0..<4).map { _ in os.step(keys: KeyState()) }
+        XCTAssertEqual(oSteps.map(\.drawn), [false, true, false, true])
+        XCTAssertEqual(kinds(oSteps[0].draws), ["omniPx", "clut", "picture", "entire", "grid", "entire", "status",
+                                                "grid", "lights", "water", "sprites", "lightFace", "lightFace",
+                                                "lightFace", "erase", "status"])
+        XCTAssertEqual(calls(oSteps[0].draws)[0], .omniPx(.turnOn(omniPxMode: 2)), "the skipped first iteration: the turn-on only")
+        XCTAssertEqual(kinds(oSteps[1].draws), ["grid", "lights", "water", "sprites", "particles", "omniPx", "copy",
+                                                "eraseP", "lightFace", "lightFace", "lightFace", "erase", "status"])
+        XCTAssertEqual(kinds(oSteps[2].draws), ["grid", "lights", "water", "sprites", "lightFace", "lightFace",
+                                                "lightFace", "erase", "status"])
+
         // Effects 3 (Reduced) drops `.DrawLightsOntoTiles`; Low Detail / plain copy reach the copy's arguments.
         var reduced = FerazelPrefs()
         reduced.effects = 3

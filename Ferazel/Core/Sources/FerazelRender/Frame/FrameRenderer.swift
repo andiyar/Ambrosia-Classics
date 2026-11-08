@@ -36,11 +36,13 @@ import FerazelCore
 /// - `mosaic(cell, _)` (TP): `.MosaicScreenBlit` (`Mosaic.blit`) from port `_DAT_100a0004` onto the screen; a
 ///   `copyToScreen` directly before a `mosaic` in the same op list is `.MosaicTransition`'s copy (the screen base
 ///   pointed at that port, M l. 12977–12983) and goes into the port, not the screen.
-/// - `omniPx(frame)` (OX): `.UpdateOmniPx @ 1001a434` (M l. 9434) — the first one is the renderer's `.TurnOnOmniPx`
-///   (`ParallaxBlitter.turnOnOmniPx`: `.GetPxBackTile` → 0, the factors zeroed for a mode outside 4…7, the port in
-///   PxBack slot 0); then the port rebuilt from the frame (`ParallaxBlitter.updateOmniPx`), its faces
-///   `.Load1EncFaceFromPICT(pict, 0, 0, 0)` under the level+sprite CLUT (`*_DAT_1009ff8c`, the load CLUT
-///   `.SetupOmniPx` sets, M l. 13184), loaded once. The next `copyToScreen` composites the port as the backdrop.
+/// - `omniPx(.turnOn(mode))` (OX): the renderer's `.TurnOnOmniPx` at `.SetupLevel`'s `.SetupOmniPx(0)` (M l. 2540),
+///   in the level-start ops before any frame (`ParallaxBlitter.turnOnOmniPx`: `.GetPxBackTile` → 0, the factors
+///   zeroed for a mode outside 4…7, the port in PxBack slot 0), so the first sprite pass's mode 0xb reads see them.
+/// - `omniPx(.update(frame))` (OX): `.UpdateOmniPx @ 1001a434` (M l. 9434) — the port rebuilt from the frame
+///   (`ParallaxBlitter.updateOmniPx`), its faces `.Load1EncFaceFromPICT(pict, 0, 0, 0)` under the level+sprite CLUT
+///   (`*_DAT_1009ff8c`, the load CLUT `.SetupOmniPx` sets, M l. 13184), loaded once. The next `copyToScreen`
+///   composites the port as the backdrop.
 /// - `changeLightFace(slot, …)`: `.ChangeLightFace @ 1001bdbc` (`LightTable.changeFace` on the renderer's copy) —
 ///   the slot's face and radius; the next `.DrawLightsOntoTiles` sees the face differ from its previous one and
 ///   redraws the cells it covers.
@@ -88,7 +90,7 @@ public final class FrameRenderer {
         case waterEffects(Int), particles(Int), eraseParticles
         case blackLines
         case mosaicCopy(h: Int, v: Int), mosaic(Int)
-        case omniPx(Int)
+        case omniPxOn(UInt8), omniPx(Int)
     }
 
     public let resources: FerazelResources
@@ -129,7 +131,7 @@ public final class FrameRenderer {
     public private(set) var ports: FramePorts
     public private(set) var grid: TileGridRenderer
     public private(set) var sprites: SpriteBlitter
-    /// OX: OmniPx's first `DrawOp.omniPx` turns it on (`ParallaxBlitter.turnOnOmniPx`) and each one rebuilds slot 0.
+    /// OX: `DrawOp.omniPx(.turnOn)` turns OmniPx on (`ParallaxBlitter.turnOnOmniPx`); each `.update` rebuilds slot 0.
     public private(set) var parallax: ParallaxBlitter
     public private(set) var statusBar: StatusBar
     /// `_DAT_100a0128`: the light slots the grid and the sprite light pass read.
@@ -463,10 +465,16 @@ public final class FrameRenderer {
                 // TP: `.MosaicScreenBlit(cell, …)` from port `_DAT_100a0004` onto the screen (`Mosaic`).
                 Mosaic.blit(cell: cell, source: mosaicPort, screen: &screen.pixels)
                 executed.append(.mosaic(cell))
-            case .omniPx(let frame):
-                // OX: `.UpdateOmniPx` (M l. 9434); the first one turns OmniPx on (`.TurnOnOmniPx`).
-                parallax.turnOnOmniPx(omniPxMode: frame.omniPxMode)
+            case .omniPx(.turnOn(let mode)):
+                // OX: `.TurnOnOmniPx` (M l. 13019–13060) from `.SetupOmniPx(0)` at the level start (M l. 2540).
+                parallax.turnOnOmniPx(omniPxMode: mode)
+                executed.append(.omniPxOn(mode))
+            case .omniPx(.update(let frame)):
+                // OX: `.UpdateOmniPx` (M l. 9434). The sprite pass's copy of the parallax shares the face store; it
+                // is dropped first so the port is written in place (no ~1 MB copy a drawn frame), then shared again.
+                sprites.parallax = nil
                 try parallax.updateOmniPx(frame) { try omniPxFace($0) }
+                sprites.parallax = parallax
                 executed.append(.omniPx(frame.faces.count))
             case .fillRect, .copyPicture, .drawFace, .drawLine, .drawText, .restoreView, .screenGamma:
                 // The front-end ops (FE0) are `ScreenRenderer`'s; no level frame carries them.

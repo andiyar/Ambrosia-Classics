@@ -94,6 +94,10 @@ public final class FerazelSession {
     /// OX: OmniPx's state (`OmniPx`: the mode, faces, layer arrays, factor backup) and its counter `c`, which runs on
     /// from the previous level (`LevelCarry.omniPxCounter`). The on-flag is G+0x174 (`world.globals.omniPxActive`).
     public internal(set) var omniPx = OmniPx()
+    /// OX: the renderer's `.TurnOnOmniPx` (`DrawOp.omniPx(.turnOn)`) when `.SetupOmniPx(0)` turned OmniPx on (modes 2,
+    /// 4, 5) — empty on a mode-0 level. `.SetupLevel` M l. 2540: `LevelRun.setupLevel` emits it after its last load
+    /// bar; an unhosted session puts it first in its level-start block (before `.SetScreenClut`, M l. 2571).
+    public private(set) var omniPxStartOps: [DrawOp] = []
     /// The level loaded (`Mlvl` id).
     public let levelNumber: Int
     /// `Mmap 200`, read by `LevelFlow` when the level exit is touched.
@@ -245,18 +249,19 @@ public final class FerazelSession {
         world.active = spawned.active
         world.idle = spawned.idle
         world.records = spawned.records                                  // the Setups' write-backs (W2a)
-        // OX: `c` runs on (`LevelCarry.omniPxCounter`). Unhosted, the session stands in for `.SetupLevel`: its
-        // `G+0x174 = 0` and `.SetupOmniPx(0)` (M l. 2539–2540) — inside `.SetupLevel`, so before the player
-        // `MTNewSprite` (`.GameLoop` M l. 5165 → 5181). Hosted, `LevelRun.setupLevel` makes both calls after its bars.
+        // OX: `c` runs on (`LevelCarry.omniPxCounter`). `.SetupLevel`'s `G+0x174 = 0` and `.SetupOmniPx(0)` (M l.
+        // 2539–2540) — inside `.SetupLevel`, so before the player `MTNewSprite` (`.GameLoop` M l. 5165 → 5181), hosted
+        // or not (nothing `LevelRun.setupLevel` does after the session init reads OmniPx or the PxBack factors). The
+        // renderer's turn-on is `omniPxStartOps`: `LevelRun` emits it at M l. 2540's place, an unhosted session at the
+        // head of its level-start block.
         var omni = OmniPx(counter: carry.omniPxCounter)
-        if !hostedByLevelRun {
-            var lv = world.level, g = world.globals
-            g.omniPxActive = 0
-            omni.setup(level: &lv, globals: &g)
-            world.level = lv
-            world.globals = g
-        }
+        var lv = world.level, g = world.globals
+        g.omniPxActive = 0
+        omni.setup(level: &lv, globals: &g)
+        world.level = lv
+        world.globals = g
         omniPx = omni
+        omniPxStartOps = g.omniPxActive != 0 ? [.omniPx(.turnOn(omniPxMode: omni.omniPxMode))] : []
         // L1 (hosted): `*(G + L·2 + 0x23e) = 1` — `unlocked[L]` — right before the player `MTNewSprite` (M l. 5180–5181).
         if hostedByLevelRun { world.globals.unlocked[level] = 1 }
         // The player `MTNewSprite(0, x, y, 10, −1, .SetupPlayerSprite)` (l. 5181), then the countdown
@@ -397,6 +402,7 @@ public final class FerazelSession {
         var ops = FrameOps()
         let graphics = prefs.graphics
         if iterations == 0 && !hostedByLevelRun {
+            ops.draws.append(contentsOf: omniPxStartOps)                  // OX: `.SetupOmniPx(0)` (M l. 2540)
             ops.draws.append(.setScreenClut(id: ColorLUT.screenClutId(level.header)))
             ops.draws.append(.drawPicture(id: 129, chain: .frontEnd, h: 0, v: 0))
             ops.draws.append(scrollOp(.redrawEntireScrollGrid(h: 0, v: 0)))
@@ -473,7 +479,7 @@ public final class FerazelSession {
             // `.DrawParticles` (l. 9433): the colour-0 kills here, on drawn iterations only (`ParticlePool.draw`).
             ops.draws.append(.drawParticles(world.particles.draw()))
             // OX: `.UpdateOmniPx` (M l. 9434) at the scroll point of this pass — an op only while OmniPx is on.
-            if let f = omniPx.update(globals: world.globals, h: h, v: v) { ops.draws.append(.omniPx(f)) }
+            if let f = omniPx.update(globals: world.globals, h: h, v: v) { ops.draws.append(.omniPx(.update(f))) }
             // Then the parity flip (raw `10012710..1001272c`).
             world.parity.toggle()
             // `.WrapCopyToScreen` of the frame port, or of the mask port while the flash toggle is on (M l. 9441–9447).
@@ -1038,15 +1044,6 @@ public final class FerazelSession {
             return .loadLevel(next.map(Int.init) ?? levelNumber)
         }
         return .deathEffect
-    }
-
-    /// OX: `.SetupOmniPx(0) @ 10019d78` (M l. 2540 in `.SetupLevel`; `OmniPx.setup`) on the level and G — mode 0 turns
-    /// OmniPx off; 2 / 4 / 5 turn it on (`.TurnOnOmniPx`), zeroing the header's PxBack factors for mode 2.
-    public func setupOmniPx() {
-        var L = world.level, g = world.globals
-        omniPx.setup(level: &L, globals: &g)
-        world.level = L
-        world.globals = g
     }
 
     /// OX: `.TurnOffOmniPx` then `.KillOmniPx` at `.GameLoop`'s exit (M l. 5321–5322; `OmniPx.turnOff`, `kill`).

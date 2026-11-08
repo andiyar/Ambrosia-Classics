@@ -36,6 +36,17 @@ public struct OmniPxFrame: Equatable, Sendable {
     }
 }
 
+/// What `DrawOp.omniPx` hands the renderer: OmniPx turned on at the level's set-up, or one drawn frame's update.
+public enum OmniPxOp: Equatable, Sendable {
+    /// The renderer's half of `.TurnOnOmniPx @ 10019ac4` (M l. 13019–13060), run by `.SetupOmniPx(0)` inside
+    /// `.SetupLevel` (M l. 2540) — before the player spawn (M l. 5181) and before any frame, so the first frame's sprite
+    /// pass already reads the zeroed PxBack factors and the port in slot 0 (`.CalcPxRowContents`, M l. 23165–23167).
+    /// Once per level start, only when the level's mode turns OmniPx on (2, 4, 5).
+    case turnOn(omniPxMode: UInt8)
+    /// One drawn frame's `.UpdateOmniPx` (`.PaintFrameWrap` M l. 9434).
+    case update(OmniPxFrame)
+}
+
 /// OmniPx (header `0x26c7`; rendering-omnipx-titles §3, M l. 13019–13547): a 128×128 port that replaces PxBack cell 0
 /// and is rebuilt on every drawn frame from an animated base (other PxBack cells) and up to 16 wrapping faces, each
 /// scrolled by its own parallax factor and drift. Core holds the state — the mode, the 16 face refs, the six 16-entry
@@ -67,6 +78,7 @@ public struct OmniPx: Equatable, Sendable {
     public internal(set) var counter: Int16
     /// `0x100f00a8` (8192 i16) / `0x100f40a8`: `.TurnOnOmniPx`'s backup of hdr+0x326c / hdr+0xb26c. BSS: zero until a
     /// zeroing mode backs them up (Core keeps them per level; the copy back into an ending level is unseen, §3.2).
+    /// The `yb` backup is 0 even then: the binary re-saves the zeroed field (`turnOn`).
     var backFactorsBackup = [Int16](repeating: 0, count: LevelFile.factorRows)
     var backYFactorBackup: Int16 = 0
 
@@ -75,12 +87,13 @@ public struct OmniPx: Equatable, Sendable {
     }
 
     /// The faces `.SetupOmniPx` loads for a mode (M l. 13246–13291), face 0 first: modes 2 and 4 → 6201 / 6200
-    /// (`0x1839` / `0x1838`); 5 → 6301 / 6300 (`0x189d` / `0x189c`); 1 → 6000 / 6001; every other mode none.
+    /// (`0x1839` / `0x1838`); 5 → 6301 / 6300 (`0x189d` / `0x189c`); 1 → 6000 / 6001 (`0x1770` / `0x1771`); every
+    /// other mode none.
     public static func facePicts(omniPxMode m: UInt8) -> [Int16] {
         switch m {
         case 2, 4: return [0x1839, 0x1838]
         case 5: return [0x189d, 0x189c]
-        case 1: return [6000, 0x1771]
+        case 1: return [0x1770, 0x1771]
         default: return []
         }
     }
@@ -129,14 +142,19 @@ public struct OmniPx: Equatable, Sendable {
         globals.omniPxActive = 1
         guard Self.turnOnZeroesFactors(omniPxMode: level.header.omniPxMode) else { return }
         backFactorsBackup = level.backFactors
-        backYFactorBackup = level.header.pxBackYFactor
         level.backFactors = [Int16](repeating: 0, count: level.backFactors.count)
+        // `yb`: the loop (M l. 13043–13054) saves and zeroes it on every one of its 8192 passes through a pointer it
+        // never advances (`*puVar4 = hdr[0xb26c]`, M l. 13048; `hdr[0xb26c] = 0`, M l. 13050): pass 0 saves the real
+        // value, then zeroes the field, and passes 1…0x1fff save that 0 over it — the backup ends 0, so
+        // `.TurnOffOmniPx` restores `yb` as 0 (the bank, rendering-omnipx-titles §3.2, says it restores the value).
         level.header.pxBackYFactor = 0
+        backYFactorBackup = level.header.pxBackYFactor                // the last pass's save: 0
     }
 
     /// `.TurnOffOmniPx @ 10019bac` (M l. 13061–13121): when G+0x174 is set, clear it and copy the backup back into
     /// hdr+0x326c / hdr+0xb26c — always, also after modes 4…7, whose backup is stale (§3.2: harmless, every level start
-    /// re-reads `Mlvl`). Restoring PxBack slot 0 is Render's.
+    /// re-reads `Mlvl`). `yb`'s backup is always 0 (`turnOn`), so `yb` comes back 0. Restoring PxBack slot 0 is
+    /// Render's.
     public mutating func turnOff(level: inout LevelFile, globals: inout GameGlobals) {
         guard globals.omniPxActive != 0 else { return }
         globals.omniPxActive = 0
