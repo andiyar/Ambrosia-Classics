@@ -1106,7 +1106,7 @@ public struct CachedFaces: Equatable, Sendable {
     /// (M l. 106–145) calls …, Crab, Dillo, Warrior, Wizard, Chief, Demon, Xichra, Floater, Frog, Gremlin, Salamander:
     /// `.InitFloaterSprite`'s three (M l. 69827–69829 — 0x6f4 6 faces, 0x6fe / 0x6ff 8, the last two absent from the data
     /// and marked only by the refused 1790 variant) after the Crab's and the Dillo's (DL: `.InitDilloSprite`'s four,
-    /// M l. 72283–72286 — 0x74e 6, 0x74f 5, 0x750 5, 0x751 2; LV5: `.InitWarriorSprite`'s three, M l. 72983–72985 —
+    /// M l. 72283–72286 — 0x74e 6, 0x74f 5, 0x750 5, 0x751 2; LV5: `.InitWarriorSprite`'s three, M l. 72982–72984 —
     /// 0x71c 8, 0x71d 8, 0x71e 6, right after the Dillo's; the Wizard … Xichra sets are Phase 6's), and
     /// `.InitGremlinSprite`'s three (M l. 69118–69120 — 0x6ea / 0x6eb 10, 0x6ec 4) between the Frog's and the
     /// Salamander's; each flag 0 (the boss Inits between store 1 and restore 0, M l. 75020, 75582, 76216). One PICT in

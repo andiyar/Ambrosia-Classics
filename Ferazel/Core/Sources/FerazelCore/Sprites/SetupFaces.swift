@@ -236,7 +236,7 @@ public enum SetupFaces {
         all += [set(Geyser.baseSet, 0xc, 0x18, 0x10, 4), set(Geyser.headSet, 6, 0x30, 0x20, 6),
                 set(Geyser.segmentSet, 6, 0x14, 0x20, 6)]
         // LV5 — the level-5 types: the decorations 2822, 2826, 2829, 2840, 2841 (`.InitBoxSprite` M l. 58775–58778: the
-        // 0x2d cache singles 0xaf5+i, flag 0) and the Warrior's three cache sets (`.InitWarriorSprite` M l. 72983–72985:
+        // 0x2d cache singles 0xaf5+i, flag 0) and the Warrior's three cache sets (`.InitWarriorSprite` M l. 72982–72984:
         // 0x71c / 0x71d 8, 0x71e 6 × 0xb4×0xa0, one row each, flag 0).
         for p: Int16 in [0xb06, 0xb0a, 0xb0d, 0xb18, 0xb19] { all.append(one(p)) }
         all += Warrior.sheets.map { ($0.pict, $0) }
