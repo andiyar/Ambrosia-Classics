@@ -255,10 +255,10 @@ final class DrawModeAuditTests: XCTestCase {
         W("World/Enemies/BlobCrab.swift:250", .mode, .words([0xb0002]), "blob.dead"),
         W("World/Enemies/BlobCrab.swift:368", .mode, .words([0x90000]), "crab"),
         W("World/Enemies/BlobCrab.swift:392", .mode, .words([0x90000]), "crab.link"),
-        W("World/Enemies/BlobCrab.swift:478", .mirrored, .flags([true]), "crab"),
-        W("World/Enemies/BlobCrab.swift:479", .rotation, .range(0...359), "crab", at: ["472", "474"],
+        W("World/Enemies/BlobCrab.swift:479", .mirrored, .flags([true]), "crab"),
+        W("World/Enemies/BlobCrab.swift:480", .rotation, .range(0...359), "crab", at: ["473", "475"],
           pins: ["(Int(s.phase) + 0xb4) % 0x168", "s.phase &+= 0x168", "s.phase &-= 0x168"]),
-        W("World/Enemies/BlobCrab.swift:481", .rotation, .range(0...359), "crab", at: ["472", "474"],
+        W("World/Enemies/BlobCrab.swift:482", .rotation, .range(0...359), "crab", at: ["473", "475"],
           pins: ["s.rotation = s.phase", "s.phase &+= 0x168", "s.phase &-= 0x168"]),
         // GF: the Gremlin — the back layer's 0xb0000 (`.SetupGremlinSprite` M l. 69214), the body's dead water flash
         // 0x11, its facing by the player's side or (path mode 2) by vx, the back layer's and the mounted rider's copies
