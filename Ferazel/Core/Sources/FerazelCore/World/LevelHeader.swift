@@ -102,7 +102,8 @@ public struct LevelHeader: Sendable, Equatable {
     /// 0x3268 — PxMid enable.
     public let pxMidEnable: Int16
     /// 0xb26c / 0xb26e — PxBack / PxMid y-parallax factors (/256).
-    public let pxBackYFactor: Int16
+    /// OX: zeroed by `.TurnOnOmniPx` for an OmniPx mode outside 4…7 (`OmniPx.turnOn`), restored by `.TurnOffOmniPx`.
+    public internal(set) var pxBackYFactor: Int16
     public let pxMidYFactor: Int16
     /// 0xb278..0xb282 — PxBack, PxMid and main-grid dimensions (tiles).
     public let pxBackWidth: Int16

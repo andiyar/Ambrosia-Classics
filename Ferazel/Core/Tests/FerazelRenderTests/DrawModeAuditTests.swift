@@ -402,7 +402,7 @@ final class DrawModeAuditTests: XCTestCase {
         W("Player/ShadowDouble.swift:156", .mirrored, .copy, "player.shadowDouble"),
         W("Player/ShadowDouble.swift:157", .mode, .words([0x1000b]), "player.shadowDouble",
           at: ["Player/ShadowDouble.swift:13"]),
-        W("Session/FerazelSession.swift:204", .mirrored, .copy, "player.shadowRing"),
+        W("Session/FerazelSession.swift:207", .mirrored, .copy, "player.shadowRing"),
         W("Shots/CastSpell.swift:164", .mirrored, .flags([false]), "shot"),
         // 10·dir, dir 0…0x23, only for a shot with gravity (`0 < +0x110`: ids 0, 1, 3, 4, 7 and the seed 0x5a); the
         // followers take their main's angle (the orb 0x50 has gravity 0, PlayerShot.setup, so its followers get 0).
@@ -766,6 +766,7 @@ final class DrawModeAuditTests: XCTestCase {
         case .drawBlackLines: "drawBlackLines"
         case .lightTable: "lightTable"
         case .mosaic: "mosaic"
+        case .omniPx: "omniPx"
         case .fillRect: "fillRect"
         case .copyPicture: "copyPicture"
         case .drawFace: "drawFace"
@@ -1204,7 +1205,8 @@ final class DrawModeAuditTests: XCTestCase {
             // The backdrop and OmniPx inputs: the level's header names the backdrop the renderer draws.
             XCTAssertLessThanOrEqual(L.header.flameMode, 0, "level \(n): the Fire backdrop")
             XCTAssertEqual(L.header.parallaxRipple, 0, "level \(n): the backdrop ripple")
-            XCTAssertEqual(L.header.omniPxMode, 0, "level \(n): OmniPx")
+            // OX: OmniPx modes 2 / 4 / 5 draw (the port as PxBack slot 0); the rest are refused at level open.
+            XCTAssertTrue([0, 2, 4, 5].contains(L.header.omniPxMode), "level \(n): OmniPx \(L.header.omniPxMode)")
 
             // Every row's values, under every transform the renderer builds for them.
             XCTAssertTrue(failures.isEmpty, "\(failures.count) refused:\n" + failures.prefix(20).joined(separator: "\n"))
@@ -1385,7 +1387,7 @@ final class DrawModeAuditTests: XCTestCase {
           [.waterTilesInSheet], "Core hands tiles 0…0x5e (`WaterEffects`, tile < 0x5f, kind ≥ 0) and every FG-water "
           + "sheet holds them"),
         // The front end's renderers, the map, sound, the census: never on a level frame.
-        R("Screens/ScreenRenderer.swift", "Refusal.levelOp", 17, .offLevelFrame, [.levelOpsRouted],
+        R("Screens/ScreenRenderer.swift", "Refusal.levelOp", 18, .offLevelFrame, [.levelOpsRouted],
           "`LevelRunOutput.target` sends every level op to the level renderer"),
         R("Screens/MapRenderer.swift", "FaceSheetError.cellOutOfRange", 1, .offLevelFrame,
           [.notNamedByLevelFrame("MapRenderer")], "the world map's renderer"),
@@ -1788,8 +1790,9 @@ final class DrawModeAuditTests: XCTestCase {
                 .changeLightFace(slot: 0, pict: 0x32a, width: 0x48, height: 0x48), .lightTable(LightTable()),
                 .wrapEraseSprites(sprites: [], h: 0, v: 0), .statusBar(StatusBarState()), .setTile(col: 0, row: 0, fg: 0),
                 .wrapDrawWaterEffects([]), .drawParticles([]), .eraseParticles, .drawBlackLines,
+                .omniPx(OmniPxFrame(omniPxMode: 2, baseCell: 6, faces: [])),
             ]
-            XCTAssertEqual(levelOps.count, 17)
+            XCTAssertEqual(levelOps.count, 18)
             for op in levelOps {
                 for owner in [LevelRunTarget.level, .screen] {
                     XCTAssertEqual(LevelRunOutput.target(of: op, levelClut: 202, owner: owner), .level, "\(c): \(op)")
@@ -1912,7 +1915,7 @@ final class DrawModeAuditTests: XCTestCase {
                 }
             }
         case .headerOmniPxStrip:
-            // Every built level opens: OmniPx 0 / 2 / 4 / 5 (built: 0) and no horizon strip.
+            // Every built level opens: OmniPx 0 / 2 / 4 / 5 (built: 0; level 5's 2 arrives with LV5) and no horizon strip.
             for a in audits {
                 let h = a.level.file.header
                 XCTAssertTrue([0, 2, 4, 5].contains(h.omniPxMode),

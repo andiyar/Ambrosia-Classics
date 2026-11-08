@@ -115,7 +115,7 @@ public struct LevelRunOutput: Equatable, Sendable {
         case .fillRect, .copyPicture, .drawFace, .drawLine, .drawText, .restoreView, .screenGamma: return .screen
         case .redrawScrollGrid, .redrawEntireScrollGrid, .setDrawnScroll, .drawLightsOntoTiles, .wrapDrawSprites,
              .copyToScreen, .copyMaskToScreen, .changeLightFace, .wrapEraseSprites, .statusBar, .setTile, .wrapDrawWaterEffects, .drawParticles,
-             .eraseParticles, .drawBlackLines, .lightTable, .mosaic:
+             .eraseParticles, .drawBlackLines, .lightTable, .mosaic, .omniPx:
             return .level
         }
     }
@@ -566,9 +566,11 @@ public final class LevelRun {
         case .completeFade:
             block(fade.gammaFadeOut(6, rgb: RGB16(red: 0, green: 0, blue: 0)), now: now) // M l. 5315
         case .finish:
-            // `_ShutDownAIFFMusic`, `_TurnOffOmniPx`, `_KillOmniPx` (no OmniPx in Phase 3), `_InputActivate(0, 0)`
-            // (no op), `_ShowCursorSafe` (M l. 5320–5324).
-            emit(&out, FrontOutput(music: music.shutDown(), requests: [.showCursor]))
+            // `_ShutDownAIFFMusic`, `_TurnOffOmniPx`, `_KillOmniPx` (OX), `_InputActivate(0, 0)` (no op),
+            // `_ShowCursorSafe` (M l. 5320–5324).
+            let shutDown = music.shutDown()
+            session?.turnOffAndKillOmniPx()
+            emit(&out, FrontOutput(music: shutDown, requests: [.showCursor]))
             end = levelEnd()
         }
     }
@@ -638,8 +640,10 @@ public final class LevelRun {
             emit(&out, StageScreens.updateStageLoad(p, of: q))
         }
         emit(&out, StageScreens.updateStageLoad(100, of: 100))
-        // `*(char *)(G + 0x174) = 0` (M l. 2539).
+        // `*(char *)(G + 0x174) = 0` (M l. 2539), then `.SetupOmniPx(0)` (M l. 2540; OX: modes 0, 2, 4, 5 — the
+        // others were refused above).
         s.world.globals.omniPxActive = 0
+        s.setupOmniPx()
     }
 
     // MARK: The loop

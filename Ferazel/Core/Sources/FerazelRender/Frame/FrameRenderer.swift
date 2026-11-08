@@ -36,6 +36,11 @@ import FerazelCore
 /// - `mosaic(cell, _)` (TP): `.MosaicScreenBlit` (`Mosaic.blit`) from port `_DAT_100a0004` onto the screen; a
 ///   `copyToScreen` directly before a `mosaic` in the same op list is `.MosaicTransition`'s copy (the screen base
 ///   pointed at that port, M l. 12977–12983) and goes into the port, not the screen.
+/// - `omniPx(frame)` (OX): `.UpdateOmniPx @ 1001a434` (M l. 9434) — the first one is the renderer's `.TurnOnOmniPx`
+///   (`ParallaxBlitter.turnOnOmniPx`: `.GetPxBackTile` → 0, the factors zeroed for a mode outside 4…7, the port in
+///   PxBack slot 0); then the port rebuilt from the frame (`ParallaxBlitter.updateOmniPx`), its faces
+///   `.Load1EncFaceFromPICT(pict, 0, 0, 0)` under the level+sprite CLUT (`*_DAT_1009ff8c`, the load CLUT
+///   `.SetupOmniPx` sets, M l. 13184), loaded once. The next `copyToScreen` composites the port as the backdrop.
 /// - `changeLightFace(slot, …)`: `.ChangeLightFace @ 1001bdbc` (`LightTable.changeFace` on the renderer's copy) —
 ///   the slot's face and radius; the next `.DrawLightsOntoTiles` sees the face differ from its previous one and
 ///   redraws the cells it covers.
@@ -83,6 +88,7 @@ public final class FrameRenderer {
         case waterEffects(Int), particles(Int), eraseParticles
         case blackLines
         case mosaicCopy(h: Int, v: Int), mosaic(Int)
+        case omniPx(Int)
     }
 
     public let resources: FerazelResources
@@ -123,7 +129,8 @@ public final class FrameRenderer {
     public private(set) var ports: FramePorts
     public private(set) var grid: TileGridRenderer
     public private(set) var sprites: SpriteBlitter
-    public let parallax: ParallaxBlitter
+    /// OX: OmniPx's first `DrawOp.omniPx` turns it on (`ParallaxBlitter.turnOnOmniPx`) and each one rebuilds slot 0.
+    public private(set) var parallax: ParallaxBlitter
     public private(set) var statusBar: StatusBar
     /// `_DAT_100a0128`: the light slots the grid and the sprite light pass read.
     public private(set) var lights: LightRenderer
@@ -144,6 +151,8 @@ public final class FrameRenderer {
     private(set) var executed: [Executed] = []
     /// The light faces loaded so far, by (pict, width, height).
     private var lightFaces: [[Int]: LightFace] = [:]
+    /// OX: the OmniPx faces loaded so far, by PICT.
+    private var omniPxFaces: [Int16: EncodedFace] = [:]
 
     /// The level's renderer: tile sets, tables, parallax, sprite faces, empty light slots (`addLights`), the status bar
     /// under the level CLUT. The sprite faces (`spriteSheets`): every face the original loads at boot, `BootFaces.sheets`
@@ -454,6 +463,11 @@ public final class FrameRenderer {
                 // TP: `.MosaicScreenBlit(cell, …)` from port `_DAT_100a0004` onto the screen (`Mosaic`).
                 Mosaic.blit(cell: cell, source: mosaicPort, screen: &screen.pixels)
                 executed.append(.mosaic(cell))
+            case .omniPx(let frame):
+                // OX: `.UpdateOmniPx` (M l. 9434); the first one turns OmniPx on (`.TurnOnOmniPx`).
+                parallax.turnOnOmniPx(omniPxMode: frame.omniPxMode)
+                try parallax.updateOmniPx(frame) { try omniPxFace($0) }
+                executed.append(.omniPx(frame.faces.count))
             case .fillRect, .copyPicture, .drawFace, .drawLine, .drawText, .restoreView, .screenGamma:
                 // The front-end ops (FE0) are `ScreenRenderer`'s; no level frame carries them.
                 break
@@ -462,6 +476,17 @@ public final class FrameRenderer {
                 executed.append(.statusBar(full: !state.call.partial && !state.call.itemsOnly && !state.call.textOnly))
             }
         }
+    }
+
+    /// OX: an OmniPx face, `.Load1EncFaceFromPICT(pict, 0, 0, 0)` (Sprites, the front-end chain) under the level+sprite
+    /// CLUT `levelClut` (`.SetupOmniPx`'s `*_DAT_1009ff94 = *_DAT_1009ff8c`, M l. 13184), loaded once.
+    private func omniPxFace(_ pict: Int16) throws -> EncodedFace {
+        if let f = omniPxFaces[pict] { return f }
+        let sheet = try FaceSheet.load(.single(pict: pict), from: resources, chain: .frontEnd, clut: levelClut,
+                                       search: search, dither: dither)
+        let f = sheet.faces[0]
+        omniPxFaces[pict] = f
+        return f
     }
 
     /// TP: port `_DAT_100a0004` (640×480), as `.MosaicTransition`'s copy left it.

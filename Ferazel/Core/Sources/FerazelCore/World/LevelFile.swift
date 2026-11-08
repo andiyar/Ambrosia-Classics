@@ -24,7 +24,8 @@ public struct LevelFile: Sendable, Equatable {
     public static let factorRows = 8192
 
     public let id: Int16
-    public let header: LevelHeader
+    /// OX: `pxBackYFactor` is written by `OmniPx.turnOn` / `turnOff` (`.TurnOnOmniPx` / `.TurnOffOmniPx`).
+    public internal(set) var header: LevelHeader
     /// All 511 placement records, in record order (§3.4).
     public let placements: [Placement]
     /// PxBack map (128-px tiles, whole u16 = tile index; §3.3).
@@ -37,7 +38,8 @@ public struct LevelFile: Sendable, Equatable {
     public let map5: TileMap
     public let overlay: TileMap
     /// PxBack per-scanline x-parallax factors (/256), header 0x326c (§3.2).
-    public let backFactors: [Int16]
+    /// OX: zeroed by `.TurnOnOmniPx` for an OmniPx mode outside 4…7 (`OmniPx.turnOn`), restored by `.TurnOffOmniPx`.
+    public internal(set) var backFactors: [Int16]
     /// PxMid per-scanline x-parallax factors (/256) and row-mode selector, header 0x726c (§3.2).
     public let midFactors: [Int16]
 

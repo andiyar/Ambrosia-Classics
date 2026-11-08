@@ -76,6 +76,12 @@ public enum DrawOp: Equatable, Sendable {
     /// the screen (`FrameRenderer`). `graphicsMode3` is the call's second argument — always false (graphics mode 3 is
     /// demoted to 2 before the blits, M l. 12972–12974) and never read (r4 is overwritten at raw `10019708`).
     case mosaic(cell: Int, graphicsMode3: Bool)
+    /// OX: one `.UpdateOmniPx @ 1001a434` (`.PaintFrameWrap` M l. 9434: drawn iterations only, after `.DrawParticles`,
+    /// before the parity flip and `.WrapCopyToScreen`; rendering-omnipx-titles §3.4) — emitted only while OmniPx is on
+    /// (G+0x174 set, header `0x26c7` ≠ 0), so a mode-0 level never carries it. The renderer rebuilds the 128×128 port
+    /// (PxBack slot 0 while OmniPx is on) from the frame's base cell and face blits; its first one is the renderer's
+    /// `.TurnOnOmniPx` (`.GetPxBackTile` → 0, the PxBack factors zeroed for a mode outside 4…7).
+    case omniPx(OmniPxFrame)
 
     // MARK: Front end (Phase 3, FE0 — every case added up front; FerazelRender.ScreenRenderer executes them)
 

@@ -24,7 +24,8 @@ import Foundation
 ///    callbacks). Debug builds can check a held copy with `solverWrites`: take it before, `assert` it unchanged before
 ///    the write-back.
 public final class SpriteWorld {
-    public let level: LevelFile
+    /// OX: mutable for `.TurnOnOmniPx` / `.TurnOffOmniPx`'s writes to the header's PxBack factors (`OmniPx`).
+    public internal(set) var level: LevelFile
     /// The level's placement records as the game holds them (`*_DAT_100a0058 + 4 + 16·i`): the loaded file's, with the
     /// writes the Setups make (W2a: `.SetupBackgroundSprite` writes the 1480–1489 defaults p2 0 → 0x8c, p3 0 → 0x1e
     /// back, l. 62329–62336). `level.placements` stays the file.

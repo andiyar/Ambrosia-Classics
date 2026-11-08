@@ -77,6 +77,10 @@ public struct LevelCarry: Equatable, Sendable {
     /// (`PlayerState.shadowRing`) — a data global whose only writer is row 42 (M l. 46613); `.SetupPlayerSprite`
     /// rewrites every other byte of the ring (l. 42855–42895), so these run on through every level, restart and game.
     public var shadowMirrors = [Bool](repeating: false, count: 14)
+    /// OX: `.UpdateOmniPx`'s counter `c` (the i16 at `0x100f97e8`, `OmniPx.counter`): BSS, loaded only by
+    /// `.UpdateOmniPx` (M l. 13393–13519) — no level load, death, map or game resets it, so it runs on through all of
+    /// them (a mode-0 level leaves it as it is).
+    public var omniPxCounter: Int16 = 0
 
     public init(parity: Bool = false, crunchLog: [CrunchLogEntry] = []) {
         self.parity = parity

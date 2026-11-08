@@ -91,6 +91,9 @@ public final class FerazelSession {
     /// the origin and the flag `*_DAT_100a00f4` are globals that run on from the previous level (`LevelCarry`, E1b
     /// review fix): a first walk at the old origin with the flag set walks the old cells; `local_6a` starts at 0.
     public private(set) var waterEffects = WaterEffects()
+    /// OX: OmniPx's state (`OmniPx`: the mode, faces, layer arrays, factor backup) and its counter `c`, which runs on
+    /// from the previous level (`LevelCarry.omniPxCounter`). The on-flag is G+0x174 (`world.globals.omniPxActive`).
+    public internal(set) var omniPx = OmniPx()
     /// The level loaded (`Mlvl` id).
     public let levelNumber: Int
     /// `Mmap 200`, read by `LevelFlow` when the level exit is touched.
@@ -242,6 +245,18 @@ public final class FerazelSession {
         world.active = spawned.active
         world.idle = spawned.idle
         world.records = spawned.records                                  // the Setups' write-backs (W2a)
+        // OX: `c` runs on (`LevelCarry.omniPxCounter`). Unhosted, the session stands in for `.SetupLevel`: its
+        // `G+0x174 = 0` and `.SetupOmniPx(0)` (M l. 2539–2540) — inside `.SetupLevel`, so before the player
+        // `MTNewSprite` (`.GameLoop` M l. 5165 → 5181). Hosted, `LevelRun.setupLevel` makes both calls after its bars.
+        var omni = OmniPx(counter: carry.omniPxCounter)
+        if !hostedByLevelRun {
+            var lv = world.level, g = world.globals
+            g.omniPxActive = 0
+            omni.setup(level: &lv, globals: &g)
+            world.level = lv
+            world.globals = g
+        }
+        omniPx = omni
         // L1 (hosted): `*(G + L·2 + 0x23e) = 1` — `unlocked[L]` — right before the player `MTNewSprite` (M l. 5180–5181).
         if hostedByLevelRun { world.globals.unlocked[level] = 1 }
         // The player `MTNewSprite(0, x, y, 10, −1, .SetupPlayerSprite)` (l. 5181), then the countdown
@@ -457,7 +472,9 @@ public final class FerazelSession {
             world.flash.step()
             // `.DrawParticles` (l. 9433): the colour-0 kills here, on drawn iterations only (`ParticlePool.draw`).
             ops.draws.append(.drawParticles(world.particles.draw()))
-            // later: `.UpdateOmniPx` (l. 9434). Then the parity flip (raw `10012710..1001272c`).
+            // OX: `.UpdateOmniPx` (M l. 9434) at the scroll point of this pass — an op only while OmniPx is on.
+            if let f = omniPx.update(globals: world.globals, h: h, v: v) { ops.draws.append(.omniPx(f)) }
+            // Then the parity flip (raw `10012710..1001272c`).
             world.parity.toggle()
             // `.WrapCopyToScreen` of the frame port, or of the mask port while the flash toggle is on (M l. 9441–9447).
             let backdrop = prefs.plainCopy == 0
@@ -1023,6 +1040,24 @@ public final class FerazelSession {
         return .deathEffect
     }
 
+    /// OX: `.SetupOmniPx(0) @ 10019d78` (M l. 2540 in `.SetupLevel`; `OmniPx.setup`) on the level and G — mode 0 turns
+    /// OmniPx off; 2 / 4 / 5 turn it on (`.TurnOnOmniPx`), zeroing the header's PxBack factors for mode 2.
+    public func setupOmniPx() {
+        var L = world.level, g = world.globals
+        omniPx.setup(level: &L, globals: &g)
+        world.level = L
+        world.globals = g
+    }
+
+    /// OX: `.TurnOffOmniPx` then `.KillOmniPx` at `.GameLoop`'s exit (M l. 5321–5322; `OmniPx.turnOff`, `kill`).
+    public func turnOffAndKillOmniPx() {
+        var L = world.level, g = world.globals
+        omniPx.turnOff(level: &L, globals: &g)
+        omniPx.kill()
+        world.level = L
+        world.globals = g
+    }
+
     /// What the next level's session takes (`init(…carry:)`, W4): the parity, the particle counters (E1a), the
     /// water-effects cache, origin and flag (E1b), the flash, paint counter, plume count and shake (EF), the Shadow-Double ring's mirror bytes (SD), and the live G with its crunch log (A1a: the flow decides when a
     /// game starts from a fresh G — New Game's `.InitGameGlobals` — never the session).
@@ -1039,6 +1074,7 @@ public final class FerazelSession {
         c.plumeCount = world.plumeCount
         c.shake = world.shakeStore ?? camera.shake                     // CS: a store the camera has not yet taken
         c.shadowMirrors = world.player.shadowRing.map(\.mirrored)        // SD review fix
+        c.omniPxCounter = omniPx.counter                                 // OX: `c` runs on (BSS)
         return c
     }
 

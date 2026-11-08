@@ -4,8 +4,9 @@ import FerazelCore
 /// The copy of the frame to the screen with the parallax backdrop composited on the way (rendering-omnipx-titles
 /// §1.1–§1.5, transcribed as written — Invariant 3): `.PaintFrameWrap` → `.WrapCopyToScreen @ 100174bc` →
 /// `.DoubleBlitUniversal @ 10022e34` → `.DoubleBlitPPCParallaxOneLayer @ 10017924`. The Fire variant
-/// (`…Fire @ 10018dd4`, header `0x2722 > 0`, levels 52/55, §1.6) and OmniPx (§3) are not built: a level with a
-/// flame mode is refused, and `omniPxActive` only makes `.GetPxBackTile` answer 0 (`1003c4f8..1003c514`). The
+/// (`…Fire @ 10018dd4`, header `0x2722 > 0`, levels 52/55, §1.6) is not built: a level with a flame mode is refused.
+/// OmniPx (§3; OX, modes 2 / 4 / 5): `turnOnOmniPx` makes `.GetPxBackTile` answer 0 (`1003c4f8..1003c514`) and puts
+/// the 128×128 port in PxBack slot 0, which `updateOmniPx` rebuilds each drawn frame (`DrawOp.omniPx`). The
 /// ripple table's producer is not built either, so a level with the ripple flag (header `0x26ca`, levels 11, 18) is
 /// refused too (Invariant 6) rather than drawn without its ripple.
 ///
@@ -79,11 +80,11 @@ public struct ParallaxBlitter: Sendable {
         var cellRow: Int
     }
 
-    // Level inputs (world-data §3.2).
-    let backFactors: [Int16]
+    // Level inputs (world-data §3.2). OX: `backFactors` / `backYFactor` are zeroed by `.TurnOnOmniPx` (`turnOnOmniPx`).
+    var backFactors: [Int16]
     let midFactors: [Int16]
     /// `yb` = header `0xb26c`, `ym` = `0xb26e`.
-    let backYFactor: Int
+    var backYFactor: Int
     let midYFactor: Int
     /// Header `0x3268`.
     let pxMidEnable: Int16
@@ -94,9 +95,9 @@ public struct ParallaxBlitter: Sendable {
     let flameMode: Int16
     let pxBackMap: TileMap
     let pxMidMap: TileMap
-    /// `slotCount` faces of `cellBytes` each, back to back.
-    let faces: [UInt8]
-    let slotLoaded: [Bool]
+    /// `slotCount` faces of `cellBytes` each, back to back. OX: slot 0 is the OmniPx port while OmniPx is on.
+    var faces: [UInt8]
+    var slotLoaded: [Bool]
 
     /// Game globals `+0x174` (OmniPx on): `.GetPxBackTile` returns 0.
     public var omniPxActive = false
@@ -556,5 +557,78 @@ public struct ParallaxBlitter: Sendable {
     func faceBase(_ slot: Int) throws -> Int {
         guard (0..<Self.slotCount).contains(slot) && slotLoaded[slot] else { throw Refusal.cellSlot(slot) }
         return slot * Self.cellBytes
+    }
+}
+
+// MARK: - OmniPx (rendering-omnipx-titles §3; OX)
+
+extension ParallaxBlitter {
+    /// The renderer's half of `.TurnOnOmniPx @ 10019ac4` (M l. 13019–13060) — the first `DrawOp.omniPx` after the level
+    /// start: G+0x174 set (`.GetPxBackTile` answers 0); for a mode outside 4…7 the PxBack x-factors (hdr+0x326c) and
+    /// `yb` (hdr+0xb26c) zeroed (`OmniPx.turnOnZeroesFactors`, as Core's copy), so the grid is fixed to the view
+    /// (§3.5); PxBack slot 0 saved (`0x100f97e0`) and the port (`NewBlitPort(128, 128, level+sprite CLUT)` at
+    /// `.SetupOmniPx`, M l. 13176; here 0-filled) stored there (M l. 13055–13056). The renderer lives one level, so
+    /// `.TurnOffOmniPx`'s restore of slot 0 and the factors has nothing left to draw.
+    mutating func turnOnOmniPx(omniPxMode m: UInt8) {
+        guard !omniPxActive else { return }
+        omniPxActive = true
+        if OmniPx.turnOnZeroesFactors(omniPxMode: m) {
+            backFactors = [Int16](repeating: 0, count: backFactors.count)
+            backYFactor = 0
+        }
+        faces.replaceSubrange(0..<Self.cellBytes, with: repeatElement(0, count: Self.cellBytes))
+        slotLoaded[Self.backBase] = true
+    }
+
+    /// `.UpdateOmniPx`'s pixels (M l. 13427–13513, §3.4) into the port, PxBack slot 0: the base — `CopyBitsCTForce`
+    /// of PxBack slot `baseCell` (the colour-table seed copied first, so the indices copy as they are) over the whole
+    /// 128×128 port — then each face's `BlitEncFaceClipX(face, port, (0, 0), point, 128, 128)` at every point of
+    /// `OmniPxFrame.Face.draws`, in order.
+    /// - Parameter face: the encoded face of a PICT (`.Load1EncFaceFromPICT`, the level+sprite CLUT).
+    /// - Throws: `Refusal.cellSlot` for a base cell with no face (`faceBase`), what `face` throws.
+    mutating func updateOmniPx(_ frame: OmniPxFrame, face: (Int16) throws -> EncodedFace) throws {
+        var port = Array(faces[0..<Self.cellBytes])
+        if let cell = frame.baseCell {
+            let b = try faceBase(Self.backBase + cell)
+            port = Array(faces[b..<(b + Self.cellBytes)])
+        }
+        for f in frame.faces {
+            let e = try face(f.pict)
+            for d in f.draws { Self.blitClip128(e, into: &port, x: d[0], y: d[1]) }
+        }
+        faces.replaceSubrange(0..<Self.cellBytes, with: port)
+    }
+
+    /// `.BlitEncFaceClipX(face, port, (0, 0), (y, x), 128, 128)` into the 128×128 port: the face's window rows
+    /// 0..<128 and columns 0..<128 (from source point 0, the word at `0x100a15c4`), each copy-run pixel at
+    /// (x + column, y + row) when that lies in the port — a left / top edge moves the source, a right / bottom edge
+    /// shortens the window, as `ClipX` clips; skips (pixel value 0) leave the port alone.
+    static func blitClip128(_ face: EncodedFace, into port: inout [UInt8], x: Int, y: Int) {
+        let n = OmniPx.size, data = face.data
+        var p = 0, row = -1, col = 0
+        while p + 4 <= data.count {
+            let tok = data[p], len = Int(data[p + 1]) << 16 | Int(data[p + 2]) << 8 | Int(data[p + 3])
+            p += 4
+            switch tok {
+            case 1:
+                row += 1
+                col = 0
+                if row >= n { return }
+            case 3:
+                col += len
+            case 2:
+                let py = y + row
+                if (0..<n).contains(py) {
+                    for k in 0..<len where col + k < n {
+                        let px = x + col + k
+                        if (0..<n).contains(px) { port[py * n + px] = data[p + k] }
+                    }
+                }
+                col += len
+                p += (len + 3) & ~3
+            default:
+                return
+            }
+        }
     }
 }
