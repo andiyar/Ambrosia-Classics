@@ -108,6 +108,9 @@ public enum SetupFaces {
         /// body) — each already set up, inserted by the spawn before the parent (`spawnLevelSprites`). The parent's
         /// links to them (`swarm.members`, `siblings.first`) hold indices into this list until then.
         public var children: [SpriteSlot] = []
+        /// LV5: the Setup stored `*_DAT_1009fed0 = 0` ("no boss alive" cleared — the Warrior with its boss flag p4 ≠ 0,
+        /// M l. 73035–73042); the spawn applies it to `Spawned.arena`.
+        public var clearsNoBossAlive = false
     }
 
     /// The state a Setup reads besides its record.
@@ -232,6 +235,11 @@ public enum SetupFaces {
         // row, 3 rows), the head 1441 (6 × 0x30×0x20) and the segment 1442 (6 × 0x14×0x20), one row each of those two.
         all += [set(Geyser.baseSet, 0xc, 0x18, 0x10, 4), set(Geyser.headSet, 6, 0x30, 0x20, 6),
                 set(Geyser.segmentSet, 6, 0x14, 0x20, 6)]
+        // LV5 — the level-5 types: the decorations 2822, 2826, 2829, 2840, 2841 (`.InitBoxSprite` M l. 58775–58778: the
+        // 0x2d cache singles 0xaf5+i, flag 0) and the Warrior's three cache sets (`.InitWarriorSprite` M l. 72983–72985:
+        // 0x71c / 0x71d 8, 0x71e 6 × 0xb4×0xa0, one row each, flag 0).
+        for p: Int16 in [0xb06, 0xb0a, 0xb0d, 0xb18, 0xb19] { all.append(one(p)) }
+        all += Warrior.sheets.map { ($0.pict, $0) }
         all.append(one(placeholderPict))
         // BN: every face `.InitBonusSprite` loads (`BonusSprite.sheets`; the level-1/2 entries above are the same sheets).
         var table = Dictionary(uniqueKeysWithValues: all)
@@ -334,6 +342,7 @@ public enum SetupFaces {
         var sheet: Sheet?, index = 0, source = FaceSource.none, light: Light?
         var record = p
         var children: [SpriteSlot] = []
+        var clearsNoBossAlive = false
         /// `.AddLight(face, (y + dy, x + dx), 0, 0, 0, colour)` with one of `.InitBonusSprite`'s / `.InitPlayerShotSprite`'s
         /// / `.InitEffectSprite`'s light faces.
         /// The slot `.AddLight` returns — the first free one, = the lights added so far — goes to `+0x9a` (every
@@ -687,6 +696,18 @@ public enum SetupFaces {
             record = Dillo.setup(&s, record: p, rng: &rng, counting: &counting)
             face(Dillo.walkType, 0, .handle)
 
+        case .warrior:
+            // `.SetupWarriorSprite @ 100878ac` (M l. 72989–73079; LV5, `Warrior.setup`): layer 12 (inside `.MTNewSprite`,
+            // before the insert), the four procs, `+0x18a`, the three sets marked, HP and "no boss alive" by p4, the
+            // re-seat, R(10) → `+0xa6`, the live record's p2 0 → 150 (written back), the bounds x ∓ 350, R(100) →
+            // `+0x17e`, `+0xc0` = the 0x71c set's face 0 (`.setupCached`), the counting window. Every type 0x71c…0x725
+            // takes it (no Setup or Handle reads `+4`, bosses §1.1); only 1820 is placed (level 5).
+            s.oldPosition = SpriteSlot.Point(x: s.x, y: s.y)           // `.MTNewSprite`'s `+8` / `+6`
+            let w = Warrior.setup(&s, record: p, rng: &rng, counting: &counting)
+            record = w.record
+            clearsNoBossAlive = w.clearsNoBossAlive
+            face(Warrior.walkSet, 0, .setupCached)
+
         default:
             throw Error.notTranscribed(type: p.type)
         }
@@ -696,7 +717,8 @@ public enum SetupFaces {
             s.face = FaceRef(pict: sh.pict, index: index, set: .encoded)
         }
         return Entry(type: p.type, spriteClass: cls, spawn: spawn, sheet: source == .none ? nil : sheet,
-                     faceIndex: index, source: source, slot: s, light: light, record: record, children: children)
+                     faceIndex: index, source: source, slot: s, light: light, record: record, children: children,
+                     clearsNoBossAlive: clearsNoBossAlive)
     }
 
     // MARK: - the level spawn
@@ -719,6 +741,9 @@ public enum SetupFaces {
         /// LT: the light table after the Setups — fresh (`.RemoveAllLights`, `.SetupLevel` M l. 2269 / `.InitLighting`
         /// M l. 13611, before `.SetupLevelSprites`), then each Setup's `.AddLight` in spawn order.
         public var lightTable = LightTable()
+        /// LV5: the arena globals as `.SetupLevelSprites` leaves them — `fed4 = 0`, `fed0 = 1` before its passes (M l.
+        /// 2016–2019), then a boss Setup's `fed0 = 0` (`Entry.clearsNoBossAlive`). The pan counter is not its.
+        public var arena = BossArena()
     }
 
     /// `*_DAT_1009ffac` secrets, `*_DAT_1009ffb0` Xichrons, `*_DAT_1009ffb4` enemies — each Setup site sets the
@@ -730,8 +755,8 @@ public enum SetupFaces {
     /// `.SetupFrogSprite` at its end (M l. 70211–70215), `.SetupSalamanderSprite` at its end (M l. 70692–70698; FR),
     /// `.SetupBlobSprite` at its end for every type (M l. 67728–67731; LV3, BL). The Crab counts nothing (BL).
     /// `.SetupGremlinSprite` in the body arm (M l. 69227–69230), `.SetupFloaterSprite` for every type (M l. 69900–69903;
-    /// GF), `.SetupDilloSprite` at its end for 1870 / 1871 (M l. 72371–72374; DL). // later: Phase 5–6 — the other enemy
-    /// classes' sites (Warrior 73069, Demon 74493, Chief 75110, Wizard
+    /// GF), `.SetupDilloSprite` at its end for 1870 / 1871 (M l. 72371–72374; DL), `.SetupWarriorSprite` at its end
+    /// (M l. 73070–73074; LV5). // later: Phase 6 — the other boss classes' sites (Demon 74493, Chief 75110, Wizard
     /// 75676, Xichra 76435), some branch-gated, are not transcribed (their Setups throw `notTranscribed` before any
     /// tally). EC: the enemies are `EnemyCounting.live` — each counted Setup's `countIfWindow` — copied here after the
     /// spawn; the secrets and Xichrons are counted here by type, while the window is set.
@@ -795,8 +820,10 @@ public enum SetupFaces {
         guard c.level.header.autoScrollEnable == 0 else { throw Error.autoScrollSprites }
         var out = Spawned(active: ActiveList(), idle: IdleSprites(), created: [], lights: [],
                           records: c.records ?? c.level.placements)
+        out.arena.setupLevelSprites()
         for p in c.records.map(spawnOrder) ?? c.level.spawnOrder {
             var e = try setup(p, context: c, lights: &out.lightTable, counting: &counting, rng: &rng)
+            if e.clearsNoBossAlive { out.arena.noBossAlive = 0 }
             if counting.window { out.tallies.count(type: e.type, class: e.spriteClass) }
             if e.type == BoxSprite.cart || e.type == BoxSprite.wheel, e.slot.recordIndex != -1 {
                 // The cart arm of `.SetupBoxSprite` (M l. 59444–59463; BX1) makes two children before the cart is

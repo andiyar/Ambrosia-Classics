@@ -5,7 +5,7 @@ import HectorResources
 /// LV3 (docs/plans/2026-10-24-ferazel-phase4.md): level 3 "Western Reaches" enterable — every one of its 216 records
 /// sets up (the enemy face stubs Blob 1730 and Bat 1741, the decorations' faces, the retracting spikes 1840…1843), the
 /// spikes' Handle with its idle-only sounds (`.HandleBackgroundSprite` M l. 63192–63276) and their arm in
-/// `.HitPlayerSprite` (M l. 49743–49751), `BuiltLevels = 1...3` (LV4: 1...4). Against the committed
+/// `.HitPlayerSprite` (M l. 49743–49751), `BuiltLevels = 1...3` (LV4: 1...4; LV5: 1...5). Against the committed
 /// `Resources/Ferazel` (D26); a missing data file is a FAILURE, never a skip.
 final class LevelThreeTests: XCTestCase {
 
@@ -391,8 +391,8 @@ final class LevelThreeTests: XCTestCase {
         XCTAssertEqual(f3.levelRun?.session?.tallies.enemies, 27)
         XCTAssertEqual(l3.prepared, [2, 3])
         XCTAssertEqual(f3.levelNumber, 3)
-        // Exit p1 2 (record 98) → node 4 → Return → level 4 runs (LV4; its not-built walk moved to node 5,
-        // `LevelFourTests.testBuiltLevelsFour`).
+        // Exit p1 2 (record 98) → node 4 → Return → level 4 runs (LV4; the not-built walk moved to node 5, then — LV5 —
+        // to node 10, `LevelFiveTests.testBuiltLevelsFive`).
         let (f4, l4, a4) = try viaExit(98, node: 4)
         XCTAssertEqual(a4, [])
         XCTAssertEqual(f4.levelRun?.levelNumber, 4)

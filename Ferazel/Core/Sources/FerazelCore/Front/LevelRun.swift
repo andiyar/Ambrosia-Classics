@@ -514,10 +514,13 @@ public final class LevelRun {
             start.requests = [.hideCursor]
             start.present = true
             emit(&out, start)
-            // The boss-music rule (M l. 5218–5220): hdr+0x2724 ≠ 0 ∧ `*_DAT_1009fed0` ("no boss alive": cleared by a
-            // boss Setup, set by its Kill — engine §4) → `hdr+0x284a = 0x1e`. // later: Phase 5 — the boss Setups and
-            // Kills that write `fed0` are not transcribed; no Phase-3 level has hdr+0x2724 ≠ 0 (levels 1–2: 0).
-            let noBossAlive = false
+            // The boss-music rule (M l. 5218–5221): hdr+0x2724 ≠ 0 ∧ `*_DAT_1009fed0` ("no boss alive", read live from
+            // `BossArena`: `.SetupLevelSprites` set it 1, a boss Setup with p4 ≠ 0 cleared it, its Kill sets it again —
+            // bosses §1.4) → `hdr+0x284a = 0x1e`, then `SetAIFFMusic(hdr+0x284a)`. Levels 1–4 have hdr+0x2724 = 0;
+            // levels 5, 18, 25, 55 have −1444, −1400, 592, 16000; level 67 has 0. Level 5 plays its own track 23 (the
+            // Warrior's Setup cleared `fed0`); a level-5 visit whose Warrior no longer spawns starts on 30. The header
+            // write does not carry over: each visit opens a fresh copy of the level (M l. 41551–41554).
+            let noBossAlive = s.world.arena.noBossAlive != 0
             let track = h.arenaBound != 0 && noBossAlive ? 0x1e : Int(h.music)
             emit(&out, FrontOutput(music: music.setAIFFMusic(track)))
             block(music.fadeAIFFMusic(direction: 1, ticks: 4, prefs: prefs), now: now)
@@ -707,14 +710,31 @@ public final class LevelRun {
                             soundStopAt: ops.soundStopAt, music: ops.music, requests: ops.requests)
         // A skipped iteration leaves the screen as it was, but its `.HandleAsyncGammaFade` still moves the gamma.
         o.present = present || ops.drawn || ops.draws.contains { if case .gammaStep = $0 { true } else { false } }
-        // `_HandleAsyncAIFFMusicFade()` (M l. 5281), after `.UpdateStatusBar(1, 0, 0)` — at the iteration's end, so
-        // not in a suspended part: nothing armed outside the boss rule's in-loop block (M l. 5257–5266, // later:
-        // Phase 5).
-        if ops.suspension == nil { o.music += music.handleAsyncFade(prefs: prefs) }
+        // The boss rule's in-loop block (M l. 5266–5274), after the frame and before `_UpdateSprites`, then
+        // `_HandleAsyncAIFFMusicFade()` (M l. 5281) after `.UpdateStatusBar(1, 0, 0)` — both at the iteration's end, so
+        // not in a suspended part.
+        if ops.suspension == nil {
+            o.music += bossMusicRule()
+            o.music += music.handleAsyncFade(prefs: prefs)
+        }
         emit(&out, o)
         // `if (prefs+0x08) WaitNextEvent(0xffff, …, 0, 0)` after `_UpdateSprites` (M l. 5277–5279): an iteration's
         // end fetches one queued event and never handles it — a quit or an open is lost.
         if ops.suspension == nil && prefs.backgroundTasks != 0 { _ = appleEvents.takeFirst() }
+    }
+
+    /// `.GameLoop`'s in-loop boss-music block (M l. 5266–5274): hdr+0x2724 ≠ 0 ∧ `*_DAT_1009fed0` ≠ 0 (read live,
+    /// `BossArena`) ∧ the current track `_DAT_100a5be0` ≠ 0x1e ∧ prefs+0xc (music on) ∧ `cRam100a5be2` (no async fade
+    /// running) → the volume `*_DAT_1009fd6c` < 1 ? `SetAIFFMusic(0x1e)` + `FadeAIFFMusicAsync(1, 0x3c)` :
+    /// `FadeAIFFMusicAsync(0, 0x3c)` — after a boss Kill the level's track fades out over 60 frames, then track 30 starts
+    /// and fades in. Level 5 with the Warrior standing: `fed0` = 0, nothing.
+    private func bossMusicRule() -> [MusicCue] {
+        guard let s = session, levelFile.header.arenaBound != 0, s.world.arena.noBossAlive != 0,
+              music.currentTrack != 0x1e, prefs.musicOn != 0, music.asyncDone else { return [] }
+        if music.volume < 1 {
+            return music.setAIFFMusic(0x1e) + music.fadeAIFFMusicAsync(direction: 1, frames: 0x3c, prefs: prefs)
+        }
+        return music.fadeAIFFMusicAsync(direction: 0, frames: 0x3c, prefs: prefs)
     }
 
     // MARK: The save point (S1)
@@ -1084,7 +1104,8 @@ public struct CachedFaces: Equatable, Sendable {
     /// (M l. 106–145) calls …, Crab, Dillo, Warrior, Wizard, Chief, Demon, Xichra, Floater, Frog, Gremlin, Salamander:
     /// `.InitFloaterSprite`'s three (M l. 69827–69829 — 0x6f4 6 faces, 0x6fe / 0x6ff 8, the last two absent from the data
     /// and marked only by the refused 1790 variant) after the Crab's and the Dillo's (DL: `.InitDilloSprite`'s four,
-    /// M l. 72283–72286 — 0x74e 6, 0x74f 5, 0x750 5, 0x751 2; the Warrior … Xichra sets are later tasks'), and
+    /// M l. 72283–72286 — 0x74e 6, 0x74f 5, 0x750 5, 0x751 2; LV5: `.InitWarriorSprite`'s three, M l. 72983–72985 —
+    /// 0x71c 8, 0x71d 8, 0x71e 6, right after the Dillo's; the Wizard … Xichra sets are Phase 6's), and
     /// `.InitGremlinSprite`'s three (M l. 69118–69120 — 0x6ea / 0x6eb 10, 0x6ec 4) between the Frog's and the
     /// Salamander's; each flag 0 (the boss Inits between store 1 and restore 0, M l. 75020, 75582, 76216). One PICT in
     /// three records: `loadedSets` keys by PICT,
@@ -1115,6 +1136,8 @@ public struct CachedFaces: Equatable, Sendable {
         Record(pict: 0x762, faces: 6, flag: 0),
         Record(pict: 0x74e, faces: 6, flag: 0), Record(pict: 0x74f, faces: 5, flag: 0),
         Record(pict: 0x750, faces: 5, flag: 0), Record(pict: 0x751, faces: 2, flag: 0),
+        Record(pict: 0x71c, faces: 8, flag: 0), Record(pict: 0x71d, faces: 8, flag: 0),
+        Record(pict: 0x71e, faces: 6, flag: 0),
         Record(pict: 0x6f4, faces: 6, flag: 0), Record(pict: 0x6fe, faces: 8, flag: 0),
         Record(pict: 0x6ff, faces: 8, flag: 0),
         Record(pict: 0x708, faces: 8, flag: 0),
@@ -1129,13 +1152,16 @@ public struct CachedFaces: Equatable, Sendable {
     /// 0xb22+i (flag 1, 58818–58823), 0xb36+i (58825), 0xb68+i (58830); Background 0xb54 (61862), the spikes' 0x732 /
     /// 0x733 (61865–61866; LV3), 3000+i (flag 1, 61899), 0x5c8+i (61905), 0xa8c+i (flag 1, 61911). LV3 adds the
     /// decorations 0xafc, 0xafd, 0xb04, 0xb05, 0xb10, 0xb1b, the outcrops 0xb34 / 0xb35 (flag 1) and the mushroom 0xb44
-    /// at their places in the loops. BL: the Crab's link single 0x767 (`.InitCrabSprite` M l. 73965, flag 0 —
+    /// at their places in the loops; LV5 the decorations 0xb06, 0xb0a, 0xb0d, 0xb18, 0xb19. BL: the Crab's link single 0x767 (`.InitCrabSprite` M l. 73965, flag 0 —
     /// `.InitBackgroundSprite` leaves `*_DAT_100a0a48` 0, M l. 61912), registered after every Background single.
     static let singles: [Record] = [
         Record(pict: 0x6a4, faces: 1, flag: 0), Record(pict: 0x6d6, faces: 1, flag: 0),
         Record(pict: 0xafc, faces: 1, flag: 0), Record(pict: 0xafd, faces: 1, flag: 0),
         Record(pict: 0xb04, faces: 1, flag: 0), Record(pict: 0xb05, faces: 1, flag: 0),
+        Record(pict: 0xb06, faces: 1, flag: 0), Record(pict: 0xb0a, faces: 1, flag: 0),
+        Record(pict: 0xb0d, faces: 1, flag: 0),
         Record(pict: 0xb10, faces: 1, flag: 0),
+        Record(pict: 0xb18, faces: 1, flag: 0), Record(pict: 0xb19, faces: 1, flag: 0),
         Record(pict: 0xb1a, faces: 1, flag: 0), Record(pict: 0xb1b, faces: 1, flag: 0),
         Record(pict: 0xb20, faces: 1, flag: 0), Record(pict: 0xb21, faces: 1, flag: 0),
         Record(pict: 0xb87, faces: 1, flag: 0), Record(pict: 0xb88, faces: 1, flag: 0),
@@ -1186,7 +1212,10 @@ public struct CachedFaces: Equatable, Sendable {
     /// 0x76c / 0x76d → set 0x76c, 0x76e → 0x76e, 0x76f → 0x76f (62497–62505). LV4: level 4's new types mark nothing —
     /// the switch blocks 1250 and the spouts 1450 / 1453 face from the boot sets `_DAT_100a0a54` / `0a4c` (M l.
     /// 59581–59597), the Buttons, the Platform 1410 and the Bonus 1331 / 1334 / 1340 / 3216 Setups store no mark.
-    /// Every other level-1–4 type marks nothing.
+    /// LV5: every Warrior type 0x71c…0x725 → sets 0x71c, 0x71d, 0x71e (M l. 73029–73031); the level-5 decorations 2822,
+    /// 2826, 2829, 2840, 2841 → their singles (59647); the Platform 1403, the save point 1065, the gate 2940, the exit
+    /// 3249 and the Bonus 1059 / 1340 / 3100 / 3214 Setups store no mark.
+    /// Every other level-1–5 type marks nothing.
     /// // later: Phase 5–6 — the other types'.
     static func marks(type t: Int16, p1: Int16 = 0) -> (sets: [Int16], singles: [Int16]) {
         switch t {
@@ -1206,6 +1235,7 @@ public struct CachedFaces: Equatable, Sendable {
         case 0x6c2...0x6cb: return ([0x6c2], [])
         case 0x762...0x76b: return ([0x762], [0x767])
         case 0x74e...0x757: return ([0x74e, 0x74f, 0x750, 0x751], [])
+        case 0x71c...0x725: return ([0x71c, 0x71d, 0x71e], [])
         case 0x5a0...0x5a8: return ([0x5a0, 0x5a1, 0x5a2], [])
         case 0x730, 0x731: return ([0x730], [])
         case 0x76c, 0x76d: return ([0x76c], [])
@@ -1220,7 +1250,8 @@ public struct CachedFaces: Equatable, Sendable {
         case 0x5b5, 0x5b6: return ([], [0x5b5])
         case 0x5b8, 0x5cd, 0xa96, 0xa99, 0xa9a, 0xbba, 0xb54, 0xb1a, 0xb20, 0xb21, 0xb87, 0xb88, 0xb8a, 0xb25,
              0xb36, 0xb37, 0xb3a, 0xb43, 0xb6a, 0xb6c, 0xb6d, 0xb6e, 0xb6f, 0xb70,
-             0xafc, 0xafd, 0xb04, 0xb05, 0xb10, 0xb1b, 0xb34, 0xb35, 0xb44:
+             0xafc, 0xafd, 0xb04, 0xb05, 0xb10, 0xb1b, 0xb34, 0xb35, 0xb44,
+             0xb06, 0xb0a, 0xb0d, 0xb18, 0xb19:
             return ([], [t])
         default: return ([], [])
         }

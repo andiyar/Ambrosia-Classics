@@ -5,8 +5,9 @@ import HectorResources
 /// LV4 (docs/plans/2026-10-24-ferazel-phase4.md): level 4 "Eastern Reaches" enterable — every one of its 250 records
 /// sets up (its new types are the switch blocks 1250, the spouts 1450 / 1453, the Buttons 1320 / 1322, the Bonus 1331,
 /// 1334, 1340, 3216 and the Platform 1410, all built by earlier tasks), `BuiltLevels = 1...4`, and the not-built
-/// report names "(Phases 5-6)" (Ruling 2): level 5 (Manditraki Warrior) is a boss and stays refused. Against the
-/// committed `Resources/Ferazel` (D26); a missing data file is a FAILURE, never a skip.
+/// report names "(Phases 5-6)" (Ruling 2): level 5 (Manditraki Warrior) is a boss and stays refused — until LV5, which
+/// builds level 5 (`BuiltLevels = 1...5`, the report "(Phase 6)."): level 4's exit p1 1 now enters level 5. Against
+/// the committed `Resources/Ferazel` (D26); a missing data file is a FAILURE, never a skip.
 final class LevelFourTests: XCTestCase {
 
     private func resources() throws -> FerazelResources { try FerazelData.open(try FerazelData.dataDirectory()) }
@@ -154,8 +155,7 @@ final class LevelFourTests: XCTestCase {
     }
 
     func testBuiltLevelsFour() throws {
-        XCTAssertEqual(BuiltLevels.range, 1...4)
-        XCTAssertEqual(BuiltLevels.notBuiltReport(5), "Level 5 is not built yet (Phases 5-6).")
+        XCTAssertTrue(BuiltLevels.range.contains(4))
         let r = try resources()
         // Level 2's exit p1 2 (record 98) → node 4 → Return → level 4 runs, its every record set up by the session.
         let rig = Rig(r, start: 2)
@@ -166,25 +166,21 @@ final class LevelFourTests: XCTestCase {
         XCTAssertEqual(rig.flow.levelNumber, 4)
         XCTAssertEqual(rig.flow.levelRun?.session?.tallies.enemies, 35)
         XCTAssertEqual(rig.levels.prepared, [2, 4])
-        // Level 4's exit p1 1 (record 71; Research note 2: 4 → [2, 5]) → node 5 → Return → "Level 5 is not built yet
-        // (Phases 5-6)." and no level run; OK → the map again at node 5 (the node chosen, F1b), nothing new unlocked.
+        // Level 4's exit p1 1 (record 71; Research note 2: 4 → [2, 5]) → node 5 → Return → level 5 runs (LV5: built),
+        // nothing asked, its every record set up by the session — the Warrior its one counted enemy.
         let exit = try LevelFile.load(from: r, level: 4).placements[71]
         XCTAssertEqual([exit.type, exit.p1], [3249, 1])
-        let m = try rig.exit(71, toNode: 5)
-        XCTAssertEqual(rig.asked.last, .report(text: "Level 5 is not built yet (Phases 5-6)."))
-        XCTAssertNil(rig.flow.levelRun)
-        let unlocked = m.globals.unlocked
-        rig.flow.dialogDone(.ok)
-        rig.drive { f in (f.worldMap.map { $0 !== m && $0.iterations >= 2 && $0.walkStep == 0 }) ?? false }
-        let again = try XCTUnwrap(rig.flow.worldMap)
-        XCTAssertEqual(again.cur, try XCTUnwrap(again.map.findCurrNode(level: 5)).index)
-        XCTAssertEqual(again.globals.unlocked, unlocked)
-        XCTAssertEqual(rig.levels.prepared, [2, 4])
+        try rig.exit(71, toNode: 5)
+        rig.drive { f in f.levelRun?.levelNumber == 5 && (f.levelRun?.iterations ?? 0) >= 45 }
+        XCTAssertEqual(rig.asked, [])
+        XCTAssertEqual(rig.flow.levelNumber, 5)
+        XCTAssertEqual(rig.flow.levelRun?.session?.tallies.enemies, 1)
+        XCTAssertEqual(rig.levels.prepared, [2, 4, 5])
     }
 
     func testStartLevelSwitch() throws {
         // The hidden `FerazelLevel` switch (`GameFlow.startLevel`, GameFlow.swift:170): 4 → New Game at level 4; 5 →
-        // level 1 (`NewGame`'s clamp to `BuiltLevels.range`).
+        // level 5 (LV5: inside `BuiltLevels.range`; before it, `NewGame`'s clamp sent it to level 1).
         let r = try resources()
         let four = Rig(r, start: 4)
         four.newGame(level: 4)
@@ -192,9 +188,9 @@ final class LevelFourTests: XCTestCase {
         XCTAssertEqual(four.levels.prepared, [4])
         XCTAssertEqual(four.asked, [])
         let five = Rig(r, start: 5)
-        five.newGame(level: 1)
-        XCTAssertEqual(five.flow.levelNumber, 1)
-        XCTAssertEqual(five.levels.prepared, [1])
+        five.newGame(level: 5)
+        XCTAssertEqual(five.flow.levelNumber, 5)
+        XCTAssertEqual(five.levels.prepared, [5])
         XCTAssertEqual(five.asked, [])
     }
 }

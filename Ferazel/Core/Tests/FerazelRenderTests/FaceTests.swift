@@ -651,20 +651,27 @@ final class FaceTests: XCTestCase {
         // replica's per-level load (`BoxSprite.dropSheets`) is a seam, so the faces are named here, not derived from it.
         // Locks (the balloon's key face 0xc80 + |p1|): L1 chest 38 p1 1, door 55 p1 2; L2 door 97 p1 2, 212 p1 1; L3
         // door 68 p1 3; L4 door 56 p1 1. Drops (p2): L1 3201, 3202, 1305 (→ 0x51d), 1302, crates 3219, 1291, 1293; L2
-        // 1305, 3202, 3201, 1302, 1293; L3 1302, 1305, 3205; L4 3201, 1305, 1302.
-        let keys: [Int: [Int16]] = [1: [0xc81, 0xc82], 2: [0xc81, 0xc82], 3: [0xc83], 4: [0xc81]]
+        // 1305, 3202, 3201, 1302, 1293; L3 1302, 1305, 3205; L4 3201, 1305, 1302. LV5: level 5 places no chest, door,
+        // crate, Bat, Frog or Blob (its 16 types: Bonus 1059, 1340, 3100, 3214; Box 1065, 2820, 2821, 2822, 2826, 2829,
+        // 2840, 2841, 2940; Platform 1403; Warrior 1820; Background 3249) — no key face, no drop, none of those sets;
+        // its own cache faces are the Warrior's three sets.
+        let keys: [Int: [Int16]] = [1: [0xc81, 0xc82], 2: [0xc81, 0xc82], 3: [0xc83], 4: [0xc81], 5: []]
         let drops: [Int: [(Int16, Int)]] = [
             1: [(0xc81, 1), (0xc82, 1), (0x51d, 9), (0x516, 9), (0xc93, 1), (0x50b, 1), (0x50d, 1)],
             2: [(0x51d, 9), (0xc82, 1), (0xc81, 1), (0x516, 9), (0x50d, 1)],
             3: [(0x516, 9), (0x51d, 9), (0xc85, 1)],
             4: [(0xc81, 1), (0x51d, 9), (0x516, 9)],
+            5: [],
         ]
-        for n in 1...4 {
+        for n in 1...5 {
             let frame = n == 1 ? one : try renderer(n)
             want("level \(n) balloon", BoxSprite.balloon, in: frame)
-            if 1 < n { want("level \(n) bat set", Bat.batSet, cells: 11, in: frame) }
-            if 1 < n { want("level \(n) frog set", FrogSalamander.frogSet, cells: 8, in: frame) }
-            if 2 < n { want("level \(n) blob set", BlobCrab.blobSet, cells: 16, in: frame) }
+            if (2...4).contains(n) { want("level \(n) bat set", Bat.batSet, cells: 11, in: frame) }
+            if (2...4).contains(n) { want("level \(n) frog set", FrogSalamander.frogSet, cells: 8, in: frame) }
+            if (3...4).contains(n) { want("level \(n) blob set", BlobCrab.blobSet, cells: 16, in: frame) }
+            if n == 5 {
+                for sh in Warrior.sheets { want("level 5 Warrior set", sh.pict, cells: sh.count, in: frame) }
+            }
             for k in keys[n]! { want("level \(n) key face", k, in: frame) }
             for (pict, cells) in drops[n]! { want("level \(n) drop", pict, cells: cells, in: frame) }
             for sh in BoxSprite.dropSheets(frame.level.placements) {

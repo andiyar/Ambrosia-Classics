@@ -249,6 +249,10 @@ public final class FerazelSession {
         world.active = spawned.active
         world.idle = spawned.idle
         world.records = spawned.records                                  // the Setups' write-backs (W2a)
+        // LV5: `.SetupLevelSprites`' `fed4 = 0`, `fed0 = 1` (M l. 2016–2019) and the Warrior's `fed0 = 0`; the pan
+        // counter `_DAT_1009ff9c` is the world's (fresh per session — see `BossArena`).
+        world.arena.locked = spawned.arena.locked
+        world.arena.noBossAlive = spawned.arena.noBossAlive
         // OX: `c` runs on (`LevelCarry.omniPxCounter`). `.SetupLevel`'s `G+0x174 = 0` and `.SetupOmniPx(0)` (M l.
         // 2539–2540) — inside `.SetupLevel`, so before the player `MTNewSprite` (`.GameLoop` M l. 5165 → 5181), hosted
         // or not (nothing `LevelRun.setupLevel` does after the session init reads OmniPx or the PxBack factors). The
@@ -614,9 +618,9 @@ public final class FerazelSession {
             // `.HandleGeyserSegSprite @ 10060cd8` (GY, `Geyser.handleSegment`): empty — the column moves the segments.
             Geyser.handleSegment(world: world, id: id)
         case .warrior:
-            // EC: the enemy Handles — the `+0x1b2` early return, then each a named no-op until its task
-            // (`EnemyCommon.handle`).
-            EnemyCommon.handle(world: world, id: id)
+            // ◇ `.HandleWarriorSprite @ 10087c04` (LV5, `Warrior.handle`): `.StandardSpriteHandles`, the hot rect, the
+            // decision state's face and timer. // later: Phase 6 — the boss.
+            Warrior.handle(world: world, id: id)
         case .button:
             // `.HandleButtonSprite @ 10070e60` (BT, `ButtonSprite.handle`).
             ButtonSprite.handle(world: world, id: id) { Self.frameRect($0, resources: res).right }
@@ -1199,8 +1203,9 @@ public final class FerazelSession {
     /// `.HitButtonSprite` (BT); `.HitEnemyShotSprite` (ES); `.HitWalkerSprite` (WK1; also the corpse raft's, kept
     /// under the Platform Handle); `.HitCrawlerSprite` / `.HitRoachSprite` (CR); `.HitBatSprite` /
     /// `.HitSwarmMemberSprite` (BA); `.HitFrogSprite` / `.HitSalamanderSprite` (FR); `.HitBlobSprite` / `.HitCrabSprite`
-    /// (BL); `.HitGremlinSprite` / `.HitFloaterSprite` (GF); `.HitDilloSprite` (DL). // later: Phase 5 (the other enemy
-    /// classes). The session's form:
+    /// (BL); `.HitGremlinSprite` / `.HitFloaterSprite` (GF); `.HitDilloSprite` (DL); ◇ `.HitWarriorSprite` (LV5: an
+    /// empty body; the other side of each pair still gets its own hit). // later: Phase 6 (the bosses). The session's
+    /// form:
     /// `hitCallback` on `lightTable`.
     private func hit(_ w: SpriteWorld, _ a: Int, _ b: Int) {
         let res = resources
@@ -1261,6 +1266,7 @@ public final class FerazelSession {
                                       faceBounds: faceBounds)
         case .dillo:                                                                    // `.HitDilloSprite` (DL)
             Dillo.hit(w, id: a, other: b, lights: &lights, effects: effects, faceWidth: faceWidth, faceBounds: faceBounds)
+        case .warrior: break                    // ◇ `.HitWarriorSprite` (LV5: `+0x5c` stored) // later: Phase 6
         case .background:                                                               // `.HitBackgroundSprite` (W2b)
             BackgroundSprite.hit(w, id: a, other: b, lights: &lights, effects: effects, faceWidth: faceWidth,
                                  faceBounds: faceBounds)
@@ -1377,7 +1383,8 @@ public final class FerazelSession {
             focusX: Int(p.focusX), focusY: Int(p.focusY), playerVX: Int(p.lastVX), snapArmed: p.snapArmed,
             ridingVeto: ridden?.type == Camera.snapVetoRiddenType,
             inWater: (s?.waterRow ?? 0) != 0 || (s?.lastWater ?? 0) != 0, latch: p.cameraSnapVeto,
-            counter: world.paintCounter, reduceFrameRate: prefs.reduceFrameRate != 0, graphics: graphics)
+            counter: world.paintCounter, reduceFrameRate: prefs.reduceFrameRate != 0, graphics: graphics,
+            arena: &world.arena)
         world.player.scrollH = camera.scrollH
         world.player.scrollV = camera.scrollV
     }

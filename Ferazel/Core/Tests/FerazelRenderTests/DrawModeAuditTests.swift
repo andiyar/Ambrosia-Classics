@@ -293,6 +293,10 @@ final class DrawModeAuditTests: XCTestCase {
         // walk's turn at the bounds (M l. 72595–72601) and the roll's facing by the player's side (M l. 72522–72524); the
         // roll's spin angle `+0x1aa` ± 15 a frame, wrapped into 0…359, and its clear in the uncurl (M l. 72635, 72723–72739);
         // the spines' `+0xb8` 0 / 0x1000b (`.ShootSpines` M l. 72400–72409) and the 1871 egg's 0x1000b (M l. 72696).
+        // LV5: the Warrior stand-in — its hurt-flash table `+0x1b4 = 1` and its facing draw (`.SetupWarriorSprite` M l.
+        // 73043, 73066; the ◇ Handle writes neither).
+        W("World/Enemies/Warrior.swift:56", .flashTable, .flags([true]), "warrior"),
+        W("World/Enemies/Warrior.swift:77", .mirrored, .flags([false, true]), "warrior"),
         W("World/Enemies/Dillo.swift:70", .mode, .words([0x1000b]), "dillo"),
         W("World/Enemies/Dillo.swift:92", .mirrored, .flags([false, true]), "dillo"),
         W("World/Enemies/Dillo.swift:162", .mirrored, .flags([false]), "dillo"),
@@ -380,8 +384,8 @@ final class DrawModeAuditTests: XCTestCase {
           pins: ["flash: 0xc", "flash: 8", "flash: 10"]),
         W("Player/Player.swift:126", .mirrored, .flags([false, true]), "player"),
         W("Player/Player.swift:332", .mirrored, .flags([false, true]), "player"),
-        W("Player/Player.swift:873", .mode, .words([0x10008, 0x10009]), "player", at: ["872"]),
-        W("Player/Player.swift:878", .mode, .words([0xb0005, 0xb0001]), "player", at: ["876"]),
+        W("Player/Player.swift:881", .mode, .words([0x10008, 0x10009]), "player", at: ["880"]),
+        W("Player/Player.swift:886", .mode, .words([0xb0005, 0xb0001]), "player", at: ["884"]),
         W("Player/PlayerLiquids.swift:55", .flash, .range(0xd...0xd), "player"),
         W("Player/PlayerLiquids.swift:78", .flash, .range(0x12...0x12), "player"),
         W("Player/PlayerState.swift:280", .mirrored, .copy, "player.shadowRing"),
@@ -420,11 +424,11 @@ final class DrawModeAuditTests: XCTestCase {
         W("Shots/PlayerShot.swift:474", .mode, .words([0x10004]), "shot.gravity"),        // the seed (gravity 0xfa)
         W("Shots/PlayerShotHits.swift:109", .mode, .words([0x10004]), "shot.gravity"),    // the seed
         W("Shots/PlayerShotHits.swift:221", .flash, .range(10...10), "box"),
-        W("Sprites/SetupFaces.swift:396", .mirrored, .flags([true]), "background.plant"),
-        W("Sprites/SetupFaces.swift:397", .mode, .placedTint(0xa8c...0xaef), "background.plant",
+        W("Sprites/SetupFaces.swift:405", .mirrored, .flags([true]), "background.plant"),
+        W("Sprites/SetupFaces.swift:406", .mode, .placedTint(0xa8c...0xaef), "background.plant",
           pins: ["if p.p2 != 0 { s.mode = UInt32(truncatingIfNeeded: Int(p.p2) + 0x10000) }"]),
-        W("Sprites/SetupFaces.swift:454", .mode, .words([0x90000]), "box.teleporter"),
-        W("Sprites/SetupFaces.swift:476", .mode, .words([0x90000]), "box.chest"),
+        W("Sprites/SetupFaces.swift:463", .mode, .words([0x90000]), "box.teleporter"),
+        W("Sprites/SetupFaces.swift:485", .mode, .words([0x90000]), "box.chest"),
         W("Sprites/SpriteSlot.swift:602", .mode, .words([0]), "platform.raft", "box.boulder", "background.maceBall",
           "chain.maceChain"),
         W("Sprites/SpriteSlot.swift:604", .mode, .levelLight, "platform.raft", "box.boulder", "background.maceBall",
@@ -1443,8 +1447,6 @@ final class DrawModeAuditTests: XCTestCase {
     /// Every `throw` in `Sources/FerazelCore` — what `LevelRun.tick` (and `FrameRenderer`'s Core calls, the CLUT and
     /// level loads) can propagate out of a level frame — with the reason it is not reached on a built level.
     static let coreRefusals: [Refusal] = [
-        R("Camera/Camera.swift", "Error.arenaBound", 1, .headerZero, [.headerCamera],
-          "header `arenaBound` = 0 on every built level"),
         R("Camera/Camera.swift", "Error.autoScroll", 1, .headerZero, [.headerCamera],
           "header `autoScrollEnable` = 0 on every built level"),
         R("Color/ColorLUT.swift", "ColorLUTError.truncated", 2, .loadsClean, [.levelsLoad, .levelClut],
@@ -1589,13 +1591,15 @@ final class DrawModeAuditTests: XCTestCase {
             // sprite `AxGoblin.arm` runs for, a Walker 0x6d6 (`Walker.handle`'s exact-type arm), never on a Box.
             // BA: the 1850 family's background flag (`.SetupBatSprite` 0 / 1 by the record p1 sign, M l. 68263–68275) —
             // on Bat sprites only, never negative. DL: the Dillo's right patrol bound (`.SetupDilloSprite` M l. 72363–72368) — on
-            // Dillo sprites only.
+            // Dillo sprites only. LV5: the Warrior's right patrol bound (`.SetupWarriorSprite` M l. 73061) — on Warrior
+            // sprites only.
             XCTAssertEqual(writes.filter { !$0.hasPrefix("World/Enemies/AxGoblin.swift ") }.sorted(),
                            ["Shots/PlayerShot.swift s.stepX = sx",
                             "World/Enemies/Bat.swift s.classWord160 = 0",
                             "World/Enemies/Bat.swift s.classWord160 = 1",
                             "World/Enemies/Dillo.swift s.classWord160 = x + w",
                             "World/Enemies/EnemyShot.swift u.classWord160 = 1",
+                            "World/Enemies/Warrior.swift s.classWord160 = x + 0x15e",
                             "World/Movers/BoxSprite.swift s.classWord160 &+= 1"], "\(c): +0x160 writers")
             let axCallers = core.filter { Self.has($0.code, "AxGoblin.") }.map { "\($0.file) \(Self.trim($0.code))" }
             XCTAssertEqual(axCallers, ["World/Enemies/Walker.swift case axGoblin: AxGoblin.arm(w, id: id)"],
@@ -1984,8 +1988,9 @@ final class DrawModeAuditTests: XCTestCase {
                 XCTAssertEqual(Array(flow[(t + 1)...].prefix(2)), ["} catch {", "levelFailed = true"], "\(c)")
             }
         case .headerCamera:
+            // LV5: the arena bounds are built (`BossArena`; level 5's hdr 0x2724 is −1444) — `Error.arenaBound` is no
+            // longer thrown; auto-scroll stays refused.
             for a in audits {
-                XCTAssertEqual(a.level.file.header.arenaBound, 0, "\(c): \(a.level.number)")
                 XCTAssertEqual(a.level.file.header.autoScrollEnable, 0, "\(c): \(a.level.number)")
             }
         case .coreNotNamed(let type):

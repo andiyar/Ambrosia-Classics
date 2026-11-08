@@ -24,7 +24,7 @@ import Foundation
 /// 14 power-up `.TickTock`s (PU); 0610/0614              35 oxygen, drowning, bubbles (P4)
 /// 15 `+0x116` copy, water-pass flag, near-surface         36 teleporter charge, blink, power-up tint (P3)
 /// 16 spirit form (MS)                                     37 level side push hdr+0x272c
-/// 17 liquid damage / heal (P4)                           38 `.PlayerConstraints` (map, glider; arena later)
+/// 17 liquid damage / heal (P4)                           38 `.PlayerConstraints` (map, glider, arena)
 /// 18 countdowns 06d8 / 06cc, see-saw flag                 39 pixel / centre positions; look-ahead + `.PlayerScroll`
 /// 19 pre-move `.SeparateFromTiles2` (plan row 13)            (`PlayerScroll`, P5)
 /// 20 hot rect, ground latch, catapult, impact            40 end `.SeparateFromTiles2` (water pass; plan row 35),
@@ -771,9 +771,9 @@ public enum Player {
     /// - y: y < −128 → y = −128, `+0x1c = y << 8`, then vy < −0x100 → vy = 0 (raw `1004cbb8..1004cbe8`).
     /// - on the glider `*_DAT_100a05e0`: vy < −0x9c4 → vy = −0x9c4 (raw `1004cbec..1004cc0c`).
     /// - the boss-arena lock (hdr `+0x2724` ≠ 0 ∧ `*_DAT_1009fed0` "no boss alive" = 0; raw `1004cc10..1004cd8c`,
-    ///   bosses §1.3: the lock line |v ± 60|, the pan counter `_DAT_1009ff9c = −40`, the lock `PTR_DAT_1009fed4`).
-    ///   // later: Phase 6 (bosses) — `fed0`/`fed4`/`ff9c` have no writer or reader yet (no boss Setup clears
-    ///   `fed0`, `.SetupLevelSprites` sets it 1, so the arm cannot fire), and `Camera` refuses hdr `0x2724` ≠ 0.
+    ///   bosses §1.3: the lock line |v ± 60|, the pan counter `_DAT_1009ff9c = −40`, the lock `PTR_DAT_1009fed4`) —
+    ///   LV5, `BossArena.playerConstraints` on the world's `arena`: x read after the map clamp (`lha +0xc`), a clamp
+    ///   stores x and `+0x14 = x << 8`. Level 5 (v −1444): x < 1384 locks, x > 1384 once locked → 1384.
     /// - the auto-scroll death (`*_DAT_1009fec4` ∧ mode `_DAT_1009fec0` 1–4 with the player past the scroll point
     ///   `PTR_DAT_1009fe78` −0x40 / +0x2a0 / −100 / +0x1c0 → G+6 = G+4 = 0, `+0xa4` = 0, `*_DAT_100a0568` =
     ///   `*_DAT_100a0564` = 1; raw `1004cd90..1004ce60`). // later: auto-scroll levels — `Camera` refuses hdr
@@ -801,7 +801,15 @@ public enum Player {
             }
             if glider && p.vy < -0x9c4 { p.vy = -0x9c4 }
         }
-        // The arena lock and the auto-scroll death: see above. // later: Phase 6 (arena), auto-scroll levels
+        // The arena lock (LV5): see above.
+        if let p = w.active.record(id: id),
+           let cx = w.arena.playerConstraints(arenaBound: w.level.header.arenaBound, x: Int16(truncatingIfNeeded: p.x)) {
+            w.active.update(id: id) { p in
+                p.x = Int(cx)
+                p.x256 = Int32(cx) << 8
+            }
+        }
+        // The auto-scroll death: see above. // later: auto-scroll levels
     }
 
     /// Row 39 (l. 46367–46392): `+8 = +0xc = fe68 = (i16)(x256 >> 8)`, `+6 = +0xa = fe64`; the centre

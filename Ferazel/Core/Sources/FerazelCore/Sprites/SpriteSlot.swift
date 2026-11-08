@@ -703,6 +703,7 @@ public enum SpriteHandler: Equatable, Hashable, Sendable {
         case .gremlin: return .gremlin      // GF: the Gremlin 1770…1779 (every part, the back layer and rider too)
         case .floater: return .floater      // GF: the Floater (the Wraith) 1780…1799
         case .dillo: return .dillo          // DL: the Dillo 1870…1879
+        case .warrior: return .warrior      // LV5: the Warrior 1820…1829 (◇ Handle, `Warrior.handle`)
         default: return .inert
         }
     }

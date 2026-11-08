@@ -74,7 +74,7 @@ public enum EnemyCommon {
         case .frog, .salamander: break                  // the session dispatches `FrogSalamander` (FR)
         case .blob, .deadBlob, .crab, .crabSegment: break   // the session dispatches `BlobCrab` (BL)
         case .geyserSegment: break                      // the session dispatches `Geyser.handleSegment` (GY)
-        case .warrior: break                            // later: LV5 ◇ — the Warrior stand-in (Ruling 3)
+        case .warrior: break                            // the session dispatches `Warrior.handle` (LV5 ◇)
         default: break
         }
     }
@@ -104,7 +104,7 @@ public enum EnemyCommon {
                 w.enemies.kill(&s, globals: &w.globals, level: w.levelIndex,
                                forGood: EnemyCounting.killsForGood(killer))
             }
-            // `.KillWalker` is the count alone (WK1). // later: LV5 — the Warrior's Kill tail
+            // `.KillWalker` is the count alone (WK1). // later: Phase 6 — `.KillWarrior`'s tail (M l. 73486–73493)
         case .gremlin:
             // `.KillGremlinSprite` (GF): `+0xe9 ≠ 0` → return (M l. 69736–69738, raw 100810e0 bnelr); the count, score
             // + 2000, the back layer and a mounted rider killed, the rider's backlink cleared.

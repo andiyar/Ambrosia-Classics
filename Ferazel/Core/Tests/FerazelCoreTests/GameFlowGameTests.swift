@@ -245,9 +245,9 @@ final class GameFlowGameTests: XCTestCase {
         XCTAssertEqual(rig2.flow.levelNumber, 1)
         XCTAssertEqual(rig2.levels.prepared, [1])
         // The hidden `FerazelLevel` switch starts at its level (∈ BuiltLevels) instead, Option or not; a level outside
-        // BuiltLevels (5 and 0) starts level 1 (LV4: level 4 is built).
-        XCTAssertEqual(BuiltLevels.range, 1...4)
-        for (start, option, expected) in [(2, true, 2), (4, false, 4), (5, false, 1), (0, false, 1)] {
+        // BuiltLevels (6 and 0) starts level 1 (LV4: level 4 is built; LV5: level 5 is built, 6 is the first outside).
+        XCTAssertEqual(BuiltLevels.range, 1...5)
+        for (start, option, expected) in [(2, true, 2), (4, false, 4), (5, false, 5), (6, false, 1), (0, false, 1)] {
             let rig3 = Rig(r, startLevel: start)
             rig3.toMenu()
             let keys = option ? [0x2d, 0x3a] : [0x2d]
@@ -481,8 +481,9 @@ final class GameFlowGameTests: XCTestCase {
         XCTAssertEqual(flow.exit2, -1)
         XCTAssertEqual(rig.levels.prepared, [1, 2])
         // Level 2's exit p1 2 (record 98) → the map → the auto-walk to node 4 → Return → level 4 (LV4: built); its exit
-        // p1 1 (record 71) → the auto-walk to node 5 → Return → the "not built yet" report (the only invented text,
-        // D35), still on the map, nothing new unlocked.
+        // p1 1 (record 71) → the auto-walk to node 5 → Return → level 5 (LV5: built); its exit p1 1 (record 26, beyond
+        // the gate) → the auto-walk to node 10 → Return → the "not built yet" report (the only invented text, D35),
+        // still on the map, nothing new unlocked.
         try touchExit(s2, record: 98)
         rig.drive { self.onIdleMap($0) }
         let m4 = try XCTUnwrap(flow.worldMap)
@@ -493,13 +494,21 @@ final class GameFlowGameTests: XCTestCase {
         XCTAssertEqual(rig.levels.prepared, [1, 2, 4])
         try touchExit(try XCTUnwrap(flow.levelRun?.session), record: 71)
         rig.drive { self.onIdleMap($0) }
+        let m5 = try XCTUnwrap(flow.worldMap)
+        XCTAssertEqual(m5.cur, try XCTUnwrap(m5.map.findCurrNode(level: 5)).index)
+        rig.drive(input: { f in FrontInput(keys: KeyState(pressed: f.worldMap?.result == nil ? [0x24] : [])) }) {
+            self.isRunning($0, level: 5)
+        }
+        XCTAssertEqual(rig.levels.prepared, [1, 2, 4, 5])
+        try touchExit(try XCTUnwrap(flow.levelRun?.session), record: 26)
+        rig.drive { self.onIdleMap($0) }
         let m2 = try XCTUnwrap(flow.worldMap)
-        XCTAssertEqual(m2.cur, try XCTUnwrap(m2.map.findCurrNode(level: 5)).index)
+        XCTAssertEqual(m2.cur, try XCTUnwrap(m2.map.findCurrNode(level: 10)).index)
         let unlocked = m2.globals.unlocked
         let ask = rig.drive(input: { f in FrontInput(keys: KeyState(pressed: f.worldMap?.result == nil ? [0x24] : [])) }) {
             _ in self.asked(rig.last)
         }
-        XCTAssertEqual(dialogs(ask).last, .report(text: "Level 5 is not built yet (Phases 5-6)."))
+        XCTAssertEqual(dialogs(ask).last, .report(text: "Level 10 is not built yet (Phase 6)."))
         XCTAssertNil(flow.levelRun)
         flow.dialogDone(.ok)
         rig.drive { self.onIdleMap($0) }
@@ -507,7 +516,7 @@ final class GameFlowGameTests: XCTestCase {
         XCTAssertFalse(m3 === m2)
         XCTAssertEqual(m3.cur, m2.cur)
         XCTAssertEqual(m3.globals.unlocked, unlocked)
-        XCTAssertEqual(rig.levels.prepared, [1, 2, 4])
+        XCTAssertEqual(rig.levels.prepared, [1, 2, 4, 5])
         XCTAssertEqual(flow.state, .newGame)
     }
 
@@ -712,15 +721,14 @@ final class GameFlowGameTests: XCTestCase {
         var all = try checkpoint(r, level: 80)
         all.preview = 1
         all.demo = 1
-        let seven = try checkpoint(r, level: 5)                            // an original full-game save, not built yet
+        let seven = try checkpoint(r, level: 5)                            // an original full-game save (LV5: built)
         rig.files.blocks = [url("preview"): preview, url("demo"): demo, url("eighty"): eighty, url("both"): both,
                             url("previewDemo"): previewDemo, url("all"): all, url("seven"): seven]
         let previewText = "Sorry, this saved game was saved with a preview version of Ferazel and can not be used with this version."
         let demoText = "Sorry, this saved game was saved with a demo version of Ferazel and can not be used with this version."
         for (name, expected) in [("preview", [previewText]), ("demo", [demoText]), ("eighty", [demoText]),
                                  ("both", [demoText, demoText]), ("previewDemo", [previewText, demoText]),
-                                 ("all", [previewText, demoText, demoText]),
-                                 ("seven", [BuiltLevels.notBuiltReport(5)])] {
+                                 ("all", [previewText, demoText, demoText])] {
             rig.press(0x0f)                                                // R
             let ask = rig.drive { _ in self.askedFile(rig.last) }
             XCTAssertEqual(ask.last?.out.requests.last,
@@ -757,6 +765,15 @@ final class GameFlowGameTests: XCTestCase {
         flow.dialogDone(.ok)
         rig.drive { $0.state == .mainMenu }
         XCTAssertNil(flow.levelRun)
+        // LV5: the "seven" save (level 5, an original full-game save) no longer meets the not-built report — level 5 is
+        // in `BuiltLevels`, so `.ContinueGame` enters it, nothing asked.
+        rig.press(0x0f)                                                    // R
+        rig.drive { _ in self.askedFile(rig.last) }
+        flow.fileDone(.chosen(SavedGameRef(url: url("seven"), displayName: "seven")))
+        let seven5 = rig.drive { self.isRunning($0, level: 5, iterations: 1) }
+        XCTAssertEqual(dialogs(seven5), [])
+        XCTAssertEqual(flow.levelNumber, 5)
+        XCTAssertEqual(rig.levels.prepared, [5])
     }
 
     func testContinueFromCheckpoint() throws {

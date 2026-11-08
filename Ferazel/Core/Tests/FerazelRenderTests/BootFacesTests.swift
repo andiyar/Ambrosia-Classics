@@ -340,11 +340,14 @@ final class BootFacesTests: XCTestCase {
         // 0x5a2e3d4e64f7c1ee). BL (run 44) re-pinned L3 f30 / f120 (counts unchanged): the level-3 Blob rec 15 runs one
         // Handle at start then idles (BL, run 44); with the Blob Handle stubbed (switch-off check) every old value
         // returned — was f30 0x07212368c70e3f4a, f120 0x521fd141e046a4d6; now 0x56a7ccb0dd544488 / 0xc43bacea46d2ff94.
+        // LV5 added level 5 (`BuiltLevels` 1...5): its three rows are new pins, measured with the boot faces in place
+        // (level 5 was not built before b535527 — no earlier value exists); levels 1–4 are untouched.
         let pinned: [String: (rows: Int, fnv: UInt64)] = [
             "L1 init": (190, 0x157d6742ce800e1f), "L1 f30": (240, 0x8190d7eb68896260), "L1 f120": (240, 0xcda33ae9706a4618),
             "L2 init": (229, 0x8fb8d314f8d35783), "L2 f30": (278, 0x7e9c0511f07e745d), "L2 f120": (278, 0x35c9c2eb3280e4b0),
             "L3 init": (234, 0x9ee49e49aaa668a4), "L3 f30": (310, 0x56a7ccb0dd544488), "L3 f120": (310, 0xc43bacea46d2ff94),
             "L4 init": (264, 0x1d9360dec485c68b), "L4 f30": (342, 0x96ede8588083992a), "L4 f120": (342, 0xc6e32956a351c41f),
+            "L5 init": (46, 0xb039da66a884cb8a), "L5 f30": (55, 0x69068d5e8151b0cc), "L5 f120": (55, 0xb9f08ee19927f3e7),
         ]
         func rect(_ x: IdleSprites.Rect) -> String { "(\(x.top),\(x.left),\(x.bottom),\(x.right))" }
         func emitter(_ f: ParticleFace?) -> String {
@@ -353,7 +356,7 @@ final class BootFacesTests: XCTestCase {
             return String(Self.fnv(words + f.tokens), radix: 16)
         }
         var measured: [String: (rows: Int, fnv: UInt64)] = [:]
-        for level in 1...4 {
+        for level in 1...5 {
             let r = try FrameRenderer(resources: res, level: level, search: ColorSearch(model: .ruled, tieBreak: .lowest),
                                       dither: .errorDiffusion, text: StatusBarTests.BoxRasterizer(), prefs: FerazelPrefs())
             let faces = r.particleFaces

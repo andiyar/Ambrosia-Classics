@@ -11,16 +11,17 @@ import Foundation
 /// auto-scroll modes 1–2 (refused here), or the one-shot `*_DAT_1009fd34` is set — which this test clears (P5); each axis
 /// eases by `max(Δ / 6, 1)` (`* 0x2aaaaaab >> 32`, truncating); the scroll point takes the eased pair (no auto-scroll);
 /// graphics 2 / 3 (prefs+2) force an even v; then `0 ≤ h ≤ 32·W − 0x280`, `0 ≤ v ≤ 32·H − 0x180` (`hdr+0xb280` /
-/// `+0xb282`). The boss-arena bounds (hdr 0x2724 / 0x272e) and auto-scroll (0x272a) are not built: a level with an
-/// arena bound or auto-scroll is refused (`_DAT_1009ff9c` is the arena's). EF: the shake `_DAT_1009ffa0` (`shake`),
-/// applied to the scroll point's v before the even-v rule.
+/// `+0xb282`). LV5: the boss-arena bounds (hdr 0x2724 / 0x272e, `BossArena.cameraBounds`, M l. 5937–6028) clamp the
+/// scroll point's h before the map clamp (M l. 6168–6173). Auto-scroll (0x272a) is not built: a level with auto-scroll
+/// is refused. EF: the shake `_DAT_1009ffa0` (`shake`), applied to the scroll point's v before the even-v rule.
 /// `.MTHandlePxSprites`, called at the end, is the caller's (level 1 has no strip).
 ///
 /// Start (`.GameLoop` l. 5168–5195): the eased pair and the scroll point are set to the sprite origin − 0xd0
 /// (x − 208, y − 208), so the view pans in from there.
 public struct Camera: Equatable, Sendable {
     public enum Error: Swift.Error, Equatable {
-        /// hdr 0x2724 ≠ 0: the boss-arena bounds (not built in Phase 1).
+        /// hdr 0x2724 ≠ 0: the boss-arena bounds — refused until LV5 built them; no longer thrown (the case is kept,
+        /// Invariant 9).
         case arenaBound(Int16)
         /// hdr 0x272a ≠ 0: auto-scroll (not built in Phase 1).
         case autoScroll(Int16)
@@ -36,6 +37,9 @@ public struct Camera: Equatable, Sendable {
     /// `32·W − 0x280`, `32·H − 0x180`.
     public let maxH: Int
     public let maxV: Int
+    /// LV5: hdr 0x2724 / 0x272e, the arena bounds `BossArena.cameraBounds` reads.
+    public let arenaBound: Int16
+    public let secondArenaBound: Int16
     /// `_DAT_1009fd84 + 2` / `_DAT_1009fd84`.
     public private(set) var h: Int
     public private(set) var v: Int
@@ -43,19 +47,20 @@ public struct Camera: Equatable, Sendable {
     public private(set) var scrollH: Int
     public private(set) var scrollV: Int
     /// EF: `*_DAT_1009ffa0`, the screen shake (engine §5). Zeroed by `.InitGameGlobals` (M l. 821) and by nothing else;
-    /// writers set it (the seed explosion 0x14, M l. 51150 // later: SH; the bosses 0x1e / 0x16, M l. 73488…77475
-    /// // later: Phase 6); `FindUpperLeftCorner` counts it down (M l. 6161). A shake still running at a level end runs on
+    /// writers set it (the seed explosion 0x14, M l. 51150 — built, `SpriteWorld.shakeStore`; the bosses 0x1e / 0x16,
+    /// M l. 73488…77475 // later: Phase 6); `FindUpperLeftCorner` counts it down (M l. 6161). A shake still running at a level end runs on
     /// into the next level (`LevelCarry.shake`, EF review fix); the flow zeroes it in `GameFlow.initGameGlobals`.
     public var shake: Int16 = 0
 
     /// The camera `.GameLoop` sets up for a sprite origin (x, y) = (hdr 0x2848 − 0x20, hdr 0x2846 − 0x20).
     public init(header: LevelHeader, spriteX: Int, spriteY: Int) throws {
-        guard header.arenaBound == 0 else { throw Error.arenaBound(header.arenaBound) }
         guard header.autoScrollEnable == 0 else { throw Error.autoScroll(header.autoScrollEnable) }
         offsetX = Int(header.cameraOffsetX)
         offsetY = Int(header.cameraOffsetY)
         maxH = Int(header.gridWidth) * 0x20 - 0x280
         maxV = Int(header.gridHeight) * 0x20 - 0x180
+        arenaBound = header.arenaBound
+        secondArenaBound = header.secondArenaBound
         h = spriteX - 0xd0
         v = spriteY - 0xd0
         scrollH = h
@@ -79,6 +84,20 @@ public struct Camera: Equatable, Sendable {
                                              ridingVeto: Bool = false, inWater: Bool = false, latch: Bool = false,
                                              counter: UInt32 = 0, reduceFrameRate: Bool = false,
                                              graphics: Int16 = 1) -> Bool {
+        var none = BossArena()
+        return findUpperLeftCorner(focusX: focusX, focusY: focusY, playerVX: playerVX, snapArmed: snapArmed,
+                                   ridingVeto: ridingVeto, inWater: inWater, latch: latch, counter: counter,
+                                   reduceFrameRate: reduceFrameRate, graphics: graphics, arena: &none)
+    }
+
+    /// LV5: the call with the arena globals (`BossArena`): the bounds and the pan step first (M l. 5937–6028), the clamp
+    /// of the scroll point's h to them after the even-v rule (M l. 6168–6173).
+    @discardableResult
+    public mutating func findUpperLeftCorner(focusX: Int, focusY: Int, playerVX: Int = 0, snapArmed: Bool = true,
+                                             ridingVeto: Bool = false, inWater: Bool = false, latch: Bool = false,
+                                             counter: UInt32 = 0, reduceFrameRate: Bool = false,
+                                             graphics: Int16 = 1, arena: inout BossArena) -> Bool {
+        let (lo, hi) = arena.cameraBounds(arenaBound: arenaBound, secondBound: secondArenaBound)
         var tx = Int(Int16(truncatingIfNeeded: focusX - Self.focusOffsetX + offsetX))
         let ty = Int(Int16(truncatingIfNeeded: focusY - Self.focusOffsetY + offsetY))
         var latchOut = latch
@@ -103,9 +122,9 @@ public struct Camera: Equatable, Sendable {
         if graphics == 3 || graphics == 2 {
             scrollV = (scrollV >> 1) << 1
         }
-        // Arena bounds (−32000 / 32000 without an arena): h < −32000 → −32000; h > 32000 − 0x260 → that.
-        if scrollH < -32000 { scrollH = -32000 }
-        if scrollH > 32000 - 0x260 { scrollH = 32000 - 0x260 }
+        // Arena bounds (−32000 / 32000 without an arena): h < lo → lo; h > hi − 0x260 → that (i16 store).
+        if scrollH < Int(lo) { scrollH = Int(lo) }
+        if Int(hi) - 0x260 < scrollH { scrollH = Int(Int16(truncatingIfNeeded: Int(hi) - 0x260)) }
         if scrollH < 0 {
             scrollH = 0
         } else if scrollH > maxH {

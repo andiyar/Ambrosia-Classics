@@ -753,7 +753,7 @@ public enum BoxSprite {
 
     /// The gate arm 0xb7c / 0xb7d (M l. 61016–61064; raw `1006f4e0..1006f6f0`; pickups-boxes §2.4.4,
     /// triggers-background §1): `+0x183 = 0` (no reader, not kept); open from the live record's p1 — p1 ≥ 0: record
-    /// [p1]'s p4 == 1 (an index outside the table reads as 0); −1: `*_DAT_1009fed0 == 1` (`SpriteWorld.bossFlag`); −2: the
+    /// [p1]'s p4 == 1 (an index outside the table reads as 0); −1: `*_DAT_1009fed0 == 1` (`BossArena.noBossAlive`); −2: the
     /// countdown `iRam100a5110` > −20 (`SpriteWorld.countdown`; the decompile's `(t < 0xffffffed) − (~(t ^ 0xffffffec) >>
     /// 31) & 1` is the signed t ≥ −19); any other negative p1 leaves r19 as the function found it — no write of r19 lies
     /// on the gate's path from the entry (raw `1006d878..1006f4d8`), `.MTHandleSprites` and `.HandleSprites` keep it,
@@ -771,7 +771,7 @@ public enum BoxSprite {
         var open: Bool
         switch p1 {
         case 0...: open = liveRecord(w, p1)?.p4 == 1
-        case -1: open = w.bossFlag == 1
+        case -1: open = w.arena.noBossAlive == 1
         case -2: open = -20 < w.countdown
         default: open = w.paintDraw                    // r19 as found: `.PaintFrameWrap`'s param_1 (see the doc)
         }

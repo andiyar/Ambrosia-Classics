@@ -5,9 +5,9 @@ import HectorResources
 
 /// OX (docs/superpowers/plans/2026-11-04-ferazel-remainder.md, wave 3): OmniPx modes 2 / 4 / 5 — level 5's moving
 /// backdrop (rendering-omnipx-titles §1, §3.1–§3.5; M l. 13019–13547). Core's `OmniPx` (`.SetupOmniPx`,
-/// `.TurnOnOmniPx`, `.UpdateOmniPx`) and the renderer's 128×128 port as PxBack slot 0. Level 5 is not in `BuiltLevels`
-/// yet (its arena bound refuses a session until LV5): it is loaded directly, as the audit loads headers. A missing data
-/// file is a FAILURE, never a skip.
+/// `.TurnOnOmniPx`, `.UpdateOmniPx`) and the renderer's 128×128 port as PxBack slot 0. Level 5 was not in
+/// `BuiltLevels` at OX (its arena bound refused a session until LV5): it is loaded directly, as the audit loads
+/// headers. A missing data file is a FAILURE, never a skip.
 final class OmniPxTests: XCTestCase {
     nonisolated(unsafe) private static let resources = Result { try FerazelData.open(try FerazelData.dataDirectory()) }
 
@@ -222,9 +222,10 @@ final class OmniPxTests: XCTestCase {
         XCTAssertEqual(o.counter, 9, "turning off and killing leave c")
     }
 
-    /// A level-5 `FrameRenderer` with its tint table built. Level 5's placements of six types have no transcribed Setup
-    /// until LV5 (the Warrior 1820; 2822, 2826, 2829, 2840, 2841), so it is built with exactly those switched off (their
-    /// records' flag byte 0) — the backdrop reads no placement. The audit's OmniPx row builds the same renderer.
+    /// A level-5 `FrameRenderer` with its tint table built. Level 5's placements of six types had no transcribed Setup
+    /// until LV5 (the Warrior 1820; 2822, 2826, 2829, 2840, 2841), so it was built with exactly those switched off
+    /// (their records' flag byte 0) — the backdrop reads no placement. LV5: every record sets up, nothing is switched
+    /// off. The audit's OmniPx row builds the same renderer.
     static func level5Renderer() throws -> (renderer: FrameRenderer, resources: FerazelResources) {
         let data = try resources.get()
         let mlvl = try XCTUnwrap(data.world.resource(type: "Mlvl", id: 5))
@@ -237,7 +238,7 @@ final class OmniPxTests: XCTestCase {
             bytes[bytes.startIndex + 4 + 16 * p.index] = 0
             off.append(p.type)
         }
-        XCTAssertEqual(Set(off), [1820, 2822, 2826, 2829, 2840, 2841], "only the untranscribed types are switched off")
+        XCTAssertEqual(off, [], "LV5: every level-5 record sets up — nothing switched off")
         var world = data.world
         world.add(Resource(type: "Mlvl", id: 5, name: mlvl.name, data: bytes))
         let res = FerazelResources(app: data.app, world: world, backgrounds: data.backgrounds, sprites: data.sprites,
