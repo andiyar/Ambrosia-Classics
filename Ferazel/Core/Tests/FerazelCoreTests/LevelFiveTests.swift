@@ -56,6 +56,14 @@ final class LevelFiveTests: XCTestCase {
         var rolls: Set<Bool> = []
         for seed: Int32 in 1...40 { var g = FastRand(seed: seed); _ = g.next(10); rolls.insert(50 < g.next(100)) }
         XCTAssertEqual(rolls, [false, true], "the seeds above cover both facings")
+        // The boundary: a roll of exactly 51 faces right (`+0x17e` 1), exactly 50 does not.
+        for want: Int32 in [51, 50] {
+            let seed = try XCTUnwrap((Int32(1)...20000).first { k in
+                var g = FastRand(seed: k); _ = g.next(10); return g.next(100) == want
+            }, "a seed rolling \(want)")
+            var rng = FastRand(seed: seed)
+            XCTAssertEqual(try SetupFaces.setup(w, context: c, rng: &rng).slot.mirrored, want == 51, "roll \(want)")
+        }
         let e = try SetupFaces.setup(w, context: c)
         let s = e.slot
         XCTAssertEqual(e.record.p2, 0x96, "p2 written back 0 → 0x96 (M l. 73056–73059)")
@@ -122,6 +130,21 @@ final class LevelFiveTests: XCTestCase {
         let bars = cache.load(needed: needed)
         XCTAssertEqual(bars.map { $0.0 }, [37, 45, 51] + Array(52...58))
         XCTAssertEqual(Set(bars.map { $0.1 }), [58])
+        // The registration order (`.InitSprites` M l. 106–145: …, Crab, Dillo, Warrior, Wizard, …, Floater, …): the
+        // Warrior's three sets (`.InitWarriorSprite` M l. 72982–72984) right after the Dillo's last (0x751) and before
+        // the Floater's first (0x6f4).
+        let picts = CachedFaces.sets.map(\.pict)
+        let dillo = try XCTUnwrap(picts.firstIndex(of: 0x751))
+        XCTAssertEqual(Array(picts[dillo...dillo + 4]), [0x751, 0x71c, 0x71d, 0x71e, 0x6f4])
+        XCTAssertEqual(CachedFaces.sets[dillo + 1...dillo + 3].map(\.faces), [8, 8, 6])
+
+        // The Warrior hurts on contact: `.HitPlayerSprite` step 7, the generic path — 0x70 damage, invulnerability 60.
+        let pid = try XCTUnwrap(session.world.playerID)
+        let wid = try XCTUnwrap(session.world.active.sprites.first { $0.type == 1820 }?.id)
+        session.world.active.update(id: pid) { p in p.hp = 0x300; p.invulnerable = 0 }
+        HitPlayerSprite.hit(session.world, player: pid, other: wid)
+        let hurt = try player(session)
+        XCTAssertEqual([hurt.hp, hurt.invulnerable], [0x300 - 0x70, 0x3c], "the Warrior's contact damage")
     }
 
     func testArenaLocksAtX1384() throws {
@@ -273,6 +296,13 @@ final class LevelFiveTests: XCTestCase {
         rig.drive { _ in run.music.asyncDone }
         XCTAssertEqual(Int(run.music.volume), full, "track 30 faded in")
         XCTAssertEqual(rig.plays, [23, 30], "the rule stops at track 30")
+        // The rule's "track ≠ 0x1e" test holds it there: 80 more frames (longer than a 60-frame fade-out and the
+        // restart after it) and track 30 is not played again.
+        let settled = run.iterations
+        rig.drive { _ in run.iterations >= settled + 80 }
+        XCTAssertEqual(rig.plays, [23, 30], "track 30 is not re-played")
+        XCTAssertEqual(run.music.currentTrack, 30)
+        XCTAssertEqual(Int(run.music.volume), full)
 
         // (3) The level start with `fed0` = 1 (a visit where no Warrior clears it) picks track 30: set it after the
         // session is built (`.SetupLevel`) and before `.GameLoop`'s music store (M l. 5218–5221).
@@ -305,6 +335,18 @@ final class LevelFiveTests: XCTestCase {
         XCTAssertEqual(turnOns.count, 1)
         let firstRedraw = rig.draws.firstIndex { if case .redrawEntireScrollGrid = $0 { true } else { false } }
         XCTAssertLessThan(try XCTUnwrap(turnOns.first), try XCTUnwrap(firstRedraw))
+        // … and between the load bars as `.SetupLevel` runs them: `.LoadCachedSpriteFaces`' last bar (its 100 %, M l.
+        // 73864; M l. 2537), then `.SetupOmniPx(0)` (M l. 2540), then `.SetupLevel`'s own 100 % (M l. 2569) — the last
+        // load bar of the level start.
+        let full = try XCTUnwrap(StageScreens.updateStageLoad(100, of: 100).draws.first)
+        let bars = rig.draws.indices.filter { k in
+            if case .fillRect(left: 0xac, top: 0xd5, right: _, bottom: 0xe0, rgb: _) = rig.draws[k] { true } else { false }
+        }
+        let on = try XCTUnwrap(turnOns.first), lastBar = try XCTUnwrap(bars.last)
+        XCTAssertEqual(lastBar, on + 1, "M l. 2569's bar is the one draw after the turn-on, and the last bar")
+        XCTAssertEqual([rig.draws[on - 1], rig.draws[lastBar]], [full, full])
+        XCTAssertEqual(bars.filter { $0 < on }.last, on - 1, "the cache's last bar right before the turn-on")
+        XCTAssertLessThan(lastBar, try XCTUnwrap(firstRedraw))
         let drawn = run.lastSteps.filter(\.drawn)
         XCTAssertFalse(drawn.isEmpty)
         for ops in drawn {
@@ -315,6 +357,9 @@ final class LevelFiveTests: XCTestCase {
         // (Phase 6)." and no level run; the level's end turned OmniPx off and killed it, and its counter runs on.
         let exit = try LevelFile.load(from: r, level: 5).placements[26]
         XCTAssertEqual([exit.type, exit.p1, exit.x], [3249, 1, -93])
+        // The pan counter `_DAT_1009ff9c` runs on across the level exit (only `.InitGameGlobals` zeroes it, M l. 806):
+        // armed far below 0 here, still counting up when the level ends.
+        s.world.arena.panCounter = -1000
         try rig.exit(26, toNode: 10)
         XCTAssertEqual(rig.asked.last, .report(text: "Level 10 is not built yet (Phase 6)."))
         XCTAssertNil(rig.flow.levelRun)
@@ -323,6 +368,14 @@ final class LevelFiveTests: XCTestCase {
         XCTAssertGreaterThan(s.omniPx.counter, 0)
         XCTAssertEqual(rig.flow.levelCarry.omniPxCounter, s.omniPx.counter)
         XCTAssertEqual(rig.levels.prepared, [5])
+        // The pan counter left at the exit is the flow's carry and the next level's session starts on it; New Game's
+        // `.InitGameGlobals` zeroes it (M l. 806, 822).
+        XCTAssertLessThan(s.world.arena.panCounter, 0)
+        XCTAssertEqual(rig.flow.levelCarry.panCounter, s.world.arena.panCounter)
+        let next = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: 5, carry: rig.flow.levelCarry)
+        XCTAssertEqual(next.world.arena.panCounter, s.world.arena.panCounter)
+        rig.flow.initGameGlobals()
+        XCTAssertEqual(rig.flow.levelCarry.panCounter, 0)
     }
 
     // MARK: - the flow

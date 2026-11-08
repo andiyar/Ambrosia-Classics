@@ -368,7 +368,7 @@ public enum PlayerStates {
             spiritTransition(w, id: id)
             return false
         }
-        // Boss grab (`_DAT_100a0570 > 0`, l. 45625–45672). // later: Phase 5 (Chief, Xichra; no Phase-2 writer)
+        // Boss grab (`_DAT_100a0570 > 0`, l. 45625–45672). // later: Phase 6 (Chief, Xichra; no Phase-2 writer)
         if 0 < w.player.bossGrab { return false }
 
         // Hurt-stun (`_DAT_100a0748 > 0`, l. 45673–45700): 1013 at 0,1,2,3,3,3,3,3,2,1, then the stun ends.

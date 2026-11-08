@@ -90,10 +90,18 @@ public enum Warrior {
     /// −10 facing left, right +10 facing right; M l. 73143–73150); then the decision state 6's head: the 0x71c set's
     /// face 0 and `+0xa6` > 0 → − 1 (M l. 73334–73337) — where the original, with the arena unlocked, returns (M l.
     /// 73338–73340). The stand-in stops there whatever the lock.
-    /// // later: Phase 6 — the boss-mode crates and wounded glow (M l. 73151–73212), the state machine (decide, walk,
-    /// run, attack with its shot 0x71f, dying), the death at HP < 1, gravity, the liquids and `.StandardSpriteCleanup`;
-    /// the Hit (`.HitWarriorSprite`) and Kill (`.KillWarrior`: thunder, shake 0x1e, flash 3, `*_DAT_1009fed0 = 1`)
-    /// bodies. Smiting may take its HP below 1 (`Smite.enemyHandlers` lists it): it stays standing.
+    /// It skips work the original does before that return, lock or not, while `+0x170` (the boss flag) is set (M l.
+    /// 73151–73212): the three falling rocks type 1075 (0x433, `.MTNewSprite` at the home x − 0xba / + 0x46 / + 0x146,
+    /// 400 / 500 / 400 px above it, layer 9; slots `+0x1d4` / `+0x1d8` / `+0x1dc`), each refilled once one is gone and
+    /// the 15-frame timer `+0x16c` runs out, and the wounded-glow timer `+0xf0` (the tint `+0xb8` at HP ≤ 1000, the
+    /// period 15 at HP ≤ 500, else 30).
+    /// The Hit `+0x5c` is stored but its body is a stand-in until Phase 6 — the original's `.HitWarriorSprite` (M l.
+    /// 73422ff) absorbs the player's shots with a sound (`.KillPlayerShot` + snd) while HP > 0 and bounces crates and
+    /// statues off it (`.PlatformBounce`; a falling one hurts it 200 and is killed).
+    /// // later: Phase 6 — the rocks and the glow above, the state machine (decide, walk, run, attack with its shot
+    /// 0x71f, dying), the death at HP < 1, gravity, the liquids and `.StandardSpriteCleanup`; the Hit and Kill
+    /// (`.KillWarrior`: thunder, shake 0x1e, flash 3, `*_DAT_1009fed0 = 1`) bodies. Smiting may take its HP below 1
+    /// (`Smite.enemyHandlers` lists it): it stays standing.
     public static func handle(world w: SpriteWorld, id: Int) {
         guard let s0 = w.active.record(id: id), !s0.dead, !s0.emerging else { return }
         w.standardSpriteHandles(id)

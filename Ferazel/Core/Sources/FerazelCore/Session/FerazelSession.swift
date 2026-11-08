@@ -250,9 +250,11 @@ public final class FerazelSession {
         world.idle = spawned.idle
         world.records = spawned.records                                  // the Setups' write-backs (W2a)
         // LV5: `.SetupLevelSprites`' `fed4 = 0`, `fed0 = 1` (M l. 2016–2019) and the Warrior's `fed0 = 0`; the pan
-        // counter `_DAT_1009ff9c` is the world's (fresh per session — see `BossArena`).
+        // counter `_DAT_1009ff9c` runs on from the previous level (`LevelCarry.panCounter`; only `.InitGameGlobals`
+        // zeroes it, M l. 806).
         world.arena.locked = spawned.arena.locked
         world.arena.noBossAlive = spawned.arena.noBossAlive
+        world.arena.panCounter = carry.panCounter
         // OX: `c` runs on (`LevelCarry.omniPxCounter`). `.SetupLevel`'s `G+0x174 = 0` and `.SetupOmniPx(0)` (M l.
         // 2539–2540) — inside `.SetupLevel`, so before the player `MTNewSprite` (`.GameLoop` M l. 5165 → 5181), hosted
         // or not (nothing `LevelRun.setupLevel` does after the session init reads OmniPx or the PxBack factors). The
@@ -996,6 +998,8 @@ public final class FerazelSession {
         ops.draws.append(statusBarInFrame(.loopIteration, keys: frameKeys))          // M l. 5280
         ops.drawn = draw
         odd.toggle()
+        // `.GameLoop`'s boss-music block reads "no boss alive" here, before `.UpdateSprites` (M l. 5266–5275).
+        noBossAliveAtMusicRule = world.arena.noBossAlive
         // Back in `.GameLoop` after the events, keys, sounds and track map: `.UpdateSprites` (raw `1000a298`).
         world.updateSprites(lights: &lightTable)
         // `.HandleAsyncGammaFade` (l. 5282, after `.UpdateStatusBar(1, 0, 0)`; W2b — the passages start the fades).
@@ -1059,6 +1063,11 @@ public final class FerazelSession {
         world.globals = g
     }
 
+    /// LV5 fix round: `*_DAT_1009fed0` ("no boss alive", `BossArena.noBossAlive`) as `.GameLoop`'s in-loop
+    /// boss-music block reads it — after the events, keys, sounds, track map and FPS, before `_UpdateSprites` (M l.
+    /// 5266–5275); `LevelRun`'s rule, which runs at the iteration's end, reads this rather than the live flag.
+    public private(set) var noBossAliveAtMusicRule: UInt8 = 1
+
     /// What the next level's session takes (`init(…carry:)`, W4): the parity, the particle counters (E1a), the
     /// water-effects cache, origin and flag (E1b), the flash, paint counter, plume count and shake (EF), the Shadow-Double ring's mirror bytes (SD), and the live G with its crunch log (A1a: the flow decides when a
     /// game starts from a fresh G — New Game's `.InitGameGlobals` — never the session).
@@ -1076,6 +1085,7 @@ public final class FerazelSession {
         c.shake = world.shakeStore ?? camera.shake                     // CS: a store the camera has not yet taken
         c.shadowMirrors = world.player.shadowRing.map(\.mirrored)        // SD review fix
         c.omniPxCounter = omniPx.counter                                 // OX: `c` runs on (BSS)
+        c.panCounter = world.arena.panCounter                            // LV5 fix round: `*_DAT_1009ff9c` runs on
         return c
     }
 

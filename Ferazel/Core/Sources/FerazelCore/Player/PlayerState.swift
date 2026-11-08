@@ -193,7 +193,7 @@ public struct PlayerState: Equatable, Sendable {
     /// `PTR_DAT_100a0700`: teleporter charge (row 36; the teleport sets −59, `HitPlayerSprite.teleportDone`).
     public var teleporterCharge: Int16 = 0
     /// `_DAT_100a05b0`: potion drink counter (the item switch sets 1, row 32 drinks — IU); `_DAT_100a0570`: boss-grab
-    /// counter (// later: Phase 5, no writer yet); `_DAT_100a0578` / `_DAT_100a0574`: spirit-form timer / transition
+    /// counter (// later: Phase 6, no writer yet); `_DAT_100a0578` / `_DAT_100a0574`: spirit-form timer / transition
     /// (MS: row 33's transition arm sets the timer 600, row 16 counts it down). `_DAT_100a0578` is a **halfword** in the
     /// binary (every access `lha`/`sth`, raw `1004e234`, `1004fb04`, `10054d40`); it is kept as `Int32` (Invariant 9) and
     /// every value written fits in an `Int16`.

@@ -341,7 +341,7 @@ final class BootFacesTests: XCTestCase {
         // Handle at start then idles (BL, run 44); with the Blob Handle stubbed (switch-off check) every old value
         // returned — was f30 0x07212368c70e3f4a, f120 0x521fd141e046a4d6; now 0x56a7ccb0dd544488 / 0xc43bacea46d2ff94.
         // LV5 added level 5 (`BuiltLevels` 1...5): its three rows are new pins, measured with the boot faces in place
-        // (level 5 was not built before b535527 — no earlier value exists); levels 1–4 are untouched.
+        // (level 5 was not built before LV5 — no earlier value exists); levels 1–4 are untouched.
         let pinned: [String: (rows: Int, fnv: UInt64)] = [
             "L1 init": (190, 0x157d6742ce800e1f), "L1 f30": (240, 0x8190d7eb68896260), "L1 f120": (240, 0xcda33ae9706a4618),
             "L2 init": (229, 0x8fb8d314f8d35783), "L2 f30": (278, 0x7e9c0511f07e745d), "L2 f120": (278, 0x35c9c2eb3280e4b0),

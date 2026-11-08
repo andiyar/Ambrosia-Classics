@@ -81,6 +81,11 @@ public struct LevelCarry: Equatable, Sendable {
     /// `.UpdateOmniPx` (M l. 13393–13519) — no level load, death, map or game resets it, so it runs on through all of
     /// them (a mode-0 level leaves it as it is).
     public var omniPxCounter: Int16 = 0
+    /// LV5 fix round: the boss-arena pan counter `*_DAT_1009ff9c` (`BossArena.panCounter`): zeroed only by
+    /// `.InitGameGlobals` (M l. 806, 822), which New Game and Continue Game run (M l. 5747, 6707;
+    /// `GameFlow.initGameGlobals`); read and counted up by `.FindUpperLeftCorner` (M l. 5918), set by
+    /// `.PlayerConstraints` (M l. 44011) — no level load, death or map resets it, so it runs on through all of them.
+    public var panCounter: Int16 = 0
 
     public init(parity: Bool = false, crunchLog: [CrunchLogEntry] = []) {
         self.parity = parity

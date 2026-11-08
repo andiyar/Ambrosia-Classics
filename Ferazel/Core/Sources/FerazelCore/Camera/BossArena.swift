@@ -9,7 +9,8 @@ import Foundation
 ///   `.PlayerConstraints` (M l. 44036–44056).
 /// - `panCounter` — `*_DAT_1009ff9c` (i16), the camera pan: `.PlayerConstraints` stores −40 on the lock (M l. 44048);
 ///   `.FindUpperLeftCorner` counts it up while negative and shifts both scroll bounds by 16·|counter| (M l. 6011–6028);
-///   zeroed by `.InitGameGlobals` (M l. 806, 828).
+///   zeroed by `.InitGameGlobals` (M l. 806, 822) and by nothing else, so it runs on across levels
+///   (`LevelCarry.panCounter`, LV5 fix round).
 public struct BossArena: Equatable, Sendable {
     public var noBossAlive: UInt8 = 1
     public var locked = false

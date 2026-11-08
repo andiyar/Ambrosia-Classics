@@ -15,8 +15,8 @@ final class FerazelSettingsTests: XCTestCase {
 
     func testParseTableAndMute() {
         // FerazelLevel: an integer in BuiltLevels.range (1…5), else 1.
-        let levels: [(String?, Int)] = [(nil, 1), ("2", 2), ("4", 4), ("9", 1), ("0", 1), ("2abc", 1), (" 3", 3),
-                                        ("-2", 1)]
+        let levels: [(String?, Int)] = [(nil, 1), ("2", 2), ("4", 4), ("5", 5), ("9", 1), ("0", 1), ("2abc", 1),
+                                        (" 3", 3), ("-2", 1)]
         for (v, want) in levels {
             XCTAssertEqual(parse(v.map { [FerazelSettings.levelKey: $0] } ?? [:]).startLevel, want, "FerazelLevel \(v ?? "absent")")
         }

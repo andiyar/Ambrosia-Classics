@@ -294,13 +294,13 @@ final class ButtonGateTests: XCTestCase {
         XCTAssertEqual(w.active.sprite(id: g)!.y, y0)
 
         // p1 −2 (the 2907 timer's countdown `iRam100a5110`): open while it is > −20; p1 −1: `*_DAT_1009fed0 == 1`.
-        func open(p1: Int16, countdown: Int32 = -0x1e, bossFlag: UInt8 = 1, paintDraw: Bool = true) throws -> Bool {
+        func open(p1: Int16, countdown: Int32 = -0x1e, noBossAlive: UInt8 = 1, paintDraw: Bool = true) throws -> Bool {
             let (v, _) = try world(level: 3)
             let q = v.records[72]
             v.records[72] = Placement(index: q.index, flag: q.flag, byte1: q.byte1, type: q.type, p1: p1, p2: 0, p3: 0,
                                       p4: 0, y: q.y, x: q.x)
             v.countdown = countdown
-            v.bossFlag = bossFlag
+            v.arena.noBossAlive = noBossAlive                             // `BossArena.noBossAlive` (LV5)
             v.paintDraw = paintDraw
             let k = try add(v, record: 72)
             v.voices = SoundVoices(playing: [460])
@@ -310,7 +310,7 @@ final class ButtonGateTests: XCTestCase {
         }
         XCTAssertEqual(try [open(p1: -2, countdown: -20), open(p1: -2, countdown: -19), open(p1: -2, countdown: 0),
                             open(p1: -2, countdown: 300)], [false, true, true, true])
-        XCTAssertEqual(try [open(p1: -1, bossFlag: 1), open(p1: -1, bossFlag: 0)], [true, false])
+        XCTAssertEqual(try [open(p1: -1, noBossAlive: 1), open(p1: -1, noBossAlive: 0)], [true, false])
         // p1 below −2: r19 as the Handle found it — `.PaintFrameWrap`'s draw flag.
         XCTAssertEqual(try [open(p1: -3, paintDraw: true), open(p1: -3, paintDraw: false)], [true, false])
     }

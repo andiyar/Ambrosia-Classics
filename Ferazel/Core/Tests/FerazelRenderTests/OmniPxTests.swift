@@ -222,27 +222,10 @@ final class OmniPxTests: XCTestCase {
         XCTAssertEqual(o.counter, 9, "turning off and killing leave c")
     }
 
-    /// A level-5 `FrameRenderer` with its tint table built. Level 5's placements of six types had no transcribed Setup
-    /// until LV5 (the Warrior 1820; 2822, 2826, 2829, 2840, 2841), so it was built with exactly those switched off
-    /// (their records' flag byte 0) — the backdrop reads no placement. LV5: every record sets up, nothing is switched
-    /// off. The audit's OmniPx row builds the same renderer.
+    /// A level-5 `FrameRenderer` with its tint table built, on the committed data as it is (LV5: every level-5 record
+    /// sets up — `LevelFiveTests.testLevel5SetsUpEveryRecord`). The audit's OmniPx row builds the same renderer.
     static func level5Renderer() throws -> (renderer: FrameRenderer, resources: FerazelResources) {
-        let data = try resources.get()
-        let mlvl = try XCTUnwrap(data.world.resource(type: "Mlvl", id: 5))
-        let L5 = try LevelFile(id: 5, data: mlvl.data)
-        let ctx = SetupFaces.Context(level: L5, playerX: SetupFaces.Context.levelStartPlayerX(L5.header),
-                                     effects: FerazelPrefs().effects)
-        var bytes = mlvl.data
-        var off: [Int16] = []
-        for p in L5.activePlacements where (try? SetupFaces.setup(p, context: ctx)) == nil {
-            bytes[bytes.startIndex + 4 + 16 * p.index] = 0
-            off.append(p.type)
-        }
-        XCTAssertEqual(off, [], "LV5: every level-5 record sets up — nothing switched off")
-        var world = data.world
-        world.add(Resource(type: "Mlvl", id: 5, name: mlvl.name, data: bytes))
-        let res = FerazelResources(app: data.app, world: world, backgrounds: data.backgrounds, sprites: data.sprites,
-                                   sounds: data.sounds, titles: data.titles, musicDirectory: data.musicDirectory)
+        let res = try resources.get()
         let r = try FrameRenderer(resources: res, level: 5, search: ColorSearch(model: .ruled, tieBreak: .lowest),
                                   dither: .errorDiffusion, text: StatusBarTests.BoxRasterizer(), prefs: FerazelPrefs())
         try r.buildTintTable([Int16](repeating: 0, count: 0xff * 2))

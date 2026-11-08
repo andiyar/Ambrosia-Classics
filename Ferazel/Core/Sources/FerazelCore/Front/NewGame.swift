@@ -35,8 +35,9 @@ extension GameFlow {
 
     /// `.InitGameGlobals @ 10001498` (M l. 582–866): SV1's G part (`GameGlobals.initGameGlobals(previous:)`, the
     /// fields it never writes from the live G), then the tail (M l. 815–825): `*ffac`, `*ffb0`, `*ffb4` (the Setups'
-    /// tallies), `*ffa8` (died), `*ffa4`, `*ffa0` (the shake counter), `*ff9c` = 0 — in the replica all but `ffa8` and
-    /// `ffa0` are the session's, fresh per level; `ffa0` is `levelCarry.shake` (EF review fix: it runs on otherwise) —
+    /// tallies), `*ffa8` (died), `*ffa4`, `*ffa0` (the shake counter), `*ff9c` = 0 — in the replica all but `ffa8`,
+    /// `ffa0` and `ff9c` are the session's, fresh per level; `ffa0` is `levelCarry.shake` (EF review fix) and `ff9c`
+    /// `levelCarry.panCounter` (the boss-arena pan, LV5 fix round) — both run on otherwise —
     /// then `save+6 = 0` (the block always exists, `NewHandleClear` at boot); then
     /// `.InitPlayerMapData` (M l. 864): the node table re-read (`WorldMapRun` reads it per run) and the node-sprite
     /// count 0 (M l. 66610); `*ff90 = 0` (the fallback branch's flag, never set in the replica).
@@ -44,6 +45,7 @@ extension GameFlow {
         globals = GameGlobals.initGameGlobals(previous: globals)
         died = false
         levelCarry.shake = 0                                            // `*_DAT_1009ffa0 = 0` (M l. 821)
+        levelCarry.panCounter = 0                                       // `*_DAT_1009ff9c = 0` (M l. 806, 822)
         saveBlock.isCheckpoint = 0
         mapSprites = []
     }

@@ -105,13 +105,6 @@ public final class SpriteWorld {
     /// pan counter `*_DAT_1009ff9c`) — the session sets them from `.SetupLevelSprites` (M l. 2016–2019) and the boss
     /// Setups; `.PlayerConstraints`, `.FindUpperLeftCorner`, the gate arm and the boss-music rule read them live.
     public var arena = BossArena()
-    /// BT: `*_DAT_1009fed0`, "no boss alive" (`arena.noBossAlive`) — `.SetupLevelSprites` sets it 1 (M l. 2019), the
-    /// Warrior's Setup with p4 ≠ 0 clears it (LV5), the gate 2940's p1 −1 arm opens on 1 (M l. 61022). // later: Phase 6
-    /// — the Kills that set it again.
-    public var bossFlag: UInt8 {
-        get { arena.noBossAlive }
-        set { arena.noBossAlive = newValue }
-    }
     /// BT: `.PaintFrameWrap`'s param_1 (the draw flag; 1 for the nested paints), live in r19 through the handle pass —
     /// the gate arm's open flag for a p1 below −2 (raw `10011d04`, `1006f4f8..1006f564`). The session sets it per paint.
     public var paintDraw = true

@@ -710,7 +710,8 @@ public final class LevelRun {
                             soundStopAt: ops.soundStopAt, music: ops.music, requests: ops.requests)
         // A skipped iteration leaves the screen as it was, but its `.HandleAsyncGammaFade` still moves the gamma.
         o.present = present || ops.drawn || ops.draws.contains { if case .gammaStep = $0 { true } else { false } }
-        // The boss rule's in-loop block (M l. 5266–5274), after the frame and before `_UpdateSprites`, then
+        // The boss rule's in-loop block (M l. 5266–5274) — it runs here, at the iteration's end, but reads "no boss
+        // alive" as the session took it before `_UpdateSprites` (`noBossAliveAtMusicRule`, M l. 5275) — then
         // `_HandleAsyncAIFFMusicFade()` (M l. 5281) after `.UpdateStatusBar(1, 0, 0)` — both at the iteration's end, so
         // not in a suspended part.
         if ops.suspension == nil {
@@ -723,13 +724,14 @@ public final class LevelRun {
         if ops.suspension == nil && prefs.backgroundTasks != 0 { _ = appleEvents.takeFirst() }
     }
 
-    /// `.GameLoop`'s in-loop boss-music block (M l. 5266–5274): hdr+0x2724 ≠ 0 ∧ `*_DAT_1009fed0` ≠ 0 (read live,
-    /// `BossArena`) ∧ the current track `_DAT_100a5be0` ≠ 0x1e ∧ prefs+0xc (music on) ∧ `cRam100a5be2` (no async fade
-    /// running) → the volume `*_DAT_1009fd6c` < 1 ? `SetAIFFMusic(0x1e)` + `FadeAIFFMusicAsync(1, 0x3c)` :
+    /// `.GameLoop`'s in-loop boss-music block (M l. 5266–5274): hdr+0x2724 ≠ 0 ∧ `*_DAT_1009fed0` ≠ 0 (`BossArena`, as
+    /// it stood before this iteration's `_UpdateSprites` — `FerazelSession.noBossAliveAtMusicRule`) ∧ the current track
+    /// `_DAT_100a5be0` ≠ 0x1e ∧ prefs+0xc (music on) ∧ `cRam100a5be2` (no async fade running) → the volume
+    /// `*_DAT_1009fd6c` < 1 ? `SetAIFFMusic(0x1e)` + `FadeAIFFMusicAsync(1, 0x3c)` :
     /// `FadeAIFFMusicAsync(0, 0x3c)` — after a boss Kill the level's track fades out over 60 frames, then track 30 starts
     /// and fades in. Level 5 with the Warrior standing: `fed0` = 0, nothing.
     private func bossMusicRule() -> [MusicCue] {
-        guard let s = session, levelFile.header.arenaBound != 0, s.world.arena.noBossAlive != 0,
+        guard let s = session, levelFile.header.arenaBound != 0, s.noBossAliveAtMusicRule != 0,
               music.currentTrack != 0x1e, prefs.musicOn != 0, music.asyncDone else { return [] }
         if music.volume < 1 {
             return music.setAIFFMusic(0x1e) + music.fadeAIFFMusicAsync(direction: 1, frames: 0x3c, prefs: prefs)
@@ -1109,7 +1111,7 @@ public struct CachedFaces: Equatable, Sendable {
     /// `.InitGremlinSprite`'s three (M l. 69118–69120 — 0x6ea / 0x6eb 10, 0x6ec 4) between the Frog's and the
     /// Salamander's; each flag 0 (the boss Inits between store 1 and restore 0, M l. 75020, 75582, 76216). One PICT in
     /// three records: `loadedSets` keys by PICT,
-    /// so a mark of 0x46a counts all three [LOW: no mark before Phase 6]. // later: Phase 5–6 — the other sets, as their
+    /// so a mark of 0x46a counts all three [LOW: no mark before Phase 6]. // later: Phase 6 — the other sets, as their
     /// Setups are transcribed.
     static let sets: [Record] = [
         Record(pict: 0x6ae, faces: 6, flag: 0), Record(pict: 0x6af, faces: 6, flag: 0),
@@ -1152,8 +1154,9 @@ public struct CachedFaces: Equatable, Sendable {
     /// 0xb22+i (flag 1, 58818–58823), 0xb36+i (58825), 0xb68+i (58830); Background 0xb54 (61862), the spikes' 0x732 /
     /// 0x733 (61865–61866; LV3), 3000+i (flag 1, 61899), 0x5c8+i (61905), 0xa8c+i (flag 1, 61911). LV3 adds the
     /// decorations 0xafc, 0xafd, 0xb04, 0xb05, 0xb10, 0xb1b, the outcrops 0xb34 / 0xb35 (flag 1) and the mushroom 0xb44
-    /// at their places in the loops; LV5 the decorations 0xb06, 0xb0a, 0xb0d, 0xb18, 0xb19. BL: the Crab's link single 0x767 (`.InitCrabSprite` M l. 73965, flag 0 —
-    /// `.InitBackgroundSprite` leaves `*_DAT_100a0a48` 0, M l. 61912), registered after every Background single.
+    /// at their places in the loops; LV5 the decorations 0xb06, 0xb0a, 0xb0d, 0xb18, 0xb19. BL: the Crab's link single
+    /// 0x767 (`.InitCrabSprite` M l. 73965, flag 0 — `.InitBackgroundSprite` leaves `*_DAT_100a0a48` 0, M l. 61912),
+    /// registered after every Background single.
     static let singles: [Record] = [
         Record(pict: 0x6a4, faces: 1, flag: 0), Record(pict: 0x6d6, faces: 1, flag: 0),
         Record(pict: 0xafc, faces: 1, flag: 0), Record(pict: 0xafd, faces: 1, flag: 0),
@@ -1216,7 +1219,7 @@ public struct CachedFaces: Equatable, Sendable {
     /// 2826, 2829, 2840, 2841 → their singles (59647); the Platform 1403, the save point 1065, the gate 2940, the exit
     /// 3249 and the Bonus 1059 / 1340 / 3100 / 3214 Setups store no mark.
     /// Every other level-1–5 type marks nothing.
-    /// // later: Phase 5–6 — the other types'.
+    /// // later: Phase 6 — the other types'.
     static func marks(type t: Int16, p1: Int16 = 0) -> (sets: [Int16], singles: [Int16]) {
         switch t {
         case 0x6a4: return ([0x6a5, 0x6a6], [0x6a4])
