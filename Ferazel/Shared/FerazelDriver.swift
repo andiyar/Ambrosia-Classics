@@ -205,7 +205,10 @@ struct FerazelSettings: Equatable {
         }
         // `.InitAppGlobals`' `_FastRand(0)` (M l. 334; `LMGetTime` + `LMGetTicks`, M l. 31295–31298): the stream is
         // seeded once from Time + Ticks and never again (the shell's `seed`).
-        let flow = GameFlow(resources: resources, prefs: prefs, seed: seed(), files: files, levels: self)
+        // The flow and its runs reach this driver through `LevelServicesLink` (weak), never directly: the driver owns
+        // the flow, so a strong back-reference would keep a dropped game alive (2026-11-10).
+        let flow = GameFlow(resources: resources, prefs: prefs, seed: seed(), files: files,
+                            levels: LevelServicesLink(driver: self))
         flow.startLevel = settings.startLevel
         // `KeyTranslate` (the Options key names): the flow calls it on the main thread (its ticks, the dialog).
         flow.keyCharacter = keyCharacter
@@ -450,4 +453,33 @@ extension FerazelDriver: @MainActor LevelServices {
         guard (0..<DeathEffect.steps).contains(k) else { throw FrameRenderer.Refusal.deathEffectStep(k) }
         _ = r.deathEffect.frame(step: k, on: &surface.frame)
     }
+}
+
+/// The `LevelServices` the driver hands `GameFlow` (2026-11-10): each call forwarded to the driver, held **weakly**.
+/// The driver owns the flow (`flow`), the flow its `LevelRun` (`levelRun`), and the driver the run it configured
+/// (`configuredRun`); the flow (`levels`) and every run (`services`) hold their `LevelServices` strongly — so with the
+/// driver itself there, a game the shell let go of was never freed (~70 MB a game on the Windows-path visit sweep,
+/// which builds one per visit; the Mac panics of 2026-11-08 and 2026-11-10). With this link nothing below the driver
+/// holds it. Both shells hold their driver for as long as they use its flow, so the driver is there for every call;
+/// were it gone, the call throws.
+@MainActor final class LevelServicesLink: @MainActor LevelServices {
+    /// The driver was freed while its flow still ran (never in a shell: each holds its driver while the game runs).
+    struct DriverReleased: Error {}
+
+    private weak var driver: FerazelDriver?
+
+    init(driver: FerazelDriver) { self.driver = driver }
+
+    private func live() throws -> FerazelDriver {
+        guard let driver else { throw DriverReleased() }
+        return driver
+    }
+
+    func prepare(level: Int) throws -> LevelFaces { try live().prepare(level: level) }
+
+    func attach(lights: [SetupFaces.Light], tintTableDraws: [Int16]) throws {
+        try live().attach(lights: lights, tintTableDraws: tintTableDraws)
+    }
+
+    func deathEffectStep(_ k: Int) throws { try live().deathEffectStep(k) }
 }
