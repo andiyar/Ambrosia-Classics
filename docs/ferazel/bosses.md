@@ -376,3 +376,25 @@ shot at power 1) 2000 HP = 20 hits [HIGH arithmetic]. Falling Statue/Box: 200 + 
 - **§1.3, the pan:** the lower-bound choice in `.FindUpperLeftCorner` reads the pan counter before this frame's +1 (M l. 5953) and the shift uses it after (M l. 6011–6028): the forced view runs 836 + 16·(40 − k) for k = 1…40, capped by the map edge at 1408; before the lock the camera sits at 1408 because the map edge beats the |−1444| bound. The pan counter `_DAT_1009ff9c` is zeroed only by the game-globals init (M l. 822; New Game / Continue), never per level.
 - **§1.2 / the boss-music loop rule (M l. 5266–5274):** the byte the rule tests beside the music preference is the **no-async-fade-running flag** `cRam100a5be2` (set/cleared only by the fade code, M l. 42067, 42078, 42093, 42123), not a "music on" setting; the read happens before `_UpdateSprites` (M l. 5275).
 - **The Warrior's Setup (M l. 72989–73079):** `+0x17e` (facing) is set when FastRand(100) **≥ 51** (raw 10087a54–10087a68, the Dillo's compare idiom), not < 51. While the arena is unlocked the Handle still drops three rocks (type 1075) above the arena every 15 frames and runs the wounded-glow timer (M l. 73151–73212) — Phase 6 builds them. `.InitWarriorSprite`'s three registrations are M l. 72982–72984, between the Dillo's and the Floater's in `.InitSprites` (M l. 133–134).
+
+## Corrections — Task BOS (2026-11-11, the Phase 6 boss contracts; committed dump, 88,106 lines)
+
+The bank's "l." numbers are the old dumps; the committed dump's spans for every routine cited here are tabled in
+`phase6-boss-contracts.md` §1.3.
+
+- **§2.2, `.RandomWarriorAttack`:** the routine first draws **R(100) and discards it** (M l. 73102; raw
+  `10087b7c..10087b84`: `li r3,0x64; bl 0x100340e0`, the result never read), then sets the state and draws R(2) for the
+  swings. The decide's attack branch therefore consumes R(100), R(100), R(2).
+- **§2.2, attack cycle:** the first swing runs 18 frames (`+0x46` 0…17, the 0x71f shot on the 10th), every later
+  swing 17 — the reset to 0 at `+0x46 > 16` is followed by the same frame's + 1 (M l. 73254–73264).
+- **§3.2, the crate carry:** the `x` / `y` in "(playerX − 16)(1 − t) + x·t" are the **crate's own** current position
+  (`*(short *)(crate + 0xc)` / `+0xa`, M l. 76027–76040) — an easing recurrence each frame, not a blend from the Wizard.
+- **§3.2, the fireball charge:** 21 frames at `+0x46 == 7` — one arming frame (`+0xa6 < 1` → 20, `+0x46 − 1`) then 20
+  count-down frames — re-armed on every volley (M l. 75768–75791).
+- **§4.2, the jump:** the lane draw R(100) comes **before** the pitch draw R(6000) (M l. 75304–75305); the `+0x46 == 3`
+  test reads `+0x46` after its + 1, i.e. the third frame of state 1 (M l. 75295–75303).
+- **§2–§4, the Inits:** the Wizard's, Chief's and Xichra's registrations run between `*_DAT_100a0a48 = 1` and `= 0`, so
+  their cache records carry flag 1 (`.NeedToReloadForThisClut`); the Warrior's and Demon's carry 0. The Chief and the
+  Wizard register their sets **before** their single (M l. 75020–75026, 75582–75586).
+- **§1.6 / the step-7 cite:** the routing list is M l. 49514–49521 and the damage rows M l. 49840–49851 (Warrior 49840,
+  Wizard 49846, Chief 49849; the Demon takes the default 0x70; Xichra is in neither).

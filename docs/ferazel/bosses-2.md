@@ -359,3 +359,28 @@ when `+0x1f8 == 0` (1003c86c..1003c874) [HIGH] (bosses-3 §12.2).
 | W3 (merged with triggers-background-2 §8.1 into the existing ⚑ wave 2 text; ⚑ corrected (review 2i, 2026-10-04) #4) | triggers-background.md §2.2 (end) and triggers-background-2.md NR 2 | "A captive of type 90 gets gravity 0x15e [HIGH; identity of type 90 not resolved]" | type 90 = 0x5a = the player shot of id 0x5a (thrown fire/Ziridium seeds from `.HandleItemUse`, the Smite bolt from `.SmiteEnemies`); no placement record has type 90 (all 24 `Mlvl`) [HIGH] — as enemy-shots §2.1 already says | raw `cmpwi r0,0x5a` 10058da8 → `li r0,0x15e; sth r0,0x110(r19)` 10058db0..10058db4; `MTNewSprite(0x5a01, …)` main l. 44265, 47036; bosses-3 §8.3 |
 | W4 | triggers-background.md §1 (census paragraph) | 2940 with p1 = 0 "stay shut unless record 0's p4 is 1" | for level 67 settled: record 0 is a 1208 floor fire and every record-p4 writer writes only its own record (Button, Bonus containers, Box, sign), so its seven gates never open [HIGH reading, MED completeness] | bosses-3 §8.5 |
 | W5 | coverage.md §2 rows `.AnimateCLUT` / `.UpdateXichraCannons` | "SC, B2" / "cannon values" | add **B3 §9** / **B3 §8.2** | bosses-3 |
+
+## Corrections — Task BOS (2026-11-11, the Phase 6 boss contracts; committed dump, 88,106 lines)
+
+Spans re-mapped to the committed dump in `phase6-boss-contracts.md` §1.3.
+
+- **§5.1, the segments' layer:** `.MTNewSprite` stores the layer argument (`+0x80 − 1`) and **then** runs the Setup
+  (M l. 30710–30717); the segment's own `.SetupDemonSprite` stores `+0x80 = 0xc` before its type test (M l. 74401), so
+  the segments sit at layer **0xc**, not `+0x80 − 1`. The partner's layer argument is its record index (M l. 74480–74483),
+  likewise overwritten to 0xc.
+- **§5.1, the segment Setup:** each of the 16 segment Setups draws R(10) (M l. 74443) and reads its p4 from record
+  0x1ff (hdr + 0x1ffe, one past the 511 records; M l. 74423–74424); the level-55 load makes 18 R(10) draws (guardian,
+  its 8 segments, partner, its 8). The Demon Setup has **no `+0x88 = 0`** in boss mode (M l. 74428–74434), unlike the
+  other four bosses.
+- **§5.2, null reads:** `.HandleDemonSegs` reads `*slot + 0xe9` before testing the slot for 0 (M l. 74528), the dying
+  state likewise (M l. 74716), the recoil state stores `+0xaa` into `t[7 − n]` with no test (M l. 74806), and the head's
+  `+0x15c` reads `t[7] + 0x1c` with no test (M l. 74880–74886). Harmless while the slots are filled; the last matters if
+  segment 7 finishes burning before the head (to be measured at 6C-DM).
+- **§6.4 state 8:** the explosion sound is `.STPlay3DSoundRand(435, 1, 0x100, +0xe)` — one R(10000) at the call — and
+  the offsets are drawn **R(30) (y) before R(65) (x)** (M l. 77177–77185).
+- **§6.4 rain form 1:** only the 0x772 gets `+0x110 = 0` and vy 0 written after its spawn; the 0x771 keeps what its
+  EnemyShot Setup gave it (M l. 76903–76918).
+- **§6.5:** the state-5 arm of `.HitXichraSprite` has **no HP > 0 test** (M l. 77365–77368), unlike the other bosses'
+  Hit routines.
+- **§6.3 phase 0:** the frame-80 trigger compares `+0xa6 == 0x50`, and `+0xa6` (i16) counts every state-0 frame of the
+  fight (M l. 76801–76802); it can equal 0x50 again only after a 65,536-frame wrap [LOW].
