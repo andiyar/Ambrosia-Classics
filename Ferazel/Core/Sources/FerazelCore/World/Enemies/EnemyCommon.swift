@@ -61,8 +61,8 @@ public enum EnemyCommon {
 
     /// The class Handles (`+0x4c`) of the enemy cases. Every one returns at once while `+0x1b2` is set (pipe
     /// emergence; the sprite is still drawn and still collidable as the inner sprite of `.MTCollideSprites`,
-    /// enemies-flyers §7.4). Each body is a named no-op until its task — the Phase-1 `.inert` behaviour, drawn, no
-    /// Handle, no hit.
+    /// enemies-flyers §7.4). A dead switch now: the session dispatches every class itself, and only `EnemyPipeTests`
+    /// calls this (its `+0x1b2` early return).
     public static func handle(world w: SpriteWorld, id: Int) {
         guard let s = w.active.record(id: id), !s.emerging else { return }   // `+0x1b2` → return
         switch s.handler {
@@ -86,9 +86,9 @@ public enum EnemyCommon {
     /// M l. 56153–56246, `.SetupRoachSprite` 64899–64957, `.SetupBatSprite` 68108ff, `.SetupBlobSprite` 67671–67735;
     /// `.InitSprite` zeroes `+0x50`, M l. 35571), so a burn on them ends in the default arm; the Blob dies through
     /// `.KillBlob` from its dead puddle (`BlobCrab`).
-    /// The classes' own parts (score `G+0`, sounds, children) are their tasks'. It runs against the world by id
-    /// (`SpriteWorld` rule 2: a Kill tail writes other sprites and spawns) — a caller holding a copy of the slot writes
-    /// it back first and re-reads after (`Burn.handle`).
+    /// The Warrior arm would count and remove the Warrior with the gate still shut if a burn ever reached it (the real
+    /// Kill is Phase 6's). Classes' own parts are theirs. By id (`SpriteWorld` rule 2: a Kill tail writes and spawns) —
+    /// a caller holding a copy of the slot writes it back first and re-reads after (`Burn.handle`).
     public static func killProc(_ w: SpriteWorld, id: Int) {
         guard var s = w.active.record(id: id) else { return }
         // The class whose Kill `+0x50` names: the corpse raft keeps `.KillWalker` under the Platform Handle (WK1) —

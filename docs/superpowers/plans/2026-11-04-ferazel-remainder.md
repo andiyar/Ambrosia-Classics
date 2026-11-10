@@ -553,7 +553,11 @@ level 5 open up to the Warrior's arena — the arena locks, the gate stays shut,
   shot, no Hit callback, `// later: Phase 6`. The Warrior stays a Ring-of-Smiting target as the binary has it
   (`.SmiteEnemies` lists its Handle 0x100a0494): a seed explosion can take its HP below 1, and with no Kill until Phase 6
   it stays standing and harmless, `noBossAlive` stays 0, the gate stays shut and only Esc / ⌘W leaves (kept faithful
-  rather than dropping it from the 16-target list or inventing a stand-in Kill).
+  rather than dropping it from the 16-target list or inventing a stand-in Kill). (corrected 2026-11-10, Phase 5
+  cross-check: nothing lowers the Warrior's health in this build — the seeds reach it, but its Hit is the empty
+  stand-in (`FerazelSession.swift`'s `.warrior` hit arm), and a probe read HP 2000 after Smite with contact still
+  hurting; in the original `.HitWarriorSprite` (M l. 73422–73458) only swallows shots and only a falling crate or
+  statue takes 200 off. Before the lock the level's own right exit also leaves.)
 - **Contract:** bosses §1.1–§1.4 (framework only); world-data-format §3.2 (`hdr+0x2724` −1444, `+0x272e` 0, music 23,
   start at the right edge facing left `0x26c8`). Dump: `.PlayerConstraints` M l. 43991–44126, `.FindUpperLeftCorner`
   M l. 5882–6239, `.SetupLevelSprites` M l. 1940–2103 (`fed4 = 0`, `fed0 = 1` at M l. 2016–2019), `.GameLoop` M l.
@@ -657,8 +661,8 @@ yet (Phase 6)".**
     comes only after the Warrior is beaten, Phase 6 — the arena locking does not change the music); walk left: the
     camera pans and the arena locks behind you, the gate ahead stays shut, the Warrior stands and hurts on contact;
     leave with Esc → abort. Expected missing until Phase 6: the three falling crates the real Warrior drops on its first
-    frames do not fall. If you use the Ring of Smiting on it, it may stop hurting but stays standing and the gate stays
-    shut — expected until Phase 6.
+    frames do not fall. No spell, weapon or the Ring of Smiting harms the Warrior in this build: it stays standing and
+    the gate stays shut until Phase 6.
 12. **Readings Ben can't see but may feel (MED):** the tint tables' colours, the burn-away, the backdrop's look, the
     goblins' voices' pitch spread.
 
@@ -673,7 +677,7 @@ reachable yet.
 | ◇ | where | replaced by |
 |---|---|---|
 | The Warrior's Handle/Hit/Kill: stands in its Setup face, hurts on contact as read, no Hit callback, never dies; the gate stays shut while it lives; the real Handle's three falling-crate children (type 0x433 into `+0x1d4/+0x1d8/+0x1dc`, spawned when p4 ≠ 0 once `+0x16c` counts below 1, M l. 73145–73182) are not spawned | LV5 | 6A-W |
-| The Warrior under the Ring of Smiting: can reach HP < 1 with no Kill; harmless; Esc / ⌘W leaves | LV5 | 6A-W (the Kill) |
+| The Warrior under the Ring of Smiting: nothing lowers its health in this build (its Hit is the empty stand-in; HP stays 2000, contact still hurts); Esc / ⌘W leaves | LV5 | 6A-W (the Hit and the Kill) |
 | The other bosses (Wizard, Chief, Demon, Xichra) stay `.inert`; their projectiles' spawners | — | 6A-CH, 6B-WZ, 6C-DM, 6C-XI |
 | OmniPx modes 1/3/6/7/≥8 refused at level open; the horizon strip refused at level open | PT, OX | 6A-RN, 6C (interlace), 6A-S8 |
 | Geyser kinds 3/4: the base face past the 12-face cache draws nothing (unplaced) | GY | kept (as read) |

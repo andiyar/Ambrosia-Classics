@@ -2,7 +2,7 @@
 
 **Status: machine gates green; Ben's and Andrew's gate pending.**
 
-Ferazel's Wand 1.0.3 for Windows: Ambrosia's Ferazel's Wand (1997), rebuilt to run on Windows 10 and 11 (64-bit) from
+Ferazel's Wand 1.0.3 for Windows: Ambrosia's Ferazel's Wand (2000), rebuilt to run on Windows 10 and 11 (64-bit) from
 the original game's own data. Unofficial, non-commercial preservation. It is the same game as the Mac Phase 5 build —
 the enemies alive on levels 1 to 4, and level 5 open up to the Warrior's arena — in lockstep with it: the Mac card
 (`Ferazel/WHAT-TO-EXPECT.md`, its 12 steps, its stand-ins and its known differences) holds here too.
@@ -31,8 +31,10 @@ up to the Warrior's arena; and the things you may only feel.
 On Windows, Shift / Alt / Ctrl act as the Mac's Shift / Option / ⌘, and Esc leaves level 5's locked arena (abort).
 
 **Note anything that differs from the Mac** — a picture, a sound, a timing, a dialog. As on the Mac, until Phase 6 the
-Warrior stands still and never dies, no rocks drop into its arena, your shots and crates do nothing special to it, and
-the gate stays shut.
+Warrior stands still and never dies, no rocks drop into its arena, no spell, weapon or the Ring of Smiting harms it,
+and the gate stays shut. Before the arena locks, walking back right leaves level 5 through its own exit to the map
+(0 of 1 enemies on the stage-complete panel), and a save point can be reached before the lock. Level 10 and later
+can't be reached in normal play (only an original saved game from a later level would show "not built yet").
 
 ## Machine checks run for this card
 - **Visit sweep** (every object on every level, taken to and drawn) on levels 1–5, through the Windows game path:

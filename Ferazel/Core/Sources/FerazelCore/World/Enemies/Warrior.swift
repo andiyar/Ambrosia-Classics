@@ -100,8 +100,8 @@ public enum Warrior {
     /// statues off it (`.PlatformBounce`; a falling one hurts it 200 and is killed).
     /// // later: Phase 6 — the rocks and the glow above, the state machine (decide, walk, run, attack with its shot
     /// 0x71f, dying), the death at HP < 1, gravity, the liquids and `.StandardSpriteCleanup`; the Hit and Kill
-    /// (`.KillWarrior`: thunder, shake 0x1e, flash 3, `*_DAT_1009fed0 = 1`) bodies. Smiting may take its HP below 1
-    /// (`Smite.enemyHandlers` lists it): it stays standing.
+    /// (`.KillWarrior`: thunder, shake 0x1e, flash 3, `*_DAT_1009fed0 = 1`) bodies. Smiting seeds it (listed in
+    /// `Smite.enemyHandlers`), but nothing lowers its HP in this build (its Hit is the empty stand-in): it stands.
     public static func handle(world w: SpriteWorld, id: Int) {
         guard let s0 = w.active.record(id: id), !s0.dead, !s0.emerging else { return }
         w.standardSpriteHandles(id)

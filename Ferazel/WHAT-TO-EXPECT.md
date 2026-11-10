@@ -19,7 +19,9 @@ Play it side by side with your Let's Play (https://www.youtube.com/watch?v=ESuyx
   and hurting them, the Statue spell on enemies, level 4's boulder spouts, the underwater tint, and level 5 up to the
   Warrior's arena. Shield blocking is built and machine-tested too, but no shield can be reached yet (card step 8).
 - **It is not** the Warrior fight. The Warrior stands still in the arena and the gate beyond it stays shut (Phase 6).
-  Level 10 and everything after it are not built yet: they say "not built yet (Phase 6)".
+  Level 10 and everything after it are not built yet. You can't reach them in normal play: the only way on to level 10
+  is level 5's far exit, beyond the Warrior's shut gate. Only an original saved game from a later level would show the
+  "not built yet (Phase 6)" message.
 
 ## Opening it
 - Double-click `Ferazel's Wand.app` on your Desktop. Start a New Game, or Resume a saved game from the Phase 4 build:
@@ -68,12 +70,15 @@ straight from the code.
     the boss music comes only once the Warrior is beaten (Phase 6), so the arena locking does not change the music.
     You start at the right edge facing left. Walk left: the camera pans and the arena locks behind you, the gate ahead
     stays shut, and the Warrior stands there and hurts you if you touch it. Leave with Esc (abort) or ⌘W.
+    Before the arena locks, walking back right leaves level 5 through its own exit to the map (the stage-complete
+    panel shows 0 of 1 enemies defeated). A save point can be reached before the lock, too.
     **Expected missing until Phase 6:**
     - the real Warrior keeps three rocks dropping into its arena from 400 to 500 pixels up, spread across it; a rock
       breaks when it lands hard (and hurts you if it lands on you), and the broken ones are replaced together about
       half a second later. None fall here;
-    - your shots and crates do nothing special to it (the real one swallows shots with a sound and knocks crates away);
-    - if you use the Ring of Smiting on it, it may stop hurting you but it stays standing, and the gate stays shut.
+    - your shots do nothing special to it (the real one swallows them with a sound);
+    - no spell, weapon or the Ring of Smiting harms the Warrior in this build: it stays standing, it keeps hurting you
+      on contact, and the gate stays shut until Phase 6.
 12. **Things you can't see but may feel (MED).** All read from the code but not provable on screen:
     - the colours of the tinted enemies, the frozen statues and the underwater tint;
     - the burn-away of a dying enemy;
@@ -95,7 +100,8 @@ straight from the code.
 - **The Warrior** stands in its first picture, hurts on contact, never fights, never dies, and the gate stays shut
   while it lives (card step 11).
 - **Level 10 and later** can't be entered yet: "Level n is not built yet (Phase 6)." (the only text in the game we
-  wrote ourselves), then back to the map.
+  wrote ourselves), then back to the map. Normal play can't reach it (the only way on is level 5's far exit, beyond
+  the shut gate); only an original saved game from a later level would show it.
 - **Enemies first placed after level 5** (the armadillo, the gremlin, the wraith, the salamander, the crab, the enemy
   pipes and the geysers) are built and machine-tested but can't be reached yet.
 - **The other bosses** and the drawing features only later levels use (rain and other moving skies, the horizon strip,

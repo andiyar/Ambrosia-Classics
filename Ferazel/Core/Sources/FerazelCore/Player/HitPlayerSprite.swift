@@ -8,7 +8,7 @@ import HectorResources
 /// suspends the frame), and the **Bonus** arm (PK, `bonus`: every pickup; the upgrades suspend the frame),
 /// the Box mechanisms placed on levels 1–4 (BX1, BX2, BT, TP), the **Effect** arm (EF), the **Statue** arm (SW)
 /// and the spikes (LV3); EC: the enemy rows of step 6 (`enemyHazard`) and step 7's generic path (`enemyContact`),
-/// keyed on the `SpriteHandler` cases — dormant until each class's task maps its `forClass` row; ES: step 7's
+/// keyed on the `SpriteHandler` cases — live: every enemy class of levels 1–5 maps its `forClass` row; ES: step 7's
 /// enemy-shot rows with `.ShieldBlock` (`EnemyShot.shieldBlock`); GY: the geyser head 0x5a9's landing hurt (step 7 of
 /// `box`) and the geyser segment 0x5a0's part of the Effect test (`effect`). // later: Phase 6 — the types first placed
 /// on levels 5+.
