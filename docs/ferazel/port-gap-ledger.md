@@ -12,14 +12,20 @@ are alive and level 5 opens up to the Warrior's arena; what stands in for Phase 
 (`Ferazel/WHAT-TO-EXPECT.md`). The phase-end checks now cover levels 1–5, every one through **both** the Mac core path
 and the Windows game path:
 
-- **Visit sweep** (Ferazel taken to every object of every level, each drawn): Mac core path <<SEAT:SWEEP-CORE>>;
-  Windows game path <<SEAT:SWEEP-WINDOWS>>.
+- **Visit sweep** (Ferazel taken to every object of every level, each drawn): Mac core path 3,488 visits, 0 problems (15
+  of 15 teleports arrived; 37 of 37 level exits reached the map), 10 November 2026;
+  Windows game path 3,488 visits, 0 problems (15 of 15 teleports arrived; 37 of 37 level exits reached the map), 10 November 2026.
 - **Random-play bot** (every level, several seeds, random keys for minutes at a time): Mac core path
-  <<SEAT:BOT-CORE>>; Windows game path <<SEAT:BOT-WINDOWS>>.
+  5 levels, 4 runs each, 108,000 steps in all (14 deaths, 106 level exits, 22 conversations, 1 save), 0 failures, 10
+  November 2026; Windows game path 5 levels, 4 runs each, 108,000 steps in all (14 deaths, 106 level exits, 22
+  conversations, 1 save), 0 failures, 10 November 2026.
 - **The load-every-face tests** (every picture each built level's sprites can ask for is loaded) and **the draw-mode
   audit** (`DrawModeAuditTests`: every draw input Core writes has a renderer that draws it; every refusal, and since PT
   every trap in FerazelRender, is proven unreachable from the levels in scope or counted as a trap no data reaches):
-  in the suites, <<SEAT:SUITES>>.
+  in the suites, the game's suite 620 tests, 0 failed (2 skipped by design: the sweep and the bot, run on their own
+  above); the Windows package's suite 82 tests, 0 failed (the same 2 skipped by design); the data census 1,108 items
+  decoded, 0 failures; the Mac app and the Windows game both build. The game's suite under CrossOver is a launch check,
+  owed by day (expected 617 passed, 0 failed, 3 skipped, of 620).
 
 **Test-harness note:** a burn-away with no face provider is a silent no-op (no sound, no draw, no state change). That
 happens only in headless test sessions built without the renderer's faces; the Mac and Windows games always pass the

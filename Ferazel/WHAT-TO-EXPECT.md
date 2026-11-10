@@ -87,14 +87,22 @@ straight from the code.
 
 ## Machine checks run for this card
 - **Visit sweep** (a script that takes Ferazel to every object on every level and draws it) on levels 1–5, through the
-  Mac game path: <<SEAT:SWEEP-CORE>>
-- The same sweep through the Windows game path: <<SEAT:SWEEP-WINDOWS>>
+  Mac game path: 3,488 visits, 0 problems (15 of 15 teleports arrived; 37 of 37 level exits reached the map), 10 November 2026
+- The same sweep through the Windows game path: 3,488 visits, 0 problems (15 of 15 teleports arrived; 37 of 37 level
+  exits reached the map), 10 November 2026
 - **Random-play bot** (plays every level with random keys, several runs of a few minutes each) on levels 1–5, Mac game
-  path: <<SEAT:BOT-CORE>>
-- The same bot through the Windows game path: <<SEAT:BOT-WINDOWS>>
+  path: 5 levels, 4 runs each, 108,000 steps in all (14 deaths, 106 level exits, 22 conversations, 1 save), 0 failures,
+  10 November 2026
+- The same bot through the Windows game path: 5 levels, 4 runs each, 108,000 steps in all (14 deaths, 106 level exits,
+  22 conversations, 1 save), 0 failures, 10 November 2026
 - **The test suites**, including the tests that load every picture each level uses and the check that every way of
-  drawing the game can ask for is one the replica draws: <<SEAT:SUITES>>
-- **Launch checks** (muted): <<SEAT:LAUNCH-CHECKS>>
+  drawing the game can ask for is one the replica draws: the game's suite 620 tests, 0 failed (2 skipped by design: the
+  sweep and the bot, run on their own above); the Windows package's suite 82 tests, 0 failed (the same 2 skipped by
+  design); the data census 1,108 items decoded, 0 failures; the Mac app and the Windows game both build. The game's
+  suite under CrossOver is a launch check, owed by day (expected 617 passed, 0 failed, 3 skipped, of 620)
+- **Launch checks** (muted): boot check owed (night rule). This build was staged at night, and builds are only launched
+  by day, muted. Owed: the Mac app's boot check, the Windows zip's boot check in CrossOver, the game's suite under
+  CrossOver, and the Mac development build's headless picture check
 
 ## Known stand-ins (until Phase 6)
 - **The Warrior** stands in its first picture, hurts on contact, never fights, never dies, and the gate stays shut
@@ -209,7 +217,8 @@ straight from the code.
 5. **Xichrons and coins.** The spinning gold Xichrons count in the score; at 100 the counter starts again and a red
    Xichron appears in the item bar. Coins and money bags add to the coin count, so Rojinko the merchant on level 1 now
    sells you potions, and they show in the item bar. Getting hit by level 1's spiked pendulums knocks 4 to 6 coins
-   out of you (fewer if you hold fewer); they blink and vanish after a few seconds unless you pick them up. (Spikes, fire and drowning hurt without
+   out of you (fewer if you hold fewer); they blink and vanish after a few seconds unless you pick them up. (Spikes,
+   fire and drowning hurt without
    costing coins, as in the original.)
 6. **Level 1's key chain.** The chest near the start gives a Steel Key. The locked chest (stand near it and a thought
    balloon shows the key it wants) opens with it and gives a Gold Key. The locked door opens with the Gold Key when you

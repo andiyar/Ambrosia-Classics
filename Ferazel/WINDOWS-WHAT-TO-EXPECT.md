@@ -10,7 +10,9 @@ the enemies alive on levels 1 to 4, and level 5 open up to the Warrior's arena �
 The question for you: **do levels 1 to 5 play on Windows as they do on the Mac — the enemies by eye, the sound by
 ear?**
 
-**Boot results (muted):** <<SEAT:LAUNCH-CHECKS>>
+**Boot results (muted):** boot check owed (night rule). This build was staged at night, and builds are only launched by
+day, muted. Owed: the Mac app's boot check, the Windows zip's boot check in CrossOver, the game's suite under CrossOver,
+and the Mac development build's headless picture check
 
 ## Starting it
 Unzip and start it exactly as in the Phase W card below (Extract All, then "Ferazel's Wand.exe"; SmartScreen: More
@@ -38,10 +40,18 @@ can't be reached in normal play (only an original saved game from a later level 
 
 ## Machine checks run for this card
 - **Visit sweep** (every object on every level, taken to and drawn) on levels 1–5, through the Windows game path:
-  <<SEAT:SWEEP-WINDOWS>>; through the Mac game path: <<SEAT:SWEEP-CORE>>
+  3,488 visits, 0 problems (15 of 15 teleports arrived; 37 of 37 level exits reached the map), 10 November 2026; through
+  the Mac game path: 3,488 visits, 0 problems (15 of 15 teleports arrived; 37 of 37 level exits reached the map), 10
+  November 2026
 - **Random-play bot** (random keys, several runs of a few minutes per level) on levels 1–5, through the Windows game
-  path: <<SEAT:BOT-WINDOWS>>; through the Mac game path: <<SEAT:BOT-CORE>>
-- **The test suites**, including the Windows package's own and the game's suite run under CrossOver: <<SEAT:SUITES>>
+  path: 5 levels, 4 runs each, 108,000 steps in all (14 deaths, 106 level exits, 22 conversations, 1 save), 0 failures,
+  10 November 2026; through the Mac game path: 5 levels, 4 runs each, 108,000 steps in all (14 deaths, 106 level exits,
+  22 conversations, 1 save), 0 failures, 10 November 2026
+- **The test suites**, including the Windows package's own and the game's suite run under CrossOver: the game's suite
+  620 tests, 0 failed (2 skipped by design: the sweep and the bot, run on their own above); the Windows package's suite
+  82 tests, 0 failed (the same 2 skipped by design); the data census 1,108 items decoded, 0 failures; the Mac app and
+  the Windows game both build. The game's suite under CrossOver is a launch check, owed by day (expected 617 passed, 0
+  failed, 3 skipped, of 620)
 
 ## Known stand-ins on Windows (Phase 5)
 - **The table's row "Every Mac stand-in of Phase 4" now reads:** every Mac stand-in of Phase 5 — the Warrior, level 10
@@ -70,7 +80,10 @@ levels 1 to 4, the spells and items, enemies that stand still — in lockstep wi
 
 The question for you: **does the Windows build behave like the Mac build — sound by ear, dialogs by eye?**
 
-**Boot results (loop run 35, 2026-10-27, by day, all muted):** the Mac staged app started and quit cleanly with no crash report; the staged Windows zip, in a clean CrossOver bottle, drew the main menu, level 1's first frame and level 1 at full brightness with its status-bar text exactly as the Mac development build does; the game's own test suite run under CrossOver: 489 passed, 0 failed, 1 skipped (the CrossOver-only skip), 0 crashed.
+**Boot results (loop run 35, 2026-10-27, by day, all muted):** the Mac staged app started and quit cleanly with no crash
+report; the staged Windows zip, in a clean CrossOver bottle, drew the main menu, level 1's first frame and level 1 at
+full brightness with its status-bar text exactly as the Mac development build does; the game's own test suite run under
+CrossOver: 489 passed, 0 failed, 1 skipped (the CrossOver-only skip), 0 crashed.
 
 Nobody has heard it yet: every run the loop made was muted, and in CrossOver on this Mac, never on a real PC.
 
@@ -86,7 +99,8 @@ Your saved games and the settings file live in `%APPDATA%\Ambrosia Classics\Fera
 Explorer's address bar). A log of the last launch, "Ferazel's Wand.log", sits there too; if the game will not start, a
 message box says why and the log has the details.
 
-### On this Mac first (optional, daytime; October's numbers, kept as history) — for Ben on the Mac where it was built; skip this on a PC
+### On this Mac first (optional, daytime; October's numbers, kept as history) — for Ben on the Mac where it was built;
+skip this on a PC
 Both scripts force the no-sound driver and refuse to run between 21:00 and 09:00.
 1. `tools/windows/proof-b-ferazel.sh` → last line `proof-b: 489 passed / 0 failed / 1 skipped / 0 crashed (of 490)`
    (the one skip is a test that cannot run under CrossOver; about 5 minutes).
