@@ -39,8 +39,12 @@ task also", the **engine features** it needs that are not built today, the **tes
 task, not derived on paper**: this document fixes only what is fixed (the death-to-Kill tail, the hit arithmetic) and,
 for every boss, the seed (1, the suite's convention) and a concrete key script (in `InputActions` terms) the build task
 starts from. The task runs the script once, measures the HP-0 frame and the Kill frame, checks the paper tail, and
-pins both; a later change is a STOP (Invariant 10). Every spawn's frame order (whether a child runs on the frame it is
-made) is stated per boss under the rule of §1.1.
+pins both; a later change is a STOP (Invariant 10). **The HP-0 frame** (HP0 below) is the frame the death entry sets
+`+0xb0 = 4` (§1.1), not the frame HP first fell below 1: a crush in the collide pass of frame h drops HP on h, and the
+death entry runs in the boss's next Handle, on h + 1 (e.g. the Warrior's, M l. 73393). **A starting script that fails**
+(no Kill, or no victory flag, by its frame cap, or the player dies) is a STOP: the seat rules the adjusted script
+before anything is pinned. Every spawn's frame order (whether a child runs on the frame it is made) is stated per boss
+under the rule of §1.1.
 
 ---
 
@@ -94,8 +98,10 @@ made) is stated per boss under the rule of §1.1.
   goes in front of the first sprite whose layer is **strictly** greater (after every equal one). So a child whose final
   layer (the Setup's store wins) is **below** its boss's goes in front of the boss and is first handled the next frame
   (**runs on its spawn frame: no**). A child at or above the boss's layer goes behind the boss, and it is handled on its
-  spawn frame only if its place lies beyond the boss's cached successor — iff the sprite after the boss (when the
-  boss's Handle began) has a layer ≤ the child's (**depends**: the build pins it on the boss's level). This holds while
+  spawn frame only if its place lies beyond the boss's cached successor — iff the boss has a successor when its Handle
+  begins and that sprite's layer is ≤ the child's (**depends**: the build pins it on the boss's level). With no
+  successor (the boss is last in the list) the cached next is 0 and the loop ends after the boss (raw 100325bc,
+  100325d4): a child behind it is **not** handled that frame. This holds while
   the list is sorted (direct `+0x80` stores do not re-sort). Children made inside a boss **Setup** exist before the
   first frame; children made in a **Hit** are made in the collide pass, after every Handle, and first run next frame.
 - **The child Setups' own draws and layers** (each runs inside the spawn, so its draws sit in the spawner's list):
@@ -258,9 +264,12 @@ The head (count, `+0xe9 = 1`, `+0xea = 1`), then with `+0x170 ≠ 0` the tail of
   Warrior dependency** — no Warrior code touches 0x46a (§8 D15).
 
 ### 2.8 Hazards for the build
-- Crate slots are record pointers into the 700-record pool and are tested by the dead flag only: a crate record freed
-  and re-used by another spawn before the Warrior's next look reads the new occupant's `+0xe9`. The build keeps the
-  slots as the pool's record identity and pins the case where a crate dies and a spawn re-uses its record in one frame.
+- Crate slots are record pointers into the 700-record pool and are tested by the dead flag only. A dead record is
+  killed (`.MTKillSprite`) only on the fourth `.UpdateSprites` pass after it died (`+0xe9` steps 1 → 2 → 3 → 4, and
+  the pass that reads 4 kills it, M l. 4967–5031; one pass a frame, M l. 5276), and the Warrior clears a slot on the
+  first Handle that sees its `+0xe9 ≠ 0` (M l. 73152–73160), so while his Handle runs every frame a slot is cleared
+  before its record can be re-used. Only a skipped Handle (`+0x1b2 ≠ 0`, M l. 73140) could leave a slot on a re-used
+  record. The build keeps the slots as the pool's record identity.
 - Every Handle frame may spawn (crates, the shot): no `SpriteSlot` copy held across a spawn (`SpriteWorld` rule 2).
 - A spawn with no free record (Ruling 16): `+0x16c` keeps counting below 1 and the empty slot re-tries every frame.
   The shot 0x71f's vx store (M l. 73249–73252) has no null test either — dropped by the same ruling.
@@ -283,8 +292,8 @@ The head (count, `+0xe9 = 1`, `+0xea = 1`), then with `+0x170 ≠ 0` the tail of
 7. `testWarriorWalkRunCycles` — walk 15 frames vx ±0x600, run 7 frames ±0xc00, patrol bound forces `+0xa6 = 0`.
 8. `testWarriorDeathAndGlow` — HP 0 → state 4, snd 703; `+0x1a2 = 1` on dying frame 45; in boss mode only (`+0x170 ≠
    0`), glow 0x10009 / 0x10008 at HP ≤ 1000, period 15 at HP ≤ 500; with p4 = 0 no glow.
-9. `testWarriorTileCallbackIsCrawlerBody` — `.HitWarriorTileSprite` (M l. 73498–73530): FG (layer 1) and kind < 100 →
-   `.WallBounce(…, 0, rect, 0, 0)`; 100 ≤ kind < 200 → `.WallBounceBG(kind − 100, …)`; kind ≥ 200 water with `+0x140
+9. `testWarriorTileCallbackIsCrawlerBody` — `.HitWarriorTileSprite` (M l. 73498–73530): FG (layer 1, any kind) →
+   `.WallBounce(…, 0, rect, 0, 0)`; else kind < 100 → the same `.WallBounce`; else 100 ≤ kind < 200 → `.WallBounceBG(kind − 100, …)`; kind ≥ 200 water with `+0x140
    == 0` → `.HandleUnderWater` — the Crawler body (`CrawlerRoach.hitTile`).
 **6A-W2 — Hit, Kill, the fight** (with 6A-FR):
 1. `testWarriorAbsorbsShots` — a player shot killed (sound 0, effect 1) + snd 303; HP unchanged; a Smite seed the same.
@@ -294,7 +303,8 @@ The head (count, `+0xe9 = 1`, `+0xea = 1`), then with `+0x170 ≠ 0` the tail of
 4. `testWarriorLavaAndBrine` — kind 2: −100, invul 0x13, flash 0x11, snd 701 vol 0x55; kind 3: +4 below 500.
 5. `testWarriorKillTail` — the count, `+0xe9`, `+0xea`, snd 453 at 48000, shake 0x1e, flash 3, `noBossAlive = 1`; with
    p4 0 no tail.
-6. `testWarriorKillFrameFormula` — Kill on dying frame 45 + (B − T) of 0x71e[5] (B, T read from the face store).
+6. `testWarriorKillFrameFormula` — Kill on dying frame 45 + (B − T) of 0x71e[5] (B, T read from the face store),
+   counted from the frame the death entry sets `+0xb0 = 4` (HP0, §0), not the crush frame.
 7. `testWarriorContactAndWriteBack` — step 7 hurts 0x70 (R(100) drawn first); Setup `+0x18a`, Kill `+0xea`.
 8. `testWarriorScriptedKill` — see 2.10.
 
@@ -306,7 +316,8 @@ seed through every level-5 sprite, the Box physics of each crate and the Warrior
 starts from:** `.left` held from the level start until the arena locks (player x < 1384); then `[]` (no keys) — the
 crates fall on their own at x 689 / 945 / 1201 and he walks his patrol [525, 1225] under them — with a one-frame
 `.jump` whenever a 0x71f shot is within 0x40 px of the player, until the Kill or 20,000 frames. It **measures** the
-HP-0 frame and the Kill frame once, checks Kill − HP0 = 45 + (B − T), and pins both; any later change is a STOP
+HP-0 frame (§0: the death-entry frame, one after the tenth crate's crush) and the Kill frame once, checks Kill − HP0
+= 45 + (B − T), and pins both; any later change is a STOP
 (Invariant 10). No frame number is given here.
 
 ### 2.11 Asserts the build task adds (the behaviours no test above pins)
@@ -384,8 +395,9 @@ first jump comes 56 frames after the lock (`+0xa6` −40 → 16), later ones 16 
 (the EnemyShot Setup keeps it) — in front of him: **runs on its spawn frame: no**.
 
 **No free record** (M l. 75232–75266): a failed boulder spawn returns 0, and the Chief still stores `+0x17e`, `+0x46`,
-vx and vy through it and still draws **R(500) and R(0x96)** — under Ruling 16 the stores are dropped and both draws are
-made (the 0x77b Setup's R(5) is not, since no Setup ran).
+vx and vy through it, **reads** through it (the dead `+0x46 == 0x10` test, M l. 75237, and the vx reads before the two
+scalings, M l. 75250–75251 and 75259–75260), and still draws **R(500) and R(0x96)** — under Ruling 16 (widened, §1.1)
+the stores and reads are dropped and both draws are made (the 0x77b Setup's R(5) is not, since no Setup ran).
 
 **Tail** (M l. 75419–75438): `+0xb2 > 0` → `< 5` ? + 1 : 0 (a hit counter with no consumer; the raw keeps an emptied
 switch, bosses-3 §10.3); death entry with **R(100) < 0x3c → `.GoblinChiefRandomCry` first**, then snd 703;
@@ -432,7 +444,9 @@ Identical to `.KillWarrior` (head, then the tail with `+0x170 ≠ 0`).
   "l. 45625–45672"; the committed dump has the arm at M l. 45591–45632). Shared with Xichra (§6). The port's counter
   is `PlayerState.bossGrab`.
 - **Its length.** The player's Handle counts the stagger down (M l. 44740–44741) **before** the arm reads it (M l.
-  45591), so the arm runs for value − 1 frames: the Chief's 0x18 gives **23** frames (written in his Handle, after the
+  45591), so the arm runs for value − 1 frames when no earlier player state pre-empts it — earlier branches jump to
+  `LAB_10050e6c` past the arm (e.g. M l. 45555, 45589), and on those frames the count-down still runs without the arm,
+  so pre-empted frames shorten the arm's run: the Chief's 0x18 gives **23** frames at most (written in his Handle, after the
   player's — layer 10 before 0xc — so the 23 start the next frame), Xichra's 0x14 gives **19** (her Handle, layer 1,
   runs before the player's, so the 19 start the same frame).
 - Cache records with flag 1 in `CachedFaces` (the mechanism exists; five new records).
@@ -452,7 +466,8 @@ Identical to `.KillWarrior` (head, then the tail with `+0x170 ≠ 0`).
    on its spawn frame.
 7. `testChiefThrowCount` — throws 2 → one boulder, 3 → two; back to state 6 with `+0xa6 = 0`.
 8. `testChiefDeathCryDraws` — HP 0: R(100) (< 60 → R(100) [+ R(10000)]) before snd 703; burn on dying frame 20.
-9. `testPlayerStaggerArm` — `PlayerState.bossGrab` 0x18 → 23 arm frames (0x14 → 19): vx halves each frame, the six
+9. `testPlayerStaggerArm` — `PlayerState.bossGrab` 0x18 → 23 arm frames (0x14 → 19) when no earlier player state
+   pre-empts the arm (the count-down runs either way; a pre-empted frame is pinned too): vx halves each frame, the six
    faces by c mod 12 (c after the count-down), no key read, then free.
 10. `testChiefTileCallbackIsCrawlerBody` — `.HitChiefTileSprite` (M l. 75535–75567, identical to the Warrior's): the
    four arms of 6A-W1 test 9.
@@ -469,8 +484,8 @@ Identical to `.KillWarrior` (head, then the tail with `+0x170 ≠ 0`).
 8. `testChiefScriptedKill` — see 3.9.
 
 ### 3.9 Scripted kill — measured by the build (the §0 ruling)
-On paper: 20 landed Fireball hits at most one per 15 frames; the tail = 20 dying frames + ⌈(B − T + 1) / 2⌉ − 1 burn
-frames of 0x77a[3] (2 rows a frame, no R(100) rows since `+0x8d ≠ 0`). The landing frames of the hits depend on the
+On paper: 20 landed Fireball hits at most one per 15 frames; the tail from HP0 (§0: the death-entry frame) = 20 dying
+frames + ⌈(B − T + 1) / 2⌉ − 1 burn frames of 0x77a[3] (2 rows a frame, no R(100) rows since `+0x8d ≠ 0`). The landing frames of the hits depend on the
 player's casting, the Chief's random lanes and the boulders' hits on the player. **Seed 1. Key script the build starts
 from:** the carry gives the Fireball selected; `.left` held from the level start until the arena locks (player x <
 1340); then every 16th frame a one-frame tap of `.left` or `.right` toward his centre x followed next frame by a
@@ -598,7 +613,7 @@ before R(12000), the layers 8 / 2, and the spawn-frame order of the table above 
 **6B-WZ2 — Hit, Kill, fight**: `testWizardShotsBurnAway`; `testWizardOwnHoveringCrateHarmless` (`+0x160 < 0` ignored);
 `testWizardCrush100` (`.KillBox`'s draws first, then R(10000), R(10000), R(2)); `testWizardKillTail`;
 `testWizardContactSmite`; `testLevel25ArenaBounds`; `testWizardScriptedKill` (the §0 ruling; tail 20 + (B − T) of
-0x728[4]; the crate attacks are the only damage — the player lures the released crate onto him). **Seed 1. Key script
+0x728[4], from HP0 — the death-entry frame, one after the crush; the crate attacks are the only damage — the player lures the released crate onto him). **Seed 1. Key script
 the build starts from:** `.right` held from the level start until the arena locks (player x > 532); then each frame a
 one-frame `.left` / `.right` toward his centre x whenever the player is more than 0x30 px from it, else `[]` — so the
 crate, which eases to 136 px above the player and drops 52 frames after it appeared, falls on him — until the Kill or
@@ -702,8 +717,12 @@ A **fourth** null use, and a stale record, both on the fire state's shot pointer
   null test** (M l. 74659–74664) — a failed spawn reads and writes low memory (Ruling 16, widened to calls and reads:
   the three calls are skipped, the R(12000) still drawn).
 - s 5–7 write `+0xb8` through `+0x1d4` (M l. 74635–74657). Those writes test `+0x1d4 ≠ 0`, but nothing ever clears it:
-  a shot that died at s 4–6 (it hit the player, or a wall) is still written, and once its record is freed (`+0xe9`
-  reaches 4 in `.UpdateSprites`, M l. 4968–5031) and re-used by another spawn, the guardian tints a stranger. The build
+  a shot that died at s 4–6 (it hit the player, or a wall) is still written. It can never be a stranger: `+0x1d4` is
+  written only at s 4–7 (M l. 74636–74657) and s 4 overwrites it first; the shot (layer 8, in front of the guardian)
+  dies at the earliest in the s-4 frame's collide pass (`+0xe9 = 1`); `.UpdateSprites` (one pass a frame, M l. 5276)
+  steps `+0xe9` 1 → 2 → 3 → 4 and kills the record (`.MTKillSprite`) only on the pass that **reads** 4 (M l.
+  4967–5031) — so three passes fall before the s-7 Handle and the record is still the dead shot at s 7. The s 5–7 tints
+  after the shot died land on its dead record (its face hidden by `.UpdateSprites`), never on a stranger. The build
   keeps `+0x1d4` as the pool's record identity (as the Warrior's crate slots, §2.8) and pins a shot killed at s 4.
 
 ### 5.8 Proposed split and tests (`DemonTests.swift`)
@@ -829,7 +848,7 @@ off = +(0x2c0 / len) / 4, else idx = k and off = −(0x2c0 / len) / 4; X = idx·
 | 0x46a ×3 (`.DoXichraShot`) | 8 (its Setup) | depends — ≤ 8 |
 | rain 0x434 / 0x5c4 | 2 (Box Setup) | depends — ≤ 2 |
 | rain 0x753 | 9 (argument kept) | depends — ≤ 9 |
-| rain 0x771 / 0x772 | 9, then `.MTChangeSpriteLayer(1200)` re-inserts each at the tail of layer 1200 | yes, whenever the sprite after her has a layer ≤ 1200 |
+| rain 0x771 / 0x772 | 9, then `.MTChangeSpriteLayer(1200)` re-inserts each at the tail of layer 1200 | depends — ≤ 1200 (pinned on level 67) |
 | explosions 0x4b7 (state 8) | 0xb (Effect Setup, M l. 53722; argument 0xc) | depends — ≤ 0xb |
 | the seed's 0x4b7 and debris 0x442 (Hit, id 0x5a) | 0xb / 0x7fbc | made in the collide pass: next frame |
 
@@ -935,7 +954,8 @@ for form 1, `.MTChangeSpriteLayer` and four stores on its spawn result with no t
 2. `testXichraRainDropForms` — forms 0, 2, 3: len / rows / delays, the drop X formula and parity (R(100) side flag);
    0x434 and 0x5c4 at layer 2, 0x753 at 9 with its R(5), R(100).
 3. `testXichraRainSweepForm1` — 0x771 / 0x772 at Y = 0x1a4 − k·0xa0 / len, `+0xa4` 0x70, vx ±0x1068, moved to layer
-   1200 (so handled on the spawn frame), gravity 0 and vy 0 on the 0x772 only.
+   1200 (handled on the spawn frame iff Xichra has a successor with a layer ≤ 1200 when her Handle begins, §1.1),
+   gravity 0 and vy 0 on the 0x772 only.
 4. `testXichraCrash` — gravity 0x15e only in state 4; R(500) snd 435 on the second grounded frame; shake 0x12; the
    stagger 0x14 (19 arm frames) only with the player's `+0xce ∨ +0xcd`; the three exits.
 5. `testXichraGroundedWindow` — vulnerable while w+0x38 ≤ 30, then state 6.
@@ -963,8 +983,14 @@ Scripted victory (the §0 ruling): on paper the tail is fixed — state 8 begins
 landing's exit, and the victory flag is set on the 211th state-8 frame after it; the frames before (three id-0x5a hits
 in phase 2, four in phase 3, the phase-4 crashes and 5000 HP of grounded hits, three in phase 5) depend on seeds lobbed
 by the lair's cannons and are **measured** by the build. **Seed 1. Key script the build starts from:** the carry gives
-the Fireball and a stock of Fire seeds (item 6; bosses-2 §6.5, bosses-3 §8.3), the Fireball selected; `[]` until
-conversation 250 ends; then a one-frame `.use` toward the nearer minion every 16 frames until both Ax goblins are dead
+the Fireball and a stock of Fire seeds (item 6; bosses-2 §6.5, bosses-3 §8.3) — at least 3 + 4 + one per phase-4
+crash + 3 plus misses; the build sets the count and records it with the pins — the Fireball selected. **Each
+conversation (250, 251, 252) is closed by Return**, a `KeyState` key (0x24), not an `InputActions` value: no
+`InputActions` value ends a conversation, which suspends the frame until its own keys (`FrameSuspension.conversation(
+keys:capsLock:)`; the `.conversation` row of `FerazelPadLayout`; Escape would abort). `ConversationRun` waits for all
+keys up, then for a key, per line (after the text is typed), so the script presses Return at each such wait and releases
+it before the next, until the conversation ends. Then: `[]` until conversation 250 (her frame 0x50) opens and is
+closed; then a one-frame `.use` toward the nearer minion every 16 frames until both Ax goblins are dead
 (conversation 251); then `.nextItem` to the Fire seeds and a one-frame `.use` each time the last seed has burst, with a
 one-frame tap toward the nearest lair cannon first (the cannons capture and lob seeds, bosses-3 §8.3); in every
 grounded window (state 5) `.previousItem` to the Fireball and a one-frame `.use` every 11 frames (past her
@@ -1079,8 +1105,8 @@ Every error this document and its two review legs found in `docs/superpowers/pla
 | P4 | 6A-FB / 6A-W order | 6A-FB "before 6A-W" | not a Warrior prerequisite — no Warrior code touches 0x46a; the first users are the Wizard, the Demon and Xichra (an order choice only; ENG E10 agrees) | §2.7, D15 |
 | P5 | 6B-WZ | "eleven states" | the switch is a 13-entry table (states 0…12) with 7 coded arms, 6 of them live (2, 4, 6, 9, 10, 12); 11 has no writer | §4.3 |
 | P6 | 6C-XL | "the CLUT animation of 67" | 6B-CA's routine: it builds `.AnimateCLUT` and the writable hdr `+0x2730` once (levels 50 / 51), and on 67 it runs on Xichra's writes; 6C-XI reuses the field | §6.6 |
-| P7 | 6A-CH | the boss grab at "`PlayerStates.swift:371`" | that comment cites "l. 45625–45672"; the arm is M l. 45591–45632 (45625ff is the hurt-stun's lead-in); the counter is `PlayerState.bossGrab` | §3.7, D16 |
+| P7 | 6A-CH | the boss grab at "`PlayerStates.swift:371`" | that comment cites "l. 45625–45672"; the arm is M l. 45591–45632 (45625ff is the hurt-stun's lead-in); the counter is `PlayerState.bossGrab`. Both of the plan's line cites have drifted: `PlayerState.swift:196` (plan l. 616, 848) is now `PlayerState.swift:201`, and `PlayerStates.swift:371` is now `:372` | §3.7, D16 |
 | P8 | 6C-XI / 6C-XL | `.UpdateXichraCannons` on the 6C-XI card | owned by 6C-XL (the seat's ruling); the rotating arm it switches on is 6A-RC's (ENG E1) | §6.6 |
-| P9 | the spiked ball 0x5c4 | (on Xichra's lair) | owned by ENG §3.4 (both 0x5c3 and 0x5c4), first needed on level 45 | §6.6 |
+| P9 | the spiked ball 0x5c4 (ownership note, not a plan error) | the plan puts spiked balls on the ENG list (l. 799), not on 6C-XL (l. 878) — it agrees | owned by ENG §3.4 (both 0x5c3 and 0x5c4), first needed on level 45; Xichra's rain also spawns 0x5c4 (§6.3) | §6.6 |
 | P10 | the no-free-record ruling | "stores to it are dropped; the caller's later draws are still made" | the bosses also call and read through a null spawn result (`.CalcCenterPos`, `.FindDesiredDirectionGeneric`, `FUN_1003f218`, `.MTChangeSpriteLayer`, `+0xe` reads); BOS proposes the ruling cover every use — stores, reads and calls skipped, draws kept | §1.1, §5.7, §6.7 |
 | P11 | BOS contract, scripted kill | "(seed, keys, expected frame of death)" | the expected frame is measured by each build task (the seat's ruling, §0); this document gives the seed and the starting key script. Xichra's test is `testXichraScriptedVictory` on purpose (the game ends from state 8; her Kill is unreachable) | §0, §6.8 |
