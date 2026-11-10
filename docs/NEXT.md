@@ -39,8 +39,8 @@ stop of the chain:** run 49 (Phase 6 research + the 6A plan) does not wait for h
 ## Gates (commands in the plan's "Machine gates"; numbers as of run 47's close)
 | gate | expected |
 |---|---|
-| at the head | G2 619 · GW2 81 · G3 1,108 / 0 · HectorKit ef2c341, zero-skip 370 |
-| G2 / GW2 after A5 | 619 / 81; 0 failed; exactly the opt-in names |
+| at the head | G2 619 · GW2 82 · G3 1,108 / 0 · HectorKit ef2c341, zero-skip 370 |
+| G2 / GW2 after A5 | 619 / 82; 0 failed; exactly the opt-in names |
 | Phase end | G3; GE `both` on levels 1–5 (sweep + bot exit 0); GWB by day **616 / 0 / 3 / 0 (of 619)**; GW4R; GW5 (stage, any hour), GW6 and G9M by day, MUTED, after the LAUNCH GUARD |
 | ◈ | A5 is not ◈: any moved golden or `BootFacesTests` pin is a STOP |
 
@@ -51,7 +51,9 @@ stop of the chain:** run 49 (Phase 6 research + the 6A plan) does not wait for h
 - Subagents: `fk-implementer` / `fk-reviewer`, **no `model` parameter** (Opus 5.5), except the one Fable cross-check
   above; foreground. Two Opus legs per task (spec, then quality with a mutation table, told what the first found); a
   fix-round leg re-runs `DrawModeAuditTests` whenever a source file gained or lost a line (run 47 lesson).
-- Memory: never two heavy suites at once; at most 4 test workers; one seat gate run in a `git archive` copy beside one
+- Memory: the sweep and the bot now kill any worker past `MAX_WORKER_MB` (4096) and write a `memory` row (exit 1) —
+  never raise the limit, a memory row is a leak to fix; stop a background run with `kill <script pid>`. Still:
+  never two heavy suites at once; at most 4 test workers; one seat gate run in a `git archive` copy beside one
   working implementer, or two review legs alone; each leg in its own `mktemp` copy.
 - Never wait silently; background long gates. Cap 300k of your own context (`get_usage` before each dispatch and at the
   close; at ~240k finish the task in flight and close).

@@ -1,4 +1,4 @@
-# Ferazel's Wand — progress note for Andrew (8 November 2026)
+# Ferazel's Wand — progress note for Andrew (10 November 2026)
 
 Hi Andrew — a plain-English update on where the Windows rewrite of Ferazel's Wand stands since test build 4, and what
 the next build will have. There is no new build to try today; the next one comes at the end of the current phase.
@@ -29,7 +29,7 @@ first job. To leave the arena, use the Escape key or close the window.
 Two automated players run through every built level on both the Mac and the Windows builds after each step: one visits
 every object on every level, the other plays randomly for several minutes per level and fails on any crash, freeze, error
 box or picture the game cannot draw. The Windows build also runs its whole test suite inside CrossOver (a Wine-based
-Windows layer) after every wave. All of these were green today on levels 1–5. The one thing a machine cannot judge is how
+Windows layer) after every wave. All of these were green on 10 November on levels 1–5. The one thing a machine cannot judge is how
 the enemies *feel* — that is what your play on real Windows is for.
 
 ## What the next build will have

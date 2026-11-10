@@ -1,5 +1,9 @@
 # Handoff — Ferazel's Wand, run 47 resumed (2026-11-10): the sweep leak, then the close
 
+> **DONE (2026-11-10, evening).** Both fixes landed (36e9a58, fafc00f, 33f52b8, bc31efa), one guarded worker ran flat
+> (928 visits, 295 MB peak), the sweep, the bot and Proof B are green, run 47 is closed and run 48 started. Kept as the
+> record of the two panics; nothing below is owed. The progress note is now `docs/progress-for-andrew-2026-11-10.md`.
+
 Written by the run 47 seat (Fable) when it passed its 300k context cap. The successor session finishes run 47 from here.
 Work in this worktree, branch `claude/ferazel-run-47-e0431c`. Read `CLAUDE.md`, then this file; nothing else first.
 

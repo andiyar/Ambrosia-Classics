@@ -7,7 +7,7 @@ Settled history lives in docs/STATE-history.md.
 > numbers and open items and moves anything settled to the top of `docs/STATE-history.md`; it never appends a run story
 > here. Forks go in `docs/DECISIONS.md`, narrative in the handoff. Re-verify before acting.
 
-## Ferazel's Wand — 2026-11-08 (attended run 47 closed; main @@MAIN@@, pushed; run 48 started 2026-11-10)
+## Ferazel's Wand — 2026-11-10 (attended run 47 closed; main bc31efa (the code head; the close documents sit on top), pushed; run 48 started 2026-11-10)
 
 - **Where it stands:** Phase 5 "Enemies" is one task from its machine end. Waves 5.0–5.5 are done: every enemy class
   placed on levels 1–4 is alive, the later classes are built and machine-tested, level 5's moving sky (OmniPx modes
@@ -24,16 +24,16 @@ Settled history lives in docs/STATE-history.md.
 - **Ben's gates:** Phase 1 passed; Phases 2 and 3 passed with notes; Phase 4 passed (Fireball note) and the Windows
   twin passed on Andrew's word (2026-11-07). After Phase 5: three gated Phase 6 parts (6A to the Goblin Chief, 6B to the
   Wizard and the fire, 6C the whole game), then one release `ferazel-1.0`.
-- **Current numbers** (the seat's own runs at run 47's close, commit 0f7d839):
+- **Current numbers** (the seat's own runs at run 47's close, commit bc31efa, 2026-11-10):
 
 | gate | value |
 |---|---|
 | Ferazel/Core suite (G2) | **619** = 486 rules + 133 render; 617 passed, 0 failed, 2 opt-in skips by name: `FerazelRenderTests.VisitSweepTests testVisitEveryObject`, `FerazelRenderTests.RandomPlayTests testRandomPlay` |
-| FerazelWinKit (GW2) | **81**; 79 passed, 0 failed, 2 opt-in skips (`WinVisitSweepTests testVisitEveryObjectThroughWinGame`, `WinRandomPlayTests testRandomPlayThroughWinGame`) |
+| FerazelWinKit (GW2) | **82** (run 47's leak fix added `WinGameReleaseTests`); 80 passed, 0 failed, 2 opt-in skips (`WinVisitSweepTests testVisitEveryObjectThroughWinGame`, `WinRandomPlayTests testRandomPlayThroughWinGame`) |
 | census (G3) | items 1,108 decoded, failures 0 |
-| visit sweep (GE, levels 1–5, both shells) | @@SWEEP@@ |
-| random-play bot (GE, levels 1–5, both shells) | @@BOT@@ |
-| Proof B in CrossOver, muted (GWB) | @@PROOFB@@ |
+| visit sweep (GE, levels 1–5, both shells) | core 3,488 visits, windows 3,488 visits, rows 0 on both (teleports 15 / 15 arrived, level exits 37 / 37 reached the map), exit 0 — 4 workers under the new per-worker limit, 2026-11-10 |
+| random-play bot (GE, levels 1–5, both shells) | core and windows each: levels 5, seeds 4, steps 108,000, deaths 14, exits 106, conversations 22, saves 1, failures 0; exit 0 (2026-11-10) |
+| Proof B in CrossOver, muted (GWB) | **616 passed / 0 failed / 3 skipped / 0 crashed (of 619)**, 2026-11-10 |
 | Mac SDL smoke (GW4R) | main menu identical (FNV 0xae2b1ee08c089b2a) |
 | GW1 / GW3 / GW4 / G5 / G-MUTE | 0 then 2 / 0 then 1 / Build complete! / BUILD SUCCEEDED / 1 then 1 |
 | HectorKit (G1) | main **ef2c341**, clean; zero-skip executed **370**; Ferazel follows HectorKit main |
@@ -54,7 +54,17 @@ Settled history lives in docs/STATE-history.md.
   refused the seat's `git worktree remove` in run 47; Ben removes them. `ferazel-run-47-e0431c` is this run's (merged).
   `heuristic-chandrasekhar-f66ade` (at c8d9cf5) is another session's; `inspiring-cannon-e97ccd` (Deimos) and
   `~/Developer/gamepad-wt/` are Ben's.
+- **The sweep and the bot are guarded (2026-11-10):** a finished Windows-path game is now freed (the flow reaches
+  `FerazelDriver` through a weak link; one worker stays near 290 MB over 928 visits, was +70 MB a visit), and both
+  scripts kill any worker past `MAX_WORKER_MB` (4096) and brake below `MIN_RUNNING_FREE_PCT` (15) free memory, with a
+  failure row. Stop a background run with `kill <script pid>`. A `memory` row is a leak to fix, never a limit to raise.
 - **Open carries** [LOW unless marked]:
+  - From the watchdog's last review (2026-11-10; all over-cautious or unlikely, none lets a worker run unguarded on a
+    real Mac): when the wait before a worker start gives up it pulls the whole brake, killing healthy running workers
+    (should-fix); if both `ps` and `top` give no reading a worker measures 0 MB and is never killed; the bot takes
+    defaults for bot settings that are set but empty; `FERAZEL_VISIT_LIMIT` is not validated; huge limit values are
+    accepted; the sweep does not clear a reused `OUT`; a worker-exit comment in `tools/ferazel-worker-watchdog.sh`
+    overstates when the cleanup runs; the release test covers the sweep's game wrapper only (the bot's has the same shape).
   - From run 47: the ◇ Warrior's pre-lock rocks (type 1075) and its shot-absorbing Hit are Phase 6 (named on the gate
     card); the stand-in Handle's per-frame step is untested; the boss-music "music is on" check has no test with music
     off; the second camera bound and the 0x7f60 right-opening bound are unreachable on level 5 (untested); `try!` at
