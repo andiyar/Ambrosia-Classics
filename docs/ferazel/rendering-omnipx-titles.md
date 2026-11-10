@@ -469,3 +469,15 @@ None (no sprite fields involved).
 - **§3.2, the yb backup:** ⚑ the `.TurnOnOmniPx` loop (M l. 13043–13054) saves `hdr+0xb26c` through a pointer it never advances, so passes 1…0x1fff re-save the already-zeroed field — the backup at 0x100f40a8 always ends 0, and `.TurnOffOmniPx` restores yb as **0**, not its original value (level 5's real yb is 256). The port follows the binary.
 - **§3.2, mode 1's layer-3 factors:** the "0xaa then 0xc0" is one dead 0xc0 write in the dump (the decompiler folded the other); no behaviour either way.
 - **§3.2, turn-on timing:** `.SetupOmniPx` runs at M l. 2540 after the cache loader's 100 % load bar and before one more 100 % bar at M l. 2569 and the player spawn at M l. 5181 — so the backdrop is on before the first frame's sprite pass (mode-0xb sprites read the zeroed factors from frame 1).
+
+## Corrections — ENG review fix round (2026-11-11; the dump wins)
+
+- **§3.6, the rain's first-call flag `*_DAT_1009fe88` has three writers, not one.** `.SetupLevel` clears it after
+  `.SetupOmniPx` (M l. 2541), **`.Pause` clears it** right after stopping the rain loop `*_DAT_1009fe24` and the voice
+  `*_DAT_1009fe20` (M l. 3200–3203), and `.GameLoop`'s exit clears it (M l. 5298–5300). So after every Caps-Lock pause
+  on level 15 the next `.GenerateRain` draws a fresh `FastRand(90)` (the thunder timer restarts) and replays the loop.
+  [HIGH]
+- **§3.6, "every logic frame" means every `.PaintFrameWrap` call.** Besides `.GameLoop`'s own call (M l. 5248),
+  `.Pause` calls `.PaintFrameWrap(1, 0)` (M l. 3190, before its clear) and the quit dialogs in `.CheckGameLoopKeys`
+  call `.PaintFrameWrap(1, 1)` (M l. 3918, 3922, 3980, 4005): each runs `.GenerateRain` (M l. 9228–9229) and
+  `.AnimateCLUT` (M l. 9231) once more. [HIGH] (phase6-engine-contracts §2.7, §3.6.)

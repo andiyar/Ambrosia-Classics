@@ -387,3 +387,15 @@ rows, l. 399 ff.; no §0 exists there) ⚑ corrected (review 2b, 2026-10-04) #3.
 In the wave-2 table at the end of `bosses-2.md` (Corrections to the existing bank, rows W1..W5):
 world-data-format §3.2 (0x2730..0x2736), sprites-backgrounds-sounds §4 (`.AnimateCLUT`),
 triggers-background §2.2 / -2 NR 2 (type 90), triggers-background §1 (level-67 gates), coverage §2.
+
+### Corrections — ENG review fix round (2026-11-11; the dump wins)
+- **§9.2 step 5, the wave's rounding.** w is **((A·S[θ]) / 256, truncating toward zero) >> 8 (floor)**, not
+  `(A·S[θ]) >> 16`: raw `10011a74 mullw`, `10011a78 srawi 8`, `10011a7c addze` (the round-toward-zero fix-up of a
+  signed divide by 256), `10011a80 srawi 8` (M l. 9025–9026). A negative product that is not a multiple of 256 comes out
+  one higher than a plain 16-bit shift. [HIGH, raw]
+- **§9.2 header, "every painted frame".** `.AnimateCLUT` runs on every `.PaintFrameWrap` call, drawn or not (M l.
+  9231, before the drawn-frame test), including `.Pause`'s and the quit dialogs' extra calls (M l. 3190, 3918, 3922,
+  3980, 4005); the timer of step 3 ticks on each. Its timer `*_DAT_100a00e8` has no writer besides this routine (M l.
+  8961, 8986), so it carries across levels 50 → 51 → 67, deaths, the map and new games. The level-start call (M l. 5206)
+  recolours the working CLUT `*_DAT_1009fe94` that `.BuildTintTable` / `.BuildReddenTable` read next (M l. 5207–5208).
+  [HIGH] (phase6-engine-contracts §3.6 writes the whole step.)

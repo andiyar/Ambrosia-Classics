@@ -499,3 +499,14 @@ conversations-mcnv.md §2–§4) [HIGH]:
   closed (§3.2); 0x272c was already HIGH; ~~0x26c7 OmniPx composition and PxMid −1 drawing remain
   (save-continue §8.3)~~ both closed by rendering-omnipx-titles §2/§3 ⚑ wave 2 corr (2026-10-04) RO #5, #6.
 - ~~Mcnv response/action encoding~~ (closed, §5, ⚑ wave 2 corr (2026-10-04) CM #1); `STR# 500` sign reader.
+
+## Corrections — ENG review fix round (2026-11-11; the dump wins)
+
+- **§3.3, the overlay wind (o1 0…15): the two gates are crossed on up-left directions.** `.StandardSpriteHandles`
+  (M l. 32489–32574, raw `100369b0..10036c5c`) tests the impulse `(v, h) = .LookupModedImpulse((o1 + 18) mod 36, 15·o2)`
+  against the sprite's vy / vx and keeps two flags: one allows the x push (`+0x14 +=`), the other the vy push
+  (`+0x2c +=`). In three of the four sign cases each axis's test feeds its own flag; **when h < 0 and v < 0** (raw
+  `10036a70..10036aa0`) `10036a98 rlwinm r29,r6` puts the **vy** test on the x flag and `10036a9c rlwinm r28,r0` the
+  **vx** test on the vy flag. o1 10…15 give m 28…33, all h < 0 ∧ v < 0 (o1 9 gives h = 0, not crossed); shipped on
+  level 10 (four o1 = 10 cells) and level 20 (36 o1 = 12 cells). A replica transcribes the crossing as written
+  (phase6-engine-contracts §2.2). [HIGH, raw]
