@@ -207,6 +207,10 @@ struct FerazelSettings: Equatable {
         // seeded once from Time + Ticks and never again (the shell's `seed`).
         // The flow and its runs reach this driver through `LevelServicesLink` (weak), never directly: the driver owns
         // the flow, so a strong back-reference would keep a dropped game alive (2026-11-10).
+        // WARNING: the driver itself still conforms to `LevelServices` (FerazelDriverTests drives it directly), so
+        // `levels: self` here would compile — and bring back the leak that kept every dropped game alive (~70 MB a
+        // visit on the Windows-path sweep; with four workers it grew to tens of GB and panicked the Mac twice). Always
+        // hand the flow `LevelServicesLink(driver: self)`; WinGameReleaseTests fails if a dropped game is not freed.
         let flow = GameFlow(resources: resources, prefs: prefs, seed: seed(), files: files,
                             levels: LevelServicesLink(driver: self))
         flow.startLevel = settings.startLevel
@@ -430,6 +434,12 @@ struct FerazelSettings: Equatable {
 /// on the shared surface (it leaves the surface's CLUT alone until the level's `setScreenClut`, FE0 — `.SetupLevel`'s
 /// tail draws it before the loop, so the death wipe always paints under the level CLUT), then its lights and tint
 /// table from the session.
+///
+/// WARNING: this conformance is for `LevelServicesLink` (which forwards here) and for FerazelDriverTests, which calls
+/// the three methods on the driver directly. Never hand the driver itself to `GameFlow(…, levels:)` or a `LevelRun`:
+/// the driver owns the flow and the flow owns its runs, so a run or flow holding the driver strongly is a cycle that
+/// keeps every dropped game alive — the leak behind the Windows-path sweep's kernel panics (2026-11-08, 2026-11-10).
+/// Hand them `LevelServicesLink(driver:)`, which holds the driver weakly.
 extension FerazelDriver: @MainActor LevelServices {
     func prepare(level: Int) throws -> LevelFaces {
         let r = try FrameRenderer(resources: resources, level: level, search: search, dither: .errorDiffusion,
