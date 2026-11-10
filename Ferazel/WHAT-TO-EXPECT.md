@@ -1,6 +1,6 @@
 # Ferazel's Wand — what to expect (Phase 5 gate build: the enemies, levels 1–5 through the first boss door)
 
-**Status: machine gates green; Ben's gate pending.** Staged from commit <<SEAT:STAGED-COMMIT>>.
+**Status: machine gates green; Ben's gate pending.**
 
 **Windows:** the same build for Windows 10/11 has its own card, `Ferazel/WINDOWS-WHAT-TO-EXPECT.md`.
 
@@ -16,8 +16,8 @@ Play it side by side with your Let's Play (https://www.youtube.com/watch?v=ESuyx
 
 ## What this build is, and what it is not
 - **It is** every enemy placed on levels 1–4 (goblins, crawlers, roaches, bats, frogs, blobs), their shots, getting hurt
-  and hurting them, the Statue spell on enemies, shields, level 4's boulder spouts, the underwater tint, and level 5 up
-  to the Warrior's arena.
+  and hurting them, the Statue spell on enemies, level 4's boulder spouts, the underwater tint, and level 5 up to the
+  Warrior's arena. Shield blocking is built and machine-tested too, but no shield can be reached yet (card step 8).
 - **It is not** the Warrior fight. The Warrior stands still in the arena and the gate beyond it stays shut (Phase 6).
   Level 10 and everything after it are not built yet: they say "not built yet (Phase 6)".
 
@@ -51,22 +51,27 @@ straight from the code.
    coins out of you (they fly out and blink). A big hit makes the big "ouch". Dead enemies never hurt.
 6. **Hurting them.** Every spell, the dagger and the other held weapons, crushing boxes, the big explosion and the Ring
    of Smiting all work on enemies. Goblins die with their death frames and burn away; a goblin dying in water leaves a
-   body that floats and can be stood on. Scores add up (goblin 500 to 800, crawler 500, roach 600, bat 500), and the
-   stage-complete panel counts the enemies defeated.
+   body that floats and can be stood on. Scores add up (goblins 400 to 600: the boulder goblin 400, the axe thrower
+   500, the spear guard 600; crawler 500, roach 600, bat 600), and the stage-complete panel counts the enemies defeated.
 7. **The Statue spell on an enemy.** It turns to stone for about 4 seconds; you can stand on it; it thaws 200 health
    points weaker.
-8. **Shields.** Level 5 has a Shield to pick up. Raised, it blocks shots from the front with a clang. The Magical
-   Shield (it reflects darts and spines, which burn away, and has its own crouch picture) is built too, but it is first
-   found on a later level, so you can't reach it yet.
+8. **Shields: nothing to test yet.** Blocking (a raised shield stops shots from the front with a clang) and the
+   Magical Shield's reflection (darts and spines bounce back and burn away; it has its own crouch picture) are built
+   and machine-tested, but no shield can be reached: none lies on levels 1–4, level 5's Wooden Shield lies beyond the
+   Warrior's shut gate, and the Magical Shield is first found on a much later level. They open up in Phase 6, once the
+   Warrior can be beaten.
 9. **Level 4's boulder spouts** fire boulders when their button is pressed.
-10. **Under water** the screen takes a blue tint (green in acid, red in lava), and clears when you surface.
+10. **Under water** the screen takes a blue tint, and clears when you surface. In acid (levels 1–3) it is green. Lava,
+    whose tint is red, is on none of levels 1–5, so the red tint can't be seen yet. In the healing-brine pools (levels
+    2–5) the screen instead dims slightly, a little toward black, as the original does.
 11. **Level 5, "Manditraki Warrior".** The sky behind the level moves. The level plays its own music from the start;
     the boss music comes only once the Warrior is beaten (Phase 6), so the arena locking does not change the music.
     You start at the right edge facing left. Walk left: the camera pans and the arena locks behind you, the gate ahead
     stays shut, and the Warrior stands there and hurts you if you touch it. Leave with Esc (abort) or ⌘W.
     **Expected missing until Phase 6:**
-    - the real Warrior keeps boulders falling from high above its arena (three at a time, each replaced once it has
-      landed); none fall here;
+    - the real Warrior keeps three rocks dropping into its arena from 400 to 500 pixels up, spread across it; a rock
+      breaks when it lands hard (and hurts you if it lands on you), and the broken ones are replaced together about
+      half a second later. None fall here;
     - your shots and crates do nothing special to it (the real one swallows shots with a sound and knocks crates away);
     - if you use the Ring of Smiting on it, it may stop hurting you but it stays standing, and the gate stays shut.
 12. **Things you can't see but may feel (MED).** All read from the code but not provable on screen:

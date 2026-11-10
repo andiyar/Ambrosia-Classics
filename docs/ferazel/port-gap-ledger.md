@@ -52,14 +52,17 @@ applied (D35 known deviation 8).
 compared with a real capture. It can't quit the game; at worst a few pixels differ. Settle it from the Let's Play or the
 VM (Q15 reviewer item).
 
-**Visible today, deliberately left for Phase 5** (worth naming on gate cards so testers don't report them):
+**Visible today, deliberately left for Phase 5** (worth naming on gate cards so testers don't report them) — **all three
+built in Phase 5 (2026-11-10):**
 - Enemies in all four levels stand still in their first picture and can't hurt or be hurt (Walker, Crawler, Roach, Bat,
-  Blob, Frog).
-- The boulder spouts on level 4 never throw boulders.
+  Blob, Frog). (Built: every enemy class of levels 1–4 moves, attacks, hurts and dies.)
+- The boulder spouts on level 4 never throw boulders. (Built: the spouts fire when their button is pressed.)
 - No blue-green screen tint underwater. (Built since, in Phase 5: blue in water, green in acid, red in lava.)
 
 **Watch list for Phases 5–6 — these WOULD quit the game the day their level or object is built, unless built first:**
-- Level 5 (the Warrior) cannot open until the OmniPx backdrop overlay is built (also levels 15, 25, 70).
+- ~~Level 5 (the Warrior) cannot open until the OmniPx backdrop overlay is built (also levels 15, 25, 70).~~ Built in
+  Phase 5 (2026-11-10): OmniPx modes 2, 4 and 5 draw and level 5 opens; rain (level 15) and the interlace (level 70)
+  are still refused at level open (Phase 6).
 - Level 10's horizon strip uses a draw mode (8) the port refuses.
 - The fire backdrop (levels 52, 55), the rippling backdrop (levels 11, 18), water kinds 206–209.
 - A sprite lit by nearby lights (boulder, raft, mace) sitting on the brightest light in a completely dark spot; only level
@@ -131,10 +134,11 @@ trip (class d).
 Class (c) rows: listed in the Summary (X001 continue save, A22 sparkle drift, M0554 empty-inventory box, M0260 voice
 eviction; ruled M0060/M0061 debug chord, M0652 Windows menu bar, M0069 system volume).
 
-Class (a), by phase: Phase 5 — enemy Handles/Hits/Kills (the `inert` class), enemy contacts in `.HitPlayerSprite`, shots
-vs enemies, the Crawler shot-kill, Statue spell / burning on enemies, geysers NR 2–4, boulder-spout boulders, the
-Magical Shield crouch picture (the underwater tint is built: UT, c49bbd4); Phase 6 — bosses, rope bridge 1466, magic carpet, spiked balls,
-falling rocks, rotating blade; level 5+ entry (the planned "not built yet" dialog).
+Class (a), by phase: Phase 5 — **all built in Phase 5 (2026-11-10):** enemy Handles/Hits/Kills (the `inert` class
+now only four bosses and the countdown digits), enemy contacts in `.HitPlayerSprite`, shots vs enemies and enemy shots,
+the Crawler shot-kill, Statue spell / burning on enemies, geysers NR 2–4, boulder-spout boulders, the Magical Shield
+crouch picture, the underwater tint (UT, c49bbd4); Phase 6 — bosses, rope bridge 1466, magic carpet, spiked balls,
+falling rocks, rotating blade; level 10+ entry (level 5 opens since Phase 5; later levels get the "not built yet" report).
 
 Class (b) highlights: rope types 3023–3039 divide by zero in the original (refused); missing PICT ids above; the
 original's undefined reads that the port refuses rather than invent (e.g. a light index past the table).
@@ -192,12 +196,13 @@ decisions in `tools/ferazel/gap-legs/routines/overrides.py`).
 | built | 501 | cited by the port; ~120 hand-checked, ~440 by citation only (MED) |
 | absorbed | 55 | the port does the job under another name (where: the table's note) |
 | partial | 21 | missing arms named per row — every missing arm is Phase 5/6 or an object not placed in levels 1–4 |
-| not built | 151 | 72 Phase 5 (enemy classes, enemy shots, geysers, burn-away, shield block, underwater tint — the tint since built, in Phase 5), 52 Phase 6 (Dillo, Warrior, Demon, Chief, Wizard, Xichra, victory, rope bridge), 27 later-level features (fire backdrop, OmniPx + rain, backdrop ripple, horizon strip, auto-scroll, boss arena, wind, programmed cannons/maces, trees, rotating blade) — header values all 0 on levels 1–4 |
+| not built | 151 | 72 Phase 5 (enemy classes, enemy shots, geysers, burn-away, shield block, underwater tint — **all built in Phase 5, 2026-11-10**), 52 Phase 6 (Dillo — **built in Phase 5, 2026-11-10** — Warrior (a stand-in since Phase 5), Demon, Chief, Wizard, Xichra, victory, rope bridge), 27 later-level features (fire backdrop, OmniPx + rain, backdrop ripple, horizon strip, auto-scroll, boss arena, wind, programmed cannons/maces, trees, rotating blade — **OmniPx modes 2/4/5 and level 5's boss arena built in Phase 5, 2026-11-10; rain and the rest still not built**) — header values all 0 on levels 1–4 |
 | out of scope | 498 | Toolbox/system/runtime plumbing (Apple events, resolution switch, date checks, memory, cursor, thread manager, debug, movie capture, FPS display, the C runtime) |
 | dead | 10 | no reachable caller: `.InitPlayerKickRects`, `.AltClutMod`, the track map (3), `.DoSaveGame`, `.BuildPosterizationTable`, `.BlitEncFaceTransRippleClip` (mode 0xd), dynamic sounds (2) |
 
-Partial, the ones a player meets: the six enemy Setups placed in levels 1–4 (face and fields built, behaviour Phase 5);
-`.HitPlayerSprite`, `.HitPlayerShotSprite`, `.KillPlayerShot`, `.HitButtonSprite` (their enemy arms are Phase 5). Every
+Partial, the ones a player meets: the six enemy Setups placed in levels 1–4 (face and fields built, behaviour Phase 5 —
+built 2026-11-10); `.HitPlayerSprite`, `.HitPlayerShotSprite`, `.KillPlayerShot`, `.HitButtonSprite` (their enemy arms
+are Phase 5 — built 2026-11-10). Every
 other partial row's missing arms belong to object types placed only on later levels.
 
 Citation is not proof of building: the enemy Handles are "cited" only because the Smiting Ring lists them as targets —

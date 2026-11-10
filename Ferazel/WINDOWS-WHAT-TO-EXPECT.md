@@ -1,6 +1,6 @@
 # Ferazel's Wand for Windows — what to expect (Phase 5 gate build: the enemies, levels 1–5 through the first boss door)
 
-**Status: machine gates green; Ben's and Andrew's gate pending.** Staged from commit <<SEAT:STAGED-COMMIT>>.
+**Status: machine gates green; Ben's and Andrew's gate pending.**
 
 Ferazel's Wand 1.0.3 for Windows: Ambrosia's Ferazel's Wand (1997), rebuilt to run on Windows 10 and 11 (64-bit) from
 the original game's own data. Unofficial, non-commercial preservation. It is the same game as the Mac Phase 5 build —
@@ -25,13 +25,14 @@ New Game then goes straight to that level, for that one launch. Any number other
 
 ## The gate card: what to check (a Windows 10/11 PC, or CrossOver)
 Play **the same 12 steps as the Mac card** (`Ferazel/WHAT-TO-EXPECT.md`, "The gate card: what to check"): the goblins,
-crawlers and roaches, bats, frogs and blobs; getting hurt and hurting them; the Statue spell on an enemy; the shield;
-level 4's boulder spouts; the underwater tint; level 5 up to the Warrior's arena; and the things you may only feel.
+crawlers and roaches, bats, frogs and blobs; getting hurt and hurting them; the Statue spell on an enemy; the shields
+(nothing to test yet: no shield can be reached in this build); level 4's boulder spouts; the underwater tint; level 5
+up to the Warrior's arena; and the things you may only feel.
 On Windows, Shift / Alt / Ctrl act as the Mac's Shift / Option / ⌘, and Esc leaves level 5's locked arena (abort).
 
 **Note anything that differs from the Mac** — a picture, a sound, a timing, a dialog. As on the Mac, until Phase 6 the
-Warrior stands still and never dies, no boulders fall from above its arena, your shots and crates do nothing special to
-it, and the gate stays shut.
+Warrior stands still and never dies, no rocks drop into its arena, your shots and crates do nothing special to it, and
+the gate stays shut.
 
 ## Machine checks run for this card
 - **Visit sweep** (every object on every level, taken to and drawn) on levels 1–5, through the Windows game path:
@@ -41,9 +42,9 @@ it, and the gate stays shut.
 - **The test suites**, including the Windows package's own and the game's suite run under CrossOver: <<SEAT:SUITES>>
 
 ## Known stand-ins on Windows (Phase 5)
-- **◇W6 now reads:** every Mac stand-in of Phase 5 — the Warrior, level 10 and later, the enemies first placed after
-  level 5, the other bosses and the later levels' drawing features — replaced in Phase 6, in lockstep with the Mac.
-- Every other row of the Phase W card's table below (◇W1 to ◇W14) still holds.
+- **The table's row "Every Mac stand-in of Phase 4" now reads:** every Mac stand-in of Phase 5 — the Warrior, level 10
+  and later, the enemies first placed after level 5, the other bosses and the later levels' drawing features —
+  replaced in Phase 6, in lockstep with the Mac. Every other row of the Phase W card's stand-ins table below still holds.
 
 ## What to tell me
 Your answer goes in `docs/QUESTIONS.md` under the Phase 5 gate item (the Windows part): yes or no to "do levels 1 to 5
@@ -54,8 +55,9 @@ number if you can.
 
 ## The Phase W card (gate build: the Phase 4 game on Windows) — kept as written
 
-Kept as it was written for the Phase W gate. Where it says the enemies stand still or level 5 is refused, the
-Phase 5 card above replaces it; the starting steps, the small differences and the ◇W table still hold.
+Kept as it was written for the Phase W gate, as history. Where it says the enemies stand still or level 5 is refused,
+the Phase 5 card above replaces it; its starting steps, small differences and stand-ins table still hold. Its boot
+results and the test counts in "On this Mac first" are October's: this build's are in the Phase 5 card's machine checks.
 
 **Status: machine gates green; Ben's and Andrew's gate pending.**
 
@@ -82,7 +84,7 @@ Your saved games and the settings file live in `%APPDATA%\Ambrosia Classics\Fera
 Explorer's address bar). A log of the last launch, "Ferazel's Wand.log", sits there too; if the game will not start, a
 message box says why and the log has the details.
 
-### On this Mac first (optional, daytime) — for Ben on the Mac where it was built; skip this on a PC
+### On this Mac first (optional, daytime; October's numbers, kept as history) — for Ben on the Mac where it was built; skip this on a PC
 Both scripts force the no-sound driver and refuse to run between 21:00 and 09:00.
 1. `tools/windows/proof-b-ferazel.sh` → last line `proof-b: 489 passed / 0 failed / 1 skipped / 0 crashed (of 490)`
    (the one skip is a test that cannot run under CrossOver; about 5 minutes).
