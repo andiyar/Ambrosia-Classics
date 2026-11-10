@@ -31,9 +31,16 @@ task also", the **engine features** it needs that are not built today, the **tes
 | shots spawned | 0x71f (EnemyShot, built) | 0x77b (EnemyShot, built) | 0x46a ×3 (EnemyShot, built) | 0x46a aimed (built) | 0x46a ×3 aimed; rain 0x753, 0x771/0x772 (built) |
 | other children | 3 falling crates Box 0x433 (built arm) | — | hovering crate Box 0x434 (built arm) | partner guardian (same class), 8 neck segments each (**new class**) | wing (**new class**), cannons 0x443/0x449 (Background), minions 0x6d6 (Walker, built), rain Box 0x434 / 0x5c4, explosions Effect 0x4b7 |
 | new `SpriteHandler` cases | none (`.warrior` exists) | `.chief` | `.wizard` | `.demon`, `.demonSegment` | `.xichra`, `.xichraWing` |
-| hurt by | falling Statue / Box (200) | every player shot (`+0xa4`), falling solid (200) | falling solid with `+0x160 ≥ 0` (100) | player shots in roar frames 5…47 only, not V Blade | phase-dependent (§6.5) |
+| hurt by | falling Statue / Box (200) | every player shot (`+0xa4`), falling solid (200) | falling solid with `+0x160 ≥ 0` (100) | player shots in roar frames 5…47 only, not V Blade | phase-dependent (§6.4) |
 | contact damage (step 7) | 0x70 (row M l. 49840) | 0x70 (row M l. 49849) | 0x70 (row M l. 49846) | 0x70 (default; no row) | none (not in the list) |
-| proposed tasks (tests) | 2 (8 + 8) | 2 (9 + 8) | 2 (9 + 7) | 3 (8 + 9 + 8) | 3 (9 + 10 + 8), plus 6C-XL |
+| proposed tasks (tests) | 2 (9 + 8) | 2 (10 + 8) | 2 (10 + 7) | 3 (8 + 9 + 8) | 3 (9 + 10 + 8), plus 6C-XL (1) |
+
+**Scripted kills (the seat's ruling, 2026-11-11).** The frame a boss dies in a scripted run is **measured by the build
+task, not derived on paper**: this document fixes only what is fixed (the death-to-Kill tail, the hit arithmetic) and,
+for every boss, the seed (1, the suite's convention) and a concrete key script (in `InputActions` terms) the build task
+starts from. The task runs the script once, measures the HP-0 frame and the Kill frame, checks the paper tail, and
+pins both; a later change is a STOP (Invariant 10). Every spawn's frame order (whether a child runs on the frame it is
+made) is stated per boss under the rule of §1.1.
 
 ---
 
@@ -68,15 +75,40 @@ task also", the **engine features** it needs that are not built today, the **tes
 - **Death entry** (Warrior, Chief, Wizard, Demon): after the state switch, `HP < 1 ∧ +0xb0 ≠ 4` → `+0xb0 = 4`,
   `+0x46 = 0`, `+0xa6 = 0`, `.STPlay3DSound(snd 703 *_DAT_100a026c, 1, 0x100, +0xe)` (no draw; the Chief draws first,
   §3).
-- **The wounded glow** (Warrior, Wizard, Xichra; not the Chief, not the Demon): `+0xf0 − 1`; at 1…3 `+0xb8 = 0x10008`,
+- **The wounded glow** (Warrior — only in boss mode, `+0x170 ≠ 0`, inside its boss block, M l. 73151–73212 —, Wizard,
+  Xichra; not the Chief, not the Demon): `+0xf0 − 1`; at 1…3 `+0xb8 = 0x10008`,
   at 4…6 `0x10009` (only under the class's HP threshold); at ≤ 0 reload (class period) and `+0xb8 = 0`. A falling-solid
   hit writes `+0xf0 = 0`.
 - **The Statue spell**: no boss Hit calls `.TurnIntoStatue` (raw scan of `bl 0x10043138`, bosses §1.5) — a Statue shot
   is an ordinary player shot to every boss. Each boss task's "Statue arm" is therefore *none*, pinned by one test row.
 - **Environmental hazards** (`EnemyCommon.environmentalHazard`): no boss Hit tests the 0x4b7 explosion or 0x5a0 — none.
-- **`.MTNewSprite`** (M l. 30690–30717): stores `+0x80` = the layer argument, then runs the Setup, then re-stores
-  `+0x48`, then inserts — so **a Setup's own layer store wins** over the caller's argument; a spawn that finds no free
-  record returns 0 and the caller's later stores go to address 0 + offset (the port drops them, Ruling 16).
+- **`.MTNewSprite`** (routine M l. 30631–30722; the stores 30703–30714, the Setup 30715–30717, the re-store of `+0x48`
+  and the insert 30718–30719): stores `+0x80` = the layer argument, then runs the Setup, then re-stores `+0x48`, then
+  inserts — so **a Setup's own layer store wins** over the caller's argument. A spawn that finds no free record
+  returns 0, and the caller's later stores go to address 0 + offset (the port drops them, the plan's no-free-record
+  ruling, "Ruling 16" here). The bosses also **read and call through** a null result (§3.3, §4.3, §5.7, §6.7):
+  BOS proposes reading the ruling as covering every use of the null result — stores, reads and calls made through it
+  are skipped; the caller's own later draws are still made (§10).
+- **Frame order of a spawn** (`.MTInsertSprite` M l. 30552–30598; `.MTHandleSprites` loads the next pointer before it
+  calls a Handle, raw `100325b8..100325d0`, spells-detail-2 §4): the list is sorted by layer ascending and a new sprite
+  goes in front of the first sprite whose layer is **strictly** greater (after every equal one). So a child whose final
+  layer (the Setup's store wins) is **below** its boss's goes in front of the boss and is first handled the next frame
+  (**runs on its spawn frame: no**). A child at or above the boss's layer goes behind the boss, and it is handled on its
+  spawn frame only if its place lies beyond the boss's cached successor — iff the sprite after the boss (when the
+  boss's Handle began) has a layer ≤ the child's (**depends**: the build pins it on the boss's level). This holds while
+  the list is sorted (direct `+0x80` stores do not re-sort). Children made inside a boss **Setup** exist before the
+  first frame; children made in a **Hit** are made in the collide pass, after every Handle, and first run next frame.
+- **The child Setups' own draws and layers** (each runs inside the spawn, so its draws sit in the spawner's list):
+  EnemyShot (M l. 51442–51611): R(5) for every type (M l. 51460), the layer argument kept except 0x46a / 0x46b /
+  0x46c (layer 8, M l. 51580) and a few others; 0x46a draws a second R(5) (M l. 51583), 0x753 an R(100) (M l. 51528).
+  Box (M l. 58892–59727): layer 2 for every type (M l. 58939; the 0x433 / 0x434 and 0x5c4 arms keep it), no draws.
+  Walker (0x6d6): layer 4 (M l. 56933), R(0x5fff), R(0x46), R(400) (M l. 56959, 57079, 57082). Effect 0x4b7: layer
+  0xb (M l. 53722), 45 particles × (R(2000), R(2000), R(2)) = 135 draws (M l. 53765–53783).
+- **`.KillBox`** (M l. 61483–61518) on a 0x433 / 0x434 (or a switch block 0x4e2…0x4ff) makes its own draws, first:
+  `.STPlay3DSoundRand(424 *_DAT_100a01e0, 1, 0x100, +0xe)` — one R(10000) — then `.ExplodeFaceIntoParticles(face,
+  pos, 2, 2, 2, 100, 100)`, style 100: four draws R(20), R(750), R(100), R(30) per emitted pixel (xStep = yStep = 2: every
+  second row, and every second pixel by a column counter that is not reset per row) (M l. 61494–61498; the port's `BoxSprite.killBox`, `ExplodeFace.explode`). A
+  crushing Statue, or a 0x5c4, makes no `.KillBox` draw. Every crush below lists these first.
 
 ### 1.2 The three pieces (named for every boss)
 
@@ -114,7 +146,7 @@ task also", the **engine features** it needs that are not built today, the **tes
 | main l. 5183–5185 / 5231–5240 | music force / rule | M l. 5218–5219 / 5266–5274 |
 | main l. 38598–38608; 32436; 32479–32500 | `.HandleBurn` Kill call; Cleanup's burn call; `.HurtSprite` | M l. 38824–38834; 32661–32662; 32705–32724 |
 | main l. 4924–4930, 4936–4942 | `.UpdateSprites` write-back guard / record clear | M l. 4959–4966 / 4971–4999 |
-| main l. 30679–30683 | `.MTNewSprite` Setup call | M l. 30710–30717 |
+| main l. 30679–30683 | `.MTNewSprite` Setup call | M l. 30715–30717 (routine 30631–30722) |
 | main l. 44078; handler l. 4224–4230 / 4511–4624 | `.SmiteEnemies`; step-7 routing / generic path | M l. 46981–47046; 49514–49521 / 49802–49929 |
 | handler l. 13235–13285; 12443–12470 | Box gate p1 −1; Box hovering rock | M l. 61016–61064; 60222–60284 |
 
@@ -146,10 +178,15 @@ Head (every live frame): `+0xe9` or `+0x1b2` → return; `.StandardSpriteHandles
 **Boss-mode block** (only `+0x170 ≠ 0`; runs whatever the lock, M l. 73151–73213):
 1. Crate slots `+0x1d4`, `+0x1d8`, `+0x1dc`: a slot whose sprite has `+0xe9` set is emptied.
 2. Any slot empty → `+0x16c − 1`; when `+0x16c < 1`, every empty slot gets `MTNewSprite(0x433, +0x168 + d, +0xa −
-   h, layer 9, record −1, Box setup _DAT_1009ff34)` with (d, h) = (−0xba, 400), (+0x46, 500), (+0x146, 400) in that slot
-   order. All three present → `+0x16c = 15`. `+0x16c` starts 0, so the **first Handle frame spawns all three**; on
-   level 5 (home 875, y 227 while unlocked) at x 689 / 945 / 1201, y −173 / −273 / −173. A destroyed crate comes back
-   15 frames after the frame it is seen dead (`+0x16c` was 15 → 14 … → 0); a crate at rest keeps its slot.
+   h, layer argument 9, record −1, Box setup _DAT_1009ff34)` with (d, h) = (−0xba, 400), (+0x46, 500), (+0x146, 400) in
+   that slot order — the y from the Warrior's **current** `+0xa`. The Box Setup stores layer **2** (M l. 58939), so the
+   crates sit at layer 2, not 9. All three present → `+0x16c = 15`. `+0x16c` starts 0, so the **first Handle frame
+   spawns all three**; on level 5 (home 875, y 227 while unlocked) at x 689 / 945 / 1201, y −173 / −273 / −173. A
+   destroyed crate's slot is emptied on the first Handle that sees its `+0xe9` (`+0x16c` 15 → 14), and the new crate
+   comes **14 Handle frames later** (`+0x16c` 14 … 0, M l. 73152–73185). So a crate killed on frame k comes back on
+   **k + 14** when the kill lands before the Warrior's Handle in list order (the crate's own tile hit in its Handle —
+   crates, layer 2, always precede him) and on **k + 15** when it lands after (the collide pass: the crush on him, a
+   rock hitting the player). A crate at rest keeps its slot.
    The decompile reuses the setup-proc variable for the third spawn's result (M l. 73178) — a register reuse with no
    effect (the proc is reloaded each frame).
 3. The glow: `+0xf0 − 1`; v = `+0xf0`: 1…3 → (HP < 0x3e9) `+0xb8 = 0x10008`; 4…6 → (HP < 0x3e9) `0x10009`; else v < 1 →
@@ -162,7 +199,7 @@ Head (every live frame): `+0xe9` or `+0x1b2` → return; `.StandardSpriteHandles
 | 6 decide | face 0x71c[0]; `+0xa6 > 0` → − 1; **`fed4 == 0` → return** (no ×0.5, no death test, no gravity, no liquids, no Cleanup — the sprite is not moved or animated by the engine while the arena is open); `+0xa6 < 1` → decide (below); then vx × 0.5 (f64 0x100a1c40) | 7 or 2 | decide: R(100) r; walk branch R(3), R(100), [R(100) → `.WarriorLayEgg`: R(2)]; attack branch `.RandomWarriorAttack`: **R(100) discarded**, R(2) | — |
 | 7 walk (`+0x14c == 0`) | face 0x71c[n >> 1]; n > 14 → n = 0, `+0xa6 − 1`, x outside [`+0x15c`, `+0x160`] → `+0xa6 = 0`, `+0xa6 == 0` → state 6, `+0xa6 = R(9) + 4`; n + 1; vx = ±0x600 by facing | 6 | R(9) at the cycle end that leaves | — |
 | 7 run (`+0x14c ≠ 0`) | face 0x71c[n]; n > 6 → the same cycle end; n + 1; vx = ±0xc00 | 6 | R(9) | — |
-| 2 attack | vx × 0.4 (0x100a1c38); n < 2 → face 0x71c[0], face the player; else: n == 7 → R(6000), snd 704 `*_DAT_100a0268` (1, 0x100, +0xe, 50000 + R); face = word at `0x71d set + (n >> 1)·4` = attack face (n >> 1) − 1; n == 9 → `MTNewSprite(0x71f, cx ± 0x30 − 0x18, cy − 0x25, 0, −1, EnemyShot setup PTR_PTR_100a0830)`, shot vx = 0xb00, negated facing left; n > 16 → n = 0, `+0x14c − 1`, < 1 → state 6, `+0xa6 = R(9) + 4`; then n + 1 | 6 | R(6000) at n = 7; R(9) at the end | snd 704; shot 0x71f |
+| 2 attack | vx × 0.4 (0x100a1c38); n < 2 → face 0x71c[0], face the player; else: n == 7 → R(6000), snd 704 `*_DAT_100a0268` (1, 0x100, +0xe, 50000 + R); face = word at `0x71d set + (n >> 1)·4` = attack face (n >> 1) − 1; n == 9 → `MTNewSprite(0x71f, cx ± 0x30 − 0x18, cy − 0x25, 0, −1, EnemyShot setup PTR_PTR_100a0830)`, shot vx = 0xb00, negated facing left; n > 16 → n = 0, `+0x14c − 1`, < 1 → state 6, `+0xa6 = R(9) + 4`; then n + 1 | 6 | R(6000) at n = 7; the 0x71f Setup's R(5) at n = 9; R(9) at the end | snd 704; shot 0x71f |
 | 4 dying | vx × 0.9 (0x100a1c30); face 0x71e[n >> 2]; n + 1, cap 0x17; `+0xa6 + 1`; `+0xa6 == 0x2d` → `+0x1a2 = 1` | — (the burn ends in the Kill) | — | — |
 
 Decide (M l. 73341–73387): r = R(100); `|playerCY − cy| < 0x50` → T = 0x41 and face the player, else T = 0x13;
@@ -176,6 +213,13 @@ result never read), `+0xb0 = 2`, n = 0 (written twice), `+0x154 = 0`, `+0xa6 = 0
 Timing facts: the walk cycle is 15 frames (n 1…15), the run 7 (n 1…7); the **first** swing is 18 frames (n 0…17,
 the shot at the 10th), every later swing 17 (the reset leaves n = 0 and the same frame's + 1 makes it 1).
 
+**Spawn frame order** (§1.1 rule; the Warrior is layer 0xc):
+
+| child | final layer | runs on its spawn frame |
+|---|---|---|
+| crate 0x433 (boss block) | 2 (Box Setup) | no — in front of him; it starts falling next frame |
+| shot 0x71f (state 2, n = 9) | 0 (argument kept) | no |
+
 **Tail** (M l. 73392–73417): death entry (§1.1); `.ApplyGravityAndSeparateFromTiles` with the tile callback
 (`.HitWarriorTileSprite`, M l. 73498–73530 — the Crawler's body, `CrawlerRoach.hitTile`); liquids — in liquid
 (`+0x11c ≠ 0` and (`+0x11c == 1 ∧ kind 0` or kind > 0)): kind 3 heals 4 below HP 500; kind 2 with `+0x116 == 0` →
@@ -188,7 +232,9 @@ the shot at the 10th), every later swing 17 (the reset leaves n = 0 and the same
 - Else other is a Statue (`01f8`) or a Box (`0484`): `.PlatformBounce(S, solid, S's hot-rect centre offset, 0, S's
   rect, 0)` == 2 ∧ (solid vy > 0 ∨ S `+0xce`) → `.HurtSprite(S, 200, solid.vx >> 1, −1000, 2, 8)`, `+0xf0 = 0`,
   `.KillBox(solid)`, R(10000) → snd 701 at 42000 + R, R(10000), R(2) → snd 477/478 (`_DAT_100a0320[R]`) at 42000 + R.
-  Sounds and `.KillBox` run whether or not the hurt landed. 2000 / 200 = **10 crate hits**.
+  **Draws in order:** `.KillBox`'s own (a 0x433: R(10000) for snd 424, then four a particle pixel — §1.1), then R(10000),
+  R(10000), R(2) (M l. 73448–73458). Sounds and `.KillBox` run whether or not the hurt landed. 2000 / 200 = **10 crate
+  hits**.
 - The shot's `+0xa6 ≠ 0` or HP ≤ 0 (dying): a player shot passes through.
 
 ### 2.5 Kill — `.KillWarrior` (M l. 73465–73495)
@@ -209,7 +255,7 @@ The head (count, `+0xe9 = 1`, `+0xea = 1`), then with `+0x170 ≠ 0` the tail of
   crates are the level-5 fight's whole damage source, so 6A-FR lands before or with 6A-W.
 - Nothing else: the Box 0x433 Setup and Handle arms (`BoxSprite.isBoulder`, `boulder`), `.KillBox`, `.PlatformBounce`,
   `.HurtSprite`, the burn, the shot 0x71f, shake, flash, gate and music are built. **6A-FB (the fireball cache) is not a
-  Warrior dependency** — no Warrior code touches 0x46a (§8 D19).
+  Warrior dependency** — no Warrior code touches 0x46a (§8 D15).
 
 ### 2.8 Hazards for the build
 - Crate slots are record pointers into the 700-record pool and are tested by the dead flag only: a crate record freed
@@ -217,26 +263,33 @@ The head (count, `+0xe9 = 1`, `+0xea = 1`), then with `+0x170 ≠ 0` the tail of
   slots as the pool's record identity and pins the case where a crate dies and a spawn re-uses its record in one frame.
 - Every Handle frame may spawn (crates, the shot): no `SpriteSlot` copy held across a spawn (`SpriteWorld` rule 2).
 - A spawn with no free record (Ruling 16): `+0x16c` keeps counting below 1 and the empty slot re-tries every frame.
+  The shot 0x71f's vx store (M l. 73249–73252) has no null test either — dropped by the same ruling.
 - `.KillPlayerShot(shot, 0, 1)` makes an effect sprite: the `staleSlot` (r29 + 0x9a) of this call site is traced in
   the raw (`PlayerShotHits.kill`'s rule) by the build.
 
 ### 2.9 Proposed split and tests (`Tests/FerazelCoreTests/Enemies/WarriorTests.swift`)
 **6A-W1 — the Handle** (replaces the ◇ in place; the switch-off check returns LV5's goldens):
-1. `testWarriorCratesFirstFrame` — three 0x433 at (689, −173), (945, −273), (1201, −173), layer 9, slots filled; next
+1. `testWarriorCratesFirstFrame` — three 0x433 at (689, −173), (945, −273), (1201, −173), layer 2 (the Box Setup's,
+   not the argument 9), slots filled, in front of the Warrior in the list and not handled until the next frame; next
    frame `+0x16c` = 15.
-2. `testWarriorCrateRespawnAfter15` — a crate killed on frame k is replaced on frame k + 15 (first empty-seen frame +
-   14), in slot order.
+2. `testWarriorCrateRespawnAfter14Or15` — a crate killed on frame k by its own tile hit (before the Warrior's Handle)
+   is replaced on frame k + 14; one killed in the collide pass (a crush) on k + 15 (first empty-seen frame + 14); in
+   slot order, y from the current `+0xa`.
 3. `testWarriorUnlockedReturnsBeforeGravity` — arena open: y unchanged, `+0xa6` counts to 0 and stays, no R(100) drawn.
 4. `testWarriorDecideDraws` — a seeded decide consumes R(100), R(3), R(100)[, R(100), R(2)] in that order; T 0x41 / 0x13.
 5. `testWarriorAttackDiscardsR100` — `.RandomWarriorAttack` consumes R(100) then R(2); `+0xa6` 0x10.
 6. `testWarriorSwingTimingAndShot` — snd 704 on n = 7 (rate 50000 + R(6000)), shot 0x71f on n = 9 at (cx ± 0x30 − 0x18,
-   cy − 0x25), vx ±0xb00; first swing 18 frames, next 17.
+   cy − 0x25), layer 0, vx ±0xb00, its Setup's R(5) drawn, not handled on its spawn frame; first swing 18 frames, next 17.
 7. `testWarriorWalkRunCycles` — walk 15 frames vx ±0x600, run 7 frames ±0xc00, patrol bound forces `+0xa6 = 0`.
-8. `testWarriorDeathAndGlow` — HP 0 → state 4, snd 703; `+0x1a2 = 1` on dying frame 45; glow 0x10009 / 0x10008 at HP ≤
-   1000, period 15 at HP ≤ 500.
+8. `testWarriorDeathAndGlow` — HP 0 → state 4, snd 703; `+0x1a2 = 1` on dying frame 45; in boss mode only (`+0x170 ≠
+   0`), glow 0x10009 / 0x10008 at HP ≤ 1000, period 15 at HP ≤ 500; with p4 = 0 no glow.
+9. `testWarriorTileCallbackIsCrawlerBody` — `.HitWarriorTileSprite` (M l. 73498–73530): FG (layer 1) and kind < 100 →
+   `.WallBounce(…, 0, rect, 0, 0)`; 100 ≤ kind < 200 → `.WallBounceBG(kind − 100, …)`; kind ≥ 200 water with `+0x140
+   == 0` → `.HandleUnderWater` — the Crawler body (`CrawlerRoach.hitTile`).
 **6A-W2 — Hit, Kill, the fight** (with 6A-FR):
 1. `testWarriorAbsorbsShots` — a player shot killed (sound 0, effect 1) + snd 303; HP unchanged; a Smite seed the same.
-2. `testWarriorCrateCrush200` — a falling 0x433 landing: HP − 200, `+0xf0 = 0`, `.KillBox`, R(10000), R(10000), R(2).
+2. `testWarriorCrateCrush200` — a falling 0x433 landing: HP − 200, `+0xf0 = 0`; draws `.KillBox`'s R(10000) and its
+   particle draws (four a pixel of the crate face), then R(10000), R(10000), R(2).
 3. `testWarriorStatueShotIsAShot` — a Statue-spell shot is absorbed (no `.TurnIntoStatue`).
 4. `testWarriorLavaAndBrine` — kind 2: −100, invul 0x13, flash 0x11, snd 701 vol 0x55; kind 3: +4 below 500.
 5. `testWarriorKillTail` — the count, `+0xe9`, `+0xea`, snd 453 at 48000, shake 0x1e, flash 3, `noBossAlive = 1`; with
@@ -245,14 +298,49 @@ The head (count, `+0xe9 = 1`, `+0xea = 1`), then with `+0x170 ≠ 0` the tail of
 7. `testWarriorContactAndWriteBack` — step 7 hurts 0x70 (R(100) drawn first); Setup `+0x18a`, Kill `+0xea`.
 8. `testWarriorScriptedKill` — see 2.10.
 
-### 2.10 Scripted kill — measured by the build, not derivable on paper
+### 2.10 Scripted kill — measured by the build, not derivable on paper (the §0 ruling)
 What is fixed on paper: the death-to-Kill tail (45 dying frames, then `B − T` burn frames of face 0x71e[5], 1 row a
 frame, `+0x8c = +0x8d = 0`, plus one R(100) a row at effects 1) and the 10-crate arithmetic. What is not: the frame the
 tenth crate lands, which depends on the player's path into the arena (the lock at x < 1384), the RNG stream from the
-seed through every level-5 sprite, the Box physics of each crate and the Warrior's walk. The build task chooses the
-seed (the session's default) and a key script (walk left into the arena, then the moves that bring crates down on
-him), **measures** the HP-0 frame and the Kill frame once, checks Kill − HP0 = 45 + (B − T), and pins both; any later
-change is a STOP (Invariant 10). No frame number is given here.
+seed through every level-5 sprite, the Box physics of each crate and the Warrior's walk. **Seed 1. Key script the build
+starts from:** `.left` held from the level start until the arena locks (player x < 1384); then `[]` (no keys) — the
+crates fall on their own at x 689 / 945 / 1201 and he walks his patrol [525, 1225] under them — with a one-frame
+`.jump` whenever a 0x71f shot is within 0x40 px of the player, until the Kill or 20,000 frames. It **measures** the
+HP-0 frame and the Kill frame once, checks Kill − HP0 = 45 + (B − T), and pins both; any later change is a STOP
+(Invariant 10). No frame number is given here.
+
+### 2.11 Asserts the build task adds (the behaviours no test above pins)
+Each is one assert line in the named 6A-W1 / 6A-W2 test that already drives the state; the dump line and value:
+1. `+0xe9 ≠ 0` → the Handle returns before `.StandardSpriteHandles` (M l. 73136–73138).
+2. `+0x1b2 ≠ 0` → the same return (M l. 73139–73141).
+3. p4 = 0 (`+0x170 == 0`): no crate spawned, `+0x16c` untouched, no glow write to `+0xb8` (M l. 73151).
+4. A respawned crate's y = the Warrior's current `+0xa` − 400 / − 500 / − 400 (M l. 73161–73174).
+5. State 6 writes face 0x71c[0] every frame, locked or not (M l. 73334).
+6. The decide faces the player when |playerCY − cy| < 0x50, before the draw comparison (M l. 73347–73352).
+7. Game-over flag `*_DAT_1009ffa8` set → T = −1: every r walks or runs (M l. 73357–73359).
+8. Run iff R(100) > 100 − T (35 near, 81 far) (M l. 73367).
+9. The egg: `+0x154 = 2`, `+0xa6 = 5`, `+0x14c = R(2) + 1` → a run (M l. 73087–73090).
+10. The decide's bound facing after the walk / run choice: x > `+0x160` → 0, else x < `+0x15c` → 1 (M l. 73377–73382).
+11. vx × 0.5 (f64 0x100a1c40) after the decide on every locked state-6 frame (M l. 73389).
+12. Walk face 0x71c[n >> 1], run face 0x71c[n] (M l. 73286, 73310).
+13. The reload `+0xa6 = R(9) + 4` (4…12) on every exit to state 6 (M l. 73259, 73296, 73320).
+14. Attack vx × 0.4 (0x100a1c38) every frame (M l. 73223).
+15. Attack n < 2: face 0x71c[0] and face the player (M l. 73224–73229).
+16. Attack face = word (n >> 1) of the 0x71d record = attack face (n >> 1) − 1 (M l. 73238).
+17. The shot's layer 0 (the argument; the EnemyShot Setup keeps it) (M l. 73246–73248).
+18. The shot Setup's R(5) on the n = 9 frame (M l. 51460).
+19. Dying vx × 0.9 (0x100a1c30) (M l. 73269).
+20. Dying face 0x71e[n >> 2] with n capped at 0x17 (index ≤ 5) (M l. 73271–73275).
+21. `.ApplyGravityAndSeparateFromTiles` on every locked frame (gravity 0x122) (M l. 73399).
+22. A player shot passes through (no kill, no snd 303) when HP ≤ 0 or its `+0xa6 ≠ 0` (M l. 73436–73437).
+23. The crush's hurt: `.HurtSprite(S, 200, solid.vx >> 1, −1000, 2, 8)` (M l. 73448).
+24. The crush also lands with S `+0xce` set and solid vy ≤ 0 (M l. 73447).
+25. Sounds: 701 (`*_DAT_100a0274`) at 42000 + R(10000), then `_DAT_100a0320[R(2)]` = 477 / 478 at 42000 + R(10000) (the
+    second R(10000) drawn before the R(2)), prio 1, vol 0x100, at S `+0xe` (M l. 73451–73458).
+26. `.KillBox`'s draws precede those three (M l. 73450; 61494–61498).
+27. `+0xf0 = 0`, `.KillBox` and both sounds run when the hurt misses (`+0x116 ≠ 0`) (M l. 73448–73458).
+28. The Kill's guard covers the count only: a second call adds nothing to live / `G+0x306` (`+0xe9` already 1, M l.
+    73479) but replays the tail with p4 ≠ 0 (M l. 73486–73493).
 
 ---
 
@@ -286,11 +374,18 @@ Head: `+0xe9 == 0 ∧ +0x1b2 == 0` (else nothing at all); `.StandardSpriteHandle
 | 6 wait | vx = 0; face S; `fed4` set → `+0xa6 + 1`; `+0xa6 > 15 ∧ +0xcd` → n = 0, `+0xa6 = 0`, state 1 | 1 | — | — |
 | 1 jump | i = n / 2 (toward 0) from the old n, n + 1, i cap 2, face J[i]; **new n == 3** → R(100) r, R(6000) p, snd 414 `*_DAT_100a03f8` (prio 0x14, vol 0xab, +0xe, 35000 + p), vy = −0x2904, `+0xce = 0`, the lane change by r (< 0x21 / < 0x42 / else): lane 2 → vx −0x700 / 0 / +0x700, lane 1 → 0 / +0x700 / +0xe00, lane 3 → −0xe00 / −0x700 / 0, `+0x15c` = 1 / 2 / 3; else new n > 3 ∧ vy > 0 → `+0xa6 = 0`, n = 0, state 3 | 3 | R(100) then R(6000) | snd 414 |
 | 3 land | not grounded (`+0xcd == 0`) → face J[3]; grounded: n == 0 → R(12000), snd 435 `*_DAT_1009fdec` (1, 0xab, +0xe, 40000 + R), shake `= 0x16`, player `+0xce ∨ +0xcd` → **stagger `*_DAT_100a0570 = 0x18`**, vx = 0, face the player; faces n 0–1 S, 2–4 A[0], 5–6 S; n < 6 → n + 1, else R(2) → `+0x158 = R + 2` throws, state 2, n = 0, `+0xa6 = 0` | 2 | R(12000) on landing; R(2) at n = 6 | snd 435, shake, stagger |
-| 2 throw | i = n >> 1: < 4 → A[i], < 8 → B[i − 4], else S; **n == 7** → R(8000), snd 704 (1, 0x5f, +0xe, 45000 + R), `MTNewSprite(0x77b, +0xc + (right ? 0xa1 : −0x11), +0xa + 0x33, +0x80 − 1, −1, EnemyShot setup)`, boulder `+0x17e` = S's facing, `+0x46 = 15`, vx = R(500) + 4000, vy = −0x4b0 − R(0x96); `|playerX − cx| < 0xf0` → vx × 0.8 (0x100a1c98), vy = 2000 (the `< 0x9b` branch, vx × 0.5 / vy 0xc80, is unreachable after it); facing left → vx negated; then n == 0 → face the player, `+0x158 − 1`, < 1 → `+0xa6 = 0`, n = 0, state 6, face S, else state 2, n + 1; n < 0x12 → n + 1; else `+0xa6 = 0`, n = 0 | 6 | R(8000), [the 0x77b Setup's], R(500), R(0x96) at n = 7 | snd 704; boulder 0x77b |
+| 2 throw | i = n >> 1: < 4 → A[i], < 8 → B[i − 4], else S; **n == 7** → R(8000), snd 704 (1, 0x5f, +0xe, 45000 + R), `MTNewSprite(0x77b, +0xc + (right ? 0xa1 : −0x11), +0xa + 0x33, +0x80 − 1, −1, EnemyShot setup)`, boulder `+0x17e` = S's facing, `+0x46 = 15`, vx = R(500) + 4000, vy = −0x4b0 − R(0x96); `abs(playerX − cx) < 0xf0` → vx × 0.8 (0x100a1c98), vy = 2000 (the `< 0x9b` branch, vx × 0.5 / vy 0xc80, is unreachable after it); facing left → vx negated; then n == 0 → face the player, `+0x158 − 1`, < 1 → `+0xa6 = 0`, n = 0, state 6, face S, else state 2, n + 1; n < 0x12 → n + 1; else `+0xa6 = 0`, n = 0 | 6 | R(8000), the 0x77b Setup's R(5), R(500), R(0x96) at n = 7 | snd 704; boulder 0x77b |
 | 4 dying | vx × 0.9 (0x100a1c88); face D[min(n >> 2, 3)]; n + 1, cap 0x10; `+0xa6 + 1`; `+0xa6 == 0x14` → `+0x1a2 = 1` | — | — | — |
 
 Throw cycle = 19 frames (n 0…18); the decrement precedes the first throw, so a landing gives **1 or 2 throws**. The
 first jump comes 56 frames after the lock (`+0xa6` −40 → 16), later ones 16 frames after the last throw cycle.
+
+**Spawn frame order** (§1.1 rule; the Chief is layer 0xc): the boulder 0x77b takes the argument `+0x80 − 1` = 0xb
+(the EnemyShot Setup keeps it) — in front of him: **runs on its spawn frame: no**.
+
+**No free record** (M l. 75232–75266): a failed boulder spawn returns 0, and the Chief still stores `+0x17e`, `+0x46`,
+vx and vy through it and still draws **R(500) and R(0x96)** — under Ruling 16 the stores are dropped and both draws are
+made (the 0x77b Setup's R(5) is not, since no Setup ran).
 
 **Tail** (M l. 75419–75438): `+0xb2 > 0` → `< 5` ? + 1 : 0 (a hit counter with no consumer; the raw keeps an emptied
 switch, bosses-3 §10.3); death entry with **R(100) < 0x3c → `.GoblinChiefRandomCry` first**, then snd 703;
@@ -307,7 +402,8 @@ switch, bosses-3 §10.3); death entry with **R(100) < 0x3c → `.GoblinChiefRand
   `.BloodSpray(S, shot, 0x28, 400, 0x96, 2)`, HP < 0xc9 → snd 702 (`_DAT_100a0270`) else snd 701, R(100) < 0x3c → the
   cry. Fireball (100) → 20 landed hits for 2000 HP.
 - Else a Statue / Box: the crush test of the Warrior → `.HurtSprite(S, 200, solid.vx >> 1, −1000, 2, 8)`, `+0xf0 = 0`,
-  `.KillBox`, R(10000) → snd 701 at 42000 + R, the cry (R(100) [+ R(10000)]).
+  `.KillBox`, R(10000) → snd 701 at 42000 + R, the cry (R(100) [+ R(10000)]). **Draws in order:** `.KillBox`'s own
+  (§1.1), R(10000), the cry's R(100) [+ R(10000)] (M l. 75469–75474).
 
 ### 3.5 Kill — `.KillChief` (M l. 75502–75532)
 Identical to `.KillWarrior` (head, then the tail with `+0x170 ≠ 0`).
@@ -320,8 +416,9 @@ Identical to `.KillWarrior` (head, then the tail with `+0x170 ≠ 0`).
 - Statue arm none; liquids none; hazards none.
 - Idle: spawned idle; the Setup writes no margin field and leaves `+0xc0 = 0`. The idle entry is made by the generic
   `.AddIdleSprite` path (built); the build pins the frame the Chief activates on level 18 (measured).
-- Write-back: **no `+0x18a`** → `.UpdateSprites` copies the Chief's type / x / y into record 1 every frame (M l.
-  4959–4966) — a save mid-fight stores his current position; Kill `+0xea = 1` clears the record. A test row each.
+- Write-back: **no `+0x18a`** → `.UpdateSprites` copies the Chief's type / x / y into his own record (`+0x48`, the
+  level record he was placed from) every frame (M l. 4959–4966) — a save mid-fight stores his current position; Kill
+  `+0xea = 1` clears the record. A test row each.
 - Arena (level 18): v = −1400, lock when x < 1340, second bound −640 (window [640, 1400]); built (`BossArena`), a
   level-18 test row.
 
@@ -332,7 +429,12 @@ Identical to `.KillWarrior` (head, then the tail with `+0x170 ≠ 0`).
   the end of the player's state chain (`LAB_10050e6c`). Built already: the count-down (`Player.swift:489`, M l. 44740–44741), `.HandleKeys`'
   early return (`HandleKeys.swift:36`, M l. 47120–47122), the zeroing by a landed enemy shot (M l. 49910–49912) and
   `.ClearPlayerVars`' zero (M l. 42749–42752). Today `PlayerStates.swift:372` returns at once (its comment cites
-  "l. 45625–45672"; the committed dump has the arm at M l. 45591–45632). Shared with Xichra (§6).
+  "l. 45625–45672"; the committed dump has the arm at M l. 45591–45632). Shared with Xichra (§6). The port's counter
+  is `PlayerState.bossGrab`.
+- **Its length.** The player's Handle counts the stagger down (M l. 44740–44741) **before** the arm reads it (M l.
+  45591), so the arm runs for value − 1 frames: the Chief's 0x18 gives **23** frames (written in his Handle, after the
+  player's — layer 10 before 0xc — so the 23 start the next frame), Xichra's 0x14 gives **19** (her Handle, layer 1,
+  runs before the player's, so the 19 start the same frame).
 - Cache records with flag 1 in `CachedFaces` (the mechanism exists; five new records).
 
 ### 3.8 Proposed split and tests (`Tests/FerazelCoreTests/Enemies/ChiefTests.swift`)
@@ -343,29 +445,73 @@ Identical to `.KillWarrior` (head, then the tail with `+0x170 ≠ 0`).
    the level-18 marks include 0x77b.
 3. `testChiefFirstJumpAfterLock` — `+0xa6` counts only while locked; state 1 on the 56th locked frame (grounded).
 4. `testChiefJumpDrawOrderAndLanes` — R(100) before R(6000); the nine lane rows; vy −0x2904 on the third jump frame.
-5. `testChiefLandingShakeAndStagger` — snd 435 (40000 + R(12000)), shake 0x16, stagger 0x18 only when the player is
-   grounded; throws R(2) + 2 at n = 6.
-6. `testChiefThrowBoulder` — at n = 7: R(8000), snd 704 vol 0x5f, 0x77b at (x + 0xa1 / −0x11, y + 0x33), `+0x46` 15, vx
-   4000 + R(500), vy −1200 − R(150); near player (< 240) vx × 0.8, vy 2000.
+5. `testChiefLandingShakeAndStagger` — snd 435 (40000 + R(12000)), shake 0x16, stagger 0x18 only when the player's
+   `+0xce ∨ +0xcd` is set (M l. 75373); throws R(2) + 2 at n = 6.
+6. `testChiefThrowBoulder` — at n = 7: R(8000), snd 704 vol 0x5f, 0x77b at (x + 0xa1 / −0x11, y + 0x33), layer 0xb, its
+   Setup's R(5), `+0x46` 15, vx 4000 + R(500), vy −1200 − R(150); near player (< 240) vx × 0.8, vy 2000; not handled
+   on its spawn frame.
 7. `testChiefThrowCount` — throws 2 → one boulder, 3 → two; back to state 6 with `+0xa6 = 0`.
 8. `testChiefDeathCryDraws` — HP 0: R(100) (< 60 → R(100) [+ R(10000)]) before snd 703; burn on dying frame 20.
-9. `testPlayerStaggerArm` — 24 frames: vx halves each frame, the six faces by c mod 12, no key read, then free.
+9. `testPlayerStaggerArm` — `PlayerState.bossGrab` 0x18 → 23 arm frames (0x14 → 19): vx halves each frame, the six
+   faces by c mod 12 (c after the count-down), no key read, then free.
+10. `testChiefTileCallbackIsCrawlerBody` — `.HitChiefTileSprite` (M l. 75535–75567, identical to the Warrior's): the
+   four arms of 6A-W1 test 9.
 **6A-CH2 — Hit, Kill, the pieces, the fight**:
 1. `testChiefTakesShotDamage` — shot killed silently first; HP − `+0xa4`; `+0x116` 15; blood spray; 701 / 702 at HP ≤ 200.
 2. `testChiefInvulnerableWastesShots` — a shot during `+0x116 > 0` is killed and does nothing else.
-3. `testChiefCrush200AndCry` — 200, `+0xf0 = 0`, `.KillBox`, R(10000), the cry's R(100).
+3. `testChiefCrush200AndCry` — 200, `+0xf0 = 0`; draws `.KillBox`'s R(10000) and its particle draws, then R(10000),
+   then the cry's R(100) [+ R(10000)].
 4. `testChiefKillTailAndGate` — count, `+0xe9`, `+0xea`, snd 453, shake 0x1e, flash 3, `noBossAlive = 1`, the level-18
    gate (x 628) opens, track 30.
-5. `testChiefRecordWriteBack` — record 1's x / y follow the Chief each frame; cleared after the Kill.
+5. `testChiefRecordWriteBack` — his own record's (`+0x48`) x / y follow the Chief each frame; cleared after the Kill.
 6. `testChiefContactAndSmite` — step 7 0x70; a Smite seed hurts by its `+0xa4`.
 7. `testLevel18ArenaBounds` — lock at x < 1340, camera window [640, 1400].
 8. `testChiefScriptedKill` — see 3.9.
 
-### 3.9 Scripted kill — measured by the build
+### 3.9 Scripted kill — measured by the build (the §0 ruling)
 On paper: 20 landed Fireball hits at most one per 15 frames; the tail = 20 dying frames + ⌈(B − T + 1) / 2⌉ − 1 burn
 frames of 0x77a[3] (2 rows a frame, no R(100) rows since `+0x8d ≠ 0`). The landing frames of the hits depend on the
-player's casting, the Chief's random lanes and the boulders' hits on the player — measured once with the default seed
-and a key script (enter the arena, then cast while facing him), then pinned.
+player's casting, the Chief's random lanes and the boulders' hits on the player. **Seed 1. Key script the build starts
+from:** the carry gives the Fireball selected; `.left` held from the level start until the arena locks (player x <
+1340); then every 16th frame a one-frame tap of `.left` or `.right` toward his centre x followed next frame by a
+one-frame `.use` (one cast per 16 frames, past his 15-frame invulnerability); nothing else, until the Kill or 20,000
+frames. Measured once, then pinned.
+
+### 3.10 Asserts the build task adds (the behaviours no test above pins)
+One assert line each, in the 6A-CH1 / 6A-CH2 test that already drives the state:
+1. `+0xe9` or `+0x1b2` set → the Handle does nothing at all (M l. 75188).
+2. The hot rect SetRect(0x58, 0x73, 0xac, 0xd2) every live frame (M l. 75190).
+3. State 6: vx = 0 and face S every frame (M l. 75408–75409).
+4. Jump faces J[min(i, 2)], i = the old n / 2 rounded toward 0 (M l. 75295–75302).
+5. snd 414 (`*_DAT_100a03f8`): prio 0x14, vol 0xab, at `+0xe`, rate 35000 + R(6000) (M l. 75306–75307).
+6. `+0xce = 0` on the take-off frame (M l. 75309).
+7. The jump's exit: new n > 3 ∧ vy > 0 → `+0xa6 = 0`, n = 0, state 3 (M l. 75356–75360).
+8. State 3 airborne (`+0xcd == 0`): face J[3] (M l. 75363–75364).
+9. The landing frame (n == 0): vx = 0 and face the player (M l. 75376–75379).
+10. The landing faces: n 0–1 S, 2–4 A[0], 5–6 S (M l. 75381–75394).
+11. The throw faces: A[i] for i < 4, B[i − 4] for i < 8, else S, i = n >> 1 (M l. 75212–75221).
+12. The boulder's layer `+0x80 − 1` = 0xb (M l. 75232–75234).
+13. The boulder's `+0x17e` = the Chief's facing (M l. 75235).
+14. The boulder's vx negated when he faces left (M l. 75264–75266).
+15. The 0x77b Setup's R(5) between R(8000) and R(500) (M l. 51460).
+16. The throw cycle: 19 frames, the reset at n ≥ 0x12 (M l. 75285–75290).
+17. Dying vx × 0.9 (f64 0x100a1c88) (M l. 75195).
+18. Dying face D[min(n >> 2, 3)], n capped at 0x10 (M l. 75197–75204).
+19. The `+0xb2` counter: > 0 → (< 5 ? + 1 : 0) every frame (M l. 75419–75425).
+20. `.ApplyGravityAndSeparateFromTiles` every live frame, gravity 0x276 (M l. 75437).
+21. No liquids: HP unchanged standing in lava or brine (the tail has no liquid test, M l. 75419–75438).
+22. The cry's voice gate: no R(10000) and no sound while 465, 466 or 467 plays (tested 465, 466, 467) (M l. 75134–75140).
+23. The cry's ids and volumes: r < 0x29 → 467 vol 0xc9; r < 0x47 → 466 vol 0xab; else 465 vol 0xab; rate 42000 +
+    R(10000) (M l. 75141–75153).
+24. On a shot hit `.HurtSprite(S, shot +0xa4, 0, 0, 2, 8)` — dvx = dvy = 0 (M l. 75480).
+25. `+0xb2 = 1` on a landed shot (M l. 75485).
+26. `.BloodSpray(S, shot, 0x28, 400, 0x96, 2)` (M l. 75486).
+27. The cry after a landed shot: R(100) < 0x3c → `.GoblinChiefRandomCry` (M l. 75493–75497).
+28. The HP ≥ 1 gate: at HP ≤ 0 a shot is not killed and goes to the solid test, which ignores it (M l. 75460–75461).
+29. The crush's `.HurtSprite(S, 200, solid.vx >> 1, −1000, 2, 8)`, with `.KillBox`'s draws before the R(10000) (M l.
+    75469–75472).
+30. The Kill with p4 = 0: the count, `+0xe9`, `+0xea`, no tail; a second call adds nothing to the count but replays the
+    tail when p4 ≠ 0 (M l. 75516–75530).
 
 ---
 
@@ -388,15 +534,15 @@ changed); `+0x150 = −1`; `+0xb0 = 6`, `+0xb2 = 0`, `+0x46 = 2`, `+0x14c = 0`; 
 write-only counter, w5 crate timer, w6 fireball run); `+0xf0 = 0x1e`; counting; `+0x14 / +0x1c`. Draws: R(10).
 
 ### 4.3 Handle — `.HandleWizardSprite` (M l. 75687–76084)
-Head: `+0xe9` / `+0x1b2` → return; `.StandardSpriteHandles`; switch (13 arms). HP bands: high > 600, mid 301…600, low ≤
+Head: `+0xe9` / `+0x1b2` → return; `.StandardSpriteHandles`; switch on `+0xb0` — a 13-entry table, states 0…12 (`cmplwi r0,0xc`, raw `1008c940`), 7 coded arms, 6 live. HP bands: high > 600, mid 301…600, low ≤
 300. Faces: M = move 0x727, C = cast 0x728, S = standing 0x726.
 
 | state | per frame | leaves to | draws | sounds / spawns |
 |---|---|---|---|---|
 | 6 idle | W = 10 (HP < 0x12d) / 16 (< 0x259) / 22; face S; vx 0; `+0xa6 + 1`; R(10) r; W + r ≤ `+0xa6` → `+0xa6 = 0`, n = 0, state 9; face the player | 9 | R(10) **every frame** | — |
 | 9 advance | i = n mod 16 (≥ 0); face M[i >> 1]; vx = 0x500, negated facing left; n + 1; n > 31 → face S, vx 0; n > 35 → face the player, w2 = 12, `+0xa6 = 0`, n = 0, state 2; B = 20 (low) / 10 (mid) / 0; R(100) r < B + 40 ∧ w6 < 3 → fireballs: w6 + 1, w3 = 0, R = 22 (HP > 600) else 35 (the 45 arm is dead), R(100) > R → w0 = 1 else w0 = R(3) + 2; else crate: R(100) r, w6 = 0, w3 = 1, r ≥ 0x5b → w0 = 1, r ≥ 0x15 → 2, else R(2) + 3; w4 + 1 | 2 | R(100), then R(100) [+ R(3)] or R(100) [+ R(2)] | — |
-| 2 attack, w3 = 0 (fireballs) | face C[min(n >> 1, 7)]; n == 7: `+0xa6 < 1` → `+0xa6 = 20`, n − 1; else `+0xa6 − 1`, `+0xb8` = 0x1000c on odd frames by `*_DAT_1009fd30` else 0, `+0xa6 < 1` → `+0xb8 = 0` else n − 1, face the player — a **21-frame hold at n = 7**, re-armed every volley; n == 8 → three 0x46a at (cx − 0x18, cy − 0x18), layer `+0x80 + 1`, (vx, vy) = (0x1194, 0), (0x1068, −0x5dc), (0xce4, −0xbb8), vx negated facing left; R(12000), snd 300 `*_DAT_100a0424` (1, 0x100, 36000 + R); w0 − 1; n + 1; n > 15 → face S, face the player, w0 == 0 → done, else w5 < 1 → n = 0 | done → w2 | R(12000) at n = 8 (after the three shot Setups) | 3 × 0x46a, snd 300 |
-| 2 attack, w3 = 1 (crate) | face C[min(n >> 1, 7)]; n == 10 → `MTNewSprite(0x434, cx − 0x10, cy − 0x10, 9, −1, Box setup)` into `+0x1d4`, its `+0x160 = −0x34`, w5 = 0x34, w0 − 1; n + 1; n > 15 → face S, face the player, w0 == 0 → done, else w5 < 1 → n = 0 (the next crate waits for the last to drop) | done | [the Box Setup's] | Box 0x434 |
+| 2 attack, w3 = 0 (fireballs) | face C[min(n >> 1, 7)]; n == 7: `+0xa6 < 1` → `+0xa6 = 20`, n − 1; else `+0xa6 − 1`, `+0xb8` = 0x1000c on odd frames by `*_DAT_1009fd30` else 0, `+0xa6 < 1` → `+0xb8 = 0` else n − 1, face the player — a **21-frame hold at n = 7**, re-armed every volley; n == 8 → three 0x46a at (cx − 0x18, cy − 0x18), layer argument `+0x80 + 1` = 2 (the 0x46a Setup stores **8**, M l. 51580, which wins — §1.1), (vx, vy) = (0x1194, 0), (0x1068, −0x5dc), (0xce4, −0xbb8), vx negated facing left; R(12000), snd 300 `*_DAT_100a0424` (1, 0x100, 36000 + R); w0 − 1; n + 1; n > 15 → face S, face the player, w0 == 0 → done, else w5 < 1 → n = 0 | done → w2 | at n = 8: the three Setups' R(5), R(5) each (six R(5)), then R(12000) | 3 × 0x46a, snd 300 |
+| 2 attack, w3 = 1 (crate) | face C[min(n >> 1, 7)]; n == 10 → `MTNewSprite(0x434, cx − 0x10, cy − 0x10, 9, −1, Box setup)` into `+0x1d4` (the Box Setup stores layer 2), its `+0x160 = −0x34`, w5 = 0x34, w0 − 1; n + 1; n > 15 → face S, face the player, w0 == 0 → done, else w5 < 1 → n = 0 (the next crate waits for the last to drop) | done | none (the Box Setup draws nothing) | Box 0x434 |
 | done | `+0xa6 = 0`, n = 0, state = w2 (always 12) | 12 | — | — |
 | 12 | face the player; state 10 | 10 | — | — |
 | 10 | face M[7 − (i >> 1)] (i = n mod 16 ≥ 0); vx = −0x500, negated facing right (so toward the facing, as in 9); n + 1; > 31 stand; > 35 → `+0xa6 = 0`, n = 0, state 6 | 6 | — | — |
@@ -413,16 +559,28 @@ drops it 52 frames after it appeared.
 Tail: death entry, **else** the glow (tint only at 0 < HP < 0x259; reload 0xc at HP < 0x12d else 0x1e);
 `.ApplyGravityAndSeparateFromTiles` (Crawler-body tile callback, M l. 76169–76201); Cleanup. No liquids.
 
+**Spawn frame order** (§1.1 rule; the Wizard is layer **1**):
+
+| child | final layer | runs on its spawn frame |
+|---|---|---|
+| fireball 0x46a ×3 (n = 8) | 8 (its Setup) | depends — yes iff the sprite after the Wizard has a layer ≤ 8 (pinned on level 25) |
+| crate 0x434 (n = 10) | 2 (Box Setup) | depends — yes iff the sprite after the Wizard has a layer ≤ 2 (pinned on level 25) |
+
+**No free record** (Ruling 16): the fireballs' vx / vy stores (M l. 75797–75818) and the crate's `+0x160` store through
+`+0x1d4` (M l. 75742–75743) have no null test; the carry then finds `+0x1d4 == 0` and clears w5 (M l. 76013–76017).
+
 ### 4.4 Hit — `.HitWizardSprite` (M l. 76087–76133)
 - Player shot ∧ `+0xa6 == 0` ∧ HP > 0: if the shot's `+0x1a2 < 1` → shot vx × 0.4 (0x100a1ca0), `+0x1a2 = 1`, `+0x8c =
   1` (it burns away; no `.KillPlayerShot`, no sound).
 - Statue / Box **with `+0x160 ≥ 0`**: the crush test → `.HurtSprite(S, 100, …, 2, 8)`, `+0xf0 = 0`, `.KillBox`,
-  R(10000) snd 701, R(10000), R(2) grunt. 1000 / 100 = 10 hits.
+  R(10000) snd 701, R(10000), R(2) grunt. **Draws in order:** `.KillBox`'s own (a 0x434: R(10000), then the particle
+  draws — §1.1), R(10000), R(10000), R(2) (M l. 76119–76129). 1000 / 100 = 10 hits.
 
 ### 4.5 Kill — `.KillWizard` (M l. 76136–76166): as the Warrior's.
 
 ### 4.6 Pieces, duties, engine
-killProc `.wizard`; step 7 row M l. 49846–49848 (0x70); Smite (the seed burns away); `SpriteHandler.wizard`
+killProc `.wizard` (and `EnemyCommon`'s `killsForGood` gains `.wizard`); step 7 row M l. 49846–49848 (0x70); Smite
+(the seed burns away); `SpriteHandler.wizard`
 (`SpriteClassTable`: `(.wizard, .idle)`); Statue none; liquids none; idle as the Chief (no margins; face 0x727[0]
 present); write-back `+0x18a` / `+0xea`; arena level 25 v = +592, lock x > 532, window [592, 1384]. Engine: **6A-FB**
 (0x46a cached by record — the Wizard marks only the 48 × 48 cut); nothing else (Box 0x434 hover arm, shots, burn built).
@@ -434,11 +592,17 @@ present); write-back `+0x18a` / `+0xea`; arena level 25 v = +592, lock x > 532, 
 `testWizardFireballChargeAndVolley` (21 frames at n 7, the parity tint, three velocities, snd 300 after the spawns);
 `testWizardCrateSpawnAndCarry` (0x434 at n 10, `+0x160` −52, w5 52, the eased path, release at 52);
 `testWizardRetreatAndDeadState11` (12 → 10 → 6; 11 unreachable); `testWizardDeathAndGlow` (cast face n >> 2, burn at
-20, period 12 at HP ≤ 300); `testWizardSwitchOff`.
+20, period 12 at HP ≤ 300); `testWizardSwitchOff`; `testWizardTileCallbackIsCrawlerBody` (`.HitWizardTileSprite`, M l.
+76169–76201, identical to the Warrior's: the four arms of 6A-W1 test 9). In the volley and crate tests: the six R(5)
+before R(12000), the layers 8 / 2, and the spawn-frame order of the table above as measured on level 25.
 **6B-WZ2 — Hit, Kill, fight**: `testWizardShotsBurnAway`; `testWizardOwnHoveringCrateHarmless` (`+0x160 < 0` ignored);
-`testWizardCrush100`; `testWizardKillTail`; `testWizardContactSmite`; `testLevel25ArenaBounds`; `testWizardScriptedKill`
-(measured: the crate attacks are the only damage — the player lures the released crate onto him; tail 20 + (B − T) of
-0x728[4]).
+`testWizardCrush100` (`.KillBox`'s draws first, then R(10000), R(10000), R(2)); `testWizardKillTail`;
+`testWizardContactSmite`; `testLevel25ArenaBounds`; `testWizardScriptedKill` (the §0 ruling; tail 20 + (B − T) of
+0x728[4]; the crate attacks are the only damage — the player lures the released crate onto him). **Seed 1. Key script
+the build starts from:** `.right` held from the level start until the arena locks (player x > 532); then each frame a
+one-frame `.left` / `.right` toward his centre x whenever the player is more than 0x30 px from it, else `[]` — so the
+crate, which eases to 136 px above the player and drops 52 frames after it appeared, falls on him — until the Kill or
+20,000 frames. Measured once, then pinned.
 
 ---
 
@@ -483,7 +647,7 @@ Guardian head: `+0xe9` / `+0x1b2` → return; Handles; SetRect(0x22, 0x14, 0x67,
 | state | per frame | leaves to | draws | spawns / sounds |
 |---|---|---|---|---|
 | 6 sway | t[8] + 2 while < t[11] + 16; n + 1, > 9 → 0; `+0xa6 + 1`; R(30) r; r + 30 < `+0xa6` ∧ neck > 0x577f ∧ n < 2 → n = `+0xa6` = 0, and: `+0x160 == 0` → R(100) < 0x2d → 9 else 2; else `+0x160 = 0`, R(100) < 0x15 → 9 else 2; player behind (facing left ∧ cx < px, or right ∧ px < cx) → state 6, `+0xa6 = 0`; face 0x780[n] (n < 6) else [10 − n]; move; `+0x15c = neck·table[t[9]] / 0xaf00` (overwritten later for the head) | 2 / 9 | R(30) every frame; R(100) on a choice | — |
-| 2 fire | move; `+0x164 × 0.75`; t[8] < 1 → `+0xa6 + 1`, n + 1, s = n: s < 11 → s == 6: shot `+0xb8 = 0xb0001`; s == 4: `MTNewSprite(0x46a, x + 0x60·facing + 8, y + 0x28, +0x80 − 1, −1, EnemyShot setup)` into `+0x1d4`, `+0xb8 = 0xb0002`; s == 5: 0xb0000; s == 7: 0; then s == 4: `.CalcCenterPos(shot)`, dir = `.FindDesiredDirectionGeneric(player centre, shot centre)`, `FUN_1003f218(shot, dir, 0x708)`, R(12000), snd 300 (36000 + R); face 0x781[min(s ≤ 4 ? s : 10 − s, 4)]; s ≥ 11 → n = `+0xa6` = 0, state 6; else (t[8] ≥ 1): t[8] − 2 (floor 0), face 0x780[0], n = −1 | 6 | R(12000) at s 4 | 0x46a aimed, snd 300 |
+| 2 fire | move; `+0x164 × 0.75`; t[8] < 1 → `+0xa6 + 1`, n + 1, s = n: s < 11 → s == 6: shot `+0xb8 = 0xb0001`; s == 4: `MTNewSprite(0x46a, x + 0x60·facing + 8, y + 0x28, +0x80 − 1, −1, EnemyShot setup)` into `+0x1d4` (the Setup stores layer 8), `+0xb8 = 0xb0002`; s == 5: 0xb0000; s == 7: 0 (the `+0xb8` stores of s 4–7 test `+0x1d4 ≠ 0`, M l. 74636–74657); then s == 4: `.CalcCenterPos(shot)`, dir = `.FindDesiredDirectionGeneric(player centre, shot centre)`, `FUN_1003f218(shot, dir, 0x708)` (**no null test**, M l. 74659–74664), R(12000), snd 300 (36000 + R); face 0x781[min(s ≤ 4 ? s : 10 − s, 4)]; s ≥ 11 → n = `+0xa6` = 0, state 6; else (t[8] ≥ 1): t[8] − 2 (floor 0), face 0x780[0], n = −1 | 6 | at s 4: the 0x46a Setup's R(5), R(5), then R(12000) | 0x46a aimed, snd 300 |
 | 9 roar | move; `+0x164 × 0.75`; t[8] − 1 while > (t[11] + 16) / 2 − 2; n + 1; i = n >> 1: < 3 → 0x782[i], else [min(24 − i, 2)]; n > 47 → `+0xa6 = R(30)`, n = 0, `+0x160 = 1`, state 6 | 6 | R(30) at the end | — |
 | 8 recoil | n == −1 → t[11] + 1; move; `+0x164 × 0.75`; n + 1; `+0xa6 + 1`; face 0x783[n] (n < 4) else [max(7 − n, 0)]; n < 8 → segment t[7 − n] `+0xaa = 8` (**no null check**); n > 6 → state 6 | 6 | — | — |
 | 4 dying | move false; t[8] − 1 while > 0; vx × 0.9; face 0x783[min(n >> 2, 3)]; n + 1 cap 12; `+0xa6 + 1`; > 11: == 12 → `+0x1a2 = 1`; < 20 → segment t[a6 − 12] (`+0xe9` → slot 0, read **before** the null test): `+0x46 = 0`, `+0x1a2 = −(30·(7 − (a6 − 12)) + 1)` | — | — | — |
@@ -499,6 +663,13 @@ slot cleared — `*slot + 0xe9` read before the null test; d = i·neck / 8 (towa
 null test**); x256 = anchor ∓ neck by facing; y256 = anchorY + `+0x154` + `+0x15c`; vx = vy = 0; `+0xc / +0xa`;
 Cleanup. No gravity, no glow, no liquids.
 
+**Spawn frame order** (§1.1 rule; guardians and segments are layer 0xc):
+
+| child | final layer | runs on its spawn frame |
+|---|---|---|
+| fireball 0x46a (state 2, s = 4) | 8 (its Setup; argument 0xb) | no — in front of the guardian |
+| 16 segments 0x785, partner 0x781 | 0xc | level load (made inside the 0x780 Setup, before the 0x780 itself is inserted); in each frame's list the guardian's 8 segments, the partner's 8, the partner, then the guardian 0x780 — every segment Handle (and its burn, in its Cleanup) runs before both heads' |
+
 ### 5.4 Hit — `.HitDemonSprite` (M l. 74907–74965)
 Player shot ∧ `+0xa6 == 0` ∧ HP > 0: window = state 9 ∧ n > 4. In the window `.KillPlayerShot(shot, 0, 0)`; shot type 6
 (V Blade) → snd 303 only; else `.HurtSprite(S, shot +0xa4, shot.vx >> 1, −1000, 2, 8)` → on a hurt: HP < 0xc9 → 702
@@ -510,7 +681,8 @@ Head (count), then **score `G+0 += 1000` unconditionally**, `+0xe9`, `+0xea`; 0x
 `*_DAT_1009fecc − 1`, snd 453, shake 0x1e, flash 3, `fecc < 1 → fed0 = 1`. Runs for every segment too (9,000 a guardian).
 
 ### 5.6 Pieces, duties, engine
-killProc `.demon` (guardian) and `.demonSegment` (the same `.KillDemon`); step 7 `.demon` (default 0x70; segments have
+killProc `.demon` (guardian) and `.demonSegment` (the same `.KillDemon`; `EnemyCommon`'s `killsForGood` gains `.demon`
+and `.demonSegment`); step 7 `.demon` (default 0x70; segments have
 empty rects and no row); Smite `.demon` (segments not listed); `SpriteHandler.demon` / `.demonSegment`; Statue none; no
 liquids; write-back `+0x18a` (both) / `+0xea`; arena: v = 16000 never locks (bosses-3 §11) — only the music applies.
 Engine not built: **the End key** (`IsPressed(0x77)` — a HectorInput key read the shells must pass, ungated in the
@@ -525,18 +697,54 @@ segment 7 finishes burning before the head does — segment 7 starts burning on 
 frame 12. **The build measures on level 55 which Kill comes first; if t[7] can be empty while the head still runs, STOP
 and ask** (the head's y would come from low memory).
 
+A **fourth** null use, and a stale record, both on the fire state's shot pointer `+0x1d4`:
+- s 4 calls `.CalcCenterPos`, `.FindDesiredDirectionGeneric` and `FUN_1003f218` on the 0x46a spawn result with **no
+  null test** (M l. 74659–74664) — a failed spawn reads and writes low memory (Ruling 16, widened to calls and reads:
+  the three calls are skipped, the R(12000) still drawn).
+- s 5–7 write `+0xb8` through `+0x1d4` (M l. 74635–74657). Those writes test `+0x1d4 ≠ 0`, but nothing ever clears it:
+  a shot that died at s 4–6 (it hit the player, or a wall) is still written, and once its record is freed (`+0xe9`
+  reaches 4 in `.UpdateSprites`, M l. 4968–5031) and re-used by another spawn, the guardian tints a stranger. The build
+  keeps `+0x1d4` as the pool's record identity (as the Warrior's crate slots, §2.8) and pins a shot killed at s 4.
+
 ### 5.8 Proposed split and tests (`DemonTests.swift`)
-**6C-DM1 — Init, Setup, segments**: sine table pins (table[0] 0, table[140] = 95·256, table[420] = −95·256);
-`testDemonCacheRegistration` (0x780…0x784 after 0x77a, flag 0, 3/3/3/4/2 a row); `testDemonSetupPairAndSegments` (partner at
-x 455 on L55, 16 segments, layer 0xc, record 0x1ff); `testDemonLevelLoadDraws` (18 × R(10) in order);
-`testDemonCounts18`; `testDemonSegmentSetupBranch` (Handle 0d64, empty rect, p4 from hdr + 0x1ffe); `testHandleDemonSegs`
-(the anchor-twice y formula at y 105); `testDemonSegmentHandleFace`.
-**6C-DM2 — Handle**: sway choice draws; fire (neck settles, shot at s 4, aim + 0x708, tints 5–7); roar (48 frames,
-`+0x160`); recoil (t[11] + 1, flash down the neck); neck motion bounds; head position; dying (head burn at 12, segment
-delays −211 … −1); End key; switch-off.
-**6C-DM3 — Hit, Kill, fight**: roar window; V Blade; outside the window; KillDemon score per call and fecc / fed0; the
-seg-7 order check (5.7); contact / Smite; `testFireGuardiansScriptedKill` (measured; 2 × 2000 HP through roar windows of
-43 frames).
+**6C-DM1 — Init, Setup, segments** (8):
+1. `testDemonSineTable` — table[0] = 0, table[140] = 95·256, table[420] = −95·256, 560 entries.
+2. `testDemonCacheRegistration` — 0x780…0x784 after 0x77a, flag 0, 3 / 3 / 3 / 4 / 2 a row.
+3. `testDemonSetupPairAndSegments` — partner at x 455 on L55, 16 segments, layer 0xc, record 0x1ff, list order (8 + 8
+   segments, partner, guardian).
+4. `testDemonLevelLoadDraws` — 18 × R(10) in the §5.2 order.
+5. `testDemonCounts18` — the counting window counts 18 (2 heads + 16 segments).
+6. `testDemonSegmentSetupBranch` — Handle 0d64, empty rect, p4 from hdr + 0x1ffe (HP 1000 / 2000 by that word).
+7. `testHandleDemonSegs` — the anchor-twice y formula at anchor y 105; a dead segment's slot cleared.
+8. `testDemonSegmentHandleFace` — face 0x784[`+0x46`], t[7] `+0x46` = 1, the others 0.
+**6C-DM2 — Handle** (9):
+1. `testDemonSwayChoiceDraws` — R(30) every frame; R(100) < 0x2d (`+0x160 == 0`) / < 0x15 (else) → roar, else fire.
+2. `testDemonFireShot` — s 4: 0x46a at (x + 0x60·facing + 8, y + 0x28), layer 8, its two R(5) then R(12000), aim
+   impulse 0x708, not handled on its spawn frame; tints 0xb0002 / 0xb0000 / 0xb0001 / 0 on s 4–7 through `+0x1d4`
+   (also after the shot died).
+3. `testDemonRoar` — 48 frames, `+0x160 = 1`, `+0xa6 = R(30)` at the end.
+4. `testDemonRecoil` — t[11] + 1 on n = −1, `+0xaa = 8` down segments 7 … 0, back to 6 after n 7.
+5. `testDemonNeckMotionBounds` — neck clamp [0x2d00, 0xaf00], extend flips at 0x4c00 / 0x9f00, speed ±0x400 by 0x80.
+6. `testDemonHeadPosition` — `+0x15c = −0xa00 − (anchorY − t[7].y256)`, x256 = anchor ∓ neck.
+7. `testDemonDying` — head `+0x1a2 = 1` at `+0xa6` 12; segment burn delays −211 … −1.
+8. `testDemonEndKeyKills` — `IsPressed(0x77)` → HP −1 in the head, so the same frame's death entry sets state 4;
+   ungated.
+9. `testDemonSwitchOff` — the switch-off check returns the Phase-5 goldens.
+**6C-DM3 — Hit, Kill, fight** (8):
+1. `testDemonRoarWindowHurts` — state 9 ∧ n > 4: shot killed silently, hurt by `+0xa4`, 701 / 702 at HP ≤ 200, state
+   8, speed −0x800.
+2. `testDemonVBladeOnlySounds` — shot type 6 in the window: snd 303, no hurt.
+3. `testDemonOutsideWindowAbsorbs` — `.KillPlayerShot(shot, 0, 1)` + snd 303, HP unchanged.
+4. `testKillDemonScorePerCall` — + 1000 for every call (9,000 a guardian with its 8 segments).
+5. `testKillDemonGuardiansAliveAndGate` — `*_DAT_1009fecc` 2 → 1 → 0; `fed0 = 1` only at 0; snd 453, shake 0x1e,
+   flash 3 per guardian with the flag.
+6. `testDemonKillsForGood` — `.demon` and `.demonSegment` in `killsForGood`; `+0xea = 1` per Kill; `+0x18a` on both.
+7. `testDemonSegment7Order` — the §5.7 check on level 55 (which Kill first; STOP if t[7] can be empty under a live head).
+8. `testFireGuardiansScriptedKill` — the §0 ruling; 2 × 2000 HP through roar windows of 43 frames (n 5…47). **Seed 1.
+   Key script the build starts from:** the carry gives the Fireball selected; `.right` held from the level start until
+   both guardians are on screen; then a one-frame `.use` every 16 frames (shots outside the window are absorbed, so the
+   cadence only has to cover the windows), facing them, until both Kills or 30,000 frames. Measured once, then pinned.
+Contact and Smite rows (step 7 default 0x70; a Smite seed outside the window is absorbed) are asserts in test 3.
 
 ---
 
@@ -589,27 +797,43 @@ Order of one frame:
 
 | state | per frame | leaves to | draws / sounds / spawns |
 |---|---|---|---|
-| 0 float | ready 0; SetRect(0x5c, 0x3a, 0x93, 0x90); `.StandardXichraFloat`; current w+0x2c == target → ready 1; `+0xa6 + 1`; == 0x50 → `.Conversation(250, +0x48, S)`, phase 1, record 500 p3 = 4 (hdr + 0x1f4c), w+0x6c = 2, two `MTNewSprite(0x6d6, cx − 0x12a / cx + 0x52, camTop − 0x6e, 0x14, record 500, Walker setup _DAT_1009ff24)` into `+0x1d4` / `+0x1d8`, the **first** minion's `+0x100 = 1` twice | (cycle) | 2 Walker Setups |
-| 1 shoot | ready 0; b2 0: Float, target ≠ 0 → saved w+0x28 = target, target 0, current == 0 ∧ frame 0 → b2 1; b2 1: target 0, n + 1, group 1, frame n < 12 ? n >> 1 : (21 − n) >> 1, **n == 12 → `.DoXichraShot(S, 3)`**, n > 20 → b2 2; b2 2: Float, target 0 → saved, reached ∧ frame 0 → ready | (cycle) | DoXichraShot: R(12000) snd 300, 3 × 0x46a aimed −1/0/+1 step, impulse 0xa28 (0x10c2 once fast) |
-| 2 rain | ready 0; b2 0: Float, save + zero the target, wind-up w+0x68 + 1 cap 0x25; current == 0 ∧ wind-up 0x25 ∧ frame 0 → b2 1 and the pattern by form (below); b2 1: target 0, delay w+0x48 − 1, < 1 → one object (below), `.CalcCenterPos`, k − 1, k < 0 → rows − 1, < 1 → b2 2, else delay = between, k = len; else delay = in-row; b2 2: Float, restore, wind-up − 1 floor 0, reached ∧ wind-up 0 ∧ frame 0 → ready | (cycle) | form 0: R(3), R(100); form 2: R(4), R(100); form 3: R(2), R(100); form 1: none |
+| 0 float | ready 0; SetRect(0x5c, 0x3a, 0x93, 0x90); `.StandardXichraFloat`; current w+0x2c == target → ready 1; `+0xa6 + 1`; == 0x50 → `.Conversation(250, +0x48, S)`, phase 1, record 500 p3 = 4 (hdr + 0x1f4c), w+0x6c = 2, two `MTNewSprite(0x6d6, cx − 0x12a / cx + 0x52, camTop − 0x6e, 0x14, record 500, Walker setup _DAT_1009ff24)` into `+0x1d4` / `+0x1d8`, the **first** minion's `+0x100 = 1` twice (no null test, M l. 76807–76816) | (cycle) | the two Walker Setups' R(0x5fff), R(0x46), R(400) each |
+| 1 shoot | ready 0; b2 0: Float, target ≠ 0 → saved w+0x28 = target, target 0, current == 0 ∧ frame 0 → b2 1; b2 1: target 0, n + 1, group 1, frame n < 12 ? n >> 1 : (21 − n) >> 1, **n == 12 → `.DoXichraShot(S, 3)`**, n > 20 → b2 2; b2 2: Float, target 0 → saved, reached ∧ frame 0 → ready | (cycle) | DoXichraShot (M l. 76520–76567): R(12000) snd 300, then per shot its Setup's R(5), R(5) (six R(5)); 3 × 0x46a (argument `+0x80 + 1` = 2, Setup layer 8) aimed −1/0/+1 step, impulse 0xa28 (0x10c2 once fast); `.CalcCenterPos` / `.FindDesiredDirectionGeneric` / `FUN_1003f218` on each spawn result with no null test |
+| 2 rain | ready 0; b2 0: Float, save + zero the target, wind-up w+0x68 + 1 cap 0x25; current == 0 ∧ wind-up 0x25 ∧ frame 0 → b2 1 and the pattern by form (below); b2 1: target 0, delay w+0x48 − 1, < 1 → one object (below), `.CalcCenterPos`, k − 1, k < 0 → rows − 1, < 1 → b2 2, else delay = between, k = len; else delay = in-row; b2 2: Float, restore, wind-up − 1 floor 0, reached ∧ wind-up 0 ∧ frame 0 → ready | (cycle) | on b2 0 → 1, form 0: R(3), R(100); form 2: R(4), R(100); form 3: R(2), R(100); form 1: none. Each object's Setup: 0x434 / 0x5c4 none; 0x753 R(5), R(100); 0x771 R(5), then 0x772 R(5). `.CalcCenterPos` on the last spawn result with no null test (M l. 76920) |
 | 4 crash | target 0; bob 10; SetRect(0x5c, 0x50, 0x93, 0xa2); n + 1; gravity 0x15e; group 2; airborne: n cap 18, frame n / 3; grounded: w+0x38 == 1 → R(500) snd 435 (50000 + R), shake 0x12, grounded player → stagger 0x14; n cap 18; w+0x38 + 1; frame n / 3; w+0x38 > 6 ∧ n == 18 → w+0x38 = 0, n = 12, w+0x10 = y; HP < 1: form 2 → phase + 1, form 3, state 7, n = 0x18, hits 3 / else state 5; HP ≥ 1 ∧ hits < 1: form 4 → phase 6, n = 0x18, state 8 / else 5; else 5 | 5 / 7 / 8 | R(500) on the second grounded frame |
 | 5 grounded | target 0, bob 10, group 2; w+0x38 + 1; > 30 → n − 1, < 0 → n = 0, state 6, w+0x3c = 0; frame n >> 1 | 6 | — (vulnerable while w+0x38 ≤ 30, §6.4) |
 | 6 rise | N = 0x1c (0xe when fast); target 0; wind-up 0; w+0x3c + 1; Float; > N ∧ frame 0 → state 0; > N → w+0x3c = N; y = homeY·c / N + crashY·(N − c) / N (two integer divisions); y256 | 0 | — |
 | 7 transform | target 0, bob 10, group 2; w+0x38 + 1; < 0x7e: n + 1 cap 0x2b, frame n >> 2; == 0x7d → `.Conversation(252, +0x48, S)`, n = 0xb, flash 3, R(10000) R(2) grunt (78000+), R(10000) R(2) grunt vol 0x97 (58000+); ≥ 0x7e: n − 1, < 0 → n = 0, state 6, **fast w+0x13 = 1**, w+0x3c = 0; frame n | 6 | — |
-| 8 death | target 0, bob 10, group 2; w+0x38 + 1; < 0x3d: n + 1 cap 0x2b, frame n >> 2 (the == 0x7d test is dead); else m = w+0x38 − 0x3c: m < 0x8c ∧ m mod 12 == 0 → **`.STPlay3DSoundRand`(435, 1, 0x100, +0xe)** (one R(10000)), flash 4, shake 0x14, R(30) dy, R(65) dx, `MTNewSprite(0x4b7, cx + dx − 0x4b, cy + dy − 0x1f, 0xc, −1, Effect setup)`; m > 0x96 → `DAT_100a5106 = 1`, `*_DAT_1009ffc4 = 1` (every frame from w+0x38 = 211); frame 10 | — (`.GameLoop` ends → `.Victory`) | 11 explosions (m 12 … 132) |
+| 8 death | target 0, bob 10, group 2; w+0x38 + 1; < 0x3d: n + 1 cap 0x2b, frame n >> 2 (the == 0x7d test is dead); else m = w+0x38 − 0x3c: m < 0x8c ∧ m mod 12 == 0 → **`.STPlay3DSoundRand`(435, 1, 0x100, +0xe)** (one R(10000)), flash 4, shake 0x14, R(30) dy, R(65) dx, `MTNewSprite(0x4b7, cx + dx − 0x4b, cy + dy − 0x1f, 0xc, −1, Effect setup)`; m > 0x96 → `DAT_100a5106 = 1`, `*_DAT_1009ffc4 = 1` (every frame from w+0x38 = 211); frame 10 | — (`.GameLoop` ends → `.Victory`) | 11 explosions (m 12 … 132); each: R(10000), R(30), R(65), then its Effect Setup's 135 (45 × R(2000), R(2000), R(2)) |
 
 Rain patterns (all written on the b2 0 → 1 frame; kind w+0x64 written only by forms 2 and 3, form 0 relies on the
 zeroed block):
 
 | form | len = k | rows | in-row / between | mode | object (b2 1) |
 |---|---|---|---|---|---|
-| 0 | 8 | R(3) + 2 | 9 / 0x15 | 1 drop | Box 0x434 at (X − 0x10, camTop − 0x20), layer 9 |
+| 0 | 8 | R(3) + 2 | 9 / 0x15 | 1 drop | Box 0x434 at (X − 0x10, camTop − 0x20), layer argument 9 (the Box Setup stores 2) |
 | 1 | 5 | 3 | 10 / 0x1e | 0 sweep | 0x771 at (camLeft − 0x3c, Y) and 0x772 at (camLeft + 0x260, Y), Y = 0x1a4 − k·0xa0 / len; both `+0xa4 = 0x70`, `+0x16c = 1`, vx ±0x1068, `.MTChangeSpriteLayer(1200)`; **only the 0x772** also gets gravity 0 and vy 0 |
 | 2 | 7 | R(4) + 1 | 8 / 0x10 | 1 | Box **0x5c4** at (X − 0x33, camTop − 0x43) |
 | 3 | 6 | R(2) + 1 | 8 / 0x10 | 1 | EnemyShot 0x753 at (X − 0x2f, camTop − 0x3f) |
 
 Drop X (mode 1): parity = rows & 1, inverted when the side flag (R(100) > 0x31) is set; parity 0 → idx = len − k and
 off = +(0x2c0 / len) / 4, else idx = k and off = −(0x2c0 / len) / 4; X = idx·0x2c0 / len + 0x60 + off.
+
+**Spawn frame order** (§1.1 rule; Xichra is layer **1**):
+
+| child | final layer | runs on its spawn frame |
+|---|---|---|
+| wing (Setup, record 0x1ff) | 0 (argument `+0x80 − 1`; its Setup branch stores none) | level load; in front of Xichra (inserted inside her Setup, before she is), so **its Handle runs before hers every frame** and the draw pass sees the position her step 8 copied that frame |
+| cannons 0x443 / 0x449 (Setup) | 1000 (Background Setup) | level load; behind her |
+| minions 0x6d6 ×2 (state 0) | 4 (Walker Setup) | depends — yes iff the sprite after her has a layer ≤ 4 |
+| 0x46a ×3 (`.DoXichraShot`) | 8 (its Setup) | depends — ≤ 8 |
+| rain 0x434 / 0x5c4 | 2 (Box Setup) | depends — ≤ 2 |
+| rain 0x753 | 9 (argument kept) | depends — ≤ 9 |
+| rain 0x771 / 0x772 | 9, then `.MTChangeSpriteLayer(1200)` re-inserts each at the tail of layer 1200 | yes, whenever the sprite after her has a layer ≤ 1200 |
+| explosions 0x4b7 (state 8) | 0xb (Effect Setup, M l. 53722; argument 0xc) | depends — ≤ 0xb |
+| the seed's 0x4b7 and debris 0x442 (Hit, id 0x5a) | 0xb / 0x7fbc | made in the collide pass: next frame |
+
+Every "depends" is pinned on level 67 by the build (the sprite after her when her Handle begins).
 
 6. **Glow** (state ≠ 8): tint at 0 < HP < 0x7d1; reload 0xc at HP < 0x12d else 0x1e.
 7. **Movement**: state 4 → `.ApplyGravityAndSeparateFromTiles` (tile callback: `.WallBounce` on FG hits only, M l.
@@ -634,58 +858,119 @@ Player shot with `+0xa6 == 0` (no HP test):
   vx 0, w+0x38 = w+0x3c = 0. Else, shot `+0x1a2 < 1` → snd 303 vol 0xab (at the shot), shot vx × 0.4 (0x100a1cc8), it
   burns (`+0x1a2 = 1`, `+0x8c = 1`).
 - states 4, 6, 7, 8 and 5 after its window: nothing.
+- **The id-0x5a `.KillPlayerShot(shot, 1, 1)`:** the seed's arm of `.KillPlayerShot` (M l. 51145–51180; built,
+  `PlayerShotHits.kill`) **ignores both flags**: it always plays `.STPlay3DSoundRand(435, 1, 0x100, shot +0xe)` — one
+  R(10000) — sets flash 3 and shake 0x14, makes a 0x4b7 explosion (its Setup's 135 draws), and when the shot's `+0xf0 ==
+  0` eight 0x442 debris (each: its Effect Setup's 135 draws, then R(0x96), R(7)). Those draws come **before** the two
+  grunts' R(10000) R(2), R(10000) R(2) (M l. 77392–77405). A seed landing in the state-5 window bursts the same way
+  through the `(shot, 0, 0)` call.
 Statue / Box with `+0x160 ≥ 0`, any state: the crush test → 100 (invul 2, flash 8), `+0xf0 = 0`, `.KillBox`, R(10000)
-701, R(10000) R(2) grunt (42000+).
+701, R(10000) R(2) grunt (42000+). **Draws in order:** `.KillBox`'s own (a 0x434: R(10000), then the particle draws —
+§1.1; a 0x5c4 or a Statue: none), R(10000), R(10000), R(2) (M l. 77435–77444).
 
 ### 6.5 Kill — `.KillXichra` (M l. 77451–77481)
 Head, then the tail **unconditionally** (no boss-flag test). Not reached in play: Xichra never sets `+0x1a2`; the
-game ends from state 8 (bosses-2 §6.6, MED on other burn writers).
+game ends from state 8 (bosses-2 §6.6, MED on other burn writers). `EnemyCommon`'s `killsForGood` gains `.xichra`.
 
 ### 6.6 The lair (6C-XL; bosses-3 §8) and the hand-offs
 - Cannons: R (record 4, 1090, placed), A (0x443, record 400), B (0x449, record 401). Background cannons with p1 0 are
   built (W2b); **the rotating arm (record p1 101…106, `cmpwi r4,0x65` raw `10073c7c`) is refused at Setup today**
   (`BackgroundSprite.swift:334`) — `.UpdateXichraCannons` (M l. 76486–76517) writes p1 0x67 / 0x68 into the live records
-  at phase 3, so the Handle's per-frame p1 read must reach that arm: 6C-XL builds it (and the 485 cue).
+  at phase 3, so the Handle's per-frame p1 read must reach that arm. The arm itself is first placed on level 10, so
+  the engine document builds it in 6A (6A-RC, its §2.3 and E1); 6C-XL reuses it (and the 485 cue).
+- **`.UpdateXichraCannons`** (owned by **6C-XL**; called from Xichra's phase 2 → 3 exit): with the block present, cannon
+  A's type is written 0x443 (unchanged) and cannon B's **0x444** (it was 0x449); records 400 / 401 get p1 (record +8)
+  0x67 / 0x68 and record +0xa = 0xf; both live cannons `+0xa6 = 0`, `+0x158 = 8`, `+0x160 = 8`, `+0x15c` = +2 (A) / −2
+  (B), `+0x164 = 9000`. No draws; the two cannon pointers (w+4, w+8) are used with no null test (M l. 76497–76514).
 - Minions 0x6d6 (record 500 p3 = 4): built Walker class (WK2); not counted (spawned outside the window).
 - Gates 2940 p1 = 0: built gate arm; record 0's p4 is never written → walls.
-- CLUT animation: Xichra writes hdr `+0x2730` every frame (modes 3…7); `.AnimateCLUT` (6B-CA, M l. 8926ff, called at M
-  l. 9231) reads it — **the header field must be a mutable Core value** (today `LevelRun` reads a parsed header), shared
-  by 6B-CA and 6C-XI.
+- CLUT animation: Xichra writes hdr `+0x2730` every frame (modes 3…7); `.AnimateCLUT` (M l. 8926ff, called at M
+  l. 9231) reads it — **the header field must be a writable Core value** (today `LevelRun` reads a parsed header). It
+  is built **once, by 6B-CA** (its first user, levels 50 / 51), and reused by 6C-XI. The level-67 CLUT animation itself
+  is 6B-CA's routine running on Xichra's writes — not 6C-XL's work (a plan correction, §10).
 - `.Victory`: the flag `*_DAT_1009ffc4` (and `DAT_100a5106`) → 6C-VI's `GameFlow` state; the three victory routines
   are ENG / 6C-VI's (§7).
 - Conversations 250, 251, 252 (`Mcnv`, LL checks their opcodes) started **from inside a Handle**: the suspension
   mechanism exists for the player's Handle (the IU hint); 6C-XI makes it work from a sprite Handle in the handle pass
   (the rest of the Handle — phase write, record 500, the minion spawns — runs after the resume).
-- Spiked ball Box 0x5c4 (form 2 rain): its Box arm and its `.HitPlayerSprite` arm (M l. 49189–49197: R(100) < 0x33 → 0
-  coins else 5, `.HurtPlayer(0xa8, blood 1, invul 0x3c)`) are Phase 6 cards (`BoxSprite.swift:474`).
+- Spiked ball Box 0x5c4 (form 2 rain): its Box arm and its `.HitPlayerSprite` arm (M l. 49189–49197, both 0x5c3 and
+  0x5c4: R(100) < 0x33 → 0 coins else 5, `.HurtPlayer(0xa8, blood 1, invul 0x3c)`; `BoxSprite.swift:474`) are **owned
+  by the engine document's spiked-ball feature** (`docs/ferazel/phase6-engine-contracts.md` §3.4; first needed on
+  level 45, so built before 6C-XL). Xichra's tasks only spawn it.
 
 ### 6.7 Pieces, duties, engine
 killProc `.xichra` (the unconditional tail; unreachable in play but built as read); **no step-7 row** (the dump has
 none — a test pins that contact does nothing); Smite `.xichra` (a seed is an id-0x5a hit); `SpriteHandler.xichra`,
 `.xichraWing`; Statue none; no liquids; write-back `+0x18a` (body; the wing's record 0x1ff is outside the guard) /
-`+0xea`; the stagger (§3.7, shared with the Chief); arena none (v = 0). Engine not built: CLUT animation (6B-CA) with a
-mutable `+0x2730`; the Handle-site conversation suspension; the rotating cannon arm (6C-XL); the 0x5c4 spiked ball (Box
-card); `.Victory` (6C-VI); 6A-FB (0x46a cuts).
+`+0xea`; `killsForGood` gains `.xichra`; the stagger (§3.7, shared with the Chief; 19 arm frames); arena none (v = 0).
+Engine not built: CLUT animation and the writable `+0x2730` (6B-CA, built once there); the Handle-site conversation
+suspension; the rotating cannon arm (6A-RC; 6C-XL owns `.UpdateXichraCannons`); the 0x5c4 spiked ball (the engine
+document's §3.4); `.Victory` (6C-VI); 6A-FB (0x46a cuts).
+
+**Hazards (Ruling 16, widened to calls and reads):** `.DoXichraShot` calls `.CalcCenterPos`, `.FindDesiredDirectionGeneric`
+and `FUN_1003f218` on each 0x46a spawn result with no null test (M l. 76545–76563); the rain calls `.CalcCenterPos` and,
+for form 1, `.MTChangeSpriteLayer` and four stores on its spawn result with no test (M l. 76903–76920); the minions'
+`+0x100` stores likewise (M l. 76807–76816). The port skips every such use of a null result and keeps the draws.
 
 ### 6.8 Proposed split and tests (`XichraTests.swift`)
-**6C-XI1 — Setup, Init, phases, float**: Setup writes and the three spawns (wing record 0x1ff, cannons at (−24, 260) /
-(779, 262) records 400 / 401); tables A and B (table B[90] = 220, A[5] = 10); cache registration (16 sets after 0x784, flag
-1); `testXichraBobOrder` (bob removed before the `+0xe9` test, added after Cleanup); sway approach 0x30 and the angle
-wrap; the phase table (form, `+0x2730`, target per phase); the action cycle (R(60) + 90 only on 2 → 0); phase 0 at frame
-80 (conversation 250, record 500 p3 4, minions at cx − 298 / cx + 82, camTop − 110); phase 1 → 2 on both minions dead
-(conversation 251).
-**6C-XI2 — the attack and crash states**: DoXichraShot (draw before the spawns, ±1 step wrap, 0xa28 / 0x10c2); the rain
-patterns ×4 (X formula, parity, the 0x772-only gravity write); crash (gravity only in state 4, the second-grounded-frame
-cue, shake 0x12, stagger 0x14, the three exits); grounded window 30; rise N 28 / 14; transform (conversation 252 at
-125, fast); death (11 explosions, draw order Rand R(10000) / R(30) / R(65), victory flag from w+0x38 = 211); faces and
-the wing copy (the x256 slip — the build checks the wing draws at Xichra's x when its Handle runs first in the list).
-**6C-XI3 — Hit, Kill, the fight**: state-5 window (invul 10, k blood, kill on a hurt only); id 0x5a phase hits and the
-form-2 crash; deflection ×0.4 and burn; solids 100; contact none; Smite; `testXichraScriptedVictory` (measured).
+**6C-XL — the lair** (1, plus the lair card's own tests, which the planner writes):
+1. `testUpdateXichraCannonsRearms` — after the phase 2 → 3 exit: cannon B's type 0x444 (A stays 0x443), records
+   400 / 401 p1 0x67 / 0x68 and +0xa = 0xf, live `+0xa6` 0, `+0x158` 8, `+0x160` 8, `+0x15c` +2 / −2, `+0x164` 9000,
+   no draws; the next frame's cannon Handles take the rotating arm.
+**6C-XI1 — Setup, Init, phases, float** (9):
+1. `testXichraSetupWritesAndSpawns` — HP 5000, layer 1, position (325, 72), block 0x374; wing (record 0x1ff, layer 0,
+   before her in the list), cannons at (−24, 260) / (779, 262), records 400 / 401, layer 1000; draws R(10) then the
+   cannons' Setups.
+2. `testXichraTables` — table B[90] = 220, table A[5] = 10, 20 and 360 entries.
+3. `testXichraCacheRegistration` — 16 sets after 0x784 and before 0x6f4, flag 1, 2 a row.
+4. `testXichraBobOrder` — the bob removed before the `+0xe9` test, added after Cleanup (`+0x1c` not updated).
+5. `testXichraSwayApproachAndWrap` — current steps 0x30 toward the target; angle wraps at 0x16800.
+6. `testXichraPhaseTable` — form, `+0x2730` and target per phase 0…6.
+7. `testXichraActionCycle` — R(60) + 90 only on 2 → 0; ready gates each step.
+8. `testXichraPhase0AtFrame80` — conversation 250, record 500 p3 4, minions at cx − 298 / cx + 82, camTop − 110,
+   layer 4, the Walker Setups' six draws, the first minion's `+0x100` 1.
+9. `testXichraPhase1To2OnMinionsDead` — w+0x6c 2 → 0, conversation 251, phase 2.
+**6C-XI2 — the attack and crash states** (10):
+1. `testDoXichraShot` — R(12000) before the spawns, then six R(5); ±1 step wrap at 0x24; impulse 0xa28 / 0x10c2 fast.
+2. `testXichraRainDropForms` — forms 0, 2, 3: len / rows / delays, the drop X formula and parity (R(100) side flag);
+   0x434 and 0x5c4 at layer 2, 0x753 at 9 with its R(5), R(100).
+3. `testXichraRainSweepForm1` — 0x771 / 0x772 at Y = 0x1a4 − k·0xa0 / len, `+0xa4` 0x70, vx ±0x1068, moved to layer
+   1200 (so handled on the spawn frame), gravity 0 and vy 0 on the 0x772 only.
+4. `testXichraCrash` — gravity 0x15e only in state 4; R(500) snd 435 on the second grounded frame; shake 0x12; the
+   stagger 0x14 (19 arm frames) only with the player's `+0xce ∨ +0xcd`; the three exits.
+5. `testXichraGroundedWindow` — vulnerable while w+0x38 ≤ 30, then state 6.
+6. `testXichraRise` — N 28 / 14 (fast), the two integer divisions.
+7. `testXichraTransform` — conversation 252 at w+0x38 0x7d, flash 3, the two grunts, fast set.
+8. `testXichraDeath` — 11 explosions at m 12 … 132, each R(10000), R(30), R(65), then the 0x4b7 Setup's 135; flash 4,
+   shake 0x14; the victory flag from w+0x38 = 211.
+9. `testXichraFacesAndWingCopy` — the three groups' faces; the wing's copy, the x256 slip, `+0xb8 = 0xb0001`; the
+   wing's Handle runs before hers.
+10. `testXichraWallBounceTileCallback` — `.HitXichraTileSprite` (M l. 77484–77503): only an FG hit (layer 1) →
+   `.WallBounce(S, kind, …, 0, rect, 0, 0)`; BG, kind 100…199 and water do nothing.
+**6C-XI3 — Hit, Kill, the fight** (8):
+1. `testXichraStateFiveWindow` — `.HurtSprite(S, +0xa4, 0, −1000, 10, 10)` while w+0x38 < 0x1f, no HP test; k blood;
+   the shot killed only on a hurt.
+2. `testXichraSeedHitsPhases` — id 0x5a in states 0–3: the seed burst's draws (R(10000), 0x4b7's 135, debris) before
+   the two grunts; hits − 1, `+0x116` 0x3c; form 2 → the crash (state 4).
+3. `testXichraDeflectsOtherShots` — snd 303 vol 0xab, vx × 0.4, the shot burns.
+4. `testXichraCrush100` — `.KillBox`'s draws first (none for a 0x5c4), then R(10000), R(10000), R(2).
+5. `testXichraKillTailUnconditional` — the head and the tail with no flag test; `.xichra` in `killsForGood`.
+6. `testXichraNoContactDamage` — touching her does nothing (no step-7 row).
+7. `testXichraSmiteSeed` — a Smite seed is an id-0x5a hit.
+8. `testXichraScriptedVictory` — see below.
 
-Scripted victory: on paper the tail is fixed — state 8 begins on the frame of the phase-6 crash landing's exit, and the
-victory flag is set on the 211th state-8 frame after it; the frames before (three id-0x5a hits in phase 2, four in phase
-3, the phase-4 crashes and 5000 HP of grounded hits, three in phase 5) depend on seeds lobbed by the lair's cannons and
-are **measured** by the build.
+Scripted victory (the §0 ruling): on paper the tail is fixed — state 8 begins on the frame of the phase-6 crash
+landing's exit, and the victory flag is set on the 211th state-8 frame after it; the frames before (three id-0x5a hits
+in phase 2, four in phase 3, the phase-4 crashes and 5000 HP of grounded hits, three in phase 5) depend on seeds lobbed
+by the lair's cannons and are **measured** by the build. **Seed 1. Key script the build starts from:** the carry gives
+the Fireball and a stock of Fire seeds (item 6; bosses-2 §6.5, bosses-3 §8.3), the Fireball selected; `[]` until
+conversation 250 ends; then a one-frame `.use` toward the nearer minion every 16 frames until both Ax goblins are dead
+(conversation 251); then `.nextItem` to the Fire seeds and a one-frame `.use` each time the last seed has burst, with a
+one-frame tap toward the nearest lair cannon first (the cannons capture and lob seeds, bosses-3 §8.3); in every
+grounded window (state 5) `.previousItem` to the Fireball and a one-frame `.use` every 11 frames (past her
+invulnerability 10), then back to the seeds; until the victory flag or 60,000 frames. The name is
+`testXichraScriptedVictory`, **not** the card's `test<Boss>ScriptedKill` pattern, on purpose: she is never killed —
+the game ends from state 8 and her Kill is unreachable (§6.5).
 
 ---
 
@@ -717,7 +1002,7 @@ The other 13 of the card's 52, owned elsewhere (named once, owned zero times her
 
 ---
 
-## 8. Disagreements (dump wins; the bank files carry dated corrections for D1–D9)
+## 8. Disagreements (dump wins; dated corrections appended to the bank: `bosses.md` carries D1–D6 and D11, `bosses-2.md` D7–D10, D18 and D19; D12, D13, D15 and D16 are plan-card or port-comment corrections, collected in §10; D14 is the ledger's)
 
 | # | where | said | the dump | evidence |
 |---|---|---|---|---|
@@ -727,7 +1012,7 @@ The other 13 of the card's 52, owned elsewhere (named once, owned zero times her
 | D4 | bosses §3.2 fireballs | "a 20-frame charge" | 21 frames at n = 7 (an arming frame sets `+0xa6 = 20`), re-armed every volley | M l. 75768–75791 |
 | D5 | bosses §4.2 jump | R(100) and R(6000) listed without order; "at `+0x46 == 3`" | R(100) (lane) **before** R(6000) (pitch); the test uses n after its + 1 (third jump frame) | M l. 75295–75307 |
 | D6 | bosses §2–§4 Inits | (flag not mentioned) | Wizard, Chief, Xichra register under `*_DAT_100a0a48 = 1` (flag-1 cache records); Warrior and Demon flag 0; Chief / Wizard register their sets before the single | M l. 75020–75026, 75582–75586, 76216–76233 |
-| D7 | bosses-2 §5.1 segments | "layer `+0x80 − 1`" | the segment's own Setup stores layer 0xc after `.MTNewSprite` stored the argument → **layer 0xc**; the partner's layer argument is its record index, also overwritten to 0xc | M l. 74401, 74461–74463, 74480–74483; M l. 30710–30717 |
+| D7 | bosses-2 §5.1 segments | "layer `+0x80 − 1`" | the segment's own Setup stores layer 0xc after `.MTNewSprite` stored the argument → **layer 0xc**; the partner's layer argument is its record index, also overwritten to 0xc | M l. 74401, 74461–74463, 74480–74483; M l. 30711, 30715–30719 |
 | D8 | bosses-2 §5.1 | (silent) | each segment Setup draws R(10), reads p4 from record 0x1ff (hdr + 0x1ffe), and the Demon Setup has **no `+0x88 = 0`**; three null reads on emptied segment slots | M l. 74443, 74423–74424, 74528, 74715–74723, 74806, 74880–74886 |
 | D9 | bosses-2 §6.4 state 8 | "snd 435 … explosion at (cx − 75 + R(65), cy − 31 + R(30))" | the sound is **`.STPlay3DSoundRand`** (one R(10000)); then R(30) (y) **before** R(65) (x) | M l. 77177–77185 |
 | D10 | bosses-2 §6.4 form 1 | "gravity 0" for both | only the 0x772 gets `+0x110 = 0` and vy 0 written | M l. 76903–76918 |
@@ -749,11 +1034,11 @@ The other 13 of the card's 52, owned elsewhere (named once, owned zero times her
 
 | boss | tasks | tests |
 |---|---|---|
-| Warrior | 6A-FR (rock player arm) → 6A-W1 Handle → 6A-W2 Hit / Kill / fight | — / 8 / 8 |
-| Chief | 6A-CH1 class + Setup + Init + Handle + the stagger arm → 6A-CH2 Hit / Kill / pieces / fight | 9 / 8 |
-| Wizard | 6B-WZ1 Setup + Init + Handle → 6B-WZ2 Hit / Kill / fight (after 6A-FB) | 9 / 7 |
+| Warrior | 6A-FR (rock player arm) → 6A-W1 Handle → 6A-W2 Hit / Kill / fight (+ the 28 asserts of §2.11) | — / 9 / 8 |
+| Chief | 6A-CH1 class + Setup + Init + Handle + the stagger arm → 6A-CH2 Hit / Kill / pieces / fight (+ the 30 asserts of §3.10) | 10 / 8 |
+| Wizard | 6B-WZ1 Setup + Init + Handle → 6B-WZ2 Hit / Kill / fight (after 6A-FB) | 10 / 7 |
 | Fire Guardians | 6C-DM1 Init + Setup + segments → 6C-DM2 Handle → 6C-DM3 Hit / Kill / fight (after 6B-FI, 6A-FB) | 8 / 9 / 8 |
-| Xichra | 6C-XL lair (rotating cannon arm) → 6C-XI1 Setup + phases → 6C-XI2 states → 6C-XI3 Hit / Kill / fight (after 6B-CA, the Handle-site suspension, 6C-VI's flag, the 0x5c4 ball) | — / 9 / 10 / 8 |
+| Xichra | 6C-XL lair (`.UpdateXichraCannons`; reuses 6A-RC's rotating arm) → 6C-XI1 Setup + phases → 6C-XI2 states → 6C-XI3 Hit / Kill / fight (after 6B-CA, the Handle-site suspension, 6C-VI's flag, ENG's spiked ball) | 1 / 9 / 10 / 8 |
 
 ### 9.2 Engine features not built today, by boss (for ENG's cross-check)
 - Warrior: 6A-FR only.
@@ -761,17 +1046,41 @@ The other 13 of the card's 52, owned elsewhere (named once, owned zero times her
 - Wizard: 6A-FB.
 - Fire Guardians: the End key read (`IsPressed(0x77)`); 6B-FI (flame buffer, fire mode 2, 0x46a sparks); 6A-FB;
   the `*_DAT_1009fecc` global.
-- Xichra: 6B-CA with a mutable hdr `+0x2730`; a conversation suspension from a sprite Handle; the rotating cannon arm
-  (p1 101…106, 6C-XL); the 0x5c4 spiked ball's Box and player arms; 6C-VI (`.Victory`); 6A-FB; the stagger arm.
+- Xichra: 6B-CA with the writable hdr `+0x2730` (built once there, reused); a conversation suspension from a sprite
+  Handle; the rotating cannon arm (p1 101…106, 6A-RC per ENG E1; 6C-XL owns `.UpdateXichraCannons`); the 0x5c4 spiked
+  ball's Box and player arms (ENG §3.4); 6C-VI (`.Victory`); 6A-FB; the stagger arm.
+- Shared: `EnemyCommon.killsForGood` gains `.chief` (§3.6), `.wizard` (§4.6), `.demon` and `.demonSegment` (§5.6),
+  `.xichra` (§6.5); the Warrior's `.warrior` is already there.
 
 ### 9.3 Not derivable on paper (each build task measures, then pins)
-Every scripted kill's HP-0 frame; each burning face's opaque top / bottom (read through the face store, as
-`GoblinBurnLevelRunTests` does); the Chief's idle activation frame on level 18; whether the Demon's segment 7 dies
-before its head (§5.7 — a possible STOP); the wing's list order against Xichra's (§6.3 step 8); record 0x1ff's p4 word
-on level 55.
+Every scripted kill's HP-0 frame (the §0 ruling); each burning face's opaque top / bottom (read through the face store,
+as `GoblinBurnLevelRunTests` does); the Chief's idle activation frame on level 18; whether the Demon's segment 7 dies
+before its head (§5.7 — a possible STOP); every "depends" row of the spawn-frame-order tables (the sprite after the
+Wizard on level 25 and after Xichra on level 67); record 0x1ff's p4 word on level 55. (The wing's list order against
+Xichra's is settled on paper: the wing is inserted first at layer 0, §6.3.)
 
 ### 9.4 Read depth
 Warrior and Chief: every line of their spans read and transcribed. Wizard, Fire Guardians and Xichra: every state of
 Setup / Handle / Hit / Kill read in the committed dump; nothing here is marked skimmed except the Demon's sine-table
 call (the decompile garbles the `sin` return; the bank's raw-derived formula is kept) — re-derive it at 6C-DM's planning
 run.
+
+---
+
+## 10. Corrections to the plan's cards (for the 6A planner)
+
+Every error this document and its two review legs found in `docs/superpowers/plans/2026-11-04-ferazel-remainder.md`:
+
+| # | card / place | the card says | the dump / this document | where |
+|---|---|---|---|---|
+| P1 | BOS acceptance | "(52 rows)" | 46 exact-phrase rows; 39 belong to these contracts; the 52 includes 9 built Dillo rows, `.PlayerConstraints` and 3 victory rows | §7, D13 |
+| P2 | BOS contract, step 7 | "damage 0x70, M l. 49836–49846" | routing list M l. 49514–49521; damage rows M l. 49840–49851 (Warrior 49840, Wizard 49846, Chief 49849); Demon default 0x70; Xichra none | §1.2, D11 |
+| P3 | BOS contract | the three pieces "which no boss has today" | the Warrior already has all three in part (routing + default 0x70, `Smite.enemyHandlers`, the killProc count arm) | §1.2, D12 |
+| P4 | 6A-FB / 6A-W order | 6A-FB "before 6A-W" | not a Warrior prerequisite — no Warrior code touches 0x46a; the first users are the Wizard, the Demon and Xichra (an order choice only; ENG E10 agrees) | §2.7, D15 |
+| P5 | 6B-WZ | "eleven states" | the switch is a 13-entry table (states 0…12) with 7 coded arms, 6 of them live (2, 4, 6, 9, 10, 12); 11 has no writer | §4.3 |
+| P6 | 6C-XL | "the CLUT animation of 67" | 6B-CA's routine: it builds `.AnimateCLUT` and the writable hdr `+0x2730` once (levels 50 / 51), and on 67 it runs on Xichra's writes; 6C-XI reuses the field | §6.6 |
+| P7 | 6A-CH | the boss grab at "`PlayerStates.swift:371`" | that comment cites "l. 45625–45672"; the arm is M l. 45591–45632 (45625ff is the hurt-stun's lead-in); the counter is `PlayerState.bossGrab` | §3.7, D16 |
+| P8 | 6C-XI / 6C-XL | `.UpdateXichraCannons` on the 6C-XI card | owned by 6C-XL (the seat's ruling); the rotating arm it switches on is 6A-RC's (ENG E1) | §6.6 |
+| P9 | the spiked ball 0x5c4 | (on Xichra's lair) | owned by ENG §3.4 (both 0x5c3 and 0x5c4), first needed on level 45 | §6.6 |
+| P10 | the no-free-record ruling | "stores to it are dropped; the caller's later draws are still made" | the bosses also call and read through a null spawn result (`.CalcCenterPos`, `.FindDesiredDirectionGeneric`, `FUN_1003f218`, `.MTChangeSpriteLayer`, `+0xe` reads); BOS proposes the ruling cover every use — stores, reads and calls skipped, draws kept | §1.1, §5.7, §6.7 |
+| P11 | BOS contract, scripted kill | "(seed, keys, expected frame of death)" | the expected frame is measured by each build task (the seat's ruling, §0); this document gives the seed and the starting key script. Xichra's test is `testXichraScriptedVictory` on purpose (the game ends from state 8; her Kill is unreachable) | §0, §6.8 |
