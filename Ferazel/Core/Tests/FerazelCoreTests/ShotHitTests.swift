@@ -127,7 +127,7 @@ final class ShotHitTests: XCTestCase {
         XCTAssertLessThanOrEqual(try XCTUnwrap(w3.active.sprite(id: d)).y, 400)       // stopped on the floor, not through it
         XCTAssertEqual(w3.player.cues.filter { $0.snd == 301 }.count, 1)
         // The Tree Trunk (id 4) landing on an FG floor: `.WallBounce` grounds it (`+0xce`) and the contact takes the
-        // trunk arm (M l. 51312–51327): the trunk bottom 0x2c8 (// later: SW, its Setup draws nothing), an effect 2
+        // trunk arm (M l. 51312–51327): the trunk bottom 0x2c8 (SW's `newTrunk`; its Setup draws nothing), an effect 2
         // at (trunk +0xc − 6, trunk +0xa − 9) = (centre.x − 8 − 6, centre.y − 6 − 9) with `+0x46 = 8` and light colour
         // 0x42, the shot `+0xe9 = 1`, `.STPlay3DSound(302, 1, 0x100, shot +0xe)` — no `.KillPlayerShot` (no 301).
         let w4 = try world(floor())
@@ -632,7 +632,7 @@ final class ShotHitTests: XCTestCase {
             w.active.update(id: thinID) { $0.dead = true }
         }
         // The tree trunk 0x2c8 → its top segment 0x2c9 (`+0x1d4`), hit by a Tree Trunk shot (M l. 51005–51030): the
-        // new segment (// later: SW) would sit at (top +0xc, top +0xa − 0x10); the old top's `+0xa6` is raised to 0x23
+        // new segment (SW's `newTrunk`) sits at (top +0xc, top +0xa − 0x10); the old top's `+0xa6` is raised to 0x23
         // (kept when above), an effect 2 at (top.x − 6, top.y − 0x10 − 9) with `+0x46 = 8` and colour 0x42, the shot
         // `+0xe9 = 1`, `.STPlay3DSound(302, 1, 0x100, effect +0xe)` (the new effect's centre word). Any other id: nothing.
         for (a6, kept) in [(Int16(0x10), Int16(0x23)), (0x30, 0x30)] {

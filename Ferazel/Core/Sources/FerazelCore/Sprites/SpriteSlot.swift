@@ -640,8 +640,8 @@ public struct SpriteSlot: Equatable, Sendable {
     }
 }
 
-/// The Handle a sprite's `+0x4c` names (plan S2, LOCKED). `inert` = the four bosses (later: Phase 6): no Handle
-/// built yet and no hit callback; still drawn, idled and erased. `bonus` (BN) = `.HandleBonusSprite` (`BonusSprite`).
+/// The Handle a sprite's `+0x4c` names (plan S2, LOCKED). `inert`: no Handle, no hit callback; still drawn, idled and
+/// erased — the four bosses (later: Phase 6) and the countdown digits (`FerazelSession`). `bonus` (BN) = `BonusSprite`.
 public enum SpriteHandler: Equatable, Hashable, Sendable {
     case player, platform, chain, background, box, effect, rope, ropeSegment, inert
     /// W1 (added, Invariant 9): `.HandleSeeSawSegSprite @ 100655c8` (`_DAT_100a01c8`) — the see-saw segments 0x59b

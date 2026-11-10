@@ -21,7 +21,7 @@ public enum LevelEnd: Equatable, Sendable {
 /// (`LevelRun.setupLevel`, before the renderer and the session) — `GameFlow` reports it as every level-run error, the
 /// level-load report, never a quit. No built level has either; the census row and its check are `DrawModeAuditTests`'.
 public enum LevelOpenRefusal: Error, Equatable, Sendable {
-    /// Header `0x26c7` (OmniPx) outside 0, 2, 4, 5: the rain and interlace modes 1, 3, 6, 7, ≥ 8 (6A-RN draws them).
+    /// Header `0x26c7` (OmniPx) outside 0, 2, 4, 5: 1 rain (6A-RN), 6 interlace (6C-L55…L70); 3, 7, ≥ 8 unplaced, refused.
     case omniPxMode(UInt8)
     /// Header `0x2716` ≠ 0: the parallax horizon strip's PICT (levels 10, 30, 40, 45, 62, 67; 6A-S8 draws it).
     case horizonStrip(Int16)

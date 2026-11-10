@@ -56,7 +56,7 @@ public enum OmniPxOp: Equatable, Sendable {
 ///
 /// Life cycle (§3.2): `.SetupLevel` clears G+0x174 and calls `setup` (M l. 2539–2540); each drawn `.PaintFrameWrap`
 /// calls `update` after `.DrawParticles` (M l. 9434); `.GameLoop`'s exit calls `turnOff` and `kill` (M l. 5321–5322).
-/// Modes 1, 3, 6, 7 and ≥ 8 are refused at level open (`LevelRun.refuseUndrawnHeader`; ◇ Phase 6 6A-RN).
+/// Refused at level open (`LevelRun.refuseUndrawnHeader`): 1 rain (◇ 6A-RN), 6 interlace (◇ 6C-L55…L70); 3, 7, ≥ 8 unplaced.
 public struct OmniPx: Equatable, Sendable {
     /// The 16 layer slots.
     public static let layers = 0x10
@@ -180,8 +180,8 @@ public struct OmniPx: Equatable, Sendable {
             if counter > 0x11 { counter = 0 }                         // M l. 13430–13432
             base = 6 + Int(counter >> 1)                              // `0x100a4f2c + 4·(c >> 1)` = slot 6 + (c >> 1)
         default:
-            // later: Phase 6 (6A-RN) — mode 6's `.InterlaceBlit128` base (M l. 13438–13446) and mode 7's ping-pong
-            // copy (M l. 13447–13465), each with its own `c` step; refused at level open until then.
+            // later: Phase 6 (6C-L55…L70, level 70) — mode 6's `.InterlaceBlit128` base (M l. 13438–13446), its own `c`
+            // step; mode 7's ping-pong copy (M l. 13447–13465) is on no level: unplaced, stays refused at level open.
             break
         }
         let H = Int32(Int16(truncatingIfNeeded: h)), V = Int32(Int16(truncatingIfNeeded: v))

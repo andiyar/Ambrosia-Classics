@@ -43,7 +43,7 @@ public enum BackgroundSprite {
     ///   the class-cache face (`+0xc0 = PTR_DAT_100a09f4[type − 0x5c8] + 4`, flagged for `.LoadCachedSpriteFaces`).
     /// - mode `+0xb0` = p1, 0 → 0xb; **p2 0 → 0x8c and p3 0 → 0x1e written back to the record**.
     /// - modes 1, 2: the programmed path and `+0x188 = 1` (M l. 62342; `SetupFaces` refuses them — // later: no level
-    ///   1–2 placement).
+    ///   1–5 placement).
     /// - modes 10…14: `+0x188 = 1` (M l. 62363: `keepRecord` — no `.UpdateSprites` write-back or count-up flag clear),
     ///   one-way `+0x185 = 1`; with a record (`+0x48 ≠ −1`): persp = 1 for modes 12, 13, 2 for 14, else 0; persp ≠ 0
     ///   clears `+0x88`; `+0xa6 = 0`, `+0x1f8 = 0`.
@@ -131,7 +131,7 @@ public enum BackgroundSprite {
     /// (`spring`), passages 0xb54 / 0xb55 (`passage`) and the two below; `.StandardSpriteCleanup` (`LAB_10074e14`).
     /// - 0x5c8…0x5d1 (l. 63136–63186): **the face re-set every frame** from the class cache (`+0xc0 =
     ///   PTR_DAT_100a09f4[type − 0x5c8] + 4`); modes 1, 2 → `.HandleProgrammedPath` + `.ApplyGravityAndSeparate`
-    ///   (// later: no level 1–2 placement; the Setup refuses them); modes 10…14: `+0xa6` < 0 counts up, else 0;
+    ///   (// later: no level 1–5 placement; the Setup refuses them); modes 10…14: `+0xa6` < 0 counts up, else 0;
     ///   vx = vy = 0; below 0x5cd the centre `+0x10 = +0xc + 0x40`, `+0xe = +0xa + 0x32`; `.UpdateRadialPos`;
     ///   `.UpdateRadiusSprites(s, 0, 0)`; `+0x194 = 0`; modes 10, 11: `+0x170 = 1`, rotation `+0x1aa = (angle >> 8)
     ///   + 90` (− 360 past 359), `+0x88 = 0`, `+0x89 = 1`; modes 12…14: `depthBand` — the layer through

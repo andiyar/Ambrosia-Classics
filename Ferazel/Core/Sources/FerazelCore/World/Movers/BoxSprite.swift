@@ -384,7 +384,7 @@ public enum BoxSprite {
             }
             if p.p1 != 0 {
                 s.mirrored = true
-                // later: `.FlipHRect(+0x34, face +6)` — Core has no face record; every decoration placed on levels 1–2
+                // later: `.FlipHRect(+0x34, face +6)` — Core has no face record; every decoration placed on levels 1–5
                 // has the empty rect, which the flip leaves empty (left = right = w): no contact either way.
             }
             if p.p2 != 0 { s.mode = UInt32(truncatingIfNeeded: Int(p.p2) + 0x10000) }
