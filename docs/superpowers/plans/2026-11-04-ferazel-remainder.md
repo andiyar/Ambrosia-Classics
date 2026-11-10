@@ -83,7 +83,7 @@ both edited `DrawModeAuditTests.swift`, no conflict).
 | Context | 300k per run; the seat reads its meter (`get_usage`) before each dispatch and at the close; 2 tasks a run (3 when at most one is ⚑); at ~240k it finishes the task in flight and closes; a run that cannot merge records why in LOOP-LOG + QUESTIONS and keeps its worktree |
 | Current-only STATE and chip | `docs/STATE.md` holds the live state only and `docs/NEXT.md` the current run only; at every close the finished run's story goes to `docs/STATE-history.md`, the LOOP-LOG line, the DECISIONS as-built paragraph and the handoff — never kept in STATE or the chip (Ben, 2026-11-08) |
 | The seat never waits silently | the looper's watchdog ends a session after 45 silent minutes: long gates run in background shells, and the seat polls with `stat -L` on the log or transcript, printing each time |
-| Memory (Ben's RAM rule, 2026-10-30) | never two whole suites or sweeps at once (Core suite, WinKit suite, visit sweep, bot); the sweep and the bot run with at most 4 workers; one seat gate run in a `git archive` copy beside one working implementer, or two review legs alone |
+| Memory (Ben's RAM rule, 2026-10-30) | never two whole suites or sweeps at once (Core suite, WinKit suite, visit sweep, bot); the sweep and the bot run with at most 4 workers; one seat gate run in a `git archive` copy beside one working implementer, or two review legs alone. **Per-worker limit (2026-11-10, after the sweep's kernel panics of 2026-11-08 and 2026-11-10):** both scripts watch every running worker (every ~3 s, the larger of `ps` resident size and `top`'s footprint) and kill it past `MAX_WORKER_MB` (default 4096) with a `memory` row and exit 1, never restarting it; below `MIN_RUNNING_FREE_PCT` (default 15) free machine memory every worker is killed (`tools/ferazel-worker-watchdog.sh`; `tools/ferazel-watchdog-selftest.sh` proves it with stand-ins). Never raise the limit to get a sweep through: a memory row is a leak to fix |
 
 **Lockstep (Ben, 2026-10-26: Windows after Phase 4, then kept in step).** (a) A task that changes what the Mac app
 shows or does — `Ferazel/App`, `Ferazel/Shared`, a new `ShellRequest` / `FerazelDialog` case, a new text face, a new
@@ -107,7 +107,7 @@ Windows part, and the Fable phase review covers both diffs.
 | G8 | file hygiene | `git -C "$WT" status --porcelain --ignored -- Resources ghidra` prints nothing new; tests write only under the temporary directory |
 | G10 | clean tree per commit | empty |
 | GW1 | Core + tests cross-build | exit 0, then `2` |
-| GW2 | FerazelWinKit (macOS-hosted) | **81** total; 0 failed; skipped = exactly `WinVisitSweepTests testVisitEveryObjectThroughWinGame` and `WinRandomPlayTests testRandomPlayThroughWinGame` (~13 min: background it) |
+| GW2 | FerazelWinKit (macOS-hosted) | **82** total (81 until run 47's sweep-leak fix added `WinGameReleaseTests`); 0 failed; skipped = exactly `WinVisitSweepTests testVisitEveryObjectThroughWinGame` and `WinRandomPlayTests testRandomPlayThroughWinGame` (~13 min: background it) |
 | GW3 | the game cross-builds and links | exit 0, then `1` |
 | GW4 | the Mac SDL development build compiles | last line `Build complete!` — every task (GW2 does not build the `FerazelWin` executable target) |
 | GW-symlinks / G-MUTE / G7W | | empty / `1` then `1` / empty |
@@ -148,7 +148,7 @@ git -C "$WT" status --porcelain | grep -v '^??'
 # GW1 Core + its tests cross-build for Windows (build only): exit 0, then 2
 WIN_BUILD_ROOT="$WINB" "$WT/tools/windows/build.sh" "$WT/Ferazel/Core" all --tests > "$SCRATCH/gw1.log" 2>&1; echo $?
 grep -cE '/(FerazelCorePackageTests|ferazel-census)\.exe$' "$SCRATCH/gw1.log"
-# GW2 the Windows package's macOS-hosted tests: 81, 0, the two Windows opt-in names (background, ~13 min)
+# GW2 the Windows package's macOS-hosted tests: 82, 0, the two Windows opt-in names (background, ~13 min)
 cd "$WT/Ferazel/Windows" && swift test > "$SCRATCH/fw.log" 2>&1
 grep -cE "^Test Case '.*' (passed|failed|skipped) \(" "$SCRATCH/fw.log"
 grep -cE "^Test Case '.*' failed \(" "$SCRATCH/fw.log"
@@ -198,7 +198,7 @@ grep -E "^== (core|windows):" "$SCRATCH"/visit-sweep.txt "$SCRATCH"/random-play.
 #   and the same for `windows`. Quick mode for one level: tools/ferazel-random-play.sh core (one level, 60 s).
 ```
 
-**Ladders** (Core G2 total; 2 opt-in skips throughout; WinKit 81 / 2 unless a row says otherwise). The Phase 5 ladder
+**Ladders** (Core G2 total; 2 opt-in skips throughout; WinKit 81 / 2 until run 47's sweep-leak fix, 82 / 2 from it, unless a row says otherwise). The Phase 5 ladder
 runs one above its original numbers because Ben's commit 3cf72df (world-map status bar, 2026-10-30) added one test:
 
 | after | Core | GWB at wave end (by day) |
@@ -624,7 +624,7 @@ level 5 open up to the Warrior's arena — the arena locks, the gate stays shut,
   (`git diff <phase-start SHA>..HEAD`), plus the card; Opus implementers fix its findings; re-stage. **STOP for Ben:** the
   card goes to QUESTIONS as a new item (the Phase 5 gate, Mac and Windows). The next run is the planning run (wave 4),
   which does not wait for his verdict.
-- **Gate:** G1, G2 618 / 2 named skips, GW2 81 / 2 named skips, G3, G5, GW1–GW4, GW5, GE; by day GWB **615 / 0 / 3 / 0
+- **Gate:** G1, G2 618 / 2 named skips, GW2 82 / 2 named skips, G3, G5, GW1–GW4, GW5, GE; by day GWB **615 / 0 / 3 / 0
   (of 618)**, GW6, G9M. **Commit:** `WHAT-TO-EXPECT: Phase 5 gate card (through the first boss door), Mac and Windows`.
 
 #### The Phase 5 gate card ("through the first boss door") — A5 writes it from this

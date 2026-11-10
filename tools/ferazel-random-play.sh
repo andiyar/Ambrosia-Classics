@@ -20,6 +20,17 @@
 #   FERAZEL_BOT_SEEDS=4  FERAZEL_BOT_MINUTES=3  FERAZEL_BOT_LEVELS=1,2      (the defaults: 4 seeds, 3 minutes, all)
 #   FERAZEL_BOT_WATCHDOG=s    wall-clock limit of one test process (default 120 s + 120 s per minute of play per run
 #                             it has to do); a process past it is killed and its run is a row (then the next run)
+#   MAX_WORKER_MB=n           the hard memory limit of one running worker (default 4096). Added 2026-11-10 after
+#                             the visit sweep kernel-panicked Ben's 64 GB Mac twice (2026-11-08, 2026-11-10: four
+#                             Windows-path workers at 36-40 GB each, a whole game leaked per run); the bot uses the
+#                             same path. Every ~3 s each worker's test process is measured (the larger of `ps` resident
+#                             size and `top`'s footprint, compressed pages included); past the limit it is killed, a
+#                             `memory` row says "worker killed at N MB (limit M MB)", the exit is 1, and that worker is
+#                             NOT restarted (a restart would only leak again). See tools/ferazel-worker-watchdog.sh.
+#   MIN_RUNNING_FREE_PCT=n    the whole-machine brake (default 15): if the Mac's free memory (`memory_pressure`) falls
+#                             below n% while workers run, every worker is killed, no new one starts, and a `memory` row
+#                             says so.
+#   Ctrl-C kills every worker and its test process (nothing is left running).
 #   Quick mode for a class task: FERAZEL_BOT_LEVELS=n FERAZEL_BOT_MINUTES=1 tools/ferazel-random-play.sh core
 # Exit 0 = no rows and every expected run (levels x seeds) reported; 1 = rows (the table is printed: a failed or
 # skipped test, a run that never reported, a watchdog kill, a trap, the bot's own rows); 2 = a build failed or a bad
@@ -49,6 +60,11 @@ MIN_FREE_PCT="${MIN_FREE_PCT:-30}"
 OUT="${OUT:-$(mktemp -d "${TMPDIR:-/tmp}/ferazel-random-play.XXXXXX")}"
 mkdir -p "$OUT"
 export FERAZEL_BOT=1
+# The running workers' memory limit and the machine brake (2026-11-10).
+. "$ROOT/tools/ferazel-worker-watchdog.sh"
+WW_BRAKE="$OUT/memory-brake"
+rm -f "$WW_BRAKE"
+trap ww_cleanup INT TERM
 
 bad() { echo "random play: $1"; exit 2; }
 positive() { case "$1" in ''|*[!0-9]*) return 1 ;; esac; [ "$1" -ge 1 ]; }
@@ -100,28 +116,47 @@ build() {   # $1 package dir
         || { echo "BUILD FAILED: $1 (see $OUT/build-$(basename "$1").log)"; exit 2; }
 }
 
-# One shard of one path; resumes after a trap or a watchdog kill from the run after the one it stopped on.
+# One shard of one path; resumes after a trap or a watchdog kill from the run after the one it stopped on — never
+# after a memory kill.
 worker() {  # $1 path name, $2 xctest bundle, $3 test, $4 shard index
     local dir="$OUT/$1/shard-$4" from=0 n=0
     mkdir -p "$dir"
     while :; do
         n=$((n + 1))
         local log="$dir/run-$n.log" left=0 i limit pid timedout=0
+        if ww_braked; then
+            printf '0\t-\tshard %s\tnot started: %s\n' "$4" "$(ww_brake_text)" >> "$dir/failures.tsv"
+            break
+        fi
         for ((i = from; i < NRUNS; i++)); do [ $((i % JOBS)) -eq "$4" ] && left=$((left + 1)); done
         limit="${FERAZEL_BOT_WATCHDOG:-$((120 + left * MINUTES * 120))}"
         FERAZEL_BOT_SHARD="$4/$JOBS" FERAZEL_BOT_OUT="$dir" FERAZEL_BOT_FROM="$from" \
             xcrun xctest -XCTest "$3" "$2" > "$log" 2>&1 &
         pid=$!
         local deadline=$((SECONDS + limit))
-        while kill -0 "$pid" 2>/dev/null; do
-            if [ "$SECONDS" -ge "$deadline" ]; then
-                timedout=1
-                pkill -KILL -P "$pid" 2>/dev/null; kill -KILL "$pid" 2>/dev/null
-                break
-            fi
-            sleep 1
-        done
+        ww_watch "$pid" "$deadline"
+        if [ "$WW_RESULT" = timeout ]; then
+            timedout=1
+            pkill -KILL -P "$pid" 2>/dev/null; kill -KILL "$pid" 2>/dev/null
+        fi
         wait "$pid" 2>/dev/null
+        if [ "$WW_RESULT" = memory ] || [ "$WW_RESULT" = brake ]; then
+            # Killed for memory: one row (on the run it was on, when the progress file names it), and no restart.
+            local why
+            if [ "$WW_RESULT" = memory ]; then
+                why="worker killed at $WW_MB MB (limit $MAX_WORKER_MB MB)"
+            else
+                why="$(ww_brake_text)"
+            fi
+            if [ -f "$dir/progress" ]; then
+                IFS=$'\t' read -r index level seed step < "$dir/progress"
+                printf '%s\t%s\tstep %s memory\t%s (see %s)\n' "$level" "$seed" "$step" "$why" "$log" >> "$dir/failures.tsv"
+                printf '%s\t%s\t%s\t0\t0\t0\t0\n' "$level" "$seed" "$step" >> "$dir/runs.tsv"
+            else
+                printf '0\t-\tshard %s\t%s before any run (see %s)\n' "$4" "$why" "$log" >> "$dir/failures.tsv"
+            fi
+            break
+        fi
         if [ "$timedout" = 0 ] && grep -qE "Executed [0-9]+ tests?" "$log"; then
             # The test finished: it must have passed. A failure the bot did not write as rows (its own assertion
             # carries "random-play failures") — a thrown error, a missing data folder — is a row; so is a skip.

@@ -13,6 +13,15 @@
 # Usage: tools/ferazel-visit-sweep.sh [core|windows|both]   (default both)
 #   JOBS=n            processes per path (default 4, never more than 6 — Ben's Mac panicked out of RAM on 2026-10-30
 #                     when 14 sweep processes ran beside builds; each worker also waits while free memory is < 30%)
+#   MAX_WORKER_MB=n   the hard memory limit of one running worker (default 4096). Added 2026-11-10 after the sweep
+#                     kernel-panicked Ben's 64 GB Mac twice (2026-11-08, 2026-11-10: four Windows-path workers at
+#                     36-40 GB each, a whole game leaked per visit). Every ~3 s each worker's test process is measured
+#                     (the larger of `ps` resident size and `top`'s footprint, compressed pages included); past the
+#                     limit it is killed, a `memory` row says "worker killed at N MB (limit M MB)", the exit is 1, and
+#                     that worker is NOT restarted (a restart would only leak again). See tools/ferazel-worker-watchdog.sh.
+#   MIN_RUNNING_FREE_PCT=n   the whole-machine brake (default 15): if the Mac's free memory (`memory_pressure`) falls
+#                     below n% while workers run, every worker is killed, no new one starts, and a `memory` row says so.
+#   Ctrl-C kills every worker and its test process (nothing is left running).
 #   FERAZEL_VISIT_LEVELS=2,3  FERAZEL_VISIT_OFFSETS=on,above  FERAZEL_VISIT_LIMIT=n   narrow it (a quick look)
 # Exit 0 = no rows; 1 = rows (the table is printed); 2 = a build failed.
 # Release builds (-enable-testing): a debug build is far too slow. Headless: no window, no audio device, nothing
@@ -33,6 +42,11 @@ MIN_FREE_PCT="${MIN_FREE_PCT:-30}"
 OUT="${OUT:-$(mktemp -d "${TMPDIR:-/tmp}/ferazel-visit-sweep.XXXXXX")}"
 mkdir -p "$OUT"
 export FERAZEL_VISIT_SWEEP=1
+# The running workers' memory limit and the machine brake (2026-11-10).
+. "$ROOT/tools/ferazel-worker-watchdog.sh"
+WW_BRAKE="$OUT/memory-brake"
+rm -f "$WW_BRAKE"
+trap ww_cleanup INT TERM
 
 # Waits (up to 10 min) while the system's free memory is below MIN_FREE_PCT, so the sweep never pushes the Mac into swap.
 wait_for_memory() {
@@ -51,14 +65,36 @@ build() {   # $1 package dir
         || { echo "BUILD FAILED: $1 (see $OUT/build-$(basename "$1").log)"; exit 2; }
 }
 
-# One shard of one path; resumes after a trap from the visit after the one it died on.
+# One shard of one path; resumes after a trap from the visit after the one it died on — never after a memory kill.
 worker() {  # $1 path name, $2 xctest bundle, $3 test, $4 shard index
-    local dir="$OUT/$1/shard-$4" from="0:0" n=0
+    local dir="$OUT/$1/shard-$4" from="0:0" n=0 pid
     mkdir -p "$dir"
     while :; do
         n=$((n + 1))
+        if ww_braked; then
+            printf '0\t-\t-\t-\tmemory\tnot started: %s\n' "$(ww_brake_text)" >> "$dir/failures.tsv"
+            break
+        fi
         FERAZEL_VISIT_SHARD="$4/$JOBS" FERAZEL_VISIT_OUT="$dir" FERAZEL_VISIT_FROM="$from" \
-            xcrun xctest -XCTest "$3" "$2" > "$dir/run-$n.log" 2>&1
+            xcrun xctest -XCTest "$3" "$2" > "$dir/run-$n.log" 2>&1 &
+        pid=$!
+        ww_watch "$pid"
+        wait "$pid" 2>/dev/null
+        if [ "$WW_RESULT" = memory ] || [ "$WW_RESULT" = brake ]; then
+            # Killed for memory: one row (on the visit it was on, when the progress file names it), and no restart.
+            local why lv="0" rc="-" ty="-" of="-"
+            if [ -f "$dir/progress" ]; then
+                IFS=$'\t' read -r lv index label rc ty of < "$dir/progress"
+            fi
+            if [ "$WW_RESULT" = memory ]; then
+                why="worker killed at $WW_MB MB (limit $MAX_WORKER_MB MB)"
+            else
+                why="$(ww_brake_text)"
+            fi
+            printf '%s\t%s\t%s\t%s\tmemory\t%s (see %s)\n' "$lv" "$rc" "$ty" "$of" "$why" "$dir/run-$n.log" \
+                >> "$dir/failures.tsv"
+            break
+        fi
         if grep -q "Executed 1 test" "$dir/run-$n.log"; then break; fi
         # Died mid-visit: the progress file names it (level, index, label, record, type, offset).
         if [ ! -f "$dir/progress" ]; then
