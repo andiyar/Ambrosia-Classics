@@ -3,7 +3,8 @@
 
 Reads (read-only): Resources/Ferazel/ (the world file's Mlvl + Mcnv), docs/ferazel/gap-ledger/placements-all.tsv and
 resources-classified.tsv, the committed dump ghidra/ferazel/Ferazel_pef.decompiled.c (its `// ==== name @ addr ====`
-headers and bodies), the bank (docs/ferazel/*.md, for the section of each type) and the port's sources
+headers and bodies), the bank (a pinned list of docs/ferazel/*.md, for the section of each type), the plan
+docs/superpowers/plans/2026-11-04-ferazel-remainder.md (its card ids) and the port's sources
 (Ferazel/Core/Sources, Ferazel/Core/Tests/FerazelRenderTests/DrawModeAuditTests.swift) for the "port today" columns.
 The port columns come from a rule table (`port_arm`) whose every file:line is resolved by an anchor regex at run time,
 so a moved line moves with the code; an anchor that no longer matches fails --check. The rule table is static (no
@@ -14,11 +15,14 @@ Usage:
   python3 -I tools/ferazel/later-levels-ledger.py --section levels|switches|wind|types|old-types|per-level|resources|
                                                   header-resources|convs|cache|deps|owners
   python3 -I tools/ferazel/later-levels-ledger.py --write    # regenerate the <!-- LL:… --> blocks of the document
-  python3 -I tools/ferazel/later-levels-ledger.py --check    # exit 0 only when: every census type appears once in
-        the type ledger with one owner; every nonzero header switch field of every later level appears; the census
-        equals placements-all.tsv; the document's totals equal the census; the dump has its 1,236 headers; every port
-        anchor resolves; the port model sets up every record of levels 1-5; and the committed document
-        (docs/ferazel/later-levels-ledger.md) holds the generated blocks byte for byte.
+  python3 -I tools/ferazel/later-levels-ledger.py --check    # exit 0 only when: the type ledger's rows (type, first
+        level, other levels, record count) equal the census recomputed from placements-all.tsv; the Mlvl records
+        agree with placements-all.tsv per level and type; every owner named is a card of the plan's Wave 5-7 tables
+        or a proposal named in bold in the document's section 8; the total recomputed from the raw Mlvl records
+        equals the TSV's, the level table's and section 0's; every nonzero header switch field of every later level
+        appears; no Mcnv uses an opcode the port does not handle; the dump has its 1,236 headers; every pinned bank
+        file exists; every port anchor resolves; the port model sets up every record of levels 1-5; and the
+        committed document (docs/ferazel/later-levels-ledger.md) holds the generated blocks byte for byte.
 Levels in scope: every Mlvl id not in BUILT (1-5).
 """
 import os, sys, re, struct, collections, csv, functools
@@ -37,6 +41,7 @@ AUDIT = os.path.join(ROOT, 'Ferazel/Core/Tests/FerazelRenderTests/DrawModeAuditT
 PLACEMENTS = os.path.join(ROOT, 'docs/ferazel/gap-ledger/placements-all.tsv')
 RESOURCES = os.path.join(ROOT, 'docs/ferazel/gap-ledger/resources-classified.tsv')
 DOC = os.path.join(ROOT, 'docs/ferazel/later-levels-ledger.md')
+PLAN = os.path.join(ROOT, 'docs/superpowers/plans/2026-11-04-ferazel-remainder.md')
 FAILS = []            # --check failures (anchors that no longer resolve, data mismatches)
 
 
@@ -219,25 +224,41 @@ PORT_CACHE = cached_records()
 # ---------------------------------------------------------------- the port: one rule per type range
 
 BUILT_S, REFUSED, NOTBUILT, PARTIAL = 'built', 'refused', 'not built', 'built (Setup) / Handle arm not built'
+FLIPLESS = 'built (Setup) / hot-rect flip not built'
 
 
 def port_arm(t, cls, lvs=None):
-    return _port_arm(t, cls, tuple(LATER if lvs is None else lvs))
+    """(state, site, note) for type t over the records of levels `lvs` (default: every later level)."""
+    ps = tuple(sorted(set(r['p'] for lv in (LATER if lvs is None else lvs) for r in ACTIVE[lv] if r['type'] == t)))
+    n1 = sum(1 for lv in (LATER if lvs is None else lvs) for r in ACTIVE[lv] if r['type'] == t and r['p'][0] != 0)
+    return _port_arm(t, cls, ps, n1)
+
+
+def record_state(r, cls=None):
+    """The port's state for ONE placement record (its own parameters only)."""
+    return _port_arm(r['type'], cls or cls_of(r['type']), (r['p'],), int(r['p'][0] != 0))[0]
+
+
+def refused_records(lv, t):
+    """How many of type t's active records on level lv the port model does not set up (counted per record)."""
+    c = cls_of(t)
+    return sum(1 for r in ACTIVE[lv] if r['type'] == t and record_state(r, c) != BUILT_S)
+
+
+FLIP_RECT = (0xb0b, 0xb10, 0xb11, 0xb12, 0xb13, 0xb14)   # decorations whose Setup gives a non-empty hot rect (M l. 59650–59667)
 
 
 @functools.lru_cache(maxsize=None)
-def _port_arm(t, cls, lvs):
-    """(state, site, note) for type t as `SetupFaces.setup` and the class code treat it today, over the records of
-    levels `lvs` (default: every later level)."""
-    lvs = LATER if lvs is None else lvs
-    p1s = p_values(t, 0, lvs)
-    p2s = p_values(t, 1, lvs)
+def _port_arm(t, cls, ps, n1):
+    """(state, site, note) for type t as `SetupFaces.setup` and the class code treat it today, over the parameter
+    tuples `ps` (p1…p4 of the records considered; `n1` of them have p1 ≠ 0)."""
+    p1s = sorted(set(p[0] for p in ps))
+    p2s = sorted(set(p[1] for p in ps))
     if cls == 'Background':
         if 0x442 <= t <= 1098:
             if any(p != 0 for p in p1s):
-                n = sum(1 for lv in lvs for r in ACTIVE[lv] if r['type'] == t and r['p'][0] != 0)
                 return (REFUSED, anchor(SF, r'case 0x442\.\.\.1098:', r'guard p\.p1 == 0 else'),
-                        f'cannon p1 ≠ 0 ({n} records: p1 {",".join(map(str, [p for p in p1s if p]))}); the '
+                        f'cannon p1 ≠ 0 ({n1} record{"s" if n1 != 1 else ""}: p1 {",".join(map(str, [p for p in p1s if p]))}); the '
                         f'rotating / path arms: {anchor(BG, r"later: p1 ≠ 0")}')
             return (BUILT_S, anchor(SF, r'case 0x442\.\.\.1098:'), 'cannon p1 0 (W2b)')
         if 0x47e <= t <= 0x481:
@@ -293,8 +314,12 @@ def _port_arm(t, cls, lvs):
             if lo <= t <= hi:
                 arm = anchor(SF, rx)
                 extra = ' (the 2907 countdown Handle is built)' if t == 0xb5b else ''
+                flip = t in FLIP_RECT and n1 > 0
+                if flip:
+                    extra += (f'; p1 ≠ 0 on {n1} record{"s" if n1 != 1 else ""} with a non-empty hot rect: the `.FlipHRect` (M l. 59670–59673) '
+                              f'is not built ({anchor(BOX, r"later: `[.]FlipHRect")})')
                 if t in SHEETS:
-                    return (BUILT_S, arm, what + extra)
+                    return (FLIPLESS if flip else BUILT_S, arm, what + extra)
                 return (REFUSED, face_refusal(), f'{what}: arm {arm} built; face {h(t)} not in the Setup-face table{extra}')
         fixed = {0x426: r'case 0x426:', 0x429: r'case 0x429:', 0x42e: r'case 0x42e, 0x433, 0x434:',
                  0x433: r'case 0x42e, 0x433, 0x434:', 0x434: r'case 0x42e, 0x433, 0x434:', 0x42f: r'case 0x42f, 0x430:',
@@ -315,7 +340,7 @@ def _port_arm(t, cls, lvs):
         dflt = anchor(SF, r'case 0xc12\.\.\.0xc14:', r'throw Error\.notTranscribed')
         if 0x5d2 <= t <= 0x5d5:
             return (REFUSED, dflt, f'enemy pipe: `setupPipe` built ({anchor(BOX, r"public static func setupPipe")}), '
-                                   'not wired into the level spawn (6A-L21)')
+                                   'not wired into the level spawn (6A-L10…L22, level 21)')
         if t in (0x424, 0x425):
             return (REFUSED, dflt, f'teleporter: `BoxSprite.setup` arm built ({anchor(BOX, r"case 0x424\.\.\.0x426:")}); '
                                    'no SetupFaces face arm (boot singles 0x424 / 0x425, M l. 58737–58740)')
@@ -389,7 +414,7 @@ def type_owner(t, cls, state):
     if t == 0xb5b:
         return '6B-TM'
     if 0x5d2 <= t <= 0x5d5:
-        return '6A-L21'
+        return '6A-L10…L22 (level 21 pipe wiring)'
     if fr is None:
         return LTASK[w]
     if cls == 'Background':
@@ -407,9 +432,20 @@ def type_owner(t, cls, state):
 
 # ---------------------------------------------------------------- bank sections
 
-BANK = sorted(f for f in os.listdir(os.path.join(ROOT, 'docs/ferazel')) if f.endswith('.md') and not re.match(
-    r'(INDEX|REVIEW|FIXPASS|REPORT|port-gap-ledger|coverage|data-census|later-levels-ledger|world-data-format|colour)', f))
-_BANK_LINES = {f: open(os.path.join(ROOT, 'docs/ferazel', f), encoding='utf-8').read().split('\n') for f in BANK}
+BANK = [   # pinned (the topical RE bank at 2f25cf6): a new document under docs/ferazel/ — the phase6-* contracts, this
+          # ledger, a review — must not move the bank column, so the list is explicit, not a directory scan
+    'bosses-2.md', 'bosses-3.md', 'bosses.md', 'conversations-mcnv.md', 'draw-effects.md', 'enemies-flyers.md',
+    'enemies-ground-2.md', 'enemies-ground.md', 'enemies-water-cave.md', 'enemy-shots-and-damage-2.md',
+    'enemy-shots-and-damage.md', 'engine.md', 'geysers.md', 'held-item-melee.md', 'lighting-tables.md', 'particles.md',
+    'physics-sprites.md', 'physics.md', 'pickups-boxes-2.md', 'pickups-boxes.md', 'platforms-ropes-radial-2.md',
+    'platforms-ropes-radial.md', 'player-states-2.md', 'player-states.md', 'rendering-omnipx-titles.md',
+    'save-continue.md', 'spells-detail-2.md', 'spells-detail.md', 'spells-items.md', 'sprites-backgrounds-sounds.md',
+    'triggers-background-2.md', 'triggers-background.md']
+for _f in BANK:
+    if not os.path.exists(os.path.join(ROOT, 'docs/ferazel', _f)):
+        FAILS.append(f'pinned bank file missing: docs/ferazel/{_f}')
+_BANK_LINES = {f: open(os.path.join(ROOT, 'docs/ferazel', f), encoding='utf-8').read().split('\n') for f in BANK
+               if os.path.exists(os.path.join(ROOT, 'docs/ferazel', f))}
 BANK_PREF = {   # the topical bank files of each class, searched first
     'Background': ['triggers-background', 'triggers-background-2', 'platforms-ropes-radial', 'platforms-ropes-radial-2',
                    'enemy-shots-and-damage'],
@@ -431,7 +467,7 @@ def bank_section(t, cls):
     hexp = re.compile(r'(?<![0-9A-Za-z_])0x%x(?![0-9a-f])' % t)
     decp = re.compile(r'(?<![0-9A-Za-z_.,])%d(?![0-9])(?! ?(?:px|B|bytes|ms|frames))' % t)
     pref = [f + '.md' for f in BANK_PREF.get(cls, []) if f + '.md' in _BANK_LINES]
-    rest = [f for f in BANK if f not in pref]
+    rest = [f for f in BANK if f not in pref and f in _BANK_LINES]
     for files, pat in ((pref, hexp), (pref, decp), (rest, hexp), (rest, decp)):
         for f in files:
             L = _BANK_LINES[f]
@@ -543,9 +579,10 @@ def dump_readers(off):
 
 
 SWITCH_STATE = {   # LL's reading of the port today, by field (evidence = the port readers column)
-    'submergedFaces': 'partial: the FG-cell draw and the light draw read it (TileGridRenderer, LightRenderer); the '
-                      'overlay-cell draw has no water-tint path (.PlainWrapFGOverlayTile M l. 9720–9735 tints overlay '
-                      'cells under water, and the pattern cell with this flag) — not traced by LL',
+    'submergedFaces': 'built: the FG-cell draw (TileGridRenderer) and the lights redraw, overlay cells included '
+                      '(LightRenderer `plainWrapFGOverlayTile` = .PlainWrapFGOverlayTile M l. 9720–9735: overlay '
+                      'faces tinted under water whatever the flag, the pattern cell with it; the original tints overlay '
+                      'cells only there) — 6A-T11 proves it, nothing to build',
     'omniPxMode': 'modes 0/2/4/5 built (OX); 1, 3, 6, 7, ≥ 8 refused at level open',
     'startFacingLeft': 'built', 'waterSurfaceEffect': 'built', 'patternPeriodSix': 'built',
     'parallaxRipple': 'refused (backdrop compositor init)', 'pxUsesLevelBaseClut': 'built',
@@ -569,7 +606,7 @@ def switch_owner(rule, off, lv, v):
     if rule == 'L' or rule is None and off != 0x26c7:
         return LTASK[w]
     if off == 0x26c7:
-        return {1: '6A-RN', 2: LTASK[w], 5: LTASK[w], 6: '6C-L70 (interlace)'}.get(v, LTASK[w])
+        return {1: '6A-RN', 2: LTASK[w], 5: LTASK[w], 6: '6C-L55…L70 (its ⚑ part: the mode-6 interlace)'}.get(v, LTASK[w])
     if rule == 'ICE':
         return '6B-ICE' if lv in (30, 31) else LTASK[w]
     if rule == 'BOSS':
@@ -671,31 +708,56 @@ for fname in ("Ferazel's Wand Sprites.rsrc", "Ferazel's Wand Backgrounds.rsrc", 
 
 
 @functools.lru_cache(maxsize=None)
+def _mark_index():
+    """global -> [line]: every `+1 = 1` store (outside .Init* and the cache routines) through a global directly or
+    through a local the same function loaded from it (`v = GLOBAL;`), block-scoped: a load made inside a `{ … }`
+    is forgotten when that block closes (so a branch's reload does not hide the function-top load in the next
+    branch). The Setups load their cache globals into locals at the top and reload them inside type arms."""
+    idx = collections.defaultdict(list)
+    store = re.compile(r'\*\((?:undefined1|char|byte) \*\)\((\w+) \+ 1\) = 1;|\b(\w+)\[1\] = 1;')
+    load = re.compile(r'^\s*\}?\s*(\w+) = ((?:_DAT|PTR_DAT)_\w+);')
+    assign = re.compile(r'^\s*(\w+) = ')
+    for k, (ln, fn) in enumerate(HEADS):
+        if fn.startswith('.Init') or 'Cache' in fn:
+            continue
+        end = HEADS[k + 1][0] - 1 if k + 1 < len(HEADS) else len(DL)
+        alias, undo, depth = {}, [], 0
+        for i in range(ln, end + 1):
+            l = DL[i - 1]
+            lead = len(l) - len(l.lstrip(' }')) and l.lstrip().startswith('}')
+            closes = len(re.match(r'\s*(\}\s*)*', l).group(0).replace(' ', '')) if lead else 0
+            depth -= closes
+            while undo and undo[-1][2] > depth:
+                v, old, _ = undo.pop()
+                if old is None:
+                    alias.pop(v, None)
+                else:
+                    alias[v] = old
+            m = load.match(l)
+            m2 = assign.match(l)
+            if m or m2:
+                v = (m or m2).group(1)
+                undo.append((v, alias.get(v), depth))
+                if m:
+                    alias[v] = m.group(2)
+                else:
+                    alias.pop(v, None)
+            for a, b in store.findall(l):
+                v = a or b
+                g = v if v.startswith(('_DAT_', 'PTR_DAT_')) else alias.get(v)
+                if g:
+                    idx[g].append(i)
+            body = l.split('//')[0]
+            depth += body.count('{') - (body.count('}') - closes)
+    return idx
+
+
 def mark_sites(ref, loop):
-    """Heuristic mark sites of a cache record: lines (outside .Init* and the cache routines) that store 1 at `+1` of
-    its global, directly or through a local alias set within the 12 lines before. Loop rows report the base global's."""
+    """Mark sites of a cache record (its global's `+1 = 1` stores, `_mark_index`). Loop rows (one global indexed by
+    type) are marked inside the class Setup and are not listed here."""
     if not ref.startswith(('_DAT_', 'PTR_DAT_')):
         return []
-    out = []
-    for i, l in enumerate(DL):
-        if ref not in l:
-            continue
-        fn = func_at(i + 1) or ''
-        if fn.startswith('.Init') or 'Cached' in fn or 'Cache1' in fn or 'CacheEnc' in fn:
-            continue
-        if re.search(r'\(%s \+ [^)]*1\) = 1;' % re.escape(ref), l) or re.search(r'%s\[1\] = 1' % re.escape(ref), l):
-            out.append(i + 1)
-            continue
-        m = re.match(r'\s*(\w+) = %s;' % re.escape(ref), l)
-        if m:
-            v = m.group(1)
-            for j in range(i + 1, min(i + 13, len(DL))):
-                if re.search(r'\(%s \+ 1\) = 1;' % v, DL[j]):
-                    out.append(j + 1)
-                    break
-                if re.match(r'\s*%s = ' % v, DL[j]):
-                    break
-    return out
+    return _mark_index().get(ref, [])
 
 
 # ---------------------------------------------------------------- conversations
@@ -809,7 +871,7 @@ def MARKED_BY(p):
            ((0x6b8, 0x6b9), (0x6b8, 0x6b8)), ((0x6ae, 0x6b1), (0x6b0, 0x6b0)), ((0x6a5, 0x6a6), (0x6a4, 0x6a4)),
            ((0x6aa, 0x6ab), (0x6a9, 0x6a9)), ((0x6e0, 0x6e0), (0x6e0, 0x6e9)), ((0x6cc, 0x6cc), (0x6cc, 0x6d5)),
            ((0x6c2, 0x6c2), (0x6c2, 0x6cb)), ((0x708, 0x708), (0x708, 0x711)), ((0x6fe, 0x6ff), (0x6fe, 0x707)),
-           ((0x5b5, 0x5b5), (0x5b5, 0x5b6))]
+           ((0x5b5, 0x5b5), (0x5b5, 0x5b6)), ((0x4b8, 0x4b9), (0x4b8, 0x4b8))]   # fire 1208: sets 0x4b8 + 0x4b9, M l. 62018–62019
     for (lo, hi), (tlo, thi) in fam:
         if lo <= p <= hi:
             return set(range(tlo, thi + 1))
@@ -982,10 +1044,13 @@ def md_level_sections(owners):
             c = cls_of(t)
             st, site, _ = port_arm(t, c, [lv])
             tag = '' if FIRST[t] == lv else f', first L{FIRST[t]}'
-            items.append(f'{t} {c} ×{COUNT[lv][t]}{tag} — {st}' + ('' if st == BUILT_S else f' `{site}`'))
+            nr = refused_records(lv, t)
+            part = f' ({nr} of {COUNT[lv][t]})' if 0 < nr < COUNT[lv][t] else ''
+            items.append(f'{t} {c} ×{COUNT[lv][t]}{tag} — {st}{part}' + ('' if st == BUILT_S else f' `{site}`'))
         out.append('2. **New types:** ' + '; '.join(items) + '.')
         old = [l.split('|') for l in md_old_types()[2:]]
-        olds = [f'{x[1].strip()} ×{x[5].strip()} p1 {x[6].strip()} — {x[7].strip()}' for x in old if int(x[4]) == lv]
+        olds = [f'{x[1].strip()} ×{x[5].strip()}, {x[6].strip()} refused, p1 {x[7].strip()} — {x[8].strip()}'
+                for x in old if int(x[4]) == lv]
         if olds:
             out.append(f'   Also refused here (types built on 1–5, records the port refuses): {"; ".join(olds)}.')
         res = [r for r in fut if lv in res_levels(r, cl)]
@@ -1065,7 +1130,31 @@ def md_convs():
                 verdict += ' (cond 3 / action 0·7·8 fall to the port default, as the original)'
             out.append(f'| {lv} | {cid} | {MCNV[cid][0]} | rec {ri} / {t} / {fl} | {sorted(conds) or "—"} | '
                        f'{sorted(acts) or "—"} | {", ".join(map(str, sorted(pics)))} | {verdict} |')
+    c_all, a_all, bad = conv_opcode_audit()
+    c6, a6 = set(), set()
+    for lv in LATER:
+        if wave(lv) == '6A':
+            for cid, _, _, _ in level_convs(lv):
+                if cid in MCNV:
+                    c6 |= conv_ops(cid)[0]
+                    a6 |= conv_ops(cid)[1]
+    out += ['', f'Checked, every `Mcnv` in the world file ({len(MCNV)}, placed or not): conditions used {sorted(c_all)}, '
+                f'actions used {sorted(a_all)}; outside the port\'s handled sets (conditions {sorted(PORT_COND)}, actions '
+                f'{sorted(PORT_ACT)}) and the original\'s no-ops (condition 3, actions 0 / 7 / 8): '
+                f'{", ".join(bad) or "none"}. Levels 10–22 use conditions {sorted(c6)}, actions {sorted(a6)}.']
     return out
+
+
+def conv_opcode_audit():
+    """The opcodes of every Mcnv resource; `bad` = any the port neither handles nor the original treats as a no-op."""
+    c_all, a_all, bad = set(), set(), []
+    for cid in sorted(MCNV):
+        conds, acts, _ = conv_ops(cid)
+        c_all |= conds
+        a_all |= acts
+        bad += [f'Mcnv {cid} cond {c}' for c in sorted(conds) if c not in PORT_COND and c not in ORIG_FALSE_COND]
+        bad += [f'Mcnv {cid} action {a}' for a in sorted(acts) if a not in PORT_ACT and a not in ORIG_NOP_ACT]
+    return c_all, a_all, bad
 
 
 def md_resources():
@@ -1099,7 +1188,7 @@ def md_cache():
     regs = registrations()
     port_sets = [p for p, _, _ in PORT_CACHE['sets']]
     port_singles = [p for p, _, _ in PORT_CACHE['singles']]
-    out = ['| # | list | PICT | faces (w×h, cols) | flag | in data | registered by (M l.) | record global | port CachedFaces | mark sites (heuristic, M l.) |',
+    out = ['| # | list | PICT | faces (w×h, cols) | flag | in data | registered by (M l.) | record global | port CachedFaces | mark sites (M l.) |',
            '|---:|---|---|---|---:|---|---|---|---|---|']
     k = {'set': 0, 'single': 0}
     for r in regs:
@@ -1107,7 +1196,8 @@ def md_cache():
         inport = ('yes' if r['pict'] in (port_sets if r['list'] == 'set' else port_singles) else '**no**')
         geo = f'{r["faces"]} ({r["w"]}×{r["h"]}, {r["cols"]})' if r['list'] == 'set' else '1'
         marks = mark_sites(r['ref'], r['loop'])
-        ms = ', '.join(map(str, marks[:5])) + (f' (+{len(marks) - 5})' if len(marks) > 5 else '') if marks else ('—' if not r['loop'] else 'indexed (see the class Setup)')
+        ms = ', '.join(map(str, marks[:5])) + (f' (+{len(marks) - 5})' if len(marks) > 5 else '') if marks else (
+            'unknown (not derived)' if not r['loop'] else 'indexed (see the class Setup)')
         out.append(f'| {k[r["list"]]} | {r["list"]} | {r["pict"]} ({h(r["pict"])}) | {geo} | {r["flag"]} | '
                    f'{"yes" if r["pict"] in PICT_FILES else "**absent**"} | {r["fn"]} {r["line"]} | `{r["ref"]}` | {inport} | {ms} |')
     nsets, nsing = k['set'], k['single']
@@ -1173,25 +1263,26 @@ def md_wind():
 
 def md_deps(owners):
     """Per later level: the tasks its records and new-value switches need besides its own level task."""
-    out = ['| level | records refused today | tasks its types need (refused records) | tasks its switches need | '
-           'classes placed (built?) |', '|---|---:|---|---|---|']
+    out = ['| level | records refused today (per record, old types included) | tasks its types need (refused records) | '
+           'tasks its switches need | classes of its census types |', '|---|---:|---|---|---|']
     sw = switch_rows()
+    totals = []
     for lv in LATER:
         need, refused = collections.Counter(), 0
         for t in COUNT[lv]:
-            c = cls_of(t)
-            if t in BUILT_TYPES:
-                continue
-            st, _, _ = port_arm(t, c, [lv])
-            if st != BUILT_S:
-                need[owners[t]] += COUNT[lv][t]
-                refused += COUNT[lv][t]
+            n = refused_records(lv, t)
+            if n:
+                need[owners[t] if t in owners else old_type_owner(t, lv)] += n
+                refused += n
         sws = sorted(set(r['owner'] for r in sw if r['lv'] == lv and r['new'] and r['owner'] != LTASK[wave(lv)]))
         if wind_cells(lv)[0]:
             sws.append('6A-WD' if wave(lv) == '6A' else 'wind (new card)')
         classes = sorted(set(cls_of(t) for t in COUNT[lv] if t not in BUILT_TYPES))
         out.append(f'| {lv} | {refused} | {", ".join(f"{o} ({n})" for o, n in sorted(need.items())) or "—"} | '
                    f'{", ".join(sws) or "—"} | {", ".join(classes)} |')
+        totals.append(refused)
+    six_a = sum(n for lv, n in zip(LATER, totals) if wave(lv) == '6A')
+    out += ['', f'Refused records, levels 10–22: **{six_a}**; all later levels: **{sum(totals)}**.']
     return out
 
 
@@ -1209,22 +1300,30 @@ def built_levels_selftest():
 
 def md_old_types():
     """Types placed on levels 1–5 (so outside the census) whose records on a later level the port refuses."""
-    out = ['| type | hex | class | later level | records | p1 values there | port today | site | note | owner |',
-           '|---|---|---|---|---:|---|---|---|---|---|']
+    out = ['| type | hex | class | later level | records | refused (per record) | p1 values there | port today | site | '
+           'note | owner |', '|---|---|---|---|---:|---:|---|---|---|---|---|']
     for t in sorted(BUILT_TYPES):
         for lv in LATER:
             if t not in COUNT[lv]:
                 continue
-            c = gen(t & 0xffff, any(r['p'][0] < 0 for r in ACTIVE[lv] if r['type'] == t))[0] or '-'
+            c = cls_of(t)
             st, site, note = port_arm(t, c, [lv])
             if st == BUILT_S:
                 continue
-            w = wave(lv)
-            own = (bg_split(t) if w == '6A' else ('6B-BG2' if w == '6B' else '6C-BG3')) if c == 'Background' else (
-                {'6A': '6A-BX1b', '6B': '6B-BX2', '6C': '6C-BX3'}[w] if c == 'Box' else LTASK[w])
             p1 = ','.join(map(str, sorted(set(r['p'][0] for r in ACTIVE[lv] if r['type'] == t))))
-            out.append(f'| {t} | {h(t)} | {c} | {lv} | {COUNT[lv][t]} | {p1} | {st} | `{site}` | {note} | {own} |')
+            out.append(f'| {t} | {h(t)} | {c} | {lv} | {COUNT[lv][t]} | {refused_records(lv, t)} | {p1} | {st} | '
+                       f'`{site}` | {note} | {old_type_owner(t, lv)} |')
     return out
+
+
+def old_type_owner(t, lv):
+    """The owner of a level-1–5 type's refused records on later level lv (by that level's wave and the class)."""
+    w, c = wave(lv), cls_of(t)
+    if c == 'Background':
+        return bg_split(t) if w == '6A' else ('6B-BG2' if w == '6B' else '6C-BG3')
+    if c == 'Box':
+        return {'6A': '6A-BX1b', '6B': '6B-BX2', '6C': '6C-BX3'}[w]
+    return LTASK[w]
 
 
 def md_owners(owners):
@@ -1269,6 +1368,38 @@ def render(S):
     return '\n'.join(out)
 
 
+def plan_cards():
+    """The card ids of the plan's Wave 5–7 tables (first cell; `6B-BG2 / BX2 / BN2` → three ids)."""
+    if not os.path.exists(PLAN):
+        return set()
+    t = open(PLAN, encoding='utf-8').read()
+    a, b = t.find('\n## Wave 5'), t.find('\n## Wave 8')
+    ids = set()
+    for l in t[a:b].split('\n'):
+        m = re.match(r'\| (?:\*\*)?(6[ABC])-([^|]+?) ?\|', l)
+        if not m:
+            continue
+        for k, part in enumerate(f'{m.group(1)}-{m.group(2)}'.split(' / ')):
+            tok = part.split()[0].strip('*')
+            if k == 0:
+                ids.add(tok)
+            elif re.fullmatch(r'[A-Z]{2,}[0-9]*', tok):      # `BX2` in `6B-BG2 / BX2 / BN2`, not `Platform`
+                ids.add(f'{m.group(1)}-{tok}')
+            else:
+                break
+    return ids
+
+
+def doc_proposals():
+    """The proposed card ids named in bold in §8 of the document (`**6A-BG1a** …`, `**6A-CF — …**`)."""
+    if not os.path.exists(DOC):
+        return set()
+    t = open(DOC, encoding='utf-8').read()
+    a = t.find('\n## 8.')
+    b = t.find('\n## ', a + 1)
+    return set(re.findall(r'\*\*(6[ABC]-[0-9A-Za-z…]+)', t[a:b])) if a >= 0 else set()
+
+
 def blocks_in_doc():
     if not os.path.exists(DOC):
         return {}
@@ -1281,29 +1412,73 @@ def main():
     S, owners = sections()
     if '--check' in args:
         ok = True
-        census = set(FIRST)
-        type_rows = [l for l in S['types'][2:]]
-        listed = collections.Counter(int(l.split('|')[1]) for l in type_rows)
-        dup = [t for t, n in listed.items() if n != 1]
-        missing = census - set(listed)
-        extra = set(listed) - census
-        if dup or missing or extra:
+        # (1) the census, recomputed from placements-all.tsv (an independent count) against the type ledger's rows
+        t_built = set(t for lv in BUILT for t in tsv.get(lv, {}))
+        t_first, t_levels, t_recs = {}, collections.defaultdict(list), collections.Counter()
+        for lv in sorted(tsv):
+            if lv in BUILT:
+                continue
+            for t, n in tsv[lv].items():
+                if t not in t_built:
+                    t_first.setdefault(t, lv)
+                    t_levels[t].append(lv)
+                    t_recs[t] += n
+        rows = {}
+        for l in S['types'][2:]:
+            x = [c.strip() for c in l.split('|')]
+            rows.setdefault(int(x[1]), []).append((int(x[4]), x[5], int(x[6])))
+        dup = sorted(t for t, v in rows.items() if len(v) != 1)
+        missing, extra = sorted(set(t_first) - set(rows)), sorted(set(rows) - set(t_first))
+        wrong = [t for t in sorted(set(rows) & set(t_first)) if rows[t][0] != (
+            t_first[t], ', '.join(str(lv) for lv in t_levels[t] if lv != t_first[t]) or '—', t_recs[t])]
+        if dup or missing or extra or wrong:
             ok = False
-            print(f'type ledger: duplicated {dup}, missing {sorted(missing)}, extra {sorted(extra)}')
-        owned = collections.Counter(t for t in owners)
-        if set(owned) != census:
+            print(f'type ledger vs placements-all.tsv: doubled {dup}, missing {missing}, extra {extra}, '
+                  f'first level / also on / records differ {wrong}')
+        census = set(t_first)
+        # (2) every owner is a plan card (Waves 5–7) or a proposal named in §8 of the document
+        cards = plan_cards()
+        props = doc_proposals()
+        used = set()
+        for l in S['owners'][2:]:
+            used.add(l.split('|')[1].strip())
+        for key, col in (('types', -2), ('old-types', -2), ('switches', -2)):
+            for l in S[key][2:]:
+                used.add(l.split('|')[col].strip())
+        for l in S['deps'][2:]:
+            x = l.split('|')
+            if len(x) > 4:
+                used |= set(re.findall(r'(6[ABC]-[^,(]+?)(?: \(|,|$)', x[3].strip() + ',' + x[4].strip()))
+        ids = set(u.split(' (')[0].strip() for u in used if u.strip() and u.strip() != '—')
+        unknown = sorted(i for i in ids if i not in cards and i not in props)
+        if not cards:
             ok = False
-            print('owners: not every census type has exactly one owner')
+            print('owners: no card ids read from the plan (Waves 5–7 tables)')
+        if unknown:
+            ok = False
+            print(f'owners not a plan card or a §8 proposal: {unknown}')
+        if set(t for t in owners) != census:
+            ok = False
+            print('owners: the owner map does not cover the census (placements-all.tsv)')
+        # (3) the total, recomputed from the raw Mlvl level records (own parse) against the table and §0
+        raw = sum(1 for lv in LEVELS for rec in struct.iter_unpack('>BBh12x', MLVL[lv][4:4 + 511 * 16])
+                  if rec[0] == 1 and rec[2] != 0)
+        tsv_tot = sum(sum(v.values()) for v in tsv.values())
+        doc_txt = open(DOC, encoding='utf-8').read() if os.path.exists(DOC) else ''
+        if f'**{raw:,}**' not in '\n'.join(S['levels']) or raw != tsv_tot or f'| {raw:,} | {raw:,} | yes |' not in doc_txt:
+            ok = False
+            print(f'total: Mlvl records {raw:,}, placements-all.tsv {tsv_tot:,}; the level table or §0 disagrees')
+        tot = raw
+        c_all, a_all, bad_ops = conv_opcode_audit()
+        if bad_ops:
+            ok = False
+            print('Mcnv opcodes outside the port\'s handled sets:', bad_ops)
         sw = switch_rows()
         need = set((h(off), lv) for off, size in SCAN for lv in LATER if field_value(lv, off, size))
         have = set((h(r['off']), r['lv']) for r in sw)
         if need - have:
             ok = False
             print('header switches missing from the ledger:', sorted(need - have))
-        tot = sum(sum(COUNT[lv].values()) for lv in LEVELS)
-        if f'**{tot:,}**' not in '\n'.join(S['levels']):
-            ok = False
-            print('level table total != census')
         doc = blocks_in_doc()
         for k, v in S.items():
             if doc.get(k) != '\n'.join(v):

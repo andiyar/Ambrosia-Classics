@@ -14,12 +14,17 @@ python3 -I tools/ferazel/later-levels-ledger.py --check   # exit 0 only when the
 python3 -I tools/ferazel/later-levels-ledger.py --section types   # one block to stdout
 ```
 
-`--check` fails when: a census type is missing from (or doubled in) the type ledger, or has no single owner; a nonzero
-header switch of a later level has no row; the level table's total is not the census; `placements-all.tsv` disagrees
-with the `Mlvl` records; the dump no longer has 1,236 headers; a port anchor (file:line regex) no longer resolves; the
-port model refuses any record of levels 1–5 (a rule-table error — the port sets up every record there); or a block of
-this file differs from a fresh run. The prose outside the markers is hand-written at base `2f25cf6` and cites
-`M l. N` = the committed dump `ghidra/ferazel/Ferazel_pef.decompiled.c` (every cited line re-read for this file).
+`--check` fails when: the type ledger's rows (type, first level, other levels, record count) differ from the census
+recomputed from `placements-all.tsv`; `placements-all.tsv` disagrees with the `Mlvl` records per level and type; an
+owner named anywhere in the blocks is neither a card of the plan's Wave 5–7 tables
+(`docs/superpowers/plans/2026-11-04-ferazel-remainder.md`) nor a proposal named in bold in §8; the total recomputed
+from the raw `Mlvl` records differs from the TSV's, the level table's or §0's; a nonzero header switch of a later level
+has no row; an `Mcnv` uses an opcode the port neither handles nor the original treats as a no-op; the dump no longer
+has 1,236 headers; a pinned bank file is missing (the bank column searches an explicit list, so a new document under
+`docs/ferazel/` cannot move it); a port anchor (file:line regex) no longer resolves; the port model refuses any record
+of levels 1–5 (a rule-table error — the port sets up every record there); or a block of this file differs from a fresh
+run. The prose outside the markers is hand-written at base `2f25cf6` (review fixes at `2e22132`) and cites `M l. N` =
+the committed dump `ghidra/ferazel/Ferazel_pef.decompiled.c` (every cited line re-read for this file).
 
 **What "port today" means.** The port columns come from a rule table in the script (`port_arm`), transcribed from
 `SetupFaces.setup` (`Ferazel/Core/Sources/FerazelCore/Sprites/SetupFaces.swift`), `BonusSprite.setup`, `BoxSprite`,
@@ -27,7 +32,10 @@ this file differs from a fresh run. The prose outside the markers is hand-writte
 record up (no throw); **refused** = it throws `notTranscribed` (the site named), including the face check at the end of
 `SetupFaces.setup` (`if source != .none, sheet == nil { throw … }`), which refuses a type whose arm exists but whose face
 the Setup-face table does not hold. "Built" here means set up at level start; a Handle arm marked `// later:` is noted
-in the note column. No Swift was run (the brief: python and grep only), so these are static readings.
+in the note column. The rule table reads each record's own parameters, so a type can be refused on some of its records
+only (a cannon with p1 ≠ 0 among p1-0 cannons, a ball in modes 1–2): every refusal count in this file is **per record**.
+No Swift was run (the brief: python and grep only), so these are static readings; the second review leg ran the port's
+real Setup over every active record of all 24 levels and the model matched it on every level × type.
 
 Sources: the world file's `Mlvl` / `Mcnv`; `docs/ferazel/gap-ledger/placements-all.tsv` (re-checked against the
 `Mlvl`); `gap-ledger/resources-classified.tsv` (its "future phase" rows = class `a`, `a5`, `a6`); `world-data-format.md`
@@ -44,6 +52,7 @@ Sources: the world file's `Mlvl` / `Mcnv`; `docs/ferazel/gap-ledger/placements-a
 | level × type census entries | — | 329 (142 distinct types) | — |
 | future-phase PICTs / cluts / music / `Mlvl` / `Mcnv` | 125 / 3 / track 29 / 20 / 23 | 125 / 3 rows (clut 198 twice — two files — and 260) / AIFC 29 / 20 rows, of which 19 are levels 10–70 (`Mlvl 5` is built now: the TSV predates LV5) / 23 | yes, with the `Mlvl 5` note |
 | picture-cache registrations | — | 92 sets + 193 singles = 285 records, 805 faces; the port registers 52 + 44 = 96 | — |
+| records the port refuses today (per record, old types included) | — | 401 on levels 10–22, 730 on all later levels (dependency table, §7) | — |
 | nonzero header switch fields (0x26c6–0x26d0, 0x2706–0x2736, 0x284a) on later levels | — | 101 field × level rows | — |
 
 <!-- LL:levels -->
@@ -93,21 +102,38 @@ Sources: the world file's `Mlvl` / `Mcnv`; `docs/ferazel/gap-ledger/placements-a
    the same way: every Bonus / Platform / Rope type in the census is "built" in the type ledger).
 3. **The constant side push is built.** Spec §3.2 says "not built"; `Player.sidePush` (`Player.swift:752`, row 37 of
    `.HandlePlayerSprite`, M l. 46347–46365) reads `hdr+0x272c`. 6A-RN's "the side push `0x272c`" is a test, not code.
-4. **Tinted submerged tiles are half built.** The FG-cell draw reads `0x26c6` (`TileGridRenderer.swift:257–275`) and the
-   light draw too; the overlay-cell draw (`TileGridRenderer.swift:279–291`) has no water-tint path, while
-   `.PlainWrapFGOverlayTile` (M l. 9720–9735) tints overlay cells < 0x5f under water whatever the flag, and the pattern
-   cell 0x5f under water only with `0x26c6`. 6A-T11 is the overlay half (and the level-11 golden). Whether the overlay
-   tint-under-water gap also reaches levels 1–5 (no flag needed for cells < 0x5f) was **not traced** — a follow-up.
+4. **Tinted submerged tiles are built — 6A-T11 only proves them.** The FG-cell draw reads `0x26c6`
+   (`TileGridRenderer.swift:257–275`) and so does the lights redraw, overlay cells included: `LightRenderer`'s
+   `plainWrapFGOverlayTile` (`Ferazel/Core/Sources/FerazelRender/Frame/LightRenderer.swift` ≈ l. 474–495) is
+   `.PlainWrapFGOverlayTile` (M l. 9720–9735) — overlay faces < 0x5f tinted under water whatever the flag, the pattern
+   cell 0x5f tinted only with `0x26c6`. The original tints overlay cells only in that lights redraw (the plain overlay
+   draw has no tint, as `TileGridRenderer.swift:279–291` has none), so nothing is missing, on level 11 or on 1–5.
+   6A-T11 becomes "prove only": the level-11 golden, no code.
 5. **The horizon strip is on six levels**, not one: `0x2716` = 265 / 275 / 315 / 315 / 345 / 385 on levels 10, 30, 40,
    45, 62, 67 (spec §3.1 names level 10 only; `DrawModeAuditTests` and `PxSprites` already say six). 6A-S8 builds it
    once; 30 … 67 only need their goldens.
 6. **Most refusals are face-table gaps, not missing arms.** Of the 81 census types the port refuses somewhere, 46 have a
    built `SetupFaces` arm (decorations, outcrops, mushrooms, plants, signs, furniture, NPCs) and are refused only by the
    face check because their PICT is not in the Setup-face table — the work is table rows + cache marks + tests, the
-   same shape for all of them.
+   same shape for all of them — with one exception: **the graves of level 21** (2833, 2834, 2836 = 0xb11, 0xb12, 0xb14,
+   p1 260, 261, 1) are decorations with a non-empty hot rect (M l. 59650–59667) placed with p1 ≠ 0, so the original
+   mirrors their rect (`.FlipHRect(+0x34, face width)`, M l. 59670–59673); the port sets `mirrored` but leaves the rect
+   unflipped (`BoxSprite.swift:387`, `// later:`), so their contact would be on the wrong side. Every decoration on
+   levels 1–5 had the empty rect, which the flip leaves empty. 6A-BX1a must build the flip (it needs the face width).
+   **Searched generally:** every parameter-conditioned refusal or `// later:` in the port's class Setups and Handles
+   (`SetupFaces`, `BoxSprite`, `BackgroundSprite`, `BonusSprite`, `PlatformSprite`, `RopeSprite`, the enemy Setups,
+   `HitPlayerSprite`) was matched against the p1…p4 values placed on levels 10–70. The hits are the ones this file
+   already counts — the cannon p1 ≠ 0 (and its 105 / 106 shot steering, `BackgroundSprite.swift:498`, which only
+   such cannons reach) and the ball / mace modes 1–2 — plus these graves. Checked and empty on 10–70: the passage
+   p2 ≠ 0 darkness override (`HitPlayerSprite.swift:970`; every passage has p2 0 — the passage p3 1 on level 21 is
+   built, `BackgroundSprite.swift:387`), the Bat path modes 10 / 11, plant types past the 30-face cache and tunnel
+   types past the 6-face one (`BackgroundSprite.swift:142`). The other values new on 10–70 reach arms with no
+   parameter-conditioned refusal or `// later:` (platform modes 6 / 7 / 8 / 0x33 / 0x34 and exit p2 were read and are
+   transcribed; crate contents, rope geometry, scroll / item p1 and the like were not traced value by value).
 7. **Types placed on levels 1–5 have refused records on later levels.** The census (types new vs 1–5) hides them: the
-   cannon 1090 with p1 101 / 103 / 105 / −1 / −2 (rotating and path cannons) on levels 10, 15, 40, 50, 52, 62, and the
-   ball 1485 with path modes 1–2 on 20, 22, 40 (table "old types"). So "level 10 sets up every record" needs the
+   cannon 1090 with p1 101 / 102 / 103 / 105 / −1 / −2 (rotating and path cannons; 102 on level 62) on levels 10, 15,
+   40, 50, 52, 62, and the ball 1485 with path modes 1–2 on 20, 22, 40 (table "old types", whose refused column counts
+   per record: on level 22 only 29 of the 38 balls — modes 1–2 — are refused). So "level 10 sets up every record" needs the
    rotating-cannon arm even though no new cannon type there is refused but 1097. Owners: 6A-BG1b (10–22) / 6B-BG2 /
    6C-BG3.
 8. **Cache-mark gaps in types the port calls built** (hand-verified against the dump; each is a load-bar step the port
@@ -126,15 +152,18 @@ Sources: the world file's `Mlvl` / `Mcnv`; `docs/ferazel/gap-ledger/placements-a
    - the enemy-shot caches are told apart by **record**, not PICT: the Wizard marks only the first 0x46a record
      (6 × 48×48, `_DAT_100a0848`, M l. 75629–75635), the Chief only 0x77b (M l. 75068–75075), the Demon all three 0x46a
      (M l. 74410–74422), Xichra 0x46a #1 and #3 and 0x77b (M l. 76343–76358). `CachedFaces.loadedSets` keys by PICT, so
-     the port would count all three 0x46a records for the Wizard (levels 25, 67) — 6A-FB's "key cached faces by record"
-     must cover `CachedFaces` too.
+     the port would count all three 0x46a records for the Wizard (level 25) and for Xichra (level 67, who marks two)
+     — 6A-FB's "key cached faces by record" must cover `CachedFaces` too.
+   - the fire 1208 (0x4b8; no Setup arm yet, so not "built", listed for its task): its Setup marks **both** set 0x4b8
+     (#33) and set 0x4b9 (#34) — `_DAT_100a0afc + 1` and `iVar8 + 1` with `iVar8 = _DAT_100a0af8` (M l. 62018–62019,
+     61959). Levels 40, 50, 51, 62, 67.
 9. **23 registration records name a PICT no file holds** (2805–2807, 2950, 2966–2969, 1489, 2718–2729, 1790, 1791): the
    load returns nothing and `.LoadCachedSpriteFaces` neither marks them loaded nor counts them (M l. 73822–73832,
    73856–73859). A full transcription must keep them as never-counting records.
 10. **Cannons 1091 and 1093–1096 belong to 6B, not 6A.** Card 6A-BG1 lists "1091–1097" among the Background types of
     10–22; on levels 10–22 they are all p1 0 (built) except 1097 (p1 101, level 10) and 1092 (p1 101 on 15, 103 on 20).
-    Their first refused records are on 40, 51, 52 and 62. The ledger gives each type to the wave of the first level
-    that needs work.
+    Their first refused records are on 40 (1093–1096) and 52 (1091); 62 also has refused 1096 records (5 of 7). The
+    ledger gives each type to the wave of the first level that needs work.
 11. **The programmed-path cannon and mace arms are Background, not Box.** Card 6A-BX1 carries "the programmed-path
     cannon (p1 ≠ 0) and mace (modes 1–2) arms"; `.GenerateSprite` sends 0x442…1099 and 0x5c8…0x5d1 to the Background
     class (`gensprite_map.py`; `SetupFaces` arms at `case 0x442...1098:` / `case 0x5c8...0x5d1:`). Proposed owner 6A-BG1b.
@@ -162,10 +191,10 @@ readers, today's state, the `DrawModeAuditTests` refusal row where one pins it, 
 <!-- LL:switches -->
 | field | property | meaning | level | value | new vs 1–5 | original readers (dump: first line per function) | port readers | port today | audit refusal row | owner |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 0x26c6 | `submergedFaces` | submerged tiles drawn as tinted faces | 11 | 1 | **yes** | .WrapDrawWaterEffects 8825, .PlainWrapFGTile 9618, .PlainWrapFGOverlayTile 9728, .RedrawScrollGrid 9957 | Frame/LightRenderer.swift:447, Frame/LightRenderer.swift:490, Frame/TileGridRenderer.swift:257, Particles/WaterEffects.swift:79 (+3) | partial: the FG-cell draw and the light draw read it (TileGridRenderer, LightRenderer); the overlay-cell draw has no water-tint path (.PlainWrapFGOverlayTile M l. 9720–9735 tints overlay cells under water, and the pattern cell with this flag) — not traced by LL | — | 6A-T11 |
+| 0x26c6 | `submergedFaces` | submerged tiles drawn as tinted faces | 11 | 1 | **yes** | .WrapDrawWaterEffects 8825, .PlainWrapFGTile 9618, .PlainWrapFGOverlayTile 9728, .RedrawScrollGrid 9957 | Frame/LightRenderer.swift:447, Frame/LightRenderer.swift:490, Frame/TileGridRenderer.swift:257, Particles/WaterEffects.swift:79 (+3) | built: the FG-cell draw (TileGridRenderer) and the lights redraw, overlay cells included (LightRenderer `plainWrapFGOverlayTile` = .PlainWrapFGOverlayTile M l. 9720–9735: overlay faces tinted under water whatever the flag, the pattern cell with it; the original tints overlay cells only there) — 6A-T11 proves it, nothing to build | — | 6A-T11 |
 | 0x26c7 | `omniPxMode` | OmniPx mode | 15 | 1 | **yes** | .PaintFrameWrap 9228, .TurnOnOmniPx 13044, .SetupOmniPx 13172, .UpdateOmniPx 13427 | World/OmniPx.swift:35, World/OmniPx.swift:110, World/OmniPx.swift:143, Front/LevelRun.swift:583 (+1) | modes 0/2/4/5 built (OX); 1, 3, 6, 7, ≥ 8 refused at level open | DrawModeAuditTests.swift:1464 | 6A-RN |
 | 0x26c7 | `omniPxMode` | OmniPx mode | 25 | 5 | **yes** | .PaintFrameWrap 9228, .TurnOnOmniPx 13044, .SetupOmniPx 13172, .UpdateOmniPx 13427 | World/OmniPx.swift:35, World/OmniPx.swift:110, World/OmniPx.swift:143, Front/LevelRun.swift:583 (+1) | modes 0/2/4/5 built (OX); 1, 3, 6, 7, ≥ 8 refused at level open | DrawModeAuditTests.swift:1464 | 6B-L25…L52 |
-| 0x26c7 | `omniPxMode` | OmniPx mode | 70 | 6 | **yes** | .PaintFrameWrap 9228, .TurnOnOmniPx 13044, .SetupOmniPx 13172, .UpdateOmniPx 13427 | World/OmniPx.swift:35, World/OmniPx.swift:110, World/OmniPx.swift:143, Front/LevelRun.swift:583 (+1) | modes 0/2/4/5 built (OX); 1, 3, 6, 7, ≥ 8 refused at level open | DrawModeAuditTests.swift:1464 | 6C-L70 (interlace) |
+| 0x26c7 | `omniPxMode` | OmniPx mode | 70 | 6 | **yes** | .PaintFrameWrap 9228, .TurnOnOmniPx 13044, .SetupOmniPx 13172, .UpdateOmniPx 13427 | World/OmniPx.swift:35, World/OmniPx.swift:110, World/OmniPx.swift:143, Front/LevelRun.swift:583 (+1) | modes 0/2/4/5 built (OX); 1, 3, 6, 7, ≥ 8 refused at level open | DrawModeAuditTests.swift:1464 | 6C-L55…L70 (its ⚑ part: the mode-6 interlace) |
 | 0x26c8 | `startFacingLeft` | player starts facing left | 11 | 1 | no | .NewGame 5821, .ContinueGame 6920 | Front/ContinueGame.swift:142, Session/FerazelSession.swift:176, Session/GameGlobals.swift:132 | built | — | 6A-L10…L22 |
 | 0x26c8 | `startFacingLeft` | player starts facing left | 18 | 1 | no | .NewGame 5821, .ContinueGame 6920 | Front/ContinueGame.swift:142, Session/FerazelSession.swift:176, Session/GameGlobals.swift:132 | built | — | 6A-L10…L22 |
 | 0x26c8 | `startFacingLeft` | player starts facing left | 40 | 1 | no | .NewGame 5821, .ContinueGame 6920 | Front/ContinueGame.swift:142, Session/FerazelSession.swift:176, Session/GameGlobals.swift:132 | built | — | 6B-L25…L52 |
@@ -295,9 +324,9 @@ first bank section naming the type (the class's topical files first, hex before 
 | 1061 | 0x425 | Box | 21 | 40 | 23 | 57,59,60,89,138,143,170,171,179,180,193, | refused | `FerazelCore/Sprites/SetupFaces.swift:512` | teleporter: `BoxSprite.setup` arm built (FerazelCore/World/Movers/BoxSprite.swift:174); no SetupFaces face arm (boot singles 0x424 / 0x425, M l. 58737–58740) | .SetupBoxSprite 58892–59730 / .HandleBoxSprite 60030–61180; type literal l. 58953, 58967 | — | 6A-BX1b |
 | 1072 | 0x430 | Box | 50 | — | 1 | 0 | built | `FerazelCore/Sprites/SetupFaces.swift:468` | Box arm | .SetupBoxSprite 58892–59730 / .HandleBoxSprite 60030–61180; type literal l. 59060 | — | 6B-L25…L52 |
 | 1080 | 0x438 | Box | 22 | — | 1 | 0 | refused | `FerazelCore/Sprites/SetupFaces.swift:512` | no Setup face arm; Handle not built (FerazelCore/World/Movers/BoxSprite.swift:463) | .SetupBoxSprite 58892–59730 / .HandleBoxSprite 60030–61180; type literal l. 59051, 59080, 60222, 61154 | pickups-boxes §2.1 | 6A-BX1c |
-| 1091 | 0x443 | Background | 10 | 22, 40, 51, 52 | 11 | 0,103 | refused (from L52; built on 10, 22, 40, 51) | `FerazelCore/Sprites/SetupFaces.swift:380` | cannon p1 ≠ 0 (1 records: p1 103); the rotating / path arms: FerazelCore/World/Movers/BackgroundSprite.swift:334 | .SetupBackgroundSprite 61919–62678 / .HandleBackgroundSprite 62887–63563; range from 0x442 l. 62062, 62112 | triggers-background §0 | 6B-BG2 |
+| 1091 | 0x443 | Background | 10 | 22, 40, 51, 52 | 11 | 0,103 | refused (from L52; built on 10, 22, 40, 51) | `FerazelCore/Sprites/SetupFaces.swift:380` | cannon p1 ≠ 0 (1 record: p1 103); the rotating / path arms: FerazelCore/World/Movers/BackgroundSprite.swift:334 | .SetupBackgroundSprite 61919–62678 / .HandleBackgroundSprite 62887–63563; range from 0x442 l. 62062, 62112 | triggers-background §0 | 6B-BG2 |
 | 1092 | 0x444 | Background | 11 | 15, 20, 31, 40, 50, 51, 52 | 20 | -1,0,101,103 | refused (from L15; built on 11) | `FerazelCore/Sprites/SetupFaces.swift:380` | cannon p1 ≠ 0 (5 records: p1 -1,101,103); the rotating / path arms: FerazelCore/World/Movers/BackgroundSprite.swift:334 | .SetupBackgroundSprite 61919–62678 / .HandleBackgroundSprite 62887–63563; range from 0x442 l. 62062, 62112 | triggers-background §2.2 | 6A-BG1b |
-| 1093 | 0x445 | Background | 10 | 40 | 2 | -2,0 | refused (from L40; built on 10) | `FerazelCore/Sprites/SetupFaces.swift:380` | cannon p1 ≠ 0 (1 records: p1 -2); the rotating / path arms: FerazelCore/World/Movers/BackgroundSprite.swift:334 | .SetupBackgroundSprite 61919–62678 / .HandleBackgroundSprite 62887–63563; range from 0x442 l. 62062, 62112 | triggers-background §2.2 | 6B-BG2 |
+| 1093 | 0x445 | Background | 10 | 40 | 2 | -2,0 | refused (from L40; built on 10) | `FerazelCore/Sprites/SetupFaces.swift:380` | cannon p1 ≠ 0 (1 record: p1 -2); the rotating / path arms: FerazelCore/World/Movers/BackgroundSprite.swift:334 | .SetupBackgroundSprite 61919–62678 / .HandleBackgroundSprite 62887–63563; range from 0x442 l. 62062, 62112 | triggers-background §2.2 | 6B-BG2 |
 | 1094 | 0x446 | Background | 10 | 20, 22, 40, 52, 62 | 23 | -2,0,103 | refused (from L40; built on 10, 20, 22) | `FerazelCore/Sprites/SetupFaces.swift:380` | cannon p1 ≠ 0 (8 records: p1 -2,103); the rotating / path arms: FerazelCore/World/Movers/BackgroundSprite.swift:334 | .SetupBackgroundSprite 61919–62678 / .HandleBackgroundSprite 62887–63563; range from 0x442 l. 62062, 62112 | triggers-background §2.2 | 6B-BG2 |
 | 1095 | 0x447 | Background | 10 | 40, 51, 62 | 6 | -1,0 | refused (from L40; built on 10) | `FerazelCore/Sprites/SetupFaces.swift:380` | cannon p1 ≠ 0 (2 records: p1 -1); the rotating / path arms: FerazelCore/World/Movers/BackgroundSprite.swift:334 | .SetupBackgroundSprite 61919–62678 / .HandleBackgroundSprite 62887–63563; range from 0x442 l. 62062, 62112 | triggers-background §2.2 | 6B-BG2 |
 | 1096 | 0x448 | Background | 10 | 11, 20, 22, 31, 40, 52, 62 | 31 | -1,0 | refused (from L40; built on 10, 11, 20, 22, 31) | `FerazelCore/Sprites/SetupFaces.swift:380` | cannon p1 ≠ 0 (11 records: p1 -1); the rotating / path arms: FerazelCore/World/Movers/BackgroundSprite.swift:334 | .SetupBackgroundSprite 61919–62678 / .HandleBackgroundSprite 62887–63563; range from 0x442 l. 62062, 62112 | — | 6B-BG2 |
@@ -328,10 +357,10 @@ first bank section naming the type (the class's topical files first, hex before 
 | 1486 | 0x5ce | Background | 30 | 31 | 34 | 1,2,10,12 | refused | `FerazelCore/Sprites/SetupFaces.swift:399` | mace modes [1, 2, 10, 12]: modes 1–2 (programmed path) refused | .SetupBackgroundSprite 61919–62678 / .HandleBackgroundSprite 62887–63563; range from 0x5cd l. 62315, 63156 | triggers-background §0 | 6B-BG2 |
 | 1487 | 0x5cf | Background | 21 | — | 1 | 13 | built | `FerazelCore/Sprites/SetupFaces.swift:389` | mace modes [13] (W2a) | .SetupBackgroundSprite 61919–62678 / .HandleBackgroundSprite 62887–63563; range from 0x5cd l. 62315, 63156 | triggers-background §0 | 6A-L10…L22 |
 | 1488 | 0x5d0 | Background | 62 | — | 30 | 1,2,10 | refused | `FerazelCore/Sprites/SetupFaces.swift:399` | mace modes [1, 2, 10]: modes 1–2 (programmed path) refused | .SetupBackgroundSprite 61919–62678 / .HandleBackgroundSprite 62887–63563; range from 0x5cd l. 62315, 63156 | triggers-background §0 | 6C-BG3 |
-| 1490 | 0x5d2 | Box | 21 | — | 1 | 1860 | refused | `FerazelCore/Sprites/SetupFaces.swift:512` | enemy pipe: `setupPipe` built (FerazelCore/World/Movers/BoxSprite.swift:446), not wired into the level spawn (6A-L21) | .SetupBoxSprite 58892–59730 / .HandleBoxSprite 60030–61180; type literal l. 60651, 60706 | pickups-boxes §2.2 | 6A-L21 |
-| 1491 | 0x5d3 | Box | 21 | — | 3 | 1705,1730 | refused | `FerazelCore/Sprites/SetupFaces.swift:512` | enemy pipe: `setupPipe` built (FerazelCore/World/Movers/BoxSprite.swift:446), not wired into the level spawn (6A-L21) | .SetupBoxSprite 58892–59730 / .HandleBoxSprite 60030–61180; type literal l. 60659, 60715 | enemies-flyers §7.4 | 6A-L21 |
-| 1492 | 0x5d4 | Box | 21 | — | 1 | 1700 | refused | `FerazelCore/Sprites/SetupFaces.swift:512` | enemy pipe: `setupPipe` built (FerazelCore/World/Movers/BoxSprite.swift:446), not wired into the level spawn (6A-L21) | .SetupBoxSprite 58892–59730 / .HandleBoxSprite 60030–61180; type literal l. 60669, 60724 | enemies-flyers §7.4 | 6A-L21 |
-| 1493 | 0x5d5 | Box | 21 | — | 1 | 1730 | refused | `FerazelCore/Sprites/SetupFaces.swift:512` | enemy pipe: `setupPipe` built (FerazelCore/World/Movers/BoxSprite.swift:446), not wired into the level spawn (6A-L21) | .SetupBoxSprite 58892–59730 / .HandleBoxSprite 60030–61180; type literal l. 60680, 60733 | pickups-boxes §2.2 | 6A-L21 |
+| 1490 | 0x5d2 | Box | 21 | — | 1 | 1860 | refused | `FerazelCore/Sprites/SetupFaces.swift:512` | enemy pipe: `setupPipe` built (FerazelCore/World/Movers/BoxSprite.swift:446), not wired into the level spawn (6A-L10…L22, level 21) | .SetupBoxSprite 58892–59730 / .HandleBoxSprite 60030–61180; type literal l. 60651, 60706 | pickups-boxes §2.2 | 6A-L10…L22 (level 21 pipe wiring) |
+| 1491 | 0x5d3 | Box | 21 | — | 3 | 1705,1730 | refused | `FerazelCore/Sprites/SetupFaces.swift:512` | enemy pipe: `setupPipe` built (FerazelCore/World/Movers/BoxSprite.swift:446), not wired into the level spawn (6A-L10…L22, level 21) | .SetupBoxSprite 58892–59730 / .HandleBoxSprite 60030–61180; type literal l. 60659, 60715 | enemies-flyers §7.4 | 6A-L10…L22 (level 21 pipe wiring) |
+| 1492 | 0x5d4 | Box | 21 | — | 1 | 1700 | refused | `FerazelCore/Sprites/SetupFaces.swift:512` | enemy pipe: `setupPipe` built (FerazelCore/World/Movers/BoxSprite.swift:446), not wired into the level spawn (6A-L10…L22, level 21) | .SetupBoxSprite 58892–59730 / .HandleBoxSprite 60030–61180; type literal l. 60669, 60724 | enemies-flyers §7.4 | 6A-L10…L22 (level 21 pipe wiring) |
+| 1493 | 0x5d5 | Box | 21 | — | 1 | 1730 | refused | `FerazelCore/Sprites/SetupFaces.swift:512` | enemy pipe: `setupPipe` built (FerazelCore/World/Movers/BoxSprite.swift:446), not wired into the level spawn (6A-L10…L22, level 21) | .SetupBoxSprite 58892–59730 / .HandleBoxSprite 60030–61180; type literal l. 60680, 60733 | pickups-boxes §2.2 | 6A-L10…L22 (level 21 pipe wiring) |
 | 1731 | 0x6c3 | Blob | 30 | 31 | 5 | 0 | built | `FerazelCore/Sprites/SetupFaces.swift:601` | Blob (BL) | .SetupBlobSprite 67671–67737 / .HandleBlobSprite 67766–67980; range from 0x6c2 l. 67704 | enemies-water-cave §0 | 6B-L25…L52 |
 | 1732 | 0x6c4 | Blob | 22 | 40, 50, 51, 52 | 13 | 0 | built | `FerazelCore/Sprites/SetupFaces.swift:601` | Blob (BL) | .SetupBlobSprite 67671–67737 / .HandleBlobSprite 67766–67980; type literal l. 67699, 67703 | enemies-water-cave §0 | 6A-L10…L22 |
 | 1742 | 0x6ce | Bat | 21 | 52 | 2 | 1,2 | built | `FerazelCore/Sprites/SetupFaces.swift:574` | Bat (BA) | .SetupBatSprite 68108–68317 / .HandleBatSprite 68447–68907; type literal l. 68287 | enemies-flyers §1.2 | 6A-L10…L22 |
@@ -370,9 +399,9 @@ first bank section naming the type (the class's topical files first, hex before 
 | 2828 | 0xb0c | Box | 70 | — | 2 | 0 | refused | `FerazelCore/Sprites/SetupFaces.swift:715` | decoration: arm FerazelCore/Sprites/SetupFaces.swift:493 built; face 0xb0c not in the Setup-face table | .SetupBoxSprite 58892–59730 / .HandleBoxSprite 60030–61180; range from 0xaf5 l. 61116 | pickups-boxes-2 §9 | 6C-BX3 |
 | 2830 | 0xb0e | Box | 70 | — | 1 | 0 | refused | `FerazelCore/Sprites/SetupFaces.swift:715` | decoration: arm FerazelCore/Sprites/SetupFaces.swift:493 built; face 0xb0e not in the Setup-face table | .SetupBoxSprite 58892–59730 / .HandleBoxSprite 60030–61180; range from 0xaf5 l. 61116 | pickups-boxes-2 §9 | 6C-BX3 |
 | 2831 | 0xb0f | Box | 11 | 21, 70 | 8 | 0,1 | refused | `FerazelCore/Sprites/SetupFaces.swift:715` | decoration: arm FerazelCore/Sprites/SetupFaces.swift:493 built; face 0xb0f not in the Setup-face table | .SetupBoxSprite 58892–59730 / .HandleBoxSprite 60030–61180; range from 0xaf5 l. 61116 | pickups-boxes-2 §9 | 6A-BX1a |
-| 2833 | 0xb11 | Box | 21 | — | 1 | 260 | refused | `FerazelCore/Sprites/SetupFaces.swift:715` | decoration: arm FerazelCore/Sprites/SetupFaces.swift:493 built; face 0xb11 not in the Setup-face table | .SetupBoxSprite 58892–59730 / .HandleBoxSprite 60030–61180; type literal l. 59658 | pickups-boxes §2.2 | 6A-BX1a |
-| 2834 | 0xb12 | Box | 21 | — | 1 | 261 | refused | `FerazelCore/Sprites/SetupFaces.swift:715` | decoration: arm FerazelCore/Sprites/SetupFaces.swift:493 built; face 0xb12 not in the Setup-face table | .SetupBoxSprite 58892–59730 / .HandleBoxSprite 60030–61180; type literal l. 59661 | pickups-boxes-2 §9 | 6A-BX1a |
-| 2836 | 0xb14 | Box | 21 | — | 1 | 1 | refused | `FerazelCore/Sprites/SetupFaces.swift:715` | decoration: arm FerazelCore/Sprites/SetupFaces.swift:493 built; face 0xb14 not in the Setup-face table | .SetupBoxSprite 58892–59730 / .HandleBoxSprite 60030–61180; type literal l. 59667 | pickups-boxes-2 §9 | 6A-BX1a |
+| 2833 | 0xb11 | Box | 21 | — | 1 | 260 | refused | `FerazelCore/Sprites/SetupFaces.swift:715` | decoration: arm FerazelCore/Sprites/SetupFaces.swift:493 built; face 0xb11 not in the Setup-face table; p1 ≠ 0 on 1 record with a non-empty hot rect: the `.FlipHRect` (M l. 59670–59673) is not built (FerazelCore/World/Movers/BoxSprite.swift:387) | .SetupBoxSprite 58892–59730 / .HandleBoxSprite 60030–61180; type literal l. 59658 | pickups-boxes §2.2 | 6A-BX1a |
+| 2834 | 0xb12 | Box | 21 | — | 1 | 261 | refused | `FerazelCore/Sprites/SetupFaces.swift:715` | decoration: arm FerazelCore/Sprites/SetupFaces.swift:493 built; face 0xb12 not in the Setup-face table; p1 ≠ 0 on 1 record with a non-empty hot rect: the `.FlipHRect` (M l. 59670–59673) is not built (FerazelCore/World/Movers/BoxSprite.swift:387) | .SetupBoxSprite 58892–59730 / .HandleBoxSprite 60030–61180; type literal l. 59661 | pickups-boxes-2 §9 | 6A-BX1a |
+| 2836 | 0xb14 | Box | 21 | — | 1 | 1 | refused | `FerazelCore/Sprites/SetupFaces.swift:715` | decoration: arm FerazelCore/Sprites/SetupFaces.swift:493 built; face 0xb14 not in the Setup-face table; p1 ≠ 0 on 1 record with a non-empty hot rect: the `.FlipHRect` (M l. 59670–59673) is not built (FerazelCore/World/Movers/BoxSprite.swift:387) | .SetupBoxSprite 58892–59730 / .HandleBoxSprite 60030–61180; type literal l. 59667 | pickups-boxes-2 §9 | 6A-BX1a |
 | 2837 | 0xb15 | Box | 10 | 11 | 4 | 0 | refused | `FerazelCore/Sprites/SetupFaces.swift:715` | decoration: arm FerazelCore/Sprites/SetupFaces.swift:493 built; face 0xb15 not in the Setup-face table | .SetupBoxSprite 58892–59730 / .HandleBoxSprite 60030–61180; range from 0xaf5 l. 61116 | pickups-boxes-2 §9 | 6A-BX1a |
 | 2838 | 0xb16 | Box | 62 | — | 3 | 0 | refused | `FerazelCore/Sprites/SetupFaces.swift:715` | decoration: arm FerazelCore/Sprites/SetupFaces.swift:493 built; face 0xb16 not in the Setup-face table | .SetupBoxSprite 58892–59730 / .HandleBoxSprite 60030–61180; range from 0xaf5 l. 61116 | pickups-boxes-2 §9 | 6C-BX3 |
 | 2839 | 0xb17 | Box | 51 | 62 | 4 | 0 | refused | `FerazelCore/Sprites/SetupFaces.swift:715` | decoration: arm FerazelCore/Sprites/SetupFaces.swift:493 built; face 0xb17 not in the Setup-face table | .SetupBoxSprite 58892–59730 / .HandleBoxSprite 60030–61180; range from 0xaf5 l. 61116 | pickups-boxes-2 §9 | 6B-BX2 |
@@ -438,17 +467,17 @@ first bank section naming the type (the class's topical files first, hex before 
 Types placed on levels 1–5 whose later-level records the port refuses (finding 7):
 
 <!-- LL:old-types -->
-| type | hex | class | later level | records | p1 values there | port today | site | note | owner |
-|---|---|---|---|---:|---|---|---|---|---|
-| 1090 | 0x442 | Background | 10 | 6 | 0,101,103 | refused | `FerazelCore/Sprites/SetupFaces.swift:380` | cannon p1 ≠ 0 (3 records: p1 101,103); the rotating / path arms: FerazelCore/World/Movers/BackgroundSprite.swift:334 | 6A-BG1b |
-| 1090 | 0x442 | Background | 15 | 3 | 0,105 | refused | `FerazelCore/Sprites/SetupFaces.swift:380` | cannon p1 ≠ 0 (2 records: p1 105); the rotating / path arms: FerazelCore/World/Movers/BackgroundSprite.swift:334 | 6A-BG1b |
-| 1090 | 0x442 | Background | 40 | 38 | -2,-1,0,103 | refused | `FerazelCore/Sprites/SetupFaces.swift:380` | cannon p1 ≠ 0 (26 records: p1 -2,-1,103); the rotating / path arms: FerazelCore/World/Movers/BackgroundSprite.swift:334 | 6B-BG2 |
-| 1090 | 0x442 | Background | 50 | 3 | 0,101 | refused | `FerazelCore/Sprites/SetupFaces.swift:380` | cannon p1 ≠ 0 (1 records: p1 101); the rotating / path arms: FerazelCore/World/Movers/BackgroundSprite.swift:334 | 6B-BG2 |
-| 1090 | 0x442 | Background | 52 | 3 | 0,103 | refused | `FerazelCore/Sprites/SetupFaces.swift:380` | cannon p1 ≠ 0 (2 records: p1 103); the rotating / path arms: FerazelCore/World/Movers/BackgroundSprite.swift:334 | 6B-BG2 |
-| 1090 | 0x442 | Background | 62 | 12 | -2,0,102 | refused | `FerazelCore/Sprites/SetupFaces.swift:380` | cannon p1 ≠ 0 (10 records: p1 -2,102); the rotating / path arms: FerazelCore/World/Movers/BackgroundSprite.swift:334 | 6C-BG3 |
-| 1485 | 0x5cd | Background | 20 | 16 | 1 | refused | `FerazelCore/Sprites/SetupFaces.swift:399` | mace modes [1]: modes 1–2 (programmed path) refused | 6A-BG1b |
-| 1485 | 0x5cd | Background | 22 | 38 | 1,2,10,12,13,14 | refused | `FerazelCore/Sprites/SetupFaces.swift:399` | mace modes [1, 2, 10, 12, 13, 14]: modes 1–2 (programmed path) refused | 6A-BG1b |
-| 1485 | 0x5cd | Background | 40 | 17 | 1,2 | refused | `FerazelCore/Sprites/SetupFaces.swift:399` | mace modes [1, 2]: modes 1–2 (programmed path) refused | 6B-BG2 |
+| type | hex | class | later level | records | refused (per record) | p1 values there | port today | site | note | owner |
+|---|---|---|---|---:|---:|---|---|---|---|---|
+| 1090 | 0x442 | Background | 10 | 6 | 3 | 0,101,103 | refused | `FerazelCore/Sprites/SetupFaces.swift:380` | cannon p1 ≠ 0 (3 records: p1 101,103); the rotating / path arms: FerazelCore/World/Movers/BackgroundSprite.swift:334 | 6A-BG1b |
+| 1090 | 0x442 | Background | 15 | 3 | 2 | 0,105 | refused | `FerazelCore/Sprites/SetupFaces.swift:380` | cannon p1 ≠ 0 (2 records: p1 105); the rotating / path arms: FerazelCore/World/Movers/BackgroundSprite.swift:334 | 6A-BG1b |
+| 1090 | 0x442 | Background | 40 | 38 | 26 | -2,-1,0,103 | refused | `FerazelCore/Sprites/SetupFaces.swift:380` | cannon p1 ≠ 0 (26 records: p1 -2,-1,103); the rotating / path arms: FerazelCore/World/Movers/BackgroundSprite.swift:334 | 6B-BG2 |
+| 1090 | 0x442 | Background | 50 | 3 | 1 | 0,101 | refused | `FerazelCore/Sprites/SetupFaces.swift:380` | cannon p1 ≠ 0 (1 record: p1 101); the rotating / path arms: FerazelCore/World/Movers/BackgroundSprite.swift:334 | 6B-BG2 |
+| 1090 | 0x442 | Background | 52 | 3 | 2 | 0,103 | refused | `FerazelCore/Sprites/SetupFaces.swift:380` | cannon p1 ≠ 0 (2 records: p1 103); the rotating / path arms: FerazelCore/World/Movers/BackgroundSprite.swift:334 | 6B-BG2 |
+| 1090 | 0x442 | Background | 62 | 12 | 10 | -2,0,102 | refused | `FerazelCore/Sprites/SetupFaces.swift:380` | cannon p1 ≠ 0 (10 records: p1 -2,102); the rotating / path arms: FerazelCore/World/Movers/BackgroundSprite.swift:334 | 6C-BG3 |
+| 1485 | 0x5cd | Background | 20 | 16 | 16 | 1 | refused | `FerazelCore/Sprites/SetupFaces.swift:399` | mace modes [1]: modes 1–2 (programmed path) refused | 6A-BG1b |
+| 1485 | 0x5cd | Background | 22 | 38 | 29 | 1,2,10,12,13,14 | refused | `FerazelCore/Sprites/SetupFaces.swift:399` | mace modes [1, 2, 10, 12, 13, 14]: modes 1–2 (programmed path) refused | 6A-BG1b |
+| 1485 | 0x5cd | Background | 40 | 17 | 17 | 1,2 | refused | `FerazelCore/Sprites/SetupFaces.swift:399` | mace modes [1, 2]: modes 1–2 (programmed path) refused | 6B-BG2 |
 <!-- /LL:old-types -->
 
 ---
@@ -468,7 +497,7 @@ new types mark, as positions in the original's two registration lists (§6).
 
 1. **Switches new vs 1–5:** 0x26c9 `waterSurfaceEffect` = 1 → 6A-L10…L22; 0x2716 `stripPict` = 265 → 6A-S8; 0x2718 `stripFactor` = 128 → 6A-S8; 0x271a `stripBaseY` = 222 → 6A-S8; 0x284a `music` = 4 → 6A-L10…L22. Nonzero but as on a built level: 0x2706=1. Wind overlay cells: 103 → 6A-WD.
 2. **New types:** 1091 Background ×1 — built; 1093 Background ×1 — built; 1094 Background ×1 — built; 1095 Background ×1 — built; 1096 Background ×2 — built; 1097 Background ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:380`; 1330 Bonus ×1 — built; 1407 Platform ×2 — built; 1440 Box ×2 — built; 1750 Walker ×8 — built; 1869 Bat ×3 — built; 2816 Box ×5 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2817 Box ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2837 Box ×3 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2846 Box ×2 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2847 Box ×2 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2861 Box ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 3020 Rope ×3 — built; 3080 Background ×2 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 3081 Background ×4 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 3082 Background ×4 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 3083 Background ×3 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 3217 Bonus ×1 — built.
-   Also refused here (types built on 1–5, records the port refuses): 1090 ×6 p1 0,101,103 — refused.
+   Also refused here (types built on 1–5, records the port refuses): 1090 ×6, 3 refused, p1 0,101,103 — refused.
 3. **Future-phase resources:** level cache [port: no]: PICT 2816, PICT 2817, PICT 2837, PICT 2846, PICT 2847; level cache [port: registered in CachedFaces]: PICT 1440, PICT 1750, PICT 1751, PICT 1752, PICT 1753, PICT 1754, PICT 1869, PICT 2841; level open [port: no (no level / screen opens it)]: Mlvl 10.
    Header-named, new vs 1–5 (generic loaders, never exercised): horizon strip PICT 265; PxBack tileset PICT 267; PxMid tileset PICT pair 268,269; FG (+FG water) tileset PICT 260; FG pattern tileset PICT 266; level CLUT 213; level+sprite CLUT 214; music track 4; chapter card PICT / clut 4620,282.
 4. **Conversations:** none. Chapter card 2 (PICT 4620, clut 282, `.ChapterScreen`).
@@ -493,7 +522,7 @@ new types mark, as positions in the original's two registration lists (§6).
 
 1. **Switches new vs 1–5:** 0x26c7 `omniPxMode` = 1 → 6A-RN; 0x26c9 `waterSurfaceEffect` = 1 → 6A-L10…L22; 0x270e `landingDamage` = 56 → 6A-L10…L22; 0x272c `sidePush` = -320 → 6A-RN; 0x284a `music` = 5 → 6A-L10…L22.
 2. **New types:** 1092 Background ×1, first L11 — refused `FerazelCore/Sprites/SetupFaces.swift:380`; 1150 Background ×9 — built; 1152 Background ×1 — built; 1153 Background ×2 — built; 1293 Bonus ×2 — built; 1750 Walker ×9, first L10 — built; 1770 Gremlin ×6 — built; 1870 Dillo ×7 — built; 2700 Background ×4 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2701 Background ×8 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2702 Background ×6 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2705 Background ×3 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2711 Background ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2808 Box ×2 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2852 Box ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 3084 Background ×4 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 3085 Background ×4 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 3086 Background ×2 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 3102 Bonus ×8 — built; 3219 Bonus ×3 — built; 3223 Bonus ×1 — built.
-   Also refused here (types built on 1–5, records the port refuses): 1090 ×3 p1 0,105 — refused.
+   Also refused here (types built on 1–5, records the port refuses): 1090 ×3, 2 refused, p1 0,105 — refused.
 3. **Future-phase resources:** level cache [port: no]: PICT 2808; level cache [port: registered in CachedFaces]: PICT 1750, PICT 1751, PICT 1752, PICT 1753, PICT 1754, PICT 1770, PICT 1771, PICT 1772, PICT 1870, PICT 1871, PICT 1872, PICT 1873, PICT 2841; level open [port: no (no level / screen opens it)]: Mlvl 15; level setup [port: named in code only]: PICT 6000, PICT 6001.
    Header-named, new vs 1–5 (generic loaders, never exercised): PxBack tileset PICT 267; PxMid tileset PICT pair 458,459; FG (+FG water) tileset PICT 260; BG tileset PICT 263; FG pattern tileset PICT 266; level CLUT 213; level+sprite CLUT 214; music track 5.
 4. **Conversations:** none.
@@ -517,8 +546,8 @@ new types mark, as positions in the original's two registration lists (§6).
 333 active records, 26 types, 17 not placed on levels 1–5 (10 first placed here).
 
 1. **Switches new vs 1–5:** 0x284a `music` = 15 → 6A-L10…L22. Wind overlay cells: 2899 → 6A-WD.
-2. **New types:** 1092 Background ×3, first L11 — refused `FerazelCore/Sprites/SetupFaces.swift:380`; 1094 Background ×1, first L10 — built; 1096 Background ×2, first L10 — built; 1290 Bonus ×5 — built; 1291 Bonus ×6 — built; 1293 Bonus ×3, first L15 — built; 1480 Background ×4 — built; 1770 Gremlin ×6, first L15 — built; 2890 Background ×44 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 2891 Background ×44 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 2892 Background ×32 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 2893 Background ×44 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 3050 Bonus ×1 — built; 3060 Background ×28 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 3102 Bonus ×2, first L15 — built; 3206 Bonus ×2 — built; 3219 Bonus ×3, first L15 — built.
-   Also refused here (types built on 1–5, records the port refuses): 1485 ×16 p1 1 — refused.
+2. **New types:** 1092 Background ×3, first L11 — refused (1 of 3) `FerazelCore/Sprites/SetupFaces.swift:380`; 1094 Background ×1, first L10 — built; 1096 Background ×2, first L10 — built; 1290 Bonus ×5 — built; 1291 Bonus ×6 — built; 1293 Bonus ×3, first L15 — built; 1480 Background ×4 — built; 1770 Gremlin ×6, first L15 — built; 2890 Background ×44 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 2891 Background ×44 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 2892 Background ×32 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 2893 Background ×44 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 3050 Bonus ×1 — built; 3060 Background ×28 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 3102 Bonus ×2, first L15 — built; 3206 Bonus ×2 — built; 3219 Bonus ×3, first L15 — built.
+   Also refused here (types built on 1–5, records the port refuses): 1485 ×16, 16 refused, p1 1 — refused.
 3. **Future-phase resources:** level cache [port: named in code only]: PICT 2890, PICT 2893, PICT 3060; level cache [port: no]: PICT 2891, PICT 2892; level cache [port: registered in CachedFaces]: PICT 1770, PICT 1771, PICT 1772; level open [port: no (no level / screen opens it)]: Mlvl 20.
    Header-named, new vs 1–5 (generic loaders, never exercised): PxBack tileset PICT 257; FG (+FG water) tileset PICT 250; BG tileset PICT 253; FG pattern tileset PICT 256; level CLUT 211; level+sprite CLUT 212; music track 15.
 4. **Conversations:** none.
@@ -534,7 +563,7 @@ new types mark, as positions in the original's two registration lists (§6).
 3. **Future-phase resources:** conversation open [port: no (no level / screen opens it)]: Mcnv 260, Mcnv 261, Mcnv 300; level cache [port: named in code only]: PICT 1490, PICT 1491, PICT 1492, PICT 1493, PICT 2827, PICT 2833, PICT 2834, PICT 2836, PICT 2921; level cache [port: no]: PICT 2831, PICT 2962; level cache [port: registered in CachedFaces]: PICT 1860, PICT 1869, PICT 2822; level open [port: no (no level / screen opens it)]: Mlvl 21.
    Header-named, new vs 1–5 (generic loaders, never exercised): PxBack tileset PICT 257; PxMid tileset PICT pair 258,259; level CLUT 211; level+sprite CLUT 212; music track 9.
 4. **Conversations:** 261 (rec 89, type 2834, flag 1; cond —, act —); 260 (rec 207, type 2833, flag 1; cond —, act —); 300 (rec 318, type 2962, flag 1; cond [5], act —) — every opcode handled by the port's interpreter.
-5. **Owners (types first placed here; switches above):** 6A-BX1a ×5, 6A-BX1b ×3, 6A-L10…L22 ×3, 6A-L21 ×4; the level itself: 6A-L10…L22.
+5. **Owners (types first placed here; switches above):** 6A-BX1a ×5, 6A-BX1b ×3, 6A-L10…L22 ×3, 6A-L10…L22 (level 21 pipe wiring) ×4; the level itself: 6A-L10…L22.
 6. **Cache records its new types mark (list #, by the MARKED_BY rule):** set #28 1840, set #44 1740 (by 1742), set #45 1860, set #46 1869, single #6 1490, single #7 1491, single #8 1492, single #9 1493, single #32 2827, single #36 2831, single #38 2833, single #39 2834, single #41 2836, single #67 2962, single #81 2850, single #118 2921, single #128 1842 (by 1843), single #129 1843, single #158 1487.
 
 ### Level 22 — The Labyrinth
@@ -543,7 +572,7 @@ new types mark, as positions in the original's two registration lists (§6).
 
 1. **Switches new vs 1–5:** 0x2706 `darknessEnable` = 2 → 6A-L10…L22; 0x284a `music` = 8 → 6A-L10…L22.
 2. **New types:** 1060 Box ×8 — refused `FerazelCore/Sprites/SetupFaces.swift:512`; 1080 Box ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:512`; 1091 Background ×1, first L10 — built; 1094 Background ×3, first L10 — built; 1096 Background ×4, first L10 — built; 1291 Bonus ×2, first L20 — built; 1293 Bonus ×3, first L15 — built; 1337 Bonus ×2 — built; 1338 Bonus ×1 — built; 1480 Background ×2, first L20 — built; 1732 Blob ×3 — built; 1750 Walker ×2, first L10 — built; 1840 Background ×13, first L11 — built; 1851 Bat ×2, first L11 — built; 1870 Dillo ×12, first L15 — built; 1871 Dillo ×1 — built; 1900 Background ×10 — built; 1901 Background ×15 — built; 1902 Background ×5 — built; 1903 Background ×3 — built; 2956 Box ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 3060 Background ×13, first L20 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 3091 Box ×14 — built; 3206 Bonus ×1, first L20 — built; 3219 Bonus ×4, first L15 — built; 3223 Bonus ×1, first L15 — built.
-   Also refused here (types built on 1–5, records the port refuses): 1485 ×38 p1 1,2,10,12,13,14 — refused.
+   Also refused here (types built on 1–5, records the port refuses): 1485 ×38, 29 refused, p1 1,2,10,12,13,14 — refused.
 3. **Future-phase resources:** conversation open [port: no (no level / screen opens it)]: Mcnv 221; level cache [port: named in code only]: PICT 3060; level cache [port: no]: PICT 2956; level cache [port: registered in CachedFaces]: PICT 1750, PICT 1751, PICT 1752, PICT 1753, PICT 1754, PICT 1850, PICT 1851, PICT 1870, PICT 1871, PICT 1872, PICT 1873, PICT 1900, PICT 1902, PICT 1903, PICT 2841; level open [port: no (no level / screen opens it)]: Mlvl 22.
    Header-named, new vs 1–5 (generic loaders, never exercised): PxBack tileset PICT 377; PxMid tileset PICT pair 378,379; FG (+FG water) tileset PICT 370; BG tileset PICT 253; FG pattern tileset PICT 376; level CLUT 245; level+sprite CLUT 246; music track 8; chapter card PICT / clut 4650,285.
 4. **Conversations:** 221 (rec 405, type 2956, flag 1; cond [5], act [5, 9, 10]) — every opcode handled by the port's interpreter. Chapter card 5 (PICT 4650, clut 285, `.ChapterScreen`).
@@ -579,7 +608,7 @@ new types mark, as positions in the original's two registration lists (§6).
 319 active records, 45 types, 26 not placed on levels 1–5 (5 first placed here).
 
 1. **Switches new vs 1–5:** 0x26cd `inLiquid` = 1 → 6B-ICE; 0x2710 `iceSlipperiness` = 220 → 6B-ICE; 0x2714 `waterCurrent` = 768 → 6B-L25…L52; 0x284a `music` = 12 → 6B-L25…L52. Nonzero but as on a built level: 0x2706=1.
-2. **New types:** 1060 Box ×4, first L22 — refused `FerazelCore/Sprites/SetupFaces.swift:512`; 1092 Background ×2, first L11 — built; 1096 Background ×3, first L10 — built; 1150 Background ×3, first L15 — built; 1151 Background ×2 — built; 1290 Bonus ×5, first L20 — built; 1291 Bonus ×6, first L20 — built; 1293 Bonus ×3, first L15 — built; 1337 Bonus ×1, first L22 — built; 1338 Bonus ×1, first L22 — built; 1404 Platform ×11, first L30 — built; 1486 Background ×10, first L30 — refused `FerazelCore/Sprites/SetupFaces.swift:399`; 1731 Blob ×1, first L30 — built; 1750 Walker ×7, first L10 — built; 1840 Background ×24, first L11 — built; 1843 Background ×3, first L11 — built; 1851 Bat ×3, first L11 — built; 1900 Background ×1, first L22 — built; 1901 Background ×4, first L22 — built; 1903 Background ×2, first L22 — built; 2854 Box ×10 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2923 Box ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2941 Box ×5, first L30 — built; 2965 Box ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 3070 Box ×3 — refused `FerazelCore/Sprites/SetupFaces.swift:512`; 3219 Bonus ×2, first L15 — built.
+2. **New types:** 1060 Box ×4, first L22 — refused `FerazelCore/Sprites/SetupFaces.swift:512`; 1092 Background ×2, first L11 — built; 1096 Background ×3, first L10 — built; 1150 Background ×3, first L15 — built; 1151 Background ×2 — built; 1290 Bonus ×5, first L20 — built; 1291 Bonus ×6, first L20 — built; 1293 Bonus ×3, first L15 — built; 1337 Bonus ×1, first L22 — built; 1338 Bonus ×1, first L22 — built; 1404 Platform ×11, first L30 — built; 1486 Background ×10, first L30 — refused (4 of 10) `FerazelCore/Sprites/SetupFaces.swift:399`; 1731 Blob ×1, first L30 — built; 1750 Walker ×7, first L10 — built; 1840 Background ×24, first L11 — built; 1843 Background ×3, first L11 — built; 1851 Bat ×3, first L11 — built; 1900 Background ×1, first L22 — built; 1901 Background ×4, first L22 — built; 1903 Background ×2, first L22 — built; 2854 Box ×10 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2923 Box ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2941 Box ×5, first L30 — built; 2965 Box ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 3070 Box ×3 — refused `FerazelCore/Sprites/SetupFaces.swift:512`; 3219 Bonus ×2, first L15 — built.
 3. **Future-phase resources:** conversation open [port: no (no level / screen opens it)]: Mcnv 211; level cache [port: named in code only]: PICT 2923, PICT 3070; level cache [port: no]: PICT 2965; level cache [port: registered in CachedFaces]: PICT 1750, PICT 1751, PICT 1752, PICT 1753, PICT 1754, PICT 1850, PICT 1851, PICT 1900, PICT 1903; level open [port: no (no level / screen opens it)]: Mlvl 31.
    Header-named, new vs 1–5 (generic loaders, never exercised): PxBack tileset PICT 287; PxMid tileset PICT pair 288,289; FG (+FG water) tileset PICT 280; BG tileset PICT 283; FG pattern tileset PICT 286; level CLUT 217; level+sprite CLUT 218; music track 12.
 4. **Conversations:** 211 (rec 304, type 2965, flag 1; cond [1, 4], act [1, 2, 3, 4]) — every opcode handled by the port's interpreter.
@@ -591,13 +620,13 @@ new types mark, as positions in the original's two registration lists (§6).
 234 active records, 33 types, 17 not placed on levels 1–5 (3 first placed here).
 
 1. **Switches new vs 1–5:** 0x2716 `stripPict` = 315 → 6A-S8; 0x2718 `stripFactor` = 128 → 6A-S8; 0x271a `stripBaseY` = 48 → 6A-S8; 0x284a `music` = 15 → 6B-L25…L52. Nonzero but as on a built level: 0x26c8=1.
-2. **New types:** 1061 Box ×9, first L21 — refused `FerazelCore/Sprites/SetupFaces.swift:512`; 1091 Background ×7, first L10 — built; 1092 Background ×5, first L11 — refused `FerazelCore/Sprites/SetupFaces.swift:380`; 1093 Background ×1, first L10 — refused `FerazelCore/Sprites/SetupFaces.swift:380`; 1094 Background ×5, first L10 — refused `FerazelCore/Sprites/SetupFaces.swift:380`; 1095 Background ×3, first L10 — refused `FerazelCore/Sprites/SetupFaces.swift:380`; 1096 Background ×10, first L10 — refused `FerazelCore/Sprites/SetupFaces.swift:380`; 1150 Background ×3, first L15 — built; 1208 Background ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 1291 Bonus ×8, first L20 — built; 1293 Bonus ×1, first L15 — built; 1337 Bonus ×2, first L22 — built; 1732 Blob ×2, first L22 — built; 1840 Background ×11, first L11 — built; 1843 Background ×12, first L11 — built; 2907 Box ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2953 Box ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:715`.
-   Also refused here (types built on 1–5, records the port refuses): 1090 ×38 p1 -2,-1,0,103 — refused; 1485 ×17 p1 1,2 — refused.
+2. **New types:** 1061 Box ×9, first L21 — refused `FerazelCore/Sprites/SetupFaces.swift:512`; 1091 Background ×7, first L10 — built; 1092 Background ×5, first L11 — refused (2 of 5) `FerazelCore/Sprites/SetupFaces.swift:380`; 1093 Background ×1, first L10 — refused `FerazelCore/Sprites/SetupFaces.swift:380`; 1094 Background ×5, first L10 — refused (4 of 5) `FerazelCore/Sprites/SetupFaces.swift:380`; 1095 Background ×3, first L10 — refused (2 of 3) `FerazelCore/Sprites/SetupFaces.swift:380`; 1096 Background ×10, first L10 — refused (6 of 10) `FerazelCore/Sprites/SetupFaces.swift:380`; 1150 Background ×3, first L15 — built; 1208 Background ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 1291 Bonus ×8, first L20 — built; 1293 Bonus ×1, first L15 — built; 1337 Bonus ×2, first L22 — built; 1732 Blob ×2, first L22 — built; 1840 Background ×11, first L11 — built; 1843 Background ×12, first L11 — built; 2907 Box ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2953 Box ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:715`.
+   Also refused here (types built on 1–5, records the port refuses): 1090 ×38, 26 refused, p1 -2,-1,0,103 — refused; 1485 ×17, 17 refused, p1 1,2 — refused.
 3. **Future-phase resources:** conversation open [port: no (no level / screen opens it)]: Mcnv 208; level cache [port: named in code only]: PICT 1208; level cache [port: no]: PICT 2953; level open [port: no (no level / screen opens it)]: Mlvl 40.
    Header-named, new vs 1–5 (generic loaders, never exercised): horizon strip PICT 315; PxBack tileset PICT 317; PxMid tileset PICT pair 318,319; FG (+FG water) tileset PICT 310; BG tileset PICT 313; FG pattern tileset PICT 316; level CLUT 227; level+sprite CLUT 228; music track 15; chapter card PICT / clut 4630,283.
 4. **Conversations:** 208 (rec 1, type 2953, flag 1; cond [5], act [5]) — every opcode handled by the port's interpreter. Chapter card 3 (PICT 4630, clut 283, `.ChapterScreen`).
 5. **Owners (types first placed here; switches above):** 6B-BG2 ×1, 6B-BX2 ×1, 6B-TM ×1; the level itself: 6B-L25…L52.
-6. **Cache records its new types mark (list #, by the MARKED_BY rule):** set #28 1840, set #29 1090 (by 1091,1092,1093,1094,1095,1096), set #30 1150, set #33 1208, set #49 1730 (by 1732), single #58 2953, single #128 1842 (by 1843), single #129 1843.
+6. **Cache records its new types mark (list #, by the MARKED_BY rule):** set #28 1840, set #29 1090 (by 1091,1092,1093,1094,1095,1096), set #30 1150, set #33 1208, set #34 1209 (by 1208), set #49 1730 (by 1732), single #58 2953, single #128 1842 (by 1843), single #129 1843.
 
 ### Level 45 — The Dig
 
@@ -617,32 +646,32 @@ new types mark, as positions in the original's two registration lists (§6).
 
 1. **Switches new vs 1–5:** 0x2730 `clutAnimMode` = 1 → 6B-CA; 0x2732 `clutAnimCount` = 48 → 6B-CA; 0x2734 `clutAnimPeriod` = 180 → 6B-CA; 0x2736 `clutAnimAmplitude` = 12000 → 6B-CA; 0x284a `music` = 18 → 6B-L25…L52.
 2. **New types:** 1072 Box ×1 — built; 1092 Background ×1, first L11 — built; 1097 Background ×1, first L10 — built; 1150 Background ×8, first L15 — built; 1151 Background ×4, first L31 — built; 1153 Background ×1, first L15 — built; 1208 Background ×43, first L40 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 1333 Bonus ×1 — built; 1405 Platform ×1 — built; 1442 Box ×9 — built; 1482 Background ×3 — built; 1732 Blob ×3, first L22 — built; 1770 Gremlin ×20, first L15 — built; 1810 Salamander ×10 — built; 1840 Background ×4, first L11 — built; 1843 Background ×1, first L11 — built; 2808 Box ×1, first L15 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2857 Box ×1, first L11 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2867 Box ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 3020 Rope ×2, first L10 — built; 3108 Bonus ×12 — built; 3219 Bonus ×8, first L15 — built; 3223 Bonus ×2, first L15 — built.
-   Also refused here (types built on 1–5, records the port refuses): 1090 ×3 p1 0,101 — refused.
+   Also refused here (types built on 1–5, records the port refuses): 1090 ×3, 1 refused, p1 0,101 — refused.
 3. **Future-phase resources:** level cache [port: named in code only]: PICT 1208; level cache [port: no]: PICT 2808; level cache [port: registered in CachedFaces]: PICT 1442, PICT 1770, PICT 1771, PICT 1772, PICT 1810; level open [port: no (no level / screen opens it)]: Mlvl 50.
    Header-named, new vs 1–5 (generic loaders, never exercised): PxBack tileset PICT 297; PxMid tileset PICT pair 298,299; FG (+FG water) tileset PICT 290; BG tileset PICT 293; FG pattern tileset PICT 296; level CLUT 219; level+sprite CLUT 220; music track 18; chapter card PICT / clut 4640,284.
 4. **Conversations:** none. Chapter card 4 (PICT 4640, clut 284, `.ChapterScreen`).
 5. **Owners (types first placed here; switches above):** 6B-BX2 ×1, 6B-L25…L52 ×7; the level itself: 6B-L25…L52.
-6. **Cache records its new types mark (list #, by the MARKED_BY rule):** set #24 1440 (by 1442), set #25 1441 (by 1442), set #26 1442, set #28 1840, set #29 1090 (by 1092,1097), set #30 1150, set #31 1151, set #32 1152 (by 1153), set #33 1208, set #49 1730 (by 1732), set #89 1770, set #90 1771 (by 1770), set #91 1772 (by 1770), set #92 1810, single #13 2808, single #88 2857, single #98 2867, single #128 1842 (by 1843), single #129 1843, single #153 1482.
+6. **Cache records its new types mark (list #, by the MARKED_BY rule):** set #24 1440 (by 1442), set #25 1441 (by 1442), set #26 1442, set #28 1840, set #29 1090 (by 1092,1097), set #30 1150, set #31 1151, set #32 1152 (by 1153), set #33 1208, set #34 1209 (by 1208), set #49 1730 (by 1732), set #89 1770, set #90 1771 (by 1770), set #91 1772 (by 1770), set #92 1810, single #13 2808, single #88 2857, single #98 2867, single #128 1842 (by 1843), single #129 1843, single #153 1482.
 
 ### Level 51 — If You Can’t Stand The Heat…
 
 326 active records, 41 types, 19 not placed on levels 1–5 (1 first placed here).
 
 1. **Switches new vs 1–5:** 0x2726 `autoScrollX` = 768 → 6B-AS; 0x272a `autoScrollEnable` = 1 → 6B-AS; 0x2730 `clutAnimMode` = 1 → 6B-CA; 0x2732 `clutAnimCount` = 48 → 6B-CA; 0x2734 `clutAnimPeriod` = 56 → 6B-CA; 0x2736 `clutAnimAmplitude` = 12000 → 6B-CA; 0x284a `music` = 16 → 6B-L25…L52.
-2. **New types:** 1091 Background ×1, first L10 — built; 1092 Background ×4, first L11 — refused `FerazelCore/Sprites/SetupFaces.swift:380`; 1095 Background ×1, first L10 — built; 1097 Background ×1, first L10 — built; 1208 Background ×3, first L40 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 1290 Bonus ×3, first L20 — built; 1291 Bonus ×6, first L20 — built; 1293 Bonus ×2, first L15 — built; 1333 Bonus ×1, first L50 — built; 1442 Box ×16, first L50 — built; 1732 Blob ×3, first L22 — built; 1770 Gremlin ×17, first L15 — built; 1810 Salamander ×12, first L50 — built; 1840 Background ×1, first L11 — built; 2839 Box ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 3020 Rope ×10, first L10 — built; 3217 Bonus ×1, first L10 — built; 3219 Bonus ×3, first L15 — built; 3223 Bonus ×1, first L15 — built.
+2. **New types:** 1091 Background ×1, first L10 — built; 1092 Background ×4, first L11 — refused (1 of 4) `FerazelCore/Sprites/SetupFaces.swift:380`; 1095 Background ×1, first L10 — built; 1097 Background ×1, first L10 — built; 1208 Background ×3, first L40 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 1290 Bonus ×3, first L20 — built; 1291 Bonus ×6, first L20 — built; 1293 Bonus ×2, first L15 — built; 1333 Bonus ×1, first L50 — built; 1442 Box ×16, first L50 — built; 1732 Blob ×3, first L22 — built; 1770 Gremlin ×17, first L15 — built; 1810 Salamander ×12, first L50 — built; 1840 Background ×1, first L11 — built; 2839 Box ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 3020 Rope ×10, first L10 — built; 3217 Bonus ×1, first L10 — built; 3219 Bonus ×3, first L15 — built; 3223 Bonus ×1, first L15 — built.
 3. **Future-phase resources:** level cache [port: named in code only]: PICT 1208; level cache [port: no]: PICT 2839; level cache [port: registered in CachedFaces]: PICT 1442, PICT 1770, PICT 1771, PICT 1772, PICT 1810; level open [port: no (no level / screen opens it)]: Mlvl 51.
    Header-named, new vs 1–5 (generic loaders, never exercised): PxBack tileset PICT 297; PxMid tileset PICT pair 298,299; FG (+FG water) tileset PICT 290; BG tileset PICT 293; FG pattern tileset PICT 296; level CLUT 219; level+sprite CLUT 220; music track 16.
 4. **Conversations:** none.
 5. **Owners (types first placed here; switches above):** 6B-BX2 ×1; the level itself: 6B-L25…L52.
-6. **Cache records its new types mark (list #, by the MARKED_BY rule):** set #24 1440 (by 1442), set #25 1441 (by 1442), set #26 1442, set #28 1840, set #29 1090 (by 1091,1092,1095,1097), set #33 1208, set #49 1730 (by 1732), set #89 1770, set #90 1771 (by 1770), set #91 1772 (by 1770), set #92 1810, single #44 2839.
+6. **Cache records its new types mark (list #, by the MARKED_BY rule):** set #24 1440 (by 1442), set #25 1441 (by 1442), set #26 1442, set #28 1840, set #29 1090 (by 1091,1092,1095,1097), set #33 1208, set #34 1209 (by 1208), set #49 1730 (by 1732), set #89 1770, set #90 1771 (by 1770), set #91 1772 (by 1770), set #92 1810, single #44 2839.
 
 ### Level 52 — Out of the Frying Pan
 
 291 active records, 35 types, 17 not placed on levels 1–5 (1 first placed here).
 
 1. **Switches new vs 1–5:** 0x2722 `flameMode` = 1 → 6B-FI; 0x2728 `autoScrollY` = 640 → 6B-AS; 0x272a `autoScrollEnable` = 1 → 6B-AS; 0x284a `music` = 17 → 6B-L25…L52.
-2. **New types:** 1091 Background ×1, first L10 — refused `FerazelCore/Sprites/SetupFaces.swift:380`; 1092 Background ×3, first L11 — built; 1094 Background ×8, first L10 — refused `FerazelCore/Sprites/SetupFaces.swift:380`; 1096 Background ×1, first L10 — built; 1097 Background ×1, first L10 — built; 1290 Bonus ×1, first L20 — built; 1291 Bonus ×3, first L20 — built; 1293 Bonus ×5, first L15 — built; 1336 Bonus ×1 — built; 1337 Bonus ×2, first L22 — built; 1732 Blob ×2, first L22 — built; 1742 Bat ×1, first L21 — built; 1770 Gremlin ×1, first L15 — built; 3020 Rope ×1, first L10 — built; 3206 Bonus ×1, first L20 — built; 3219 Bonus ×1, first L15 — built; 3223 Bonus ×1, first L15 — built.
-   Also refused here (types built on 1–5, records the port refuses): 1090 ×3 p1 0,103 — refused.
+2. **New types:** 1091 Background ×1, first L10 — refused `FerazelCore/Sprites/SetupFaces.swift:380`; 1092 Background ×3, first L11 — built; 1094 Background ×8, first L10 — refused (4 of 8) `FerazelCore/Sprites/SetupFaces.swift:380`; 1096 Background ×1, first L10 — built; 1097 Background ×1, first L10 — built; 1290 Bonus ×1, first L20 — built; 1291 Bonus ×3, first L20 — built; 1293 Bonus ×5, first L15 — built; 1336 Bonus ×1 — built; 1337 Bonus ×2, first L22 — built; 1732 Blob ×2, first L22 — built; 1742 Bat ×1, first L21 — built; 1770 Gremlin ×1, first L15 — built; 3020 Rope ×1, first L10 — built; 3206 Bonus ×1, first L20 — built; 3219 Bonus ×1, first L15 — built; 3223 Bonus ×1, first L15 — built.
+   Also refused here (types built on 1–5, records the port refuses): 1090 ×3, 2 refused, p1 0,103 — refused.
 3. **Future-phase resources:** boot [port: no]: PICT 198; boot [port: no (no level / screen opens it)]: clut 198, clut 198; level cache [port: registered in CachedFaces]: PICT 1770, PICT 1771, PICT 1772; level open [port: no (no level / screen opens it)]: Mlvl 52.
    Header-named, new vs 1–5 (generic loaders, never exercised): PxBack tileset PICT 297; PxMid tileset PICT pair 298,299; FG (+FG water) tileset PICT 290; BG tileset PICT 293; FG pattern tileset PICT 296; level CLUT 221; level+sprite CLUT 222; music track 17.
 4. **Conversations:** none.
@@ -666,13 +695,13 @@ new types mark, as positions in the original's two registration lists (§6).
 312 active records, 52 types, 36 not placed on levels 1–5 (11 first placed here).
 
 1. **Switches new vs 1–5:** 0x26c9 `waterSurfaceEffect` = 1 → 6C-L55…L70; 0x26cc `pxUsesLevelBaseClut` = 1 → 6C-L55…L70; 0x270e `landingDamage` = 100 → 6C-L55…L70; 0x2716 `stripPict` = 345 → 6A-S8; 0x2718 `stripFactor` = 128 → 6A-S8; 0x271a `stripBaseY` = 116 → 6A-S8; 0x284a `music` = 22 → 6C-L55…L70.
-2. **New types:** 1094 Background ×5, first L10 — built; 1095 Background ×1, first L10 — built; 1096 Background ×7, first L10 — refused `FerazelCore/Sprites/SetupFaces.swift:380`; 1097 Background ×1, first L10 — refused `FerazelCore/Sprites/SetupFaces.swift:380`; 1150 Background ×6, first L15 — built; 1151 Background ×5, first L31 — built; 1152 Background ×6, first L15 — built; 1153 Background ×6, first L15 — built; 1208 Background ×38, first L40 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 1290 Bonus ×3, first L20 — built; 1291 Bonus ×6, first L20 — built; 1293 Bonus ×1, first L15 — built; 1337 Bonus ×1, first L22 — built; 1405 Platform ×5, first L50 — built; 1475 Box ×1, first L45 — refused `FerazelCore/Sprites/SetupFaces.swift:512`; 1488 Background ×30 — refused `FerazelCore/Sprites/SetupFaces.swift:399`; 1750 Walker ×8, first L10 — built; 1780 Floater ×7 — built; 1840 Background ×12, first L11 — built; 1892 Crab ×3 — built; 1900 Background ×1, first L22 — built; 1901 Background ×1, first L22 — built; 1903 Background ×3, first L22 — built; 2809 Box ×3 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2811 Box ×5 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2838 Box ×3 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2839 Box ×3, first L51 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2856 Box ×2 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2901 Background ×4 — built; 2941 Box ×3, first L30 — built; 2957 Box ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 3060 Background ×9, first L20 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 3101 Bonus ×9 — built; 3103 Bonus ×4 — built; 3219 Bonus ×1, first L15 — built; 3223 Bonus ×3, first L15 — built.
-   Also refused here (types built on 1–5, records the port refuses): 1090 ×12 p1 -2,0,102 — refused.
+2. **New types:** 1094 Background ×5, first L10 — built; 1095 Background ×1, first L10 — built; 1096 Background ×7, first L10 — refused (5 of 7) `FerazelCore/Sprites/SetupFaces.swift:380`; 1097 Background ×1, first L10 — refused `FerazelCore/Sprites/SetupFaces.swift:380`; 1150 Background ×6, first L15 — built; 1151 Background ×5, first L31 — built; 1152 Background ×6, first L15 — built; 1153 Background ×6, first L15 — built; 1208 Background ×38, first L40 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 1290 Bonus ×3, first L20 — built; 1291 Bonus ×6, first L20 — built; 1293 Bonus ×1, first L15 — built; 1337 Bonus ×1, first L22 — built; 1405 Platform ×5, first L50 — built; 1475 Box ×1, first L45 — refused `FerazelCore/Sprites/SetupFaces.swift:512`; 1488 Background ×30 — refused (28 of 30) `FerazelCore/Sprites/SetupFaces.swift:399`; 1750 Walker ×8, first L10 — built; 1780 Floater ×7 — built; 1840 Background ×12, first L11 — built; 1892 Crab ×3 — built; 1900 Background ×1, first L22 — built; 1901 Background ×1, first L22 — built; 1903 Background ×3, first L22 — built; 2809 Box ×3 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2811 Box ×5 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2838 Box ×3 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2839 Box ×3, first L51 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2856 Box ×2 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2901 Background ×4 — built; 2941 Box ×3, first L30 — built; 2957 Box ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 3060 Background ×9, first L20 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 3101 Bonus ×9 — built; 3103 Bonus ×4 — built; 3219 Bonus ×1, first L15 — built; 3223 Bonus ×3, first L15 — built.
+   Also refused here (types built on 1–5, records the port refuses): 1090 ×12, 10 refused, p1 -2,0,102 — refused.
 3. **Future-phase resources:** conversation open [port: no (no level / screen opens it)]: Mcnv 209; level cache [port: named in code only]: PICT 1208, PICT 2957, PICT 3060; level cache [port: no]: PICT 2809, PICT 2811, PICT 2838, PICT 2839; level cache [port: registered in CachedFaces]: PICT 1750, PICT 1751, PICT 1752, PICT 1753, PICT 1754, PICT 1780, PICT 1890, PICT 1895, PICT 1900, PICT 1903, PICT 2840; level open [port: no (no level / screen opens it)]: Mlvl 62.
    Header-named, new vs 1–5 (generic loaders, never exercised): horizon strip PICT 345; PxBack tileset PICT 347; PxMid tileset PICT pair 348,349; FG (+FG water) tileset PICT 340; BG tileset PICT 263; FG pattern tileset PICT 346; level CLUT 239; level+sprite CLUT 240; music track 22; chapter card PICT / clut 4670,287.
 4. **Conversations:** 209 (rec 1, type 2957, flag 1; cond [2, 5], act [3, 5, 6]) — every opcode handled by the port's interpreter. Chapter card 7 (PICT 4670, clut 287, `.ChapterScreen`).
 5. **Owners (types first placed here; switches above):** 6C-BG3 ×1, 6C-BX3 ×5, 6C-L55…L70 ×5; the level itself: 6C-L55…L70.
-6. **Cache records its new types mark (list #, by the MARKED_BY rule):** set #15 1751 (by 1750), set #16 1752 (by 1750), set #17 1753 (by 1750), set #18 1754 (by 1750), set #28 1840, set #29 1090 (by 1094,1095,1096,1097), set #30 1150, set #31 1151, set #32 1152 (by 1152,1153), set #33 1208, set #37 1900 (by 1900,1901), set #39 1903, set #50 1890 (by 1892), set #85 1780, single #2 1750, single #14 2809, single #16 2811, single #43 2838, single #44 2839, single #62 2957, single #87 2856, single #127 2901, single #136 3060, single #159 1488, single #191 1895 (by 1892).
+6. **Cache records its new types mark (list #, by the MARKED_BY rule):** set #15 1751 (by 1750), set #16 1752 (by 1750), set #17 1753 (by 1750), set #18 1754 (by 1750), set #28 1840, set #29 1090 (by 1094,1095,1096,1097), set #30 1150, set #31 1151, set #32 1152 (by 1152,1153), set #33 1208, set #34 1209 (by 1208), set #37 1900 (by 1900,1901), set #39 1903, set #50 1890 (by 1892), set #85 1780, single #2 1750, single #14 2809, single #16 2811, single #43 2838, single #44 2839, single #62 2957, single #87 2856, single #127 2901, single #136 3060, single #159 1488, single #191 1895 (by 1892).
 
 ### Level 67 — Xichra’s Lair
 
@@ -684,13 +713,13 @@ new types mark, as positions in the original's two registration lists (§6).
    Header-named, new vs 1–5 (generic loaders, never exercised): horizon strip PICT 385; PxBack tileset PICT 387; FG (+FG water) tileset PICT 380; BG tileset PICT 380; level CLUT 247; level+sprite CLUT 248; music track 28.
 4. **Conversations:** 250 (rec 5, type 1990, flag code; cond —, act —); 251 (rec 5, type 1990, flag code; cond —, act —); 252 (rec 5, type 1990, flag code; cond —, act —) — every opcode handled by the port's interpreter.
 5. **Owners (types first placed here; switches above):** 6C-XI ×1; the level itself: 6C-L55…L70.
-6. **Cache records its new types mark (list #, by the MARKED_BY rule):** set #33 1208, set #40 1130 (by 1990), set #42 1130 (by 1990), set #43 1915 (by 1990), set #69 1980 (by 1990), set #70 1981 (by 1990), set #71 1982 (by 1990), set #72 1983 (by 1990), set #73 1984 (by 1990), set #74 1985 (by 1990), set #75 1986 (by 1990), set #76 1987 (by 1990), set #77 1970 (by 1990), set #78 1971 (by 1990), set #79 1972 (by 1990), set #80 1973 (by 1990), set #81 1974 (by 1990), set #82 1975 (by 1990), set #83 1976 (by 1990), set #84 1977 (by 1990).
+6. **Cache records its new types mark (list #, by the MARKED_BY rule):** set #33 1208, set #34 1209 (by 1208), set #40 1130 (by 1990), set #42 1130 (by 1990), set #43 1915 (by 1990), set #69 1980 (by 1990), set #70 1981 (by 1990), set #71 1982 (by 1990), set #72 1983 (by 1990), set #73 1984 (by 1990), set #74 1985 (by 1990), set #75 1986 (by 1990), set #76 1987 (by 1990), set #77 1970 (by 1990), set #78 1971 (by 1990), set #79 1972 (by 1990), set #80 1973 (by 1990), set #81 1974 (by 1990), set #82 1975 (by 1990), set #83 1976 (by 1990), set #84 1977 (by 1990).
 
 ### Level 70 — Purple Haze
 
 133 active records, 20 types, 15 not placed on levels 1–5 (7 first placed here).
 
-1. **Switches new vs 1–5:** 0x26c7 `omniPxMode` = 6 → 6C-L70 (interlace); 0x26c9 `waterSurfaceEffect` = 1 → 6C-L55…L70; 0x26cc `pxUsesLevelBaseClut` = 1 → 6C-L55…L70; 0x270e `landingDamage` = 100 → 6C-L55…L70; 0x284a `music` = 26 → 6C-L55…L70.
+1. **Switches new vs 1–5:** 0x26c7 `omniPxMode` = 6 → 6C-L55…L70 (its ⚑ part: the mode-6 interlace); 0x26c9 `waterSurfaceEffect` = 1 → 6C-L55…L70; 0x26cc `pxUsesLevelBaseClut` = 1 → 6C-L55…L70; 0x270e `landingDamage` = 100 → 6C-L55…L70; 0x284a `music` = 26 → 6C-L55…L70.
 2. **New types:** 1293 Bonus ×9, first L15 — built; 1338 Bonus ×2, first L22 — built; 1405 Platform ×3, first L50 — built; 2828 Box ×2 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2830 Box ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2831 Box ×3, first L11 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2906 Box ×4 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2956 Box ×1, first L22 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2957 Box ×1, first L62 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2963 Box ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2964 Box ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 3021 Rope ×5 — built; 3107 Bonus ×2 — built; 3219 Bonus ×5, first L15 — built; 3223 Bonus ×1, first L15 — built.
 3. **Future-phase resources:** conversation open [port: no (no level / screen opens it)]: Mcnv 202, Mcnv 212, Mcnv 213, Mcnv 214, Mcnv 280, Mcnv 281, Mcnv 282, Mcnv 283, Mcnv 401; level cache [port: named in code only]: PICT 2957; level cache [port: no]: PICT 2828, PICT 2830, PICT 2831, PICT 2956, PICT 2963, PICT 2964; level cache [port: registered in CachedFaces]: PICT 2829; level open [port: no (no level / screen opens it)]: Mlvl 70.
    Header-named, new vs 1–5 (generic loaders, never exercised): PxBack tileset PICT 357; PxMid tileset PICT pair 348,349; FG (+FG water) tileset PICT 340; BG tileset PICT 263; FG pattern tileset PICT 346; level CLUT 241; level+sprite CLUT 242; music track 26.
@@ -911,6 +940,8 @@ defaults (false / nothing), which is what the original does (§3.4). Result: eve
 | 70 | 283 | jason plaque | rec 71 / 2906 / 1 | — | — | 4001, 4025 | every opcode handled |
 | 70 | 401 | Ben conv | rec 72 / 2964 / 1 | — | — | 4001, 4009 | every opcode handled |
 | 70 | 214 | AH conv | rec 88 / 2957 / 1 | — | — | 4001, 4015 | every opcode handled |
+
+Checked, every `Mcnv` in the world file (29, placed or not): conditions used [1, 2, 3, 4, 5], actions used [1, 2, 3, 4, 5, 6, 9, 10]; outside the port's handled sets (conditions [1, 2, 4, 5], actions [1, 2, 3, 4, 5, 6, 9, 10]) and the original's no-ops (condition 3, actions 0 / 7 / 8): none. Levels 10–22 use conditions [4, 5], actions [1, 2, 4, 5, 9, 10].
 <!-- /LL:convs -->
 
 ---
@@ -929,15 +960,19 @@ stepping the load bar by each record's face count (sets) or 1 (singles) — so o
 
 The table is the whole registration, unrolled (loops `for (v = 0; v < N; …)` around `v + BASE` expanded), with: the
 list position, geometry, flag, whether the data holds the PICT, the registering line, the record's global (the TOC slot
-the Setups mark through), whether the port's `CachedFaces` registers it today, and the mark sites a simple alias search
-finds (`+1 = 1` through the global or a local loaded from it within 12 lines — **heuristic: an empty cell is not proof
-that nothing marks it**; the Walker 0x6a4 and Roach 0x6b8 marks, M l. 56966 and 64931, go through aliases set further
-up and are missed). Two flag notes: the cannon set 0x442 is registered under a *conversion* CLUT switch (`*ff94 =
+the Setups mark through), whether the port's `CachedFaces` registers it today, and its mark sites, derived from every
+routine of the dump but the Inits and the cache routines: each `+1 = 1` store through the global, or through a local
+the same routine loaded from it (`v = GLOBAL;`, block-scoped — a reload inside a `{ … }` is forgotten when the block
+closes, so the Setups' top-of-function loads reach every type arm: the Walker 0x6a4 at M l. 56966, the Roach 0x6b8 at
+64931, the clouds from 62532, the passage 0xb55 at 62586, the spring 0x480 at 62199). Rows marked inside a class
+Setup by type index (one global, `type·0x10 + …`) say "indexed"; the two rows left as **"unknown (not derived)"** (the
+singles 0x73f / 0x740, whose Setup arm reads the face at M l. 62455 with no store found) are not a proof that nothing
+marks them. Two flag notes: the cannon set 0x442 is registered under a *conversion* CLUT switch (`*ff94 =
 *_DAT_100a001c`, M l. 61874–61876) that does not touch the cache flag — its flag is 0; the boss Inits set the flag to 1
 around their own calls only (M l. 75020/75026, 75582/75586, 76216/76233).
 
 <!-- LL:cache -->
-| # | list | PICT | faces (w×h, cols) | flag | in data | registered by (M l.) | record global | port CachedFaces | mark sites (heuristic, M l.) |
+| # | list | PICT | faces (w×h, cols) | flag | in data | registered by (M l.) | record global | port CachedFaces | mark sites (M l.) |
 |---:|---|---|---|---:|---|---|---|---|---|
 | 1 | set | 1050 (0x41a) | 6 (160×160, 3) | 0 | yes | .InitPlayerSprite 42486 | `_DAT_100a0778` | **no** | 52622 |
 | 2 | set | 1051 (0x41b) | 4 (160×160, 4) | 0 | yes | .InitPlayerSprite 42487 | `_DAT_100a0774` | **no** | 52623 |
@@ -946,20 +981,20 @@ around their own calls only (M l. 75020/75026, 75582/75586, 76216/76233).
 | 5 | set | 1710 (0x6ae) | 6 (64×44, 6) | 0 | yes | .InitCrawlerSprite 56142 | `_DAT_100a09a8` | yes | 56188 |
 | 6 | set | 1711 (0x6af) | 6 (64×44, 6) | 0 | yes | .InitCrawlerSprite 56143 | `_DAT_100a09a4` | yes | 56189 |
 | 7 | set | 1713 (0x6b1) | 6 (64×44, 6) | 0 | yes | .InitCrawlerSprite 56144 | `_DAT_100a09a0` | yes | 56190 |
-| 8 | set | 1720 (0x6b8) | 6 (100×54, 6) | 0 | yes | .InitRoachSprite 64893 | `_DAT_100a0b7c` | yes | — |
+| 8 | set | 1720 (0x6b8) | 6 (100×54, 6) | 0 | yes | .InitRoachSprite 64893 | `_DAT_100a0b7c` | yes | 64931 |
 | 9 | set | 1721 (0x6b9) | 6 (100×54, 6) | 0 | yes | .InitRoachSprite 64894 | `_DAT_100a0b78` | yes | 64932 |
-| 1 | single | 1700 (0x6a4) | 1 | 0 | yes | .InitWalkerSprite 56755 | `_DAT_100a09f0` | yes | — |
-| 2 | single | 1750 (0x6d6) | 1 | 0 | yes | .InitWalkerSprite 56756 | `_DAT_100a09ec` | yes | 76362 |
+| 1 | single | 1700 (0x6a4) | 1 | 0 | yes | .InitWalkerSprite 56755 | `_DAT_100a09f0` | yes | 56966 |
+| 2 | single | 1750 (0x6d6) | 1 | 0 | yes | .InitWalkerSprite 56756 | `_DAT_100a09ec` | yes | 56998, 76362 |
 | 10 | set | 1701 (0x6a5) | 8 (100×80, 4) | 0 | yes | .InitWalkerSprite 56757 | `_DAT_100a09e8` | yes | 56969 |
 | 11 | set | 1702 (0x6a6) | 6 (100×80, 6) | 0 | yes | .InitWalkerSprite 56758 | `_DAT_100a09e4` | yes | 56968 |
-| 12 | set | 1705 (0x6a9) | 3 (204×89, 1) | 0 | yes | .InitWalkerSprite 56761 | `_DAT_100a09dc` | yes | — |
-| 13 | set | 1706 (0x6aa) | 2 (204×89, 1) | 0 | yes | .InitWalkerSprite 56762 | `_DAT_100a09d8` | yes | — |
+| 12 | set | 1705 (0x6a9) | 3 (204×89, 1) | 0 | yes | .InitWalkerSprite 56761 | `_DAT_100a09dc` | yes | 56977 |
+| 13 | set | 1706 (0x6aa) | 2 (204×89, 1) | 0 | yes | .InitWalkerSprite 56762 | `_DAT_100a09d8` | yes | 56979 |
 | 14 | set | 1707 (0x6ab) | 9 (204×89, 1) | 0 | yes | .InitWalkerSprite 56763 | `_DAT_100a09d4` | yes | 56980 |
-| 15 | set | 1751 (0x6d7) | 8 (216×110, 1) | 0 | yes | .InitWalkerSprite 56764 | `_DAT_100a09d0` | yes | 76363 |
+| 15 | set | 1751 (0x6d7) | 8 (216×110, 1) | 0 | yes | .InitWalkerSprite 56764 | `_DAT_100a09d0` | yes | 57000, 76363 |
 | 16 | set | 1752 (0x6d8) | 6 (216×110, 1) | 0 | yes | .InitWalkerSprite 56765 | `_DAT_100a09cc` | yes | 57004, 76365 |
 | 17 | set | 1753 (0x6d9) | 3 (216×110, 1) | 0 | yes | .InitWalkerSprite 56766 | `_DAT_100a09c8` | yes | 57002, 76364 |
 | 18 | set | 1754 (0x6da) | 6 (216×110, 1) | 0 | yes | .InitWalkerSprite 56767 | `_DAT_100a09c4` | yes | 57005, 76366 |
-| 19 | set | 1760 (0x6e0) | 9 (84×92, 9) | 0 | yes | .InitWalkerSprite 56768 | `_DAT_100a09c0` | yes | — |
+| 19 | set | 1760 (0x6e0) | 9 (84×92, 9) | 0 | yes | .InitWalkerSprite 56768 | `_DAT_100a09c0` | yes | 56989 |
 | 3 | single | 3070 (0xbfe) | 1 | 0 | yes | .InitBoxSprite 58755 | `_DAT_100a0a8c` | **no** | 59527 |
 | 4 | single | 3071 (0xbff) | 1 | 0 | yes | .InitBoxSprite 58756 | `_DAT_100a0a88` | **no** | 59526 |
 | 5 | single | 3072 (0xc00) | 1 | 0 | yes | .InitBoxSprite 58757 | `_DAT_100a0a84` | **no** | 59525 |
@@ -1033,17 +1068,17 @@ around their own calls only (M l. 75020/75026, 75582/75586, 76216/76233).
 | 73 | single | 2968 (0xb98) | 1 | 0 | **absent** | .InitBoxSprite 58781 | `_DAT_100a0a6c` | **no** | indexed (see the class Setup) |
 | 74 | single | 2969 (0xb99) | 1 | 0 | **absent** | .InitBoxSprite 58781 | `_DAT_100a0a6c` | **no** | indexed (see the class Setup) |
 | 20 | set | 2929 (0xb71) | 2 (71×52, 2) | 0 | yes | .InitBoxSprite 58784 | `_DAT_100a0a68` | **no** | 59405 |
-| 21 | set | 2930 (0xb72) | 14 (128×96, 7) | 0 | yes | .InitBoxSprite 58785 | `_DAT_100a0a64` | yes | — |
-| 22 | set | 2931 (0xb73) | 21 (128×58, 7) | 0 | yes | .InitBoxSprite 58786 | `_DAT_100a0a60` | yes | — |
+| 21 | set | 2930 (0xb72) | 14 (128×96, 7) | 0 | yes | .InitBoxSprite 58785 | `_DAT_100a0a64` | yes | 59435 |
+| 22 | set | 2931 (0xb73) | 21 (128×58, 7) | 0 | yes | .InitBoxSprite 58786 | `_DAT_100a0a60` | yes | 59434 |
 | 75 | single | 1460 (0x5b4) | 1 | 1 | yes | .InitBoxSprite 58799 | `_DAT_100a0a44` | **no** | 59196 |
-| 76 | single | 1461 (0x5b5) | 1 | 1 | yes | .InitBoxSprite 58800 | `_DAT_100a0a40` | yes | — |
+| 76 | single | 1461 (0x5b5) | 1 | 1 | yes | .InitBoxSprite 58800 | `_DAT_100a0a40` | yes | 59200, 59204 |
 | 77 | single | 1463 (0x5b7) | 1 | 1 | yes | .InitBoxSprite 58801 | `_DAT_100a0a3c` | **no** | 59209 |
-| 78 | single | 1464 (0x5b8) | 1 | 1 | yes | .InitBoxSprite 58802 | `_DAT_100a0a38` | yes | — |
+| 78 | single | 1464 (0x5b8) | 1 | 1 | yes | .InitBoxSprite 58802 | `_DAT_100a0a38` | yes | 59213, 59217 |
 | 79 | single | 1466 (0x5ba) | 1 | 1 | yes | .InitBoxSprite 58803 | `_DAT_100a0a34` | **no** | 59222 |
-| 80 | single | 1467 (0x5bb) | 1 | 1 | yes | .InitBoxSprite 58804 | `_DAT_100a0a30` | **no** | — |
-| 23 | set | 1470 (0x5be) | 4 (54×56, 4) | 0 | yes | .InitBoxSprite 58806 | `_DAT_100a0a2c` | yes | — |
+| 80 | single | 1467 (0x5bb) | 1 | 1 | yes | .InitBoxSprite 58804 | `_DAT_100a0a30` | **no** | 59223 |
+| 23 | set | 1470 (0x5be) | 4 (54×56, 4) | 0 | yes | .InitBoxSprite 58806 | `_DAT_100a0a2c` | yes | 59260 |
 | 24 | set | 1440 (0x5a0) | 12 (24×16, 4) | 0 | yes | .InitBoxSprite 58813 | `_DAT_100a0a1c` | yes | 59121 |
-| 25 | set | 1441 (0x5a1) | 6 (48×32, 6) | 0 | yes | .InitBoxSprite 58814 | `_DAT_100a0a18` | yes | — |
+| 25 | set | 1441 (0x5a1) | 6 (48×32, 6) | 0 | yes | .InitBoxSprite 58814 | `_DAT_100a0a18` | yes | 59120 |
 | 26 | set | 1442 (0x5a2) | 6 (20×32, 6) | 0 | yes | .InitBoxSprite 58815 | `_DAT_100a0a14` | yes | 59118 |
 | 27 | set | 1080 (0x438) | 6 (113×24, 1) | 0 | yes | .InitBoxSprite 58816 | `_DAT_100a0a10` | **no** | 59079 |
 | 81 | single | 2850 (0xb22) | 1 | 1 | yes | .InitBoxSprite 58820 | `_DAT_100a0a0c` | **no** | indexed (see the class Setup) |
@@ -1091,24 +1126,24 @@ around their own calls only (M l. 75020/75026, 75582/75586, 76216/76233).
 | 123 | single | 2926 (0xb6e) | 1 | 0 | yes | .InitBoxSprite 58830 | `_DAT_100a0a04` | yes | indexed (see the class Setup) |
 | 124 | single | 2927 (0xb6f) | 1 | 0 | yes | .InitBoxSprite 58830 | `_DAT_100a0a04` | yes | indexed (see the class Setup) |
 | 125 | single | 2928 (0xb70) | 1 | 0 | yes | .InitBoxSprite 58830 | `_DAT_100a0a04` | yes | indexed (see the class Setup) |
-| 126 | single | 2900 (0xb54) | 1 | 0 | yes | .InitBackgroundSprite 61862 | `_DAT_100a0b3c` | yes | — |
-| 127 | single | 2901 (0xb55) | 1 | 0 | yes | .InitBackgroundSprite 61863 | `_DAT_100a0b38` | **no** | — |
-| 28 | set | 1840 (0x730) | 12 (24×128, 12) | 0 | yes | .InitBackgroundSprite 61864 | `_DAT_100a0b34` | yes | — |
+| 126 | single | 2900 (0xb54) | 1 | 0 | yes | .InitBackgroundSprite 61862 | `_DAT_100a0b3c` | yes | 62434 |
+| 127 | single | 2901 (0xb55) | 1 | 0 | yes | .InitBackgroundSprite 61863 | `_DAT_100a0b38` | **no** | 62586 |
+| 28 | set | 1840 (0x730) | 12 (24×128, 12) | 0 | yes | .InitBackgroundSprite 61864 | `_DAT_100a0b34` | yes | 61984, 62281 |
 | 128 | single | 1842 (0x732) | 1 | 0 | yes | .InitBackgroundSprite 61865 | `_DAT_100a0b30` | yes | 62460 |
-| 129 | single | 1843 (0x733) | 1 | 0 | yes | .InitBackgroundSprite 61866 | `_DAT_100a0b2c` | yes | — |
-| 130 | single | 1855 (0x73f) | 1 | 0 | yes | .InitBackgroundSprite 61867 | `_DAT_100a0b28` | **no** | — |
-| 131 | single | 1856 (0x740) | 1 | 0 | yes | .InitBackgroundSprite 61868 | `_DAT_100a0b24` | **no** | — |
-| 132 | single | 2890 (0xb4a) | 1 | 0 | yes | .InitBackgroundSprite 61869 | `_DAT_100a0b20` | **no** | — |
-| 133 | single | 2891 (0xb4b) | 1 | 0 | yes | .InitBackgroundSprite 61870 | `_DAT_100a0b1c` | **no** | — |
-| 134 | single | 2892 (0xb4c) | 1 | 0 | yes | .InitBackgroundSprite 61871 | `_DAT_100a0b18` | **no** | — |
-| 135 | single | 2893 (0xb4d) | 1 | 0 | yes | .InitBackgroundSprite 61872 | `_DAT_100a0b14` | **no** | — |
+| 129 | single | 1843 (0x733) | 1 | 0 | yes | .InitBackgroundSprite 61866 | `_DAT_100a0b2c` | yes | 62461 |
+| 130 | single | 1855 (0x73f) | 1 | 0 | yes | .InitBackgroundSprite 61867 | `_DAT_100a0b28` | **no** | unknown (not derived) |
+| 131 | single | 1856 (0x740) | 1 | 0 | yes | .InitBackgroundSprite 61868 | `_DAT_100a0b24` | **no** | unknown (not derived) |
+| 132 | single | 2890 (0xb4a) | 1 | 0 | yes | .InitBackgroundSprite 61869 | `_DAT_100a0b20` | **no** | 62537 |
+| 133 | single | 2891 (0xb4b) | 1 | 0 | yes | .InitBackgroundSprite 61870 | `_DAT_100a0b1c` | **no** | 62541 |
+| 134 | single | 2892 (0xb4c) | 1 | 0 | yes | .InitBackgroundSprite 61871 | `_DAT_100a0b18` | **no** | 62532 |
+| 135 | single | 2893 (0xb4d) | 1 | 0 | yes | .InitBackgroundSprite 61872 | `_DAT_100a0b14` | **no** | 62546 |
 | 29 | set | 1090 (0x442) | 5 (150×150, 5) | 0 | yes | .InitBackgroundSprite 61875 | `_DAT_100a0b10` | yes | 62061 |
 | 136 | single | 3060 (0xbf4) | 1 | 0 | yes | .InitBackgroundSprite 61878 | `_DAT_100a0b0c` | **no** | 62572 |
 | 30 | set | 1150 (0x47e) | 4 (60×60, 4) | 0 | yes | .InitBackgroundSprite 61879 | `_DAT_100a0b08` | **no** | 62187 |
 | 31 | set | 1151 (0x47f) | 4 (60×60, 4) | 0 | yes | .InitBackgroundSprite 61880 | `_DAT_100a0b04` | **no** | 62047 |
-| 32 | set | 1152 (0x480) | 4 (60×60, 4) | 0 | yes | .InitBackgroundSprite 61881 | `_DAT_100a0b00` | **no** | — |
+| 32 | set | 1152 (0x480) | 4 (60×60, 4) | 0 | yes | .InitBackgroundSprite 61881 | `_DAT_100a0b00` | **no** | 62199, 62209 |
 | 33 | set | 1208 (0x4b8) | 16 (96×72, 16) | 0 | yes | .InitBackgroundSprite 61882 | `_DAT_100a0afc` | **no** | 62018 |
-| 34 | set | 1209 (0x4b9) | 16 (96×72, 16) | 0 | yes | .InitBackgroundSprite 61883 | `_DAT_100a0af8` | **no** | — |
+| 34 | set | 1209 (0x4b9) | 16 (96×72, 16) | 0 | yes | .InitBackgroundSprite 61883 | `_DAT_100a0af8` | **no** | 62019, 62223 |
 | 35 | set | 1211 (0x4bb) | 16 (72×96, 1) | 0 | yes | .InitBackgroundSprite 61884 | `_DAT_100a0af4` | **no** | 62250 |
 | 36 | set | 1212 (0x4bc) | 16 (96×72, 16) | 0 | yes | .InitBackgroundSprite 61885 | `_DAT_100a0af0` | **no** | 62222 |
 | 37 | set | 1900 (0x76c) | 6 (92×92, 6) | 0 | yes | .InitBackgroundSprite 61886 | `_DAT_100a0aec` | yes | 62498 |
@@ -1173,29 +1208,29 @@ around their own calls only (M l. 75020/75026, 75582/75586, 76216/76233).
 | 42 | set | 1130 (0x46a) | 6 (64×64, 6) | 0 | yes | .InitEnemyShotSprite 51436 | `_DAT_100a0840` | yes | 74422, 76356 |
 | 43 | set | 1915 (0x77b) | 16 (112×112, 4) | 0 | yes | .InitEnemyShotSprite 51437 | `_DAT_100a083c` | yes | 75075, 76358 |
 | 44 | set | 1740 (0x6cc) | 11 (56×52, 11) | 0 | yes | .InitBatSprite 68099 | `PTR_DAT_100a0c90` | yes | 68286 |
-| 45 | set | 1860 (0x744) | 9 (48×44, 9) | 0 | yes | .InitBatSprite 68100 | `_DAT_100a0c8c` | yes | — |
+| 45 | set | 1860 (0x744) | 9 (48×44, 9) | 0 | yes | .InitBatSprite 68100 | `_DAT_100a0c8c` | yes | 68218 |
 | 46 | set | 1869 (0x74d) | 8 (24×22, 8) | 0 | yes | .InitBatSprite 68101 | `_DAT_100a0c88` | yes | 68158 |
 | 47 | set | 1850 (0x73a) | 12 (64×80, 12) | 0 | yes | .InitBatSprite 68102 | `_DAT_100a0c84` | yes | 68241 |
 | 48 | set | 1851 (0x73b) | 12 (64×80, 12) | 0 | yes | .InitBatSprite 68103 | `_DAT_100a0c80` | yes | 68267 |
-| 49 | set | 1730 (0x6c2) | 16 (64×44, 16) | 0 | yes | .InitBlobSprite 67666 | `PTR_DAT_100a0c64` | yes | — |
-| 50 | set | 1890 (0x762) | 6 (100×100, 6) | 0 | yes | .InitCrabSprite 73964 | `PTR_DAT_100a0d60` | yes | — |
+| 49 | set | 1730 (0x6c2) | 16 (64×44, 16) | 0 | yes | .InitBlobSprite 67666 | `PTR_DAT_100a0c64` | yes | 67726 |
+| 50 | set | 1890 (0x762) | 6 (100×100, 6) | 0 | yes | .InitCrabSprite 73964 | `PTR_DAT_100a0d60` | yes | 74007 |
 | 191 | single | 1895 (0x767) | 1 | 0 | yes | .InitCrabSprite 73965 | `_DAT_100a0d5c` | yes | 74008 |
-| 51 | set | 1870 (0x74e) | 6 (100×80, 6) | 0 | yes | .InitDilloSprite 72283 | `PTR_DAT_100a0d38` | yes | — |
+| 51 | set | 1870 (0x74e) | 6 (100×80, 6) | 0 | yes | .InitDilloSprite 72283 | `PTR_DAT_100a0d38` | yes | 72333 |
 | 52 | set | 1871 (0x74f) | 5 (100×80, 5) | 0 | yes | .InitDilloSprite 72284 | `_DAT_100a0d34` | yes | 72332 |
 | 53 | set | 1872 (0x750) | 5 (100×80, 5) | 0 | yes | .InitDilloSprite 72285 | `_DAT_100a0d30` | yes | 72331 |
 | 54 | set | 1873 (0x751) | 2 (100×80, 2) | 0 | yes | .InitDilloSprite 72286 | `_DAT_100a0d2c` | yes | 72330 |
-| 55 | set | 1820 (0x71c) | 8 (180×160, 8) | 0 | yes | .InitWarriorSprite 72982 | `PTR_DAT_100a0d50` | yes | — |
+| 55 | set | 1820 (0x71c) | 8 (180×160, 8) | 0 | yes | .InitWarriorSprite 72982 | `PTR_DAT_100a0d50` | yes | 73028 |
 | 56 | set | 1821 (0x71d) | 8 (180×160, 8) | 0 | yes | .InitWarriorSprite 72983 | `_DAT_100a0d4c` | yes | 73029 |
 | 57 | set | 1822 (0x71e) | 6 (180×160, 6) | 0 | yes | .InitWarriorSprite 72984 | `_DAT_100a0d48` | yes | 73030 |
-| 58 | set | 1831 (0x727) | 8 (192×140, 8) | 1 | yes | .InitWizardSprite 75583 | `PTR_DAT_100a0dbc` | **no** | — |
+| 58 | set | 1831 (0x727) | 8 (192×140, 8) | 1 | yes | .InitWizardSprite 75583 | `PTR_DAT_100a0dbc` | **no** | 75632 |
 | 59 | set | 1832 (0x728) | 8 (192×140, 8) | 1 | yes | .InitWizardSprite 75584 | `_DAT_100a0db8` | **no** | 75633 |
 | 192 | single | 1830 (0x726) | 1 | 1 | yes | .InitWizardSprite 75585 | `_DAT_100a0db4` | **no** | 75634 |
-| 60 | set | 1911 (0x777) | 4 (256×254, 4) | 1 | yes | .InitChiefSprite 75021 | `PTR_DAT_100a0da4` | **no** | — |
+| 60 | set | 1911 (0x777) | 4 (256×254, 4) | 1 | yes | .InitChiefSprite 75021 | `PTR_DAT_100a0da4` | **no** | 75069 |
 | 61 | set | 1912 (0x778) | 4 (256×254, 4) | 1 | yes | .InitChiefSprite 75022 | `_DAT_100a0da0` | **no** | 75071 |
 | 62 | set | 1913 (0x779) | 4 (256×254, 4) | 1 | yes | .InitChiefSprite 75023 | `_DAT_100a0d9c` | **no** | 75073 |
 | 63 | set | 1914 (0x77a) | 4 (256×254, 4) | 1 | yes | .InitChiefSprite 75024 | `_DAT_100a0d98` | **no** | 75074 |
 | 193 | single | 1910 (0x776) | 1 | 1 | yes | .InitChiefSprite 75025 | `_DAT_100a0d94` | **no** | 75067 |
-| 64 | set | 1920 (0x780) | 6 (144×116, 3) | 0 | yes | .InitDemonSprite 74342 | `PTR_DAT_100a0d84` | **no** | — |
+| 64 | set | 1920 (0x780) | 6 (144×116, 3) | 0 | yes | .InitDemonSprite 74342 | `PTR_DAT_100a0d84` | **no** | 74413 |
 | 65 | set | 1921 (0x781) | 6 (144×116, 3) | 0 | yes | .InitDemonSprite 74343 | `_DAT_100a0d80` | **no** | 74415 |
 | 66 | set | 1922 (0x782) | 3 (144×116, 3) | 0 | yes | .InitDemonSprite 74344 | `_DAT_100a0d7c` | **no** | 74417 |
 | 67 | set | 1923 (0x783) | 4 (144×116, 4) | 0 | yes | .InitDemonSprite 74345 | `_DAT_100a0d78` | **no** | 74418 |
@@ -1219,8 +1254,8 @@ around their own calls only (M l. 75020/75026, 75582/75586, 76216/76233).
 | 85 | set | 1780 (0x6f4) | 6 (100×80, 6) | 0 | yes | .InitFloaterSprite 69827 | `PTR_DAT_100a0cc0` | yes | 69876 |
 | 86 | set | 1790 (0x6fe) | 8 (88×100, 8) | 0 | **absent** | .InitFloaterSprite 69828 | `_DAT_100a0cbc` | yes | 69870 |
 | 87 | set | 1791 (0x6ff) | 8 (88×100, 8) | 0 | **absent** | .InitFloaterSprite 69829 | `_DAT_100a0cb8` | yes | 69871 |
-| 88 | set | 1800 (0x708) | 8 (120×100, 8) | 0 | yes | .InitFrogSprite 70116 | `PTR_DAT_100a0cd0` | yes | — |
-| 89 | set | 1770 (0x6ea) | 10 (132×120, 10) | 0 | yes | .InitGremlinSprite 69118 | `PTR_DAT_100a0cac` | yes | — |
+| 88 | set | 1800 (0x708) | 8 (120×100, 8) | 0 | yes | .InitFrogSprite 70116 | `PTR_DAT_100a0cd0` | yes | 70211 |
+| 89 | set | 1770 (0x6ea) | 10 (132×120, 10) | 0 | yes | .InitGremlinSprite 69118 | `PTR_DAT_100a0cac` | yes | 69181 |
 | 90 | set | 1771 (0x6eb) | 10 (132×120, 10) | 0 | yes | .InitGremlinSprite 69119 | `_DAT_100a0ca8` | yes | 69182 |
 | 91 | set | 1772 (0x6ec) | 4 (32×32, 4) | 0 | yes | .InitGremlinSprite 69120 | `_DAT_100a0ca4` | yes | 69183 |
 | 92 | set | 1810 (0x712) | 9 (80×100, 9) | 0 | yes | .InitSalamanderSprite 70649 | `_DAT_100a0ce0` | yes | 70680 |
@@ -1236,14 +1271,18 @@ records above and only `marks` grows per task. Three things it must carry: (a) r
 (0x46a is registered three times with two geometries — finding 8, card 6A-FB); (b) the 23 absent PICTs stay registered
 and never count (finding 9); (c) the 805-face total is irrelevant at run time — only needed records count — so a full
 list changes no built level's load bar as long as `marks` is unchanged (worth a test: levels 1–5's bar steps equal
-today's). Proposed as new card **6A-CF** below.
+today's). Proposed as new card **6A-CF** below (card text in §8(b)1). Picture 0x46a: three records (#40–#42) but
+**two** cuts — 6 × 48×48, then 6 × 64×64 twice (`.InitEnemyShotSprite` M l. 51434–51436; the Handle reads #40 for
+0x46a, #41 for 0x46b, #42 for 0x46c, M l. 51822–51861) — so the plan's 6A-FB test "the three cuts differ" cannot
+pass as worded.
 
 ---
 
 ## 7. Owners (item 5)
 
 Each census type and each new-value switch has exactly one owner (switch rows not new against 1–5 go to their level's
-task, in the switch table). Rule: a boss class → its boss card; the countdown 2907 → 6B-TM; the pipes → 6A-L21; a type
+task, in the switch table). Rule: a boss class → its boss card; the countdown 2907 → 6B-TM; the pipes → 6A-L10…L22 (the plan puts their level-spawn
+wiring in the level-21 task); a type
 the port sets up on every level that places it → the level task of its first level; otherwise the class card of the
 wave of the **first level the port refuses its records**, with LL's split of 6A-BG1 / 6A-BX1 (§8).
 
@@ -1258,7 +1297,7 @@ wave of the **first level the port refuses its records**, with LL's split of 6A-
 | 6A-BX1c | 1 | 1080 |
 | 6A-CH | 3 | 1910, 0x2724@L18, 0x272e@L18 |
 | 6A-L10…L22 | 55 | 1150, 1152, 1153, 1290, 1291, 1293, 1330, 1337, 1338, 1407, 1440, 1480, 1487, 1732, 1742, 1750, 1770, 1840, 1843, 1851, 1860, 1869, 1870, 1871, 1900, 1901, 1902, 1903, 3020, 3050, 3091, 3102, 3206, 3217, 3219, 3223, 0x26c9@L10, 0x26c9@L15, 0x2706@L21, 0x2706@L22, 0x270c@L11, 0x270c@L18, 0x270e@L11, 0x270e@L15, 0x270e@L18, 0x2710@L11, 0x2710@L18, 0x2714@L11, 0x2714@L18, 0x284a@L10, 0x284a@L11, 0x284a@L15, 0x284a@L20, 0x284a@L21, 0x284a@L22 |
-| 6A-L21 | 4 | 1490, 1491, 1492, 1493 |
+| 6A-L10…L22 (level 21 pipe wiring) | 4 | 1490, 1491, 1492, 1493 |
 | 6A-RN | 2 | 0x26c7@L15, 0x272c@L15 |
 | 6A-RP | 2 | 0x26ca@L11, 0x26ca@L18 |
 | 6A-S8 | 18 | 0x2716@L10, 0x2716@L30, 0x2716@L40, 0x2716@L45, 0x2716@L62, 0x2716@L67, 0x2718@L10, 0x2718@L30, 0x2718@L40, 0x2718@L45, 0x2718@L62, 0x2718@L67, 0x271a@L10, 0x271a@L30, 0x271a@L40, 0x271a@L45, 0x271a@L62, 0x271a@L67 |
@@ -1276,35 +1315,38 @@ wave of the **first level the port refuses its records**, with LL's split of 6A-
 | 6C-BX3 | 10 | 2809, 2811, 2828, 2830, 2838, 2856, 2906, 2957, 2963, 2964 |
 | 6C-DM | 3 | 1920, 0x2724@L55, 0x272e@L55 |
 | 6C-L55…L70 | 18 | 1780, 1892, 2901, 3021, 3101, 3103, 3107, 3224, 0x26c9@L62, 0x26c9@L70, 0x26cc@L62, 0x26cc@L70, 0x270c@L67, 0x270e@L62, 0x270e@L70, 0x284a@L62, 0x284a@L67, 0x284a@L70 |
-| 6C-L70 (interlace) | 1 | 0x26c7@L70 |
+| 6C-L55…L70 (its ⚑ part: the mode-6 interlace) | 1 | 0x26c7@L70 |
 | 6C-XI | 1 | 1990 |
 | 6C-XL | 4 | 0x2730@L67, 0x2732@L67, 0x2734@L67, 0x2736@L67 |
 <!-- /LL:owners -->
 
-What each later level needs besides its own level task (refused records counted on that level):
+What each later level needs besides its own level task (refused records counted **per record** on that level, the
+types placed on levels 1–5 included — a type refused on some of its records counts only those):
 
 <!-- LL:deps -->
-| level | records refused today | tasks its types need (refused records) | tasks its switches need | classes placed (built?) |
+| level | records refused today (per record, old types included) | tasks its types need (refused records) | tasks its switches need | classes of its census types |
 |---|---:|---|---|---|
-| 10 | 28 | 6A-BG1a (13), 6A-BG1b (1), 6A-BX1a (14) | 6A-S8, 6A-WD | Background, Bat, Bonus, Box, Platform, Rope, Walker |
+| 10 | 31 | 6A-BG1a (13), 6A-BG1b (4), 6A-BX1a (14) | 6A-S8, 6A-WD | Background, Bat, Bonus, Box, Platform, Rope, Walker |
 | 11 | 35 | 6A-BG1a (8), 6A-BX1a (26), 6A-BX1b (1) | 6A-RP, 6A-T11 | Background, Bat, Box, Rope, Walker |
-| 15 | 36 | 6A-BG1a (10), 6A-BG1b (1), 6A-BG1c (22), 6A-BX1a (3) | 6A-RN | Background, Bonus, Box, Dillo, Gremlin, Walker |
+| 15 | 38 | 6A-BG1a (10), 6A-BG1b (3), 6A-BG1c (22), 6A-BX1a (3) | 6A-RN | Background, Bonus, Box, Dillo, Gremlin, Walker |
 | 18 | 6 | 6A-BG1c (5), 6A-CH (1) | 6A-CH, 6A-RP | Background, Chief |
-| 20 | 195 | 6A-BG1a (164), 6A-BG1b (31) | 6A-WD | Background, Bonus, Gremlin |
-| 21 | 30 | 6A-BX1a (7), 6A-BX1b (17), 6A-L21 (6) | — | Background, Bat, Bonus, Box |
-| 22 | 23 | 6A-BG1b (13), 6A-BX1b (9), 6A-BX1c (1) | — | Background, Bat, Blob, Bonus, Box, Dillo, Walker |
+| 20 | 209 | 6A-BG1a (164), 6A-BG1b (45) | 6A-WD | Background, Bonus, Gremlin |
+| 21 | 30 | 6A-BX1a (7), 6A-BX1b (17), 6A-L10…L22 (level 21 pipe wiring) (6) | — | Background, Bat, Bonus, Box |
+| 22 | 52 | 6A-BG1b (42), 6A-BX1b (9), 6A-BX1c (1) | — | Background, Bat, Blob, Bonus, Box, Dillo, Walker |
 | 25 | 2 | 6A-BG1c (1), 6B-WZ (1) | 6B-WZ | Background, Bonus, Wizard |
 | 30 | 34 | 6A-BG1b (3), 6A-BX1b (3), 6B-BG2 (24), 6B-BX2 (4) | 6A-S8, 6B-ICE | Background, Blob, Bonus, Box, Platform, Walker |
-| 31 | 29 | 6A-BX1b (4), 6B-BG2 (10), 6B-BX2 (15) | 6B-ICE | Background, Bat, Blob, Bonus, Box, Platform, Walker |
-| 40 | 36 | 6A-BG1b (5), 6A-BX1b (9), 6B-BG2 (20), 6B-BX2 (1), 6B-TM (1) | 6A-S8 | Background, Blob, Bonus, Box |
+| 31 | 23 | 6A-BX1b (4), 6B-BG2 (4), 6B-BX2 (15) | 6B-ICE | Background, Bat, Blob, Bonus, Box, Platform, Walker |
+| 40 | 70 | 6A-BG1b (2), 6A-BX1b (9), 6B-BG2 (57), 6B-BX2 (1), 6B-TM (1) | 6A-S8 | Background, Blob, Bonus, Box |
 | 45 | 12 | 6B-BX2 (12) | 6A-S8 | Background, Bonus, Box, Walker |
-| 50 | 46 | 6A-BX1a (2), 6B-BG2 (43), 6B-BX2 (1) | 6B-CA | Background, Blob, Bonus, Box, Gremlin, Platform, Rope, Salamander |
-| 51 | 8 | 6A-BG1b (4), 6B-BG2 (3), 6B-BX2 (1) | 6B-AS, 6B-CA | Background, Blob, Bonus, Box, Gremlin, Rope, Salamander |
-| 52 | 9 | 6B-BG2 (9) | 6B-AS, 6B-FI | Background, Bat, Blob, Bonus, Gremlin, Rope |
+| 50 | 47 | 6A-BX1a (2), 6B-BG2 (44), 6B-BX2 (1) | 6B-CA | Background, Blob, Bonus, Box, Gremlin, Platform, Rope, Salamander |
+| 51 | 5 | 6A-BG1b (1), 6B-BG2 (3), 6B-BX2 (1) | 6B-AS, 6B-CA | Background, Blob, Bonus, Box, Gremlin, Rope, Salamander |
+| 52 | 7 | 6B-BG2 (7) | 6B-AS, 6B-FI | Background, Bat, Blob, Bonus, Gremlin, Rope |
 | 55 | 1 | 6C-DM (1) | 6B-FI, 6C-DM | Bonus, Demon |
-| 62 | 103 | 6A-BG1b (10), 6B-BG2 (45), 6B-BX2 (4), 6C-BG3 (30), 6C-BX3 (14) | 6A-S8 | Background, Bonus, Box, Crab, Floater, Platform, Walker |
+| 62 | 109 | 6A-BG1b (10), 6B-BG2 (43), 6B-BX2 (4), 6C-BG3 (38), 6C-BX3 (14) | 6A-S8 | Background, Bonus, Box, Crab, Floater, Platform, Walker |
 | 67 | 5 | 6B-BG2 (4), 6C-XI (1) | 6A-S8, 6C-XL | Background, Xichra |
-| 70 | 14 | 6A-BX1a (3), 6A-BX1b (1), 6C-BX3 (10) | 6C-L70 (interlace) | Bonus, Box, Platform, Rope |
+| 70 | 14 | 6A-BX1a (3), 6A-BX1b (1), 6C-BX3 (10) | 6C-L55…L70 (its ⚑ part: the mode-6 interlace) | Bonus, Box, Platform, Rope |
+
+Refused records, levels 10–22: **401**; all later levels: **730**.
 <!-- /LL:deps -->
 
 ---
@@ -1316,23 +1358,26 @@ What each later level needs besides its own level task (refused records counted 
 | proposed task | types (census) | also | what the work is | size |
 |---|---|---|---|---|
 | **6A-BG1a** trees + clouds | 3080–3086 (trees 0xc08…), 2890–2893 (clouds 0xb4a…) — 11 | — | no Setup arm today (`SetupFaces` Background `default`); the Setup arms (the dump's: trees from M l. 62570, clouds M l. 62531–62536) and their Handle arms (M l. 63307–63311 clouds); tree singles are flag-1 cache records (singles #137–#144), clouds flag 0 (#132–#135) | 11 types, two arms |
-| **6A-BG1b** moving hazards | 1092, 1097 (cannons p1 101 / 103), 3060 (the rotating blade 0xbf4, `.SectLineSegs`) — 3 | the old-type records: 1090 p1 101 / 103 / 105 on 10 / 15, the ball 1485 modes 1–2 on 20 / 22 | the cannon's rotating (101…106) and path (1…100, < 0) arms and the mace modes 1–2 — both through the one `ProgrammedPath` (moved here from 6A-BX1, finding 11) — and the blade (Setup M l. 62571–62585, Handle M l. 63511–63532, its single 0xbf4 #136) | 3 types + 2 old types; the largest — split the blade off if the path arms run long |
+| **6A-BG1b** moving hazards | 1092, 1097 (cannons p1 101 / 103), 3060 (the rotating blade 0xbf4, `.SectLineSegs`) — 3 | the old-type records: 1090 p1 101 / 103 / 105 on 10 / 15 (3 + 2 records), the ball 1485 modes 1–2 on 20 / 22 (16 + 29 records) | the cannon's rotating (101…106) and path (1…100, < 0) arms and the mace modes 1–2 — both through the one `ProgrammedPath` (moved here from 6A-BX1, finding 11) — and the blade (Setup M l. 62571–62585, Handle M l. 63511–63532, its single 0xbf4 #136) | 3 types + 2 old types; the largest — split the blade off if the path arms run long |
 | **6A-BG1c** plants | 2700, 2701, 2702, 2705, 2711 — 5 | — | arm built (`case 0xa8c...0xaef:`); faces into the Setup-face table; flag-1 singles #161–#172 marked | 5 types, table + marks |
-| **6A-BX1a** Box scenery | decorations 2808, 2816, 2817, 2827, 2831, 2833, 2834, 2836, 2837, 2846, 2847; outcrops 2850, 2852, 2857, 2861; mushrooms 2872, 2873, 2875, 2876 — 19 | — | arms built; faces into the table; singles marked (outcrops flag 1); the graves 2833 / 2834 / 2836 also open Mcnv 260 / 261 (talk arm built, `HitPlayerSprite.swift:332`) | 19 types, mechanical (could merge with 6A-BG1c: 24 types of one shape) |
+| **6A-BX1a** Box scenery | decorations 2808, 2816, 2817, 2827, 2831, 2833, 2834, 2836, 2837, 2846, 2847; outcrops 2850, 2852, 2857, 2861; mushrooms 2872, 2873, 2875, 2876 — 19 | — | arms built; faces into the table; singles marked (outcrops flag 1); **not table rows only** — the level-21 graves 2833 / 2834 / 2836 are placed with p1 ≠ 0 (260, 261, 1) and have non-empty hot rects, so they reach the unbuilt hot-rect flip (`.FlipHRect(+0x34, face width)`, M l. 59670–59673; `BoxSprite.swift:387`, finding 6), which this task builds; 2833 / 2834 (p1 > 100) also open Mcnv 260 / 261 (talk arm built, `HitPlayerSprite.swift:332`; 2836, p1 1, opens none) | 19 types, mostly mechanical + the flip (could merge with 6A-BG1c: 24 types of one shape) |
 | **6A-BX1b** Box faces + talkers | teleporters 1060 / 1061, the crate-furniture 2921, NPCs 2955, 2956, 2962 — 6 | — | teleporters: `BoxSprite.setup` arm built, no `SetupFaces` face arm (boot singles 0x424 / 0x425, M l. 58737–58740); 2921 / NPCs: table + marks; the NPCs open Mcnv 206, 220, 221, 300 | 6 types |
 | **6A-BX1c** the magic carpet | 1080 (0x438, waking into 0x439) — 1 | — | no Setup face arm; the Box Handle arm (`BoxSprite.swift:463`), the player's carpet arms (`PlayerTiles.swift:164`, `BoxSprite.swift:1521`, `:1594`); cache set 0x438 (#27, not registered) | 1 type, a whole mover |
 | ~~6A-BN1~~ | — 0 | — | nothing (finding 2) | drop |
 
 ### (b) Types, switches and resources of 10–22 that no Wave 5 card owns — proposals
 
-1. **6A-CF — the picture cache in full** (new card): transcribe the 285 registration records once (§6), keyed by
-   position, absent PICTs kept; then add the marks the port misses for types it calls built — cannon set 0x442 for
-   0x443…0x44a, the spring sets 0x47e / 0x47f / 0x480, the mace singles 0x5c8…0x5d0, the Player sets 0x41a…0x41d for
-   the hang glider (finding 8). Acceptance: levels 1–5's load-bar steps unchanged; a level-20 and a level-22 bar test.
+1. **6A-CF — the picture cache in full** (new card; the second review leg confirmed it is one task). Card text:
+
+   | card | what | files (today's owners) | acceptance |
+   |---|---|---|---|
+   | 6A-CF the picture cache in full (before the first 6A level task) | `CachedFaces.sets` / `.singles` become the original's whole registration list — **285 records (92 sets, 193 singles, 805 faces)**, in `.InitSprites` order, each with its geometry and flag (§6's table), the 23 absent PICTs kept as never-counting records (finding 9); records keyed by **record (list position)**, not picture, in the records, the marks, `loadedSets`, the load (`load(needed:)`) and `sheets(markedBy:)` — 0x46a is three records with two cuts (§6); then the marks the port misses for types it calls built (finding 8): cannon set 0x442 for 0x443…0x44a, the spring sets 0x47e / 0x47f / 0x480, the mace / ball singles 0x5c8…0x5d0, the Player sets 0x41a…0x41d for the hang glider 0xbea, the passage single 0xb55. Marks of types not built yet (the fire 1208's #33 + #34, the trees, clouds, plants, decorations …) stay with their Setup tasks. | `Front/LevelRun.swift` (`CachedFaces` only — `BootFaces` is untouched); the two tests that pin neighbours in today's shortened list, re-anchored to the full one: `LevelFiveTests.swift:136–139` (the Warrior's sets after the Dillo's 0x751) and `GremlinFloaterTests.swift:252–257` (the 16 sets from 0x762) | levels 1–5's load-bar steps unchanged — **no level 1–5 golden moves**: the only level-1–5 types in the gap ranges, 0x442, 0x5cd and 0xb54, are already marked; a list test (285 / 92 / 193 / 805, order and flags against §6); a level-20 and a level-22 bar test with the new marks |
+
    Without this card, every level task must add its records at their positions itself (the card's default) and the
-   marks gaps fall to levels 15, 20, 22.
+   mark gaps fall on levels 15, 20, **21** and 22 (21: the mace 1487's single).
 2. **6A-WD amended, not new:** wind on level 20 (2,899 cells, nine direction indices) as well as 10 (finding 1).
-3. **6A-T11 amended:** the overlay-cell water tint (finding 4) — today the FG half exists.
+3. **6A-T11 becomes "prove only":** both halves of the submerged tint are built (finding 4); the card is the level-11
+   golden and nothing else.
 4. **Ownership corrections, not new cards:** the cannon / mace path arms from 6A-BX1 to 6A-BG1b (finding 11); cannons
    1091 / 1093–1096 out of 6A (finding 10).
 5. Nothing else on 10–22 is unowned: every header switch new on 10–22 maps to S8, RP, T11, RN, CH or its level task
@@ -1350,7 +1395,7 @@ task adds a feature only where the plan puts one inside it.
 | 11 | none (ripple → 6A-RP, tint → 6A-T11) | with 10 |
 | 15 | none (rain + side push → 6A-RN) | alone (neighbours 11, paired, and 18, the boss) |
 | 18 | the Chief arena (6A-CH's level-18 rows) | alone, with or after 6A-CH |
-| 20 | none, once 6A-WD covers its wind and BG1a / BG1b are in | alone, or with 21 if the pipe wiring moves out of 6A-L21 |
+| 20 | none, once 6A-WD covers its wind and BG1a / BG1b are in | alone, or with 21 if the pipe wiring moves out of the level-21 task |
 | 21 | the enemy pipes' level spawn (`setupPipe` wiring + the throwaway child, M l. 59347–59353) — the plan puts it here | alone as planned |
 | 22 | none (blade → BG1b, teleporter / NPC → BX1b, carpet → BX1c) | alone, or with 21 under the same condition |
 
@@ -1361,9 +1406,46 @@ So, as the plan stands: **one pair (10 + 11)** and five single levels. If the pi
 
 ## 9. Not determined here
 
-- The overlay-cell water tint on levels 1–5 (finding 4) — not traced.
-- Marks of new types not verified one by one beyond finding 8 and the `MARKED_BY` families in the script; §6's mark
-  column is heuristic. Each class / level task re-reads its Setup's `+1 = 1` stores.
+- Marks of new types not verified one by one beyond finding 8 and the `MARKED_BY` families in the script (the per-level
+  item 6 lists); §6's mark column is derived from the dump's stores, but two rows stay "unknown (not derived)". Each
+  class / level task re-reads its Setup's `+1 = 1` stores.
 - The wind direction indices' meaning per `.LookupModedImpulse` case (M l. 37020–37412) — counted, not decoded.
 - Handle-side `// later:` gaps of types whose Setup is built are noted only where the port marks them (passage p2 ≠ 0,
   cannon p1 ≠ 0, carpet, spiked ball, snowball, table); no Handle arm was audited line by line.
+- Parameter values new on levels 10–70 were matched against every parameter-conditioned refusal and `// later:` of the
+  port (finding 6); arms with no such marker were not traced value by value.
+
+---
+
+## 10. Corrections to the plan's cards (for the 6A planner)
+
+What the Wave 5 cards of `docs/superpowers/plans/2026-11-04-ferazel-remainder.md` say against what this ledger
+measured (each with its finding):
+
+1. **6A-WD** must cover **level 20 (2,899 wind cells)** as well as level 10 (103); its acceptance names level 10 only
+   (finding 1).
+2. **6A-T11** is **prove only**: the FG-cell and overlay-cell submerged tints are both built (`TileGridRenderer`,
+   `LightRenderer.plainWrapFGOverlayTile`); the card keeps its level-11 golden and builds nothing (finding 4).
+3. **6A-BN1 has nothing to build**: every Bonus, Platform and Rope type placed on 10–22 sets up in the port today
+   (finding 2); drop it (6B-BN2 / 6C-BN3 likewise have no refused record).
+4. **The cannon (p1 ≠ 0) and mace (modes 1–2) path arms are Background class**, not Box: they leave 6A-BX1 for the
+   Background card (proposed 6A-BG1b), still through the one `ProgrammedPath` (finding 11).
+5. **The horizon strip is on six levels** (10, 30, 40, 45, 62, 67), not level 10 only: 6A-S8 builds it once, the
+   other five need their goldens (finding 5).
+6. **6A-FB's test wording:** picture 0x46a has three cache records but **two** cuts (48×48, then 64×64 twice, M l.
+   51822–51861), so "the three cuts differ" cannot pass; test instead that 0x46a draws the 48×48 cut and 0x46b /
+   0x46c the 64×64 one, each from its own record (§6) — and key `CachedFaces` by record too (finding 8, 6A-CF).
+7. **The side push is built** (`Player.sidePush`, `Player.swift:752`): 6A-RN's "the side push `0x272c`" is a test, not
+   code (finding 3).
+8. **"Every record set up" is per record, and old types count:** the refused records per level, levels 10–22 —
+
+   | level | 10 | 11 | 15 | 18 | 20 | 21 | 22 | 10–22 |
+   |---|---:|---:|---:|---:|---:|---:|---:|---:|
+   | refused records | 31 | 35 | 38 | 6 | 209 | 30 | 52 | **401** |
+
+   (the dependency table, §7, by owner; on level 20 the cannon 1092 is 1 of 3 records and the ball 1485 all 16; on
+   level 22 6A-BG1b holds 42, the ball 1485's 29 of 38 in modes 1–2 among them).
+9. **6A-BX1a is not table rows only:** the level-21 graves need the hot-rect flip (finding 6).
+10. **Owner ids:** the pipes' level-spawn wiring sits in the plan's 6A-L10…L22 card (level 21), and level 70's
+    OmniPx interlace is the ⚑ part of 6C-L55…L70; this ledger names no card outside the plan's Wave 5–7 tables but
+    the proposals of §8 (6A-BG1a/b/c, 6A-BX1a/b/c, 6A-CF), and `--check` enforces it.
