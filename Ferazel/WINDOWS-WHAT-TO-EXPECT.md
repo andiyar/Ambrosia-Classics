@@ -1,4 +1,61 @@
-# Ferazel's Wand for Windows — what to expect (Phase W gate build: the Phase 4 game on Windows)
+# Ferazel's Wand for Windows — what to expect (Phase 5 gate build: the enemies, levels 1–5 through the first boss door)
+
+**Status: machine gates green; Ben's and Andrew's gate pending.** Staged from commit <<SEAT:STAGED-COMMIT>>.
+
+Ferazel's Wand 1.0.3 for Windows: Ambrosia's Ferazel's Wand (1997), rebuilt to run on Windows 10 and 11 (64-bit) from
+the original game's own data. Unofficial, non-commercial preservation. It is the same game as the Mac Phase 5 build —
+the enemies alive on levels 1 to 4, and level 5 open up to the Warrior's arena — in lockstep with it: the Mac card
+(`Ferazel/WHAT-TO-EXPECT.md`, its 12 steps, its stand-ins and its known differences) holds here too.
+
+The question for you: **do levels 1 to 5 play on Windows as they do on the Mac — the enemies by eye, the sound by
+ear?**
+
+**Boot results (muted):** <<SEAT:LAUNCH-CHECKS>>
+
+## Starting it
+Unzip and start it exactly as in the Phase W card below (Extract All, then "Ferazel's Wand.exe"; SmartScreen: More
+info, then Run anyway). Saved games from the Phase W build still open.
+
+**To make New Game start on any level from 1 to 5** (the hidden test switch), open a command prompt in the game's
+folder and run (here for level 5):
+
+`"Ferazel's Wand.exe" -FerazelLevel 5`
+
+New Game then goes straight to that level, for that one launch. Any number other than 1 to 5 means level 1.
+
+## The gate card: what to check (a Windows 10/11 PC, or CrossOver)
+Play **the same 12 steps as the Mac card** (`Ferazel/WHAT-TO-EXPECT.md`, "The gate card: what to check"): the goblins,
+crawlers and roaches, bats, frogs and blobs; getting hurt and hurting them; the Statue spell on an enemy; the shield;
+level 4's boulder spouts; the underwater tint; level 5 up to the Warrior's arena; and the things you may only feel.
+On Windows, Shift / Alt / Ctrl act as the Mac's Shift / Option / ⌘, and Esc leaves level 5's locked arena (abort).
+
+**Note anything that differs from the Mac** — a picture, a sound, a timing, a dialog. As on the Mac, until Phase 6 the
+Warrior stands still and never dies, no boulders fall from above its arena, your shots and crates do nothing special to
+it, and the gate stays shut.
+
+## Machine checks run for this card
+- **Visit sweep** (every object on every level, taken to and drawn) on levels 1–5, through the Windows game path:
+  <<SEAT:SWEEP-WINDOWS>>; through the Mac game path: <<SEAT:SWEEP-CORE>>
+- **Random-play bot** (random keys, several runs of a few minutes per level) on levels 1–5, through the Windows game
+  path: <<SEAT:BOT-WINDOWS>>; through the Mac game path: <<SEAT:BOT-CORE>>
+- **The test suites**, including the Windows package's own and the game's suite run under CrossOver: <<SEAT:SUITES>>
+
+## Known stand-ins on Windows (Phase 5)
+- **◇W6 now reads:** every Mac stand-in of Phase 5 — the Warrior, level 10 and later, the enemies first placed after
+  level 5, the other bosses and the later levels' drawing features — replaced in Phase 6, in lockstep with the Mac.
+- Every other row of the Phase W card's table below (◇W1 to ◇W14) still holds.
+
+## What to tell me
+Your answer goes in `docs/QUESTIONS.md` under the Phase 5 gate item (the Windows part): yes or no to "do levels 1 to 5
+play on Windows as they do on the Mac?", then anything that felt, sounded or looked different, by the Mac card's step
+number if you can.
+
+---
+
+## The Phase W card (gate build: the Phase 4 game on Windows) — kept as written
+
+Kept as it was written for the Phase W gate. Where it says the enemies stand still or level 5 is refused, the
+Phase 5 card above replaces it; the starting steps, the small differences and the ◇W table still hold.
 
 **Status: machine gates green; Ben's and Andrew's gate pending.**
 
@@ -13,7 +70,7 @@ The question for you: **does the Windows build behave like the Mac build — sou
 
 Nobody has heard it yet: every run the loop made was muted, and in CrossOver on this Mac, never on a real PC.
 
-## Starting it
+### Starting it
 1. Unzip "Ferazel's Wand (Windows).zip" anywhere (the Desktop is fine): right-click it, Extract All. Do not run the
    game from inside the zip; it needs the whole folder.
 2. Open the folder "Ferazel's Wand (Windows)" and double-click **Ferazel's Wand.exe**. Keep the "Data" folder and the
@@ -25,7 +82,7 @@ Your saved games and the settings file live in `%APPDATA%\Ambrosia Classics\Fera
 Explorer's address bar). A log of the last launch, "Ferazel's Wand.log", sits there too; if the game will not start, a
 message box says why and the log has the details.
 
-## On this Mac first (optional, daytime) — for Ben on the Mac where it was built; skip this on a PC
+### On this Mac first (optional, daytime) — for Ben on the Mac where it was built; skip this on a PC
 Both scripts force the no-sound driver and refuse to run between 21:00 and 09:00.
 1. `tools/windows/proof-b-ferazel.sh` → last line `proof-b: 489 passed / 0 failed / 1 skipped / 0 crashed (of 490)`
    (the one skip is a test that cannot run under CrossOver; about 5 minutes).
@@ -35,7 +92,7 @@ Both scripts force the no-sound driver and refuse to run between 21:00 and 09:00
    fresh stage first: `tools/windows/stage-ferazel-win.sh --no-desktop`, which refuses while the checkout has
    uncommitted changes; the smoke refuses a stage made before the latest commit.
 
-## The gate card: what to check (a Windows 10/11 PC, or CrossOver)
+### The gate card: what to check (a Windows 10/11 PC, or CrossOver)
 3. **First launch** (SmartScreen: More info → Run anyway): logo, title music, main menu — no console window, no error
    box.
 4. **Keyboard:** keypad 4 / 6 / 8 / 5 move with Num Lock on **and** off; Shift / Alt / Ctrl act as the Mac's Shift /
@@ -58,7 +115,7 @@ Both scripts force the no-sound driver and refuse to run between 21:00 and 09:00
 
 Pass looks like: the Mac build's behaviour on Windows, sound by ear, dialogs by eye. Notes become a named wave.
 
-## Small differences found while building (expected, not bugs)
+### Small differences found while building (expected, not bugs)
 - **The Open dialog may open in the folder Windows last used** for this program, not the saves folder (Windows
   remembers it). The Save dialog is told the full path, so it should open in the saves folder.
 - **The Save dialog shows no message line** (the Mac's panel shows the original's prompt; Windows' dialog has no place
@@ -74,7 +131,7 @@ Pass looks like: the Mac build's behaviour on Windows, sound by ear, dialogs by 
 - **Ctrl shortcuts follow the US key positions** on other keyboard layouts (e.g. Ctrl+Q is the key where Q sits on a US
   keyboard), and Options shows US key names.
 
-## Known stand-ins on Windows
+### Known stand-ins on Windows
 | | What Windows lacks | Why / who replaces it |
 |---|---|---|
 | ◇W1 | Options' key names are the US layout's, not your PC's layout | the window library cannot ask Windows for the layout; a later task if wanted |
@@ -92,7 +149,7 @@ Pass looks like: the Mac build's behaviour on Windows, sound by ear, dialogs by 
 
 (◇W8 and ◇W13 were not needed: the item counts and the dialog font came out exact.)
 
-## What to tell me
+### What to tell me
 Your answer goes in `docs/QUESTIONS.md` under the Windows gate item: yes or no to "does the Windows build behave like
 the Mac build?", then anything that felt, sounded or looked wrong, by card number if you can — and especially how the
 save and restore (step 6) went.

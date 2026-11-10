@@ -1,4 +1,128 @@
-# Ferazel's Wand — what to expect (Phase 4 gate build: spells and items, levels 1–4)
+# Ferazel's Wand — what to expect (Phase 5 gate build: the enemies, levels 1–5 through the first boss door)
+
+**Status: machine gates green; Ben's gate pending.** Staged from commit <<SEAT:STAGED-COMMIT>>.
+
+**Windows:** the same build for Windows 10/11 has its own card, `Ferazel/WINDOWS-WHAT-TO-EXPECT.md`.
+
+This build of our Ferazel's Wand 1.0.3 replica brings **the enemies to life** and opens **level 5, "Manditraki
+Warrior"**, up to the first boss's door. Every enemy on levels 1–4 now walks, flies, hops, throws, blocks, hurts you and
+can be hurt and killed; a hit knocks you back and can cost you coins; the stage-complete panel counts what you
+defeated. Level 5 opens with its moving sky, and walking left locks you into the Warrior's arena. Everything from
+Phases 2 to 4 (movement, front end, saves, map, spells, items, pickups) is unchanged underneath. Every picture, sound
+and dialog still comes from the original game files, unchanged.
+
+The question for you: **do levels 1 to 5 play like the original with the enemies alive, up to the Warrior's arena?**
+Play it side by side with your Let's Play (https://www.youtube.com/watch?v=ESuyxMUEzDw) and the longplays.
+
+## What this build is, and what it is not
+- **It is** every enemy placed on levels 1–4 (goblins, crawlers, roaches, bats, frogs, blobs), their shots, getting hurt
+  and hurting them, the Statue spell on enemies, shields, level 4's boulder spouts, the underwater tint, and level 5 up
+  to the Warrior's arena.
+- **It is not** the Warrior fight. The Warrior stands still in the arena and the gate beyond it stays shut (Phase 6).
+  Level 10 and everything after it are not built yet: they say "not built yet (Phase 6)".
+
+## Opening it
+- Double-click `Ferazel's Wand.app` on your Desktop. Start a New Game, or Resume a saved game from the Phase 4 build:
+  it still opens.
+- **To make New Game start on any level from 1 to 5** (the hidden test switch), quit the game, open Terminal and
+  paste (here for level 5):
+
+  `cd ~/Desktop && open -n "Ferazel's Wand.app" --args -FerazelLevel 5`
+
+  The game still opens on the title and menu; New Game then goes straight to that level, for that one launch.
+  `defaults write com.ambrosiaclassics.ferazel FerazelLevel 5` makes it stick, and
+  `defaults delete com.ambrosiaclassics.ferazel FerazelLevel` goes back. Any number other than 1 to 5 means level 1.
+- Everything else about opening it, the keys and the hidden picture settings is as in the Phase 4 card below.
+
+## The gate card: what to check
+
+Each line says what the build does, read from the original's code. **MED** = fairly sure. Unmarked lines are read
+straight from the code.
+
+1. **Goblins (level 1 onwards).** The axe throwers walk into range and throw axes in arcs; the ones that never walk
+   stay put. The spear guards turn to face you, block your shots with a metal clang and thrust. The boulder goblin on
+   levels 1 and 4 throws boulders that bounce a few times and burst into shards (the dark ones explode). Goblins growl
+   and taunt now and then, and cry out when hit.
+2. **Crawlers and roaches.** Crawlers hop; roaches scuttle back and forth. A falling crate or boulder crushes them.
+3. **Bats (levels 2–4).** Sleeping bats wake when shot or approached, and chase you; level 3's path bat flies its
+   route. Bats burst into blood and drop coins.
+4. **Frogs (levels 2–4) and blobs (levels 3–4).** Frogs leap and spit; blobs ooze and attack.
+5. **Getting hurt.** Touching an enemy or its shot knocks you back by its speed, splashes blood and sometimes knocks
+   coins out of you (they fly out and blink). A big hit makes the big "ouch". Dead enemies never hurt.
+6. **Hurting them.** Every spell, the dagger and the other held weapons, crushing boxes, the big explosion and the Ring
+   of Smiting all work on enemies. Goblins die with their death frames and burn away; a goblin dying in water leaves a
+   body that floats and can be stood on. Scores add up (goblin 500 to 800, crawler 500, roach 600, bat 500), and the
+   stage-complete panel counts the enemies defeated.
+7. **The Statue spell on an enemy.** It turns to stone for about 4 seconds; you can stand on it; it thaws 200 health
+   points weaker.
+8. **Shields.** Level 5 has a Shield to pick up. Raised, it blocks shots from the front with a clang. The Magical
+   Shield (it reflects darts and spines, which burn away, and has its own crouch picture) is built too, but it is first
+   found on a later level, so you can't reach it yet.
+9. **Level 4's boulder spouts** fire boulders when their button is pressed.
+10. **Under water** the screen takes a blue tint (green in acid, red in lava), and clears when you surface.
+11. **Level 5, "Manditraki Warrior".** The sky behind the level moves. The level plays its own music from the start;
+    the boss music comes only once the Warrior is beaten (Phase 6), so the arena locking does not change the music.
+    You start at the right edge facing left. Walk left: the camera pans and the arena locks behind you, the gate ahead
+    stays shut, and the Warrior stands there and hurts you if you touch it. Leave with Esc (abort) or ⌘W.
+    **Expected missing until Phase 6:**
+    - the real Warrior keeps boulders falling from high above its arena (three at a time, each replaced once it has
+      landed); none fall here;
+    - your shots and crates do nothing special to it (the real one swallows shots with a sound and knocks crates away);
+    - if you use the Ring of Smiting on it, it may stop hurting you but it stays standing, and the gate stays shut.
+12. **Things you can't see but may feel (MED).** All read from the code but not provable on screen:
+    - the colours of the tinted enemies, the frozen statues and the underwater tint;
+    - the burn-away of a dying enemy;
+    - the look of level 5's moving sky;
+    - how much the goblins' voices vary in pitch.
+
+## Machine checks run for this card
+- **Visit sweep** (a script that takes Ferazel to every object on every level and draws it) on levels 1–5, through the
+  Mac game path: <<SEAT:SWEEP-CORE>>
+- The same sweep through the Windows game path: <<SEAT:SWEEP-WINDOWS>>
+- **Random-play bot** (plays every level with random keys, several runs of a few minutes each) on levels 1–5, Mac game
+  path: <<SEAT:BOT-CORE>>
+- The same bot through the Windows game path: <<SEAT:BOT-WINDOWS>>
+- **The test suites**, including the tests that load every picture each level uses and the check that every way of
+  drawing the game can ask for is one the replica draws: <<SEAT:SUITES>>
+- **Launch checks** (muted): <<SEAT:LAUNCH-CHECKS>>
+
+## Known stand-ins (until Phase 6)
+- **The Warrior** stands in its first picture, hurts on contact, never fights, never dies, and the gate stays shut
+  while it lives (card step 11).
+- **Level 10 and later** can't be entered yet: "Level n is not built yet (Phase 6)." (the only text in the game we
+  wrote ourselves), then back to the map.
+- **Enemies first placed after level 5** (the armadillo, the gremlin, the wraith, the salamander, the crab, the enemy
+  pipes and the geysers) are built and machine-tested but can't be reached yet.
+- **The other bosses** and the drawing features only later levels use (rain and other moving skies, the horizon strip,
+  the fire and rippling backdrops) are not built; no level you can enter uses them.
+- Everything in the Phase 4 card's "Known stand-ins and differences" below still holds, except the lines this build
+  replaces: the enemies, the boulder spouts, the underwater tint, the Magical Shield's crouch and level 5.
+
+## Known differences (forced by the platform or ruled)
+1. **Many sounds at once.** When all 16 sound channels are busy and a new sound pushes an old one out, the replica can
+   be wrong for one tick about whether that old sound is still playing. Nothing is drawn wrong and nothing quits. Tell
+   me if you ever hear a difference. **MED**
+2. **Tint colours.** The colours of the tinted enemies and the frozen statues come through the replica's own colour
+   search. **LOW**
+3. **The underwater tint** is applied to the picture the game draws, not to the monitor's colour setting as the
+   original did; it should look the same. A pause of about a thousandth of a second the original made when the tint
+   changes is not copied (nothing is drawn in it). **MED**
+4. **Speed.** Every timer runs at the original's top speed of 30 game steps a second (your ruling, 2026-10-25).
+
+## What to tell me
+A pass looks like: on levels 1 to 4 the enemies move, attack, hurt you and die as in the original, and level 5 opens,
+pans and locks you in front of the Warrior as in the Let's Play — the Warrior fight itself aside.
+
+Your answer goes in `docs/QUESTIONS.md`, under the Phase 5 gate item: a plain yes or no to "do levels 1 to 5 play like
+the original with the enemies alive, up to the Warrior's arena?", then anything that felt or looked wrong, by card
+number if you can.
+
+---
+
+## The Phase 4 card (gate build: spells and items, levels 1–4) — kept as written
+
+Kept as it was written for the Phase 4 gate. Where it says the enemies stand still, the boulder spouts are quiet,
+there is no underwater tint or level 5 is not built, the Phase 5 card above replaces it.
 
 **Status: machine gates green; Ben's gate pending.**
 
@@ -14,14 +138,14 @@ underneath. Every picture, sound and dialog still comes from the original game f
 The question for you: **do the first four levels play like the original, as far as the original allows without
 enemies?** Play it side by side with your Let's Play (https://www.youtube.com/watch?v=ESuyxMUEzDw) and the longplays.
 
-## What this build is, and what it is not
+### What this build is, and what it is not
 - **It is** casting (the Fireball from the start, the Statue spell found on level 3), the dagger, the item bar and its
   selection, every pickup on levels 1–4, potions, the upgrades, the power-up spheres, the Ring of Smiting, chests, keys
   and doors, crates, buttons, gates, switch blocks, mine carts, teleporters, the spikes, and levels 3 and 4 from the map.
 - **It is not** the enemies yet. They are drawn but stand still, do no harm, and take no hits (Phase 5). Level 5, the
   first boss, and everything after it are not built (Phases 5–6).
 
-## Opening it
+### Opening it
 - Double-click `Ferazel's Wand.app` on your Desktop. It opens on the title screen, then the main menu. Start a New
   Game, or Resume a saved game from the Phase 3 build: it still opens.
 - If macOS says it can't check the app: right-click it, choose Open, then Open again.
@@ -41,7 +165,7 @@ enemies?** Play it side by side with your Let's Play (https://www.youtube.com/wa
   `defaults delete com.ambrosiaclassics.ferazel FerazelLevel` to go back. Any number other than 1 to 4 means level 1.
 - The hidden picture settings below also live in the `com.ambrosiaclassics.ferazel` preferences domain.
 
-## Keys (the original's defaults; change them in Options ▸ Controls)
+### Keys (the original's defaults; change them in Options ▸ Controls)
 - **keypad 4 / 6** — walk left / right. **Shift** — run. **keypad 8** — up. **keypad 5** — down.
 - **Option** — jump. **⌘** — use the selected item or spell. **keypad 7 / 9** — previous / next item.
 - **Caps Lock** — pause: the game is paused while the Caps Lock light is on.
@@ -53,7 +177,7 @@ enemies?** Play it side by side with your Let's Play (https://www.youtube.com/wa
 - **A game controller** works as in Phase 3 (pairing steps in `Ferazel/GAMEPAD.md`): the top button uses the item,
   L / R choose the previous / next item.
 
-## The gate card: what to check
+### The gate card: what to check
 
 Each line says what the build does, read from the original's code. **MED** = fairly sure. Unmarked lines are read
 straight from the code.
@@ -130,7 +254,7 @@ straight from the code.
     - the item counts' Geneva, drawn by today's macOS;
     - level 2's hidden switch at its far left edge (it only shows in the saved game).
 
-## Still true from Phases 1 to 3
+### Still true from Phases 1 to 3
 - **The front end is unchanged:** the title and loading screens, the main menu, Options (with key setup), Credits,
   New Game with the chapter card, conversations and signs, save points and Resume, the Caps Lock pause, the
   stage-complete panel, the world map and the death screen all work as in the last build. The one difference: the
@@ -150,7 +274,7 @@ straight from the code.
 - **The black border** around the play view is the original's own screen picture, not a bug.
 - **Every run is different.** Random numbers start from the clock at launch, as the original's did.
 
-## Known stand-ins and differences
+### Known stand-ins and differences
 - **Enemies** stand still, do no harm and ignore every attack — shots, the dagger, the Statue spell, the Ring of
   Smiting's blasts and exploding crates pass through or do nothing to them (Phase 5). So the stage-complete panel's
   enemy bar stays low, and nothing an enemy would drop appears.
@@ -177,7 +301,7 @@ straight from the code.
   or lava).
 - **No screen switching, no CD check, no installer check, no birthday dialog, no InputSprocket.**
 
-## What to tell me
+### What to tell me
 A pass looks like: on levels 1 to 4 you can fire, stab, pick things up, open the chests and doors with their keys,
 break the crates, ride the teleporters, take the spheres and upgrades, learn and cast the Statue spell, and it all feels
 like the original — enemies aside.

@@ -5,6 +5,27 @@
 > 78e81c3, light PICT 806 + rope faces 48a0620, every boot face b535527). Read-only analysis: no game code changed, the
 > game was never launched. Evidence tables live in `docs/ferazel/gap-ledger/`; re-run recipes are in §5.
 
+## After Phase 5 (2026-11-10)
+
+The ledger below is the inventory of 2026-10-30 (levels 1–4, before the enemies). Since then the enemies of levels 1–4
+are alive and level 5 opens up to the Warrior's arena; what stands in for Phase 6 is named on the Phase 5 gate card
+(`Ferazel/WHAT-TO-EXPECT.md`). The phase-end checks now cover levels 1–5, every one through **both** the Mac core path
+and the Windows game path:
+
+- **Visit sweep** (Ferazel taken to every object of every level, each drawn): Mac core path <<SEAT:SWEEP-CORE>>;
+  Windows game path <<SEAT:SWEEP-WINDOWS>>.
+- **Random-play bot** (every level, several seeds, random keys for minutes at a time): Mac core path
+  <<SEAT:BOT-CORE>>; Windows game path <<SEAT:BOT-WINDOWS>>.
+- **The load-every-face tests** (every picture each built level's sprites can ask for is loaded) and **the draw-mode
+  audit** (`DrawModeAuditTests`: every draw input Core writes has a renderer that draws it; every refusal, and since PT
+  every trap in FerazelRender, is proven unreachable from the levels in scope or counted as a trap no data reaches):
+  in the suites, <<SEAT:SUITES>>.
+
+**Test-harness note:** a burn-away with no face provider is a silent no-op (no sound, no draw, no state change). That
+happens only in headless test sessions built without the renderer's faces; the Mac and Windows games always pass the
+renderer's, so in play a burn always runs to the kill (`Particles/Burn.swift`). A headless test that needs the burn
+must supply the faces.
+
 ## Summary (plain English)
 
 **Headline: after yesterday's four fixes, the inventory found nothing left in levels 1–4, the front end, the world map
@@ -35,7 +56,7 @@ VM (Q15 reviewer item).
 - Enemies in all four levels stand still in their first picture and can't hurt or be hurt (Walker, Crawler, Roach, Bat,
   Blob, Frog).
 - The boulder spouts on level 4 never throw boulders.
-- No blue-green screen tint underwater.
+- No blue-green screen tint underwater. (Built since, in Phase 5: blue in water, green in acid, red in lava.)
 
 **Watch list for Phases 5–6 — these WOULD quit the game the day their level or object is built, unless built first:**
 - Level 5 (the Warrior) cannot open until the OmniPx backdrop overlay is built (also levels 15, 25, 70).
@@ -171,7 +192,7 @@ decisions in `tools/ferazel/gap-legs/routines/overrides.py`).
 | built | 501 | cited by the port; ~120 hand-checked, ~440 by citation only (MED) |
 | absorbed | 55 | the port does the job under another name (where: the table's note) |
 | partial | 21 | missing arms named per row — every missing arm is Phase 5/6 or an object not placed in levels 1–4 |
-| not built | 151 | 72 Phase 5 (enemy classes, enemy shots, geysers, burn-away, shield block, underwater tint), 52 Phase 6 (Dillo, Warrior, Demon, Chief, Wizard, Xichra, victory, rope bridge), 27 later-level features (fire backdrop, OmniPx + rain, backdrop ripple, horizon strip, auto-scroll, boss arena, wind, programmed cannons/maces, trees, rotating blade) — header values all 0 on levels 1–4 |
+| not built | 151 | 72 Phase 5 (enemy classes, enemy shots, geysers, burn-away, shield block, underwater tint — the tint since built, in Phase 5), 52 Phase 6 (Dillo, Warrior, Demon, Chief, Wizard, Xichra, victory, rope bridge), 27 later-level features (fire backdrop, OmniPx + rain, backdrop ripple, horizon strip, auto-scroll, boss arena, wind, programmed cannons/maces, trees, rotating blade) — header values all 0 on levels 1–4 |
 | out of scope | 498 | Toolbox/system/runtime plumbing (Apple events, resolution switch, date checks, memory, cursor, thread manager, debug, movie capture, FPS display, the C runtime) |
 | dead | 10 | no reachable caller: `.InitPlayerKickRects`, `.AltClutMod`, the track map (3), `.DoSaveGame`, `.BuildPosterizationTable`, `.BlitEncFaceTransRippleClip` (mode 0xd), dynamic sounds (2) |
 
