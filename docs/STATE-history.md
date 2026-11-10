@@ -4,6 +4,16 @@
 > only). Nothing current reads this file; the live state is `docs/STATE.md`. Each later close that settles something
 > adds a dated section at the top, newest first. The two snapshots below are verbatim (headings demoted only).
 
+## Settled at run 49's close (2026-11-11)
+
+- **Run 48's Ferazel block** (main 2f25cf6): Phase 5 machine-closed, Core 620, both builds staged at e9183ce, Q18 with
+  Ben, launch checks owed, run 49 = the Phase 6 planning run. Run 49 replaced it: the three research documents (LL, BOS,
+  ENG) written and reviewed, the 6A plan left for run 50, the launch checks still owed.
+- **What the research overturned in the plan's cards** (each document's closing section has the full list): 39 boss
+  routines, not 52; wind on levels 10 and 20; the horizon strip on six levels; the submerged tint and the side push
+  already built; the Bonus / Platform / Rope card of levels 10–22 empty; the ripple routine named by the plan never
+  runs in the original (the effect is inline in the frame painter); the rotating cannon belongs to 6A.
+
 ## Settled at run 48's close (2026-11-10)
 
 - **Run 47's Ferazel block** (main bc31efa / 8aa4db5): Phase 5 one task from its machine end; Core 619 = 486 + 133;

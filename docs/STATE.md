@@ -1,4 +1,4 @@
-# STATE — Ambrosia Classics — 2026-11-10
+# STATE — Ambrosia Classics — 2026-11-11
 
 Settled history lives in docs/STATE-history.md.
 
@@ -7,25 +7,30 @@ Settled history lives in docs/STATE-history.md.
 > numbers and open items and moves anything settled to the top of `docs/STATE-history.md`; it never appends a run story
 > here. Forks go in `docs/DECISIONS.md`, narrative in the handoff. Re-verify before acting.
 
-## Ferazel's Wand — 2026-11-10 (attended run 48 closed: Phase 5 machine-closed, Ben's gate pending; pushed; run 49 started)
+## Ferazel's Wand — 2026-11-11 (attended run 49 closed: Phase 6 research done, the 6A plan is next; pushed; run 50 started)
 
 - **Where it stands:** Phase 5 "Enemies" is closed on the machine side — **machine gates green; Ben's gate pending
   (Q18)**. Every enemy placed on levels 1–4 is alive, level 5 is enterable up to the Warrior's arena (the Warrior is a
   Phase 6 stand-in), on Mac and Windows. Both builds are staged on the Desktop (stamp e9183ce): `Ferazel's Wand.app`,
   `Ferazel's Wand (Windows).zip`; the card is `Ferazel/WHAT-TO-EXPECT.md` + `Ferazel/WINDOWS-WHAT-TO-EXPECT.md`.
-- **Owed by day (night rule; run 48 sat 21:28–23:30):** the four launch checks, muted — the Mac app's boot (G9M), the
-  Windows zip's boot in CrossOver (GW6), Proof B (expect 617 / 0 / 3 / 0 of 620), the Mac SDL smoke (GW4R). Run 49 does
-  them first if it starts by day, after a fresh stage of its head (the smoke refuses a stage older than the head), then
-  replaces the cards' "boot check owed" lines and re-stages.
-- **Next:** run 49 = the Phase 6 planning run (research tasks LL, BOS, ENG, then the 6A plan); it does not wait for
-  Ben's verdict.
+- **Phase 6 research is done (run 49, 2026-11-11; docs only, no game code):** three reviewed documents under
+  `docs/ferazel/` — `later-levels-ledger.md` (+ `tools/ferazel/later-levels-ledger.py --check`), `phase6-boss-contracts.md`,
+  `phase6-engine-contracts.md`. Each ends with "Corrections to the plan's cards (for the 6A planner)". Measured: 142
+  object types first placed after level 5; 401 placed objects on levels 10–22 are not built yet (730 on all later
+  levels); 39 boss routines over five bosses; 31 engine routines. Rulings: D46.
+- **Owed by day (still; run 48 sat at night, run 49 started 07:36 and spent its budget on reviews):** the four launch
+  checks, muted — the Mac app's boot (G9M), the Windows zip's boot in CrossOver (GW6), Proof B (expect 617 / 0 / 3 / 0
+  of 620), the Mac SDL smoke (GW4R). Run 50 does them first, after a fresh stage of its head (the smoke refuses a stage
+  older than the head), then replaces the cards' "boot check owed" lines and re-stages.
+- **Next:** run 50 = the Phase 6A plan (task P6A), written into the one plan file from the three research documents;
+  two Opus review legs, then the Fable cross-check. It does not wait for Ben's verdict.
 - **The plan:** `docs/superpowers/plans/2026-11-04-ferazel-remainder.md` (self-contained); the design:
   `docs/superpowers/specs/2026-11-04-ferazel-remainder-design.md`.
 - **Ben's gates:** Phase 1 passed; Phases 2 and 3 passed with notes; Phase 4 passed (Fireball note) and the Windows
   twin passed on Andrew's word (2026-11-07); **Phase 5 waiting (Q18)**. Then three gated Phase 6 parts (6A to the Goblin
   Chief, 6B to the Wizard and the fire, 6C the whole game), then one release `ferazel-1.0`.
 - **Current numbers** (the seat's own runs at run 48's close, 2026-11-10; suites and builds at 2bf8634, sweep and bot
-  at 1e82506 — game code identical):
+  at 1e82506 — game code identical; run 49 changed documents and one python tool only, so nothing was re-run):
 
 | gate | value |
 |---|---|
@@ -39,7 +44,7 @@ Settled history lives in docs/STATE-history.md.
 | GW1 / GW3 / GW4 / G5 / G-MUTE | 0 then 2 / 0 then 1 / Build complete! / BUILD SUCCEEDED / 1 then 1 |
 | stages (GW5) | both exit 0, stamp e9183ce, HectorKit ef2c341 |
 | HectorKit (G1) | main **ef2c341**, clean; zero-skip executed **370**; Ferazel follows HectorKit main |
-| ladder from here | 620; Phase 6 ladders are set by the 6A plan (run 49) |
+| ladder from here | 620; Phase 6 ladders are set by the 6A plan (run 50) |
 
 - **Goldens (◈):** unchanged in run 48 (A5 moved none); the values live in the test files (`FrameGoldenTests`,
   `Phase2GoldenTests`, `BootFacesTests`, `WinReferenceFramesTests`) and are listed in the plan's "Goldens" paragraph
@@ -49,7 +54,7 @@ Settled history lives in docs/STATE-history.md.
   Q15's follow-ups, Q13.
 - **Worktrees:** `ferazel-run-44-7428b3` (one untracked cache folder) and `ferazel-run-47-e0431c` are finished and
   merged — Ben or their sessions remove them; run 48 removed `ferazel-run-45-f94cf1`. `nifty-mendel-0ad40e` is run
-  48's (merged; `out/` holds the stages). `heuristic-chandrasekhar-f66ade` is another session's;
+  48's (merged; `out/` holds the stages). `compassionate-leavitt-7ca958` is run 49's (merged). `heuristic-chandrasekhar-f66ade` is another session's;
   `inspiring-cannon-e97ccd` (Deimos) and `~/Developer/gamepad-wt/` are Ben's.
 - **The sweep and the bot are guarded (2026-11-10):** both scripts kill any worker past `MAX_WORKER_MB` (4096) and
   brake below `MIN_RUNNING_FREE_PCT` (15) free memory, with a failure row. Stop a background run with a plain

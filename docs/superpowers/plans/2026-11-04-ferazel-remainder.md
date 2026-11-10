@@ -764,6 +764,20 @@ once; every nonzero header field appears); the document's totals equal the censu
 levels); two Opus legs review it (§0); the first checks it against the dump on three sampled levels (10, 50, 62). Commit: `Ferazel bank:
 later-levels ledger (levels 10–70: switches, types, resources, owners) + checker`.
 
+**As executed (run 49, 2026-11-11).** Done: `docs/ferazel/later-levels-ledger.md` + `tools/ferazel/later-levels-ledger.py`
+(84529ea; fix round 16963f5, which also wrote the three INDEX lines). `--check`: OK — 142 census types once, 101 nonzero
+header fields on 19 later levels, 5,641 active records over 24 levels. Two Opus legs, both PASS WITH FIXES; leg 2 ran the
+port's real Setup over every active record of all 24 levels — the ledger's port model matched on every level × type.
+Measured: 401 records on levels 10–22 are refused today (10: 31 · 11: 35 · 15: 38 · 18: 6 · 20: 209 · 21: 30 · 22: 52),
+730 on all later levels. **This plan's cards were wrong against the data** (the ledger's closing section lists them for
+P6A): wind is on levels 10 and 20 (103 / 2,899 cells), not 10 only; the submerged-tile tint (6A-T11) and the side push
+are already built — prove only; 6A-BN1 has nothing to build; the cannon and mace path arms are Background class, not
+Box; the horizon strip is on six levels (10, 30, 40, 45, 62, 67); picture 0x46a has three cache records but two cuts,
+so 6A-FB's test cannot pass as worded; level 21's graves 2833 / 2834 / 2836 reach an unbuilt hot-rect flip. New card
+proposed: 6A-CF — transcribe the whole picture-cache registration list once (285 records: 92 sets, 193 singles), keyed
+by record; feasible as one task (touches `CachedFaces` only; two tests re-anchor). The fix round's corrected leg-1
+claim: the overlay-cell water tint is built (`LightRenderer.plainWrapFGOverlayTile`).
+
 ### Task BOS — the boss contracts (research)
 
 **Files:** `docs/ferazel/phase6-boss-contracts.md` (new), corrections appended to `bosses.md`, `bosses-2.md`,
@@ -784,6 +798,20 @@ ends with the **test list** its build task will carry (names + the number each p
 **Acceptance:** every routine in `routines-classified.tsv` with "phase 6 (boss)" or "boss face cache registration"
 appears in exactly one contract (52 rows); two Opus legs review it (§0); the first re-derives two states per boss from the dump. Commit: `Ferazel
 bank: Phase 6 boss contracts (Warrior, Chief, Wizard, Fire Guardians, Xichra) from the dump`.
+
+**As executed (run 49, 2026-11-11).** Done: `docs/ferazel/phase6-boss-contracts.md` (1cfc137; fix round 2e22132; a
+re-review of that large fix round and its 13 small fixes a5a5016), dated corrections appended to `bosses.md` and
+`bosses-2.md`. Two Opus legs, both PASS WITH FIXES; leg 1 re-derived ten states from the dump, all matching. **The card's
+"52 rows" was wrong:** 46 rows carry the phrases, 8 of them (+ `.ShootSpines`) are the built Dillo's — 39 rows, each in
+exactly one contract (Warrior 8, Chief 7, Wizard 6, Fire Guardians 7, Xichra 11). Other card errors (the document's
+closing section lists them for P6A): the step-7 lines are routing M l. 49514–49521 and damage rows 49840–49851; Xichra
+has no contact row; the Warrior already has its three pieces in part; 6A-FB is not a Warrior prerequisite; the Wizard
+has 13 switch arms, 6 live, not "eleven states"; level 67's CLUT animation belongs to 6B-CA's routine. **Seat's
+rulings:** every scripted kill's death frame is measured by its build task (none can be derived on paper) — the
+contract names seed 1 and a starting key script; each spawned type carries a "runs on its spawn frame" row (insert by
+layer; the Handle pass reads the next sprite first); the two mutation tables' 58 unpinned behaviours (Warrior 28,
+Chief 30) are listed as asserts for the build tasks. Proposed split: 6A-W1 9 tests / W2 8, 6A-CH1 10 / CH2 8, 6B-WZ1
+10 / WZ2 7, 6C-DM1 8 / DM2 9 / DM3 8, 6C-XL 1, 6C-XI1 9 / XI2 10 / XI3 8.
 
 ### Task ENG — the engine-feature contracts (research)
 
@@ -806,6 +834,22 @@ blew up level 3's review in run 29).
 **Acceptance:** the 27 "later-level" routines and the Phase 6 "not built" non-boss rows of `routines-classified.tsv`
 each appear once; two Opus legs review it (§0); the first re-derives OmniPx mode 1's rain generator and the CLUT animation's step from the dump.
 Commit: `Ferazel bank: Phase 6 engine-feature contracts from the dump`.
+
+**As executed (run 49, 2026-11-11).** Done: `docs/ferazel/phase6-engine-contracts.md` (d662b44 + its review fix
+round, the last `Ferazel bank: engine-feature contracts` commit of run 49). Two Opus legs, both PASS WITH FIXES (44
+findings, none critical); leg 1 re-derived the rain generator, the CLUT step, the wind lookup and the strip Setup.
+**The card's "27 later-level routines" are nine reason phrases** among the not-built rows; with the 4 non-boss Phase 6
+rows the set is 31, each in exactly one section. Card errors (listed in the document for P6A): `.RipplePxBackOffsets`
+never runs (its header switch 0x271e is 0 on every level) — the ripple of levels 11 and 18 is inline in
+`.PaintFrameWrap`; the rotating cannon arm (p1 101–106) is first placed on level 10, so it is 6A; water kinds 206–209,
+rope bridge 1466 and table 0xb71 are placed on no level; the strip sprites take the first records on their six levels.
+**Seat's rulings (D46):** the engine document's feature tasks own every type that has a feature section; the ledger's
+type-split tasks own the rest. 6A-FB is absorbed by 6A-CF. A feature is proven before its level opens on a test-only
+level fixture (the real level data without the still-unbuilt records) with a feature golden; the level's "enterable"
+task pins the real first-frame golden as a new value. Frames of thunder, ripple and death are measured by the build.
+
+**P6A was not reached in run 49** (the context cap: the three research tasks and their reviews took the run). It is
+run 50's whole job.
 
 ### Task P6A — the Phase 6A plan (the planning run's product)
 

@@ -2097,3 +2097,27 @@ with the skipped tests checked by name (rulings 11, 15); D44's ladder (+1) stand
    named in the closing message). Non-blocking questions queue and never stop the chain. Run 43 applies it at its
    close: NEXT → run 44 [BL GF], the next attended session started.
 **Approved by:** Ben (1 in his words, 2–5 "yes, all recommended", 6 by his resume request, 7 in his words, 2026-11-07).
+
+## D46 — Ferazel's Wand: Phase 6 research rulings (run 49, 2026-11-11)
+
+The seat's rulings while the three Phase 6 research documents were written and reviewed (the later-levels ledger, the
+boss contracts, the engine-feature contracts — all under `docs/ferazel/`). None changes the game; each tells the 6A
+planner how to cut the work.
+
+1. **One owner per object type.** Where the engine document has a feature section for a type (trees, clouds, rotating
+   cannons, the blade, mace paths, the carpet …) its feature task owns that type; the ledger's type-split tasks own only
+   what is left (plants, Box scenery, faces and talkers).
+2. **The fireball cache task is folded into the picture-cache task.** The plan's 6A-FB becomes part of the new 6A-CF
+   (the whole registration list of 285 records, transcribed once and keyed by record). Picture 0x46a has three cache
+   records and two cuts.
+3. **Proof before a level opens.** An engine feature is built before its first level's "enterable" task, when that
+   level cannot yet open. The feature task proves itself on a test-only fixture — the real level data with the records
+   of still-unbuilt types left out — and pins a feature golden there. The level's own task later pins the real
+   first-frame golden as a new value. No golden of levels 1–5 may move in a feature task.
+4. **Measured, not derived.** A boss's scripted-kill death frame, and the thunder and ripple frames, are measured by
+   the build task; the contracts name the seed and a starting key script only.
+5. **Card numbers that the data contradicts are corrected in each document's closing section**, not silently: 39 boss
+   routines (not 52), 31 engine routines, wind on levels 10 and 20, the horizon strip on six levels, the tint and the
+   side push already built, 6A-BN1 empty.
+6. **The owed launch checks stay owed.** Run 49 started at 07:36 (night rule) and spent its context on the research
+   reviews; run 50 starts by day and does them first.
