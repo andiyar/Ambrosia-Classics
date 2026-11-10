@@ -304,9 +304,11 @@ Desktop items are replaced). `stage-btx.sh`'s recipe, for Ferazel:
 ### The smoke: `smoke-ferazel-win.sh` (gates GW4R and GW6)
 
 - `--mac-only` (GW4R): the Mac SDL development build (`swift build` of `Ferazel/Windows`, brew `sdl3`), headless, to
-  the main menu; exit 0, `video=dummy audio=none`, FNV = the menu reference (one source for all three: the
-  `"smoke …_fnv"` asserts of `Ferazel/Windows/Tests/FerazelWinKitTests/WinReferenceFramesTests.swift`, read by the
-  script; unreadable → exit 65).
+  the main menu; exit 0, `video=dummy audio=none`, FNV = the menu reference. The script reads its three reference
+  FNVs from the `"smoke …_fnv"` asserts of `Ferazel/Windows/Tests/FerazelWinKitTests/WinReferenceFramesTests.swift`
+  (unreadable → exit 65), after the argument check and the night guard, and compares them in the exe's spelling (no
+  leading zeros). The menu FNV is also pinned by `FerazelDriverTests` and `BakedTextTests`, and the three runs' wake
+  counts still live in the script; a drift in either fails loudly rather than passing.
 - **No argument** (GW6): unzips the **staged zip** (it never stages: no zip → exit 66 with the stage command) into a
   scratch folder and runs its `Ferazel's Wand.exe` with no `--data` / `--fonts` in the clean bottle
   (`run-in-crossover.sh --clean`: nothing on `WINEPATH`), then `cmp`s each dump with the Mac SDL build's dump of the

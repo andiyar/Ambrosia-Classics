@@ -58,29 +58,9 @@ repo="${here:h:h}"
 # the dump ON the reference frame, so the Mac dump's FNV can be checked against the recorded one as well.
 # These six values are also pinned in-process, headless, by Ferazel/Windows/Tests/FerazelWinKitTests/
 # WinReferenceFramesTests.swift (testSmokeReferencesInProcess: the exe's --frames loop through the scripted host, the
-# same wakes, keys and baked fonts). The three reference FNVs have ONE source: that test. They are read from it here
-# (the `hex(0x…)` on the assert line tagged "smoke <name>", underscores dropped); a change that moves a reference moves
+# same wakes, keys and baked fonts). The three reference FNVs are read from that test (below, after the launch guard:
+# the `hex(0x…)` on the assert line tagged "smoke <name>", underscores dropped); a change that moves a reference moves
 # it there, and this script follows. If any of the three cannot be read, the script stops (exit 65, one line).
-refs_file="$repo/Ferazel/Windows/Tests/FerazelWinKitTests/WinReferenceFramesTests.swift"
-# -- reference parse (begin) --
-ref_fnv() {  # ref_fnv <name>: prints the 0x + 16-hex-digit FNV the test pins for "smoke <name>", or fails
-    local -a lines
-    lines=("${(@f)$(grep -F "\"smoke $1\"" "$refs_file" 2>/dev/null || true)}")
-    lines=(${lines:#})
-    (( ${#lines} == 1 )) || return 1
-    [[ "${lines[1]}" =~ 'hex\((0x[0-9a-f_]+)\)' ]] || return 1
-    local v="${match[1]//_/}"
-    [[ "$v" =~ '^0x[0-9a-f]{16}$' ]] || return 1
-    print -r -- "$v"
-}
-for ref in menu_fnv newgame_fnv text_fnv; do
-    if ! val="$(ref_fnv $ref)"; then
-        print -u2 "smoke-ferazel-win: cannot read the reference $ref from $refs_file (want exactly one assert line tagged \"smoke $ref\" with a hex(0x…) FNV)"
-        exit 65
-    fi
-    typeset -g "$ref=$val"
-done
-# -- reference parse (end) --
 menu_frames=1437
 newgame_frames=1865
 text_frames=3833
@@ -118,6 +98,34 @@ if [[ $mode == guard ]]; then
     print "smoke-ferazel-win: guard ok: hour $h; drivers dummy; --mute"
     exit 0
 fi
+
+# ---- The three reference FNVs, read from WinReferenceFramesTests.swift (after the argument check and the guard, so a
+# bad argument still exits 64 and --check-guard never reads the test file) --------------------------------------------
+refs_file="$repo/Ferazel/Windows/Tests/FerazelWinKitTests/WinReferenceFramesTests.swift"
+# -- reference parse (begin) --
+# ref_fnv <name>: prints the FNV the test pins for "smoke <name>" in the exe's own spelling, or fails. The exe prints
+# `"0x" + String(fnv, radix: 16)` (Ferazel/Windows/Sources/FerazelWin/main.swift): lower case, no leading zeros. So the
+# test's literal (1–16 hex digits after the underscores go) is printed the same way: leading zeros dropped, "0x0" for 0.
+ref_fnv() {
+    local -a lines
+    lines=("${(@f)$(grep -F "\"smoke $1\"" "$refs_file" 2>/dev/null || true)}")
+    lines=(${lines:#})
+    (( ${#lines} == 1 )) || return 1
+    [[ "${lines[1]}" =~ 'hex\((0x[0-9a-f_]+)\)' ]] || return 1
+    local v="${match[1]//_/}"
+    [[ "$v" =~ '^0x[0-9a-f]{1,16}$' ]] || return 1
+    v="${v#0x}"
+    while [[ "$v" == 0?* ]]; do v="${v#0}"; done
+    print -r -- "0x$v"
+}
+for ref in menu_fnv newgame_fnv text_fnv; do
+    if ! val="$(ref_fnv $ref)"; then
+        print -u2 "smoke-ferazel-win: cannot read the reference $ref from $refs_file (want exactly one assert line tagged \"smoke $ref\" with a hex(0x…) FNV)"
+        exit 65
+    fi
+    typeset -g "$ref=$val"
+done
+# -- reference parse (end) --
 
 # ---- The stage (CrossOver half): present, never made here ----------------------------------------------------
 zipfile="$repo/out/Windows/Ferazel's Wand (Windows).zip"
@@ -172,7 +180,9 @@ mac_run() {
     cat "$log"
     (( code == 0 )) || { print "smoke-ferazel-win: mac $label: exit $code (want 0)"; ok=0; }
     log_ok mac $label "$log" || ok=0
-    grep -qF "presented RGBA FNV $fnv" "$log" || { print "smoke-ferazel-win: mac $label: FNV is not $fnv"; ok=0; }
+    # End-anchored (the FNV is followed by ", wrote …" or the line end), so a reference that is a prefix of the printed
+    # value does not match; $fnv is already in the exe's spelling (ref_fnv).
+    grep -qE "presented RGBA FNV ${fnv}(,|\$)" "$log" || { print "smoke-ferazel-win: mac $label: FNV is not $fnv"; ok=0; }
     [[ -s "$out/mac-$label.ppm" ]] || { print "smoke-ferazel-win: mac $label: no dump"; ok=0; }
     (( ok ))
 }
