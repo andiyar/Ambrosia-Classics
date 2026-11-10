@@ -59,6 +59,14 @@ while (( $# )); do
     shift
 done
 
+# Before any build work: refuse a gate card that still holds a placeholder the seat has not filled ("<<SEAT:").
+for c in "$repo/Ferazel/WHAT-TO-EXPECT.md" "$repo/Ferazel/WINDOWS-WHAT-TO-EXPECT.md"; do
+    if hit="$(grep -n -F -m 1 '<<SEAT:' "$c")"; then
+        print -u2 "stage-ferazel-win: unfilled <<SEAT: placeholder in ${c#"$repo"/} line ${hit%%:*}; fill the card first"
+        exit 66
+    fi
+done
+
 name="Ferazel's Wand"
 pkg="$repo/Ferazel/Windows"
 data="$repo/Resources/Ferazel"

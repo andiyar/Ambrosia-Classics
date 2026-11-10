@@ -10,6 +10,13 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# Before any build work: refuse a gate card that still holds a placeholder the seat has not filled ("<<SEAT:").
+for c in "$ROOT/Ferazel/WHAT-TO-EXPECT.md" "$ROOT/Ferazel/WINDOWS-WHAT-TO-EXPECT.md"; do
+    if hit="$(grep -n -F -m 1 '<<SEAT:' "$c")"; then
+        echo "stage-ferazel: unfilled <<SEAT: placeholder in ${c#"$ROOT"/} line ${hit%%:*}; fill the card first" >&2
+        exit 3
+    fi
+done
 DATA="${FERAZEL_DATA:-$ROOT/Resources/Ferazel}"
 FILES=("Ferazel's Wand.rsrc" "Ferazel's Wand Backgrounds.rsrc" "Ferazel's Wand Sounds.rsrc"
        "Ferazel's Wand Sprites.rsrc" "Ferazel's Wand Titles.rsrc" "Ferazel's Wand World Data.rsrc")

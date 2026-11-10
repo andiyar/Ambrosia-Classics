@@ -26,6 +26,8 @@
 #
 # `xcrun xctest` execs xctest in place on this Mac (the pid stays the same), but the tree walk (`pgrep -P`) also
 # catches the case where xcrun starts xctest as a child.
+# Never force-kill (`kill -9` / `pkill -9`) the sweep or bot script: no trap runs, the watcher dies with it and the
+# test process is left running unwatched. Stop a run with a plain `kill <script pid>` (its trap cleans up).
 
 # A numeric setting ($1, the variable's name; $2 its default when unset): digits only, no leading zero, at most 9
 # digits, not empty. Anything else stops the script at once (exit 2) — never a silent default.
