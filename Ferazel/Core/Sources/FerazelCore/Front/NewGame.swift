@@ -276,7 +276,7 @@ extension GameFlow {
             loopEnded = true
         } else if !BuiltLevels.range.contains(n) {
             // ◇ D35: the level is not built yet — the report, then the map again at the node the player chose, nothing
-            // new unlocked (the exits are −1 since the map's loop began). // later: Phases 5–6.
+            // new unlocked (the exits are −1 since the map's loop began). // later: Phase 6 (6A-BL; gone at 6C-END).
             report(BuiltLevels.notBuiltReport(n), &out)
             run([
                 { f, _, _, out in f.openMap(level: Int16(truncatingIfNeeded: n), name: m.levelName, &out) },

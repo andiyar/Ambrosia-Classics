@@ -5,7 +5,7 @@ import Foundation
 /// hurt-stun → door walk (`_DAT_100a05f8`) → rope → swim → wall cling / climb / pull-up → melee (`.HandleItemUse`) →
 /// grounded (crouch, walk / run with footsteps, stand / turn / uphill / fidget) → airborne. The glider arm is GL's,
 /// the spirit transition and the dying arm's necklace revive MS's; the boss-grab arm is a named stub (no writer until
-/// Phase 5); the melee arm is IU's `.HandleItemUse`, `HeldItem`; the door
+/// Phase 6: 6A-CH, 6C-XI); the melee arm is IU's `.HandleItemUse`, `HeldItem`; the door
 /// arm is W2b's (passages) (plan Invariant 6). A face is `+0xc0 = set + index·0x34` (one 0x34-byte face record per index).
 public enum PlayerStates {
     // MARK: the face sets (`.InitPlayerSprite @ 1004a284`, l. 42428–42490; player-states §7)

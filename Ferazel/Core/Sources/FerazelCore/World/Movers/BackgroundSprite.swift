@@ -495,7 +495,7 @@ extension BackgroundSprite {
     ///   (`+0x168` still ≥ 1 after its − 1), and never for ids ≥ 100 (100 included): those are launched.
     /// - **cannon** 0x442…0x44b (l. 63679–63714): other's Handle is none of Background, Statue (`01f8`), Cannoned
     ///   (`045c`), Button (`0ac4`), EnemyShot (`0488`), Effect (`0460`); its type none of 0x41f, 0x434, 0x771, 0x772,
-    ///   0xb7c, 0x5c3, 0x5c4; `+0x130 ≥ 0` → (a player shot at a 105 / 106 cannon is steered — // later: SH, and
+    ///   0xb7c, 0x5c3, 0x5c4; `+0x130 ≥ 0` → (a player shot at a 105 / 106 cannon is steered — // later: Phase 6;
     ///   those cannons are refused at Setup) `.TurnIntoCannoned(other, bg)`, then bg `+0x154 = 6` (write-only).
     ///   An enemy shot is never captured (its Handle is excluded, l. 63684; ES); a Button runs `.button` (BT), a
     ///   Statue `.statue` (SW).

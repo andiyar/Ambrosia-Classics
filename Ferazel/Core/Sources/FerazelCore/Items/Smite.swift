@@ -14,7 +14,7 @@ public enum Smite {
     ///
     /// As `SpriteHandler` cases (EC): the eleven enemy classes of levels 1–5, the Warrior's included
     /// (0x100a0494 — Ruling 3a). The four bosses' Handles (Xichra, Wizard, Demon, Chief) have no case yet: those
-    /// sprites are `.inert` and placed on no level 1–5 // later: Phase 6–7 (their Handles).
+    /// sprites are `.inert` and placed on no level 1–5 // later: Phase 6 (their Handles: 6A-CH, 6B-WZ, 6C-DM, 6C-XI).
     public static let enemyHandlers: [SpriteHandler] = [.warrior, .walker, .salamander, .roach, .gremlin, .frog,
                                                         .floater, .dillo, .crawler, .blob, .bat]
 

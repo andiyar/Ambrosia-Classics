@@ -1,8 +1,8 @@
 import Foundation
 
 /// The Statue spell's petrified sprite (SW; enemies-ground §2.2): `.TurnIntoStatue @ 10043138` (M l. 38244–38272) and
-/// `.HandleStatueSprite @ 100664a8` (M l. 56521–56555). On levels 1–4 its one caller is the platform site of
-/// `.HitPlatformSprite` (M l. 55798–55803, `PlatformSprite.hit`); the enemies' eleven sites are // later: Phase 5.
+/// `.HandleStatueSprite @ 100664a8` (M l. 56521–56555). Its callers: the platform site of `.HitPlatformSprite`
+/// (M l. 55798–55803, `PlatformSprite.hit`) and the enemies' eleven Hit sites (`EnemyCommon.turnIntoStatue`).
 /// While petrified the sprite runs `.statue` with the Box class's hit (`.HitBoxSprite`, `FerazelSession.hitCallback`)
 /// and tile callback (`.HitBoxTileSprite` — the Statue Handle never separates, so it is never called).
 public enum StatueSprite {

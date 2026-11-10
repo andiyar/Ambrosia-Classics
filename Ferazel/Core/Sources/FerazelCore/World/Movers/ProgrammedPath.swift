@@ -3,8 +3,8 @@ import Foundation
 /// The programmed path (physics §8.5): `.SetupProgrammedPath @ 10044c58` (M l. 39288–39381) and `.HandleProgrammedPath
 /// @ 10044fe8` (M l. 39384–39468). Modes 1 (vertical) and 2 (horizontal) shuttle between two 24.8 bounds; 3 is stores
 /// only (its Handle has no arm); 10 / 11 swing on a radial (`makeRadial`, the world `handle`). One home for every caller
-/// (audit ruling 3): the path bats (BA), and later the Background p1 < 0 and mace modes 1–2 (M l. 62072, 62343, 62976,
-/// 63143) and the Gremlin (M l. 69226, 69307). No Bat places 10 / 11 today: `SetupFaces` refuses them.
+/// (audit ruling 3): the path bats (BA), the Gremlin (GF, M l. 69226, 69307), and later the Background p1 < 0 and mace
+/// modes 1–2 (M l. 62072, 62343, 62976, 63143 // later: Phase 6). No Bat places 10 / 11: `SetupFaces` refuses them.
 public enum ProgrammedPath {
     /// `.SetupProgrammedPath(s, −1, 0)` (M l. 39288–39381) — `record` the live record of `+0x48` (nil = −1): mode
     /// `+0xf0` = |p1| (100…199 → − 100, which also zeroes the radial speed — `makeRadial`), `+0xfc` = p3; `+0xf8 = 1`;

@@ -640,7 +640,7 @@ public struct SpriteSlot: Equatable, Sendable {
     }
 }
 
-/// The Handle a sprite's `+0x4c` names (plan S2, LOCKED). `inert` = the Phase 5 classes (enemies): no Handle
+/// The Handle a sprite's `+0x4c` names (plan S2, LOCKED). `inert` = the four bosses (later: Phase 6): no Handle
 /// built yet and no hit callback; still drawn, idled and erased. `bonus` (BN) = `.HandleBonusSprite` (`BonusSprite`).
 public enum SpriteHandler: Equatable, Hashable, Sendable {
     case player, platform, chain, background, box, effect, rope, ropeSegment, inert
@@ -671,7 +671,7 @@ public enum SpriteHandler: Equatable, Hashable, Sendable {
     case button
     /// SW (added, Invariant 9): `.HandleStatueSprite @ 100664a8` (`PTR_PTR_100a01f8`, M l. 56521–56555), installed by
     /// `.TurnIntoStatue @ 10043138` (M l. 38244–38272) with the Box class's hit `.HitBoxSprite` (`PTR_PTR_100a01f4`) and
-    /// tile callback `.HitBoxTileSprite` (`PTR_PTR_100a01f0`) — `StatueSprite`. The enemies' statue sites are Phase 5's.
+    /// tile callback `.HitBoxTileSprite` (`PTR_PTR_100a01f0`) — `StatueSprite`. The enemies' eleven sites call it too.
     case statue
     /// EC (added at once, plan S2, Invariant 9): the enemy Handles — each a named no-op (`EnemyCommon.handle`, drawn like
     /// `.inert`, no hit) until its class's task fills it and maps its `forClass` row. TOC slots (`pef.py tocfunc`):

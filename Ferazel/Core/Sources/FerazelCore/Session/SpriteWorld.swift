@@ -436,8 +436,8 @@ public final class SpriteWorld {
     /// each in list order (the "sort" takes the first unvisited key < 32000 and breaks — every key is ≤ 0) gets
     /// `hitPlayer` then `C.hit`. `hitPlayer` = `.HitPlayerSprite` — built
     /// (W1 Platform arm, W2a/W2b Background arms, W3 Box arm, S1 save point, C1 NPCs / signs); its other arms are
-    /// `HitPlayerSprite`'s own stubs (TP the teleporters — BX1 built the spin stomp, BX2 the doors, chest and 2907
-    /// timer; Phase 5 enemies and shots).
+    /// `HitPlayerSprite`'s own stubs (later: Phase 6 — TP built the teleporters, BX1 the spin stomp, BX2 the doors,
+    /// chest and 2907 timer, EC / ES the enemies and shots).
     ///
     /// S1 (Invariant 6): a `hitPlayer` that sets `suspension` (a save point firing) stops the pass right after that
     /// call; the iteration state is kept (`SpecialPass`) and `continueSpecialPass` goes on with what the original does

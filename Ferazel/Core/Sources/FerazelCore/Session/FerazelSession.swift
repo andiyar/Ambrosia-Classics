@@ -551,7 +551,7 @@ public final class FerazelSession {
             PlayerShot.handle(world: world, id: id, solver: solver, lights: &self.lightTable, effects: effects,
                               faceWidth: { Self.frameRect($0, resources: res).right }, faceBounds: bounds)
         case .inert:
-            break                                       // the four bosses not placed on levels 1–5 // later: Phase 6–7
+            break                                       // the four bosses not placed on levels 1–5 // later: Phase 6
         case .enemyShot:
             // `.HandleEnemyShotSprite @ 1005bffc` (ES, `EnemyShot.handle`): its Kills' Effects take `lightTable` and
             // prefs+6; the Chief boulder's hot rect reads the face bounds.
