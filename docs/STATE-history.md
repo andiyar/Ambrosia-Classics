@@ -4,6 +4,15 @@
 > only). Nothing current reads this file; the live state is `docs/STATE.md`. Each later close that settles something
 > adds a dated section at the top, newest first. The two snapshots below are verbatim (headings demoted only).
 
+## Settled at run 47's close (2026-11-08)
+
+- **Run 46's Ferazel block** (main c8d9cf5 → repaired 2d82e7e): waves 5.0–5.4 done, levels 1–4 enterable, level 5 not;
+  Core 607 = 479 + 128; Proof B 604 / 0 / 3 / 0 of 607; visit sweep 3,360 visits / 0, bot 86,400 steps / 0 on levels 1–4;
+  GE core-only. Run 47 replaced it: level 5 enterable, Core 619 = 486 + 133, GE on levels 1–5 both shells.
+- **Wave 5.4's missing Fable cross-check** (runs 44–46 reviewed under the one-Opus-leg rule) was made good in run 47:
+  MERGEABLE, no divergence from the dump; one tests-only fix round (608).
+- The run-44/45 worktree note moved to the live block as a Ben action (the app refused the removal).
+
 ## 2026-11-08 — Snapshot A: `docs/STATE.md` as it stood at run 46's close (main c8d9cf5), before the split
 
 Everything here was the whole live-state file: the release history of Aki and Bubble Trouble X, every finished Ferazel

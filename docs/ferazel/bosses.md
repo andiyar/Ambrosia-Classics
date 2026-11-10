@@ -370,3 +370,9 @@ then `+0x116 = 15` (15 invulnerable frames), `+0xb2 = 1`, `.BloodSpray(…,0x28,
 snd 702 if HP ≤ 200 else 701, 60 % a cry; the shot is killed silently. With Fireball (100 per
 shot at power 1) 2000 HP = 20 hits [HIGH arithmetic]. Falling Statue/Box: 200 + cry. Contact
 0x70; the thrown 0x77b and the landing stun are the other threats. Kill §1.4.
+
+## Corrections — run 47 (2026-11-08, LV5)
+
+- **§1.3, the pan:** the lower-bound choice in `.FindUpperLeftCorner` reads the pan counter before this frame's +1 (M l. 5953) and the shift uses it after (M l. 6011–6028): the forced view runs 836 + 16·(40 − k) for k = 1…40, capped by the map edge at 1408; before the lock the camera sits at 1408 because the map edge beats the |−1444| bound. The pan counter `_DAT_1009ff9c` is zeroed only by the game-globals init (M l. 822; New Game / Continue), never per level.
+- **§1.2 / the boss-music loop rule (M l. 5266–5274):** the byte the rule tests beside the music preference is the **no-async-fade-running flag** `cRam100a5be2` (set/cleared only by the fade code, M l. 42067, 42078, 42093, 42123), not a "music on" setting; the read happens before `_UpdateSprites` (M l. 5275).
+- **The Warrior's Setup (M l. 72989–73079):** `+0x17e` (facing) is set when FastRand(100) **≥ 51** (raw 10087a54–10087a68, the Dillo's compare idiom), not < 51. While the arena is unlocked the Handle still drops three rocks (type 1075) above the arena every 15 frames and runs the wounded-glow timer (M l. 73151–73212) — Phase 6 builds them. `.InitWarriorSprite`'s three registrations are M l. 72982–72984, between the Dillo's and the Floater's in `.InitSprites` (M l. 133–134).

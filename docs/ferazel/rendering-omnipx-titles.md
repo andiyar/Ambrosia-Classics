@@ -463,3 +463,9 @@ None (no sprite fields involved).
    at V 10 the back row is re-decided only at 273→274; the 410→411 change lies past the drawn rows [HIGH].
 4. Header 0x271e (the 0x86/0x85 flags) is 0 on all 24 levels; the late re-decide branch (`100187a8`, view row > 0x280)
    is dead as written [HIGH data].
+
+## Corrections — run 47 (2026-11-08, OX)
+
+- **§3.2, the yb backup:** ⚑ the `.TurnOnOmniPx` loop (M l. 13043–13054) saves `hdr+0xb26c` through a pointer it never advances, so passes 1…0x1fff re-save the already-zeroed field — the backup at 0x100f40a8 always ends 0, and `.TurnOffOmniPx` restores yb as **0**, not its original value (level 5's real yb is 256). The port follows the binary.
+- **§3.2, mode 1's layer-3 factors:** the "0xaa then 0xc0" is one dead 0xc0 write in the dump (the decompiler folded the other); no behaviour either way.
+- **§3.2, turn-on timing:** `.SetupOmniPx` runs at M l. 2540 after the cache loader's 100 % load bar and before one more 100 % bar at M l. 2569 and the player spawn at M l. 5181 — so the backdrop is on before the first frame's sprite pass (mode-0xb sprites read the zeroed factors from frame 1).
