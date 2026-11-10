@@ -4,6 +4,16 @@
 > only). Nothing current reads this file; the live state is `docs/STATE.md`. Each later close that settles something
 > adds a dated section at the top, newest first. The two snapshots below are verbatim (headings demoted only).
 
+## Settled at run 48's close (2026-11-10)
+
+- **Run 47's Ferazel block** (main bc31efa / 8aa4db5): Phase 5 one task from its machine end; Core 619 = 486 + 133;
+  WinKit 82; Proof B 616 / 0 / 3 / 0 of 619; nothing staged since Phase 4. Run 48 replaced it: A5 and the Phase 5 Fable
+  cross-check done, Core 620, both builds staged at e9183ce, the gate card to Ben as Q18, launch checks owed by day.
+- **The relabel sweep is done:** no `later: Phase 5` is left in `Ferazel/Core/Sources`; the gap ledger marks the enemy
+  classes, shots, geysers, the Dillo, the boulder spouts, the underwater tint and level 5 as built.
+- **Carries closed by run 48:** "the gap ledger's tint lines still call the tint unbuilt" (fixed); the Windows smoke
+  references living in two copies (the script reads the test file).
+
 ## Settled at run 47's close (2026-11-08)
 
 - **Run 46's Ferazel block** (main c8d9cf5 → repaired 2d82e7e): waves 5.0–5.4 done, levels 1–4 enterable, level 5 not;

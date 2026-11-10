@@ -32,6 +32,24 @@ brother's Windows machine.
 
 ## Open
 
+### Q18 — 2026-11-10 — Phase 5 gate: with the enemies alive, do levels 1–5 play like Ferazel's, up to the Warrior's arena?
+Context: Phase 5 is finished on the machine side (attended run 48). Every enemy on levels 1–4 now moves, attacks, hurts
+you and can be killed; level 5 opens with its moving sky and locks you into the Warrior's arena, where the Warrior
+stands still (the fight is Phase 6). Both builds are on your Desktop: `Ferazel's Wand.app` (Mac) and
+`Ferazel's Wand (Windows).zip` (for you or Andrew on a PC). The checklist is `Ferazel's Wand — WHAT-TO-EXPECT.md` on the
+Desktop (12 points; repo: `Ferazel/WHAT-TO-EXPECT.md`, Windows part `Ferazel/WINDOWS-WHAT-TO-EXPECT.md`). To start on
+any level 1–5: `cd ~/Desktop && open -n "Ferazel's Wand.app" --args -FerazelLevel 5`. The machine checked every object
+on every level (3,488 visits on each of the Mac and Windows game paths, 0 problems) and played 108,000 random steps on
+each path with 0 failures; 620 game tests pass. **Not yet done: the muted boot checks of the two staged builds** — the
+run sat at night, when nothing may be launched; the next daytime session does them and updates the card. Known and
+expected: no shield can be reached yet, no lava before level 50, nothing harms the Warrior, the Warrior drops no rocks.
+Pass looks like: the enemies behave, hurt and die as in your Let's Play (https://www.youtube.com/watch?v=ESuyxMUEzDw),
+by eye and by ear, and level 5 plays to the arena.
+Options: (a) pass; (b) pass with notes (write them — each becomes a task); (c) fail (say what is wrong).
+Recommendation: a or b — only a person can judge how each enemy feels at speed and how it sounds.
+Blocks: nothing. Run 49 plans Phase 6 (research, then the plan to the Goblin Chief) without waiting.
+Answer:
+
 ### Q17 — 2026-11-07 — The Aki 1.1.0 original has moved on your Mac (HectorKit's four Aki census tests skip) — a note, no action needed from the loop
 Context: HectorKit's machine gate (`tools/check-zero-skip.sh`) looks for the Aki 1.1.0 app at
 `~/Developer/Ambrosia/Aki/Aki - Mahjong Solitaire/…`, and this repo's git-ignored `Resources/Aki/1.1.0.app` symlink pointed

@@ -1,4 +1,4 @@
-# STATE — Ambrosia Classics — 2026-11-08
+# STATE — Ambrosia Classics — 2026-11-10
 
 Settled history lives in docs/STATE-history.md.
 
@@ -7,58 +7,65 @@ Settled history lives in docs/STATE-history.md.
 > numbers and open items and moves anything settled to the top of `docs/STATE-history.md`; it never appends a run story
 > here. Forks go in `docs/DECISIONS.md`, narrative in the handoff. Re-verify before acting.
 
-## Ferazel's Wand — 2026-11-10 (attended run 47 closed; main bc31efa (the code head; the close documents sit on top), pushed; run 48 started 2026-11-10)
+## Ferazel's Wand — 2026-11-10 (attended run 48 closed: Phase 5 machine-closed, Ben's gate pending; pushed; run 49 started)
 
-- **Where it stands:** Phase 5 "Enemies" is one task from its machine end. Waves 5.0–5.5 are done: every enemy class
-  placed on levels 1–4 is alive, the later classes are built and machine-tested, level 5's moving sky (OmniPx modes
-  2/4/5) draws, and **level 5 is enterable up to the Warrior's arena** — the arena locks at x 1384 with the 40-frame
-  camera pan, the gate stays shut while the Warrior lives, level 5 plays its own track 23 throughout, and the Warrior
-  stands as a Phase 6 stand-in (no AI, no rocks, no shot absorption; hurts on contact). Levels 1–5 enterable on Mac and
-  Windows.
-- **Next:** run 48 = A5 + the Fable cross-check = the Phase 5 end (GE both shells, the relabel sweep, both builds
-  staged, the gate card to QUESTIONS for Ben). Ben held the chain for quota on 2026-11-08 and released it on 2026-11-10 ("trigger the next one"): run 47's close
-  started run 48. Run 49 = the Phase 6 research and
-  the 6A plan (does not wait for his verdict).
+- **Where it stands:** Phase 5 "Enemies" is closed on the machine side — **machine gates green; Ben's gate pending
+  (Q18)**. Every enemy placed on levels 1–4 is alive, level 5 is enterable up to the Warrior's arena (the Warrior is a
+  Phase 6 stand-in), on Mac and Windows. Both builds are staged on the Desktop (stamp e9183ce): `Ferazel's Wand.app`,
+  `Ferazel's Wand (Windows).zip`; the card is `Ferazel/WHAT-TO-EXPECT.md` + `Ferazel/WINDOWS-WHAT-TO-EXPECT.md`.
+- **Owed by day (night rule; run 48 sat 21:28–23:30):** the four launch checks, muted — the Mac app's boot (G9M), the
+  Windows zip's boot in CrossOver (GW6), Proof B (expect 617 / 0 / 3 / 0 of 620), the Mac SDL smoke (GW4R). Run 49 does
+  them first if it starts by day, after a fresh stage of its head (the smoke refuses a stage older than the head), then
+  replaces the cards' "boot check owed" lines and re-stages.
+- **Next:** run 49 = the Phase 6 planning run (research tasks LL, BOS, ENG, then the 6A plan); it does not wait for
+  Ben's verdict.
 - **The plan:** `docs/superpowers/plans/2026-11-04-ferazel-remainder.md` (self-contained); the design:
   `docs/superpowers/specs/2026-11-04-ferazel-remainder-design.md`.
 - **Ben's gates:** Phase 1 passed; Phases 2 and 3 passed with notes; Phase 4 passed (Fireball note) and the Windows
-  twin passed on Andrew's word (2026-11-07). After Phase 5: three gated Phase 6 parts (6A to the Goblin Chief, 6B to the
-  Wizard and the fire, 6C the whole game), then one release `ferazel-1.0`.
-- **Current numbers** (the seat's own runs at run 47's close, commit bc31efa, 2026-11-10):
+  twin passed on Andrew's word (2026-11-07); **Phase 5 waiting (Q18)**. Then three gated Phase 6 parts (6A to the Goblin
+  Chief, 6B to the Wizard and the fire, 6C the whole game), then one release `ferazel-1.0`.
+- **Current numbers** (the seat's own runs at run 48's close, 2026-11-10; suites and builds at 2bf8634, sweep and bot
+  at 1e82506 — game code identical):
 
 | gate | value |
 |---|---|
-| Ferazel/Core suite (G2) | **619** = 486 rules + 133 render; 617 passed, 0 failed, 2 opt-in skips by name: `FerazelRenderTests.VisitSweepTests testVisitEveryObject`, `FerazelRenderTests.RandomPlayTests testRandomPlay` |
-| FerazelWinKit (GW2) | **82** (run 47's leak fix added `WinGameReleaseTests`); 80 passed, 0 failed, 2 opt-in skips (`WinVisitSweepTests testVisitEveryObjectThroughWinGame`, `WinRandomPlayTests testRandomPlayThroughWinGame`) |
+| Ferazel/Core suite (G2) | **620** = 486 rules + 134 render; 618 passed, 0 failed, 2 opt-in skips by name: `FerazelRenderTests.VisitSweepTests testVisitEveryObject`, `FerazelRenderTests.RandomPlayTests testRandomPlay` |
+| FerazelWinKit (GW2) | **82**; 80 passed, 0 failed, 2 opt-in skips (`WinVisitSweepTests testVisitEveryObjectThroughWinGame`, `WinRandomPlayTests testRandomPlayThroughWinGame`) |
 | census (G3) | items 1,108 decoded, failures 0 |
-| visit sweep (GE, levels 1–5, both shells) | core 3,488 visits, windows 3,488 visits, rows 0 on both (teleports 15 / 15 arrived, level exits 37 / 37 reached the map), exit 0 — 4 workers under the new per-worker limit, 2026-11-10 |
-| random-play bot (GE, levels 1–5, both shells) | core and windows each: levels 5, seeds 4, steps 108,000, deaths 14, exits 106, conversations 22, saves 1, failures 0; exit 0 (2026-11-10) |
-| Proof B in CrossOver, muted (GWB) | **616 passed / 0 failed / 3 skipped / 0 crashed (of 619)**, 2026-11-10 |
-| Mac SDL smoke (GW4R) | main menu identical (FNV 0xae2b1ee08c089b2a) |
+| visit sweep (GE, levels 1–5, both shells) | core 3,488 visits, windows 3,488 visits, rows 0 on both (teleports 15 / 15, level exits 37 / 37), exit 0 |
+| random-play bot (GE, levels 1–5, both shells) | core and windows each: levels 5, seeds 4, steps 108,000, deaths 14, exits 106, conversations 22, saves 1, failures 0; exit 0 |
+| Proof B in CrossOver, muted (GWB) | **owed by day**; expected 617 / 0 / 3 / 0 (of 620); last measured 616 / 0 / 3 / 0 of 619 at run 47 |
+| Mac SDL smoke (GW4R), GW6, G9M | owed by day |
 | GW1 / GW3 / GW4 / G5 / G-MUTE | 0 then 2 / 0 then 1 / Build complete! / BUILD SUCCEEDED / 1 then 1 |
+| stages (GW5) | both exit 0, stamp e9183ce, HectorKit ef2c341 |
 | HectorKit (G1) | main **ef2c341**, clean; zero-skip executed **370**; Ferazel follows HectorKit main |
-| ladder from here | 619 → A5 619 (Proof B 616 / 0 / 3 / 0 of 619 at the phase end); the ladder runs +1 over the plan's October numbers since run 47 (the cross-check's geyser test) |
+| ladder from here | 620; Phase 6 ladders are set by the 6A plan (run 49) |
 
-- **Goldens (◈, current; run 47 moved none on levels 1–4):** Phase 1 level-1 first frame `9db8f32f7e3d88b4`, highest
-  tie-break `b80b0efd384ffdb9`, pan 30 `b1f4efcf3c34735f`, pan 60 `80d88efdc8fac27c`, chain `aaab15c0710cbcf7`; Phase 2
-  level 2 `565e867a02736c18` / `b310ef334de49c00`, jump `deb577ecdeb64c58`, swim `3e99f74fa10e87e2` (particles [67,
-  322]), 600-frame `0cce4b0446e2a48e` / cues `1b06b8a4117cf9dc` (cue words 3160, seed 1361095401, particles 150); Phase
-  3 FE0 `ed142fed9e3bdce7`, map first frame `38563faaa2276f05`, map RNG `0x7b052a62`, sign frame `c8e41941c1e4d6da`;
-  `BootFacesTests` level 3 f30 `0x56a7ccb0dd544488`, f120 `0xc43bacea46d2ff94`; **level 5 (new, first measured):** init
-  46 / `0xb039da66a884cb8a`, f30 55 / `0x69068d5e8151b0cc`, f120 55 / `0xb9f08ee19927f3e7`; Windows smoke references
-  menu `0xae2b1ee08c089b2a`, level 1 first frame `0xc99ce8e85b4bd8f7`, level-1 text `0xfbb2dd7a1d289726`.
-- **Staged builds:** the Phase 4 / Windows-twin stages on the Desktop and Windows test builds 1–4 in
-  `releases/ferazel-windows-test-*`; nothing staged since — A5 stages both.
-- **Waiting on Ben (QUESTIONS.md "Open"; nothing blocks):** Q17, Q16 (defaults stand), Q15's follow-ups, Q13.
-- **Worktrees:** `ferazel-run-44-7428b3` and `ferazel-run-45-f94cf1` are finished (merged, rebased SHAs) — the app
-  refused the seat's `git worktree remove` in run 47; Ben removes them. `ferazel-run-47-e0431c` is this run's (merged).
-  `heuristic-chandrasekhar-f66ade` (at c8d9cf5) is another session's; `inspiring-cannon-e97ccd` (Deimos) and
-  `~/Developer/gamepad-wt/` are Ben's.
-- **The sweep and the bot are guarded (2026-11-10):** a finished Windows-path game is now freed (the flow reaches
-  `FerazelDriver` through a weak link; one worker stays near 290 MB over 928 visits, was +70 MB a visit), and both
-  scripts kill any worker past `MAX_WORKER_MB` (4096) and brake below `MIN_RUNNING_FREE_PCT` (15) free memory, with a
-  failure row. Stop a background run with `kill <script pid>`. A `memory` row is a leak to fix, never a limit to raise.
+- **Goldens (◈):** unchanged in run 48 (A5 moved none); the values live in the test files (`FrameGoldenTests`,
+  `Phase2GoldenTests`, `BootFacesTests`, `WinReferenceFramesTests`) and are listed in the plan's "Goldens" paragraph
+  plus level 5's: init 46 / `0xb039da66a884cb8a`, f30 55 / `0x69068d5e8151b0cc`, f120 55 / `0xb9f08ee19927f3e7`. The
+  smoke script now reads its three references from `WinReferenceFramesTests.swift`.
+- **Waiting on Ben (QUESTIONS.md "Open"; nothing blocks):** **Q18 (the Phase 5 gate)**, Q17, Q16 (defaults stand),
+  Q15's follow-ups, Q13.
+- **Worktrees:** `ferazel-run-44-7428b3` (one untracked cache folder) and `ferazel-run-47-e0431c` are finished and
+  merged — Ben or their sessions remove them; run 48 removed `ferazel-run-45-f94cf1`. `nifty-mendel-0ad40e` is run
+  48's (merged; `out/` holds the stages). `heuristic-chandrasekhar-f66ade` is another session's;
+  `inspiring-cannon-e97ccd` (Deimos) and `~/Developer/gamepad-wt/` are Ben's.
+- **The sweep and the bot are guarded (2026-11-10):** both scripts kill any worker past `MAX_WORKER_MB` (4096) and
+  brake below `MIN_RUNNING_FREE_PCT` (15) free memory, with a failure row. Stop a background run with a plain
+  `kill <script pid>` — never `kill -9` / `pkill -9`. A `memory` row is a leak to fix, never a limit to raise. A
+  background shell that chains the sweep and then the bot starts the bot when the sweep is killed: stop the outer
+  shell too.
+- **Known deviation of muted launches (D44 As built run 48 (d)):** a muted run draws the random stream differently
+  from an audible one; boot checks only.
 - **Open carries** [LOW unless marked]:
+  - From run 48's cross-check: a force-kill by pattern (`pkill -9`) of the sweep or bot leaves its test process
+    unwatched — never force-kill, plain `kill <script pid>` only; sweep workers have no time limit (the bot has one);
+    the two scripts' release builds run outside the memory watch; `EnemyCommon.killProc`'s Warrior arm would count and
+    remove the Warrior without opening the gate if a burn ever reached it (unreachable today; the real Kill is 6A's);
+    parent/child sprite links across idling for the classes first placed after level 5 are unreviewed (look when 6A
+    places them); the smoke script's three wake counts are still a second copy (a drift fails loudly); the older
+    sections of both cards still say "1997" (the data says © 2000 for 1.0.3).
   - From the watchdog's last review (2026-11-10; all over-cautious or unlikely, none lets a worker run unguarded on a
     real Mac): when the wait before a worker start gives up it pulls the whole brake, killing healthy running workers
     (should-fix); if both `ps` and `top` give no reading a worker measures 0 MB and is never killed; the bot takes
@@ -78,7 +85,7 @@ Settled history lives in docs/STATE-history.md.
     the Walker Hit's shot-kill light recolour may belong to the Walker's own light; the egg's 0.9 / −0.15 constants are
     unchecked against the data section; the Setup-face fallback width for 0x6a5/0x6a6 is the whole picture; the airborne
     face's `onSprite` term is unpinned; the Dillo coin count is asserted as a range; the bot saves once per 16 runs;
-    `try!` at `PlayerStates.swift:291`; the gap ledger's tint lines still call the tint unbuilt; the orb argument check
+    `try!` at `PlayerStates.swift:291`; the orb argument check
     covers `Shots/` only.
   - Readings the machine cannot prove [MED]: voice eviction is not modelled in Core's `SoundVoices`; the underwater tint
     is applied as screen gamma; the OmniPx backdrop's look; the text smoothing mix is linear and its 14 pt threshold

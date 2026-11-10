@@ -209,7 +209,8 @@ runs one above its original numbers because Ben's commit 3cf72df (world-map stat
 | wave 5.4 Fable cross-check fix round (run 47; one geyser test by the seat's ruling) | 608 | — |
 | OX ⚑ (run 47, done) | 613 | — |
 | LV5 ⚑ (run 47, done; wave 5.5 end) | 619 | 616 / 0 / 3 / 0 (of 619) |
-| A5 (Phase 5 end) | 619 | 616 / 0 / 3 / 0 (of 619) |
+| A5 (Phase 5 end; run 48, done) | 619 | — |
+| Phase 5 Fable cross-check fix round (run 48; one burn-away test by the seat's ruling) | **620** = 486 + 134 | 617 / 0 / 3 / 0 (of 620) — owed by day |
 
 The wave 5.4 end measured in run 46: G3 `Totals: items 1,108 decoded, failures 0`; GE `core` on levels 1–4 — visit
 sweep 3,360 visits / 0 failures, bot 86,400 steps / 0 failures; GW4R main menu identical; GW1 0 / 2, GW2 81 / 0 / 2,
@@ -630,6 +631,32 @@ level 5 open up to the Warrior's arena — the arena locks, the gate stays shut,
   which does not wait for his verdict.
 - **Gate:** G1, G2 618 / 2 named skips, GW2 82 / 2 named skips, G3, G5, GW1–GW4, GW5, GE; by day GWB **615 / 0 / 3 / 0
   (of 618)**, GW6, G9M. **Commit:** `WHAT-TO-EXPECT: Phase 5 gate card (through the first boss door), Mac and Windows`.
+
+- **As executed (run 48, 2026-11-10, Fable 5.2 seat; A5 at e9183ce).** Implementer afa986f / dadb814 / 19d6c7a; two
+  Opus legs (spec, then quality with a 17-row mutation table on the smoke script's hash parse) → fix round 4048d8a /
+  f41c182 / 1e82506; the Phase 5 Fable cross-check (`fk-reviewer`, `model: "fable"`, e815146..head: PASS WITH FIXES, no
+  sampled divergence from the dump) → fix round bffd3c0 / 34a05d5 / 2bf8634; the seat's numbers into the cards e9183ce.
+  **The card was wrong against the data in six places, all corrected on the cards:** no shield is reachable (level 5's
+  Wooden Shield lies behind the shut gate, none on levels 1–4, the Magical Shield first on level 25); a bat scores 600
+  and the reachable goblins 400 / 500 / 600 (the 800 goblin, type 1750, is on no level 1–5); lava is on none of levels
+  1–5 (acid on 1–3; brine dims 15 % toward black, M l. 46449–46476); the Warrior's "three crates" are rocks (three
+  slots, a 15-frame refill, M l. 73151–73182); nothing lowers the Warrior's health in this build (the Ring of Smiting
+  claim was untrue); level 5 can be left by its own right-hand exit before the lock, and "level 10 not built" is
+  unreachable in normal play. **Seat rulings:** (1) one new test, not an assert — `GoblinBurnLevelRunTests` (a level-1
+  axe thrower burns away through the real renderer's face store; score +500, live enemies 15 → 14, defeated 0 → 1) —
+  ladder **620**; (2) muted launches draw the random stream differently from audible ones (no Sound Tool, so "is it
+  playing?" is always no) — recorded as a known deviation of the muted boot checks only, no code change; (3) the guard
+  scripts are not changed at a phase end: "never force-kill" documented, the gaps carried in STATE. Also: the smoke
+  script reads its hashes from `WinReferenceFramesTests.swift` (1–16 hex digits, normalised to the exe's spelling); both
+  stage scripts refuse a card with an unfilled `<<SEAT:` slot; the OmniPx owner labels corrected (mode 1 → 6A-RN, mode 6
+  → 6C-L55…L70, modes 3 / 7 unplaced). **Gates (the seat's own runs):** at the head 8aa4db5 G2 619 / 0 / 2 named, G3
+  1,108 / 0; at 2bf8634 G2 **620** = 486 + 134 / 0 failed / the 2 named skips, GW2 **82** / 0 / the 2 named skips, G3
+  1,108 / 0, GW1 0 / 2, GW3 0 / 1, GW4 Build complete!, G5 BUILD SUCCEEDED, G7 / G7W empty, G-MUTE 1 / 1; GE at 1e82506
+  (game code identical to the head, comment-stripped diff empty): visit sweep core 3,488 visits rows 0 and windows 3,488
+  rows 0 (teleports 15 / 15, exits 37 / 37), bot core and windows each 108,000 steps, deaths 14, exits 106,
+  conversations 22, saves 1, failures 0; GW5 both stages exit 0, stamp e9183ce. **Owed by day (night rule, the run sat
+  21:28–23:30):** G9M, GW6, GWB (expect 617 / 0 / 3 / 0 of 620), GW4R — run 49 does them first if it starts by day,
+  after a fresh stage of its head.
 
 #### The Phase 5 gate card ("through the first boss door") — A5 writes it from this
 
