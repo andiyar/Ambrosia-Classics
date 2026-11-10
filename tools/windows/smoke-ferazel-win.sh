@@ -19,7 +19,7 @@
 #   --mac-only     GW4R: the Mac SDL development build (Ferazel/Windows `FerazelWin`, brew sdl3), headless: boots to the
 #                  main menu in --frames mode, muted, on the dummy SDL drivers, and checks: exit 0, the launch line ends
 #                  "video=dummy audio=none" (SDL's real drivers; a --frames run starts no audio subsystem — HectorSDL
-#                  starts it only with an output), the presented main menu's RGBA FNV = WF2's (0xae2b1ee08c089b2a).
+#                  starts it only with an output), the presented main menu's RGBA FNV = the recorded menu reference.
 #   --check-guard  evaluate the launch guard (hour + drivers + mute) and exit: builds nothing, runs nothing
 #
 # Each run's logs and dumps go to a fresh `mktemp -d` folder (its path is printed). Every run's log, Mac and Windows,
@@ -58,13 +58,32 @@ repo="${here:h:h}"
 # the dump ON the reference frame, so the Mac dump's FNV can be checked against the recorded one as well.
 # These six values are also pinned in-process, headless, by Ferazel/Windows/Tests/FerazelWinKitTests/
 # WinReferenceFramesTests.swift (testSmokeReferencesInProcess: the exe's --frames loop through the scripted host, the
-# same wakes, keys and baked fonts) — a change that moves a reference moves it there in the same commit.
+# same wakes, keys and baked fonts). The three reference FNVs have ONE source: that test. They are read from it here
+# (the `hex(0x…)` on the assert line tagged "smoke <name>", underscores dropped); a change that moves a reference moves
+# it there, and this script follows. If any of the three cannot be read, the script stops (exit 65, one line).
+refs_file="$repo/Ferazel/Windows/Tests/FerazelWinKitTests/WinReferenceFramesTests.swift"
+# -- reference parse (begin) --
+ref_fnv() {  # ref_fnv <name>: prints the 0x + 16-hex-digit FNV the test pins for "smoke <name>", or fails
+    local -a lines
+    lines=("${(@f)$(grep -F "\"smoke $1\"" "$refs_file" 2>/dev/null || true)}")
+    lines=(${lines:#})
+    (( ${#lines} == 1 )) || return 1
+    [[ "${lines[1]}" =~ 'hex\((0x[0-9a-f_]+)\)' ]] || return 1
+    local v="${match[1]//_/}"
+    [[ "$v" =~ '^0x[0-9a-f]{16}$' ]] || return 1
+    print -r -- "$v"
+}
+for ref in menu_fnv newgame_fnv text_fnv; do
+    if ! val="$(ref_fnv $ref)"; then
+        print -u2 "smoke-ferazel-win: cannot read the reference $ref from $refs_file (want exactly one assert line tagged \"smoke $ref\" with a hex(0x…) FNV)"
+        exit 65
+    fi
+    typeset -g "$ref=$val"
+done
+# -- reference parse (end) --
 menu_frames=1437
-menu_fnv=0xae2b1ee08c089b2a
 newgame_frames=1865
-newgame_fnv=0xc99ce8e85b4bd8f7
 text_frames=3833
-text_fnv=0xfbb2dd7a1d289726
 newgame_keys="# N held from the first tick after the main menu (WinGameTests test 18)
 1440 down n"
 

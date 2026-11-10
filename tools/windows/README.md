@@ -304,14 +304,16 @@ Desktop items are replaced). `stage-btx.sh`'s recipe, for Ferazel:
 ### The smoke: `smoke-ferazel-win.sh` (gates GW4R and GW6)
 
 - `--mac-only` (GW4R): the Mac SDL development build (`swift build` of `Ferazel/Windows`, brew `sdl3`), headless, to
-  the main menu; exit 0, `video=dummy audio=none`, FNV `0xae2b1ee08c089b2a`.
+  the main menu; exit 0, `video=dummy audio=none`, FNV = the menu reference (one source for all three: the
+  `"smoke …_fnv"` asserts of `Ferazel/Windows/Tests/FerazelWinKitTests/WinReferenceFramesTests.swift`, read by the
+  script; unreadable → exit 65).
 - **No argument** (GW6): unzips the **staged zip** (it never stages: no zip → exit 66 with the stage command) into a
   scratch folder and runs its `Ferazel's Wand.exe` with no `--data` / `--fonts` in the clean bottle
   (`run-in-crossover.sh --clean`: nothing on `WINEPATH`), then `cmp`s each dump with the Mac SDL build's dump of the
   same run, whose FNV must also be the recorded one. Three headless runs (wakes of 1/240 s; the first wake at which
   flow step T has run is 4 × (T − 1) + 1): **A** main menu, step 360 → 1,437 wakes; **B** New Game with N held from
   wake 1,440 → level 1's first frame, step 467 → 1,865 wakes; **C** the same on to the end of level 1's fade-in, the
-  first full-brightness frame with the status bar text, step 959 → 3,833 wakes, FNV `0xfbb2dd7a1d289726` (A and B draw
+  first full-brightness frame with the status bar text, step 959 → 3,833 wakes, FNV the text reference (A and B draw
   no text; the text's first presented frame, step 881, is faded nearly to black, so it could not catch a wrong glyph —
   at 959 blanking every glyph changes 281 pixels). Every run's log, Mac and Windows, must also carry the launch line
   ending `video=dummy audio=none` and no `BakedTextRasterizer:` line (a font face missing or not loaded). Logs and dumps
