@@ -48,6 +48,7 @@ by eye and by ear, and level 5 plays to the arena.
 Options: (a) pass; (b) pass with notes (write them — each becomes a task); (c) fail (say what is wrong).
 Recommendation: a or b — only a person can judge how each enemy feels at speed and how it sounds.
 Blocks: nothing. Run 49 plans Phase 6 (research, then the plan to the Goblin Chief) without waiting.
+Update 2026-11-11 (run 50, by day): the muted boot checks are done and all pass — the Mac app boots and quits cleanly, the Windows zip boots in CrossOver with its three reference screens identical, the game's tests under CrossOver 617 passed / 0 failed / 3 skipped by design (of 620). Both builds on your Desktop were staged again (game code unchanged).
 Answer:
 
 ### Q17 — 2026-11-07 — The Aki 1.1.0 original has moved on your Mac (HectorKit's four Aki census tests skip) — a note, no action needed from the loop

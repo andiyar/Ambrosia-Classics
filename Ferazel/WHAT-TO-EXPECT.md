@@ -98,11 +98,8 @@ straight from the code.
 - **The test suites**, including the tests that load every picture each level uses and the check that every way of
   drawing the game can ask for is one the replica draws: the game's suite 620 tests, 0 failed (2 skipped by design: the
   sweep and the bot, run on their own above); the Windows package's suite 82 tests, 0 failed (the same 2 skipped by
-  design); the data census 1,108 items decoded, 0 failures; the Mac app and the Windows game both build. The game's
-  suite under CrossOver is a launch check, owed by day (expected 617 passed, 0 failed, 3 skipped, of 620)
-- **Launch checks** (muted): boot check owed (night rule). This build was staged at night, and builds are only launched
-  by day, muted. Owed: the Mac app's boot check, the Windows zip's boot check in CrossOver, the game's suite under
-  CrossOver, and the Mac development build's headless picture check
+  design); the data census 1,108 items decoded, 0 failures; the Mac app and the Windows game both build. The game's suite under CrossOver (a launch check, run by day on 2026-11-11): 617 passed, 0 failed, 3 skipped, 0 crashed, of 620
+- **Launch checks** (muted): done by day on 2026-11-11 (run 50), on a build staged from efeb66f — game code identical to this build. The Mac app booted muted and quit cleanly with no crash report; the Windows zip booted in a clean CrossOver bottle with the main menu, the new game and level 1's text identical to the references; the game's suite under CrossOver: 617 passed, 0 failed, 3 skipped, 0 crashed, of 620; the Mac development build's headless main menu matched its reference
 
 ## Known stand-ins (until Phase 6)
 - **The Warrior** stands in its first picture, hurts on contact, never fights, never dies, and the gate stays shut

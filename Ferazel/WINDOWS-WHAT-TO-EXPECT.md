@@ -10,9 +10,7 @@ the enemies alive on levels 1 to 4, and level 5 open up to the Warrior's arena �
 The question for you: **do levels 1 to 5 play on Windows as they do on the Mac — the enemies by eye, the sound by
 ear?**
 
-**Boot results (muted):** boot check owed (night rule). This build was staged at night, and builds are only launched by
-day, muted. Owed: the Mac app's boot check, the Windows zip's boot check in CrossOver, the game's suite under CrossOver,
-and the Mac development build's headless picture check
+**Boot results (muted):** done by day on 2026-11-11 (run 50), on a build staged from efeb66f — game code identical to this build. The Mac app booted muted and quit cleanly with no crash report; the Windows zip booted in a clean CrossOver bottle with the main menu, the new game and level 1's text identical to the references; the game's suite under CrossOver: 617 passed, 0 failed, 3 skipped, 0 crashed, of 620; the Mac development build's headless main menu matched its reference
 
 ## Starting it
 Unzip and start it exactly as in the Phase W card below (Extract All, then "Ferazel's Wand.exe"; SmartScreen: More
@@ -50,8 +48,7 @@ can't be reached in normal play (only an original saved game from a later level 
 - **The test suites**, including the Windows package's own and the game's suite run under CrossOver: the game's suite
   620 tests, 0 failed (2 skipped by design: the sweep and the bot, run on their own above); the Windows package's suite
   82 tests, 0 failed (the same 2 skipped by design); the data census 1,108 items decoded, 0 failures; the Mac app and
-  the Windows game both build. The game's suite under CrossOver is a launch check, owed by day (expected 617 passed, 0
-  failed, 3 skipped, of 620)
+  the Windows game both build. The game's suite under CrossOver (a launch check, run by day on 2026-11-11): 617 passed, 0 failed, 3 skipped, 0 crashed, of 620
 
 ## Known stand-ins on Windows (Phase 5)
 - **The table's row "Every Mac stand-in of Phase 4" now reads:** every Mac stand-in of Phase 5 — the Warrior, level 10
