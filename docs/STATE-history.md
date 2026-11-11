@@ -4,6 +4,15 @@
 > only). Nothing current reads this file; the live state is `docs/STATE.md`. Each later close that settles something
 > adds a dated section at the top, newest first. The two snapshots below are verbatim (headings demoted only).
 
+## Settled at run 50's close (2026-11-11)
+
+- **Run 49's Ferazel block** (main efeb66f): the Phase 6 research done, the 6A plan and the four launch checks owed.
+  Run 50 replaced it: the launch checks done by day (all pass; Proof B 617 / 0 / 3 / 0 of 620), the 6A plan written
+  into the one plan file, reviewed by two Opus legs and a Fable reviewer, fixed twice (D47, Q19).
+- **How the plan changed under review:** the first draft had 27 build tasks and 812 tests; the reviews split out the
+  pipes' level spawn (6A-PS) and the level fixture (6A-FX), made the picture-cache task major, moved the plants ahead
+  of the rain, and added a 13th run: 29 build tasks, Core 814, WinKit 90, runs 51–63.
+
 ## Settled at run 49's close (2026-11-11)
 
 - **Run 48's Ferazel block** (main 2f25cf6): Phase 5 machine-closed, Core 620, both builds staged at e9183ce, Q18 with

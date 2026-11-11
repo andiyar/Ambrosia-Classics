@@ -2121,3 +2121,37 @@ planner how to cut the work.
    side push already built, 6A-BN1 empty.
 6. **The owed launch checks stay owed.** Run 49 started at 07:36 (night rule) and spent its context on the research
    reviews; run 50 starts by day and does them first.
+
+## D47 — Ferazel's Wand: the Phase 6A plan's rulings (run 50, 2026-11-11)
+
+The seat's rulings while the Phase 6A plan ("through the Goblin Chief", levels 10–22) was written into the one plan
+file, reviewed by two Opus legs and cross-checked by Fable. The plan's own "Planner's notes" carry the detail.
+
+1. **The Chief's first task carries twelve tests.** The boss document gave it ten with one stagger test; the engine
+   document put three stagger tests inside the ten. The plan keeps the boss document's nine and the engine document's
+   three.
+2. **Four "placed nowhere" data checks from the engine document get owners** (the ripple task, the trees task and the
+   Box scenery task), so nothing unplaced can appear later without a test failing.
+3. **Windows pictures are pinned on real levels, not on test fixtures.** Each feature's picture test is Mac-side on a
+   fixture; each level task adds one Windows reference of the real level. The drawing code is shared, and Proof B runs
+   the Mac-side feature tests on the Windows toolchain.
+4. **Scripted boss kills live in the Render tests**, because a death ends in a burn and a burn needs face pixels.
+5. **Feature pictures on fixtures are kept** when the level opens (they are a different world from the real level),
+   except the four the engine document says to delete. A fixture's leave-out list is written out literally in the
+   test, never computed from what the port refuses that day. A later task that rightly changes what an earlier
+   fixture picture shows may move that one picture, named, with the switch-off check.
+6. **A level task builds no feature and no type.** The pipes' level spawn (level 21) is its own small task before the
+   level; the level fixture is its own task before the horizon strip. Each level task also traces every already-built
+   type whose parameters take a value new to that level, and stops for a type task if an arm is not built.
+7. **The picture-cache task keeps its outward interface keyed by picture** and is a major task (it touches many test
+   files). Its load-bar tests pin only its own marks; each later task that adds marks re-derives them.
+8. **No free record for a boss's spawn — a deviation, accepted.** With all 700 sprite records in use the original gets
+   nothing back and then writes through the missing sprite anyway (undefined on the Mac). The port skips those writes,
+   reads and calls and still makes every random draw, so the random stream stays the original's. It cannot happen in
+   normal play. Listed in the plan as known deviation 6.
+9. **The full sweep and bot after every level task stays** (Ben's rule of 2026-11-08), at an estimated 45–65 minutes
+   each by level 22, with at most four workers whatever the scripts allow. Whether to narrow it is Ben's call (Q19).
+10. **The Fable cross-check of this plan was done by a Fable reviewer, not by the seat's own read:** the seat's context
+    stood at 196k of its 300k cap after the launch checks, the planner and two review legs.
+11. **The four launch checks owed since run 48 were done by day in this run, muted, all passing** (Mac boot, Windows
+    zip in CrossOver, Proof B 617 / 0 / 3 / 0 of 620, the Mac SDL smoke); the cards say so.

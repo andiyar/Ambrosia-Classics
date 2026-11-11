@@ -864,6 +864,23 @@ free decision number. Its first task is 6A-BL, then 6A-FB, then the Warrior (rep
 sections are expanded the same way by their own planning runs at the end of 6A and 6B. The plan budgets the visit
 sweep's time and memory as it grows from 5 to 24 levels (Ben's RAM rule).
 
+**As executed (run 50, 2026-11-11).** Done: Wave 5 below, written by one Opus planner from the three documents (draft
+636a8c3), two Opus review legs (both PASS WITH FIXES, 0 critical: 13 should-fix, 32 minor; fix round 41270e2 — 41
+fixed, 3 rejected with reasons), then the Fable cross-check by a Fable reviewer (PASS WITH FIXES, 0 critical, 6
+should-fix, 17 minor; fix round 16f3398 — 20 fixed, 3 rejected). **The plan:** 29 build tasks + 6A-END, 9 ⚑; Core
+620 → 814, WinKit 82 → 90; runs 51–63 in four waves (6A.1 the Warrior, 6A.2 levels 10 / 11, 6A.3 level 15 and the
+Chief, 6A.4 levels 20–22). Checked by script after each round: every card's number, the ladder / run / Proof B tables,
+206 new test names against the 702 existing, 95 dependency pairs, the ledger's `--check` (OK, through the cross-walk
+table). Rulings: D47. Ben's later read: Q19. The review found and the rounds fixed, among others: the pipes' level
+spawn was inside a level task (now 6A-PS); the level fixture was inside the strip task (now 6A-FX) and opened levels a
+way that would have missed the strip; the picture-cache task's file list was about fifteen files short (now ⚑); the
+strip's colour table was unstated for five of its six levels; the ledger's two open reads had no owner (now a step in
+every level task). **The four launch checks owed since run 48 were done by day at the head of this run, muted, all
+passing** — G9M (boots, quits, no crash report), GW6 (three screens identical), GWB 617 / 0 / 3 / 0 (of 620), GW4R
+(main menu identical) — on a stage of efeb66f; the cards updated (ee0fa6e); both builds staged again at the close.
+Left open for the builds (the cards STOP if wrong): the in-package symlink of the fixture (6A-FX's first step); whether
+all four pipe child types are on level 21 (6A-PS); stores to the strip's colour-table pointer during play (6A-S8).
+
 ---
 
 ## Wave 5 — Phase 6A (expanded by P6A, run 50, from LL, BOS and ENG)

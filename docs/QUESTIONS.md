@@ -32,6 +32,21 @@ brother's Windows machine.
 
 ## Open
 
+### Q19 — 2026-11-11 — Phase 6A plan (to the Goblin Chief): three small choices, for your later read
+Context: the plan for levels 10–22 is written and reviewed (run 50): the Warrior's real fight, then the horizon strip,
+wind, cannons, trees, the river ripple, rain and thunder, the Goblin Chief, clouds, blades, maces and the magic carpet,
+with each level opened once everything on it is built. Thirteen sessions of one to three tasks each. The build
+starts without waiting for you; these are the choices you may want to change.
+Options: (1) After every newly opened level the machine re-checks every object on every built level and replays the
+random-play bot — about an hour each time by level 22. Default: keep it (your rule of 2026-11-08). Alternative: check
+only the new level each time and all levels at the end of each group of levels. (2) Windows pictures are compared on
+the real levels only; the special test levels used to prove a feature early are Mac-side. Default: keep. (3) If a boss
+tries to spawn something when the game's 700 object slots are all full, the original misbehaves in an undefined way;
+the port quietly skips the spawn instead. It cannot happen in normal play. Default: keep.
+Recommendation: the defaults; say "narrow the sweep" if the hour per level bothers you.
+Blocks: nothing.
+Answer:
+
 ### Q18 — 2026-11-10 — Phase 5 gate: with the enemies alive, do levels 1–5 play like Ferazel's, up to the Warrior's arena?
 Context: Phase 5 is finished on the machine side (attended run 48). Every enemy on levels 1–4 now moves, attacks, hurts
 you and can be killed; level 5 opens with its moving sky and locks you into the Warrior's arena, where the Warrior
