@@ -107,7 +107,7 @@ Windows part, and the Fable phase review covers both diffs.
 | G8 | file hygiene | `git -C "$WT" status --porcelain --ignored -- Resources ghidra` prints nothing new; tests write only under the temporary directory |
 | G10 | clean tree per commit | empty |
 | GW1 | Core + tests cross-build | exit 0, then `2` |
-| GW2 | FerazelWinKit (macOS-hosted) | **82** total (81 until run 47's sweep-leak fix added `WinGameReleaseTests`); 0 failed; skipped = exactly `WinVisitSweepTests testVisitEveryObjectThroughWinGame` and `WinRandomPlayTests testRandomPlayThroughWinGame` (~13 min: background it) |
+| GW2 | FerazelWinKit (macOS-hosted) | **82** total at the Phase 5 end; the 6A ladder is in Wave 5 (81 until run 47's sweep-leak fix added `WinGameReleaseTests`); 0 failed; skipped = exactly `WinVisitSweepTests testVisitEveryObjectThroughWinGame` and `WinRandomPlayTests testRandomPlayThroughWinGame` (~13 min: background it) |
 | GW3 | the game cross-builds and links | exit 0, then `1` |
 | GW4 | the Mac SDL development build compiles | last line `Build complete!` — every task (GW2 does not build the `FerazelWin` executable target) |
 | GW-symlinks / G-MUTE / G7W | | empty / `1` then `1` / empty |
@@ -217,7 +217,8 @@ sweep 3,360 visits / 0 failures, bot 86,400 steps / 0 failures; GW4R main menu i
 GW3 0 / 1, GW4 and G5 green. From here the ladder was **607 → OX 612 → LV5 618**; run 47 measured 608 → 613 → **619** (the cross-check's +1).
 
 Review fix rounds add asserts, not tests, unless the seat rules otherwise (recorded in As executed). Merged out of
-order: previous + the task's N. Phase 6 ladders are set by their own plans (wave 4).
+order: previous + the task's N. The 6A ladder is in Wave 5's "Verification-model additions for 6A" (Core 620 → 812,
+WinKit 82 → 90 from 6A-L10L11 on); 6B's and 6C's are set by their own planning runs.
 
 **Goldens (◈).** The values live in the test files (`FrameGoldenTests`, `Phase2GoldenTests`, `BootFacesTests`,
 `WinReferenceFramesTests`); at c8d9cf5 (after run 46 — PI and PT moved none) they are: Phase 1 level-1 first frame `9db8f32f7e3d88b4`,
@@ -319,7 +320,8 @@ states; sound handles are TOC slots (pickups-boxes-2 §1.2); colourised CopyBits
   faces' (x, y) for this drawn frame; Render composites the 128×128 port. `FrameRenderer` executes it as PxBack slot 0
   for the backdrop compositor, the factors zeroed for modes 1–3 and ≥ 8 as `.TurnOnOmniPx` does.
 - **`BuiltLevels.range`** (`Front/BuiltLevels.swift:9`, `1...4` today) → `1...5` at LV5, with the report "Level n is not
-  built yet (Phase 6)."; it becomes an explicit list at 6A-BL.
+  built yet (Phase 6)."; it becomes the explicit sorted `BuiltLevels.list` at 6A-BL (the scripts read it through
+  `tools/ferazel-built-levels.sh`), and each level task adds its ids.
 - **Faces of run-time-spawned sprites:** every task that spawns a type at run time adds its sheet where the original
   loads it — the boot list `Sprites/BootFaces.swift` or the level-load picture cache (`Front/LevelRun.swift`
   `CachedFaces`: `sets`, `singles`, `marks`, `handleSets`), registered **at the original's position** in `.InitSprites`'
@@ -344,7 +346,7 @@ states; sound handles are TOC slots (pickups-boxes-2 §1.2); colourised CopyBits
 | 2 (rest) | PI, PT — wave 5.4 end (done) | the last Box arm of Phase 5; the renderer's traps | 46 |
 | 3 | OX, LV5; then A5 + the Fable phase review → Ben's gate | level 5 and the first engine feature (OmniPx); "through the first boss door" | 47–48 |
 | 4 | Phase 6 research: LL later-level ledger, BOS boss contracts, ENG engine-feature contracts; then the 6A plan | every Phase 6 number measured before a build task exists | 49 |
-| 5 | Phase 6A — engine features of levels 10–22, levels 10–22 enterable, the Goblin Chief; gate | the first boss fight; six new engine features | ~8 |
+| 5 | Phase 6A — the Warrior's fight, the engine features of levels 10–22, levels 10–22 enterable, the Goblin Chief; gate | the first two boss fights; eleven new engine features (strip, wind, cannons, trees, ripple, rain, clouds, blade, mace paths, carpet, rocks) | 12 (runs 51–62) |
 | 6 | Phase 6B — levels 25–52, the Wizard, ice, timer, CLUT animation, auto-scroll, fire; gate | the renderer's last big features | ~7 |
 | 7 | Phase 6C — levels 55–70, the Fire Guardians, Xichra's lair, victory; gate = the whole game | the end of the game | ~6 |
 | 8 | release (attended) | — | 1 session |
@@ -703,17 +705,17 @@ reachable yet.
 
 | ◇ | where | replaced by |
 |---|---|---|
-| The Warrior's Handle/Hit/Kill: stands in its Setup face, hurts on contact as read, no Hit callback, never dies; the gate stays shut while it lives; the real Handle's three falling-crate children (type 0x433 into `+0x1d4/+0x1d8/+0x1dc`, spawned when p4 ≠ 0 once `+0x16c` counts below 1, M l. 73145–73182) are not spawned | LV5 | 6A-W |
-| The Warrior under the Ring of Smiting: nothing lowers its health in this build (its Hit is the empty stand-in; HP stays 2000, contact still hurts); Esc / ⌘W leaves | LV5 | 6A-W (the Hit and the Kill) |
-| The other bosses (Wizard, Chief, Demon, Xichra) stay `.inert`; their projectiles' spawners | — | 6A-CH, 6B-WZ, 6C-DM, 6C-XI |
-| OmniPx modes 1/3/6/7/≥8 refused at level open; the horizon strip refused at level open | PT, OX | 6A-RN, 6C (interlace), 6A-S8 |
+| The Warrior's Handle/Hit/Kill: stands in its Setup face, hurts on contact as read, no Hit callback, never dies; the gate stays shut while it lives; the real Handle's three falling-crate children (type 0x433 into `+0x1d4/+0x1d8/+0x1dc`, spawned when p4 ≠ 0 once `+0x16c` counts below 1, M l. 73145–73182) are not spawned | LV5 | 6A-W1 (the Handle: the crates from the first frame, the attacks, the dying) |
+| The Warrior under the Ring of Smiting: nothing lowers its health in this build (its Hit is the empty stand-in; HP stays 2000, contact still hurts); Esc / ⌘W leaves | LV5 | 6A-W2 (the Hit and the Kill) |
+| The other bosses (Wizard, Chief, Demon, Xichra) stay `.inert`; their projectiles' spawners | — | 6A-CH1 / CH2, 6B-WZ1 / WZ2, 6C-DM1–DM3, 6C-XI1–XI3 |
+| OmniPx modes 1/3/6/7/≥8 refused at level open; the horizon strip refused at level open | PT, OX | mode 1: 6A-RN; mode 6: 6C-L55…L70 (level 70); 3 / 7 / ≥ 8 placed nowhere — kept; the strip: 6A-S8 |
 | Geyser kinds 3/4: the base face past the 12-face cache draws nothing (unplaced) | GY | kept (as read) |
 | Dillo types 1872–1879 and the Wraith variant 0x6fe–0x707 refused at Setup (unplaced) | DL, GF | kept (as read) |
 | The enemy pipe's level spawn: `BoxSprite.setupPipe` (the Setup's stores) is not wired into level spawn; the throwaway child `.SetupBoxSprite` spawns and kills at once (its Setup's random draws and its +1 on the live-enemy count, M l. 59347–59353) is not made; `SetupFaces`' pipe arm 1490…1493 still refuses | PI | 6A-L21 (level 21 places the first pipe) |
 | `BuiltLevels = 1...5`; the not-built report "(Phase 6)" | LV5 | 6A-BL, then deleted at 6C-END |
-| Refusals kept and pinned unreachable: the light byte −1, mode 5 rotated/scaled, 0xa mirrored, 0xb rotated, modes 2/7/8/0xd/0xe/≥0xf, water kinds ≥ 6, fire/ripple backdrops | `DrawModeAuditTests` | the Phase 6 task whose level places each |
+| Refusals kept and pinned unreachable: the light byte −1, mode 5 rotated/scaled, 0xa mirrored, 0xb rotated, modes 2/7/8/0xd/0xe/≥0xf, water kinds ≥ 6, fire/ripple backdrops | `DrawModeAuditTests` | the Phase 6 task whose level places each — mode 8: 6A-S8; the ripple: 6A-RP; the fire: 6B-FI; water kinds 206–209 are placed on no level (ENG §5): kept for good, the check widened to all 24 levels at 6A-BX1a |
 | `ParticleLife` vs CLUT 222 (levels 52/55) | carried | the task that opens 52/55 |
-| `.Victory`, falling rocks 1075/1076, spiked balls, magic carpet, rope bridge 1466, boss grab `_DAT_100a0570` writers, countdown digits | — | Phase 6 cards below |
+| `.Victory`, falling rocks 1075/1076, spiked balls, magic carpet, rope bridge 1466, boss grab `_DAT_100a0570` writers, countdown digits | — | 6C-VI; 6A-FR (the rocks' player arm) with 6A-W1 (their spawn); 6B (ENG §3.4); 6A-CP; none — placed nowhere, pinned by `testRopeBridgeUnplaced` (6A-BX1a); 6A-CH1 (the arm and the Chief's writer; Xichra's at 6C-XI); 6B-TM |
 
 ### Known deviations (forced by the platform or ruled)
 1. **Voice eviction:** a play that pushes another sound out of the 16-entry list is not modelled in Core's
@@ -857,41 +859,895 @@ Written by the Opus planner from LL, BOS, ENG and the cards in wave 5, **in this
 section expanded in place, the cards below replaced by bite-sized tasks — never a separate plan file): Verification
 model additions (the 6A ladder, gate commands with numbers), tasks with Files/Contract/Tests/Gate/Commit, execution
 order, stand-ins, known deviations, the gate card; two Opus legs + the Fable cross-check; rulings recorded under the next
-free decision number. Its first task is 6A-BL, then 6A-FB, then the Warrior (replacing LV5's stand-in). The 6B and 6C
+free decision number. Its first task is 6A-BL, then 6A-FB, then the Warrior (replacing LV5's stand-in) — as planned:
+6A-BL, then 6A-CF (which absorbed 6A-FB, D46.2), then 6A-FR and the Warrior's 6A-W1 / W2 (ENG P14). The 6B and 6C
 sections are expanded the same way by their own planning runs at the end of 6A and 6B. The plan budgets the visit
 sweep's time and memory as it grows from 5 to 24 levels (Ben's RAM rule).
 
 ---
 
-## Wave 5 — Phase 6A (cards; expanded in this file by P6A after LL, BOS, ENG)
+## Wave 5 — Phase 6A (expanded by P6A, run 50, from LL, BOS and ENG)
 
-Gate: **"through the Goblin Chief"** — levels 1–22 playable, the Warrior and the Chief beatable, Mac and Windows.
+Gate: **"through the Goblin Chief"** — levels 1–22 playable (the world file holds levels 1–5, 10, 11, 15, 18, 20, 21
+and 22 in that span), the Warrior and the Chief beatable, Mac and Windows.
 
-Every level task ("level N enterable") is one level, or two adjacent levels when neither adds a class or an engine
-feature: every record set up (no `notTranscribed`), the picture cache marked at the original's positions, the load bar
-counted, a `Level<N>Tests` file, the face-load tests extended (`FaceTests`' per-level drops/keys table re-derived), the
-visit sweep and the bot extended to it, the bot's quick mode on it with 0 failures; the range/list widens only once its
-census sets up every record. Every boss task replaces its stand-in in place and passes the switch-off check (its Handle
-stubbed back → the old goldens return).
+Sources, cited by section: **LL** = `docs/ferazel/later-levels-ledger.md`, **BOS** = `docs/ferazel/phase6-boss-contracts.md`,
+**ENG** = `docs/ferazel/phase6-engine-contracts.md`; rulings D46 (1–6). Where a research document corrects a card of the
+old Wave 5 table, the document won and the card below already says so; the "Planner's notes" at the end list the places
+where two documents disagreed and what this plan chose. Spans are the committed dump's ("M l. N"); every card's brief
+carries the standing sentence (*re-read each cited M line in the committed dump before coding; the dump wins; record any
+disagreement in the task's As-executed note*).
 
-| card | what | files (today's owners) | acceptance |
-|---|---|---|---|
-| 6A-BL built-level list (first task of 6A) | `BuiltLevels` becomes an explicit sorted list of built level ids (`[1, 2, 3, 4, 5, 10]` …) with `contains` (a closed range cannot say "1 to 5, then 10"; `1...10` would admit 6–9, which have no level data); `NewGame.swift:66/:275–284`, `ContinueGame.swift:134–141`, `Shared/FerazelDriver.swift:44` (`-FerazelLevel`, both shells, refuses an id not in the list) read it; the bot and the sweep (`ferazel-random-play.sh:62/:76` parse the range with `sed`/`seq` today; `ferazel-visit-sweep.sh` / `VisitSweepPlan.swift:18`) take the list from one printed source, with a test of the parse; the tests pinned to a range move (`GameFlowGameTests`, `LevelFourTests`, `LevelThreeTests`, `BootFacesTests`, `FaceTests` — the LV5 list) | `Front/BuiltLevels.swift:9`, the readers above, both scripts | every reader compiles against the list; the bot runs on `[1…5, 10]` |
-| 6A-FB the fireball cache (before 6A-W) | picture 0x46a is cut three ways (48×48 for 0x46a; 64×64 twice for the dead types 0x46b / 0x46c, M l. 51822–51861) but the port caches faces by picture only; the original reads three caches — key cached faces by record | `World/Enemies/EnemyShot.swift:381/:400`, `Front/LevelRun.swift:1216–1251` | a test that the three cuts differ and 0x46b draws the 64×64 cut |
-| 6A-W Warrior ⚑ | the real Handle / Hit / Kill replacing LV5's stand-in in place (same file, the ◇ markers removed): eggs, random attacks, the three falling crates (0x433 into `+0x1d4/+0x1d8/+0x1dc`), the Kill's four writes (snd 453, shake 0x1e, flash 3, `fed0 = 1`), the gate opens, track 30 by the loop rule; its `killProc` case, step-7 contact row and Smite entry | `World/Enemies/Warrior.swift`, `BossArena`, `LevelRun.swift` (music), `Tests/.../Enemies/WarriorTests.swift` | the scripted-keys kill test; LV5's goldens return with the Handle stubbed |
-| 6A-FR falling rocks 0x433/0x434 | the Warrior's crates and the rocks' player arm in `.HurtPlayer` | `World/Movers/BoxSprite.swift`, `Player/HitPlayerSprite.swift` | built with 6A-W or just before |
-| 6A-S8 horizon strip (draw mode 8) ⚑ | `.BlitEncFaceBehindTiles{Clip,NoClip}`, the `Px` strip sprite from `hdr+0x2716/18/1a` | `FerazelRender/Frame/SpriteBlitter.swift` (the refusal row), `ParallaxBlitter.swift`, `DrawModeAuditTests` (PT's `0x2716` header check becomes a draw check), `LevelRun.swift` (PT's level-open refusal removed) | level-10 first-frame golden; the audit row moves to "drawn" |
-| 6A-WD wind cells | `.LookupModedImpulse` on the overlay cells | `Player/PlayerTiles.swift`, `Physics/` | level-10 test rows |
-| 6A-RP parallax ripple ⚑ | `.RipplePxBackOffsets` for levels 11, 18 | `ParallaxBlitter.swift` | level-11 golden |
-| 6A-RN OmniPx rain (mode 1) ⚑ | `.GenerateRain` + overlay faces 6000/6001 (every logic frame, drawn or not); the side push `0x272c` | `World/OmniPx.swift`, `Camera/`, `DrawModeAuditTests` (PT's mode-1 refusal becomes a draw check) | level-15 golden; push pinned |
-| 6A-T11 tinted submerged tiles | `hdr+0x26c6` in `.PlainWrapFGTile` / overlay | `FerazelRender/Frame/TileGridRenderer.swift` | level-11 golden |
-| 6A-BG1 Background types of 10–22 (42 new; LL lists them) | trees 0xc08…, clouds 0xb4a…, the rotating blade 0xbf4 (`.SectLineSegs`), 1091–1097, 1150–1153, 1840/1843, 1900–1903, 2700–2711, 2890–2893, 3080–3084 | `World/Movers/BackgroundSprite.swift` | each type's Setup/Handle rows; split by LL into 2–3 tasks |
-| 6A-BX1 Box types of 10–22 (LL) | geysers 1440 (built), pipes (built), 2808–2876…, 1060/1061/1080, the programmed-path cannon (p1 ≠ 0) and mace (modes 1–2) arms — added to the one `ProgrammedPath` (`World/Movers/ProgrammedPath.swift`), never a second copy; remember the 1xx-form flag zeroes the swing speed | `World/Movers/BoxSprite.swift`, `World/Movers/ProgrammedPath.swift` | split by LL |
-| 6A-BN1 Bonus / Platform / Rope types of 10–22 | 1290–1339, 3050…3223, Platform 1404/1407, Rope 3020 | `BonusSprite.swift`, `PlatformSprite.swift`, `RopeSprite.swift` | — |
-| 6A-L10…L22 levels enterable | 10, 11, 15, 18, 20, 21, 22 (the Dillo is placed on 15 and 22, the Gremlin on 15, pipes on 21 — all built). Level 21 also wires the pipe's level spawn: `BoxSprite.setupPipe` into level spawn, the throwaway Setup child (its random draws and its count bump, M l. 59347–59353), `SetupFaces`' pipe arm 1490…1493 | `Front/BuiltLevels.swift`, `LevelRun.swift`, new `Level<N>Tests.swift` | `testLevel<N>SetsUpEveryRecord`; bot quick mode 0 failures |
-| 6A-CH Goblin Chief ⚑ | BOS's contract; the boss grab (`PlayerStates.swift:371`, `PlayerState.swift:196`); its `killProc` case, step-7 row, Smite entry | `World/Enemies/Chief.swift`, `Player/PlayerStates.swift` | scripted kill test; level-18 arena rows (second bound −640) |
-| 6A-MC conversations + chapter cards for 10–22 | the `Mcnv` ids and cards LL lists; the resources loaded as the original | `Front/StageScreens.swift`, `Talk/` | the card goldens |
-| 6A-END phase end | GE both shells over levels 1–22, Proof B, the Fable cross-check, both builds staged, the card → Ben (a new QUESTIONS item) | — | — |
+**Every level task** ("level N enterable") is one level, or two adjacent levels when neither adds a class or an engine
+feature (only 10 + 11 qualify, LL §8(c)): every record of the level set up (no `notTranscribed` — counted **per record**,
+old types included, LL §10.8), the picture cache marked at the original's positions (6A-CF's list), the load bar counted,
+a `Level<Name>Tests` file in `FerazelCoreTests`, the face-load tests extended (`BootFacesTests`' per-level pins,
+`FaceTests`' per-level drops / keys table re-derived), the level's **new** real first-frame golden (Mac) and its Windows
+reference, the visit sweep and the bot extended to it by the list, the bot's quick mode on it with 0 failures, then the
+full GE; `BuiltLevels.list` gains the level only once its census sets up every record. A level task builds **no** engine
+feature: every feature and type task its data switches on comes first (D46.3). It deletes or keeps its levels' feature
+goldens as each feature card says (the ladder counts both).
+
+**Every boss task** replaces its stand-in in place (same file, the ◇ markers removed) and passes the switch-off check
+(its Handle — and its Hit, where the Hit is the task's — stubbed back with one local patch, never committed: every old
+value returns); builds or completes the boss's three pieces (its `EnemyCommon.killProc` arm, its `.HitPlayerSprite`
+step-7 row, its `.SmiteEnemies` entry — BOS §1.2) and the class duties of "Shared architecture"; adds BOS's "asserts the
+build task adds" as assert lines inside its named tests (not new tests); and turns BOS's scripted-kill scenario into a
+test by **running the starting key script once, measuring the HP-0 and Kill frames and pinning both** (D46.4) — a
+script that fails (no Kill by its frame cap, or the player dies) is a STOP for the seat's ruling.
+
+**Every engine-feature task** (D46.3) is built before its first level opens and proves itself on a **test-only level
+fixture** (below) with a feature golden; it removes its own level-open refusal; **no golden of levels 1–5 moves** (those
+goldens are its switch-off check: each ENG section says why the levels 1–5 path never reaches the new arm); it adds
+ENG's "asserts the build task adds" inside its named tests and its `DrawModeAuditTests` writer rows (Invariant 8).
+
+### Verification-model additions for 6A
+
+- **The level fixture** (new at 6A-S8, `Tests/FerazelRenderTests/LevelFixture.swift`): opens a level directly through
+  the level runner (as `FrameGoldenTests` opens level 1 — never through `BuiltLevels`) from a patched
+  `ResourceCollection` (the pattern of `GameFlowGameTests.swift:297–306`) whose `Mlvl` has the left-out placements'
+  active flag cleared — every other record, the header and the stream as the level has them (ENG §7.2). A named test
+  stand-in, never in `Sources`. Each feature card lists what its fixture leaves out; moving a task changes its fixture —
+  re-read ENG §7.2 then. Levels that open with nothing left out (18 for the Chief, 20 for 6A-MP, 22 for 6A-CP) use
+  the same helper with an empty list in Render tests, because they are not yet in `BuiltLevels`; Core tests
+  (`FerazelCoreTests` cannot see the Render helper) open such a level directly through the session, as
+  `LevelFiveTests` does.
+- **New goldens are new values, not moves.** Three kinds: a *feature golden* (on a fixture, Mac,
+  `Tests/FerazelRenderTests/FeatureGoldenTests.swift`, new at 6A-S8), a *level first-frame golden* (the real level, Mac,
+  `Tests/FerazelRenderTests/LevelFrameGoldenTests.swift`, new at 6A-L10L11) with its *Windows reference*
+  (`Ferazel/Windows/Tests/FerazelWinKitTests/WinLevelReferenceTests.swift`, new at 6A-L10L11: `WinGame` headless,
+  `-FerazelLevel N`, N held, the first presented frame's FNV and flow step — `WinReferenceFramesTests.framesRun`'s
+  shape), and the two *chapter-card goldens* (6A-MC). Each is measured by the build, recorded in the task's As executed
+  and, at the wave close, in this plan's "Goldens" paragraph. The CrossOver smoke script keeps its three level-1
+  references only. **Only 6A-W1 and 6A-W2 (◈) may move an existing golden** — level 5's (`BootFacesTests` level-5 pins
+  init 46 / `0xb039da66a884cb8a`, f30 55 / `0x69068d5e8151b0cc`, f120 55 / `0xb9f08ee19927f3e7`, and any other level-5
+  value), for their named cause, with the switch-off check.
+- **Measured, never invented** (D46.4): every golden's value and frame, every scripted kill's HP-0 and Kill frame, the
+  first thunder frame, the first ripple frame, the Chief's activation frame on level 18. The build measures, pins and
+  records; a later change is a STOP (Invariant 10).
+- **Burns end only with face pixels** (process lesson): a kill whose death ends in a burn completes only through the real
+  renderer's face store, so the kill-frame and scripted-kill tests live in `Tests/FerazelRenderTests/BossKillLevelRunTests.swift`
+  (new at 6A-W2), as `GoblinBurnLevelRunTests` does; the rest of each boss's tests stay in `FerazelCoreTests/Enemies/`.
+- **Proof-B test rules** (Phase 4–5 lessons): no `@MainActor` test class; no `FileManager.enumerator` or
+  `NSRegularExpression`; no Foundation string search or trim (`String.contains(String)` traps under Wine) — plain Swift.
+- **Gate bundles** (the commands are §0's; every task also runs G6 ⊆ its Files, G7 / G7b / G8, G10 after each commit,
+  and `--filter DrawModeAuditTests` with moved writer rows re-anchored, values unchanged):
+  - **Gate-F** (feature or type task; Core / Render only — lockstep (b)): G2 = the ladder number with exactly the two
+    named opt-in skips; G5; GW1 0 / 2; GW2 = the WinKit number / 0 / the two named skips; GW3 0 / 1; GW4; levels 1–5's
+    goldens and `BootFacesTests` pins unchanged; the feature golden measured and pinned.
+  - **Gate-B** (boss task): Gate-F with ◈ (the switch-off check, every moved value old → new in the commit body and As
+    executed) where a golden moves; the bot's quick mode on the boss's level (`FERAZEL_BOT_LEVELS=n FERAZEL_BOT_MINUTES=1
+    tools/ferazel-random-play.sh core`) 0 failures, its `== core:` line recorded.
+  - **Gate-L** (level task; lockstep (a): the Windows side is in the task): Gate-F; G3; the new Windows reference test
+    (GW2 + 1 a level) and `FerazelSettingsTests`' `-FerazelLevel` rows for the new ids; the quick mode on each new
+    level 0 failures; then the full GE — `tools/ferazel-visit-sweep.sh both`, then `tools/ferazel-random-play.sh both`,
+    every built level, background, at most 4 workers, nothing else heavy running — both exit 0, summary lines in
+    LOOP-LOG (budget below).
+  - **Wave end:** G3; GWB by day (the line below); GW4R by day; the Fable cross-check of the wave's whole diff and gate
+    numbers before the next wave's first task (§0) — it opens the next run when the context is spent. The last wave's
+    cross-check is the phase review (6A-END).
+
+**The 6A ladder** (Core G2 total, 2 opt-in skips throughout; WinKit GW2 total, 2 opt-in skips throughout). Each task's
+"(→ N)" = the previous N + its new tests − the feature goldens it deletes; "+a / −d" names both.
+
+| # | task | ⚑ ◈ | tests | Core after | WinKit after | wave end: GWB by day (P = N − 3) |
+|---:|---|---|---|---:|---:|---|
+| — | start (run 49 close) | | | 620 | 82 | |
+| 1 | 6A-BL built-level list | | +2 | 622 | 82 | |
+| 2 | 6A-CF picture cache in full (+ the fireball records) | | +6 | 628 | 82 | |
+| 3 | 6A-FR falling rocks' player arm | | +5 | 633 | 82 | |
+| 4 | 6A-W1 the Warrior's Handle | ⚑ ◈ | +9 | 642 | 82 | |
+| 5 | 6A-W2 the Warrior's Hit, Kill, fight | ⚑ ◈ | +8 | 650 | 82 | **6A.1 end:** 647 / 0 / 3 / 0 (of 650) |
+| 6 | 6A-S8 horizon strip | ⚑ | +11 | 661 | 82 | |
+| 7 | 6A-WD wind | | +9 | 670 | 82 | |
+| 8 | 6A-RC rotating cannons | | +10 | 680 | 82 | |
+| 9 | 6A-TR trees | | +11 | 691 | 82 | |
+| 10 | 6A-RP river ripple (+ the T11 proof) | ⚑ | +10 | 701 | 82 | |
+| 11 | 6A-BX1a Box scenery | | +6 | 707 | 82 | |
+| 12 | 6A-BX1b Box faces and talkers | | +4 | 711 | 82 | |
+| 13 | 6A-MC conversations and chapter cards | | +3 | 714 | 82 | |
+| 14 | 6A-L10L11 levels 10 and 11 enterable | ⚑ | +8 / −2 | 720 | 84 | **6A.2 end:** 717 / 0 / 3 / 0 (of 720) |
+| 15 | 6A-RN rain, thunder, side push | ⚑ | +12 | 732 | 85 | |
+| 16 | 6A-BG1c plants | | +3 | 735 | 85 | |
+| 17 | 6A-L15 level 15 enterable | | +4 / −1 | 738 | 86 | |
+| 18 | 6A-CH1 the Chief's class and Handle, the stagger | ⚑ | +12 | 750 | 86 | |
+| 19 | 6A-CH2 the Chief's Hit, Kill, fight | ⚑ | +8 | 758 | 86 | |
+| 20 | 6A-L18 level 18 enterable | | +4 | 762 | 87 | **6A.3 end:** 759 / 0 / 3 / 0 (of 762) |
+| 21 | 6A-CL clouds | | +7 | 769 | 87 | |
+| 22 | 6A-BD rotating blade | | +13 | 782 | 87 | |
+| 23 | 6A-MP mace paths | | +7 | 789 | 87 | |
+| 24 | 6A-L20 level 20 enterable | | +4 / −1 | 792 | 88 | |
+| 25 | 6A-L21 level 21 enterable (+ the pipes' level spawn) | | +4 | 796 | 89 | |
+| 26 | 6A-CP magic carpet | | +12 | 808 | 89 | |
+| 27 | 6A-L22 level 22 enterable | | +4 | **812** | **90** | **6A.4 end = phase end:** 809 / 0 / 3 / 0 (of 812) |
+| 28 | 6A-END phase end | | 0 | 812 | 90 | (the same, at the staged head) |
+
+New tests 196, deleted 4 (the wind, rotating-cannon, rain and mace-path feature goldens), net **+192**. 27 build tasks
++ the phase end; **8 ⚑** (W1, W2, S8, RP, L10L11, RN, CH1, CH2); ◈ only W1 and W2. Review fix rounds add asserts, not
+tests, unless the seat rules otherwise (As executed); merged out of order: previous + the task's net N.
+
+---
+
+#### 6A-BL — minor — the built-level list (→ 622)
+- **Files:** `Sources/FerazelCore/Front/BuiltLevels.swift` (`range` → `public static let list: [Int] = [1, 2, 3, 4, 5]`
+  + `contains(_:)`; the doc comment), `Sources/FerazelCore/Front/NewGame.swift` (`:68`, `:277–:280`),
+  `Sources/FerazelCore/Front/ContinueGame.swift` (`:134–:135`), `Ferazel/Shared/FerazelDriver.swift` (`:39–:44`, both
+  shells), `Tests/FerazelRenderTests/VisitSweepPlan.swift` (`:18`) and `Tests/FerazelRenderTests/RandomPlayPlan.swift`
+  (`:120`) (both git-symlinked into `FerazelWinKitTests`), `tools/ferazel-built-levels.sh` (new — prints the list as
+  `1,2,3,4,5` from the one source line), `tools/ferazel-random-play.sh` (`:74–:89`: the `sed` / `seq` range parse →
+  the helper's list; `FERAZEL_BOT_LEVELS` checked against it), `tools/ferazel-visit-sweep.sh` (`FERAZEL_VISIT_LEVELS`
+  checked against it), the tests pinned to the range (each retargeted, values unchanged): `Tests/FerazelCoreTests/{GameFlowGameTests.swift:249,
+  LevelFiveTests.swift:320–:321, LevelFourTests.swift:158, LevelThreeTests.swift:355}`, `Tests/FerazelRenderTests/{BootFacesTests.swift:237/:281/:303,
+  DrawModeAuditTests.swift:931/:1756, LevelSweepTests.swift:60/:75/:80, FaceTests.swift}` (the per-level loop),
+  `Ferazel/Windows/Tests/FerazelWinKitTests/FerazelSettingsTests.swift` (`:17–:19` comment and rows: `("6", 1)` and
+  `("10", 1)` added — asserts, WinKit unchanged), `Tests/FerazelCoreTests/BuiltLevelsTests.swift` (new).
+- **Contract:** the old card's (a closed range cannot say "1 to 5, then 10"; `1...10` would admit 6–9, which have no
+  level data). One sorted list of built level ids; every reader asks `contains`; the scripts take the list from one
+  printed source. No behaviour changes in this task (the list holds 1–5); the not-built report text is unchanged
+  ("Level n is not built yet (Phase 6).", D35 — deleted at 6C-END). `-FerazelLevel` outside the list → 1, as today.
+- **Tests (2):** `testBuiltLevelsListAndContains` (the list is `[1, 2, 3, 4, 5]`, sorted, no duplicates; 6–9 and 10 are
+  not in it; `notBuiltReport(10)`) · `testBuiltLevelsSourceLineParses` (`BuiltLevels.swift` holds exactly one line of the
+  shape the helper reads, and its plain-Swift parse equals `BuiltLevels.list` — the script and the code cannot drift).
+- **Gate:** Gate-F (G2 622, GW2 82 — the shared driver and the symlinked plans compile and pass in both packages);
+  the bot's quick mode on level 1 through the new parse (`FERAZEL_BOT_LEVELS=1`) exits 0 and a bad level (`=6`) exits 2;
+  `tools/ferazel-watchdog-selftest.sh` still passes. **Commit:** `Ferazel: BuiltLevels becomes an explicit list; the
+  scripts read it from one source; 2 tests`.
+
+#### 6A-CF — minor — the picture cache in full, keyed by record (+ the fireball records) (→ 628)
+- **Files:** `Sources/FerazelCore/Front/LevelRun.swift` (`CachedFaces`, `:1085` on: `sets`, `singles`, `marks`,
+  `handleSets`, `loadedSets`, `load(needed:)`, `sheets(markedBy:)`), `Sources/FerazelCore/World/Enemies/EnemyShot.swift`
+  (`:381`, `:400` — the face read by record), `Sources/FerazelRender/Frame/FrameRenderer.swift` (only if the face store's
+  key needs it; a `FaceSetKind` case if the record cannot ride in `FaceRef.pict` space — lockstep (a), named in As
+  executed), the two tests that pin neighbours in today's short list, re-anchored to the full one:
+  `Tests/FerazelCoreTests/LevelFiveTests.swift:136–:139` (the Warrior's sets after the Dillo's 0x751) and
+  `Tests/FerazelCoreTests/Enemies/GremlinFloaterTests.swift:252–:257` (the 16 sets from 0x762),
+  `Tests/FerazelCoreTests/CachedFacesTests.swift` (new). `BootFaces` is untouched.
+- **Contract:** LL §6 (the table is the transcription target), LL §8(b)1 (the card), ENG §2.14 (R2). Dump:
+  `.InitSprites` M l. 103–145 (the Init order), the two cache routines M l. 73888–73902 (sets) / 73943–73951 (singles),
+  `.LoadCachedSpriteFaces` M l. 73769–73869; EnemyShot M l. 51434–51436 and 51822–51861.
+  - The whole registration list: **285 records — 92 sets, 193 singles, 805 faces** — in `.InitSprites` order, each with
+    its geometry and its CLUT flag (the boss Inits' flag-1 records; the cannon set 0x442's flag 0), keyed by **record
+    (list position)**, not picture, in the records, the marks, `loadedSets`, the load and `sheets(markedBy:)`.
+  - The **23 records whose PICT no file holds** (2805–2807, 2950, 2966–2969, 1489, 2718–2729, 1790, 1791) kept as
+    records that load nothing and are never marked loaded or counted (M l. 73822–73832, 73856–73859).
+  - The marks the port misses for types it already calls built (LL §1 finding 8): set 0x442 for every cannon
+    0x443…0x44a; the spring sets 0x47e / 0x47f / 0x480 (1150…1153); each mace / ball single 0x5c8…0x5d0 by type; the
+    hang glider 0xbea's four Player sets 0x41a…0x41d (records #1–#4); the passage single 0xb55. Marks of types not
+    built yet stay with their tasks (trees, clouds, plants, scenery, the carpet set 0x438, the Chief's five, fire 1208).
+  - Picture 0x46a has **three records and two cuts** (48×48 at `_DAT_100a0848`; 64×64 twice at `0844` / `0840`,
+    identical): 0x46a reads `0848`, 0x46b `0844`, 0x46c `0840`; each Setup marks its own record (the Wizard only `0848`,
+    the Demon all three, Xichra #1 and #3).
+  - **Levels 1–5's load-bar steps are unchanged**, so no level 1–5 golden moves: their only types in the new ranges
+    (0x442, 0x5cd, 0xb54) are already marked (LL §8(b)1).
+- **Tests (6):** `testCacheRegistrationListInFull` (285 / 92 / 193 / 805; every row's order, geometry and flag against LL
+  §6; the 23 absent records never counted) · `testLevel20LoadBarMarks` (level 20's needed records and bar total from its
+  built types' marks: the four Player sets by 3050, set 0x442 by 1092 / 1094 / 1096 — measured, checked against §6's mark
+  column) · `testLevel22LoadBarMarks` (the same for 22: 0x442 by 1091 / 1094 / 1096, the mace singles by type) ·
+  `testFireballCutsByRecord` (0x46a draws the 48×48 cut, 0x46b / 0x46c the 64×64 one, each from its own record; the two
+  64×64 cuts equal) · `testShot46bReadsRecord0844` (0x46b's face comes from record `0844`; assert: 0x46c reads `0840`,
+  not `0844`) · `testCacheMarksPerRecord` (a Setup that marks record #k marks no other record of the same PICT).
+  Asserts: ENG §2.14's first (the spark draws are 6B-WZ1's).
+- **Gate:** Gate-F (G2 628); `BootFacesTests` and `GremlinFloaterTests` green with the re-anchored neighbours; levels 1–5
+  load-bar step counts printed before and after — identical. **Commit:** `FerazelCore: the picture cache in full (285
+  records, keyed by record), the missing marks of built types, the fireball's three records; 6 tests`.
+
+#### 6A-FR — minor — the falling rocks' player arm (→ 633)
+- **Files:** `Sources/FerazelCore/Player/HitPlayerSprite.swift` (`:177`, the `// later: Phase 6` arm),
+  `Tests/FerazelCoreTests/FallingRockTests.swift` (new).
+- **Contract:** ENG §2.12 (BOS §2.7). Dump: `.HitPlayerSprite` M l. 49170–49188 (not `.HurtPlayer`, ENG P11). 0x434
+  with `+0x160 < 0` → return at once; 0x433 with `+0x160 ≥ 0`: its centre y < the player's (strict) and vy > 599 →
+  `.HurtPlayer(player, rock, 0x38, blood 1, invul 0x1e, coins 0)` + `.KillBox(rock)`, return, else fall through; 0x434
+  with `+0x160 ≥ 0` the same with 0x70 / 0x3c; a 0x433 with `+0x160 < 0` matches no arm and falls through. The Box arms
+  (`BoxSprite.isBoulder`), `.KillBox` and `.HurtPlayer` are built. No rock exists before 6A-W1, so levels 1–5 never
+  enter the arm; no feature golden (6A-W2's scripted fight is its first frame proof).
+- **Tests (5):** `testRock433HurtsWhenFallingOnPlayer` · `testRock434HurtsHarder` · `testRock434NegativeReturnsEarly` ·
+  `testRockSlowOrBelowFallsThrough` · `testRockBoundaries` (a 0x433 with `+0x160 < 0` falls through; equal centre y
+  falls through; vy 599 falls through, 600 hurts). Asserts: ENG §2.12's three.
+- **Gate:** Gate-F (G2 633). **Commit:** `FerazelCore: the falling rocks' player arm (0x433 / 0x434); 5 tests`.
+
+#### 6A-W1 — ⚑ MAJOR ◈ — the Warrior's Handle: the crates, the decide, the walk and run, the swing and shot, the dying (→ 642)
+- **Files:** `Sources/FerazelCore/World/Enemies/Warrior.swift` (the ◇ Handle replaced in place; the stand-in markers
+  removed), `Sources/FerazelCore/Session/FerazelSession.swift` (the `.warrior` Handle row), `Sources/FerazelCore/World/Enemies/EnemyCommon.swift`
+  (`liquids(class: .dillo)` reused by the Warrior's tail, BOS §2.3), `Sources/FerazelCore/World/Enemies/CrawlerRoach.swift`
+  (`hitTile` reused as `.HitWarriorTileSprite`, only if it must be widened), `Tests/FerazelCoreTests/Enemies/WarriorTests.swift`
+  (new), `Tests/FerazelRenderTests/BootFacesTests.swift` (level 5's pins, ◈), `Tests/FerazelCoreTests/LevelFiveTests.swift`
+  (any level-5 value the real Handle moves, re-derived), `Tests/FerazelRenderTests/DrawModeAuditTests.swift` (the
+  Warrior's face writers).
+- **Contract:** BOS §2.3 (the Handle, the state table, the decide, the timing facts, the spawn frame order, the tail),
+  §2.8 (hazards). Dump: `.HandleWarriorSprite` M l. 73115–73419, `.WarriorLayEgg` 73080–73092, `.RandomWarriorAttack`
+  73095–73112, `.HitWarriorTileSprite` 73498–73530.
+  - The **boss-mode block** (p4 ≠ 0, whatever the lock, M l. 73151–73213): the three crate slots `+0x1d4/+0x1d8/+0x1dc`,
+    the first Handle frame spawns all three 0x433 at (689, −173), (945, −273), (1201, −173), **layer 2** (the Box Setup's,
+    not the argument 9); a dead crate's slot is cleared on the first Handle that sees `+0xe9`, the new crate comes 14
+    Handle frames later (k + 14 for a kill before his Handle, k + 15 for a collide-pass kill); the wounded glow.
+    **This closes the Phase 5 carry "the Warrior's pre-lock rocks are not spawned".**
+  - States 6 (decide; unlocked → return before gravity), 7 (walk 15 frames ±0x600 / run 7 frames ±0xc00), 2 (attack:
+    snd 704 at n = 7, shot 0x71f at n = 9, first swing 18 frames, later 17), 4 (dying, `+0x1a2 = 1` on dying frame 45);
+    the decide's draws R(100), R(3), R(100) [, R(100) → the egg's R(2)]; `.RandomWarriorAttack` draws R(100) and
+    **discards it**, then R(2) (BOS D1).
+  - Spawn frame order: neither the crates (layer 2, in front of him) nor the shot (layer 0) run on their spawn frame.
+  - No free record (Ruling 16, widened as BOS §1.1): `+0x16c` keeps counting below 1, the slot re-tries each frame; the
+    shot's vx store through a null result is dropped. No `SpriteSlot` copy held across a spawn (`SpriteWorld` rule 2).
+  - ◈ **Cause: the real Handle runs on level 5** (crates from frame 1). Switch-off: stub the Warrior Handle body back to
+    LV5's stand-in — level 5's old values return. Levels 1–4: no Warrior — unchanged.
+- **Tests (9):** BOS §2.9's 6A-W1 list, names as written: `testWarriorCratesFirstFrame` ·
+  `testWarriorCrateRespawnAfter14Or15` · `testWarriorUnlockedReturnsBeforeGravity` · `testWarriorDecideDraws` ·
+  `testWarriorAttackDiscardsR100` · `testWarriorSwingTimingAndShot` · `testWarriorWalkRunCycles` ·
+  `testWarriorDeathAndGlow` · `testWarriorTileCallbackIsCrawlerBody`. Asserts: BOS §2.11 items 1–21.
+- **Gate:** Gate-B (G2 642; ◈ level 5's moved values old → new; the bot's quick mode on level 5).
+  **Commit:** `FerazelCore: the Warrior's Handle — crates, decide, walk / run, swing and shot, dying; 9 tests`.
+
+#### 6A-W2 — ⚑ MAJOR ◈ — the Warrior's Hit and Kill, the three pieces, the fight (→ 650)
+- **Files:** `Sources/FerazelCore/World/Enemies/Warrior.swift` (Hit, Kill), `Sources/FerazelCore/Session/FerazelSession.swift`
+  (the `.warrior` hit arm — today's empty stand-in), `Sources/FerazelCore/World/Enemies/EnemyCommon.swift` (`:98–:107`:
+  the `.warrior` `killProc` arm gains `.KillWarrior`'s tail), `Sources/FerazelCore/Player/HitPlayerSprite.swift` (`:67`,
+  the step-7 row exists — a test row only), `Sources/FerazelCore/Items/Smite.swift` (`:18`, exists — a test row),
+  `Tests/FerazelCoreTests/Enemies/WarriorTests.swift`, `Tests/FerazelRenderTests/BossKillLevelRunTests.swift` (new),
+  `Tests/FerazelRenderTests/BootFacesTests.swift` and `Tests/FerazelCoreTests/LevelFiveTests.swift` (◈, if a crush
+  inside the pinned frames moves them).
+- **Contract:** BOS §2.4 (Hit), §2.5 (Kill), §2.6 (pieces and duties), §2.10 (the scripted kill), §1.1 (the boss-kill
+  tail, the death entry, the burn's Kill-frame formula). Dump: `.HitWarriorSprite` M l. 73422–73462, `.KillWarrior`
+  73465–73495, the routing list M l. 49514–49521, damage row 49840–49842.
+  - Hit: a player shot (`+0xa6 == 0`, HP > 0) is killed (sound 0, effect 1) with snd 303 — immune; a Statue or Box
+    landing (`.PlatformBounce` == 2 ∧ (vy > 0 ∨ `+0xce`)) → `.HurtSprite(S, 200, …)`, `+0xf0 = 0`, `.KillBox`, then
+    R(10000), R(10000), R(2) (`.KillBox`'s own draws first) — 2000 / 200 = 10 crate hits. A Statue-spell shot is an
+    ordinary shot (no boss calls `.TurnIntoStatue`).
+  - Kill: the count head, `+0xe9 = 1`, `+0xea = 1`; with p4 ≠ 0 snd 453 at 48000, shake 0x1e, flash 3, `noBossAlive
+    = 1` → the gate opens from the next gate Handle, track 30 by the loop rule (LV5, built). **Closes the Phase 5 carry
+    "the Warrior's killProc arm would count and remove the Warrior without opening the gate".**
+  - Liquids: the `.dillo` row (kind 2: −100, invul 0x13, flash 0x11, snd 701 vol 0x55; kind 3: + 4 below HP 500).
+  - The scripted kill (BOS §2.10): seed 1; `.left` held from the level start until the lock (x < 1384), then no keys
+    but a one-frame `.jump` whenever a 0x71f shot is within 0x40 px; until the Kill or 20,000 frames. Measured once:
+    HP0 (the death-entry frame, one after the tenth crush) and the Kill frame; Kill − HP0 = 45 + (B − T) of face 0x71e[5]
+    (1 row a frame; one R(100) a row at effects 1) is checked, then both are pinned.
+  - ◈ **Cause: the real Hit** (a crate landing on him inside the pinned frames). Switch-off: stub the Hit back to the
+    empty arm — the old values return.
+- **Tests (8):** BOS §2.9's 6A-W2 list: `testWarriorAbsorbsShots` · `testWarriorCrateCrush200` ·
+  `testWarriorStatueShotIsAShot` · `testWarriorLavaAndBrine` · `testWarriorKillTail` (also: with the music preference
+  off the loop rule never switches to 30 — the Phase 5 carry "no test with music off") · `testWarriorContactAndWriteBack`
+  — in `WarriorTests`; `testWarriorKillFrameFormula` · `testWarriorScriptedKill` — in `BossKillLevelRunTests` (the burn
+  needs face pixels). Asserts: BOS §2.11 items 22–28.
+- **Gate:** Gate-B (G2 650; the bot's quick mode on level 5 — the fight now ends). Wave 6A.1 end: G3, GWB by day
+  **647 / 0 / 3 / 0 (of 650)**, GW4R by day, the Fable cross-check of BL…W2. **Commit:** `FerazelCore: the Warrior's Hit and
+  Kill — crates crush him, the gate opens, the boss track; the scripted fight; 8 tests`.
+
+#### 6A-S8 — ⚑ MAJOR — the horizon strip (draw mode 8) (→ 661)
+- **Files:** `Sources/FerazelCore/Sprites/PxSprites.swift` (built R4, unused — becomes the real records),
+  `Sources/FerazelCore/Front/LevelRun.swift` (`setupLevel`: the strip sprites created at `.SetupLevel`'s position, after
+  `.KillAllSprites` and before `.SetupLevelSprites`; `refuseUndrawnHeader` `:584` — the strip's refusal removed, the
+  OmniPx one kept), `Sources/FerazelCore/Session/{FerazelSession,SpriteWorld}.swift` (the Handle in the sprite pass;
+  the allocations), `Sources/FerazelCore/Camera/Camera.swift` (the second `.MTHandlePxSprites` pass at the end of
+  `.FindUpperLeftCorner`, M l. 6235), `Sources/FerazelCore/Seams/FaceRef.swift` (one `FaceSetKind` case for a
+  Backgrounds-file single — Invariant 9, a case added), `Sources/FerazelRender/Frame/SpriteBlitter.swift` (mode 8, both
+  variants; `:301`), `Sources/FerazelRender/Frame/FrameRenderer.swift` (the strip face loaded from the Backgrounds file,
+  under the level+base CLUT when hdr `0x26cc` ≠ 0), `Tests/FerazelRenderTests/LevelFixture.swift` (new),
+  `Tests/FerazelRenderTests/FeatureGoldenTests.swift` (new), `Tests/FerazelRenderTests/HorizonStripTests.swift` (new),
+  `Tests/FerazelRenderTests/DrawModeAuditTests.swift` (the `horizonStrip` `.headerZero` row gone, mode 8 drawn, the
+  header check at `:1949` narrowed), `Tests/FerazelCoreTests/GameFlowGameTests.swift` (PT's strip patch at `:293–:306`
+  now opens — retargeted; the OmniPx patch stays a refusal). Any exhaustive `switch` over `FaceSetKind` the compiler
+  finds (both packages) is added and recorded.
+- **Contract:** ENG §2.1 (creation, `.SetupPxSprite`, the twice-a-frame Handle, the mode-8 add with carries, the clipped
+  walk from the raw, the mask pass). Dump: `.SetupLevel` M l. 2252–2268 / 2350–2356, `.MTAddPxSprite` 30853–30927,
+  `.SetupPxSprite` 30798–30819, `.HandlePxSprite` 30771–30797, `.MTHandlePxSprites` 30928–30948,
+  `.BlitEncFaceBehindTilesClip` 22251–22449 (raw `100269c4..10026d04`), `…NoClip` 22450–22548.
+  - Six levels (10, 30, 40, 45, 62, 67; LL §10.5): built once here; 30 … 67 only need their goldens later.
+  - **The strip shifts every sprite-slot id on those six levels** (placement indices do not move): every later test that
+    names a slot on them is measured after this task (ENG §7.3).
+  - `0x271a` is read as the level has it (222 on 10) — `.BuildSineTable`'s clamp runs before any level loads.
+  - Fixture: level 10 with 31 records left out (trees 13, rotating cannons 4, Box scenery 14).
+- **Tests (11):** ENG §2.1's list less the audit row: `testStripSpritesAreTheFirstAllocations` ·
+  `testStripCopiesPerLevel` (the sprites `setupLevel` creates in `SpriteWorld`: 9, 12, 12, 3, 9, 2 — not the `PxSprites`
+  model `ParallaxTests.testStripSpriteCopies` already pins) · `testHandlePxSpriteRunsTwice` ·
+  `testStripFaceUsesBackgroundsFile` · `testStripFaceClutOnLevel62` · `testModeEightWordAddCarries` ·
+  `testModeEightTailBytes` · `testModeEightClipped` · `testModeEightMaskPassZeroes` ·
+  `testFrameIsZeroUnderOpenMaskOnLevel10` (on the fixture) · `testLevel10StripFeatureGolden` (the first frame with a
+  strip pixel on screen, measured; kept at 6A-L10L11). Asserts: ENG §2.1's seven.
+- **Gate:** Gate-F (G2 661; the new `FaceSetKind` case compiles in both shells — G5, GW1–GW4; no shell source switches on
+  it). **Commit:** `Ferazel: the horizon strip — draw mode 8, the strip sprites, the level fixture; 11 tests`.
+
+#### 6A-WD — minor — wind cells (→ 670)
+- **Files:** `Sources/FerazelCore/Physics/StandardSprite.swift` (`:60`, the empty `// later: wind` branch; the
+  `+0x92` clear at the routine's top), `Sources/FerazelCore/Sprites/SpriteSlot.swift` (`:443`, the fields exist),
+  `Tests/FerazelCoreTests/WindTests.swift` (new), `Tests/FerazelRenderTests/FeatureGoldenTests.swift`.
+- **Contract:** ENG §2.2. Dump: `.StandardSpriteHandles` M l. 32489–32574 (raw `100369b0..10036c5c`), `+0x92 = 0` at
+  M l. 32460; `.LookupModedImpulse` 37020–37412 (built). Wind is on **levels 10 (103 cells) and 20 (2,899)** (LL §10.1);
+  it moves every sprite with a wind scale, not only the player (ENG P6); the test impulse (15·o2), the gates — **crossed on
+  h < 0, v < 0 directions, as written** (o1 10…15: 4 cells on 10, 36 on 20) — the push impulse (14·o2) scaled below
+  0xff, the 33-frame ramp, `+0x98` un-ramped, the leaving arm. No random draw; no draw writer. Fixture: level 10 with the
+  same 31 records left out.
+- **Tests (9):** `testWindGatesEachQuadrant` · `testWindCrossedGatesOnDiagonalUpLeft` · `testWindRampUpAndOff` ·
+  `testWindScaleBelow255` · `testWindNeedsPositiveStrength` · `testWindSetsInWindFlag` · `testWindCellCensus`
+  (103 / 2,899 / 0 on every other level) · `testLevel10WindTrace` (Render, on the fixture; kept for good) ·
+  `testLevel10WindFeatureGolden` (the trace's last frame; **deleted at 6A-L10L11**). Asserts: ENG §2.2's four.
+- **Gate:** Gate-F (G2 670). **Commit:** `FerazelCore: wind cells (levels 10 and 20), the crossed gates as written; 9 tests`.
+
+#### 6A-RC — minor — the rotating cannon arm (p1 101…106) and its shot steering (→ 680)
+- **Files:** `Sources/FerazelCore/Sprites/SetupFaces.swift` (`:377–:380`, the p1 ≠ 0 refusal),
+  `Sources/FerazelCore/World/Movers/BackgroundSprite.swift` (`:334` the Handle stub, `:498` the steering `// later`),
+  `Tests/FerazelCoreTests/RotatingCannonTests.swift` (new), `Tests/FerazelRenderTests/FeatureGoldenTests.swift`,
+  `Tests/FerazelRenderTests/DrawModeAuditTests.swift` (the cannon face writer rows near `BackgroundSprite.swift:355/:364`
+  re-keyed).
+- **Contract:** ENG §2.3. Dump: Setup arm M l. 62057–62184 (p1 ≥ 1: 62120–62170), Handle 62944–63069 (rotation
+  62983–63021), `.HitBackgroundSprite` 63680–63714 (steering 63689–63709). Owns 1092, 1097 and the p1 101–106 records of
+  1090 on 10 / 15 / 20 (D46.1; LL's 6A-BG1b dissolves); 1091 / 1093–1096 with p1 0 are built (their first refused
+  records are 6B's, LL finding 10); the path arm p1 < 0 is 6B (ENG §3.1). Record p2 written back (105, or 106 with
+  p2 0 → 4); the pause and step; the click only with no voice playing (`SoundVoices`); 105 / 106 never turn by
+  themselves; a player shot steers a paused 105 / 106 by the 12 / 24 and 8 / 23 windows; a shot into a 101–104 cannon is
+  cannoned. The set mark 0x442 is 6A-CF's. Every cannon on levels 1–5 has p1 0 (measured) — no golden moves. Fixture:
+  level 10 with trees (13) and Box scenery (14) left out.
+- **Tests (10):** ENG §2.3's list: `testRotatingCannonSetupFields` · `testCannon105WritesRecordP2` ·
+  `testRotatingCannonPauseAndStep` · `testRotatingCannonClickNeedsSilentVoice` · `testCannon105DoesNotSelfTurn` ·
+  `testShotSteersCannonLeftAndRight` · `testShotSteeringOnlyWhilePaused` · `testCannonP1OutsideRangeTakesPath` ·
+  `testLevel10CannonTrace` (Render, fixture, kept) · `testLevel10RotatingCannonFeatureGolden` (**deleted at
+  6A-L10L11**). Asserts: ENG §2.3's seven.
+- **Gate:** Gate-F (G2 680). **Commit:** `FerazelCore: rotating cannons (p1 101…106) and shot steering; 10 tests`.
+
+#### 6A-TR — minor — trees and their branches (→ 691)
+- **Files:** `Sources/FerazelCore/Sprites/SetupFaces.swift` (`:430`, the Background `default` for 0xc08…0xc0f),
+  `Sources/FerazelCore/World/Movers/BackgroundSprite.swift` (`:10`; the Handle arm; `faceWidth` at `:144`),
+  `Sources/FerazelCore/World/Movers/BoxSprite.swift` (the branch arms for Box 0xc08 / 0xc09),
+  `Sources/FerazelCore/World/Movers/PlatformSprite.swift` (`:402–:409` — `flipH`, the existing `.FlipHRect` port: made
+  callable from both movers, never a second copy), `Sources/FerazelCore/Front/LevelRun.swift` (`CachedFaces` marks of
+  `_DAT_100a0ae0` on CF's list), `Tests/FerazelCoreTests/TreeTests.swift` (new),
+  `Tests/FerazelRenderTests/FeatureGoldenTests.swift`, `Tests/FerazelRenderTests/DrawModeAuditTests.swift` (the tree's
+  mirror at Setup and every Handle, its face store, layer 30000 / −10).
+- **Contract:** ENG §2.4. Dump: Setup arm M l. 62597–62617, `.SetupTree` 62679–62886, Handle 63538–63546, branch Box arms
+  60941–60947 (0xc08) / 61067–61075 (0xc09), `.SetupBoxSprite` head 58934–58947 and tail 59722–59727, `.FlipHRect`
+  39474–39491. Owns 3080–3087 and the spawned branches (D46.1). The first Handle plants the branches (3 / 4 / 4 / 5 / 0 /
+  1 by tree; 0xc0b's fifth overwrites slot `1d4`, as written), mirrored by the face width, at **layer 2** (the Box Setup's
+  head overwrites 0xb), first handled next frame; 0xc0f's one solid branch (type 0xc09, `+0x185 = 0`; unplaced).
+  ENG says "build the shared `flipHRect`": it exists as `PlatformSprite.flipH` (Planner's note 6). Fixture: level 10
+  with Box scenery (14) left out.
+- **Tests (11):** ENG §2.4's ten: `testTreeSetupFields` · `testTreePlantsBranchesOnFirstHandle` ·
+  `testTreeFifthBranchOverwritesFirstSlot` · `testTreeBranchesMirror` · `testBranchBoxArm` · `testBranchLayerIsTwo` ·
+  `testBranchFirstHandleNextFrame` · `testTreeNoFreeRecordDropsStores` · `testTreeCacheMarks` ·
+  `testLevel10TreeFeatureGolden` (kept); plus ENG §5's pin `testUnplacedBackgroundArms` (Background 0x73f / 0x740 and
+  their `.HitPlayerSprite` arm, M l. 49753–49760, placed on no level). Asserts: ENG §2.4's ten.
+- **Gate:** Gate-F (G2 691). **Commit:** `FerazelCore: trees plant their branches (one FlipHRect); 11 tests`.
+
+#### 6A-RP — ⚑ MAJOR — the river ripple (and the submerged-tint proof) (→ 701)
+- **Files:** `Sources/FerazelRender/Frame/ParallaxBlitter.swift` (`:130` `Refusal.ripple` removed; `rippleTable` `:107`,
+  `:370` — the consumer is built), `Sources/FerazelRender/Frame/FrameRenderer.swift` (the table filled at
+  `.PaintFrameWrap`'s position: the add on every call, the formula on drawn frames, before the copy),
+  `Tests/FerazelRenderTests/RippleTests.swift` (new), `Tests/FerazelRenderTests/FeatureGoldenTests.swift`,
+  `Tests/FerazelRenderTests/DrawModeAuditTests.swift` (the `Refusal.ripple` row gone; `:1340`).
+- **Contract:** ENG §2.5 (the ripple) and §2.6 (T11, prove only — LL §10.2). Dump: `.PaintFrameWrap` M l. 9211–9226
+  (every call) and 9255–9425 (drawn frames; raw `10011fe0..100126c8`), the 55-entry table `.BuildSineTable` 17389–17397.
+  **`.RipplePxBackOffsets` is not this feature** (gated on hdr `0x271e`, 0 on all 24 levels — ENG §5, P7). The 55-entry
+  f32 sine table; rows 0x200…0x27f and 0x280…0x47f by their formulas, b growing by 2 a frame (the drift), `fctiwz`
+  saturating; ffbc added on every call (a no-op as shipped, pinned 0). Render only, no seam type. T11: the seven
+  submerged-tint readers are built (`TileGridRenderer.swift:257`, `LightRenderer.swift:447, :490`,
+  `WaterEffects.swift:246`, `TileGridRenderer.swift:265`); the task proves them against the dump, no golden of its own.
+  Fixture: level 11 with 27 records left out (Box scenery 26, the Nimbo NPC 1).
+- **Tests (10):** ENG §2.5's seven: `testRippleSineTable55` · `testRippleRowsShallow` · `testRippleRowsDeep` ·
+  `testRippleDriftsTwoPerFrame` · `testRippleAddIsNoOp` · `testRippleOnlyOnDrawnFrames` ·
+  `testLevel11RippleFeatureGolden` (the first frame showing a PxBack row ≥ 512, measured; kept); ENG §2.6's two:
+  `testSubmergedTintSitesMatchDump` · `testLevel11SubmergedSwitchOff` (forcing `submergedFaces = 0` changes the feature
+  golden, leaves levels 1–5's); ENG §5's pin `testNoLevelSetsParallaxMode` (hdr `0x271e` = 0 on all 24 levels).
+  Asserts: ENG §2.5's three.
+- **Gate:** Gate-F (G2 701). **Commit:** `FerazelRender: the river ripple of levels 11 and 18; the submerged tint
+  proven; 10 tests`.
+
+#### 6A-BX1a — minor — Box scenery: decorations, outcrops, mushrooms, the graves' mirrored hot rect (→ 707)
+- **Files:** `Sources/FerazelCore/Sprites/SetupFaces.swift` (the Setup-face table rows; `:493` decorations and the
+  outcrop / mushroom arms; the face check `:715`), `Sources/FerazelCore/World/Movers/BoxSprite.swift` (`:385–:388`,
+  the `.FlipHRect(+0x34, face +6)` `// later`), `Sources/FerazelCore/Front/LevelRun.swift` (the singles' marks on CF's
+  list), `Tests/FerazelCoreTests/BoxSceneryTests.swift` (new), `Tests/FerazelRenderTests/DrawModeAuditTests.swift` (the
+  water-kinds check widened to all 24 levels — ENG §5).
+- **Contract:** LL §8(a) (6A-BX1a), §1 finding 6; ENG §5. Dump: `.SetupBoxSprite` M l. 58892–59730 (decorations from
+  M l. 59641; the hot rect 59650–59667; the flip 59670–59673). The 19 types 2808, 2816, 2817, 2827, 2831, 2833, 2834, 2836,
+  2837, 2846, 2847, 2850, 2852, 2857, 2861, 2872, 2873, 2875, 2876: faces into the table, singles marked (outcrops
+  flag 1); **the level-21 graves 2833 / 2834 / 2836 (p1 260, 261, 1) have non-empty hot rects and need the flip**
+  (`PlatformSprite.flipH`, made shared by 6A-TR); 2833 / 2834 (p1 > 100) open Mcnv 260 / 261 through the built talk arm
+  (`HitPlayerSprite.swift:332`), 2836 none. Every decoration on levels 1–5 has the empty rect (the flip leaves it empty)
+  — no golden moves. Also ENG §5's unplaced Box pins.
+- **Tests (6):** `testBoxSceneryFacesSetUp` (every record of the 19 types on 10–22 sets up; the face per type) ·
+  `testBoxSceneryCacheMarks` (the singles at LL §6's positions; outcrops flag 1) · `testGraveHotRectFlip` (2833 / 2834 /
+  2836 mirrored by the face width; contact on the mirrored side) · `testGraveTalkersOpenConversations` (260 / 261 on
+  contact; 2836 none) · `testRopeBridgeUnplaced` (1466 on no level, spawned by nothing — ENG §5) · `testTableUnplaced`
+  (0xb71 on no level — ENG §5).
+- **Gate:** Gate-F (G2 707). **Commit:** `FerazelCore: Box scenery of levels 10–22 and the graves' mirrored hot rect;
+  6 tests`.
+
+#### 6A-BX1b — minor — Box faces and talkers: teleporters, furniture, NPCs (→ 711)
+- **Files:** `Sources/FerazelCore/Sprites/SetupFaces.swift` (`:512` — no face arm for 1060 / 1061; `:505` furniture,
+  `:507` NPCs; the table rows), `Sources/FerazelCore/Front/LevelRun.swift` (marks on CF's list),
+  `Tests/FerazelCoreTests/BoxTalkerTests.swift` (new).
+- **Contract:** LL §8(a) (6A-BX1b). Dump: `.SetupBoxSprite` M l. 58892–59730 (teleporter faces from the boot singles
+  0x424 / 0x425, M l. 58737–58740; furniture M l. 59603; NPCs). Types 1060, 1061 (the `BoxSprite.setup` arm and the
+  teleport are built, TP), 2921, 2955, 2956, 2962; the NPCs open Mcnv 206 (2955, level 11), 220 (2956 rec 283 flag 99 on
+  level 11 — dormant), 221 (2956, level 22), 300 (2962, level 21) through the built talk arm.
+- **Tests (4):** `testTeleporterFacesFromBootSingles` (1060 / 1061 face 0x424 / 0x425; every record on 21 / 22 sets up)
+  · `testFurnitureAndNpcFacesSetUp` (2921, 2955, 2956, 2962: face rows, marks) · `testNpcConversationIds` (2955 → 206,
+  2956 → 220 / 221 by record, 2962 → 300; the flag-99 record does not talk) · `testTeleporterSheetsSpawnable`
+  (`FaceTests.testEverySpawnableTypeHasSheet`'s rule holds for the new types).
+- **Gate:** Gate-F (G2 711). **Commit:** `FerazelCore: teleporter faces, furniture and NPCs of levels 10–22; 4 tests`.
+
+#### 6A-MC — minor — conversations and chapter cards of levels 10–22 (prove) (→ 714)
+- **Files:** `Sources/FerazelCore/Talk/{ConvActions,ConversationRun}.swift` and `Sources/FerazelCore/Front/StageScreens.swift`
+  (only if a check fails — the interpreter and `ChapterScreenRun` are built), `Tests/FerazelCoreTests/LaterConversationTests.swift`
+  (new), `Tests/FerazelRenderTests/ScreenTests.swift` (the two card goldens).
+- **Contract:** LL §5 (every opcode of levels 10–22 handled: conditions [4, 5], actions [1, 2, 4, 5, 9, 10]), LL §4
+  items 3–4. Dump: `.ChapterScreen` M l. 5038–5089 (picture `chapter·10 + 0x11f8`, clut `chapter + 0x118`). The six
+  `Mcnv` of 10–22 (206, 220, 221, 260, 261, 300) run to their end through `ConversationRun` with their portraits (4001,
+  4013, 4014, 4022, 4024) loaded; chapter card 2 (level 10: PICT 4620, clut 282) and card 5 (level 22: PICT 4650,
+  clut 285) draw. Render through the shared `ScreenRenderer`: lockstep (b), no WinKit test (Planner's note 4).
+- **Tests (3):** `testLevels10To22ConversationsRunToEnd` · `testChapterCard2FrameGolden` · `testChapterCard5FrameGolden`.
+- **Gate:** Gate-F (G2 714). **Commit:** `Ferazel: the conversations and chapter cards of levels 10–22 proven; 3 tests`.
+
+#### 6A-L10L11 — ⚑ MAJOR — levels 10 "Unemployed In Greenland" and 11 "River of Fears" enterable (→ 720)
+- **Files:** `Sources/FerazelCore/Front/BuiltLevels.swift` (`[1, 2, 3, 4, 5, 10, 11]`), `Sources/FerazelCore/Front/LevelRun.swift`
+  (whatever the two censuses still need — none expected), `Tests/FerazelCoreTests/LevelTenTests.swift` (new),
+  `Tests/FerazelCoreTests/LevelElevenTests.swift` (new), `Tests/FerazelRenderTests/LevelFrameGoldenTests.swift` (new),
+  `Tests/FerazelRenderTests/FeatureGoldenTests.swift` (the wind and rotating-cannon feature goldens deleted),
+  `Ferazel/Windows/Tests/FerazelWinKitTests/WinLevelReferenceTests.swift` (new), `Ferazel/Windows/Tests/FerazelWinKitTests/FerazelSettingsTests.swift`
+  (`("10", 10)`, `("11", 11)` rows), and the tests pinned to the list, each retargeted with every value re-derived:
+  `Tests/FerazelCoreTests/LevelFiveTests.swift` (`testBuiltLevelsFive`: level 5's exit p1 1 → node 10 now **enters**
+  level 10), `Tests/FerazelCoreTests/GameFlowGameTests.swift` (the not-built walk moves to the first unbuilt node reached
+  from 10 / 11's exits, measured), `Tests/FerazelRenderTests/{BootFacesTests,FaceTests}.swift` (levels 10, 11 pins and
+  table rows), `Tests/FerazelCoreTests/BuiltLevelsTests.swift`.
+- **Contract:** LL §4 "Level 10", "Level 11" (switches, types, resources, marks), LL §7 deps, ENG §7.2. Dump:
+  `.SetupLevelSprites` M l. 1940–2103, `.SetupLevel` 2189–2590, `.ChapterScreen` 5038–5089.
+  - Level 10: 312 records (31 refused today: trees, rotating cannons, Box scenery — all built by now); the strip's 9
+    sprites first; 103 wind cells; `0x26c9` = 1 (the water-surface effect, built); music 4; chapter card 2 on entry
+    (measured: whether `-FerazelLevel 10` shows it). Level 11: 397 records (35 refused: trees 8, Box scenery 26, Nimbo
+    1); the ripple; the submerged tint; `0x270c` −30, `0x270e` 150, `0x2710` 80, `0x2714` −512, start facing left,
+    music 6; Mcnv 206 on contact, 220 dormant.
+  - First placements now real: the 800-point goblin 1750, the swarm 1869, the bat 1851, the geyser 1440 on 10, the
+    rope 3020, the platform 1407.
+  - **The Phase 5 carry "parent / child sprite links across idling for the classes first placed after level 5"**: read
+    for the swarm 1869 (its members, record 0x200, never idled, keep running while the parent idles — Hazards
+    "Idle children") and the bat 1851 on these two levels; a test pins it.
+- **Tests (+8 / −2):** `testLevel10SetsUpEveryRecord` · `testLevel11SetsUpEveryRecord` (each: the record count, no
+  `notTranscribed`, the switch values, the music cue) · `testLevels10And11CacheMarks` (LL §4 item 6's records, the
+  bar's step count) · `testLevel10FirstFrameGolden` · `testLevel11FirstFrameGolden` (new values, measured) ·
+  `testBuiltLevelsTenEleven` (the list; level 5's exit → level 10; `startLevel` 10 / 11 accepted) ·
+  `testLevels10And11IdleChildLinks` · `testLevel11NimboConversationOnContact`; deleted:
+  `testLevel10WindFeatureGolden`, `testLevel10RotatingCannonFeatureGolden` (ENG §2.2, §2.3: the traces and the real
+  golden cover them). WinKit (+2): `testLevel10FirstFrameReference` · `testLevel11FirstFrameReference`.
+- **Gate:** Gate-L (G2 720, GW2 84). Wave 6A.2 end: G3, GWB by day **717 / 0 / 3 / 0 (of 720)**, GW4R by day, the Fable
+  cross-check of S8…L10L11 (opens run 56 if the context is spent). **Commit:** `Levels 10 and 11 enterable: the strip,
+  wind, cannons, trees, the river; BuiltLevels [1…5, 10, 11]; 8 tests (2 feature goldens retired), 2 Windows references`.
+
+#### 6A-RN — ⚑ MAJOR — OmniPx rain (mode 1), thunder, the side push (→ 732)
+- **Files:** `Sources/FerazelCore/World/OmniPx.swift` (mode 1 — 6000 / 6001 already loaded, `:96`, `:125`),
+  `Sources/FerazelCore/Front/LevelRun.swift` (`:583` — mode 1 leaves the refusal; 3 / 6 / 7 / ≥ 8 stay; the first-call
+  flag cleared after `.SetupOmniPx`; `AsyncGammaFade` `:536–:541`), `Sources/FerazelCore/Front/Pause.swift`
+  (`painted` `:252`: the flag clear after the loop stop), `Sources/FerazelCore/Session/FerazelSession.swift` (`GenerateRain`
+  at `.PaintFrameWrap`'s position, every call, drawn or not), `Sources/FerazelCore/Particles/{ParticlePool,ScreenFlash}.swift`
+  (`.NewParticle` mode 1; the built flash), `Sources/FerazelCore/Seams/SoundCue.swift` (a loop field, default off —
+  Invariant 9; shaped so 6B-AS can add a "set the volume of the voice playing snd N" cue), `Ferazel/Shared/FerazelAudio.swift`
+  (`:152–:153`, the loop play), `Ferazel/App/FerazelController.swift` and `Ferazel/Windows/Sources/FerazelWinKit/WinAudioDriver.swift`
+  (`:59`) only if the cue's path passes through them, `Ferazel/Windows/Tests/FerazelWinKitTests/FerazelAudioTests.swift`,
+  `Sources/FerazelRender/Frame/{FrameRenderer,ParallaxBlitter}.swift` (mode 1's port update: faces only, no base cell),
+  `Tests/FerazelCoreTests/RainTests.swift` (new), `Tests/FerazelRenderTests/{FeatureGoldenTests,OmniPxTests,DrawModeAuditTests}.swift`
+  (`omniPxMode` row: 1 drawn; `:1464`), `Tests/FerazelCoreTests/GameFlowGameTests.swift` (PT's OmniPx patch → mode 3).
+- **Contract:** ENG §2.7 (re-read line by line). Dump: `.GenerateRain` M l. 8429–8531 (called 9228–9229, before the
+  drawn-frame test), the first-call flag's writers 2541, 3203, 5300; the extra paints 3190, 3918, 3922, 3980, 4005;
+  `.GammaFadeOutAsync` 31893–31915, `.HandleAsyncGammaFade` 31917–31945, `.GammaFadeInAsync` 31872–31891,
+  `.STPlayLoopedSound` 40978ff; the side push 46347–46365 (**built**, `Player.sidePush` — a test only, ENG E4 / LL §10.7).
+  - First call: T = R(90) + 90, the rain loop snd 452 (no stream draw); after every Caps-Lock pause a fresh R(90) and
+    the loop again. Thunder: T counts down; 0 → flash 3 + snd 453; −2 → the fade as **`AsyncGammaFade` plus three
+    `gammaStep` ops in the same iteration**, gated on the fading preference and the faded flag; then T = R(150) + 210.
+    Drops: x from H + R(50) while < H + 660, heavy / light by R(2), three particles each, the draw order R(2), [R(100),
+    R(100)], R(200). Runs on undrawn frames and on the pause's and the quit dialogs' extra paints.
+  - Fixture: level 15 with the plants (22) left out.
+- **Tests (12):** ENG §2.7's list less the audit row: `testRainFirstCallTimerAndLoop` · `testRainRestartsAfterPause` ·
+  `testRainThunderSequence` · `testRainThunderGammaOps` · `testRainDropColumnsAndDraws` · `testRainHeavyDropParticles` ·
+  `testRainLightDropParticles` · `testRainRunsOnUndrawnFrames` · `testOmniPxModeOneFacesOnly` (Render) ·
+  `testSidePushOnLevel15` · `testLevel15RainFeatureGolden` (frame 1; **deleted at 6A-L15**) ·
+  `testLevel15ThunderFlashFeatureGolden` (the flash frame, measured; kept). WinKit (+1): `testLoopedCueOnTheMixer`.
+  Asserts: ENG §2.7's five.
+- **Gate:** Gate-F with lockstep (a) (G2 732, GW2 85; G5; G-MUTE 1 / 1). **Commit:** `Ferazel: Storm Valley's rain,
+  thunder and the looped rain sound; the side push pinned; 12 tests, 1 Windows audio test`.
+
+#### 6A-BG1c — minor — plants (→ 735)
+- **Files:** `Sources/FerazelCore/Sprites/SetupFaces.swift` (`:401` the arm, built; the Setup-face table rows; `:715`),
+  `Sources/FerazelCore/Front/LevelRun.swift` (singles #161–#172 marked on CF's list), `Tests/FerazelCoreTests/PlantTests.swift`
+  (new).
+- **Contract:** LL §8(a) (6A-BG1c). Dump: `.SetupBackgroundSprite` M l. 61919–62678 (plants M l. 62629–62668),
+  `.HandleBackgroundSprite` 62887–63563. Types 2700, 2701, 2702, 2705, 2711 (levels 15, 18; 25 later): faces into the
+  table, flag-1 singles marked.
+- **Tests (3):** `testPlantFacesSetUp` · `testPlantCacheMarksFlagOne` · `testPlantsOnLevels15And18` (every plant record
+  of 15 and 18 sets up).
+- **Gate:** Gate-F (G2 735). **Commit:** `FerazelCore: the plants of levels 15 and 18; 3 tests`.
+
+#### 6A-L15 — minor — level 15 "Storm Valley" enterable (→ 738)
+- **Files:** `Sources/FerazelCore/Front/BuiltLevels.swift` (+ 15), `Tests/FerazelCoreTests/LevelFifteenTests.swift` (new),
+  `Tests/FerazelRenderTests/{LevelFrameGoldenTests,FeatureGoldenTests,BootFacesTests,FaceTests}.swift` (the rain
+  feature golden deleted), `Ferazel/Windows/Tests/FerazelWinKitTests/{WinLevelReferenceTests,FerazelSettingsTests}.swift`,
+  the list-pinned tests (`BuiltLevelsTests`, `GameFlowGameTests`' not-built walk if it moves).
+- **Contract:** LL §4 "Level 15". 183 records (38 refused today: trees 10, rotating cannons 3, plants 22, Box scenery 3);
+  OmniPx mode 1; `0x26c9` = 1; `0x270e` 56; the side push −320; music 5; the springs 1150 / 1152 / 1153 (built; marks
+  CF's); the Gremlin 1770 and the Dillo 1870 first placed — **the parent / child idling carry** read for the Gremlin's
+  composite and the Dillo (a test).
+- **Tests (+4 / −1):** `testLevel15SetsUpEveryRecord` · `testLevel15FirstFrameGolden` · `testBuiltLevelsFifteen` ·
+  `testLevel15IdleChildLinks`; deleted: `testLevel15RainFeatureGolden` (ENG §2.7: the real first frame is the same
+  frame). WinKit (+1): `testLevel15FirstFrameReference`.
+- **Gate:** Gate-L (G2 738, GW2 86). **Commit:** `Level 15 enterable: Storm Valley; 4 tests (1 feature golden retired),
+  1 Windows reference`.
+
+#### 6A-CH1 — ⚑ MAJOR — the Goblin Chief: class, Init, Setup, Handle; the player's stagger arm (→ 750)
+- **Files:** `Sources/FerazelCore/World/Enemies/Chief.swift` (new), `Sources/FerazelCore/Sprites/SpriteSlot.swift`
+  (`SpriteHandler.chief`), `Sources/FerazelCore/Sprites/SetupFaces.swift` (`:712`, the Chief's refusal),
+  `Sources/FerazelCore/World/SpriteClassTable.swift` (already `(.chief, .idle)` for 0x776…0x77f — confirm),
+  `Sources/FerazelCore/Session/FerazelSession.swift` (the Handle row), `Sources/FerazelCore/Front/LevelRun.swift` (the
+  Chief's five flag-1 records on CF's list; his Setup's marks incl. the 0x77b set), `Sources/FerazelCore/Player/PlayerStates.swift`
+  (`:371–:372`, the boss-grab early return → the arm; the comment's cite corrected to M l. 45591–45632),
+  `Sources/FerazelCore/Player/PlayerState.swift` (`bossGrab`, `:201`), `Tests/FerazelCoreTests/Enemies/ChiefTests.swift`
+  (new), `Tests/FerazelCoreTests/PlayerStaggerTests.swift` (new), `Tests/FerazelRenderTests/DrawModeAuditTests.swift`.
+- **Contract:** BOS §3.1–§3.3, §3.6 (duties), §3.7 (the stagger, its length); ENG §2.13. Dump: `.InitChiefSprite`
+  M l. 75008–75028, `.SetupChiefSprite` 75031–75115, `.HandleChiefSprite` 75162–75441, `.GoblinChiefRandomCry`
+  75118–75159, `.HitChiefTileSprite` 75535–75567, the stagger arm `.HandlePlayerSprite` 45591–45632.
+  - Setup in dump order (HP 2000 / 1200, gravity 0x276, `+0x8d = 1`, `+0xa6` −40, lane 2, R(10) drawn then
+    overwritten, **no `+0x18a`, no `+0x1b4`**); spawned idle.
+  - States 6 (wait; counts only while locked), 1 (jump: R(100) before R(6000), snd 414, vy −0x2904, the nine lane rows),
+    3 (land: R(12000), snd 435, shake 0x16, **stagger 0x18** when the player's `+0xce ∨ +0xcd`), 2 (throw: R(8000),
+    snd 704 vol 0x5f, the 0x77b boulder at layer 0xb, its Setup's R(5), R(500), R(0x96); 1 or 2 throws a landing), 4
+    (dying: `+0x1a2 = 1` on dying frame 20); the tail (the `+0xb2` counter; the death entry's R(100) < 0x3c → the cry
+    first; no liquids, no glow). The no-free-record boulder (Ruling 16 widened: stores and reads dropped, R(500) and
+    R(0x96) still drawn).
+  - The stagger arm: vx × 0.5, the six faces by (c mod 12) >> 1, the clears, the spin-sound stop through `SoundVoices`,
+    then the end of the state chain; 0x18 → 23 arm frames, 0x14 (Xichra's) → 19; a pre-empted frame shortens it.
+  - Level 18 opens with nothing left out (BG1c and RP are in): directly through the session in `ChiefTests`, through
+    `LevelFixture` in Render tests.
+- **Tests (12):** BOS §3.8's 6A-CH1 list less `testPlayerStaggerArm`: `testChiefSetupWrites` ·
+  `testChiefCacheRegistration` (his records' place and flag 1 in CF's list; his Setup's marks incl. 0x77b) ·
+  `testChiefFirstJumpAfterLock` · `testChiefJumpDrawOrderAndLanes` · `testChiefLandingShakeAndStagger` ·
+  `testChiefThrowBoulder` · `testChiefThrowCount` · `testChiefDeathCryDraws` · `testChiefTileCallbackIsCrawlerBody`;
+  ENG §2.13's three in its place: `testStaggerSlowsAndPoses` (with BOS's 0x18 → 23 / 0x14 → 19 and the pre-empted
+  frame) · `testStaggerClearsStates` · `testStaggerSkipsStateChain`. Asserts: BOS §3.10 items 1–23; ENG §2.13's two.
+- **Gate:** Gate-B (G2 750; no golden moves — the Chief is on no built level; `_DAT_100a0570` has no writer on 1–5).
+  **Commit:** `FerazelCore: the Goblin Chief's class and Handle; the player's stagger; 12 tests`.
+
+#### 6A-CH2 — ⚑ MAJOR — the Chief's Hit and Kill, the three pieces, the fight (→ 758)
+- **Files:** `Sources/FerazelCore/World/Enemies/Chief.swift`, `Sources/FerazelCore/World/Enemies/EnemyCommon.swift`
+  (a `.chief` `killProc` arm; `killsForGood` gains `.chief`), `Sources/FerazelCore/Player/HitPlayerSprite.swift` (`:67`,
+  `.chief` joins the routing case — row M l. 49849–49851, 0x70), `Sources/FerazelCore/Items/Smite.swift` (`:18`,
+  `.chief` appended), `Sources/FerazelCore/Session/{FerazelSession,SpriteWorld}.swift` (the hit arm; the per-frame
+  record write-back with no `+0x18a`), `Tests/FerazelCoreTests/Enemies/ChiefTests.swift`,
+  `Tests/FerazelRenderTests/BossKillLevelRunTests.swift`.
+- **Contract:** BOS §3.4 (Hit), §3.5 (Kill), §3.6 (pieces, write-back, arena), §3.9 (the scripted kill). Dump:
+  `.HitChiefSprite` M l. 75444–75499, `.KillChief` 75502–75532, `.UpdateSprites` write-back 4959–4966.
+  - Hit: a player shot is killed silently **first**, then `.HurtSprite(S, shot +0xa4, 0, 0, 2, 8)` — a miss wastes the
+    shot; a hurt sets `+0x116 = 15`, `+0xb2 = 1`, blood spray, snd 701 / 702 (HP ≤ 200), the cry by R(100) < 0x3c;
+    Fireball 100 → 20 landed hits. A crush: 200, `+0xf0 = 0`, `.KillBox`'s draws, R(10000), the cry.
+  - Kill as the Warrior's; the level-18 gate (x 628) opens, track 30. His own record follows him every frame (no
+    `+0x18a`) and is cleared by `+0xea`. The arena: v −1400, lock at x < 1340, the second bound −640 — built at LV5,
+    now reached (**closes the Phase 5 carry "the second camera bound is untested"**).
+  - The scripted kill (BOS §3.9): seed 1; the Fireball carried; `.left` until the lock (x < 1340), then every 16th
+    frame a one-frame tap toward his centre and next frame a one-frame `.use`; until the Kill or 20,000 frames. HP0 and
+    the Kill measured; Kill − HP0 = 20 + ⌈(B − T + 1) / 2⌉ − 1 of face 0x77a[3] checked; both pinned.
+- **Tests (8):** BOS §3.8's 6A-CH2 list: `testChiefTakesShotDamage` · `testChiefInvulnerableWastesShots` ·
+  `testChiefCrush200AndCry` · `testChiefKillTailAndGate` · `testChiefRecordWriteBack` · `testChiefContactAndSmite` ·
+  `testLevel18ArenaBounds` — in `ChiefTests`; `testChiefScriptedKill` — in `BossKillLevelRunTests`. Asserts: BOS §3.10
+  items 24–30.
+- **Gate:** Gate-B (G2 758; the bot cannot reach level 18 until 6A-L18 — quick mode there). **Commit:** `FerazelCore:
+  the Goblin Chief's Hit and Kill; the scripted fight on level 18; 8 tests`.
+
+#### 6A-L18 — minor — level 18 "Goblin Chief" enterable (→ 762)
+- **Files:** `Sources/FerazelCore/Front/BuiltLevels.swift` (+ 18), `Tests/FerazelCoreTests/LevelEighteenTests.swift` (new),
+  `Tests/FerazelRenderTests/{LevelFrameGoldenTests,BootFacesTests,FaceTests}.swift`,
+  `Ferazel/Windows/Tests/FerazelWinKitTests/{WinLevelReferenceTests,FerazelSettingsTests}.swift`, the list-pinned tests.
+- **Contract:** LL §4 "Level 18". 34 records (6 refused today: plants 5, the Chief 1); the ripple; `0x270c` −108,
+  `0x270e` 150, `0x2710` 80, `0x2714` −512, start facing left; music 23 until the Kill, then 30; the Chief's idle
+  activation frame measured (BOS §9.3).
+- **Tests (4):** `testLevel18SetsUpEveryRecord` · `testLevel18FirstFrameGolden` · `testBuiltLevelsEighteen` ·
+  `testLevel18ChiefActivationFrame`. WinKit (+1): `testLevel18FirstFrameReference`.
+- **Gate:** Gate-L (G2 762, GW2 87; the bot's quick mode on 18 meets the Chief). Wave 6A.3 end: G3, GWB by day
+  **759 / 0 / 3 / 0 (of 762)**, GW4R by day, the Fable cross-check of RN…L18. **Commit:** `Level 18 enterable: the Goblin
+  Chief's arena; 4 tests, 1 Windows reference`.
+
+#### 6A-CL — minor — clouds (→ 769)
+- **Files:** `Sources/FerazelCore/Sprites/SetupFaces.swift` (`:430`), `Sources/FerazelCore/World/Movers/BackgroundSprite.swift`,
+  `Sources/FerazelCore/Front/LevelRun.swift` (the cloud singles #132–#135 marked), `Tests/FerazelCoreTests/CloudTests.swift`
+  (new), `Tests/FerazelRenderTests/{FeatureGoldenTests,DrawModeAuditTests}.swift` (`+0xb8 = 0xb0004` and layer 0x7ef4
+  writer rows; `Refusal.translucency`'s width case stays unreachable — the cloud widths 174 / 197 / 220 / 193 as its reason).
+- **Contract:** ENG §2.8. Dump: Setup arm M l. 62526–62567, Handle 63304–63341. Owns 2890–2893 (164 records, level 20
+  only). **Two draws per cloud in `.SetupLevelSprites` (R(60) then R(50)) — 328 draws that every later level-20 number
+  depends on** (ENG §7.3); fx = fy = R(60) + 270 > 256 on every shipped cloud; the fx / fy = 0 and < 0 arms pinned as
+  read (synthetic). Fixture: level 20 with the blade (28) and mace-path (16) records left out.
+- **Tests (7):** `testCloudSetupDrawsTwo` · `testCloudSetupFields` · `testCloudParallaxX` · `testCloudParallaxY` ·
+  `testCloudNeverCollides` · `testCloudFxAlwaysAbove256OnLevel20` · `testLevel20CloudFeatureGolden` (kept). Asserts:
+  ENG §2.8's six.
+- **Gate:** Gate-F (G2 769). **Commit:** `FerazelCore: the clouds of Hangnabit; 7 tests`.
+
+#### 6A-BD — minor — the rotating blade and the segment test (→ 782)
+- **Files:** `Sources/FerazelCore/Sprites/SetupFaces.swift` (`:430`), `Sources/FerazelCore/World/Movers/BackgroundSprite.swift`,
+  `Sources/FerazelCore/Player/HitPlayerSprite.swift` (`:126`, `:159` the `// later: 0xbf4`),
+  `Sources/FerazelCore/Physics/LineSegments.swift` (new — `.SectLineSegs`, `.SectRectLineSeg`),
+  `Sources/FerazelRender/Frame/SpriteBlitter.swift` (only if a rotated mode-0xc face with bottom clip 0x5e is refused
+  today — Invariant 8), `Sources/FerazelCore/Front/LevelRun.swift` (single #136 marked), `Tests/FerazelCoreTests/BladeTests.swift`
+  (new), `Tests/FerazelRenderTests/{FeatureGoldenTests,DrawModeAuditTests}.swift` (rotation `+0x1aa`, `+0x89 = 1`,
+  `+0x1ba = 0x5e` writer rows).
+- **Contract:** ENG §2.9. Dump: Setup M l. 62571–62583, Handle 63511–63530, `.HitPlayerSprite` arm 49684–49724,
+  `.SectRectLineSeg` 39562–39601, `.SectLineSegs` 39507–39561. Owns 3060 (28 on 20, 13 on 22). Angle + speed (p3 0 → 8)
+  wrapped both ways; dynamic light; p4 = 0 → bottom clip 0x5e (levels 22, 62); p1 read by neither arm. The hurt only when
+  the arm's segment (16…88 px) crosses the body box (top + 6, bottom − 8): R(100) for the coins drawn **only on a
+  crossing frame**, vx ±0x8fc by the strict centre test, 0x70 / invul 0x3c; touching and collinear-disjoint segments
+  count as crossings (i32). Fixture: level 20 with the mace-path records (16) left out.
+- **Tests (13):** ENG §2.9's list: `testBladeSetupFields` · `testBladeHandleSpinsAndWraps` ·
+  `testBladeBottomClipWhenP4Zero` · `testSectLineSegsCrossTouchAndMiss` · `testSectLineSegsCollinearDisjointHits` ·
+  `testSectRectLineSegEdgesAndInside` · `testBladeArmEndpoints` · `testBladeHitKnockbackAndCoins` ·
+  `testBladeNoDrawWithoutCrossing` · `testBladeHitRestoresVx` · `testBladeIgnoresP1` · `testBladeRotatedLitDrawIsDrawable`
+  · `testLevel20BladeFeatureGolden` (kept). Asserts: ENG §2.9's seven.
+- **Gate:** Gate-F (G2 782). **Commit:** `Ferazel: the rotating blade and its segment test; 13 tests`.
+
+#### 6A-MP — minor — programmed-path maces, modes 1 and 2 (→ 789)
+- **Files:** `Sources/FerazelCore/Sprites/SetupFaces.swift` (`:399` the modes 1–2 refusal; `:888–:898` the spawn —
+  modes 1–2 make no radial), `Sources/FerazelCore/World/Movers/BackgroundSprite.swift` (`:173` `mace`),
+  `Sources/FerazelCore/World/Movers/ProgrammedPath.swift` (the one path — never a second copy),
+  `Tests/FerazelCoreTests/MacePathTests.swift` (new), `Tests/FerazelRenderTests/FeatureGoldenTests.swift`.
+- **Contract:** ENG §2.10. Dump: Setup M l. 62338–62361 (after the built common stores and write-backs 62329–62336),
+  Handle 63141–63146, the radial branch 62362–62420 (modes 10–14 only — ENG E19). Owns the mode-1 / mode-2 records of
+  1485 (16 on 20, 29 on 22). `+0x170 = 1`, `+0x185 = 0`, `+0x188 = 1` (a write-back flag — a Setup-test row),
+  `.SetupProgrammedPath(s, −1, 0)` with the bounds from the position **before** the p4 offset; mode 1 → y, mode 2 → x;
+  the Handle: the face, the path, gravity and tiles; no chain, no spoke. Level 1's pendulums share the edited spawn: its
+  goldens are the switch-off — none moves. Fixture: level 20 with nothing left out.
+- **Tests (7):** `testMacePathSetupModeOne` · `testMacePathSetupModeTwo` · `testMacePathHandleMoves` ·
+  `testMacePathMakesNoChain` · `testMacePathWriteBackFlag` · `testLevel20MacePathTrace` (kept) ·
+  `testLevel20MacePathFeatureGolden` (**deleted at 6A-L20**). Asserts: ENG §2.10's five.
+- **Gate:** Gate-F (G2 789). **Commit:** `FerazelCore: mace paths (modes 1 and 2) on the one ProgrammedPath; 7 tests`.
+
+#### 6A-L20 — minor — level 20 "Hangnabit" enterable (→ 792)
+- **Files:** `Sources/FerazelCore/Front/BuiltLevels.swift` (+ 20), `Tests/FerazelCoreTests/LevelTwentyTests.swift` (new),
+  `Tests/FerazelRenderTests/{LevelFrameGoldenTests,FeatureGoldenTests,BootFacesTests,FaceTests}.swift` (the mace-path
+  feature golden deleted), `Ferazel/Windows/Tests/FerazelWinKitTests/{WinLevelReferenceTests,FerazelSettingsTests}.swift`,
+  the list-pinned tests.
+- **Contract:** LL §4 "Level 20". 333 records (209 refused today: clouds 164, blades 28, the cannon 1092 p1 103, maces 16);
+  2,899 wind cells; music 15; the hang glider 3050 (its four Player sets marked — CF); the Gremlin 1770.
+- **Tests (+4 / −1):** `testLevel20SetsUpEveryRecord` (incl. the 328 cloud draws first in the stream) ·
+  `testLevel20FirstFrameGolden` · `testBuiltLevelsTwenty` · `testLevel20GliderMarksAndWind`; deleted:
+  `testLevel20MacePathFeatureGolden`. WinKit (+1): `testLevel20FirstFrameReference`.
+- **Gate:** Gate-L (G2 792, GW2 88). **Commit:** `Level 20 enterable: Hangnabit; 4 tests (1 feature golden retired), 1
+  Windows reference`.
+
+#### 6A-L21 — minor — level 21 "Obfuscation & Edification" enterable, with the pipes' level spawn (→ 796)
+- **Files:** `Sources/FerazelCore/Front/BuiltLevels.swift` (+ 21), `Sources/FerazelCore/World/Movers/BoxSprite.swift`
+  (`setupPipe` wired into level spawn; the throwaway child), `Sources/FerazelCore/Sprites/SetupFaces.swift` (`:512` — the
+  pipe arm 1490…1493), `Sources/FerazelCore/Front/LevelRun.swift` (the pipe singles #6–#9 marked), `Tests/FerazelCoreTests/LevelTwentyOneTests.swift`
+  (new), `Tests/FerazelRenderTests/{LevelFrameGoldenTests,BootFacesTests,FaceTests}.swift`,
+  `Ferazel/Windows/Tests/FerazelWinKitTests/{WinLevelReferenceTests,FerazelSettingsTests}.swift`, the list-pinned tests.
+- **Contract:** LL §4 "Level 21"; the PI card's As executed (above). Dump: the pipe Setup M l. 59325–59356 (the throwaway
+  child 59347–59353). 325 records (30 refused today: Box scenery 7, faces and talkers 17, the pipes 6). **The pipe's
+  level spawn** (the Phase 5 stand-in): `BoxSprite.setupPipe` into the level spawn; the throwaway child
+  `.GenerateSprite(…, 0x200, 1, 2)` then `+0xe9 = 1` — its Setup's draws and its + 1 on the live-enemy count while the
+  window is open, never taken back; `SetupFaces`' pipe arm. `0x2706` = 2 (the ambient row index, M l. 29824 `0x2706 ·
+  0x100`, read at `FrameRenderer.swift:208` — an assert on a lit-kind cell); music 9; Mcnv 260 / 261 / 300; the
+  insects 1860 and the bat 1742.
+- **Tests (4):** `testLevel21SetsUpEveryRecord` · `testLevel21FirstFrameGolden` · `testLevel21PipeLevelSpawn` (the
+  throwaway child's draws and count bump; the p2 write-back asserted in `w.records` — **closes the run-47 carry "pinned
+  on the helper's return only"**; a pipe whose child lives across the pipe's idling keeps its `+0x1d4` link — the
+  parent / child carry for pipes) · `testBuiltLevelsTwentyOne`. WinKit (+1): `testLevel21FirstFrameReference`.
+- **Gate:** Gate-L (G2 796, GW2 89). **Commit:** `Level 21 enterable: the enemy pipes spawn from the level; 4 tests, 1
+  Windows reference`.
+
+#### 6A-CP — minor — the magic carpet (→ 808)
+- **Files:** `Sources/FerazelCore/World/Movers/BoxSprite.swift` (`:147` the Setup `// later`; `:472` `handleBuilt`;
+  `:1521`, `:1594` the wake; the tail `:605–:621` keeps its two exclusions), `Sources/FerazelCore/Sprites/SetupFaces.swift`
+  (`:512`, the carpet's face arm), `Sources/FerazelCore/Front/LevelRun.swift` (set #27 0x438 marked), the player's half
+  (built; proven, not changed): `Sources/FerazelCore/Player/{Player.swift:368–385, HandleKeys.swift:502–539,
+  PlayerTiles.swift:158–172}`, `Tests/FerazelCoreTests/CarpetTests.swift` (new),
+  `Tests/FerazelRenderTests/{FeatureGoldenTests,DrawModeAuditTests}.swift` (the mode words `p1 + 0x10000`, 0x10009,
+  0x10008).
+- **Contract:** ENG §2.11 (read in full). Dump: Setup M l. 59078–59103, Handle 60289–60375 (→ the Box tail 61152–61174),
+  the wake `.HitBoxSprite` 61470–61476, the player's half 44532–44552 and 47249–47308. Owns 1080 / 1081 (D46.1; LL's
+  6A-BX1c dissolves). The only shipped carpet (level 22, placement 486) has p2 0 → `+0x14c = −1`: **it never counts
+  down, flashes or bursts** — those arms are synthetic (p2 > 0). The rolled carpet gets its tile hit back on its first
+  Handle; rise 14 frames then sink; vx decay; vy · 0.8 once the bob ends; `.FootPressure` skipped and gravity forced for
+  0x438 / 0x439. Fixture: level 22 with nothing left out and the player's start moved beside placement 486 (a named
+  test stand-in).
+- **Tests (12):** ENG §2.11's list: `testCarpetSetupRolled` · `testCarpetSetupUnrolledDrawsR4` ·
+  `testCarpetWakesOnPlayer` · `testCarpetRiseAndSink` · `testRolledCarpetGetsTileHitOnFirstHandle` ·
+  `testCarpetVerticalDampingAfterBob` · `testCarpetRideCountAndFlash` · `testCarpetBurstsAtZero` ·
+  `testCarpetLevel22NeverCounts` · `testCarpetSteeringMovesCarpet` · `testCarpetExcludedFromBoxTileHits` ·
+  `testLevel22CarpetFeatureGolden` (the first frame after the wake, measured; kept). Asserts: ENG §2.11's ten.
+- **Gate:** Gate-F (G2 808). **Commit:** `FerazelCore: the magic carpet; the player's built half proven; 12 tests`.
+
+#### 6A-L22 — minor — level 22 "The Labyrinth" enterable (→ 812)
+- **Files:** `Sources/FerazelCore/Front/BuiltLevels.swift` (`[1, 2, 3, 4, 5, 10, 11, 15, 18, 20, 21, 22]`),
+  `Tests/FerazelCoreTests/LevelTwentyTwoTests.swift` (new), `Tests/FerazelRenderTests/{LevelFrameGoldenTests,BootFacesTests,FaceTests}.swift`,
+  `Ferazel/Windows/Tests/FerazelWinKitTests/{WinLevelReferenceTests,FerazelSettingsTests}.swift`, the list-pinned tests.
+- **Contract:** LL §4 "Level 22". 510 records (52 refused today: blades 13, maces 29, faces and talkers 9, the carpet 1);
+  `0x2706` = 2; music 8; chapter card 5; the teleporters 1060 ×8; Dimbo 2956 (Mcnv 221: actions 5, 9, 10); the
+  blades' bottom clip (p4 0) on screen; the Dillo 1870 / 1871, the Blob 1732, the bat 1851.
+- **Tests (4):** `testLevel22SetsUpEveryRecord` · `testLevel22FirstFrameGolden` · `testBuiltLevelsTwentyTwo` (the
+  whole 6A list; level 22's exits → the not-built report for the next node, measured) ·
+  `testDimboConversationActions` (Mcnv 221's actions 9 / 10 and what they write — the flag-99 Dimbo of level 11's
+  record 283, Mcnv 220 — read in `ConvActions`, measured). WinKit (+1): `testLevel22FirstFrameReference`.
+- **Gate:** Gate-L (G2 812, GW2 90). Wave 6A.4 end = the phase end (6A-END). **Commit:** `Level 22 enterable: The
+  Labyrinth; BuiltLevels holds every level through the Goblin Chief; 4 tests, 1 Windows reference`.
+
+#### 6A-END — minor — the phase end: the checks, the relabel sweep, both builds staged, one gate card (→ 812)
+- **Files:** `Ferazel/WHAT-TO-EXPECT.md` (the 6A card, Mac part), `Ferazel/WINDOWS-WHAT-TO-EXPECT.md` (Windows part —
+  one card, two files), any `Ferazel/Core/Sources` file with a stale `// later:` naming a merged 6A task or "Phase 6"
+  where a 6A task now owns it (comment-only relabels to the real owner: 6B / 6C task ids), `docs/ferazel/port-gap-ledger.md`
+  (a dated "after Phase 6A" note), `tools/stage-ferazel.sh` / `tools/windows/stage-ferazel-win.sh` (only if needed).
+- **Contract:** as A5's, for 6A. (1) **GE** over levels 1–5, 10, 11, 15, 18, 20, 21, 22, both shells: the visit sweep,
+  the bot, the face-load tests and the draw-mode audit (inside G2) — every one exit 0 / green; **a non-zero exit stops
+  the phase end** (each row becomes a fix task, nothing is staged); the summary lines go on the card. (2) The relabel
+  sweep: `grep -rn 'later: 6A\|6A-' "$WT/Ferazel/Core/Sources"` prints only comments that name a 6B / 6C owner (each
+  checked), and no `// later:` names a merged task (process lesson). (3) Stage both, GW5; by day G9M, GW6, GWB, GW4R
+  (else "boot check owed (night rule)" on the card and in LOOP-LOG). (4) The Fable cross-check (§0) over the whole 6A
+  diff (`git diff <phase-start SHA>..HEAD`, Mac + Windows) and the card — it covers wave 6A.4; Opus implementers fix
+  its findings; re-stage. **STOP for Ben:** the card goes to QUESTIONS as a new item (the 6A gate, Mac and Windows). The
+  next run is the 6B planning run (P6B: the Wave 6 cards expanded the same way), which does not wait for his verdict.
+- **Gate:** G1; G2 812 / 2 named skips; GW2 90 / 2 named skips; G3; G5; GW1–GW4; GW5; GE; by day GWB **809 / 0 / 3 /
+  0 (of 812)**, GW6, G9M. **Commit:** `WHAT-TO-EXPECT: Phase 6A gate card (through the Goblin Chief), Mac and Windows`.
+
+### Execution order
+
+Runs of 2 tasks, 3 when at most one is ⚑ (§0 "Context"); the seat may split a run at the 240k mark (the task in flight
+finishes). Two implementers may work at once when their files are disjoint or touch one file in different regions (run
+46's lesson): 6A-CF ∥ 6A-FR and 6A-BG1c ∥ 6A-RN qualify; the level-10 features (S8, WD, RC, TR) and the level-20 ones
+(CL, BD, MP) do not — each measures on a fixture the one before it defines.
+
+| run | tasks (in order) | ⚑ | Core / WinKit at the run's end | wave end (Proof B by day + the Fable cross-check) |
+|---:|---|---:|---|---|
+| 51 | the owed launch checks first (by day: G9M, GW6, GWB 617 / 0 / 3 / 0 of 620, GW4R — STATE), then 6A-BL, 6A-CF, 6A-FR | 0 | 633 / 82 | — |
+| 52 | 6A-W1, 6A-W2 | 2 | 650 / 82 | **6A.1 "the Warrior"**: GWB 647 / 0 / 3 / 0 (of 650); the cross-check here or opening run 53 |
+| 53 | 6A-S8, 6A-WD, 6A-RC | 1 | 680 / 82 | — |
+| 54 | 6A-TR, 6A-RP, 6A-BX1a | 1 | 707 / 82 | — |
+| 55 | 6A-BX1b, 6A-MC, 6A-L10L11 (+ the full GE) | 1 | 720 / 84 | **6A.2 "levels 10 and 11"**: GWB 717 / 0 / 3 / 0 (of 720); the cross-check opens run 56 |
+| 56 | 6A-RN, 6A-BG1c, 6A-L15 (+ the full GE) | 1 | 738 / 86 | — |
+| 57 | 6A-CH1, 6A-CH2 | 2 | 758 / 86 | — |
+| 58 | 6A-L18 (+ the full GE) | 0 | 762 / 87 | **6A.3 "Storm Valley and the Chief"**: GWB 759 / 0 / 3 / 0 (of 762); the cross-check in this run |
+| 59 | 6A-CL, 6A-BD, 6A-MP | 0 | 789 / 87 | — |
+| 60 | 6A-L20, 6A-L21 (+ the full GE after each) | 0 | 796 / 89 | — |
+| 61 | 6A-CP, 6A-L22 (+ the full GE) | 0 | 812 / 90 | **6A.4 "Hangnabit to the Labyrinth"** — its cross-check is the phase review |
+| 62 | 6A-END | — | 812 / 90 | the phase end: GE both shells, stages, GWB 809 / 0 / 3 / 0 (of 812), the Fable phase review, the card → Ben |
+
+Every dependency holds: CF before every type and level task; FR before W1; S8 before every level-10 feature (it removes
+the strip's refusal and shifts the slot ids they measure); WD and RC before TR, RP (fixtures); TR before BX1a (the shared
+flip); RC, TR, BX1a before RN (its fixture leaves out only the plants); RP and BG1c before CH1 (level 18 opens); CL
+before BD before MP (fixtures); BD, MP, BX1b before CP; every level task after every feature and type task its data
+switches on (LL §7 deps, ENG §7.2).
+
+### Stand-ins kept at the 6A end (◇, named) and who replaces them
+
+| ◇ | where | replaced by |
+|---|---|---|
+| `BuiltLevels.list` = 1–5, 10, 11, 15, 18, 20, 21, 22; the not-built report "(Phase 6)" for 25 on | 6A-BL…6A-L22 | 6B-L25…L52, 6C-L55…L70; the report deleted at 6C-END |
+| The Wizard, the Fire Guardians and Xichra stay `.inert` (their records refused at Setup) | — | 6B-WZ1 / WZ2, 6C-DM1–DM3, 6C-XI1–XI3 |
+| OmniPx modes 3 / 6 / 7 / ≥ 8 refused at level open | PT, RN | mode 6: 6C-L55…L70 (level 70); 3 / 7 / ≥ 8 placed nowhere — kept |
+| The path cannons (p1 < 0) refused at Setup | RC | 6B (ENG §3.1, level 40) |
+| The spiked balls 0x5c3 / 0x5c4, the snowball 0xbfe (Box and player arms) | — | 6B (ENG §3.4, level 45; §3.5, level 31) |
+| The countdown digits 2907; the CLUT animation; auto-scroll and its death arm; the fire backdrop, flame buffer and the placed fire 1208; the level-wide liquid flag / ice | — | 6B-TM, 6B-CA, 6B-AS, 6B-FI, 6B-ICE (prove) |
+| The 0x46a spark draws of the EnemyShot Handle (CF pins the records only) | CF | 6B-WZ1 (ENG §2.14's second assert) |
+| Every type first refused on levels 25–70 (LL §7: 6B-BG2 / BX2, 6C-BG3 / BX3 …) | — | its LL owner |
+| Unreachable as shipped, kept refused or not transcribed and pinned: rope bridge 1466, table 0xb71, water kinds 206–209, `.RipplePxBackOffsets`, Background 0x73f / 0x740, tree 0xc0f's solid branch (synthetic), cannons p1 1…100 / ≥ 107 | ENG §5 (pins in BX1a, TR, RP, RC) | kept (as read) |
+| Geyser kinds 3 / 4 past the 12-face cache; Dillo 1872–1879; the Wraith variant | GY, DL, GF | kept (as read) |
+| `.Victory`, the stitch, the credits | — | 6C-VI |
+| `ParticleLife` vs CLUT 222 (levels 52 / 55) | carried | the task that opens 52 / 55 |
+| **Test stand-ins:** `LevelFixture`'s patched `Mlvl` copies (records left out) and 6A-CP's moved player start | tests only | kept as tests (never in `Sources`) |
+
+### Known deviations added by 6A
+5. **The thunder's darkening** (`.GammaFadeOutAsync` / `.GammaFadeInAsync` on level 15) is presented through
+   FerazelRender's screen gamma on the presented image, like the underwater tint (deviation 3), not the monitor's gamma
+   [MED]; no golden sees it (`FrameRenderer` drops `.screenGamma` in level frames) — `testRainThunderGammaOps` pins the
+   op list instead.
+
+### The 6A gate card ("through the Goblin Chief") — an outline; 6A-END checks every point against the level data
+
+Play the staged Mac app and the Windows zip, New Game or a Phase 5 save; jump with `-FerazelLevel N` (N in the list).
+**Levels 1–5, 10, 11, 15, 18, 20, 21 and 22 can be entered; 25 and later say "not built yet (Phase 6)".**
+1. **Level 5, the Warrior** — three crates fall on the arena from the first moments; he walks, runs and swings, throws
+   his blade-shot; crates landing on him hurt him (ten do it); he dies with his death frames and burns away, thunder
+   and a shake, the gate opens, the boss track plays. Shots and spells do not hurt him (as in the original).
+2. **Level 10** — chapter card 2; the mountain strip moving at half speed behind the tiles; wind pushes you (and shots)
+   in places; cannons that turn by themselves; trees whose branches you can stand on; the 800-point goblins; bat swarms.
+3. **Level 11** — the river backdrop flowing and wobbling; tiles under water tinted; the water current; Nimbo talks.
+4. **Level 15** — rain sheets and falling drops, lightning flashes with thunder and a brief darkening (with "fading"
+   on), a steady push to the left; Gremlins and Dillos; springs; plants.
+5. **Level 18, the Goblin Chief** — he waits until the arena locks, then jumps between three lanes, the landing shakes
+   the screen and stuns you if you are standing, he throws boulders; 20 Fireball hits kill him; death, burn, gate,
+   boss track.
+6. **Level 20** — clouds drifting in front of everything; spinning blades (they hurt only when the arm crosses you);
+   maces shuttling on paths; strong wind; the hang glider.
+7. **Level 21** — darker; graves that speak; enemy pipes letting out creatures one at a time; teleporters; insects.
+8. **Level 22** — chapter card 5; the Labyrinth's teleporters; Dimbo's conversation; the magic carpet (touch it, it
+   unrolls, rises and you steer it — it never wears out here); blades with their lower half hidden; maces.
+9. **Readings Ben can't see but may feel (MED):** the strip's look, the ripple's speed, the rain's density, the
+   thunder's darkening strength (screen gamma), the clouds' translucency.
+
+**Windows part:** the same points on a Windows PC; note anything that differs. **Machine checks for the card:** the visit
+sweep and the bot (both shells, every built level), the face-load tests, the draw-mode audit — summary lines pasted by
+6A-END. **Known stand-ins:** the Wizard and later levels (6B, 6C).
+
+### The sweep's and the bot's budget as levels 10–22 join (Ben's RAM rule)
+
+The rule stands unchanged: at most 4 workers per path, `MAX_WORKER_MB` 4096 never raised (a `memory` row is a leak to
+fix), the machine brake at 15 % free, never two heavy things at once (the sweep, the bot, the Core suite, the WinKit
+suite, Proof B — one at a time, beside at most one working implementer), stop with a plain `kill <script pid>`.
+
+The sweep makes 4 visits per active record (levels 1–5: 872 records → 3,488 visits a path, measured at run 48). The
+bot plays 4 seeds × 3 minutes a level = 21,600 steps a level (108,000 on 1–5, measured).
+
+| after | levels | sweep visits a path | bot steps a path | sweep time, both paths | worker peak (sweep) |
+|---|---:|---:|---:|---|---|
+| Phase 5 (measured) | 5 | 3,488 | 108,000 | ~12 min on 1–4 (3,360 visits, measured at 6a70bce); 1–5 not recorded | Core ~130–140 MB; Windows ~295 MB after the leak fix (one worker, levels 1 / 4 / 5) — measured 2026-11-10 |
+| 6A-L10L11 | 7 | 6,324 | 151,200 | ~23 min **(est.)** | ≤ 600 MB **(est.)** |
+| 6A-L15 | 8 | 7,056 | 172,800 | ~25 min (est.) | ≤ 600 MB (est.) |
+| 6A-L18 | 9 | 7,192 | 194,400 | ~26 min (est.) | ≤ 600 MB (est.) |
+| 6A-L20 | 10 | 8,524 | 216,000 | ~31 min (est.) | ≤ 700 MB (est.: 164 clouds) |
+| 6A-L21 | 11 | 9,824 | 237,600 | ~35 min (est.) | ≤ 700 MB (est.) |
+| 6A-L22 / END | 12 | 11,864 | 259,200 | ~43 min, up to ~65 min if a visit costs more on the big levels (est.) | ≤ 800 MB (est.: 510 records) |
+
+Visits a level: 10 → 1,248; 11 → 1,588; 15 → 732; 18 → 136; 20 → 1,332; 21 → 1,300; 22 → 2,040. **Estimates:** the
+time scales the measured ~0.11 s a visit (4 workers, one path) by the visit count, builds excluded; the peaks are
+guesses from the level sizes, far below the 4 GB limit, never a reason to raise it. The bot's wall time is not
+recorded in the repo (its summary prints `in W s`): its watchdog allows 120 s + 120 s a minute of play a process, so
+at 12 levels × 4 seeds × 3 min over 4 workers the bound is ~75 min a path; the seat records the measured `W` at 6A-L10L11
+and replaces this paragraph's estimates in the As executed. The G2 render half (~12 min at 134 render tests) grows with
+the fixture and level goldens (~60 more render tests, est. 20–30 min): the 40-minute timeout holds; past 35 minutes the
+seat records it in LOOP-LOG and raises it with Ben, never runs the two halves at once. At 6A-END the full GE (sweep then
+bot, both shells, est. 1.5–2.5 h with builds) runs in a background shell polled with `stat -L`.
+
+### Planner's notes (for Ben and the reviewers)
+
+1. **Two documents disagree on the Chief's first task:** BOS gives 6A-CH1 ten tests with one stagger test
+   (`testPlayerStaggerArm`); ENG says the stagger's three tests sit "inside CH1's 10". The sums cannot both hold. This
+   plan keeps BOS's nine Chief tests and puts ENG's three stagger tests in place of BOS's one (BOS's 23 / 19 frame
+   counts go into `testStaggerSlowsAndPoses`): CH1 is **12**, so the ladder runs 2 higher than the engine document's
+   from there.
+2. **ENG §5's four "data pin" tests had no task** (ENG §7.1 leaves them out): `testNoLevelSetsParallaxMode` → 6A-RP,
+   `testUnplacedBackgroundArms` → 6A-TR, `testRopeBridgeUnplaced` and `testTableUnplaced` → 6A-BX1a; the water-kinds
+   row widened to all 24 levels is an assert in 6A-BX1a. +4 against ENG's ladder.
+3. **Windows references are pinned on real levels, not on fixtures.** ENG asks for "feature golden both shells" for the
+   strip, the ripple and the rain; a fixture is test code in `FerazelRenderTests`, while `WinGame` boots the real world
+   file (and the CrossOver smoke runs the real exe), so a Windows fixture would mean a second fixture mechanism in the
+   Windows package. Instead every feature golden is Mac-only and each level task adds one Windows reference of its real
+   first frame (7 WinKit tests, 82 → 90 with the rain's audio test). The features' pixels come from the shared
+   `FerazelRender`, so the Windows reference on the real level covers the same drawing.
+4. **6A-MC has no WinKit test** (ENG's "card goldens both shells"): the chapter screen is the shared `ScreenRenderer`;
+   if `-FerazelLevel 10` shows chapter card 2 before the level, 6A-L10L11's Windows reference sees it — measured there.
+5. **Scripted kills and the Warrior's kill-frame test live in a Render test file**, not in `WarriorTests` /
+   `ChiefTests` as BOS wrote: a burn never completes without face pixels (the Phase 5 lesson), and both kills end in a burn.
+6. **ENG §2.4 says "build one shared `flipHRect`"; it exists** as `PlatformSprite.flipH` (`PlatformSprite.swift:402–409`,
+   the `.FlipHRect` port). 6A-TR makes it callable from the Box and Background movers; 6A-BX1a reuses it. No new copy.
+7. **Feature goldens "kept unless frame 1" are always kept** (ENG lets the level task delete them when the feature's
+   frame is frame 1). A fixture's frame and the real level's frame are different worlds even at frame 1, so they are not
+   duplicates, and keeping them fixes the ladder in advance. The four ENG says to delete (wind, rotating cannon, rain,
+   mace path) are deleted as ENG says.
+8. **`testStripCopiesPerLevel` (ENG) next to the existing `ParallaxTests.testStripSpriteCopies`:** kept, with its
+   meaning narrowed to the sprites `setupLevel` really creates (the existing test pins the `PxSprites` model's copies).
+9. **6A-L10L11 is ⚑** though neither document marks it: the first new levels since Phase 5, two levels in one task, the
+   first Windows level references and the first full GE over 7 levels (LV5, its nearest neighbour, was ⚑).
+10. **The full sweep and bot after every level task** (Ben, 2026-11-08) cost an estimated 45–65 minutes each by level 22
+    (budget above), twice in run 60. If Ben prefers, a level task could sweep only its own levels and leave the full
+    width to wave ends and the phase end — a question for QUESTIONS, not chosen here.
+11. **Not determined on paper (each build measures):** the strip sprites' slot ids; whether the strip, trees, cannons
+    show at frame 1 on level 10; the first ripple frame on 11; the first thunder frame on 15; the frame after the carpet's
+    wake; the Chief's activation frame; both scripted kills' frames; whether `-FerazelLevel 10` shows chapter card 2;
+    what Mcnv 221's actions 9 / 10 write; the not-built node reached from levels 11 and 22's exits; the bot's wall time.
+12. **The old cards' errors, corrected in place:** 6A-FB folded into 6A-CF (D46.2); 6A-FR's arm is in `.HitPlayerSprite`,
+    not `.HurtPlayer`; 6A-WD covers level 20 and moves every wind-scaled sprite; 6A-RP is `.PaintFrameWrap`'s inline
+    loops, not `.RipplePxBackOffsets`; 6A-T11 is two proof tests inside 6A-RP; 6A-RN's side push is a test; 6A-S8 is
+    sprites on six levels with a feature golden on a fixture; 6A-BG1 / BX1 split into the ENG feature tasks (TR, CL, RC,
+    BD, MP, CP) and LL's BG1c / BX1a / BX1b (D46.1); 6A-BN1 dropped (nothing to build, LL §10.3); cannons 1091 /
+    1093–1096 leave 6A (LL finding 10); the order is BL, CF, FR, the Warrior (ENG P14).
+13. The next free decision number at commit time is D47 (checked 2026-11-11; several projects share the ledger) — the
+    seat records this plan's rulings there (notes 1–3, 5, 7, 10's question).
 
 ## Wave 6 — Phase 6B (cards; expanded in this file by its planning run)
 
