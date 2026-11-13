@@ -131,12 +131,14 @@ final class LevelFiveTests: XCTestCase {
         XCTAssertEqual(bars.map { $0.0 }, [37, 45, 51] + Array(52...58))
         XCTAssertEqual(Set(bars.map { $0.1 }), [58])
         // The registration order (`.InitSprites` M l. 106–145: …, Crab, Dillo, Warrior, Wizard, …, Floater, …): the
-        // Warrior's three sets (`.InitWarriorSprite` M l. 72982–72984) right after the Dillo's last (0x751) and before
-        // the Floater's first (0x6f4).
+        // Warrior's three sets (`.InitWarriorSprite` M l. 72982–72984) right after the Dillo's last (0x751, LL §6 set
+        // #54) and before the Wizard's first (0x727, #58); 6A-CF: the Wizard, Chief, Demon and Xichra records (#58–#84)
+        // sit between them and the Floater's first (0x6f4, #85), after Xichra's last (0x7b9, #84).
         let picts = CachedFaces.sets.map(\.pict)
         let dillo = try XCTUnwrap(picts.firstIndex(of: 0x751))
-        XCTAssertEqual(Array(picts[dillo...dillo + 4]), [0x751, 0x71c, 0x71d, 0x71e, 0x6f4])
+        XCTAssertEqual(Array(picts[dillo...dillo + 4]), [0x751, 0x71c, 0x71d, 0x71e, 0x727])
         XCTAssertEqual(CachedFaces.sets[dillo + 1...dillo + 3].map(\.faces), [8, 8, 6])
+        XCTAssertEqual(Array(picts[dillo + 30...dillo + 31]), [0x7b9, 0x6f4])
 
         // The Warrior hurts on contact: `.HitPlayerSprite` step 7, the generic path — 0x70 damage, invulnerability 60.
         let pid = try XCTUnwrap(session.world.playerID)

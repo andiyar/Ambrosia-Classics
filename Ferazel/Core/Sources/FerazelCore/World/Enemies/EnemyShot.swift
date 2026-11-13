@@ -68,6 +68,15 @@ public enum EnemyShot {
     /// A face of sheet `pict`.
     static func face(_ pict: Int16, _ index: Int) -> FaceRef { FaceRef(pict: pict, index: index, set: .encoded) }
 
+    /// 6A-CF (ENG §2.14): cell `cell` of the cache record a fireball type reads — 0x46a `_DAT_100a0848` (6 × 48×48,
+    /// M l. 51822–51845), 0x46b `0844` (51846–51853), 0x46c `0840` (51854–51861; the two 64×64 cuts are the same
+    /// pixels) — keyed by record (`CachedFaces.face(record:cell:)`).
+    public static func cacheFace(type: Int16, cell: Int) -> FaceRef {
+        let k = type == 0x46b ? CachedFaces.fireball0844 : type == 0x46c ? CachedFaces.fireball0840
+            : CachedFaces.fireball0848
+        return CachedFaces.face(record: k, cell: cell)
+    }
+
     /// `(int)((double)v · f)` (`fctiwz`).
     static func scaled(_ v: Int32, _ f: Double) -> Int32 { PlayerShot.fctiwz(Double(v) * f) }
 
@@ -281,8 +290,7 @@ public enum EnemyShot {
     ///   dh), R + 1, 0, 0, 0, 1)`; the flame sparks after the Cleanup (`flame`); 0x46b / 0x46c: `+0x46` + 1, past 5 → 0,
     ///   their cache's face;
     /// - any other type: `+0x46` wrapped 0…7 (no step: types 0 / 1 stepped above), face 0x6a7.
-    /// The three 0x46a caches share one PICT (`FaceRef` keys a face by PICT and cell): the 64×64 pair of the dead
-    /// types is faced from the same PICT's cells [LOW: dead types].
+    /// The three 0x46a caches are three records of one PICT: each type reads its own (`cacheFace`, 6A-CF).
     static func typeArm(_ w: SpriteWorld, id: Int, lights: inout LightTable, effects: Int16,
                         faceBounds: (FaceRef) -> IdleSprites.Rect, flame: inout Bool) {
         guard let s = w.active.record(id: id) else { return }
@@ -378,7 +386,7 @@ public enum EnemyShot {
             w.active.update(id: id) { t in
                 t.phase &+= 1
                 if 5 < t.phase { t.phase = 0 }
-                t.face = face(fireball, Int(t.phase))
+                t.face = cacheFace(type: fireball, cell: Int(t.phase))
             }
             flame = true
             if w.level.header.flameMode == 0, let t = w.active.record(id: id) {
@@ -397,7 +405,7 @@ public enum EnemyShot {
             w.active.update(id: id) { t in
                 t.phase &+= 1
                 if 5 < t.phase { t.phase = 0 }
-                t.face = face(fireball, Int(t.phase))
+                t.face = cacheFace(type: t.type, cell: Int(t.phase))
             }
         default:
             w.active.update(id: id) { t in

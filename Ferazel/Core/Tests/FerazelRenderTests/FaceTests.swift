@@ -680,4 +680,32 @@ final class FaceTests: XCTestCase {
         }
         XCTAssertEqual(missing, [])
     }
+
+    /// 6A-CF (ENG §2.14): picture 0x46a is three cache records with two cuts (`.InitEnemyShotSprite` M l.
+    /// 51434–51436) — `_DAT_100a0848` 6 × 48×48 (#40), `0844` and `0840` 6 × 64×64 (#41, #42) — and the face store keys
+    /// them by record: 0x46a draws the 48×48 cut, 0x46b / 0x46c the 64×64 one, each from its own record (M l.
+    /// 51822–51861); the two 64×64 cuts are the same pixels (same picture, same arguments).
+    func testFireballCutsByRecord() throws {
+        let r = try resources()
+        let keys = [CachedFaces.fireball0848, CachedFaces.fireball0844, CachedFaces.fireball0840]
+        let sheets = try keys.map { try XCTUnwrap(CachedFaces.sheet(record: $0)) }
+        XCTAssertEqual(sheets.map { [Int($0.pict), $0.count, $0.cellWidth, $0.cellHeight, $0.columns, Int($0.clut)] },
+                       [[0x46a, 6, 0x30, 0x30, 6, 200], [0x46a, 6, 0x40, 0x40, 6, 200], [0x46a, 6, 0x40, 0x40, 6, 200]])
+        let search = ColorSearch(model: .exactNearest)
+        let faces = try SpriteBlitter.Faces([], records: Array(zip(keys, sheets)), resources: r, search: search)
+        XCTAssertNil(faces.sheets[0x46a], "0x46a is keyed by record, not by picture")
+        for cell in 0..<6 {
+            let a = try XCTUnwrap(faces.face(EnemyShot.cacheFace(type: 0x46a, cell: cell)), "0x46a cell \(cell)")
+            let b = try XCTUnwrap(faces.face(EnemyShot.cacheFace(type: 0x46b, cell: cell)), "0x46b cell \(cell)")
+            let c = try XCTUnwrap(faces.face(EnemyShot.cacheFace(type: 0x46c, cell: cell)), "0x46c cell \(cell)")
+            XCTAssertEqual([a.width, a.height, b.width, b.height, c.width, c.height], [48, 48, 64, 64, 64, 64])
+            XCTAssertEqual(b, c, "the two 64×64 cuts are the same pixels")
+            XCTAssertNotEqual(a, b)
+        }
+        // Each type reads its own record: with only `0844` loaded, 0x46b draws and 0x46a / 0x46c have no face.
+        let only = try SpriteBlitter.Faces([], records: [(keys[1], sheets[1])], resources: r, search: search)
+        XCTAssertNotNil(only.face(EnemyShot.cacheFace(type: 0x46b, cell: 0)))
+        XCTAssertNil(only.face(EnemyShot.cacheFace(type: 0x46a, cell: 0)))
+        XCTAssertNil(only.face(EnemyShot.cacheFace(type: 0x46c, cell: 0)))
+    }
 }

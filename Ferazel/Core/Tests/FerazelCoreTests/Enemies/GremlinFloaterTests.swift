@@ -245,16 +245,26 @@ final class GremlinFloaterTests: XCTestCase {
             XCTAssertEqual(CachedFaces.marks(type: t).singles, [])
             XCTAssertEqual(SpriteHandler.forClass(type: t), .gremlin)
         }
-        // The cache registration (`.InitSprites` M l. 106–145: … Crab, Dillo, Warrior, …, Floater, Frog, Gremlin,
-        // Salamander): the Floater's three (M l. 69827–69829) after the Crab's, the Dillo's four (DL, M l. 72283–72286)
-        // and the Warrior's three (LV5: `.InitWarriorSprite` M l. 72982–72984 — 0x71c 8, 0x71d 8, 0x71e 6, called
-        // right after `.InitDilloSprite`, M l. 133–134), the Gremlin's three (M l. 69118–69120) after the Frog's.
+        // The cache registration (`.InitSprites` M l. 106–145: … Crab, Dillo, Warrior, Wizard, Chief, Demon, Xichra,
+        // Floater, Frog, Gremlin, Salamander): the Floater's three (M l. 69827–69829) after the Crab's, the Dillo's four
+        // (DL, M l. 72283–72286), the Warrior's three (LV5: `.InitWarriorSprite` M l. 72982–72984 — 0x71c 8, 0x71d 8,
+        // 0x71e 6, called right after `.InitDilloSprite`, M l. 133–134) and — 6A-CF, LL §6 sets #58–#84 — the Wizard's
+        // two, the Chief's four, the Demon's five and Xichra's sixteen (flag 1 inside the Wizard's, Chief's and Xichra's
+        // Inits, M l. 75582–75586, 75020–75026, 76216–76233); the Gremlin's three (M l. 69118–69120) after the Frog's:
+        // the 43 sets #50–#92 from 0x762 to the list's end.
         let picts = CachedFaces.sets.map(\.pict)
         let at = try XCTUnwrap(picts.firstIndex(of: 0x762))
-        XCTAssertEqual(Array(picts[at...at + 15]), [0x762, 0x74e, 0x74f, 0x750, 0x751, 0x71c, 0x71d, 0x71e, 0x6f4,
-                                                    0x6fe, 0x6ff, 0x708, 0x6ea, 0x6eb, 0x6ec, 0x712])
-        XCTAssertEqual(CachedFaces.sets[at...at + 15].map(\.faces), [6, 6, 5, 5, 2, 8, 8, 6, 6, 8, 8, 8, 10, 10, 4, 9])
-        XCTAssertEqual(CachedFaces.sets[at...at + 15].map(\.flag), [Int16](repeating: 0, count: 16))
+        XCTAssertEqual(Array(picts[at...]), [0x762, 0x74e, 0x74f, 0x750, 0x751, 0x71c, 0x71d, 0x71e,
+                                             0x727, 0x728, 0x777, 0x778, 0x779, 0x77a, 0x780, 0x781, 0x782, 0x783, 0x784,
+                                             0x7bc, 0x7bd, 0x7be, 0x7bf, 0x7c0, 0x7c1, 0x7c2, 0x7c3,
+                                             0x7b2, 0x7b3, 0x7b4, 0x7b5, 0x7b6, 0x7b7, 0x7b8, 0x7b9,
+                                             0x6f4, 0x6fe, 0x6ff, 0x708, 0x6ea, 0x6eb, 0x6ec, 0x712])
+        XCTAssertEqual(CachedFaces.sets[at...].map(\.faces), [6, 6, 5, 5, 2, 8, 8, 6, 8, 8, 4, 4, 4, 4, 6, 6, 3, 4, 2,
+                                                              4, 4, 2, 4, 2, 4, 4, 4, 4, 4, 2, 4, 2, 4, 4, 4,
+                                                              6, 8, 8, 8, 10, 10, 4, 9])
+        XCTAssertEqual(CachedFaces.sets[at...].map(\.flag), [Int16](repeating: 0, count: 8) + [1, 1, 1, 1, 1, 1]
+                       + [Int16](repeating: 0, count: 5) + [Int16](repeating: 1, count: 16)
+                       + [Int16](repeating: 0, count: 8))
         XCTAssertEqual(SetupFaces.sheet(pict: 0x6ea), SetupFaces.Sheet(pict: 0x6ea, count: 10, cellWidth: 0x84,
                                                                      cellHeight: 0x78, columns: 10, clut: 200))
         XCTAssertEqual(SetupFaces.sheet(pict: 0x6eb), SetupFaces.Sheet(pict: 0x6eb, count: 10, cellWidth: 0x84,

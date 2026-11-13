@@ -308,10 +308,10 @@ final class DrawModeAuditTests: XCTestCase {
         W("World/Enemies/Dillo.swift:354", .mode, .words([0, 0x1000b]), "enemyShot.spine", at: ["337"],
           pins: ["let mode: UInt32 = walker ? 0 : 0x1000b"]),
         W("World/Enemies/Dillo.swift:394", .mirrored, .flags([false, true]), "dillo"),
-        W("World/Enemies/EnemyShot.swift:154", .mirrored, .flags([false, true]), "enemyShot.egg"),
-        W("World/Enemies/EnemyShot.swift:314", .mode, .words([0xb0002, 0xb0000, 0xb0001, 0]), "enemyShot.wraith"),
-        W("World/Enemies/EnemyShot.swift:339", .mirrored, .flags([false, true]), "enemyShot.warrior"),
-        W("World/Enemies/EnemyShot.swift:348", .flash, .range(5...5), "enemyShot.egg"),
+        W("World/Enemies/EnemyShot.swift:163", .mirrored, .flags([false, true]), "enemyShot.egg"),
+        W("World/Enemies/EnemyShot.swift:322", .mode, .words([0xb0002, 0xb0000, 0xb0001, 0]), "enemyShot.wraith"),
+        W("World/Enemies/EnemyShot.swift:347", .mirrored, .flags([false, true]), "enemyShot.warrior"),
+        W("World/Enemies/EnemyShot.swift:356", .flash, .range(5...5), "enemyShot.egg"),
         // WK1: the Walker — `.SetupWalkerSprite`'s flip (0x6e0 always, the others by the player's x) and tier tint
         // (`+0xb8` 0x10010…0x10015 by record p3), the 1700's facing, the 1705's turn, the 1760 death entry's inverted
         // flip, and the damaging-surface flash 0x12.

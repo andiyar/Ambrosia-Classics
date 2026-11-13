@@ -194,6 +194,7 @@ public final class FrameRenderer {
                                          effects: prefs.effects)
         let entries = try L.activePlacements.map { try SetupFaces.setup($0, context: context) }
         let faces = try SpriteBlitter.Faces(Self.spriteSheets(level: L, entries: entries, resources: resources),
+                                            records: CachedFaces.recordSheets(markedBy: entries.map(\.type)),
                                             resources: resources, search: search, dither: dither)
         let lights = LightRenderer(level: L, tables: tables)
         self.lights = lights
@@ -214,7 +215,9 @@ public final class FrameRenderer {
     /// active placements, the glider caches (`FaceSheet.gliderSheets`, `.InitPlayerSprite` M l. 42486–42489),
     /// `SetupFaces.backgroundSheets` / `backgroundW2bSheets`, the cache faces the placements' Setups mark
     /// (`CachedFaces.sheets(markedBy:)`; WK1: the Walker Handles' sets), `BoxSprite.spawnSheets`,
-    /// `BoxSprite.dropSheets` — less any PICT already loaded at boot.
+    /// `BoxSprite.dropSheets` — less any PICT already loaded at boot. One sheet per PICT (`seen`): a PICT registered as
+    /// more than one cache record (0x46a's two cuts, 6A-CF) is not here — the face store loads its marked records by
+    /// record (`CachedFaces.recordSheets(markedBy:)`, `SpriteBlitter.Faces.recordSheets`).
     static func spriteSheets(level L: LevelFile, entries: [SetupFaces.Entry], resources: FerazelResources)
         -> [SetupFaces.Sheet] {
         let boot = BootFaces.sheets.filter { resources.resource(type: "PICT", id: $0.pict, chain: .frontEnd) != nil }

@@ -80,16 +80,20 @@ public struct SpriteBlitter: Sendable {
     /// The face sets the sprites draw from (`SetupFaces.Sheet`s), loaded once.
     public struct Faces: Sendable {
         public private(set) var sheets: [Int16: FaceSheet] = [:]
+        /// 6A-CF: the cache records of a PICT registered more than once (0x46a's three, two cuts), keyed by record —
+        /// a face ref of such a PICT names its record and cell (`CachedFaces.recordCell(of:)`).
+        public private(set) var recordSheets: [CachedFaces.RecordKey: FaceSheet] = [:]
 
         public init(sheets: [Int16: FaceSheet]) { self.sheets = sheets }
 
         /// Each sheet loaded as its `.Init<Class>Sprite` / cache call does: `GetPicture` on the front-end chain
-        /// (Sprites → Sounds → Titles → app), converted under the sheet's CLUT.
-        public init<S: Sequence>(_ wanted: S, resources: FerazelResources, search: ColorSearch,
+        /// (Sprites → Sounds → Titles → app), converted under the sheet's CLUT; each of `records` (the record-keyed
+        /// caches, `CachedFaces.recordSheets(markedBy:)`) the same way into `recordSheets`.
+        public init<S: Sequence>(_ wanted: S, records: [(record: CachedFaces.RecordKey, sheet: SetupFaces.Sheet)] = [],
+                                 resources: FerazelResources, search: ColorSearch,
                                  dither: DitherModel = .errorDiffusion) throws where S.Element == SetupFaces.Sheet {
             var cluts: [Int16: ColorLUT] = [:]
-            let placeholder = SetupFaces.sheet(pict: SetupFaces.placeholderPict).map { [$0] } ?? []
-            for s in Array(wanted) + placeholder where sheets[s.pict] == nil {
+            func load(_ s: SetupFaces.Sheet) throws -> FaceSheet {
                 let clut: ColorLUT
                 if let c = cluts[s.clut] { clut = c } else {
                     clut = try ColorLUT.load(id: s.clut, from: resources, chain: .level)
@@ -99,8 +103,15 @@ public struct SpriteBlitter: Sendable {
                     ? .single(pict: s.pict)
                     : .set(try FaceSheet.Arguments(pict: s.pict, count: s.count, cellWidth: s.cellWidth,
                                                    cellHeight: s.cellHeight, columns: s.columns))
-                sheets[s.pict] = try FaceSheet.load(loader, from: resources, chain: .frontEnd, clut: clut,
-                                                    search: search, dither: dither)
+                return try FaceSheet.load(loader, from: resources, chain: .frontEnd, clut: clut, search: search,
+                                          dither: dither)
+            }
+            let placeholder = SetupFaces.sheet(pict: SetupFaces.placeholderPict).map { [$0] } ?? []
+            for s in Array(wanted) + placeholder where sheets[s.pict] == nil {
+                sheets[s.pict] = try load(s)
+            }
+            for (k, s) in records where recordSheets[k] == nil {
+                recordSheets[k] = try load(s)
             }
         }
 
@@ -119,8 +130,13 @@ public struct SpriteBlitter: Sendable {
         }
 
         public func face(_ ref: FaceRef) -> EncodedFace? {
-            guard let s = sheets[ref.pict], s.faces.indices.contains(ref.index) else { return nil }
-            return s.faces[ref.index]
+            if let s = sheets[ref.pict] {
+                return s.faces.indices.contains(ref.index) ? s.faces[ref.index] : nil
+            }
+            // A record-keyed cache face (6A-CF): the record's own sheet, at the record's cell.
+            guard !recordSheets.isEmpty, let rc = CachedFaces.recordCell(of: ref), let s = recordSheets[rc.record],
+                  s.faces.indices.contains(rc.cell) else { return nil }
+            return s.faces[rc.cell]
         }
     }
 

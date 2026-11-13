@@ -1082,125 +1082,221 @@ public final class LevelRun {
 /// 266, 268, 270, 271, 273, 275, 276, 278, 279, 281, 283, 284, 286, 288, 289, 291, 293; level 2 after level 1 n 31,
 /// q 62 → 35, 46, 54 (sets 0x5be, 0x6cc, 0x708), 55 … 62; the level-1 restart n 6, q 12 → 7 … 12 (the six flag-1
 /// singles reload: the fast path never updates the two CLUT ids, so −1 ≠ 202 still holds).
+///
+/// 6A-CF: the whole registration list — `.InitSprites` (M l. 103–145) calls Player, PlayerShot, Effect, Bonus,
+/// Platform, Crawler, Roach, Walker, Box, Background, EnemyShot, Button, Bat, Blob, Crab, Dillo, Warrior, Wizard, Chief,
+/// Demon, Xichra, Floater, Frog, Gremlin, Salamander, Rope; each `.CacheEncFaceSetFromPICT` appends to the set list
+/// (`_DAT_100a12b4`, M l. 73888–73892) and each `.Cache1EncFaceFromPICT` to the singles list (`PTR_DAT_100a12b8`, M l.
+/// 73943–73946), each record keeping `*_DAT_100a0a48` as its flag (M l. 73902, 73951): **285 records — 92 sets, 193
+/// singles, 805 faces** (LL §6, the transcription target; every row checked against the dump's Init calls). Everything
+/// inside is keyed by **record** (`RecordKey`, the list position) — the marks (`markedRecords`), the loaded records, the
+/// load and the face store — because picture 0x46a is registered three times with two cuts (#40–#42). The outward API
+/// stays picture-valued (`marks`, `Needed.sets` / `.singles`, `loadedSets` / `loadedSingles`, `sheets(markedBy:)`) as
+/// views. The 23 records whose PICT no file holds (`absentPicts`) stay registered: `.CountNeededCachedSpriteFaces` has
+/// no presence test (M l. 73749–73764), so a marked one counts its faces in n (q = 2n), makes no step and is never
+/// marked loaded (M l. 73822–73832, 73852–73859) — unreachable as shipped (no placed type marks one).
 public struct CachedFaces: Equatable, Sendable {
-    /// A cache record: a face set (its face count) or a single, and its `*_DAT_100a0a48` flag at registration.
-    struct Record: Sendable {
+    /// A cache record: a face set (its face count and its cut) or a single (one face), its `*_DAT_100a0a48` flag at
+    /// registration, and whether the data holds its PICT.
+    struct Record: Sendable, Equatable {
         let pict: Int16
         let faces: Int
         let flag: Int16
+        /// The set's cut (`.CacheEncFaceSetFromPICT`'s width, height, faces a row); 0, 0, 1 for a single.
+        let cellWidth: Int
+        let cellHeight: Int
+        let columns: Int
+        /// The data holds the PICT (`Ferazel Sprites`): false for `absentPicts`.
+        let present: Bool
     }
 
-    /// The set list `_DAT_100a12b4` in registration order (`.InitSprites` M l. 106–145 calls the Init routines in the
-    /// order Platform … Crawler, Roach, Walker, Box, Background, …, Bat, Blob, …, Frog) — the records levels 1–4 can mark
-    /// (Crawler M l. 56142–56144, Roach 64893–64894, Walker 56757–56768 (WK2: the 1750's four, 56764–56767), Box
-    /// 58785–58786 (LV3: the mine cart's 0xb72 /
-    /// 0xb73) and 58806, Background 61864 (LV3: the wall spikes' 0x730) and 61875, Bat 68099, Blob 67666 (LV3), Frog
-    /// 70116; BL: Crab 73964 — 0x762, after the Blob's; GY: the Box's geyser sets 0x5a0, 0x5a1, 0x5a2 after the
-    /// trampoline's, M l. 58813–58815, flag 0). BA: `.InitBatSprite`'s five in its order — 0x6cc (11), 0x744 (9), 0x74d (8), 0x73a (12), 0x73b (12)
-    /// (M l. 68099–68103, flag 0). ES: the dart traps' three (Background M l. 61886–61888, after 0x442; marked only
-    /// from level 22 on);
-    /// `.InitEnemyShotSprite`'s four (M l. 51434–51437, after the Background's, flag 0 — `.InitBackgroundSprite`
-    /// leaves `*_DAT_100a0a48` 0, M l. 61912): 0x46a three times (6 × 48×48, then 6 × 64×64 twice) and 0x77b (16 faces);
-    /// only the boss Setups mark them (`EnemyShot.cachedSheets`). FR: `.InitSalamanderSprite`'s 0x712 (9 faces, M l.
-    /// 70649, flag 0), registered after the Frog's (`.InitSprites` calls Frog, Gremlin, Salamander). GF: `.InitSprites`
-    /// (M l. 106–145) calls …, Crab, Dillo, Warrior, Wizard, Chief, Demon, Xichra, Floater, Frog, Gremlin, Salamander:
-    /// `.InitFloaterSprite`'s three (M l. 69827–69829 — 0x6f4 6 faces, 0x6fe / 0x6ff 8, the last two absent from the data
-    /// and marked only by the refused 1790 variant) after the Crab's and the Dillo's (DL: `.InitDilloSprite`'s four,
-    /// M l. 72283–72286 — 0x74e 6, 0x74f 5, 0x750 5, 0x751 2; LV5: `.InitWarriorSprite`'s three, M l. 72982–72984 —
-    /// 0x71c 8, 0x71d 8, 0x71e 6, right after the Dillo's; the Wizard … Xichra sets are Phase 6's), and
-    /// `.InitGremlinSprite`'s three (M l. 69118–69120 — 0x6ea / 0x6eb 10, 0x6ec 4) between the Frog's and the
-    /// Salamander's; each flag 0 (the boss Inits between store 1 and restore 0, M l. 75020, 75582, 76216). One PICT in
-    /// three records: `loadedSets` keys by PICT,
-    /// so a mark of 0x46a counts all three [LOW: no mark before Phase 6]. // later: Phase 6 — the other sets, as their
-    /// Setups are transcribed.
-    static let sets: [Record] = [
-        Record(pict: 0x6ae, faces: 6, flag: 0), Record(pict: 0x6af, faces: 6, flag: 0),
-        Record(pict: 0x6b1, faces: 6, flag: 0),
-        Record(pict: 0x6b8, faces: 6, flag: 0), Record(pict: 0x6b9, faces: 6, flag: 0),
-        Record(pict: 0x6a5, faces: 8, flag: 0), Record(pict: 0x6a6, faces: 6, flag: 0),
-        Record(pict: 0x6a9, faces: 3, flag: 0), Record(pict: 0x6aa, faces: 2, flag: 0),
-        Record(pict: 0x6ab, faces: 9, flag: 0),
-        Record(pict: 0x6d7, faces: 8, flag: 0), Record(pict: 0x6d8, faces: 6, flag: 0),
-        Record(pict: 0x6d9, faces: 3, flag: 0), Record(pict: 0x6da, faces: 6, flag: 0),
-        Record(pict: 0x6e0, faces: 9, flag: 0),
-        Record(pict: 0xb72, faces: 14, flag: 0), Record(pict: 0xb73, faces: 21, flag: 0),
-        Record(pict: 0x5be, faces: 4, flag: 0),
-        Record(pict: 0x5a0, faces: 12, flag: 0), Record(pict: 0x5a1, faces: 6, flag: 0),
-        Record(pict: 0x5a2, faces: 6, flag: 0),
-        Record(pict: 0x730, faces: 12, flag: 0), Record(pict: 0x442, faces: 5, flag: 0),
-        Record(pict: 0x76c, faces: 6, flag: 0), Record(pict: 0x76e, faces: 6, flag: 0),
-        Record(pict: 0x76f, faces: 6, flag: 0),
-        Record(pict: 0x46a, faces: 6, flag: 0), Record(pict: 0x46a, faces: 6, flag: 0),
-        Record(pict: 0x46a, faces: 6, flag: 0), Record(pict: 0x77b, faces: 16, flag: 0),
-        Record(pict: 0x6cc, faces: 11, flag: 0), Record(pict: 0x744, faces: 9, flag: 0),
-        Record(pict: 0x74d, faces: 8, flag: 0), Record(pict: 0x73a, faces: 12, flag: 0),
-        Record(pict: 0x73b, faces: 12, flag: 0), Record(pict: 0x6c2, faces: 16, flag: 0),
-        Record(pict: 0x762, faces: 6, flag: 0),
-        Record(pict: 0x74e, faces: 6, flag: 0), Record(pict: 0x74f, faces: 5, flag: 0),
-        Record(pict: 0x750, faces: 5, flag: 0), Record(pict: 0x751, faces: 2, flag: 0),
-        Record(pict: 0x71c, faces: 8, flag: 0), Record(pict: 0x71d, faces: 8, flag: 0),
-        Record(pict: 0x71e, faces: 6, flag: 0),
-        Record(pict: 0x6f4, faces: 6, flag: 0), Record(pict: 0x6fe, faces: 8, flag: 0),
-        Record(pict: 0x6ff, faces: 8, flag: 0),
-        Record(pict: 0x708, faces: 8, flag: 0),
-        Record(pict: 0x6ea, faces: 10, flag: 0), Record(pict: 0x6eb, faces: 10, flag: 0),
-        Record(pict: 0x6ec, faces: 4, flag: 0),
-        Record(pict: 0x712, faces: 9, flag: 0),
-    ]
+    /// A record by its list and its 0-based position there (LL §6's # − 1).
+    public enum RecordKey: Hashable, Comparable, Sendable {
+        case set(Int)
+        case single(Int)
+    }
 
-    /// The singles list `PTR_DAT_100a12b8` in registration order (the same subset): Walker 0x6a4, 0x6d6 (M l. 56755–56756;
-    /// WK2); Box
-    /// loops 0xaf5+i (58776), 0xb86+i (58781), the flag-1 block 0x5b4…0x5bb (58798–58805, raw `1006af78` / `1006b014`),
-    /// 0xb22+i (flag 1, 58818–58823), 0xb36+i (58825), 0xb68+i (58830); Background 0xb54 (61862), the spikes' 0x732 /
-    /// 0x733 (61865–61866; LV3), 3000+i (flag 1, 61899), 0x5c8+i (61905), 0xa8c+i (flag 1, 61911). LV3 adds the
-    /// decorations 0xafc, 0xafd, 0xb04, 0xb05, 0xb10, 0xb1b, the outcrops 0xb34 / 0xb35 (flag 1) and the mushroom 0xb44
-    /// at their places in the loops; LV5 the decorations 0xb06, 0xb0a, 0xb0d, 0xb18, 0xb19. BL: the Crab's link single
-    /// 0x767 (`.InitCrabSprite` M l. 73965, flag 0 — `.InitBackgroundSprite` leaves `*_DAT_100a0a48` 0, M l. 61912),
-    /// registered after every Background single.
-    static let singles: [Record] = [
-        Record(pict: 0x6a4, faces: 1, flag: 0), Record(pict: 0x6d6, faces: 1, flag: 0),
-        Record(pict: 0xafc, faces: 1, flag: 0), Record(pict: 0xafd, faces: 1, flag: 0),
-        Record(pict: 0xb04, faces: 1, flag: 0), Record(pict: 0xb05, faces: 1, flag: 0),
-        Record(pict: 0xb06, faces: 1, flag: 0), Record(pict: 0xb0a, faces: 1, flag: 0),
-        Record(pict: 0xb0d, faces: 1, flag: 0),
-        Record(pict: 0xb10, faces: 1, flag: 0),
-        Record(pict: 0xb18, faces: 1, flag: 0), Record(pict: 0xb19, faces: 1, flag: 0),
-        Record(pict: 0xb1a, faces: 1, flag: 0), Record(pict: 0xb1b, faces: 1, flag: 0),
-        Record(pict: 0xb20, faces: 1, flag: 0), Record(pict: 0xb21, faces: 1, flag: 0),
-        Record(pict: 0xb87, faces: 1, flag: 0), Record(pict: 0xb88, faces: 1, flag: 0),
-        Record(pict: 0xb8a, faces: 1, flag: 0),
-        Record(pict: 0x5b5, faces: 1, flag: 1), Record(pict: 0x5b8, faces: 1, flag: 1),
-        Record(pict: 0xb25, faces: 1, flag: 1), Record(pict: 0xb34, faces: 1, flag: 1),
-        Record(pict: 0xb35, faces: 1, flag: 1),
-        Record(pict: 0xb36, faces: 1, flag: 0), Record(pict: 0xb37, faces: 1, flag: 0),
-        Record(pict: 0xb3a, faces: 1, flag: 0), Record(pict: 0xb43, faces: 1, flag: 0),
-        Record(pict: 0xb44, faces: 1, flag: 0),
-        Record(pict: 0xb6a, faces: 1, flag: 0), Record(pict: 0xb6c, faces: 1, flag: 0),
-        Record(pict: 0xb6d, faces: 1, flag: 0), Record(pict: 0xb6e, faces: 1, flag: 0),
-        Record(pict: 0xb6f, faces: 1, flag: 0), Record(pict: 0xb70, faces: 1, flag: 0),
-        Record(pict: 0xb54, faces: 1, flag: 0),
-        Record(pict: 0x732, faces: 1, flag: 0), Record(pict: 0x733, faces: 1, flag: 0),
-        Record(pict: 0xbba, faces: 1, flag: 1),
-        Record(pict: 0x5cd, faces: 1, flag: 0),
-        Record(pict: 0xa96, faces: 1, flag: 1), Record(pict: 0xa99, faces: 1, flag: 1),
-        Record(pict: 0xa9a, faces: 1, flag: 1),
-        Record(pict: 0x767, faces: 1, flag: 0),
-    ]
+    /// The registered PICTs no file holds (LL §1 finding 9): the Box loops' 2805–2807, 2950, 2966–2969, the mace loop's
+    /// 1489, the plant loop's 2718–2729, the Floater variant's 1790 / 1791.
+    static let absentPicts: Set<Int16> = Set([1489, 1790, 1791, 2805, 2806, 2807, 2950] + Array(Int16(2718)...2729)
+                                             + Array(Int16(2966)...2969))
 
-    /// What a level's Setups mark needed: (sets, singles) by PICT.
+    /// The set list `_DAT_100a12b4` in registration order (LL §6 sets #1–#92), each row `.CacheEncFaceSetFromPICT(rec,
+    /// pict, faces, width, height, faces a row)`; the flag is 1 only inside the Wizard's, Chief's and Xichra's Inits
+    /// (M l. 75582–75586, 75020–75026, 76216–76233). The cannon set 0x442 is registered under a conversion-CLUT switch
+    /// (`*ff94 = *_DAT_100a001c`, M l. 61874) that leaves the flag 0.
+    static let sets: [Record] = {
+        func set(_ p: Int16, _ n: Int, _ w: Int, _ h: Int, _ c: Int, flag: Int16 = 0) -> Record {
+            Record(pict: p, faces: n, flag: flag, cellWidth: w, cellHeight: h, columns: c,
+                   present: !absentPicts.contains(p))
+        }
+        return [
+            // `.InitPlayerSprite` M l. 42486–42489 (#1–#4): the hang-glider sets.
+            set(0x41a, 6, 0xa0, 0xa0, 3), set(0x41b, 4, 0xa0, 0xa0, 4), set(0x41c, 6, 0xa0, 0xa0, 3),
+            set(0x41d, 4, 0xa0, 0xa0, 4),
+            // `.InitCrawlerSprite` 56142–56144 (#5–#7), `.InitRoachSprite` 64893–64894 (#8, #9).
+            set(0x6ae, 6, 0x40, 0x2c, 6), set(0x6af, 6, 0x40, 0x2c, 6), set(0x6b1, 6, 0x40, 0x2c, 6),
+            set(0x6b8, 6, 100, 0x36, 6), set(0x6b9, 6, 100, 0x36, 6),
+            // `.InitWalkerSprite` 56757–56768 (#10–#19).
+            set(0x6a5, 8, 100, 0x50, 4), set(0x6a6, 6, 100, 0x50, 6),
+            set(0x6a9, 3, 0xcc, 0x59, 1), set(0x6aa, 2, 0xcc, 0x59, 1), set(0x6ab, 9, 0xcc, 0x59, 1),
+            set(0x6d7, 8, 0xd8, 0x6e, 1), set(0x6d8, 6, 0xd8, 0x6e, 1), set(0x6d9, 3, 0xd8, 0x6e, 1),
+            set(0x6da, 6, 0xd8, 0x6e, 1), set(0x6e0, 9, 0x54, 0x5c, 9),
+            // `.InitBoxSprite` 58784–58786, 58806, 58813–58816 (#20–#27).
+            set(0xb71, 2, 0x47, 0x34, 2), set(0xb72, 0xe, 0x80, 0x60, 7), set(0xb73, 0x15, 0x80, 0x3a, 7),
+            set(0x5be, 4, 0x36, 0x38, 4),
+            set(0x5a0, 0xc, 0x18, 0x10, 4), set(0x5a1, 6, 0x30, 0x20, 6), set(0x5a2, 6, 0x14, 0x20, 6),
+            set(0x438, 6, 0x71, 0x18, 1),
+            // `.InitBackgroundSprite` 61864, 61875, 61879–61888 (#28–#39).
+            set(0x730, 0xc, 0x18, 0x80, 0xc), set(0x442, 5, 0x96, 0x96, 5),
+            set(0x47e, 4, 0x3c, 0x3c, 4), set(0x47f, 4, 0x3c, 0x3c, 4), set(0x480, 4, 0x3c, 0x3c, 4),
+            set(0x4b8, 0x10, 0x60, 0x48, 0x10), set(0x4b9, 0x10, 0x60, 0x48, 0x10), set(0x4bb, 0x10, 0x48, 0x60, 1),
+            set(0x4bc, 0x10, 0x60, 0x48, 0x10),
+            set(0x76c, 6, 0x5c, 0x5c, 6), set(0x76e, 6, 0x5c, 0x5c, 6), set(0x76f, 6, 0x5c, 0x5c, 6),
+            // `.InitEnemyShotSprite` 51434–51437 (#40–#43): 0x46a three times — 6 × 48×48 (`_DAT_100a0848`), then
+            // 6 × 64×64 twice (`0844`, `0840`) — and the Chief's boulder 0x77b.
+            set(0x46a, 6, 0x30, 0x30, 6), set(0x46a, 6, 0x40, 0x40, 6), set(0x46a, 6, 0x40, 0x40, 6),
+            set(0x77b, 0x10, 0x70, 0x70, 4),
+            // `.InitBatSprite` 68099–68103 (#44–#48), `.InitBlobSprite` 67666 (#49), `.InitCrabSprite` 73964 (#50).
+            set(0x6cc, 0xb, 0x38, 0x34, 0xb), set(0x744, 9, 0x30, 0x2c, 9), set(0x74d, 8, 0x18, 0x16, 8),
+            set(0x73a, 0xc, 0x40, 0x50, 0xc), set(0x73b, 0xc, 0x40, 0x50, 0xc),
+            set(0x6c2, 0x10, 0x40, 0x2c, 0x10),
+            set(0x762, 6, 100, 100, 6),
+            // `.InitDilloSprite` 72283–72286 (#51–#54), `.InitWarriorSprite` 72982–72984 (#55–#57).
+            set(0x74e, 6, 100, 0x50, 6), set(0x74f, 5, 100, 0x50, 5), set(0x750, 5, 100, 0x50, 5),
+            set(0x751, 2, 100, 0x50, 2),
+            set(0x71c, 8, 0xb4, 0xa0, 8), set(0x71d, 8, 0xb4, 0xa0, 8), set(0x71e, 6, 0xb4, 0xa0, 6),
+            // `.InitWizardSprite` 75583–75584 (#58, #59), `.InitChiefSprite` 75021–75024 (#60–#63): flag 1.
+            set(0x727, 8, 0xc0, 0x8c, 8, flag: 1), set(0x728, 8, 0xc0, 0x8c, 8, flag: 1),
+            set(0x777, 4, 0x100, 0xfe, 4, flag: 1), set(0x778, 4, 0x100, 0xfe, 4, flag: 1),
+            set(0x779, 4, 0x100, 0xfe, 4, flag: 1), set(0x77a, 4, 0x100, 0xfe, 4, flag: 1),
+            // `.InitDemonSprite` 74342–74349 (#64–#68).
+            set(0x780, 6, 0x90, 0x74, 3), set(0x781, 6, 0x90, 0x74, 3), set(0x782, 3, 0x90, 0x74, 3),
+            set(0x783, 4, 0x90, 0x74, 4), set(0x784, 2, 0x60, 0x60, 2),
+            // `.InitXichraSprite` 76217–76232 (#69–#84): flag 1.
+            set(0x7bc, 4, 0xf0, 200, 2, flag: 1), set(0x7bd, 4, 0xf0, 200, 2, flag: 1),
+            set(0x7be, 2, 0xf0, 200, 2, flag: 1), set(0x7bf, 4, 0xf0, 200, 2, flag: 1),
+            set(0x7c0, 2, 0xf0, 200, 2, flag: 1), set(0x7c1, 4, 0xf0, 200, 2, flag: 1),
+            set(0x7c2, 4, 0xf0, 200, 2, flag: 1), set(0x7c3, 4, 0xf0, 200, 2, flag: 1),
+            set(0x7b2, 4, 0xf0, 200, 2, flag: 1), set(0x7b3, 4, 0xf0, 200, 2, flag: 1),
+            set(0x7b4, 2, 0xf0, 200, 2, flag: 1), set(0x7b5, 4, 0xf0, 200, 2, flag: 1),
+            set(0x7b6, 2, 0xf0, 200, 2, flag: 1), set(0x7b7, 4, 0xf0, 200, 2, flag: 1),
+            set(0x7b8, 4, 0xf0, 200, 2, flag: 1), set(0x7b9, 4, 0xf0, 200, 2, flag: 1),
+            // `.InitFloaterSprite` 69827–69829 (#85–#87; 0x6fe / 0x6ff absent), `.InitFrogSprite` 70116 (#88),
+            // `.InitGremlinSprite` 69118–69120 (#89–#91), `.InitSalamanderSprite` 70649 (#92).
+            set(0x6f4, 6, 100, 0x50, 6), set(0x6fe, 8, 0x58, 100, 8), set(0x6ff, 8, 0x58, 100, 8),
+            set(0x708, 8, 0x78, 100, 8),
+            set(0x6ea, 10, 0x84, 0x78, 10), set(0x6eb, 10, 0x84, 0x78, 10), set(0x6ec, 4, 0x20, 0x20, 4),
+            set(0x712, 9, 0x50, 100, 9),
+        ]
+    }()
+
+    /// The singles list `PTR_DAT_100a12b8` in registration order (LL §6 singles #1–#193), the Init loops
+    /// (`for (i = 0; i < N; …) Cache1EncFaceFromPICT(rec + 0x10·i, BASE + i)`) unrolled.
+    static let singles: [Record] = {
+        var all: [Record] = []
+        func one(_ p: Int16, flag: Int16 = 0) {
+            all.append(Record(pict: p, faces: 1, flag: flag, cellWidth: 0, cellHeight: 0, columns: 1,
+                              present: !absentPicts.contains(p)))
+        }
+        func run(_ base: Int16, _ n: Int16, flag: Int16 = 0) { for i in 0..<n { one(base + i, flag: flag) } }
+        // `.InitWalkerSprite` 56755–56756 (#1, #2).
+        one(0x6a4); one(0x6d6)
+        // `.InitBoxSprite`: 0xbfe…0xc00 (58755–58757, #3–#5); 0x5d2 + i × 4 (58771, #6–#9), 0xaf5 + i × 0x2d (58776,
+        // #10–#54), 0xb86 + i × 0x14 (58781, #55–#74); the flag-1 block (`*_DAT_100a0a48 = 1`, 58798–58805, #75–#80);
+        // 0xb22 + i × 0x14 under flag 1 (58818–58823, #81–#100); 0xb36 + i × 0x10 (58825, #101–#116); 0xb68 + i × 9
+        // (58830, #117–#125).
+        one(0xbfe); one(0xbff); one(0xc00)
+        run(0x5d2, 4); run(0xaf5, 0x2d); run(0xb86, 0x14)
+        for p: Int16 in [0x5b4, 0x5b5, 0x5b7, 0x5b8, 0x5ba, 0x5bb] { one(p, flag: 1) }
+        run(0xb22, 0x14, flag: 1); run(0xb36, 0x10); run(0xb68, 9)
+        // `.InitBackgroundSprite` 61862–61911: the passages 0xb54 / 0xb55, the spikes' 0x732 / 0x733, 0x73f, 0x740,
+        // 0xb4a…0xb4d (#126–#135), 0xbf4 (61878, under a conversion-CLUT switch: flag 0; #136); 0xc08 + i × 8 and
+        // 3000 + i × 6, each under flag 1 (61889–61902, #137–#150); the maces / balls 0x5c8 + i × 10 (61905,
+        // #151–#160); the plants 0xa8c + i × 0x1e under flag 1 (61908–61914, #161–#190).
+        for p: Int16 in [0xb54, 0xb55, 0x732, 0x733, 0x73f, 0x740, 0xb4a, 0xb4b, 0xb4c, 0xb4d, 0xbf4] { one(p) }
+        run(0xc08, 8, flag: 1); run(3000, 6, flag: 1); run(0x5c8, 10); run(0xa8c, 0x1e, flag: 1)
+        // `.InitCrabSprite` 73965 (#191), `.InitWizardSprite` 75585 (flag 1, #192), `.InitChiefSprite` 75025 (flag 1,
+        // #193).
+        one(0x767); one(0x726, flag: 1); one(0x776, flag: 1)
+        return all
+    }()
+
+    /// The set positions of each PICT (0x46a's three; one for every other) and the single position of each PICT.
+    private static let setPositions: [Int16: [Int]] = {
+        var d: [Int16: [Int]] = [:]
+        for (i, r) in sets.enumerated() { d[r.pict, default: []].append(i) }
+        return d
+    }()
+    private static let singlePositions: [Int16: Int] = {
+        var d: [Int16: Int] = [:]
+        for (i, r) in singles.enumerated() { d[r.pict] = i }
+        return d
+    }()
+
+    /// The record of key `k`.
+    static func record(_ k: RecordKey) -> Record {
+        switch k {
+        case .set(let i): return sets[i]
+        case .single(let i): return singles[i]
+        }
+    }
+
+    /// The one set record of PICT `p` (every set PICT but 0x46a is registered once).
+    static func set(_ p: Int16) -> RecordKey {
+        guard let ks = setPositions[p], ks.count == 1 else { preconditionFailure("set PICT \(p) is not one record") }
+        return .set(ks[0])
+    }
+
+    /// The single record of PICT `p`.
+    static func single(_ p: Int16) -> RecordKey {
+        guard let i = singlePositions[p] else { preconditionFailure("single PICT \(p) is not registered") }
+        return .single(i)
+    }
+
+    /// Picture 0x46a's three records (`.InitEnemyShotSprite` M l. 51434–51436): `_DAT_100a0848` (6 × 48×48, the
+    /// fireball 0x46a's, M l. 51822–51845), `_DAT_100a0844` and `_DAT_100a0840` (6 × 64×64 each, the dead types 0x46b's
+    /// and 0x46c's, M l. 51846–51861).
+    public static let fireball0848 = RecordKey.set(39), fireball0844 = RecordKey.set(40), fireball0840 = RecordKey.set(41)
+
+    /// What a level's Setups mark needed (`rec+1 = 1`), by record.
     public struct Needed: Equatable, Sendable {
-        public var sets: Set<Int16> = []
-        public var singles: Set<Int16> = []
+        public var records: Set<RecordKey>
+
+        public init(records: Set<RecordKey>) { self.records = records }
+
+        /// A PICT-valued `Needed`: every record of each PICT (only 0x46a has more than one).
+        public init(sets: Set<Int16> = [], singles: Set<Int16> = []) {
+            records = []
+            for (i, r) in CachedFaces.sets.enumerated() where sets.contains(r.pict) { records.insert(.set(i)) }
+            for (i, r) in CachedFaces.singles.enumerated() where singles.contains(r.pict) { records.insert(.single(i)) }
+        }
+
+        /// The marked sets' and singles' PICTs.
+        public var sets: Set<Int16> {
+            Set(records.compactMap { k -> Int16? in if case .set(let i) = k { return CachedFaces.sets[i].pict }; return nil })
+        }
+        public var singles: Set<Int16> {
+            Set(records.compactMap { k -> Int16? in
+                if case .single(let i) = k { return CachedFaces.singles[i].pict }
+                return nil
+            })
+        }
     }
 
-    /// The marks each placed type's Setup makes (`rec+1 = 1`), for the types levels 1–4 place: Walker 0x6a4 → single
-    /// 0x6a4 + sets 0x6a5, 0x6a6 (M l. 56966–56969), 0x6a9 → 0x6a9, 0x6aa, 0x6ab (56977–56980), 0x6e0…0x6e9 → 0x6e0
-    /// (56989), 0x6d6…0x6df → single 0x6d6 + sets 0x6d7, 0x6d9, 0x6d8, 0x6da (56998–57005; WK2 — first placed on level
-    /// 10; the sets listed in registration order); Crawler 0x6b0 → 0x6ae, 0x6af, 0x6b1 (56188–56190); Roach 0x6b8 →
+    /// The marks each placed type's Setup makes (`rec+1 = 1`), by record — the sets in registration order, then the
+    /// singles: Walker 0x6a4 → single 0x6a4 + sets 0x6a5, 0x6a6 (M l. 56966–56969), 0x6a9 → 0x6a9, 0x6aa, 0x6ab
+    /// (56977–56980), 0x6e0…0x6e9 → 0x6e0 (56989), 0x6d6…0x6df → single 0x6d6 + sets 0x6d7, 0x6d9, 0x6d8, 0x6da
+    /// (56998–57005; WK2 — first placed on level 10); Crawler 0x6b0 → 0x6ae, 0x6af, 0x6b1 (56188–56190); Roach 0x6b8 →
     /// 0x6b8, 0x6b9 (64931–64932);
-    /// Background 0x442 → set 0x442 (62061), 0x5c8+i → single 0x5c8+i (≈ 62320), 0xa8c+i / 3000+i → their singles,
-    /// 0xb54 (62434); Box 0x5b8 (59213), 0x5b5 / 0x5b6 → 0x5b5 (59200 / 59204), 0x5be → set 0x5be (59260), the
-    /// decoration, outcrop, mushroom, furniture and NPC singles of the same id; BA: every Bat type 0x6cc…0x6d5 → set
+    /// Background: every cannon 0x442…0x44a → set 0x442 (the arm 0x442…1098, M l. 62058–62061; CF — the port marked it
+    /// for 0x442 alone), the springs 0x47e → set 0x47e (62186–62187), 0x47f → 0x47f (62047), 0x480 / 0x481 → 0x480
+    /// (62197–62210, `iVar9 = _DAT_100a0b00` at 61958; CF), every mace / ball 0x5c8…0x5d1 → its own single
+    /// (`PTR_DAT_100a09f4[type·0x10 − 0x5c7f] = 1`, M l. 62321 — the arm runs to 0x5d1, whose PICT 1489 is absent; CF —
+    /// the port marked 0x5cd alone), 0xa8c+i / 3000+i → their singles, the passages 0xb54 (62434) and 0xb55 (62585–
+    /// 62587; CF); Box 0x5b8 (59213), 0x5b5 / 0x5b6 → 0x5b5 (59200 / 59204), 0x5be → set 0x5be (59260), the
+    /// decoration, outcrop, mushroom, furniture and NPC singles of the same id; Bonus: the hang glider 0xbea → the four
+    /// Player sets #1–#4 (`.SetupBonusSprite` M l. 52616–52625; CF); BA: every Bat type 0x6cc…0x6d5 → set
     /// 0x6cc (`PTR_DAT_100a0c90[1] = 1`, M l. 68286 — the whole arm), 0x73a…0x73e → set 0x73a (M l. 68241) and with
     /// record p1 < 0 also 0x73b (M l. 68267; `p1`), 0x74d → set 0x74d (M l. 68158), 0x744…0x74c → set 0x744 (M l.
     /// 68218); Frog 0x708…0x711 → set 0x708 (70211); FR: Salamander 0x712…0x71b → set 0x712 (70680). GF: every Gremlin
@@ -1218,46 +1314,65 @@ public struct CachedFaces: Equatable, Sendable {
     /// LV5: every Warrior type 0x71c…0x725 → sets 0x71c, 0x71d, 0x71e (M l. 73029–73031); the level-5 decorations 2822,
     /// 2826, 2829, 2840, 2841 → their singles (59647); the Platform 1403, the save point 1065, the gate 2940, the exit
     /// 3249 and the Bonus 1059 / 1340 / 3100 / 3214 Setups store no mark.
-    /// Every other level-1–5 type marks nothing.
-    /// // later: Phase 6 — the other types'.
-    static func marks(type t: Int16, p1: Int16 = 0) -> (sets: [Int16], singles: [Int16]) {
+    /// Every other built type marks nothing. // later: Phase 6 — the marks of the types not built yet, with their
+    /// Setups (the trees, clouds, plants, scenery, the carpet set 0x438, fire 1208's 0x4b8 + 0x4b9, the bosses' own
+    /// records and 0x46a's / 0x77b's: the Wizard `0848` only, the Chief 0x77b, the Demon all three 0x46a records,
+    /// Xichra `0848` + `0840` + 0x77b — LL §1 finding 8).
+    static func markedRecords(type t: Int16, p1: Int16 = 0) -> [RecordKey] {
         switch t {
-        case 0x6a4: return ([0x6a5, 0x6a6], [0x6a4])
-        case 0x6a9: return ([0x6a9, 0x6aa, 0x6ab], [])
-        case 0x6e0...0x6e9: return ([0x6e0], [])
-        case 0x6d6...0x6df: return ([0x6d7, 0x6d8, 0x6d9, 0x6da], [0x6d6])
-        case 0x6b0: return ([0x6ae, 0x6af, 0x6b1], [])
-        case 0x6b8: return ([0x6b8, 0x6b9], [])
-        case 0x442: return ([0x442], [])
-        case 0x5be: return ([0x5be], [])
-        case 0x6cc...0x6d5: return ([0x6cc], [])
+        case 0x6a4: return [set(0x6a5), set(0x6a6), single(0x6a4)]
+        case 0x6a9: return [set(0x6a9), set(0x6aa), set(0x6ab)]
+        case 0x6e0...0x6e9: return [set(0x6e0)]
+        case 0x6d6...0x6df: return [set(0x6d7), set(0x6d8), set(0x6d9), set(0x6da), single(0x6d6)]
+        case 0x6b0: return [set(0x6ae), set(0x6af), set(0x6b1)]
+        case 0x6b8: return [set(0x6b8), set(0x6b9)]
+        case 0x442...0x44a: return [set(0x442)]
+        case 0x47e: return [set(0x47e)]
+        case 0x47f: return [set(0x47f)]
+        case 0x480, 0x481: return [set(0x480)]
+        case 0x5be: return [set(0x5be)]
+        case 0x6cc...0x6d5: return [set(0x6cc)]
         // 0x73a…0x73e only: the class dispatch (M l. 1750–1753) sends 0x73f…0x743 to the Background class.
-        case 0x73a...0x73e: return (p1 < 0 ? [0x73a, 0x73b] : [0x73a], [])
-        case 0x74d: return ([0x74d], [])
-        case 0x744...0x74c: return ([0x744], [])
-        case 0x6c2...0x6cb: return ([0x6c2], [])
-        case 0x762...0x76b: return ([0x762], [0x767])
-        case 0x74e...0x757: return ([0x74e, 0x74f, 0x750, 0x751], [])
-        case 0x71c...0x725: return ([0x71c, 0x71d, 0x71e], [])
-        case 0x5a0...0x5a8: return ([0x5a0, 0x5a1, 0x5a2], [])
-        case 0x730, 0x731: return ([0x730], [])
-        case 0x76c, 0x76d: return ([0x76c], [])
-        case 0x76e, 0x76f: return ([t], [])
-        case 0x732, 0x733: return ([], [0x732, 0x733])
-        case 0xb72, 0xb73: return ([0xb72, 0xb73], [])
-        case 0x708...0x711: return ([0x708], [])
-        case 0x712...0x71b: return ([0x712], [])
-        case 0x6ea...0x6f3: return ([0x6ea, 0x6eb, 0x6ec], [])
-        case 0x6f4...0x6fd: return ([0x6f4], [])
-        case 0x6fe...0x707: return ([0x6fe, 0x6ff], [])
-        case 0x5b5, 0x5b6: return ([], [0x5b5])
-        case 0x5b8, 0x5cd, 0xa96, 0xa99, 0xa9a, 0xbba, 0xb54, 0xb1a, 0xb20, 0xb21, 0xb87, 0xb88, 0xb8a, 0xb25,
+        case 0x73a...0x73e: return p1 < 0 ? [set(0x73a), set(0x73b)] : [set(0x73a)]
+        case 0x74d: return [set(0x74d)]
+        case 0x744...0x74c: return [set(0x744)]
+        case 0x6c2...0x6cb: return [set(0x6c2)]
+        case 0x762...0x76b: return [set(0x762), single(0x767)]
+        case 0x74e...0x757: return [set(0x74e), set(0x74f), set(0x750), set(0x751)]
+        case 0x71c...0x725: return [set(0x71c), set(0x71d), set(0x71e)]
+        case 0x5a0...0x5a8: return [set(0x5a0), set(0x5a1), set(0x5a2)]
+        case 0x730, 0x731: return [set(0x730)]
+        case 0x76c, 0x76d: return [set(0x76c)]
+        case 0x76e, 0x76f: return [set(t)]
+        case 0x732, 0x733: return [single(0x732), single(0x733)]
+        case 0xb72, 0xb73: return [set(0xb72), set(0xb73)]
+        case 0x708...0x711: return [set(0x708)]
+        case 0x712...0x71b: return [set(0x712)]
+        case 0x6ea...0x6f3: return [set(0x6ea), set(0x6eb), set(0x6ec)]
+        case 0x6f4...0x6fd: return [set(0x6f4)]
+        case 0x6fe...0x707: return [set(0x6fe), set(0x6ff)]
+        case 0xbea: return [set(0x41a), set(0x41b), set(0x41c), set(0x41d)]
+        case 0x5b5, 0x5b6: return [single(0x5b5)]
+        case 0x5c8...0x5d1: return [single(t)]
+        case 0x5b8, 0xa96, 0xa99, 0xa9a, 0xbba, 0xb54, 0xb55, 0xb1a, 0xb20, 0xb21, 0xb87, 0xb88, 0xb8a, 0xb25,
              0xb36, 0xb37, 0xb3a, 0xb43, 0xb6a, 0xb6c, 0xb6d, 0xb6e, 0xb6f, 0xb70,
              0xafc, 0xafd, 0xb04, 0xb05, 0xb10, 0xb1b, 0xb34, 0xb35, 0xb44,
              0xb06, 0xb0a, 0xb0d, 0xb18, 0xb19:
-            return ([], [t])
-        default: return ([], [])
+            return [single(t)]
+        default: return []
         }
+    }
+
+    /// The marks by PICT (the view of `markedRecords`): (sets, singles) in mark order.
+    static func marks(type t: Int16, p1: Int16 = 0) -> (sets: [Int16], singles: [Int16]) {
+        var s: [Int16] = [], g: [Int16] = []
+        for k in markedRecords(type: t, p1: p1) {
+            switch k {
+            case .set(let i): s.append(sets[i].pict)
+            case .single(let i): g.append(singles[i].pict)
+            }
+        }
+        return (s, g)
     }
 
     /// The cache sets' geometry the Setup-face table (`SetupFaces.sheet(pict:)`) does not hold — the sets only a Handle
@@ -1268,7 +1383,7 @@ public struct CachedFaces: Equatable, Sendable {
     /// `.InitRoachSprite`'s 0x6b9 death (6 × 100×0x36, 6 a row; M l. 64894; its 0x6b8 walk is the Setup-face table's),
     /// marked by the Crawler / Roach Setups (M l. 56188–56190, 64931–64932); WK2: `.InitWalkerSprite`'s 1750 sets 0x6d7
     /// walk (8), 0x6d8 swing (6), 0x6d9 jump (3), 0x6da death (6), each 0xd8×0x6e, one a row (M l. 56764–56767), marked
-    /// by the 0x6d6…0x6df Setup (M l. 56998–57005).
+    /// by the 0x6d6…0x6df Setup (M l. 56998–57005). (CF: the other records carry their own cut, `sheet(record:)`.)
     public static let handleSets: [SetupFaces.Sheet] = [
         SetupFaces.Sheet(pict: 0x6a5, count: 8, cellWidth: 100, cellHeight: 0x50, columns: 4, clut: 200),
         SetupFaces.Sheet(pict: 0x6a6, count: 6, cellWidth: 100, cellHeight: 0x50, columns: 6, clut: 200),
@@ -1284,35 +1399,101 @@ public struct CachedFaces: Equatable, Sendable {
         SetupFaces.Sheet(pict: 0x6da, count: 6, cellWidth: 0xd8, cellHeight: 0x6e, columns: 1, clut: 200),
     ]
 
+    /// Record `k`'s own sheet, as `.LoadCachedSpriteFaces` loads it (M l. 73806–73815, 73843–73850): a set's cut or a
+    /// single, under clut 200 (flag 0 leaves the conversion CLUT as the Inits set it). Nil for an absent PICT (the load
+    /// returns nil) and for a flag-1 record (the level+base CLUT is the renderer's: no flag-1 record outside the
+    /// Setup-face table is marked by a built type). // later: Phase 6 — the bosses' flag-1 records.
+    public static func sheet(record k: RecordKey) -> SetupFaces.Sheet? {
+        let r = record(k)
+        guard r.present, r.flag == 0 else { return nil }
+        if case .single = k { return .single(r.pict) }
+        return SetupFaces.Sheet(pict: r.pict, count: r.faces, cellWidth: r.cellWidth, cellHeight: r.cellHeight,
+                                columns: r.columns, clut: 200)
+    }
+
+    /// Whether PICT `p` is registered as more than one set record (only 0x46a): its faces are keyed by record.
+    static func sharedPict(_ p: Int16) -> Bool { (setPositions[p]?.count ?? 0) > 1 }
+
     /// The level-load cache faces the Setups of `types` mark (`marks`), as sheets, in `marks` order — each type's sets,
     /// then its singles, the sets in registration order rather than the Setup's store order (the 1750's Setup marks
     /// 0x6d6, 0x6d7, 0x6d9, 0x6d8, 0x6da, M l. 56998–57005; this lists 0x6d7, 0x6d8, 0x6d9, 0x6da, 0x6d6) — what
     /// `.LoadCachedSpriteFaces` loads for those placements, for the renderer: each marked set / single whose geometry
-    /// the Setup-face table or `handleSets` holds (a PICT neither holds is skipped; a placed type's own Setup sheet is
-    /// the table's, so it comes out the same).
+    /// the Setup-face table, `handleSets` or the record itself (`sheet(record:)`) holds (an absent PICT is skipped; a
+    /// placed type's own Setup sheet is the table's, so it comes out the same). The records of a PICT registered more
+    /// than once (0x46a) are `recordSheets(markedBy:)`'s: the face store keys them by record.
     public static func sheets<S: Sequence>(markedBy types: S) -> [SetupFaces.Sheet] where S.Element == Int16 {
         types.flatMap { t -> [SetupFaces.Sheet] in
-            let m = marks(type: t)
-            return (m.sets + m.singles).compactMap { p in
-                SetupFaces.sheet(pict: p) ?? handleSets.first(where: { $0.pict == p })
+            let ks = markedRecords(type: t)
+            let ordered = ks.filter { if case .set = $0 { return true }; return false }
+                + ks.filter { if case .single = $0 { return true }; return false }
+            return ordered.compactMap { k in
+                let p = record(k).pict
+                guard !sharedPict(p) else { return nil }
+                return SetupFaces.sheet(pict: p) ?? handleSets.first(where: { $0.pict == p }) ?? sheet(record: k)
             }
         }
+    }
+
+    /// The marked records of the PICTs registered more than once (0x46a), each with its own cut, first mark first —
+    /// the face store keys these by record (`face(record:cell:)`).
+    public static func recordSheets<S: Sequence>(markedBy types: S) -> [(record: RecordKey, sheet: SetupFaces.Sheet)]
+    where S.Element == Int16 {
+        var seen: Set<RecordKey> = []
+        var out: [(record: RecordKey, sheet: SetupFaces.Sheet)] = []
+        for t in types {
+            for k in markedRecords(type: t) where sharedPict(record(k).pict) && seen.insert(k).inserted {
+                if let s = sheet(record: k) { out.append((k, s)) }
+            }
+        }
+        return out
+    }
+
+    /// Cell `cell` of record `k` as a face ref: its PICT, and the index past the cells of the PICT's earlier records —
+    /// for a PICT registered once, its plain cell; for 0x46a, `0848`'s cells 0…5, `0844`'s 6…11, `0840`'s 12…17.
+    public static func face(record k: RecordKey, cell: Int) -> FaceRef {
+        let r = record(k)
+        var base = 0
+        if case .set(let i) = k {
+            for j in setPositions[r.pict] ?? [] where j < i { base += sets[j].faces }
+        }
+        return FaceRef(pict: r.pict, index: base + cell, set: .encoded)
+    }
+
+    /// The record and cell a cache face ref names (`face(record:cell:)` reversed); nil for a PICT no record registers
+    /// or an index past its records' cells.
+    public static func recordCell(of f: FaceRef) -> (record: RecordKey, cell: Int)? {
+        guard f.index >= 0 else { return nil }
+        if let ks = setPositions[f.pict] {
+            var i = f.index
+            for j in ks {
+                if i < sets[j].faces { return (.set(j), i) }
+                i -= sets[j].faces
+            }
+            return nil
+        }
+        if let j = singlePositions[f.pict], f.index == 0 { return (.single(j), 0) }
+        return nil
     }
 
     /// The marks of every record `.SetupLevelSprites` ran a Setup for (the session's live records, spawn order).
     public static func needed(by s: FerazelSession) -> Needed {
         var n = Needed()
-        for p in SetupFaces.spawnOrder(s.world.records) {
-            let m = marks(type: p.type, p1: p.p1)
-            n.sets.formUnion(m.sets)
-            n.singles.formUnion(m.singles)
-        }
+        for p in SetupFaces.spawnOrder(s.world.records) { n.records.formUnion(markedRecords(type: p.type, p1: p.p1)) }
         return n
     }
 
-    /// Loaded sets / singles (`rec+0 ≠ 0`).
-    public private(set) var loadedSets: Set<Int16> = []
-    public private(set) var loadedSingles: Set<Int16> = []
+    /// Loaded records (`rec+0 ≠ 0`).
+    public private(set) var loadedRecords: Set<RecordKey> = []
+    /// The loaded sets' and singles' PICTs.
+    public var loadedSets: Set<Int16> {
+        Set(loadedRecords.compactMap { k -> Int16? in if case .set(let i) = k { return Self.sets[i].pict }; return nil })
+    }
+    public var loadedSingles: Set<Int16> {
+        Set(loadedRecords.compactMap { k -> Int16? in
+            if case .single(let i) = k { return Self.singles[i].pict }
+            return nil
+        })
+    }
     /// `_DAT_100a3eae` (the level CLUT id, hdr+0x285e as stored) and `sRam100a3eb2` (the one before): data-section
     /// initial −1 / −2 (`const.py 100a3eac`: ffff ffff fffe fffe).
     public private(set) var levelClut: Int16 = -1
@@ -1327,31 +1508,30 @@ public struct CachedFaces: Equatable, Sendable {
         levelClut = raw
     }
 
-    /// `.LoadCachedSpriteFaces`' dispose, count and loads; the (p, q) of each `UpdateStageLoad` before the final
-    /// (100, 100). Every PICT is taken as present (all are in `Ferazel Sprites`).
+    /// `.LoadCachedSpriteFaces`' dispose, count and loads, by record; the (p, q) of each `UpdateStageLoad` before the
+    /// final (100, 100). The count has no presence test (M l. 73749–73764): an absent record counts its faces (a set)
+    /// or 1 (a single) in n, but its load returns nil — no step, never marked loaded (M l. 73822–73832, 73852–73859).
     mutating func load(needed n: Needed) -> [(Int16, Int16)] {
         let reload = previousLevelClut != levelClut              // `.NeedToReloadForThisClut` (M l. 73651)
-        for r in Self.sets where loadedSets.contains(r.pict) && (!n.sets.contains(r.pict) || (r.flag == 1 && reload)) {
-            loadedSets.remove(r.pict)
+        for k in loadedRecords where !n.records.contains(k) || (Self.record(k).flag == 1 && reload) {
+            loadedRecords.remove(k)
         }
-        for r in Self.singles
-        where loadedSingles.contains(r.pict) && (!n.singles.contains(r.pict) || (r.flag == 1 && reload)) {
-            loadedSingles.remove(r.pict)
+        let toSets = Self.sets.indices.filter { n.records.contains(.set($0)) && !loadedRecords.contains(.set($0)) }
+        let toSingles = Self.singles.indices.filter {
+            n.records.contains(.single($0)) && !loadedRecords.contains(.single($0))
         }
-        let toSets = Self.sets.filter { n.sets.contains($0.pict) && !loadedSets.contains($0.pict) }
-        let toSingles = Self.singles.filter { n.singles.contains($0.pict) && !loadedSingles.contains($0.pict) }
-        let count = toSets.reduce(0) { $0 + $1.faces } + toSingles.count
+        let count = toSets.reduce(0) { $0 + Self.sets[$1].faces } + toSingles.count
         var p = count
         let q = Int16(truncatingIfNeeded: count * 2)
         var bars: [(Int16, Int16)] = []
-        for r in toSets {
-            p += r.faces
-            loadedSets.insert(r.pict)
+        for i in toSets where Self.sets[i].present {
+            p += Self.sets[i].faces
+            loadedRecords.insert(.set(i))
             bars.append((Int16(truncatingIfNeeded: p), q))
         }
-        for r in toSingles {
+        for i in toSingles where Self.singles[i].present {
             p += 1
-            loadedSingles.insert(r.pict)
+            loadedRecords.insert(.single(i))
             bars.append((Int16(truncatingIfNeeded: p), q))
         }
         return bars
