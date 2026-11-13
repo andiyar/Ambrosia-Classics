@@ -34,7 +34,7 @@ I just played my first game of Aki in a decade. I am so happy!
 ![iPad](https://img.shields.io/badge/iPad-build%20from%20source-lightgrey) &nbsp;
 ![Remastered Art](https://img.shields.io/badge/Remastered%20Art-⌘G-blueviolet)
 
-**Aki 1.0 is out.** [Download it here](https://github.com/andiyar/Ambrosia-Classics/releases/tag/aki-1.0): a signed, notarized Mac app with the original Aki 1.2.0 data inside. Pick a lantern on the map, the map slides apart onto the level's photo, 144 tiles are dealt onto the real layout, and the stone time bar starts draining. Matching, Tip, Reshuffle, Undo, Pause, "no more pairs", the stacked ending, running out of time (with the proverb), Give Up, winning to light the next lantern, Level Statistics, and the game themes alternating are all in, on all four difficulties. It passed my hands-on check on 2026-10-04: it plays like Aki, on every difficulty.
+**Aki 1.0 is out.** [Download it here](https://github.com/andiyar/Ambrosia-Classics/releases/tag/aki-1.0): a signed, notarized Mac app with the original Aki 1.2.0 data inside. Pick a lantern on the map, the map slides apart onto the level's photo, 144 tiles are dealt onto the real layout, and the stone time bar starts draining. Matching, Tip, Reshuffle, Undo, Pause, "no more pairs", the stacked ending, running out of time (with the proverb), Give Up, winning to light the next lantern, Level Statistics, and the game themes alternating are all in, on all four difficulties. I've played it through on every difficulty, and it plays like Aki.
 
 There's also an **iPad version** (same game, same data, touch in place of the mouse). It's in the source, not in the download: you build it yourself for now. And there's a **Remastered Art** mode: every picture redrawn 4× sharper, with smooth de-dithered backgrounds, grain-free tile bodies and sharp tile faces. Same game underneath. Turn it on with **Aki ▸ Remastered Art** (⌘G); off is the original 2008 pixels. Next for Aki is Phase 3: the Level Editor and custom `.aki` level packs.
 
@@ -43,28 +43,28 @@ There's also an **iPad version** (same game, same data, touch in place of the mo
 [![Mac](https://img.shields.io/badge/Mac-download-blue)](https://github.com/andiyar/Ambrosia-Classics/releases/download/btx-1.0/BubbleTroubleX-1.0.dmg) &nbsp;
 [![Windows](https://img.shields.io/badge/Windows-download-blue)](https://github.com/andiyar/Ambrosia-Classics/releases/download/btx-1.0/BubbleTroubleX-1.0-Windows.zip)
 
-**Bubble Trouble X 1.0 is out.** [Download it here](https://github.com/andiyar/Ambrosia-Classics/releases/tag/btx-1.0): a signed, notarized Mac app with the original Bubble Trouble X 1.1 data inside. Everything in the game comes from that data, and every sound effect and each level set's music has been checked against the original. My playtest is done. Not in yet: the separate BT Level Editor, and so custom levels. It also runs on Windows 10/11 (64-bit), cross-compiled from the same Swift code: the same release has **BubbleTroubleX-1.0-Windows.zip**. It isn't code-signed for Windows, so Windows asks once ("More info" → "Run anyway").
+**Bubble Trouble X 1.0 is out.** [Download it here](https://github.com/andiyar/Ambrosia-Classics/releases/tag/btx-1.0): a signed, notarized Mac app with the original Bubble Trouble X 1.1 data inside. Everything in the game comes from that data, and every sound effect and each level set's music has been checked against the original. I've played it through. Not in yet: the separate BT Level Editor, and so custom levels. It also runs on Windows 10/11 (64-bit), cross-compiled from the same Swift code: the same release has **BubbleTroubleX-1.0-Windows.zip**. It isn't code-signed for Windows, so Windows asks once ("More info" → "Run anyway").
 
-**Coming in 1.1: game controllers**, on Mac and Windows. It's built and has passed my controller check on the Mac; the release is in its final check before I publish it.
+**Coming in 1.1: game controllers**, on Mac and Windows. It's built and works with my controller on the Mac; it'll be out soon.
 
 ### Ferazel's Wand
 ![status](https://img.shields.io/badge/status-building-yellow) &nbsp;
 ![levels](https://img.shields.io/badge/levels%201–5-playable-green) &nbsp;
 ![enemies](https://img.shields.io/badge/enemies-alive-green)
 
-**The first five levels play**, on Mac and Windows, from the original Ferazel's Wand 1.0.3 data. The front end, world map and saved games (in the original's own file format) are in, along with Ferazel's moves, spells and items, the lighting, water and machinery of the levels, sound, music and game controllers. The enemies are alive: goblins, bats, frogs, blobs and the rest walk, fly, throw, block and die the way the original's code says. Level 5 runs up to the first boss, the Manditraki Warrior, who for now just stands in his arena. Being built now: the Warrior fight and everything after it, through to the Goblin Chief. I've played and passed everything up to level 4; the enemies build is waiting for my hands-on check. There's no download yet: Mac and Windows come together at 1.0.
+**The first five levels play**, on Mac and Windows, from the original Ferazel's Wand 1.0.3 data. The front end, world map and saved games (in the original's own file format) are in, along with Ferazel's moves, spells and items, the lighting, water and machinery of the levels, sound, music and game controllers. The enemies are alive: goblins, bats, frogs, blobs and the rest walk, fly, throw, block and die the way the original's code says. Level 5 runs up to the first boss, the Manditraki Warrior, who for now just stands in his arena. Being built now: the Warrior fight and everything after it, through to the Goblin Chief. I've played everything up to level 4 and it feels right; I haven't played the build with the enemies yet. There's no download yet: Mac and Windows come together at 1.0.
 
 ### Deimos Rising
 ![status](https://img.shields.io/badge/status-parked-lightgrey) &nbsp;
-![gate 1](https://img.shields.io/badge/level%201%20look-passed-green)
+![level 1](https://img.shields.io/badge/level%201-looks%20right-green)
 
-Every function of the game's code has been read out of the decompile and written up. The original data is in the repo, and a census proves all 872 files open. **Level 1 looks right**: the app draws the first level, its ship, enemies, terrain and status panel the way the original did, at OS X's 60 Hz. I checked it by eye on 2026-10-07 ("it looks okay!"). Making level 1 actually play (shooting, enemies, destruction, bonuses, the end-of-level tally, game over) is most of the way there on a branch. The rest of the game is planned out and waits until Ferazel is done.
+Every function of the game's code has been read out of the decompile and written up. The original data is in the repo, and a census proves all 872 files open. **Level 1 looks right**: the app draws the first level, its ship, enemies, terrain and status panel the way the original did, at OS X's 60 Hz. Making level 1 actually play (shooting, enemies, destruction, bonuses, the end-of-level tally, game over) is most of the way there on a branch. The rest of the game is planned out and waits until Ferazel is done.
 
 ### Cythera
 ![status](https://img.shields.io/badge/status-parked-lightgrey) &nbsp;
 ![reverse engineering](https://img.shields.io/badge/reverse%20engineering-done-green)
 
-The whole binary is decompiled and read. Building has started: the data is in the repo, and the core can already unpack the game's files (its segment files, compression and world records) and decode its tiles, portraits and pictures. Next is the script decoder, then the first gate: walking around Catamarca. Planned out, and waiting until Ferazel is done.
+The whole binary is decompiled and read. Building has started: the data is in the repo, and the core can already unpack the game's files (its segment files, compression and world records) and decode its tiles, portraits and pictures. Next is the script decoder, then the first milestone: walking around Catamarca. Planned out, and waiting until Ferazel is done.
 
 <details>
 <summary><strong>Aki milestone status</strong></summary>
@@ -79,7 +79,7 @@ The whole binary is decompiled and read. Building has started: the data is in th
 - [x] Splash screens, the map with the blinking lantern and level previews, skill-level arrows
 - [x] Menus from the shipped nib, Preferences, the Carbon dialogs rebuilt, Level Description
 - [x] Fullscreen, the original's preferences format (and 1.1 prefs migration)
-- [x] Owner's gate: "yes it absolutely is Aki"
+- [x] Played it: "yes it absolutely is Aki"
 
 ### Phase 2: the game ✅
 - [x] The rules engine: dealing, open tiles, matching, hints, reshuffle, undo, the clock and its penalties and bonuses, statistics (107 tests)
@@ -87,7 +87,7 @@ The whole binary is decompiled and read. Building has started: the data is in th
 - [x] Level start and end slides, the game tick, win/loss, music and sound
 - [x] Mouse, keyboard, menus, pause, Give Up, Tile Stacked, Level Statistics
 - [x] The match fade, paced the way a 2008 Mac's display drew it
-- [x] Owner's gate: a level start to finish on each difficulty — "it plays like Aki"
+- [x] Played a level start to finish on each difficulty: "it plays like Aki"
 
 ### Aki on iPad ✅
 - [x] The same game on iPadOS 26+: the 800×600 screen scaled to fill the height, tap a lantern to preview and again to enter, the original menus in the iPad menu bar, Give Up as an X in the left border
@@ -95,7 +95,7 @@ The whole binary is decompiled and read. Building has started: the data is in th
 ### Remastered Art ✅
 - [x] Every picture AI-upscaled 4×: smooth de-dithered backgrounds, grain-free tile bodies, sharp tile faces
 - [x] One toggle (Aki ▸ Remastered Art, ⌘G, or the Preferences checkbox), Original by default, switches live, even mid-level and in fullscreen
-- [x] Owner's gate: "Looks right — done"
+- [x] Looked it over: "Looks right — done"
 
 ### Phase 3: Level Editor and custom levels
 - [ ] Level Editor, `.aki` files, Play Custom Level, Replay
