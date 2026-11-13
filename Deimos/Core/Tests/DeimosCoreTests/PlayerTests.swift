@@ -359,6 +359,7 @@ final class PlayerTests: XCTestCase {
         XCTAssertFalse(deaths.isEmpty)
         XCTAssertTrue(deaths.allSatisfy { d in ownedSerials.allSatisfy { $0 < d.e.serial } })   // pi5k first
         XCTAssertEqual(deaths.map(\.e), spawned(t, after: first).filter { $0.id == death }.map(\.e))
+        XCTAssertEqual(s.rng, t.rng)                                    // the same generator state
     }
 
     func testDyingAndRespawn() throws {

@@ -100,7 +100,7 @@ public struct Console: Equatable, Sendable {
 
     /// The charCode table `FUN_1002d230` switches on (`1002d2e0..1002d350`): Mac `GetOSEvent` keyDown charCodes,
     /// no auto-repeat. These are the codes `HeldKeys.typed` must carry (A3 maps the host's keys onto them; this
-    /// file pins them — HeldKeys' "C19 pins the codes").
+    /// file pins them — HeldKeys: "the codes are `Console`'s pinned charCodes, `Console.upArrow` … `tildeKey`").
     public static let upArrow: UInt8 = 0x1e
     public static let backspace: UInt8 = 0x08
     public static let returnKey: UInt8 = 0x0d

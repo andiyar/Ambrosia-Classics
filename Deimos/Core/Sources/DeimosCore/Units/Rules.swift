@@ -169,7 +169,9 @@ extension GameState {
     /// `FUN_10016bd0(e) @ 10016bd0` — `0.0 ≤ x ≤ float(trunc(PermFloat 54))` and `0.0 ≤ y ≤
     /// float(trunc(PermFloat 55))`, inclusive (`10016bf4 fcmpo; blt`, `10016c38 fcmpo; bgt`, `10016c48 fcmpo;
     /// blt`, `10016c8c fcmpo; ble`; 0.0 = `*(float*)0x100d6c8c`). The x tests are the listing's negated compares
-    /// (`blt` / `bgt` cull, so an unordered — NaN — x passes both); a NaN y fails the last test (`ble` keeps).
+    /// (`blt` / `bgt` cull, so an unordered — NaN — x passes both). A NaN y fails
+    /// here at the first y test (`y >= 0` is false for NaN); the original fails it only at the last test,
+    /// `10016c8c` (`ble` keeps) — the same result.
     func isOnScreen(_ i: Int) -> Bool {
         let x = world.entities[i].object.x, y = world.entities[i].object.y
         if x < 0 { return false }                                              // 10016bf4..10016bf8

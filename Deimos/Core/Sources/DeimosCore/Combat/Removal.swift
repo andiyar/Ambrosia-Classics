@@ -66,8 +66,8 @@ extension GameState {
                 if u.deletionSpawn != .none, !world.entities[e].destroyed,   // 10036774..1003678c
                    mediaGate(e) {                                            // 10036790..100367a0
                     // The deletion template r2+0x50ec (`0x100eb41c`) equals the shared template `childRequest`
-                    // builds from: the static initialisers leave the seven spawn templates differing only by
-                    // +0x24 = −1, which `SpawnRequest.template` carries.
+                    // builds from: the static initialisers leave each of the seven spawn-request templates
+                    // equal to the default template except +0x24 = −1, which `SpawnRequest.template` carries.
                     spawn(childRequest(e, unit: u.deletionSpawn))            // 100367a4..1003683c (r2+0x50ec)
                 }
                 let byPlayer = world.entities[e].killer != -1                // 10036840..10036860

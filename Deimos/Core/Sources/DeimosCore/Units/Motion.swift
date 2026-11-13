@@ -24,10 +24,9 @@ public struct NearestPlayer: Equatable, Sendable {
 ///
 /// **RNG draws (C9 owns them, invariant 6):** the controller's only own sites are the cyclic motion's two
 /// int draws per tick, `10017024` a = `R(trunc(Max)/2, trunc(Max))` then `10017054` b = `R(1, 100)` — two draws
-/// unless trunc(MaxSpeed) = 0 (then a's range is closed and only b draws; no shipped cyclic state is below 1:
-/// 40 cyclic states, max speeds 1, 2, 4). The
-/// range trigger's state entry (C8's `enterState`) and the no-player flee (`setFleePoint`) make theirs inside
-/// the controller call, in that position.
+/// unless trunc(MaxSpeed) = 0 (then a = `R(0, 0)` makes no draw and only b draws; no shipped cyclic state is
+/// below 1: 40 cyclic states, max speeds 1, 2, 4). The range trigger's state entry (C8's `enterState`) and the
+/// no-player flee (`setFleePoint`) make theirs inside the controller call, in that position.
 extension GameState {
     /// `FUN_10005d40(e, &tgt, &dist, &no) @ 10005d40` — the nearest active player (state 4, `FUN_10026c60`) to the
     /// entity: for players 0, 1 `d = root(fctiwz(fmadds(dx, dx, dy·dy)))` with `dy = py − y`, `dx = px − x`
@@ -60,7 +59,8 @@ extension GameState {
     /// 1. Fleeing (+0xcc): seek with the flee speeds (`FUN_10016cc0`), turn (`FUN_100172d0`), return.
     /// 2. `FUN_10005d40`. None: +0x118 = −1; `DeleteOnNoActivePlayers` → del; `DestructOnNoActivePlayers` →
     ///    destroy; unit `fleesNorth` → flee `nora`; `fleesSouth` → `sora`; each returns. Else fall through.
-    /// 3. `CyclicMotion` → `FUN_10016fe0` (two draws); unit `constrainInGameArea` → `FUN_10016da0`.
+    /// 3. `CyclicMotion` → `FUN_10016fe0` (two draws; one when trunc(MaxSpeed) = 0); unit `constrainInGameArea`
+    ///    → `FUN_10016da0`.
     /// 4. +0x11c/+0x120 = the target, +0x118 = the player number (`100153bc..100153d8`).
     /// 5. A player found: `OnRange == 0.0` (`fcmpu`) or `dist ≥ OnRange` (`fcmpo; bge`) → hunt = `Hunts`. Else
     ///    `OnRangeChangeTo` `"Delete"` → del, `"Destroy"` → destroy (return); empty → the old state's hold test;
@@ -175,11 +175,12 @@ extension GameState {
         world.entities[i].desiredVY = -(dy * st.stateMaxSpeed)                 // 10017c94..10017ca0
     }
 
-    /// `FUN_10016fe0(e) @ 10016fe0` — cyclic motion (units-movement §5.5), **two draws every tick**: m =
-    /// `fctiwz(MaxSpeed)` (`10017008..10017014`), **draw `10017024`** a = `R(m/2, m)` (C division: `rlwinm; add;
-    /// srawi`), **draw `10017054`** b = `R(1, 100)`; L = float(a) + float(b) / 100.0 (`fdivs` by `*(float*)
-    /// (0x100d6c8c + 0x10)` = 100.0, `fadds`). Per axis, x then y: `v > L` → v = L, accel = −accel; then (re-read)
-    /// `v < −L` → v = −L, accel = −accel (`10017090..100170fc`); then v += accel (both axes), desired = v.
+    /// `FUN_10016fe0(e) @ 10016fe0` — cyclic motion (units-movement §5.5), **two draws every tick** unless m = 0:
+    /// m = `fctiwz(MaxSpeed)` (`10017008..10017014`), **draw `10017024`** a = `R(m/2, m)` (C division: `rlwinm;
+    /// add; srawi`; m = 0 gives `R(0, 0)`, which makes no draw), **draw `10017054`** b = `R(1, 100)`;
+    /// L = float(a) + float(b) / 100.0 (`fdivs` by `*(float*)(0x100d6c8c + 0x10)` = 100.0, `fadds`).
+    /// Per axis, x then y: `v > L` → v = L, accel = −accel; then (re-read) `v < −L` → v = −L, accel = −accel
+    /// (`10017090..100170fc`); then v += accel (both axes), desired = v.
     mutating func cyclicMotion(_ i: Int) {
         guard let st = currentState(i) else { return }
         let m = EntityDraw.fctiwz(st.stateMaxSpeed)                            // 10017008..10017014

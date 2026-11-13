@@ -3,9 +3,10 @@ import HectorResources
 
 /// The 0x2c-byte spawn request, argument of `FUN_10033220` (spawn-and-waves.md §1.1, weapons-projectiles
 /// §3.1, loose-ends-combat §4.3–§4.4; HIGH). ★ LOCKED (plan S2). The defaults are the **runtime** template:
-/// all five templates (`0x100e3ca4` game, `0x100e64b0` spawn sets, `0x100e91d4` player, `0x100eb41c` level
-/// objects, `0x100ecd14` weapons) hold `'none'`, zeros, +0x14 = 0xff and +0x28 = 1.0f in the image, and
-/// their static initialisers set +0x24 = −1 before `main` (static-init-audit.md §3, §5; INDEX #56).
+/// all seven templates (`0x100e251c`, `0x100e3ca4` game, `0x100e5a44`, `0x100e64b0` spawn sets, `0x100e91d4`
+/// player, `0x100eb41c` level objects, `0x100ecd14` weapons; five of them have users after `main`) hold
+/// `'none'`, zeros, +0x14 = 0xff and +0x28 = 1.0f in the image, and their static initialisers set +0x24 = −1
+/// before `main` (static-init-audit.md §3, §5; INDEX #56).
 public struct SpawnRequest: Equatable, Sendable {
     /// +0x00: the unit ID to spawn (`none` → assert in `FUN_10033220`).
     public var unit: FourCC = .none

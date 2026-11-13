@@ -186,6 +186,8 @@ final class LevelEndTests: XCTestCase {
         XCTAssertNil(s.tallyTextRequest())                                // alpha 0x20 → nothing (faded out)
         s.tally.alpha = -1
         XCTAssertNil(s.tallyTextRequest())                                // `cmplwi`: −1 is 0xFFFFFFFF ≥ 0x20
+        s.tally.alpha = 31
+        XCTAssertNotNil(s.tallyTextRequest())                             // alpha 0x1f < 0x20 → a record (boundary)
         s.tally.alpha = 29
         let t = try XCTUnwrap(s.tallyTextRequest())
         var format = s.assets.formats[0x35]                               // FUN_1000d130(0x35)
@@ -306,8 +308,9 @@ final class LevelEndTests: XCTestCase {
             if t == 3918 {                                                // nole at (flli 54 × 0.5, flli 55 × 0.5)
                 XCTAssertEqual(spawned(s, after: first), [FourCC("nole")!])
                 XCTAssertEqual(spawnedAt(s, after: first), [[208, 240]])
-                let g = s.world.groups.first { $0.id == s.world.entities[s.world.entities.indices.first {
-                    s.world.inUse[$0] && s.world.entities[$0].serial == first }!].groupID }
+                let n = try XCTUnwrap(s.world.entities.indices.first {
+                    s.world.inUse[$0] && s.world.entities[$0].serial == first })
+                let g = s.world.groups.first { $0.id == s.world.entities[n].groupID }
                 XCTAssertEqual(g.map { [$0.x, $0.y] }, [208, 240])        // the group itself (1003351c..1003357c)
             }
             t += 1
@@ -375,6 +378,13 @@ final class LevelEndTests: XCTestCase {
         u.levelEndStep(atEnd: true) { log.append($0) }
         XCTAssertEqual(log.first, .notice(FourCC("nole")!))
         XCTAssertFalse(u.flags.allLevels)
+        // And sector 11 with 12 levels started is an ordinary level end too.
+        var w = try world(sector: 11)
+        w.flags.levelsStarted = 12
+        log = []
+        w.levelEndStep(atEnd: true) { log.append($0) }
+        XCTAssertEqual(log.first, .notice(FourCC("nole")!))
+        XCTAssertFalse(w.flags.allLevels)
     }
 
     func testGameOverStopsOnStartPlus111() throws {

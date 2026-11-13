@@ -523,8 +523,8 @@ final class SpawnTests: XCTestCase {
         return out
     }
 
-    /// One request's draws in site order (`FUN_10033220` → `FUN_10035cd0`): the size (`10036a3c`), the appears
-    /// draws (`10036a80`), then per member the placement (`10037a54`), the scale tolerance (`10014b14`), the flee
+    /// One request's draws in site order (`FUN_10033220` → `FUN_10035cd0`): the size (`10036a2c`), the appears
+    /// draws (`10036a74`), then per member the placement (`10037a54`), the scale tolerance (`10014b14`), the flee
     /// point (`rave`: `100178c8` then `100178ec`/`10017920`), the spawn-set arming (`10017d64`, `10017d7c`,
     /// `10017dbc`), the group delay (`10035fc8`) and the cyclic start (`10037f04`…`10038034`). A synthetic unit
     /// on pdex (one of the 17 shipped units that draw the scale tolerance) with every other range closed.

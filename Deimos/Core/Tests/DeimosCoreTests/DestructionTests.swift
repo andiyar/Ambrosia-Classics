@@ -71,6 +71,7 @@ final class DestructionTests: XCTestCase {
         // The bonus `R(0, 100)` (`10016530`) is the destroy's last draw: replay every earlier one on the copy.
         let n = s.rng.draws - draws0
         XCTAssertGreaterThan(n, 1)
+        guard n > 1 else { return }                                           // 1..<n traps when n == 0
         for _ in 1..<n { _ = copy.rand() }
         XCTAssertEqual(r, copy.range(Int32(0), 100))
         XCTAssertEqual(copy, s.rng)

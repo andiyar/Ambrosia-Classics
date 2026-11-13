@@ -196,8 +196,9 @@ extension Player {
     /// the pending ground applied (`FUN_1003b180(h, 'PEAG', …)`); with arg 1 (level start) the `PEAA` def whose
     /// minimum == sector (`FUN_1003cd30`) is equipped and the pending air dropped, otherwise (arg 0) the pending air
     /// is applied (`1003b0d4..1003b134`); `FUN_1003bab0(h, 0)`; crosshair visibility = 0.0, target 100.0, step
-    /// `+0x124` (`1003b148..1003b15c`). `sector` = game +0x14 (`FUN_10005cd0` at `1003b0dc`), read only with arg 1;
-    /// required (no default) so every caller passes the game's sector, as the original always reads G+0x14.
+    /// `+0x124` (`1003b148..1003b15c`). `sector` = game +0x14 (`FUN_10005cd0` at `1003b0dc`), read only on the
+    /// level-start path (the branch at `1003b0d8` skips it otherwise); the parameter is required (no default) so
+    /// callers pass the game's sector rather than a silent 0.
     mutating func resetHandler(levelStart: Bool, sector: Int32) {
         handler.x = 0                                                // 1003afc0
         handler.y = 0                                                // 1003afc4
