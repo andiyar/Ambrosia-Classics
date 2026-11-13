@@ -79,8 +79,10 @@ public final class DeimosAudioEngine: DeimosAudioSink, PCMPullSource {
         self.init(effects: mixer, tracks: music)
     }
 
-    /// An engine over a ready mixer and parsed music tracks (tests: synthetic effects and AIFC tracks).
-    init(effects: EffectMixer, tracks: [FourCC: MusicTrack]) {
+    /// An engine over a ready mixer and parsed music tracks (tests: synthetic effects and AIFC tracks). The mixer is
+    /// taken (`consuming`): a caller that kept its copy would leave the mixer's buffers shared, and the first
+    /// mutation in `render` would copy them on the audio thread.
+    init(effects: consuming EffectMixer, tracks: [FourCC: MusicTrack]) {
         state = Mutex(State(effects: effects))
         self.tracks = tracks
     }

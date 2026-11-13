@@ -60,6 +60,9 @@ public struct EffectMixer: Sendable {
 
     // MARK: Load
 
+    /// How many sound records `register` has appended (tests: the engine's preload count).
+    var registeredCount: Int { records.count }
+
     /// Load a sound under a `soun` id (`FUN_10047330`: the record is appended; lookups walk from the front).
     public mutating func register(_ id: FourCC, _ sound: IMAContinuous) {
         sounds.append(sound)
@@ -71,7 +74,6 @@ public struct EffectMixer: Sendable {
     /// `FUN_10047bf0` (listing `10047bf0..10047e34`, bank §2.3) for one cue. Returns the voice id the mixer gave
     /// (0 = refused by a full list) or nil when nothing reached the mixer: id `none`, an `allowMultiple == false`
     /// cue whose last instance still lives (`10047c40`, `FUN_100476e0`), or an unregistered id.
-    @discardableResult
     ///
     /// The two gates between the `none` test and the allowMultiple test — sound available (`10047c28 lbz
     /// r0,-0x60a0(r2)`, set when the mixer opened, `FUN_10047160`) and effects enabled (`10047c34 lbz
@@ -80,6 +82,7 @@ public struct EffectMixer: Sendable {
     /// (A2: an engine that failed to open plays nothing) and the driver (H2: `audio == nil` → no cue reaches a
     /// mixer). Core's pitch draw happens before all of them (bank §8.6, C0's `SoundPlay`), so none of this
     /// touches the RNG.
+    @discardableResult
     public mutating func play(_ cue: SoundCue) -> UInt32? {
         guard cue.id != .none else { return nil }
         if !cue.allowMultiple, isPlaying(cue.id) { return nil }

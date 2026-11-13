@@ -38,6 +38,23 @@ final class LevelEndTests: XCTestCase {
             .map { units[s.world.entities[$0].unit].id }
     }
 
+    /// The spawn-request positions [x, y] of the live entities created at or after serial `after`, in serial order:
+    /// each entity's position less its unit's closed placement offset (`FUN_10037930` `10037a8c`/`10037b0c`: x = gx +
+    /// xMin, y = gy + yMin when the range is closed — `nole` sits 40 above its request, `noal` 90). Nothing moves
+    /// them in these tests (no entity update runs); a unit with an open (random) range fails.
+    private func spawnedAt(_ s: GameState, after: Int32) -> [[Float]] {
+        let units = s.assets.definitions.units
+        return s.world.entities.indices
+            .filter { s.world.inUse[$0] && s.world.entities[$0].serial >= after }
+            .sorted { s.world.entities[$0].serial < s.world.entities[$1].serial }
+            .map { i in
+                let e = s.world.entities[i], u = units[e.unit]
+                XCTAssertEqual(u.xOffsetMin, u.xOffsetMax, "\(u.id) x placement is random")
+                XCTAssertEqual(u.yOffsetMin, u.yOffsetMax, "\(u.id) y placement is random")
+                return [e.object.x - u.xOffsetMin, e.object.y - u.yOffsetMin]
+            }
+    }
+
     /// Runs the accuracy tally from game time `from` until it reports done; returns the done tick (G11 bound).
     @discardableResult
     private func runTally(_ s: inout GameState, from: Int32, bound: Int32 = 2000,
@@ -152,6 +169,36 @@ final class LevelEndTests: XCTestCase {
         XCTAssertEqual(String(decoding: f.tally.text, as: UTF8.self), "Ground Accuracy:   0%   Bonus:  None!")
     }
 
+    // MARK: - FUN_10007d60
+
+    func testTallyTextRequest() throws {
+        // `FUN_10007d60`: G+0x48 (state) ≠ 0 and G+0x50 (alpha) < 0x20 unsigned → FUN_1000d130(0x35, rec); +0x114 =
+        // alpha; strcpy(rec, G+0x60); +0x10d = 1; +0x110 = 0; +0x10c = 0xf; FUN_1000d380(rec, 0). Else nothing.
+        var s = try world()
+        s.flags.groundDestroyed = 16
+        s.flags.groundCreated = 20
+        s.accuracyTier(now: 0)                                            // state 1, text = pgsl 11
+        s.tally.state = 0
+        s.tally.alpha = 29
+        XCTAssertNil(s.tallyTextRequest())                                // state 0 → nothing
+        s.tally.state = 2
+        s.tally.alpha = 32
+        XCTAssertNil(s.tallyTextRequest())                                // alpha 0x20 → nothing (faded out)
+        s.tally.alpha = -1
+        XCTAssertNil(s.tallyTextRequest())                                // `cmplwi`: −1 is 0xFFFFFFFF ≥ 0x20
+        s.tally.alpha = 29
+        let t = try XCTUnwrap(s.tallyTextRequest())
+        var format = s.assets.formats[0x35]                               // FUN_1000d130(0x35)
+        format.blendAmount = 29                                           // +0x114 = alpha
+        XCTAssertEqual(t.format, format)
+        XCTAssertEqual(t.format.blendAmount, 29)
+        XCTAssertEqual(t.text, s.tally.text)                              // strcpy of G+0x60
+        XCTAssertEqual(t.text, s.assets.gameStrings[11])                  // "Ground Accuracy:   "
+        XCTAssertEqual(t.layer, 15)                                       // +0x10c = 0xf
+        XCTAssertTrue(t.keepTemplateClip)                                 // +0x10d = 1
+        XCTAssertFalse(t.drawNow)                                         // +0x110 = 0 (queued)
+    }
+
     // MARK: - FUN_10027670 / FUN_10027930
 
     func testCoinBonusSteps() throws {
@@ -172,6 +219,7 @@ final class LevelEndTests: XCTestCase {
             XCTAssertEqual(c.bonusStep, step)
             XCTAssertEqual(c.textYOffset, 0)
             XCTAssertEqual(spawned(s, after: first), [FourCC("p1mc")!])   // active_MoneyCounterSpawn_ID
+            XCTAssertEqual(spawnedAt(s, after: first), [[105, 248]])      // (flli 179, flli 180)
             var paid = 0
             var t: Int32 = 1
             var lastScore = before
@@ -202,6 +250,7 @@ final class LevelEndTests: XCTestCase {
         XCTAssertEqual(s.tally.coin[1].textYOffset, 70)
         let e = s.world.entities.indices.first { s.world.inUse[$0] && s.world.entities[$0].serial >= first }
         XCTAssertEqual(e.map { s.assets.definitions.units[s.world.entities[$0].unit].id }, FourCC("p2mc")!)
+        XCTAssertEqual(spawnedAt(s, after: first), [[105, 248 + 70]])   // y + (float)int(flli 181), `fadds`
     }
 
     func testMissionBonusNeedsAllLevels() throws {
@@ -244,6 +293,7 @@ final class LevelEndTests: XCTestCase {
         s.players[0].lifeState = 4
         s.players[1].lifeState = 4
         s.flags.levelsStarted = 1
+        let first = s.world.nextSerial
         var log: [LevelEndEvent] = []
         var perTick: [[LevelEndEvent]] = []
         var t: Int32 = 3918
@@ -253,6 +303,13 @@ final class LevelEndTests: XCTestCase {
             s.gameOverStep { log.append($0) }
             s.levelEndStep(atEnd: true) { log.append($0) }
             perTick.append(log)
+            if t == 3918 {                                                // nole at (flli 54 × 0.5, flli 55 × 0.5)
+                XCTAssertEqual(spawned(s, after: first), [FourCC("nole")!])
+                XCTAssertEqual(spawnedAt(s, after: first), [[208, 240]])
+                let g = s.world.groups.first { $0.id == s.world.entities[s.world.entities.indices.first {
+                    s.world.inUse[$0] && s.world.entities[$0].serial == first }!].groupID }
+                XCTAssertEqual(g.map { [$0.x, $0.y] }, [208, 240])        // the group itself (1003351c..1003357c)
+            }
             t += 1
             if t > 3918 + 1000 { XCTFail("level never completed"); break }
         }
@@ -271,9 +328,13 @@ final class LevelEndTests: XCTestCase {
         XCTAssertTrue(s.players[0].invulnerable && s.players[1].invulnerable)
         XCTAssertFalse(s.players[0].invulnerableSticky)
         XCTAssertEqual(s.tally.coin[1].textYOffset, 70)                   // P2 stacked under P1
+        // The notice, then both coin counters: P1 at (flli 179, flli 180), P2 stacked int(flli 181) = 70 lower.
+        XCTAssertEqual(spawned(s, after: first), [FourCC("nole")!, FourCC("p1mc")!, FourCC("p2mc")!])
+        XCTAssertEqual(spawnedAt(s, after: first), [[208, 240], [105, 248], [105, 318]])
         // Nobody alive at the level end: only +0x29, no notice, no tier.
         var u = try world()
         u.players[0].inGame = false
+        let uFirst = u.world.nextSerial
         log = []
         u.flags.gameTime = 100
         u.gameOverStep { log.append($0) }
@@ -283,12 +344,37 @@ final class LevelEndTests: XCTestCase {
         XCTAssertEqual(log, [.gameOverChecked, .notice(FourCC("nogo")!), .gameOverChecked])
         XCTAssertTrue(u.flags.levelEndHandled)
         XCTAssertEqual(u.tally.state, 0)
+        XCTAssertEqual(spawned(u, after: uFirst), [FourCC("nogo")!])      // the game-over notice only
+        XCTAssertEqual(spawnedAt(u, after: uFirst), [[208, 240]])
         // Not at the end: nothing.
         var v = try world()
         log = []
         v.levelEndStep(atEnd: false) { log.append($0) }
         XCTAssertEqual(log, [])
         XCTAssertFalse(v.flags.levelEnding)
+    }
+
+    func testAllLevelsNoticeAtSectorTwelve() throws {
+        // `10006dd4..10006e04`: sector == FUN_10011de0 (12) and levels started == 12 → G+0x0d = 1; then `noal`
+        // (PermObjectID 23) instead of `nole` (22), at the same (208, 240).
+        XCTAssertEqual(try TestAssets.loaded.get().levelOrder.levels.count, 12)
+        var s = try world(sector: 12)
+        s.flags.levelsStarted = 12
+        let first = s.world.nextSerial
+        var log: [LevelEndEvent] = []
+        s.flags.gameTime = 5000
+        s.levelEndStep(atEnd: true) { log.append($0) }
+        XCTAssertEqual(log, [.notice(FourCC("noal")!), .invulnerable(0), .accuracyTier])
+        XCTAssertTrue(s.flags.allLevels)
+        XCTAssertEqual(spawned(s, after: first), [FourCC("noal")!])
+        XCTAssertEqual(spawnedAt(s, after: first), [[208, 240]])
+        // Both must equal 12: sector 12 with 11 levels started is an ordinary level end.
+        var u = try world(sector: 12)
+        u.flags.levelsStarted = 11
+        log = []
+        u.levelEndStep(atEnd: true) { log.append($0) }
+        XCTAssertEqual(log.first, .notice(FourCC("nole")!))
+        XCTAssertFalse(u.flags.allLevels)
     }
 
     func testGameOverStopsOnStartPlus111() throws {
@@ -301,6 +387,7 @@ final class LevelEndTests: XCTestCase {
         XCTAssertTrue(s.flags.gameOverNoticed)
         XCTAssertEqual(s.flags.gameOverStart, 700)
         XCTAssertEqual(spawned(s, after: first), [FourCC("nogo")!])       // PermObjectID 24
+        XCTAssertEqual(spawnedAt(s, after: first), [[208, 240]])          // (flli 54 × 0.5, flli 55 × 0.5)
         for t in Int32(701)...810 {                                       // `cmpw; ble`: > start + flli 13 (110)
             s.flags.gameTime = t
             s.gameOverStep()
@@ -321,16 +408,23 @@ final class LevelEndTests: XCTestCase {
         let a = try TestAssets.loaded.get()
         var c = FrameController(fpsMaxRate: 30)
         var console = try Console(assets: a)
-        // A film: running cleared, nothing else.
+        // A film: running cleared, nothing else (`100071f0` returns before FUN_100302e0: the message and the open
+        // console survive).
         var s = try world()
+        var filmConsole = try Console(assets: a)
         s.flags.filmPlaying = true
         s.flags.levelComplete = true
         s.flags.levelEnding = true
-        s.levelCompleteStep(controller: &c, console: &console, ticks: 0)
+        s.messages.post(text: "film message", kind: .normal)
+        filmConsole.open(frame: 0, game: &s)
+        s.cues.sounds = []                                                // drop the console's open click
+        s.levelCompleteStep(controller: &c, console: &filmConsole, ticks: 0)
         XCTAssertFalse(s.flags.running)
         XCTAssertTrue(s.flags.levelComplete)
         XCTAssertTrue(s.flags.levelEnding)
         XCTAssertTrue(s.cues.sounds.isEmpty && s.cues.music.isEmpty)
+        XCTAssertEqual(s.messages.messages.count, 1)
+        XCTAssertTrue(filmConsole.isOpen)
         // Not complete: nothing.
         var u = try world()
         u.flags.filmPlaying = true
@@ -344,13 +438,22 @@ final class LevelEndTests: XCTestCase {
         XCTAssertFalse(v.flags.running)
         // Not a film (◇ S9.1): music stop, `tran` (priority 75, volume 100, multiple), +9/+0x39 cleared, then the
         // session ends instead of FUN_100064d0.
+        // FUN_100302e0 (`10007244..1000724c`) clears the posted message and closes the open console.
         var w = try world()
         w.flags.levelComplete = true
         w.flags.levelEnding = true
+        w.messages.post(text: "a message", kind: .normal)
+        console.open(frame: 0, game: &w)
+        XCTAssertEqual(w.messages.messages.count, 1)
+        XCTAssertTrue(console.isOpen && console.visible)
+        w.cues.sounds = []                                                // drop the console's open click
         w.levelCompleteStep(controller: &c, console: &console, ticks: 0)
         XCTAssertFalse(w.flags.running)
         XCTAssertFalse(w.flags.levelComplete)
         XCTAssertFalse(w.flags.levelEnding)
+        XCTAssertTrue(w.messages.messages.isEmpty)
+        XCTAssertFalse(console.isOpen)
+        XCTAssertFalse(console.visible)
         XCTAssertEqual(w.cues.music, [.stop])
         XCTAssertEqual(w.cues.sounds, [SoundPlay.perm(a.sounds[3], priority: 75, volume: 100, allowMultiple: true)])
     }

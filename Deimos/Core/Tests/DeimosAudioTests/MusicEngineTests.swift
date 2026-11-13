@@ -321,7 +321,9 @@ final class MusicEngineTests: XCTestCase {
         let e = try DeimosAudioEngine(assets: assets)
         let source: any PCMPullSource = e
         XCTAssertEqual(source.outputRate, 44100)
-        // Every mono soun tag is preloaded, the three stereo music tracks are not; 8 audible voices (flli 38).
+        // Every mono soun tag is preloaded (96 records), the three stereo music tracks are not; 8 audible voices
+        // (flli 38).
+        XCTAssertEqual(e.withState { $0.effects.registeredCount }, 96)
         XCTAssertEqual(e.withState { $0.effects.audibleVoices }, 8)
         e.apply(sounds: [AudioTestData.cue("incl"), AudioTestData.cue("mu03")], music: [], haltEffectsAt: nil)
         XCTAssertEqual(e.withState { $0.effects.voiceCount }, 1)
