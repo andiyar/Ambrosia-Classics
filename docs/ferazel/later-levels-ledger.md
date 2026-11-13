@@ -213,10 +213,10 @@ readers, today's state, the `DrawModeAuditTests` refusal row where one pins it, 
 | 0x26cc | `pxUsesLevelBaseClut` | px tilesets under the level+base CLUT | 70 | 1 | **yes** | .LoadPxBackTileset 1094, .LoadPxMidTileset 1128, .MTAddPxSprite 30885 | Faces/TileSets.swift:58, Sprites/PxSprites.swift:86 | built | — | 6C-L55…L70 |
 | 0x26cd | `inLiquid` | level-wide "in liquid" | 30 | 1 | **yes** | .HandlePlayerSprite 44858, .SetupBoxSprite 59493, .SetupBackgroundSprite 62004, .SetupFrogSprite 70207 | World/Movers/BackgroundSprite.swift:280, World/Movers/BackgroundSprite.swift:882, World/Movers/BoxSprite.swift:314, Sprites/SetupFaces.swift:636 (+1) | built at the readers listed (player liquids, Box gate, Background spring/spike, Frog) | — | 6B-ICE |
 | 0x26cd | `inLiquid` | level-wide "in liquid" | 31 | 1 | **yes** | .HandlePlayerSprite 44858, .SetupBoxSprite 59493, .SetupBackgroundSprite 62004, .SetupFrogSprite 70207 | World/Movers/BackgroundSprite.swift:280, World/Movers/BackgroundSprite.swift:882, World/Movers/BoxSprite.swift:314, Sprites/SetupFaces.swift:636 (+1) | built at the readers listed (player liquids, Box gate, Background spring/spike, Frog) | — | 6B-ICE |
-| 0x2706 | `darknessEnable` | per-cell darkness enable | 10 | 1 | no | .SetupLevel 2377, .GetAmbDarkVal 13645, .DrawLightOpOverTile 15058, .DrawLightOverFace 15116 | Frame/FrameRenderer.swift:208, Frame/LightRenderer.swift:92, Frame/LightRenderer.swift:237, Frame/SpriteBlitter.swift:666 (+2) | built | — | 6A-L10…L22 |
-| 0x2706 | `darknessEnable` | per-cell darkness enable | 21 | 2 | **yes** | .SetupLevel 2377, .GetAmbDarkVal 13645, .DrawLightOpOverTile 15058, .DrawLightOverFace 15116 | Frame/FrameRenderer.swift:208, Frame/LightRenderer.swift:92, Frame/LightRenderer.swift:237, Frame/SpriteBlitter.swift:666 (+2) | built | — | 6A-L10…L22 |
-| 0x2706 | `darknessEnable` | per-cell darkness enable | 22 | 2 | **yes** | .SetupLevel 2377, .GetAmbDarkVal 13645, .DrawLightOpOverTile 15058, .DrawLightOverFace 15116 | Frame/FrameRenderer.swift:208, Frame/LightRenderer.swift:92, Frame/LightRenderer.swift:237, Frame/SpriteBlitter.swift:666 (+2) | built | — | 6A-L10…L22 |
-| 0x2706 | `darknessEnable` | per-cell darkness enable | 31 | 1 | no | .SetupLevel 2377, .GetAmbDarkVal 13645, .DrawLightOpOverTile 15058, .DrawLightOverFace 15116 | Frame/FrameRenderer.swift:208, Frame/LightRenderer.swift:92, Frame/LightRenderer.swift:237, Frame/SpriteBlitter.swift:666 (+2) | built | — | 6B-L25…L52 |
+| 0x2706 | `darknessEnable` | per-cell darkness enable | 10 | 1 | no | .SetupLevel 2377, .GetAmbDarkVal 13645, .DrawLightOpOverTile 15058, .DrawLightOverFace 15116 | Frame/FrameRenderer.swift:209, Frame/LightRenderer.swift:92, Frame/LightRenderer.swift:237, Frame/SpriteBlitter.swift:682 (+2) | built | — | 6A-L10…L22 |
+| 0x2706 | `darknessEnable` | per-cell darkness enable | 21 | 2 | **yes** | .SetupLevel 2377, .GetAmbDarkVal 13645, .DrawLightOpOverTile 15058, .DrawLightOverFace 15116 | Frame/FrameRenderer.swift:209, Frame/LightRenderer.swift:92, Frame/LightRenderer.swift:237, Frame/SpriteBlitter.swift:682 (+2) | built | — | 6A-L10…L22 |
+| 0x2706 | `darknessEnable` | per-cell darkness enable | 22 | 2 | **yes** | .SetupLevel 2377, .GetAmbDarkVal 13645, .DrawLightOpOverTile 15058, .DrawLightOverFace 15116 | Frame/FrameRenderer.swift:209, Frame/LightRenderer.swift:92, Frame/LightRenderer.swift:237, Frame/SpriteBlitter.swift:682 (+2) | built | — | 6A-L10…L22 |
+| 0x2706 | `darknessEnable` | per-cell darkness enable | 31 | 1 | no | .SetupLevel 2377, .GetAmbDarkVal 13645, .DrawLightOpOverTile 15058, .DrawLightOverFace 15116 | Frame/FrameRenderer.swift:209, Frame/LightRenderer.swift:92, Frame/LightRenderer.swift:237, Frame/SpriteBlitter.swift:682 (+2) | built | — | 6B-L25…L52 |
 | 0x270c | `cameraOffsetY` | camera target offset y | 11 | -30 | **yes** | .FindUpperLeftCorner 6032 | Camera/Camera.swift:60 | built | — | 6A-L10…L22 |
 | 0x270c | `cameraOffsetY` | camera target offset y | 18 | -108 | **yes** | .FindUpperLeftCorner 6032 | Camera/Camera.swift:60 | built | — | 6A-L10…L22 |
 | 0x270c | `cameraOffsetY` | camera target offset y | 25 | 36 | **yes** | .FindUpperLeftCorner 6032 | Camera/Camera.swift:60 | built | — | 6B-L25…L52 |
@@ -252,8 +252,8 @@ readers, today's state, the `DrawModeAuditTests` refusal row where one pins it, 
 | 0x271a | `stripBaseY` | horizon strip base y | 45 | 48 | **yes** | .SetupLevel 2265, .BuildSineTable 17375 | Sprites/PxSprites.swift:80 | read by PxSprites | — | 6A-S8 |
 | 0x271a | `stripBaseY` | horizon strip base y | 62 | 116 | **yes** | .SetupLevel 2265, .BuildSineTable 17375 | Sprites/PxSprites.swift:80 | read by PxSprites | — | 6A-S8 |
 | 0x271a | `stripBaseY` | horizon strip base y | 67 | 16 | **yes** | .SetupLevel 2265, .BuildSineTable 17375 | Sprites/PxSprites.swift:80 | read by PxSprites | — | 6A-S8 |
-| 0x2722 | `flameMode` | fire backdrop + flame buffer | 52 | 1 | **yes** | .SetupLevel 2542, .PaintFrameWrap 9232, .DoubleBlitPPCParallaxOneLayerFire 12593, .DoubleBlitUniversal 18952 | Frame/ParallaxBlitter.swift:129, Frame/ParallaxBlitter.swift:138, World/Enemies/EnemyShot.swift:245, World/Enemies/EnemyShot.swift:384 | refused (backdrop compositor init) | DrawModeAuditTests.swift:1338 | 6B-FI |
-| 0x2722 | `flameMode` | fire backdrop + flame buffer | 55 | 2 | **yes** | .SetupLevel 2542, .PaintFrameWrap 9232, .DoubleBlitPPCParallaxOneLayerFire 12593, .DoubleBlitUniversal 18952 | Frame/ParallaxBlitter.swift:129, Frame/ParallaxBlitter.swift:138, World/Enemies/EnemyShot.swift:245, World/Enemies/EnemyShot.swift:384 | refused (backdrop compositor init) | DrawModeAuditTests.swift:1338 | 6B-FI |
+| 0x2722 | `flameMode` | fire backdrop + flame buffer | 52 | 1 | **yes** | .SetupLevel 2542, .PaintFrameWrap 9232, .DoubleBlitPPCParallaxOneLayerFire 12593, .DoubleBlitUniversal 18952 | Frame/ParallaxBlitter.swift:129, Frame/ParallaxBlitter.swift:138, World/Enemies/EnemyShot.swift:254, World/Enemies/EnemyShot.swift:392 | refused (backdrop compositor init) | DrawModeAuditTests.swift:1338 | 6B-FI |
+| 0x2722 | `flameMode` | fire backdrop + flame buffer | 55 | 2 | **yes** | .SetupLevel 2542, .PaintFrameWrap 9232, .DoubleBlitPPCParallaxOneLayerFire 12593, .DoubleBlitUniversal 18952 | Frame/ParallaxBlitter.swift:129, Frame/ParallaxBlitter.swift:138, World/Enemies/EnemyShot.swift:254, World/Enemies/EnemyShot.swift:392 | refused (backdrop compositor init) | DrawModeAuditTests.swift:1338 | 6B-FI |
 | 0x2724 | `arenaBound` | boss-arena bound (and track 30) | 18 | -1400 | **yes** | .GameLoop 5218, .FindUpperLeftCorner 5937, .PlayerConstraints 44035 | Camera/Camera.swift:63, Front/LevelRun.swift:524, Front/LevelRun.swift:734, Player/Player.swift:806 | built (LV5) | — | 6A-CH |
 | 0x2724 | `arenaBound` | boss-arena bound (and track 30) | 25 | 592 | **yes** | .GameLoop 5218, .FindUpperLeftCorner 5937, .PlayerConstraints 44035 | Camera/Camera.swift:63, Front/LevelRun.swift:524, Front/LevelRun.swift:734, Player/Player.swift:806 | built (LV5) | — | 6B-WZ |
 | 0x2724 | `arenaBound` | boss-arena bound (and track 30) | 55 | 16000 | **yes** | .GameLoop 5218, .FindUpperLeftCorner 5937, .PlayerConstraints 44035 | Camera/Camera.swift:63, Front/LevelRun.swift:524, Front/LevelRun.swift:734, Player/Player.swift:806 | built (LV5) | — | 6C-DM |
@@ -335,10 +335,10 @@ first bank section naming the type (the class's topical files first, hex before 
 | 1095 | 0x447 | Background | 10 | 40, 51, 62 | 6 | -1,0 | refused (from L40; built on 10) | `FerazelCore/Sprites/SetupFaces.swift:380` | cannon p1 ≠ 0 (2 records: p1 -1); the rotating / path arms: FerazelCore/World/Movers/BackgroundSprite.swift:334 | .SetupBackgroundSprite 61919–62678 / .HandleBackgroundSprite 62887–63563; range from 0x442 l. 62062, 62112 | triggers-background §2.2 | 6B-BG2 |
 | 1096 | 0x448 | Background | 10 | 11, 20, 22, 31, 40, 52, 62 | 31 | -1,0 | refused (from L40; built on 10, 11, 20, 22, 31) | `FerazelCore/Sprites/SetupFaces.swift:380` | cannon p1 ≠ 0 (11 records: p1 -1); the rotating / path arms: FerazelCore/World/Movers/BackgroundSprite.swift:334 | .SetupBackgroundSprite 61919–62678 / .HandleBackgroundSprite 62887–63563; range from 0x442 l. 62062, 62112 | — | 6B-BG2 |
 | 1097 | 0x449 | Background | 10 | 50, 51, 52, 62 | 5 | 0,101,105 | refused | `FerazelCore/Sprites/SetupFaces.swift:380` | cannon p1 ≠ 0 (2 records: p1 101,105); the rotating / path arms: FerazelCore/World/Movers/BackgroundSprite.swift:334 | .SetupBackgroundSprite 61919–62678 / .HandleBackgroundSprite 62887–63563; range from 0x442 l. 62062, 62112 | bosses-2 §6.1 | 6A-BG1b |
-| 1150 | 0x47e | Background | 15 | 30, 31, 40, 50, 62 | 30 | 0 | built | `FerazelCore/Sprites/SetupFaces.swift:383` | spring (W2b); its Setup marks cache set 0x47e/0x47f (M l. 62047, 62187) — not in CachedFaces (FerazelCore/Front/LevelRun.swift:1223) | .SetupBackgroundSprite 61919–62678 / .HandleBackgroundSprite 62887–63563; type literal l. 63086 | triggers-background §2.3 | 6A-L10…L22 |
-| 1151 | 0x47f | Background | 31 | 50, 62 | 11 | 0 | built | `FerazelCore/Sprites/SetupFaces.swift:383` | spring (W2b); its Setup marks cache set 0x47e/0x47f (M l. 62047, 62187) — not in CachedFaces (FerazelCore/Front/LevelRun.swift:1223) | .SetupBackgroundSprite 61919–62678 / .HandleBackgroundSprite 62887–63563; type literal l. 62046, 62056 | triggers-background §0 | 6B-L25…L52 |
-| 1152 | 0x480 | Background | 15 | 62 | 7 | 0 | built | `FerazelCore/Sprites/SetupFaces.swift:383` | spring (W2b); its Setup marks cache set 0x47e/0x47f (M l. 62047, 62187) — not in CachedFaces (FerazelCore/Front/LevelRun.swift:1223) | .SetupBackgroundSprite 61919–62678 / .HandleBackgroundSprite 62887–63563; type literal l. 63081, 63085 | triggers-background §0 | 6A-L10…L22 |
-| 1153 | 0x481 | Background | 15 | 50, 62 | 9 | 0 | built | `FerazelCore/Sprites/SetupFaces.swift:383` | spring (W2b); its Setup marks cache set 0x47e/0x47f (M l. 62047, 62187) — not in CachedFaces (FerazelCore/Front/LevelRun.swift:1223) | .SetupBackgroundSprite 61919–62678 / .HandleBackgroundSprite 62887–63563; type literal l. 62198, 62208 | triggers-background §2.3 | 6A-L10…L22 |
+| 1150 | 0x47e | Background | 15 | 30, 31, 40, 50, 62 | 30 | 0 | built | `FerazelCore/Sprites/SetupFaces.swift:383` | spring (W2b); its Setup marks cache set 0x47e/0x47f (M l. 62047, 62187) — not in CachedFaces (FerazelCore/Front/LevelRun.swift:1367) | .SetupBackgroundSprite 61919–62678 / .HandleBackgroundSprite 62887–63563; type literal l. 63086 | triggers-background §2.3 | 6A-L10…L22 |
+| 1151 | 0x47f | Background | 31 | 50, 62 | 11 | 0 | built | `FerazelCore/Sprites/SetupFaces.swift:383` | spring (W2b); its Setup marks cache set 0x47e/0x47f (M l. 62047, 62187) — not in CachedFaces (FerazelCore/Front/LevelRun.swift:1367) | .SetupBackgroundSprite 61919–62678 / .HandleBackgroundSprite 62887–63563; type literal l. 62046, 62056 | triggers-background §0 | 6B-L25…L52 |
+| 1152 | 0x480 | Background | 15 | 62 | 7 | 0 | built | `FerazelCore/Sprites/SetupFaces.swift:383` | spring (W2b); its Setup marks cache set 0x47e/0x47f (M l. 62047, 62187) — not in CachedFaces (FerazelCore/Front/LevelRun.swift:1367) | .SetupBackgroundSprite 61919–62678 / .HandleBackgroundSprite 62887–63563; type literal l. 63081, 63085 | triggers-background §0 | 6A-L10…L22 |
+| 1153 | 0x481 | Background | 15 | 50, 62 | 9 | 0 | built | `FerazelCore/Sprites/SetupFaces.swift:383` | spring (W2b); its Setup marks cache set 0x47e/0x47f (M l. 62047, 62187) — not in CachedFaces (FerazelCore/Front/LevelRun.swift:1367) | .SetupBackgroundSprite 61919–62678 / .HandleBackgroundSprite 62887–63563; type literal l. 62198, 62208 | triggers-background §2.3 | 6A-L10…L22 |
 | 1208 | 0x4b8 | Background | 40 | 50, 51, 62, 67 | 89 | 0,1 | refused | `FerazelCore/Sprites/SetupFaces.swift:430` | no Setup arm; Handle: FerazelCore/World/Movers/BackgroundSprite.swift:10 | .SetupBackgroundSprite 61919–62678 / .HandleBackgroundSprite 62887–63563; type literal l. 62017, 62045, 63103 | enemy-shots-and-damage §3.4 | 6B-BG2 |
 | 1290 | 0x50a | Bonus | 20 | 31, 45, 51, 52, 62 | 69 | 0,1 | built | `FerazelCore/World/Movers/BonusSprite.swift:149` | big crystal (BN; Handle `BonusSprite.handle`) | .SetupBonusSprite 52338–52804 / .HandleBonusSprite 52805–53443; type literal l. 52486 | pickups-boxes §1.2 | 6A-L10…L22 |
 | 1291 | 0x50b | Bonus | 20 | 21, 22, 30, 31, 40, 45, 51, 52, 62 | 56 | 0,1 | built | `FerazelCore/World/Movers/BonusSprite.swift:149` | big crystal (BN; Handle `BonusSprite.handle`) | .SetupBonusSprite 52338–52804 / .HandleBonusSprite 52805–53443; type literal l. 52870, 52903 | pickups-boxes §1.3 | 6A-L10…L22 |
@@ -505,7 +505,7 @@ is not marked on levels 22 and 31** although their item 6 lists it (6A-CF review
 1. **Switches new vs 1–5:** 0x26c9 `waterSurfaceEffect` = 1 → 6A-L10…L22; 0x2716 `stripPict` = 265 → 6A-S8; 0x2718 `stripFactor` = 128 → 6A-S8; 0x271a `stripBaseY` = 222 → 6A-S8; 0x284a `music` = 4 → 6A-L10…L22. Nonzero but as on a built level: 0x2706=1. Wind overlay cells: 103 → 6A-WD.
 2. **New types:** 1091 Background ×1 — built; 1093 Background ×1 — built; 1094 Background ×1 — built; 1095 Background ×1 — built; 1096 Background ×2 — built; 1097 Background ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:380`; 1330 Bonus ×1 — built; 1407 Platform ×2 — built; 1440 Box ×2 — built; 1750 Walker ×8 — built; 1869 Bat ×3 — built; 2816 Box ×5 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2817 Box ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2837 Box ×3 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2846 Box ×2 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2847 Box ×2 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2861 Box ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 3020 Rope ×3 — built; 3080 Background ×2 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 3081 Background ×4 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 3082 Background ×4 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 3083 Background ×3 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 3217 Bonus ×1 — built.
    Also refused here (types built on 1–5, records the port refuses): 1090 ×6, 3 refused, p1 0,101,103 — refused.
-3. **Future-phase resources:** level cache [port: no]: PICT 2816, PICT 2817, PICT 2837, PICT 2846, PICT 2847; level cache [port: registered in CachedFaces]: PICT 1440, PICT 1750, PICT 1751, PICT 1752, PICT 1753, PICT 1754, PICT 1869, PICT 2841; level open [port: no (no level / screen opens it)]: Mlvl 10.
+3. **Future-phase resources:** level cache [port: registered in CachedFaces]: PICT 1440, PICT 1750, PICT 1751, PICT 1752, PICT 1753, PICT 1754, PICT 1869, PICT 2816, PICT 2817, PICT 2837, PICT 2841, PICT 2846, PICT 2847; level open [port: no (no level / screen opens it)]: Mlvl 10.
    Header-named, new vs 1–5 (generic loaders, never exercised): horizon strip PICT 265; PxBack tileset PICT 267; PxMid tileset PICT pair 268,269; FG (+FG water) tileset PICT 260; FG pattern tileset PICT 266; level CLUT 213; level+sprite CLUT 214; music track 4; chapter card PICT / clut 4620,282.
 4. **Conversations:** none. Chapter card 2 (PICT 4620, clut 282, `.ChapterScreen`).
 5. **Owners (types first placed here; switches above):** 6A-BG1a ×4, 6A-BG1b ×1, 6A-BX1a ×6, 6A-L10…L22 ×7, 6B-BG2 ×5; the level itself: 6A-L10…L22.
@@ -517,7 +517,7 @@ is not marked on levels 22 and 31** although their item 6 lists it (6A-CF review
 
 1. **Switches new vs 1–5:** 0x26c6 `submergedFaces` = 1 → 6A-T11; 0x26ca `parallaxRipple` = 1 → 6A-RP; 0x270c `cameraOffsetY` = -30 → 6A-L10…L22; 0x270e `landingDamage` = 150 → 6A-L10…L22; 0x2710 `iceSlipperiness` = 80 → 6A-L10…L22; 0x2714 `waterCurrent` = -512 → 6A-L10…L22; 0x284a `music` = 6 → 6A-L10…L22. Nonzero but as on a built level: 0x26c8=1.
 2. **New types:** 1092 Background ×1 — built; 1096 Background ×2, first L10 — built; 1750 Walker ×6, first L10 — built; 1840 Background ×2 — built; 1843 Background ×2 — built; 1851 Bat ×40 — built; 1869 Bat ×2, first L10 — built; 2816 Box ×4, first L10 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2817 Box ×2, first L10 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2831 Box ×3 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2837 Box ×1, first L10 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2857 Box ×2 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2872 Box ×6 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2873 Box ×3 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2875 Box ×2 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2876 Box ×3 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2955 Box ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 3020 Rope ×4, first L10 — built; 3080 Background ×2, first L10 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 3081 Background ×1, first L10 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 3082 Background ×1, first L10 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 3083 Background ×4, first L10 — refused `FerazelCore/Sprites/SetupFaces.swift:430`.
-3. **Future-phase resources:** conversation open [port: no (no level / screen opens it)]: Mcnv 206, Mcnv 220; level cache [port: no]: PICT 2816, PICT 2817, PICT 2831, PICT 2837, PICT 2872, PICT 2873, PICT 2875, PICT 2876, PICT 2955; level cache [port: registered in CachedFaces]: PICT 1750, PICT 1751, PICT 1752, PICT 1753, PICT 1754, PICT 1850, PICT 1851, PICT 1869, PICT 2822, PICT 2829; level open [port: no (no level / screen opens it)]: Mlvl 11.
+3. **Future-phase resources:** conversation open [port: no (no level / screen opens it)]: Mcnv 206, Mcnv 220; level cache [port: registered in CachedFaces]: PICT 1750, PICT 1751, PICT 1752, PICT 1753, PICT 1754, PICT 1850, PICT 1851, PICT 1869, PICT 2816, PICT 2817, PICT 2822, PICT 2829, PICT 2831, PICT 2837, PICT 2872, PICT 2873, PICT 2875, PICT 2876, PICT 2955; level open [port: no (no level / screen opens it)]: Mlvl 11.
    Header-named, new vs 1–5 (generic loaders, never exercised): PxBack tileset PICT 217; FG (+FG water) tileset PICT 260; BG tileset PICT 244; FG pattern tileset PICT 507; level CLUT 223; level+sprite CLUT 224; music track 6.
 4. **Conversations:** 206 (rec 135, type 2955, flag 1; cond [4, 5], act [1, 2, 4, 5]); 220 (rec 283, type 2956, flag 99; cond —, act —) — every opcode handled by the port's interpreter.
 5. **Owners (types first placed here; switches above):** 6A-BG1b ×1, 6A-BX1a ×6, 6A-BX1b ×1, 6A-L10…L22 ×3; the level itself: 6A-L10…L22.
@@ -530,7 +530,7 @@ is not marked on levels 22 and 31** although their item 6 lists it (6A-CF review
 1. **Switches new vs 1–5:** 0x26c7 `omniPxMode` = 1 → 6A-RN; 0x26c9 `waterSurfaceEffect` = 1 → 6A-L10…L22; 0x270e `landingDamage` = 56 → 6A-L10…L22; 0x272c `sidePush` = -320 → 6A-RN; 0x284a `music` = 5 → 6A-L10…L22.
 2. **New types:** 1092 Background ×1, first L11 — refused `FerazelCore/Sprites/SetupFaces.swift:380`; 1150 Background ×9 — built; 1152 Background ×1 — built; 1153 Background ×2 — built; 1293 Bonus ×2 — built; 1750 Walker ×9, first L10 — built; 1770 Gremlin ×6 — built; 1870 Dillo ×7 — built; 2700 Background ×4 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2701 Background ×8 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2702 Background ×6 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2705 Background ×3 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2711 Background ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2808 Box ×2 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2852 Box ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 3084 Background ×4 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 3085 Background ×4 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 3086 Background ×2 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 3102 Bonus ×8 — built; 3219 Bonus ×3 — built; 3223 Bonus ×1 — built.
    Also refused here (types built on 1–5, records the port refuses): 1090 ×3, 2 refused, p1 0,105 — refused.
-3. **Future-phase resources:** level cache [port: no]: PICT 2808; level cache [port: registered in CachedFaces]: PICT 1750, PICT 1751, PICT 1752, PICT 1753, PICT 1754, PICT 1770, PICT 1771, PICT 1772, PICT 1870, PICT 1871, PICT 1872, PICT 1873, PICT 2841; level open [port: no (no level / screen opens it)]: Mlvl 15; level setup [port: named in code only]: PICT 6000, PICT 6001.
+3. **Future-phase resources:** level cache [port: registered in CachedFaces]: PICT 1750, PICT 1751, PICT 1752, PICT 1753, PICT 1754, PICT 1770, PICT 1771, PICT 1772, PICT 1870, PICT 1871, PICT 1872, PICT 1873, PICT 2808, PICT 2841; level open [port: no (no level / screen opens it)]: Mlvl 15; level setup [port: named in code only]: PICT 6000, PICT 6001.
    Header-named, new vs 1–5 (generic loaders, never exercised): PxBack tileset PICT 267; PxMid tileset PICT pair 458,459; FG (+FG water) tileset PICT 260; BG tileset PICT 263; FG pattern tileset PICT 266; level CLUT 213; level+sprite CLUT 214; music track 5.
 4. **Conversations:** none.
 5. **Owners (types first placed here; switches above):** 6A-BG1a ×3, 6A-BG1c ×5, 6A-BX1a ×2, 6A-L10…L22 ×9; the level itself: 6A-L10…L22.
@@ -542,7 +542,7 @@ is not marked on levels 22 and 31** although their item 6 lists it (6A-CF review
 
 1. **Switches new vs 1–5:** 0x26ca `parallaxRipple` = 1 → 6A-RP; 0x270c `cameraOffsetY` = -108 → 6A-L10…L22; 0x270e `landingDamage` = 150 → 6A-L10…L22; 0x2710 `iceSlipperiness` = 80 → 6A-L10…L22; 0x2714 `waterCurrent` = -512 → 6A-L10…L22; 0x2724 `arenaBound` = -1400 → 6A-CH; 0x272e `secondArenaBound` = -640 → 6A-CH. Nonzero but as on a built level: 0x26c8=1, 0x284a=23.
 2. **New types:** 1910 Chief ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:712`; 2700 Background ×2, first L15 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2701 Background ×1, first L15 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2702 Background ×2, first L15 — refused `FerazelCore/Sprites/SetupFaces.swift:715`.
-3. **Future-phase resources:** level cache [port: named in code only]: PICT 1910; level cache [port: no]: PICT 1911, PICT 1912, PICT 1913, PICT 1914; level cache [port: registered in CachedFaces]: PICT 1130, PICT 1915, PICT 2822, PICT 2841; level open [port: no (no level / screen opens it)]: Mlvl 18.
+3. **Future-phase resources:** level cache [port: registered in CachedFaces]: PICT 1130, PICT 1910, PICT 1911, PICT 1912, PICT 1913, PICT 1914, PICT 1915, PICT 2822, PICT 2841; level open [port: no (no level / screen opens it)]: Mlvl 18.
    Header-named, new vs 1–5 (generic loaders, never exercised): PxBack tileset PICT 217; FG (+FG water) tileset PICT 260; BG tileset PICT 244; FG pattern tileset PICT 507; level CLUT 223; level+sprite CLUT 224.
 4. **Conversations:** none.
 5. **Owners (types first placed here; switches above):** 6A-CH ×1; the level itself: 6A-L10…L22.
@@ -555,7 +555,7 @@ is not marked on levels 22 and 31** although their item 6 lists it (6A-CF review
 1. **Switches new vs 1–5:** 0x284a `music` = 15 → 6A-L10…L22. Wind overlay cells: 2899 → 6A-WD.
 2. **New types:** 1092 Background ×3, first L11 — refused (1 of 3) `FerazelCore/Sprites/SetupFaces.swift:380`; 1094 Background ×1, first L10 — built; 1096 Background ×2, first L10 — built; 1290 Bonus ×5 — built; 1291 Bonus ×6 — built; 1293 Bonus ×3, first L15 — built; 1480 Background ×4 — built; 1770 Gremlin ×6, first L15 — built; 2890 Background ×44 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 2891 Background ×44 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 2892 Background ×32 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 2893 Background ×44 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 3050 Bonus ×1 — built; 3060 Background ×28 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 3102 Bonus ×2, first L15 — built; 3206 Bonus ×2 — built; 3219 Bonus ×3, first L15 — built.
    Also refused here (types built on 1–5, records the port refuses): 1485 ×16, 16 refused, p1 1 — refused.
-3. **Future-phase resources:** level cache [port: named in code only]: PICT 2890, PICT 2893, PICT 3060; level cache [port: no]: PICT 2891, PICT 2892; level cache [port: registered in CachedFaces]: PICT 1770, PICT 1771, PICT 1772; level open [port: no (no level / screen opens it)]: Mlvl 20.
+3. **Future-phase resources:** level cache [port: registered in CachedFaces]: PICT 1770, PICT 1771, PICT 1772, PICT 2890, PICT 2891, PICT 2892, PICT 2893, PICT 3060; level open [port: no (no level / screen opens it)]: Mlvl 20.
    Header-named, new vs 1–5 (generic loaders, never exercised): PxBack tileset PICT 257; FG (+FG water) tileset PICT 250; BG tileset PICT 253; FG pattern tileset PICT 256; level CLUT 211; level+sprite CLUT 212; music track 15.
 4. **Conversations:** none.
 5. **Owners (types first placed here; switches above):** 6A-BG1a ×4, 6A-BG1b ×1, 6A-L10…L22 ×5; the level itself: 6A-L10…L22.
@@ -567,7 +567,7 @@ is not marked on levels 22 and 31** although their item 6 lists it (6A-CF review
 
 1. **Switches new vs 1–5:** 0x2706 `darknessEnable` = 2 → 6A-L10…L22; 0x284a `music` = 9 → 6A-L10…L22.
 2. **New types:** 1061 Box ×14 — refused `FerazelCore/Sprites/SetupFaces.swift:512`; 1291 Bonus ×4, first L20 — built; 1293 Bonus ×1, first L15 — built; 1487 Background ×1 — built; 1490 Box ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:512`; 1491 Box ×3 — refused `FerazelCore/Sprites/SetupFaces.swift:512`; 1492 Box ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:512`; 1493 Box ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:512`; 1742 Bat ×1 — built; 1840 Background ×13, first L11 — built; 1843 Background ×2, first L11 — built; 1860 Bat ×5 — built; 1869 Bat ×1, first L10 — built; 2827 Box ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2831 Box ×2, first L11 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2833 Box ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2834 Box ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2836 Box ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2850 Box ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2921 Box ×2 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2962 Box ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 3206 Bonus ×9, first L20 — built; 3219 Bonus ×1, first L15 — built.
-3. **Future-phase resources:** conversation open [port: no (no level / screen opens it)]: Mcnv 260, Mcnv 261, Mcnv 300; level cache [port: named in code only]: PICT 1490, PICT 1491, PICT 1492, PICT 1493, PICT 2827, PICT 2833, PICT 2834, PICT 2836, PICT 2921; level cache [port: no]: PICT 2831, PICT 2962; level cache [port: registered in CachedFaces]: PICT 1860, PICT 1869, PICT 2822; level open [port: no (no level / screen opens it)]: Mlvl 21.
+3. **Future-phase resources:** conversation open [port: no (no level / screen opens it)]: Mcnv 260, Mcnv 261, Mcnv 300; level cache [port: registered in CachedFaces]: PICT 1490, PICT 1491, PICT 1492, PICT 1493, PICT 1860, PICT 1869, PICT 2822, PICT 2827, PICT 2831, PICT 2833, PICT 2834, PICT 2836, PICT 2921, PICT 2962; level open [port: no (no level / screen opens it)]: Mlvl 21.
    Header-named, new vs 1–5 (generic loaders, never exercised): PxBack tileset PICT 257; PxMid tileset PICT pair 258,259; level CLUT 211; level+sprite CLUT 212; music track 9.
 4. **Conversations:** 261 (rec 89, type 2834, flag 1; cond —, act —); 260 (rec 207, type 2833, flag 1; cond —, act —); 300 (rec 318, type 2962, flag 1; cond [5], act —) — every opcode handled by the port's interpreter.
 5. **Owners (types first placed here; switches above):** 6A-BX1a ×5, 6A-BX1b ×3, 6A-L10…L22 ×3, 6A-L10…L22 (level 21 pipe wiring) ×4; the level itself: 6A-L10…L22.
@@ -580,7 +580,7 @@ is not marked on levels 22 and 31** although their item 6 lists it (6A-CF review
 1. **Switches new vs 1–5:** 0x2706 `darknessEnable` = 2 → 6A-L10…L22; 0x284a `music` = 8 → 6A-L10…L22.
 2. **New types:** 1060 Box ×8 — refused `FerazelCore/Sprites/SetupFaces.swift:512`; 1080 Box ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:512`; 1091 Background ×1, first L10 — built; 1094 Background ×3, first L10 — built; 1096 Background ×4, first L10 — built; 1291 Bonus ×2, first L20 — built; 1293 Bonus ×3, first L15 — built; 1337 Bonus ×2 — built; 1338 Bonus ×1 — built; 1480 Background ×2, first L20 — built; 1732 Blob ×3 — built; 1750 Walker ×2, first L10 — built; 1840 Background ×13, first L11 — built; 1851 Bat ×2, first L11 — built; 1870 Dillo ×12, first L15 — built; 1871 Dillo ×1 — built; 1900 Background ×10 — built; 1901 Background ×15 — built; 1902 Background ×5 — built; 1903 Background ×3 — built; 2956 Box ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 3060 Background ×13, first L20 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 3091 Box ×14 — built; 3206 Bonus ×1, first L20 — built; 3219 Bonus ×4, first L15 — built; 3223 Bonus ×1, first L15 — built.
    Also refused here (types built on 1–5, records the port refuses): 1485 ×38, 29 refused, p1 1,2,10,12,13,14 — refused.
-3. **Future-phase resources:** conversation open [port: no (no level / screen opens it)]: Mcnv 221; level cache [port: named in code only]: PICT 3060; level cache [port: no]: PICT 2956; level cache [port: registered in CachedFaces]: PICT 1750, PICT 1751, PICT 1752, PICT 1753, PICT 1754, PICT 1850, PICT 1851, PICT 1870, PICT 1871, PICT 1872, PICT 1873, PICT 1900, PICT 1902, PICT 1903, PICT 2841; level open [port: no (no level / screen opens it)]: Mlvl 22.
+3. **Future-phase resources:** conversation open [port: no (no level / screen opens it)]: Mcnv 221; level cache [port: registered in CachedFaces]: PICT 1750, PICT 1751, PICT 1752, PICT 1753, PICT 1754, PICT 1850, PICT 1851, PICT 1870, PICT 1871, PICT 1872, PICT 1873, PICT 1900, PICT 1902, PICT 1903, PICT 2841, PICT 2956, PICT 3060; level open [port: no (no level / screen opens it)]: Mlvl 22.
    Header-named, new vs 1–5 (generic loaders, never exercised): PxBack tileset PICT 377; PxMid tileset PICT pair 378,379; FG (+FG water) tileset PICT 370; BG tileset PICT 253; FG pattern tileset PICT 376; level CLUT 245; level+sprite CLUT 246; music track 8; chapter card PICT / clut 4650,285.
 4. **Conversations:** 221 (rec 405, type 2956, flag 1; cond [5], act [5, 9, 10]) — every opcode handled by the port's interpreter. Chapter card 5 (PICT 4650, clut 285, `.ChapterScreen`).
 5. **Owners (types first placed here; switches above):** 6A-BX1b ×2, 6A-BX1c ×1, 6A-L10…L22 ×9; the level itself: 6A-L10…L22.
@@ -592,7 +592,7 @@ is not marked on levels 22 and 31** although their item 6 lists it (6A-CF review
 
 1. **Switches new vs 1–5:** 0x26c7 `omniPxMode` = 5 → 6B-L25…L52; 0x270c `cameraOffsetY` = 36 → 6B-L25…L52; 0x2724 `arenaBound` = 592 → 6B-WZ; 0x272e `secondArenaBound` = 1384 → 6B-WZ. Nonzero but as on a built level: 0x270e=112, 0x284a=23.
 2. **New types:** 1830 Wizard ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:712`; 2700 Background ×1, first L15 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 3215 Bonus ×1 — built.
-3. **Future-phase resources:** level cache [port: named in code only]: PICT 1830, PICT 1832; level cache [port: no]: PICT 1831; level cache [port: registered in CachedFaces]: PICT 1130, PICT 1915, PICT 2822, PICT 2841; level open [port: no (no level / screen opens it)]: Mlvl 25; level setup [port: named in code only]: PICT 6300, PICT 6301.
+3. **Future-phase resources:** level cache [port: registered in CachedFaces]: PICT 1130, PICT 1830, PICT 1831, PICT 1832, PICT 1915, PICT 2822, PICT 2841; level open [port: no (no level / screen opens it)]: Mlvl 25; level setup [port: named in code only]: PICT 6300, PICT 6301.
    Header-named, new vs 1–5 (generic loaders, never exercised): PxBack tileset PICT 601; FG (+FG water) tileset PICT 250; BG tileset PICT 253; FG pattern tileset PICT 256; level CLUT 237; level+sprite CLUT 238.
 4. **Conversations:** none.
 5. **Owners (types first placed here; switches above):** 6B-L25…L52 ×1, 6B-WZ ×1; the level itself: 6B-L25…L52.
@@ -604,7 +604,7 @@ is not marked on levels 22 and 31** although their item 6 lists it (6A-CF review
 
 1. **Switches new vs 1–5:** 0x26cd `inLiquid` = 1 → 6B-ICE; 0x2710 `iceSlipperiness` = 220 → 6B-ICE; 0x2716 `stripPict` = 275 → 6A-S8; 0x2718 `stripFactor` = 128 → 6A-S8; 0x271a `stripBaseY` = 227 → 6A-S8; 0x284a `music` = 10 → 6B-L25…L52.
 2. **New types:** 1150 Background ×1, first L15 — built; 1291 Bonus ×6, first L20 — built; 1337 Bonus ×4, first L22 — built; 1338 Bonus ×3, first L22 — built; 1404 Platform ×16 — built; 1481 Background ×1 — built; 1486 Background ×24 — refused `FerazelCore/Sprites/SetupFaces.swift:399`; 1731 Blob ×4 — built; 1750 Walker ×6, first L10 — built; 1840 Background ×7, first L11 — built; 1843 Background ×14, first L11 — built; 1901 Background ×4, first L22 — built; 1902 Background ×5, first L22 — built; 1903 Background ×8, first L22 — built; 2818 Box ×4 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2921 Box ×3, first L21 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2941 Box ×2 — built; 3060 Background ×3, first L20 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 3106 Bonus ×3 — built; 3219 Bonus ×4, first L15 — built; 3226 Bonus ×2 — built.
-3. **Future-phase resources:** conversation open [port: no (no level / screen opens it)]: Mcnv 207; level cache [port: named in code only]: PICT 2921, PICT 3060; level cache [port: no]: PICT 2818; level cache [port: registered in CachedFaces]: PICT 1750, PICT 1751, PICT 1752, PICT 1753, PICT 1754, PICT 1902, PICT 1903; level open [port: no (no level / screen opens it)]: Mlvl 30.
+3. **Future-phase resources:** conversation open [port: no (no level / screen opens it)]: Mcnv 207; level cache [port: registered in CachedFaces]: PICT 1750, PICT 1751, PICT 1752, PICT 1753, PICT 1754, PICT 1902, PICT 1903, PICT 2818, PICT 2921, PICT 3060; level open [port: no (no level / screen opens it)]: Mlvl 30.
    Header-named, new vs 1–5 (generic loaders, never exercised): horizon strip PICT 275; PxBack tileset PICT 277; PxMid tileset PICT pair 278,279; FG (+FG water) tileset PICT 270; BG tileset PICT 273; FG pattern tileset PICT 276; level CLUT 215; level+sprite CLUT 216; music track 10; chapter card PICT / clut 4660,286.
 4. **Conversations:** 207 (rec 255, type 2952, flag 1; cond [1, 4], act [1, 2, 3, 4]) — every opcode handled by the port's interpreter. Chapter card 6 (PICT 4660, clut 286, `.ChapterScreen`).
 5. **Owners (types first placed here; switches above):** 6B-BG2 ×1, 6B-BX2 ×1, 6B-L25…L52 ×6; the level itself: 6B-L25…L52.
@@ -616,7 +616,7 @@ is not marked on levels 22 and 31** although their item 6 lists it (6A-CF review
 
 1. **Switches new vs 1–5:** 0x26cd `inLiquid` = 1 → 6B-ICE; 0x2710 `iceSlipperiness` = 220 → 6B-ICE; 0x2714 `waterCurrent` = 768 → 6B-L25…L52; 0x284a `music` = 12 → 6B-L25…L52. Nonzero but as on a built level: 0x2706=1.
 2. **New types:** 1060 Box ×4, first L22 — refused `FerazelCore/Sprites/SetupFaces.swift:512`; 1092 Background ×2, first L11 — built; 1096 Background ×3, first L10 — built; 1150 Background ×3, first L15 — built; 1151 Background ×2 — built; 1290 Bonus ×5, first L20 — built; 1291 Bonus ×6, first L20 — built; 1293 Bonus ×3, first L15 — built; 1337 Bonus ×1, first L22 — built; 1338 Bonus ×1, first L22 — built; 1404 Platform ×11, first L30 — built; 1486 Background ×10, first L30 — refused (4 of 10) `FerazelCore/Sprites/SetupFaces.swift:399`; 1731 Blob ×1, first L30 — built; 1750 Walker ×7, first L10 — built; 1840 Background ×24, first L11 — built; 1843 Background ×3, first L11 — built; 1851 Bat ×3, first L11 — built; 1900 Background ×1, first L22 — built; 1901 Background ×4, first L22 — built; 1903 Background ×2, first L22 — built; 2854 Box ×10 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2923 Box ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2941 Box ×5, first L30 — built; 2965 Box ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 3070 Box ×3 — refused `FerazelCore/Sprites/SetupFaces.swift:512`; 3219 Bonus ×2, first L15 — built.
-3. **Future-phase resources:** conversation open [port: no (no level / screen opens it)]: Mcnv 211; level cache [port: named in code only]: PICT 2923, PICT 3070; level cache [port: no]: PICT 2965; level cache [port: registered in CachedFaces]: PICT 1750, PICT 1751, PICT 1752, PICT 1753, PICT 1754, PICT 1850, PICT 1851, PICT 1900, PICT 1903; level open [port: no (no level / screen opens it)]: Mlvl 31.
+3. **Future-phase resources:** conversation open [port: no (no level / screen opens it)]: Mcnv 211; level cache [port: registered in CachedFaces]: PICT 1750, PICT 1751, PICT 1752, PICT 1753, PICT 1754, PICT 1850, PICT 1851, PICT 1900, PICT 1903, PICT 2923, PICT 2965, PICT 3070; level open [port: no (no level / screen opens it)]: Mlvl 31.
    Header-named, new vs 1–5 (generic loaders, never exercised): PxBack tileset PICT 287; PxMid tileset PICT pair 288,289; FG (+FG water) tileset PICT 280; BG tileset PICT 283; FG pattern tileset PICT 286; level CLUT 217; level+sprite CLUT 218; music track 12.
 4. **Conversations:** 211 (rec 304, type 2965, flag 1; cond [1, 4], act [1, 2, 3, 4]) — every opcode handled by the port's interpreter.
 5. **Owners (types first placed here; switches above):** 6B-BX2 ×4, 6B-L25…L52 ×1; the level itself: 6B-L25…L52.
@@ -629,7 +629,7 @@ is not marked on levels 22 and 31** although their item 6 lists it (6A-CF review
 1. **Switches new vs 1–5:** 0x2716 `stripPict` = 315 → 6A-S8; 0x2718 `stripFactor` = 128 → 6A-S8; 0x271a `stripBaseY` = 48 → 6A-S8; 0x284a `music` = 15 → 6B-L25…L52. Nonzero but as on a built level: 0x26c8=1.
 2. **New types:** 1061 Box ×9, first L21 — refused `FerazelCore/Sprites/SetupFaces.swift:512`; 1091 Background ×7, first L10 — built; 1092 Background ×5, first L11 — refused (2 of 5) `FerazelCore/Sprites/SetupFaces.swift:380`; 1093 Background ×1, first L10 — refused `FerazelCore/Sprites/SetupFaces.swift:380`; 1094 Background ×5, first L10 — refused (4 of 5) `FerazelCore/Sprites/SetupFaces.swift:380`; 1095 Background ×3, first L10 — refused (2 of 3) `FerazelCore/Sprites/SetupFaces.swift:380`; 1096 Background ×10, first L10 — refused (6 of 10) `FerazelCore/Sprites/SetupFaces.swift:380`; 1150 Background ×3, first L15 — built; 1208 Background ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 1291 Bonus ×8, first L20 — built; 1293 Bonus ×1, first L15 — built; 1337 Bonus ×2, first L22 — built; 1732 Blob ×2, first L22 — built; 1840 Background ×11, first L11 — built; 1843 Background ×12, first L11 — built; 2907 Box ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2953 Box ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:715`.
    Also refused here (types built on 1–5, records the port refuses): 1090 ×38, 26 refused, p1 -2,-1,0,103 — refused; 1485 ×17, 17 refused, p1 1,2 — refused.
-3. **Future-phase resources:** conversation open [port: no (no level / screen opens it)]: Mcnv 208; level cache [port: named in code only]: PICT 1208; level cache [port: no]: PICT 2953; level open [port: no (no level / screen opens it)]: Mlvl 40.
+3. **Future-phase resources:** conversation open [port: no (no level / screen opens it)]: Mcnv 208; level cache [port: registered in CachedFaces]: PICT 1208, PICT 2953; level open [port: no (no level / screen opens it)]: Mlvl 40.
    Header-named, new vs 1–5 (generic loaders, never exercised): horizon strip PICT 315; PxBack tileset PICT 317; PxMid tileset PICT pair 318,319; FG (+FG water) tileset PICT 310; BG tileset PICT 313; FG pattern tileset PICT 316; level CLUT 227; level+sprite CLUT 228; music track 15; chapter card PICT / clut 4630,283.
 4. **Conversations:** 208 (rec 1, type 2953, flag 1; cond [5], act [5]) — every opcode handled by the port's interpreter. Chapter card 3 (PICT 4630, clut 283, `.ChapterScreen`).
 5. **Owners (types first placed here; switches above):** 6B-BG2 ×1, 6B-BX2 ×1, 6B-TM ×1; the level itself: 6B-L25…L52.
@@ -654,7 +654,7 @@ is not marked on levels 22 and 31** although their item 6 lists it (6A-CF review
 1. **Switches new vs 1–5:** 0x2730 `clutAnimMode` = 1 → 6B-CA; 0x2732 `clutAnimCount` = 48 → 6B-CA; 0x2734 `clutAnimPeriod` = 180 → 6B-CA; 0x2736 `clutAnimAmplitude` = 12000 → 6B-CA; 0x284a `music` = 18 → 6B-L25…L52.
 2. **New types:** 1072 Box ×1 — built; 1092 Background ×1, first L11 — built; 1097 Background ×1, first L10 — built; 1150 Background ×8, first L15 — built; 1151 Background ×4, first L31 — built; 1153 Background ×1, first L15 — built; 1208 Background ×43, first L40 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 1333 Bonus ×1 — built; 1405 Platform ×1 — built; 1442 Box ×9 — built; 1482 Background ×3 — built; 1732 Blob ×3, first L22 — built; 1770 Gremlin ×20, first L15 — built; 1810 Salamander ×10 — built; 1840 Background ×4, first L11 — built; 1843 Background ×1, first L11 — built; 2808 Box ×1, first L15 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2857 Box ×1, first L11 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2867 Box ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 3020 Rope ×2, first L10 — built; 3108 Bonus ×12 — built; 3219 Bonus ×8, first L15 — built; 3223 Bonus ×2, first L15 — built.
    Also refused here (types built on 1–5, records the port refuses): 1090 ×3, 1 refused, p1 0,101 — refused.
-3. **Future-phase resources:** level cache [port: named in code only]: PICT 1208; level cache [port: no]: PICT 2808; level cache [port: registered in CachedFaces]: PICT 1442, PICT 1770, PICT 1771, PICT 1772, PICT 1810; level open [port: no (no level / screen opens it)]: Mlvl 50.
+3. **Future-phase resources:** level cache [port: registered in CachedFaces]: PICT 1208, PICT 1442, PICT 1770, PICT 1771, PICT 1772, PICT 1810, PICT 2808; level open [port: no (no level / screen opens it)]: Mlvl 50.
    Header-named, new vs 1–5 (generic loaders, never exercised): PxBack tileset PICT 297; PxMid tileset PICT pair 298,299; FG (+FG water) tileset PICT 290; BG tileset PICT 293; FG pattern tileset PICT 296; level CLUT 219; level+sprite CLUT 220; music track 18; chapter card PICT / clut 4640,284.
 4. **Conversations:** none. Chapter card 4 (PICT 4640, clut 284, `.ChapterScreen`).
 5. **Owners (types first placed here; switches above):** 6B-BX2 ×1, 6B-L25…L52 ×7; the level itself: 6B-L25…L52.
@@ -666,7 +666,7 @@ is not marked on levels 22 and 31** although their item 6 lists it (6A-CF review
 
 1. **Switches new vs 1–5:** 0x2726 `autoScrollX` = 768 → 6B-AS; 0x272a `autoScrollEnable` = 1 → 6B-AS; 0x2730 `clutAnimMode` = 1 → 6B-CA; 0x2732 `clutAnimCount` = 48 → 6B-CA; 0x2734 `clutAnimPeriod` = 56 → 6B-CA; 0x2736 `clutAnimAmplitude` = 12000 → 6B-CA; 0x284a `music` = 16 → 6B-L25…L52.
 2. **New types:** 1091 Background ×1, first L10 — built; 1092 Background ×4, first L11 — refused (1 of 4) `FerazelCore/Sprites/SetupFaces.swift:380`; 1095 Background ×1, first L10 — built; 1097 Background ×1, first L10 — built; 1208 Background ×3, first L40 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 1290 Bonus ×3, first L20 — built; 1291 Bonus ×6, first L20 — built; 1293 Bonus ×2, first L15 — built; 1333 Bonus ×1, first L50 — built; 1442 Box ×16, first L50 — built; 1732 Blob ×3, first L22 — built; 1770 Gremlin ×17, first L15 — built; 1810 Salamander ×12, first L50 — built; 1840 Background ×1, first L11 — built; 2839 Box ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 3020 Rope ×10, first L10 — built; 3217 Bonus ×1, first L10 — built; 3219 Bonus ×3, first L15 — built; 3223 Bonus ×1, first L15 — built.
-3. **Future-phase resources:** level cache [port: named in code only]: PICT 1208; level cache [port: no]: PICT 2839; level cache [port: registered in CachedFaces]: PICT 1442, PICT 1770, PICT 1771, PICT 1772, PICT 1810; level open [port: no (no level / screen opens it)]: Mlvl 51.
+3. **Future-phase resources:** level cache [port: registered in CachedFaces]: PICT 1208, PICT 1442, PICT 1770, PICT 1771, PICT 1772, PICT 1810, PICT 2839; level open [port: no (no level / screen opens it)]: Mlvl 51.
    Header-named, new vs 1–5 (generic loaders, never exercised): PxBack tileset PICT 297; PxMid tileset PICT pair 298,299; FG (+FG water) tileset PICT 290; BG tileset PICT 293; FG pattern tileset PICT 296; level CLUT 219; level+sprite CLUT 220; music track 16.
 4. **Conversations:** none.
 5. **Owners (types first placed here; switches above):** 6B-BX2 ×1; the level itself: 6B-L25…L52.
@@ -691,7 +691,7 @@ is not marked on levels 22 and 31** although their item 6 lists it (6A-CF review
 
 1. **Switches new vs 1–5:** 0x2722 `flameMode` = 2 → 6B-FI; 0x2724 `arenaBound` = 16000 → 6C-DM; 0x272e `secondArenaBound` = -448 → 6C-DM. Nonzero but as on a built level: 0x284a=23.
 2. **New types:** 1920 Demon ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:712`; 3224 Bonus ×1 — built.
-3. **Future-phase resources:** boot [port: no]: PICT 198; boot [port: no (no level / screen opens it)]: clut 198, clut 198; level cache [port: named in code only]: PICT 1920; level cache [port: no]: PICT 1921, PICT 1922, PICT 1923, PICT 1924; level cache [port: registered in CachedFaces]: PICT 1130, PICT 1915, PICT 2822, PICT 2826, PICT 2829; level open [port: no (no level / screen opens it)]: Mlvl 55.
+3. **Future-phase resources:** boot [port: no]: PICT 198; boot [port: no (no level / screen opens it)]: clut 198, clut 198; level cache [port: registered in CachedFaces]: PICT 1130, PICT 1915, PICT 1920, PICT 1921, PICT 1922, PICT 1923, PICT 1924, PICT 2822, PICT 2826, PICT 2829; level open [port: no (no level / screen opens it)]: Mlvl 55.
    Header-named, new vs 1–5 (generic loaders, never exercised): PxBack tileset PICT 297; PxMid tileset PICT pair 298,299; FG (+FG water) tileset PICT 290; BG tileset PICT 293; FG pattern tileset PICT 296; level CLUT 221; level+sprite CLUT 222.
 4. **Conversations:** none.
 5. **Owners (types first placed here; switches above):** 6C-DM ×1, 6C-L55…L70 ×1; the level itself: 6C-L55…L70.
@@ -704,7 +704,7 @@ is not marked on levels 22 and 31** although their item 6 lists it (6A-CF review
 1. **Switches new vs 1–5:** 0x26c9 `waterSurfaceEffect` = 1 → 6C-L55…L70; 0x26cc `pxUsesLevelBaseClut` = 1 → 6C-L55…L70; 0x270e `landingDamage` = 100 → 6C-L55…L70; 0x2716 `stripPict` = 345 → 6A-S8; 0x2718 `stripFactor` = 128 → 6A-S8; 0x271a `stripBaseY` = 116 → 6A-S8; 0x284a `music` = 22 → 6C-L55…L70.
 2. **New types:** 1094 Background ×5, first L10 — built; 1095 Background ×1, first L10 — built; 1096 Background ×7, first L10 — refused (5 of 7) `FerazelCore/Sprites/SetupFaces.swift:380`; 1097 Background ×1, first L10 — refused `FerazelCore/Sprites/SetupFaces.swift:380`; 1150 Background ×6, first L15 — built; 1151 Background ×5, first L31 — built; 1152 Background ×6, first L15 — built; 1153 Background ×6, first L15 — built; 1208 Background ×38, first L40 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 1290 Bonus ×3, first L20 — built; 1291 Bonus ×6, first L20 — built; 1293 Bonus ×1, first L15 — built; 1337 Bonus ×1, first L22 — built; 1405 Platform ×5, first L50 — built; 1475 Box ×1, first L45 — refused `FerazelCore/Sprites/SetupFaces.swift:512`; 1488 Background ×30 — refused (28 of 30) `FerazelCore/Sprites/SetupFaces.swift:399`; 1750 Walker ×8, first L10 — built; 1780 Floater ×7 — built; 1840 Background ×12, first L11 — built; 1892 Crab ×3 — built; 1900 Background ×1, first L22 — built; 1901 Background ×1, first L22 — built; 1903 Background ×3, first L22 — built; 2809 Box ×3 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2811 Box ×5 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2838 Box ×3 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2839 Box ×3, first L51 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2856 Box ×2 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2901 Background ×4 — built; 2941 Box ×3, first L30 — built; 2957 Box ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 3060 Background ×9, first L20 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 3101 Bonus ×9 — built; 3103 Bonus ×4 — built; 3219 Bonus ×1, first L15 — built; 3223 Bonus ×3, first L15 — built.
    Also refused here (types built on 1–5, records the port refuses): 1090 ×12, 10 refused, p1 -2,0,102 — refused.
-3. **Future-phase resources:** conversation open [port: no (no level / screen opens it)]: Mcnv 209; level cache [port: named in code only]: PICT 1208, PICT 2957, PICT 3060; level cache [port: no]: PICT 2809, PICT 2811, PICT 2838, PICT 2839; level cache [port: registered in CachedFaces]: PICT 1750, PICT 1751, PICT 1752, PICT 1753, PICT 1754, PICT 1780, PICT 1890, PICT 1895, PICT 1900, PICT 1903, PICT 2840; level open [port: no (no level / screen opens it)]: Mlvl 62.
+3. **Future-phase resources:** conversation open [port: no (no level / screen opens it)]: Mcnv 209; level cache [port: registered in CachedFaces]: PICT 1208, PICT 1750, PICT 1751, PICT 1752, PICT 1753, PICT 1754, PICT 1780, PICT 1890, PICT 1895, PICT 1900, PICT 1903, PICT 2809, PICT 2811, PICT 2838, PICT 2839, PICT 2840, PICT 2957, PICT 3060; level open [port: no (no level / screen opens it)]: Mlvl 62.
    Header-named, new vs 1–5 (generic loaders, never exercised): horizon strip PICT 345; PxBack tileset PICT 347; PxMid tileset PICT pair 348,349; FG (+FG water) tileset PICT 340; BG tileset PICT 263; FG pattern tileset PICT 346; level CLUT 239; level+sprite CLUT 240; music track 22; chapter card PICT / clut 4670,287.
 4. **Conversations:** 209 (rec 1, type 2957, flag 1; cond [2, 5], act [3, 5, 6]) — every opcode handled by the port's interpreter. Chapter card 7 (PICT 4670, clut 287, `.ChapterScreen`).
 5. **Owners (types first placed here; switches above):** 6C-BG3 ×1, 6C-BX3 ×5, 6C-L55…L70 ×5; the level itself: 6C-L55…L70.
@@ -716,7 +716,7 @@ is not marked on levels 22 and 31** although their item 6 lists it (6A-CF review
 
 1. **Switches new vs 1–5:** 0x270c `cameraOffsetY` = -80 → 6C-L55…L70; 0x2716 `stripPict` = 385 → 6A-S8; 0x2718 `stripFactor` = 128 → 6A-S8; 0x271a `stripBaseY` = 16 → 6A-S8; 0x2730 `clutAnimMode` = 3 → 6C-XL; 0x2732 `clutAnimCount` = 16 → 6C-XL; 0x2734 `clutAnimPeriod` = 75 → 6C-XL; 0x2736 `clutAnimAmplitude` = 12000 → 6C-XL; 0x284a `music` = 28 → 6C-L55…L70.
 2. **New types:** 1208 Background ×4, first L40 — refused `FerazelCore/Sprites/SetupFaces.swift:430`; 1990 Xichra ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:712`.
-3. **Future-phase resources:** boot [port: no (no level / screen opens it)]: clut 260; conversation open [port: no (no level / screen opens it)]: Mcnv 250, Mcnv 251, Mcnv 252; level cache [port: named in code only]: PICT 1208; level cache [port: no]: PICT 1970, PICT 1971, PICT 1972, PICT 1973, PICT 1974, PICT 1975, PICT 1976, PICT 1977, PICT 1980, PICT 1981, PICT 1982, PICT 1983, PICT 1984, PICT 1985, PICT 1986, PICT 1987; level cache [port: registered in CachedFaces]: PICT 1130, PICT 1915; level open [port: no (no level / screen opens it)]: Mlvl 67; victory screens [port: named in code only]: PICT 159; victory screens [port: no]: PICT 161, PICT 162, PICT 4601, PICT 4602, PICT 4603, PICT 4604, PICT 4605, PICT 4606, PICT 4607; victory screens [port: no (no level / screen opens it)]: AIFC 29.
+3. **Future-phase resources:** boot [port: no (no level / screen opens it)]: clut 260; conversation open [port: no (no level / screen opens it)]: Mcnv 250, Mcnv 251, Mcnv 252; level cache [port: registered in CachedFaces]: PICT 1130, PICT 1208, PICT 1915, PICT 1970, PICT 1971, PICT 1972, PICT 1973, PICT 1974, PICT 1975, PICT 1976, PICT 1977, PICT 1980, PICT 1981, PICT 1982, PICT 1983, PICT 1984, PICT 1985, PICT 1986, PICT 1987; level open [port: no (no level / screen opens it)]: Mlvl 67; victory screens [port: named in code only]: PICT 159; victory screens [port: no]: PICT 161, PICT 162, PICT 4601, PICT 4602, PICT 4603, PICT 4604, PICT 4605, PICT 4606, PICT 4607; victory screens [port: no (no level / screen opens it)]: AIFC 29.
    Header-named, new vs 1–5 (generic loaders, never exercised): horizon strip PICT 385; PxBack tileset PICT 387; FG (+FG water) tileset PICT 380; BG tileset PICT 380; level CLUT 247; level+sprite CLUT 248; music track 28.
 4. **Conversations:** 250 (rec 5, type 1990, flag code; cond —, act —); 251 (rec 5, type 1990, flag code; cond —, act —); 252 (rec 5, type 1990, flag code; cond —, act —) — every opcode handled by the port's interpreter.
 5. **Owners (types first placed here; switches above):** 6C-XI ×1; the level itself: 6C-L55…L70.
@@ -728,7 +728,7 @@ is not marked on levels 22 and 31** although their item 6 lists it (6A-CF review
 
 1. **Switches new vs 1–5:** 0x26c7 `omniPxMode` = 6 → 6C-L55…L70 (its ⚑ part: the mode-6 interlace); 0x26c9 `waterSurfaceEffect` = 1 → 6C-L55…L70; 0x26cc `pxUsesLevelBaseClut` = 1 → 6C-L55…L70; 0x270e `landingDamage` = 100 → 6C-L55…L70; 0x284a `music` = 26 → 6C-L55…L70.
 2. **New types:** 1293 Bonus ×9, first L15 — built; 1338 Bonus ×2, first L22 — built; 1405 Platform ×3, first L50 — built; 2828 Box ×2 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2830 Box ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2831 Box ×3, first L11 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2906 Box ×4 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2956 Box ×1, first L22 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2957 Box ×1, first L62 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2963 Box ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 2964 Box ×1 — refused `FerazelCore/Sprites/SetupFaces.swift:715`; 3021 Rope ×5 — built; 3107 Bonus ×2 — built; 3219 Bonus ×5, first L15 — built; 3223 Bonus ×1, first L15 — built.
-3. **Future-phase resources:** conversation open [port: no (no level / screen opens it)]: Mcnv 202, Mcnv 212, Mcnv 213, Mcnv 214, Mcnv 280, Mcnv 281, Mcnv 282, Mcnv 283, Mcnv 401; level cache [port: named in code only]: PICT 2957; level cache [port: no]: PICT 2828, PICT 2830, PICT 2831, PICT 2956, PICT 2963, PICT 2964; level cache [port: registered in CachedFaces]: PICT 2829; level open [port: no (no level / screen opens it)]: Mlvl 70.
+3. **Future-phase resources:** conversation open [port: no (no level / screen opens it)]: Mcnv 202, Mcnv 212, Mcnv 213, Mcnv 214, Mcnv 280, Mcnv 281, Mcnv 282, Mcnv 283, Mcnv 401; level cache [port: registered in CachedFaces]: PICT 2828, PICT 2829, PICT 2830, PICT 2831, PICT 2956, PICT 2957, PICT 2963, PICT 2964; level open [port: no (no level / screen opens it)]: Mlvl 70.
    Header-named, new vs 1–5 (generic loaders, never exercised): PxBack tileset PICT 357; PxMid tileset PICT pair 348,349; FG (+FG water) tileset PICT 340; BG tileset PICT 263; FG pattern tileset PICT 346; level CLUT 241; level+sprite CLUT 242; music track 26.
 4. **Conversations:** 280 (rec 2, type 2906, flag 1; cond —, act —); 213 (rec 66, type 2963, flag 1; cond —, act —); 212 (rec 67, type 2952, flag 1; cond —, act —); 202 (rec 68, type 2956, flag 1; cond [3], act [3]); 281 (rec 69, type 2906, flag 1; cond —, act —); 282 (rec 70, type 2906, flag 1; cond —, act —); 283 (rec 71, type 2906, flag 1; cond —, act —); 401 (rec 72, type 2964, flag 1; cond —, act —); 214 (rec 88, type 2957, flag 1; cond —, act —) — every opcode handled by the port's interpreter.
 5. **Owners (types first placed here; switches above):** 6C-BX3 ×5, 6C-L55…L70 ×2; the level itself: 6C-L55…L70.
@@ -740,7 +740,7 @@ Resources, totals (item 3):
 
 <!-- LL:resources -->
 Future-phase rows read (resources-classified.tsv, class a / a5 / a6): 172 — AIFC 1, Mcnv 23, Mlvl 20, PICT 125, clut 3.
-Level × resource pairs by port state: AIFC no (no level / screen opens it) 1, Mcnv no (no level / screen opens it) 23, Mlvl no (no level / screen opens it) 19, PICT named in code only 34, PICT no 71, PICT registered in CachedFaces 116, clut no (no level / screen opens it) 5.
+Level × resource pairs by port state: AIFC no (no level / screen opens it) 1, Mcnv no (no level / screen opens it) 23, Mlvl no (no level / screen opens it) 19, PICT named in code only 5, PICT no 11, PICT registered in CachedFaces 205, clut no (no level / screen opens it) 5.
 Rows that map to no later level: Mlvl 5 (later level); PICT 1820 (later levels (cached; class Warrior not placed in L1-4)); PICT 1821 (later levels (cached; class Warrior not placed in L1-4)); PICT 1822 (later levels (cached; class Warrior not placed in L1-4)); PICT 6200 (later levels (OmniPx modes 1/2/5/6: L15,5,25,70)); PICT 6201 (later levels (OmniPx modes 1/2/5/6: L15,5,25,70)); PICT 1790-1791 (later (Floater, Phase 5)).
 <!-- /LL:resources -->
 
@@ -981,10 +981,10 @@ around their own calls only (M l. 75020/75026, 75582/75586, 76216/76233).
 <!-- LL:cache -->
 | # | list | PICT | faces (w×h, cols) | flag | in data | registered by (M l.) | record global | port CachedFaces | mark sites (M l.) |
 |---:|---|---|---|---:|---|---|---|---|---|
-| 1 | set | 1050 (0x41a) | 6 (160×160, 3) | 0 | yes | .InitPlayerSprite 42486 | `_DAT_100a0778` | **no** | 52622 |
-| 2 | set | 1051 (0x41b) | 4 (160×160, 4) | 0 | yes | .InitPlayerSprite 42487 | `_DAT_100a0774` | **no** | 52623 |
-| 3 | set | 1052 (0x41c) | 6 (160×160, 3) | 0 | yes | .InitPlayerSprite 42488 | `_DAT_100a0770` | **no** | 52625 |
-| 4 | set | 1053 (0x41d) | 4 (160×160, 4) | 0 | yes | .InitPlayerSprite 42489 | `_DAT_100a076c` | **no** | 52624 |
+| 1 | set | 1050 (0x41a) | 6 (160×160, 3) | 0 | yes | .InitPlayerSprite 42486 | `_DAT_100a0778` | yes | 52622 |
+| 2 | set | 1051 (0x41b) | 4 (160×160, 4) | 0 | yes | .InitPlayerSprite 42487 | `_DAT_100a0774` | yes | 52623 |
+| 3 | set | 1052 (0x41c) | 6 (160×160, 3) | 0 | yes | .InitPlayerSprite 42488 | `_DAT_100a0770` | yes | 52625 |
+| 4 | set | 1053 (0x41d) | 4 (160×160, 4) | 0 | yes | .InitPlayerSprite 42489 | `_DAT_100a076c` | yes | 52624 |
 | 5 | set | 1710 (0x6ae) | 6 (64×44, 6) | 0 | yes | .InitCrawlerSprite 56142 | `_DAT_100a09a8` | yes | 56188 |
 | 6 | set | 1711 (0x6af) | 6 (64×44, 6) | 0 | yes | .InitCrawlerSprite 56143 | `_DAT_100a09a4` | yes | 56189 |
 | 7 | set | 1713 (0x6b1) | 6 (64×44, 6) | 0 | yes | .InitCrawlerSprite 56144 | `_DAT_100a09a0` | yes | 56190 |
@@ -1002,214 +1002,214 @@ around their own calls only (M l. 75020/75026, 75582/75586, 76216/76233).
 | 17 | set | 1753 (0x6d9) | 3 (216×110, 1) | 0 | yes | .InitWalkerSprite 56766 | `_DAT_100a09c8` | yes | 57002, 76364 |
 | 18 | set | 1754 (0x6da) | 6 (216×110, 1) | 0 | yes | .InitWalkerSprite 56767 | `_DAT_100a09c4` | yes | 57005, 76366 |
 | 19 | set | 1760 (0x6e0) | 9 (84×92, 9) | 0 | yes | .InitWalkerSprite 56768 | `_DAT_100a09c0` | yes | 56989 |
-| 3 | single | 3070 (0xbfe) | 1 | 0 | yes | .InitBoxSprite 58755 | `_DAT_100a0a8c` | **no** | 59527 |
-| 4 | single | 3071 (0xbff) | 1 | 0 | yes | .InitBoxSprite 58756 | `_DAT_100a0a88` | **no** | 59526 |
-| 5 | single | 3072 (0xc00) | 1 | 0 | yes | .InitBoxSprite 58757 | `_DAT_100a0a84` | **no** | 59525 |
-| 6 | single | 1490 (0x5d2) | 1 | 0 | yes | .InitBoxSprite 58771 | `_DAT_100a0a74` | **no** | indexed (see the class Setup) |
-| 7 | single | 1491 (0x5d3) | 1 | 0 | yes | .InitBoxSprite 58771 | `_DAT_100a0a74` | **no** | indexed (see the class Setup) |
-| 8 | single | 1492 (0x5d4) | 1 | 0 | yes | .InitBoxSprite 58771 | `_DAT_100a0a74` | **no** | indexed (see the class Setup) |
-| 9 | single | 1493 (0x5d5) | 1 | 0 | yes | .InitBoxSprite 58771 | `_DAT_100a0a74` | **no** | indexed (see the class Setup) |
-| 10 | single | 2805 (0xaf5) | 1 | 0 | **absent** | .InitBoxSprite 58776 | `0x100a644c` | **no** | indexed (see the class Setup) |
-| 11 | single | 2806 (0xaf6) | 1 | 0 | **absent** | .InitBoxSprite 58776 | `0x100a644c` | **no** | indexed (see the class Setup) |
-| 12 | single | 2807 (0xaf7) | 1 | 0 | **absent** | .InitBoxSprite 58776 | `0x100a644c` | **no** | indexed (see the class Setup) |
-| 13 | single | 2808 (0xaf8) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | **no** | indexed (see the class Setup) |
-| 14 | single | 2809 (0xaf9) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | **no** | indexed (see the class Setup) |
-| 15 | single | 2810 (0xafa) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | **no** | indexed (see the class Setup) |
-| 16 | single | 2811 (0xafb) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | **no** | indexed (see the class Setup) |
+| 3 | single | 3070 (0xbfe) | 1 | 0 | yes | .InitBoxSprite 58755 | `_DAT_100a0a8c` | yes | 59527 |
+| 4 | single | 3071 (0xbff) | 1 | 0 | yes | .InitBoxSprite 58756 | `_DAT_100a0a88` | yes | 59526 |
+| 5 | single | 3072 (0xc00) | 1 | 0 | yes | .InitBoxSprite 58757 | `_DAT_100a0a84` | yes | 59525 |
+| 6 | single | 1490 (0x5d2) | 1 | 0 | yes | .InitBoxSprite 58771 | `_DAT_100a0a74` | yes | indexed (see the class Setup) |
+| 7 | single | 1491 (0x5d3) | 1 | 0 | yes | .InitBoxSprite 58771 | `_DAT_100a0a74` | yes | indexed (see the class Setup) |
+| 8 | single | 1492 (0x5d4) | 1 | 0 | yes | .InitBoxSprite 58771 | `_DAT_100a0a74` | yes | indexed (see the class Setup) |
+| 9 | single | 1493 (0x5d5) | 1 | 0 | yes | .InitBoxSprite 58771 | `_DAT_100a0a74` | yes | indexed (see the class Setup) |
+| 10 | single | 2805 (0xaf5) | 1 | 0 | **absent** | .InitBoxSprite 58776 | `0x100a644c` | yes | indexed (see the class Setup) |
+| 11 | single | 2806 (0xaf6) | 1 | 0 | **absent** | .InitBoxSprite 58776 | `0x100a644c` | yes | indexed (see the class Setup) |
+| 12 | single | 2807 (0xaf7) | 1 | 0 | **absent** | .InitBoxSprite 58776 | `0x100a644c` | yes | indexed (see the class Setup) |
+| 13 | single | 2808 (0xaf8) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | yes | indexed (see the class Setup) |
+| 14 | single | 2809 (0xaf9) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | yes | indexed (see the class Setup) |
+| 15 | single | 2810 (0xafa) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | yes | indexed (see the class Setup) |
+| 16 | single | 2811 (0xafb) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | yes | indexed (see the class Setup) |
 | 17 | single | 2812 (0xafc) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | yes | indexed (see the class Setup) |
 | 18 | single | 2813 (0xafd) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | yes | indexed (see the class Setup) |
-| 19 | single | 2814 (0xafe) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | **no** | indexed (see the class Setup) |
-| 20 | single | 2815 (0xaff) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | **no** | indexed (see the class Setup) |
-| 21 | single | 2816 (0xb00) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | **no** | indexed (see the class Setup) |
-| 22 | single | 2817 (0xb01) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | **no** | indexed (see the class Setup) |
-| 23 | single | 2818 (0xb02) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | **no** | indexed (see the class Setup) |
-| 24 | single | 2819 (0xb03) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | **no** | indexed (see the class Setup) |
+| 19 | single | 2814 (0xafe) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | yes | indexed (see the class Setup) |
+| 20 | single | 2815 (0xaff) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | yes | indexed (see the class Setup) |
+| 21 | single | 2816 (0xb00) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | yes | indexed (see the class Setup) |
+| 22 | single | 2817 (0xb01) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | yes | indexed (see the class Setup) |
+| 23 | single | 2818 (0xb02) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | yes | indexed (see the class Setup) |
+| 24 | single | 2819 (0xb03) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | yes | indexed (see the class Setup) |
 | 25 | single | 2820 (0xb04) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | yes | indexed (see the class Setup) |
 | 26 | single | 2821 (0xb05) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | yes | indexed (see the class Setup) |
 | 27 | single | 2822 (0xb06) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | yes | indexed (see the class Setup) |
-| 28 | single | 2823 (0xb07) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | **no** | indexed (see the class Setup) |
-| 29 | single | 2824 (0xb08) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | **no** | indexed (see the class Setup) |
-| 30 | single | 2825 (0xb09) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | **no** | indexed (see the class Setup) |
+| 28 | single | 2823 (0xb07) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | yes | indexed (see the class Setup) |
+| 29 | single | 2824 (0xb08) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | yes | indexed (see the class Setup) |
+| 30 | single | 2825 (0xb09) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | yes | indexed (see the class Setup) |
 | 31 | single | 2826 (0xb0a) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | yes | indexed (see the class Setup) |
-| 32 | single | 2827 (0xb0b) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | **no** | indexed (see the class Setup) |
-| 33 | single | 2828 (0xb0c) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | **no** | indexed (see the class Setup) |
+| 32 | single | 2827 (0xb0b) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | yes | indexed (see the class Setup) |
+| 33 | single | 2828 (0xb0c) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | yes | indexed (see the class Setup) |
 | 34 | single | 2829 (0xb0d) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | yes | indexed (see the class Setup) |
-| 35 | single | 2830 (0xb0e) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | **no** | indexed (see the class Setup) |
-| 36 | single | 2831 (0xb0f) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | **no** | indexed (see the class Setup) |
+| 35 | single | 2830 (0xb0e) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | yes | indexed (see the class Setup) |
+| 36 | single | 2831 (0xb0f) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | yes | indexed (see the class Setup) |
 | 37 | single | 2832 (0xb10) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | yes | indexed (see the class Setup) |
-| 38 | single | 2833 (0xb11) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | **no** | indexed (see the class Setup) |
-| 39 | single | 2834 (0xb12) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | **no** | indexed (see the class Setup) |
-| 40 | single | 2835 (0xb13) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | **no** | indexed (see the class Setup) |
-| 41 | single | 2836 (0xb14) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | **no** | indexed (see the class Setup) |
-| 42 | single | 2837 (0xb15) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | **no** | indexed (see the class Setup) |
-| 43 | single | 2838 (0xb16) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | **no** | indexed (see the class Setup) |
-| 44 | single | 2839 (0xb17) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | **no** | indexed (see the class Setup) |
+| 38 | single | 2833 (0xb11) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | yes | indexed (see the class Setup) |
+| 39 | single | 2834 (0xb12) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | yes | indexed (see the class Setup) |
+| 40 | single | 2835 (0xb13) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | yes | indexed (see the class Setup) |
+| 41 | single | 2836 (0xb14) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | yes | indexed (see the class Setup) |
+| 42 | single | 2837 (0xb15) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | yes | indexed (see the class Setup) |
+| 43 | single | 2838 (0xb16) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | yes | indexed (see the class Setup) |
+| 44 | single | 2839 (0xb17) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | yes | indexed (see the class Setup) |
 | 45 | single | 2840 (0xb18) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | yes | indexed (see the class Setup) |
 | 46 | single | 2841 (0xb19) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | yes | indexed (see the class Setup) |
 | 47 | single | 2842 (0xb1a) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | yes | indexed (see the class Setup) |
 | 48 | single | 2843 (0xb1b) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | yes | indexed (see the class Setup) |
-| 49 | single | 2844 (0xb1c) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | **no** | indexed (see the class Setup) |
-| 50 | single | 2845 (0xb1d) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | **no** | indexed (see the class Setup) |
-| 51 | single | 2846 (0xb1e) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | **no** | indexed (see the class Setup) |
-| 52 | single | 2847 (0xb1f) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | **no** | indexed (see the class Setup) |
+| 49 | single | 2844 (0xb1c) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | yes | indexed (see the class Setup) |
+| 50 | single | 2845 (0xb1d) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | yes | indexed (see the class Setup) |
+| 51 | single | 2846 (0xb1e) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | yes | indexed (see the class Setup) |
+| 52 | single | 2847 (0xb1f) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | yes | indexed (see the class Setup) |
 | 53 | single | 2848 (0xb20) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | yes | indexed (see the class Setup) |
 | 54 | single | 2849 (0xb21) | 1 | 0 | yes | .InitBoxSprite 58776 | `0x100a644c` | yes | indexed (see the class Setup) |
-| 55 | single | 2950 (0xb86) | 1 | 0 | **absent** | .InitBoxSprite 58781 | `_DAT_100a0a6c` | **no** | indexed (see the class Setup) |
+| 55 | single | 2950 (0xb86) | 1 | 0 | **absent** | .InitBoxSprite 58781 | `_DAT_100a0a6c` | yes | indexed (see the class Setup) |
 | 56 | single | 2951 (0xb87) | 1 | 0 | yes | .InitBoxSprite 58781 | `_DAT_100a0a6c` | yes | indexed (see the class Setup) |
 | 57 | single | 2952 (0xb88) | 1 | 0 | yes | .InitBoxSprite 58781 | `_DAT_100a0a6c` | yes | indexed (see the class Setup) |
-| 58 | single | 2953 (0xb89) | 1 | 0 | yes | .InitBoxSprite 58781 | `_DAT_100a0a6c` | **no** | indexed (see the class Setup) |
+| 58 | single | 2953 (0xb89) | 1 | 0 | yes | .InitBoxSprite 58781 | `_DAT_100a0a6c` | yes | indexed (see the class Setup) |
 | 59 | single | 2954 (0xb8a) | 1 | 0 | yes | .InitBoxSprite 58781 | `_DAT_100a0a6c` | yes | indexed (see the class Setup) |
-| 60 | single | 2955 (0xb8b) | 1 | 0 | yes | .InitBoxSprite 58781 | `_DAT_100a0a6c` | **no** | indexed (see the class Setup) |
-| 61 | single | 2956 (0xb8c) | 1 | 0 | yes | .InitBoxSprite 58781 | `_DAT_100a0a6c` | **no** | indexed (see the class Setup) |
-| 62 | single | 2957 (0xb8d) | 1 | 0 | yes | .InitBoxSprite 58781 | `_DAT_100a0a6c` | **no** | indexed (see the class Setup) |
-| 63 | single | 2958 (0xb8e) | 1 | 0 | yes | .InitBoxSprite 58781 | `_DAT_100a0a6c` | **no** | indexed (see the class Setup) |
-| 64 | single | 2959 (0xb8f) | 1 | 0 | yes | .InitBoxSprite 58781 | `_DAT_100a0a6c` | **no** | indexed (see the class Setup) |
-| 65 | single | 2960 (0xb90) | 1 | 0 | yes | .InitBoxSprite 58781 | `_DAT_100a0a6c` | **no** | indexed (see the class Setup) |
-| 66 | single | 2961 (0xb91) | 1 | 0 | yes | .InitBoxSprite 58781 | `_DAT_100a0a6c` | **no** | indexed (see the class Setup) |
-| 67 | single | 2962 (0xb92) | 1 | 0 | yes | .InitBoxSprite 58781 | `_DAT_100a0a6c` | **no** | indexed (see the class Setup) |
-| 68 | single | 2963 (0xb93) | 1 | 0 | yes | .InitBoxSprite 58781 | `_DAT_100a0a6c` | **no** | indexed (see the class Setup) |
-| 69 | single | 2964 (0xb94) | 1 | 0 | yes | .InitBoxSprite 58781 | `_DAT_100a0a6c` | **no** | indexed (see the class Setup) |
-| 70 | single | 2965 (0xb95) | 1 | 0 | yes | .InitBoxSprite 58781 | `_DAT_100a0a6c` | **no** | indexed (see the class Setup) |
-| 71 | single | 2966 (0xb96) | 1 | 0 | **absent** | .InitBoxSprite 58781 | `_DAT_100a0a6c` | **no** | indexed (see the class Setup) |
-| 72 | single | 2967 (0xb97) | 1 | 0 | **absent** | .InitBoxSprite 58781 | `_DAT_100a0a6c` | **no** | indexed (see the class Setup) |
-| 73 | single | 2968 (0xb98) | 1 | 0 | **absent** | .InitBoxSprite 58781 | `_DAT_100a0a6c` | **no** | indexed (see the class Setup) |
-| 74 | single | 2969 (0xb99) | 1 | 0 | **absent** | .InitBoxSprite 58781 | `_DAT_100a0a6c` | **no** | indexed (see the class Setup) |
-| 20 | set | 2929 (0xb71) | 2 (71×52, 2) | 0 | yes | .InitBoxSprite 58784 | `_DAT_100a0a68` | **no** | 59405 |
+| 60 | single | 2955 (0xb8b) | 1 | 0 | yes | .InitBoxSprite 58781 | `_DAT_100a0a6c` | yes | indexed (see the class Setup) |
+| 61 | single | 2956 (0xb8c) | 1 | 0 | yes | .InitBoxSprite 58781 | `_DAT_100a0a6c` | yes | indexed (see the class Setup) |
+| 62 | single | 2957 (0xb8d) | 1 | 0 | yes | .InitBoxSprite 58781 | `_DAT_100a0a6c` | yes | indexed (see the class Setup) |
+| 63 | single | 2958 (0xb8e) | 1 | 0 | yes | .InitBoxSprite 58781 | `_DAT_100a0a6c` | yes | indexed (see the class Setup) |
+| 64 | single | 2959 (0xb8f) | 1 | 0 | yes | .InitBoxSprite 58781 | `_DAT_100a0a6c` | yes | indexed (see the class Setup) |
+| 65 | single | 2960 (0xb90) | 1 | 0 | yes | .InitBoxSprite 58781 | `_DAT_100a0a6c` | yes | indexed (see the class Setup) |
+| 66 | single | 2961 (0xb91) | 1 | 0 | yes | .InitBoxSprite 58781 | `_DAT_100a0a6c` | yes | indexed (see the class Setup) |
+| 67 | single | 2962 (0xb92) | 1 | 0 | yes | .InitBoxSprite 58781 | `_DAT_100a0a6c` | yes | indexed (see the class Setup) |
+| 68 | single | 2963 (0xb93) | 1 | 0 | yes | .InitBoxSprite 58781 | `_DAT_100a0a6c` | yes | indexed (see the class Setup) |
+| 69 | single | 2964 (0xb94) | 1 | 0 | yes | .InitBoxSprite 58781 | `_DAT_100a0a6c` | yes | indexed (see the class Setup) |
+| 70 | single | 2965 (0xb95) | 1 | 0 | yes | .InitBoxSprite 58781 | `_DAT_100a0a6c` | yes | indexed (see the class Setup) |
+| 71 | single | 2966 (0xb96) | 1 | 0 | **absent** | .InitBoxSprite 58781 | `_DAT_100a0a6c` | yes | indexed (see the class Setup) |
+| 72 | single | 2967 (0xb97) | 1 | 0 | **absent** | .InitBoxSprite 58781 | `_DAT_100a0a6c` | yes | indexed (see the class Setup) |
+| 73 | single | 2968 (0xb98) | 1 | 0 | **absent** | .InitBoxSprite 58781 | `_DAT_100a0a6c` | yes | indexed (see the class Setup) |
+| 74 | single | 2969 (0xb99) | 1 | 0 | **absent** | .InitBoxSprite 58781 | `_DAT_100a0a6c` | yes | indexed (see the class Setup) |
+| 20 | set | 2929 (0xb71) | 2 (71×52, 2) | 0 | yes | .InitBoxSprite 58784 | `_DAT_100a0a68` | yes | 59405 |
 | 21 | set | 2930 (0xb72) | 14 (128×96, 7) | 0 | yes | .InitBoxSprite 58785 | `_DAT_100a0a64` | yes | 59435 |
 | 22 | set | 2931 (0xb73) | 21 (128×58, 7) | 0 | yes | .InitBoxSprite 58786 | `_DAT_100a0a60` | yes | 59434 |
-| 75 | single | 1460 (0x5b4) | 1 | 1 | yes | .InitBoxSprite 58799 | `_DAT_100a0a44` | **no** | 59196 |
+| 75 | single | 1460 (0x5b4) | 1 | 1 | yes | .InitBoxSprite 58799 | `_DAT_100a0a44` | yes | 59196 |
 | 76 | single | 1461 (0x5b5) | 1 | 1 | yes | .InitBoxSprite 58800 | `_DAT_100a0a40` | yes | 59200, 59204 |
-| 77 | single | 1463 (0x5b7) | 1 | 1 | yes | .InitBoxSprite 58801 | `_DAT_100a0a3c` | **no** | 59209 |
+| 77 | single | 1463 (0x5b7) | 1 | 1 | yes | .InitBoxSprite 58801 | `_DAT_100a0a3c` | yes | 59209 |
 | 78 | single | 1464 (0x5b8) | 1 | 1 | yes | .InitBoxSprite 58802 | `_DAT_100a0a38` | yes | 59213, 59217 |
-| 79 | single | 1466 (0x5ba) | 1 | 1 | yes | .InitBoxSprite 58803 | `_DAT_100a0a34` | **no** | 59222 |
-| 80 | single | 1467 (0x5bb) | 1 | 1 | yes | .InitBoxSprite 58804 | `_DAT_100a0a30` | **no** | 59223 |
+| 79 | single | 1466 (0x5ba) | 1 | 1 | yes | .InitBoxSprite 58803 | `_DAT_100a0a34` | yes | 59222 |
+| 80 | single | 1467 (0x5bb) | 1 | 1 | yes | .InitBoxSprite 58804 | `_DAT_100a0a30` | yes | 59223 |
 | 23 | set | 1470 (0x5be) | 4 (54×56, 4) | 0 | yes | .InitBoxSprite 58806 | `_DAT_100a0a2c` | yes | 59260 |
 | 24 | set | 1440 (0x5a0) | 12 (24×16, 4) | 0 | yes | .InitBoxSprite 58813 | `_DAT_100a0a1c` | yes | 59121 |
 | 25 | set | 1441 (0x5a1) | 6 (48×32, 6) | 0 | yes | .InitBoxSprite 58814 | `_DAT_100a0a18` | yes | 59120 |
 | 26 | set | 1442 (0x5a2) | 6 (20×32, 6) | 0 | yes | .InitBoxSprite 58815 | `_DAT_100a0a14` | yes | 59118 |
-| 27 | set | 1080 (0x438) | 6 (113×24, 1) | 0 | yes | .InitBoxSprite 58816 | `_DAT_100a0a10` | **no** | 59079 |
-| 81 | single | 2850 (0xb22) | 1 | 1 | yes | .InitBoxSprite 58820 | `_DAT_100a0a0c` | **no** | indexed (see the class Setup) |
-| 82 | single | 2851 (0xb23) | 1 | 1 | yes | .InitBoxSprite 58820 | `_DAT_100a0a0c` | **no** | indexed (see the class Setup) |
-| 83 | single | 2852 (0xb24) | 1 | 1 | yes | .InitBoxSprite 58820 | `_DAT_100a0a0c` | **no** | indexed (see the class Setup) |
+| 27 | set | 1080 (0x438) | 6 (113×24, 1) | 0 | yes | .InitBoxSprite 58816 | `_DAT_100a0a10` | yes | 59079 |
+| 81 | single | 2850 (0xb22) | 1 | 1 | yes | .InitBoxSprite 58820 | `_DAT_100a0a0c` | yes | indexed (see the class Setup) |
+| 82 | single | 2851 (0xb23) | 1 | 1 | yes | .InitBoxSprite 58820 | `_DAT_100a0a0c` | yes | indexed (see the class Setup) |
+| 83 | single | 2852 (0xb24) | 1 | 1 | yes | .InitBoxSprite 58820 | `_DAT_100a0a0c` | yes | indexed (see the class Setup) |
 | 84 | single | 2853 (0xb25) | 1 | 1 | yes | .InitBoxSprite 58820 | `_DAT_100a0a0c` | yes | indexed (see the class Setup) |
-| 85 | single | 2854 (0xb26) | 1 | 1 | yes | .InitBoxSprite 58820 | `_DAT_100a0a0c` | **no** | indexed (see the class Setup) |
-| 86 | single | 2855 (0xb27) | 1 | 1 | yes | .InitBoxSprite 58820 | `_DAT_100a0a0c` | **no** | indexed (see the class Setup) |
-| 87 | single | 2856 (0xb28) | 1 | 1 | yes | .InitBoxSprite 58820 | `_DAT_100a0a0c` | **no** | indexed (see the class Setup) |
-| 88 | single | 2857 (0xb29) | 1 | 1 | yes | .InitBoxSprite 58820 | `_DAT_100a0a0c` | **no** | indexed (see the class Setup) |
-| 89 | single | 2858 (0xb2a) | 1 | 1 | yes | .InitBoxSprite 58820 | `_DAT_100a0a0c` | **no** | indexed (see the class Setup) |
-| 90 | single | 2859 (0xb2b) | 1 | 1 | yes | .InitBoxSprite 58820 | `_DAT_100a0a0c` | **no** | indexed (see the class Setup) |
-| 91 | single | 2860 (0xb2c) | 1 | 1 | yes | .InitBoxSprite 58820 | `_DAT_100a0a0c` | **no** | indexed (see the class Setup) |
-| 92 | single | 2861 (0xb2d) | 1 | 1 | yes | .InitBoxSprite 58820 | `_DAT_100a0a0c` | **no** | indexed (see the class Setup) |
-| 93 | single | 2862 (0xb2e) | 1 | 1 | yes | .InitBoxSprite 58820 | `_DAT_100a0a0c` | **no** | indexed (see the class Setup) |
-| 94 | single | 2863 (0xb2f) | 1 | 1 | yes | .InitBoxSprite 58820 | `_DAT_100a0a0c` | **no** | indexed (see the class Setup) |
-| 95 | single | 2864 (0xb30) | 1 | 1 | yes | .InitBoxSprite 58820 | `_DAT_100a0a0c` | **no** | indexed (see the class Setup) |
-| 96 | single | 2865 (0xb31) | 1 | 1 | yes | .InitBoxSprite 58820 | `_DAT_100a0a0c` | **no** | indexed (see the class Setup) |
-| 97 | single | 2866 (0xb32) | 1 | 1 | yes | .InitBoxSprite 58820 | `_DAT_100a0a0c` | **no** | indexed (see the class Setup) |
-| 98 | single | 2867 (0xb33) | 1 | 1 | yes | .InitBoxSprite 58820 | `_DAT_100a0a0c` | **no** | indexed (see the class Setup) |
+| 85 | single | 2854 (0xb26) | 1 | 1 | yes | .InitBoxSprite 58820 | `_DAT_100a0a0c` | yes | indexed (see the class Setup) |
+| 86 | single | 2855 (0xb27) | 1 | 1 | yes | .InitBoxSprite 58820 | `_DAT_100a0a0c` | yes | indexed (see the class Setup) |
+| 87 | single | 2856 (0xb28) | 1 | 1 | yes | .InitBoxSprite 58820 | `_DAT_100a0a0c` | yes | indexed (see the class Setup) |
+| 88 | single | 2857 (0xb29) | 1 | 1 | yes | .InitBoxSprite 58820 | `_DAT_100a0a0c` | yes | indexed (see the class Setup) |
+| 89 | single | 2858 (0xb2a) | 1 | 1 | yes | .InitBoxSprite 58820 | `_DAT_100a0a0c` | yes | indexed (see the class Setup) |
+| 90 | single | 2859 (0xb2b) | 1 | 1 | yes | .InitBoxSprite 58820 | `_DAT_100a0a0c` | yes | indexed (see the class Setup) |
+| 91 | single | 2860 (0xb2c) | 1 | 1 | yes | .InitBoxSprite 58820 | `_DAT_100a0a0c` | yes | indexed (see the class Setup) |
+| 92 | single | 2861 (0xb2d) | 1 | 1 | yes | .InitBoxSprite 58820 | `_DAT_100a0a0c` | yes | indexed (see the class Setup) |
+| 93 | single | 2862 (0xb2e) | 1 | 1 | yes | .InitBoxSprite 58820 | `_DAT_100a0a0c` | yes | indexed (see the class Setup) |
+| 94 | single | 2863 (0xb2f) | 1 | 1 | yes | .InitBoxSprite 58820 | `_DAT_100a0a0c` | yes | indexed (see the class Setup) |
+| 95 | single | 2864 (0xb30) | 1 | 1 | yes | .InitBoxSprite 58820 | `_DAT_100a0a0c` | yes | indexed (see the class Setup) |
+| 96 | single | 2865 (0xb31) | 1 | 1 | yes | .InitBoxSprite 58820 | `_DAT_100a0a0c` | yes | indexed (see the class Setup) |
+| 97 | single | 2866 (0xb32) | 1 | 1 | yes | .InitBoxSprite 58820 | `_DAT_100a0a0c` | yes | indexed (see the class Setup) |
+| 98 | single | 2867 (0xb33) | 1 | 1 | yes | .InitBoxSprite 58820 | `_DAT_100a0a0c` | yes | indexed (see the class Setup) |
 | 99 | single | 2868 (0xb34) | 1 | 1 | yes | .InitBoxSprite 58820 | `_DAT_100a0a0c` | yes | indexed (see the class Setup) |
 | 100 | single | 2869 (0xb35) | 1 | 1 | yes | .InitBoxSprite 58820 | `_DAT_100a0a0c` | yes | indexed (see the class Setup) |
 | 101 | single | 2870 (0xb36) | 1 | 0 | yes | .InitBoxSprite 58825 | `iVar12` | yes | indexed (see the class Setup) |
 | 102 | single | 2871 (0xb37) | 1 | 0 | yes | .InitBoxSprite 58825 | `iVar12` | yes | indexed (see the class Setup) |
-| 103 | single | 2872 (0xb38) | 1 | 0 | yes | .InitBoxSprite 58825 | `iVar12` | **no** | indexed (see the class Setup) |
-| 104 | single | 2873 (0xb39) | 1 | 0 | yes | .InitBoxSprite 58825 | `iVar12` | **no** | indexed (see the class Setup) |
+| 103 | single | 2872 (0xb38) | 1 | 0 | yes | .InitBoxSprite 58825 | `iVar12` | yes | indexed (see the class Setup) |
+| 104 | single | 2873 (0xb39) | 1 | 0 | yes | .InitBoxSprite 58825 | `iVar12` | yes | indexed (see the class Setup) |
 | 105 | single | 2874 (0xb3a) | 1 | 0 | yes | .InitBoxSprite 58825 | `iVar12` | yes | indexed (see the class Setup) |
-| 106 | single | 2875 (0xb3b) | 1 | 0 | yes | .InitBoxSprite 58825 | `iVar12` | **no** | indexed (see the class Setup) |
-| 107 | single | 2876 (0xb3c) | 1 | 0 | yes | .InitBoxSprite 58825 | `iVar12` | **no** | indexed (see the class Setup) |
-| 108 | single | 2877 (0xb3d) | 1 | 0 | yes | .InitBoxSprite 58825 | `iVar12` | **no** | indexed (see the class Setup) |
-| 109 | single | 2878 (0xb3e) | 1 | 0 | yes | .InitBoxSprite 58825 | `iVar12` | **no** | indexed (see the class Setup) |
-| 110 | single | 2879 (0xb3f) | 1 | 0 | yes | .InitBoxSprite 58825 | `iVar12` | **no** | indexed (see the class Setup) |
-| 111 | single | 2880 (0xb40) | 1 | 0 | yes | .InitBoxSprite 58825 | `iVar12` | **no** | indexed (see the class Setup) |
-| 112 | single | 2881 (0xb41) | 1 | 0 | yes | .InitBoxSprite 58825 | `iVar12` | **no** | indexed (see the class Setup) |
-| 113 | single | 2882 (0xb42) | 1 | 0 | yes | .InitBoxSprite 58825 | `iVar12` | **no** | indexed (see the class Setup) |
+| 106 | single | 2875 (0xb3b) | 1 | 0 | yes | .InitBoxSprite 58825 | `iVar12` | yes | indexed (see the class Setup) |
+| 107 | single | 2876 (0xb3c) | 1 | 0 | yes | .InitBoxSprite 58825 | `iVar12` | yes | indexed (see the class Setup) |
+| 108 | single | 2877 (0xb3d) | 1 | 0 | yes | .InitBoxSprite 58825 | `iVar12` | yes | indexed (see the class Setup) |
+| 109 | single | 2878 (0xb3e) | 1 | 0 | yes | .InitBoxSprite 58825 | `iVar12` | yes | indexed (see the class Setup) |
+| 110 | single | 2879 (0xb3f) | 1 | 0 | yes | .InitBoxSprite 58825 | `iVar12` | yes | indexed (see the class Setup) |
+| 111 | single | 2880 (0xb40) | 1 | 0 | yes | .InitBoxSprite 58825 | `iVar12` | yes | indexed (see the class Setup) |
+| 112 | single | 2881 (0xb41) | 1 | 0 | yes | .InitBoxSprite 58825 | `iVar12` | yes | indexed (see the class Setup) |
+| 113 | single | 2882 (0xb42) | 1 | 0 | yes | .InitBoxSprite 58825 | `iVar12` | yes | indexed (see the class Setup) |
 | 114 | single | 2883 (0xb43) | 1 | 0 | yes | .InitBoxSprite 58825 | `iVar12` | yes | indexed (see the class Setup) |
 | 115 | single | 2884 (0xb44) | 1 | 0 | yes | .InitBoxSprite 58825 | `iVar12` | yes | indexed (see the class Setup) |
-| 116 | single | 2885 (0xb45) | 1 | 0 | yes | .InitBoxSprite 58825 | `iVar12` | **no** | indexed (see the class Setup) |
-| 117 | single | 2920 (0xb68) | 1 | 0 | yes | .InitBoxSprite 58830 | `_DAT_100a0a04` | **no** | indexed (see the class Setup) |
-| 118 | single | 2921 (0xb69) | 1 | 0 | yes | .InitBoxSprite 58830 | `_DAT_100a0a04` | **no** | indexed (see the class Setup) |
+| 116 | single | 2885 (0xb45) | 1 | 0 | yes | .InitBoxSprite 58825 | `iVar12` | yes | indexed (see the class Setup) |
+| 117 | single | 2920 (0xb68) | 1 | 0 | yes | .InitBoxSprite 58830 | `_DAT_100a0a04` | yes | indexed (see the class Setup) |
+| 118 | single | 2921 (0xb69) | 1 | 0 | yes | .InitBoxSprite 58830 | `_DAT_100a0a04` | yes | indexed (see the class Setup) |
 | 119 | single | 2922 (0xb6a) | 1 | 0 | yes | .InitBoxSprite 58830 | `_DAT_100a0a04` | yes | indexed (see the class Setup) |
-| 120 | single | 2923 (0xb6b) | 1 | 0 | yes | .InitBoxSprite 58830 | `_DAT_100a0a04` | **no** | indexed (see the class Setup) |
+| 120 | single | 2923 (0xb6b) | 1 | 0 | yes | .InitBoxSprite 58830 | `_DAT_100a0a04` | yes | indexed (see the class Setup) |
 | 121 | single | 2924 (0xb6c) | 1 | 0 | yes | .InitBoxSprite 58830 | `_DAT_100a0a04` | yes | indexed (see the class Setup) |
 | 122 | single | 2925 (0xb6d) | 1 | 0 | yes | .InitBoxSprite 58830 | `_DAT_100a0a04` | yes | indexed (see the class Setup) |
 | 123 | single | 2926 (0xb6e) | 1 | 0 | yes | .InitBoxSprite 58830 | `_DAT_100a0a04` | yes | indexed (see the class Setup) |
 | 124 | single | 2927 (0xb6f) | 1 | 0 | yes | .InitBoxSprite 58830 | `_DAT_100a0a04` | yes | indexed (see the class Setup) |
 | 125 | single | 2928 (0xb70) | 1 | 0 | yes | .InitBoxSprite 58830 | `_DAT_100a0a04` | yes | indexed (see the class Setup) |
 | 126 | single | 2900 (0xb54) | 1 | 0 | yes | .InitBackgroundSprite 61862 | `_DAT_100a0b3c` | yes | 62434 |
-| 127 | single | 2901 (0xb55) | 1 | 0 | yes | .InitBackgroundSprite 61863 | `_DAT_100a0b38` | **no** | 62586 |
+| 127 | single | 2901 (0xb55) | 1 | 0 | yes | .InitBackgroundSprite 61863 | `_DAT_100a0b38` | yes | 62586 |
 | 28 | set | 1840 (0x730) | 12 (24×128, 12) | 0 | yes | .InitBackgroundSprite 61864 | `_DAT_100a0b34` | yes | 61984, 62281 |
 | 128 | single | 1842 (0x732) | 1 | 0 | yes | .InitBackgroundSprite 61865 | `_DAT_100a0b30` | yes | 62460 |
 | 129 | single | 1843 (0x733) | 1 | 0 | yes | .InitBackgroundSprite 61866 | `_DAT_100a0b2c` | yes | 62461 |
-| 130 | single | 1855 (0x73f) | 1 | 0 | yes | .InitBackgroundSprite 61867 | `_DAT_100a0b28` | **no** | unknown (not derived) |
-| 131 | single | 1856 (0x740) | 1 | 0 | yes | .InitBackgroundSprite 61868 | `_DAT_100a0b24` | **no** | unknown (not derived) |
-| 132 | single | 2890 (0xb4a) | 1 | 0 | yes | .InitBackgroundSprite 61869 | `_DAT_100a0b20` | **no** | 62537 |
-| 133 | single | 2891 (0xb4b) | 1 | 0 | yes | .InitBackgroundSprite 61870 | `_DAT_100a0b1c` | **no** | 62541 |
-| 134 | single | 2892 (0xb4c) | 1 | 0 | yes | .InitBackgroundSprite 61871 | `_DAT_100a0b18` | **no** | 62532 |
-| 135 | single | 2893 (0xb4d) | 1 | 0 | yes | .InitBackgroundSprite 61872 | `_DAT_100a0b14` | **no** | 62546 |
+| 130 | single | 1855 (0x73f) | 1 | 0 | yes | .InitBackgroundSprite 61867 | `_DAT_100a0b28` | yes | unknown (not derived) |
+| 131 | single | 1856 (0x740) | 1 | 0 | yes | .InitBackgroundSprite 61868 | `_DAT_100a0b24` | yes | unknown (not derived) |
+| 132 | single | 2890 (0xb4a) | 1 | 0 | yes | .InitBackgroundSprite 61869 | `_DAT_100a0b20` | yes | 62537 |
+| 133 | single | 2891 (0xb4b) | 1 | 0 | yes | .InitBackgroundSprite 61870 | `_DAT_100a0b1c` | yes | 62541 |
+| 134 | single | 2892 (0xb4c) | 1 | 0 | yes | .InitBackgroundSprite 61871 | `_DAT_100a0b18` | yes | 62532 |
+| 135 | single | 2893 (0xb4d) | 1 | 0 | yes | .InitBackgroundSprite 61872 | `_DAT_100a0b14` | yes | 62546 |
 | 29 | set | 1090 (0x442) | 5 (150×150, 5) | 0 | yes | .InitBackgroundSprite 61875 | `_DAT_100a0b10` | yes | 62061 |
-| 136 | single | 3060 (0xbf4) | 1 | 0 | yes | .InitBackgroundSprite 61878 | `_DAT_100a0b0c` | **no** | 62572 |
-| 30 | set | 1150 (0x47e) | 4 (60×60, 4) | 0 | yes | .InitBackgroundSprite 61879 | `_DAT_100a0b08` | **no** | 62187 |
-| 31 | set | 1151 (0x47f) | 4 (60×60, 4) | 0 | yes | .InitBackgroundSprite 61880 | `_DAT_100a0b04` | **no** | 62047 |
-| 32 | set | 1152 (0x480) | 4 (60×60, 4) | 0 | yes | .InitBackgroundSprite 61881 | `_DAT_100a0b00` | **no** | 62199, 62209 |
-| 33 | set | 1208 (0x4b8) | 16 (96×72, 16) | 0 | yes | .InitBackgroundSprite 61882 | `_DAT_100a0afc` | **no** | 62018 |
-| 34 | set | 1209 (0x4b9) | 16 (96×72, 16) | 0 | yes | .InitBackgroundSprite 61883 | `_DAT_100a0af8` | **no** | 62019, 62223 |
-| 35 | set | 1211 (0x4bb) | 16 (72×96, 1) | 0 | yes | .InitBackgroundSprite 61884 | `_DAT_100a0af4` | **no** | 62250 |
-| 36 | set | 1212 (0x4bc) | 16 (96×72, 16) | 0 | yes | .InitBackgroundSprite 61885 | `_DAT_100a0af0` | **no** | 62222 |
+| 136 | single | 3060 (0xbf4) | 1 | 0 | yes | .InitBackgroundSprite 61878 | `_DAT_100a0b0c` | yes | 62572 |
+| 30 | set | 1150 (0x47e) | 4 (60×60, 4) | 0 | yes | .InitBackgroundSprite 61879 | `_DAT_100a0b08` | yes | 62187 |
+| 31 | set | 1151 (0x47f) | 4 (60×60, 4) | 0 | yes | .InitBackgroundSprite 61880 | `_DAT_100a0b04` | yes | 62047 |
+| 32 | set | 1152 (0x480) | 4 (60×60, 4) | 0 | yes | .InitBackgroundSprite 61881 | `_DAT_100a0b00` | yes | 62199, 62209 |
+| 33 | set | 1208 (0x4b8) | 16 (96×72, 16) | 0 | yes | .InitBackgroundSprite 61882 | `_DAT_100a0afc` | yes | 62018 |
+| 34 | set | 1209 (0x4b9) | 16 (96×72, 16) | 0 | yes | .InitBackgroundSprite 61883 | `_DAT_100a0af8` | yes | 62019, 62223 |
+| 35 | set | 1211 (0x4bb) | 16 (72×96, 1) | 0 | yes | .InitBackgroundSprite 61884 | `_DAT_100a0af4` | yes | 62250 |
+| 36 | set | 1212 (0x4bc) | 16 (96×72, 16) | 0 | yes | .InitBackgroundSprite 61885 | `_DAT_100a0af0` | yes | 62222 |
 | 37 | set | 1900 (0x76c) | 6 (92×92, 6) | 0 | yes | .InitBackgroundSprite 61886 | `_DAT_100a0aec` | yes | 62498 |
 | 38 | set | 1902 (0x76e) | 6 (92×92, 6) | 0 | yes | .InitBackgroundSprite 61887 | `_DAT_100a0ae8` | yes | 62501 |
 | 39 | set | 1903 (0x76f) | 6 (92×92, 6) | 0 | yes | .InitBackgroundSprite 61888 | `_DAT_100a0ae4` | yes | 62504 |
-| 137 | single | 3080 (0xc08) | 1 | 1 | yes | .InitBackgroundSprite 61892 | `_DAT_100a0ae0` | **no** | indexed (see the class Setup) |
-| 138 | single | 3081 (0xc09) | 1 | 1 | yes | .InitBackgroundSprite 61892 | `_DAT_100a0ae0` | **no** | indexed (see the class Setup) |
-| 139 | single | 3082 (0xc0a) | 1 | 1 | yes | .InitBackgroundSprite 61892 | `_DAT_100a0ae0` | **no** | indexed (see the class Setup) |
-| 140 | single | 3083 (0xc0b) | 1 | 1 | yes | .InitBackgroundSprite 61892 | `_DAT_100a0ae0` | **no** | indexed (see the class Setup) |
-| 141 | single | 3084 (0xc0c) | 1 | 1 | yes | .InitBackgroundSprite 61892 | `_DAT_100a0ae0` | **no** | indexed (see the class Setup) |
-| 142 | single | 3085 (0xc0d) | 1 | 1 | yes | .InitBackgroundSprite 61892 | `_DAT_100a0ae0` | **no** | indexed (see the class Setup) |
-| 143 | single | 3086 (0xc0e) | 1 | 1 | yes | .InitBackgroundSprite 61892 | `_DAT_100a0ae0` | **no** | indexed (see the class Setup) |
-| 144 | single | 3087 (0xc0f) | 1 | 1 | yes | .InitBackgroundSprite 61892 | `_DAT_100a0ae0` | **no** | indexed (see the class Setup) |
-| 145 | single | 3000 (0xbb8) | 1 | 1 | yes | .InitBackgroundSprite 61899 | `_DAT_100a0adc` | **no** | indexed (see the class Setup) |
-| 146 | single | 3001 (0xbb9) | 1 | 1 | yes | .InitBackgroundSprite 61899 | `_DAT_100a0adc` | **no** | indexed (see the class Setup) |
+| 137 | single | 3080 (0xc08) | 1 | 1 | yes | .InitBackgroundSprite 61892 | `_DAT_100a0ae0` | yes | indexed (see the class Setup) |
+| 138 | single | 3081 (0xc09) | 1 | 1 | yes | .InitBackgroundSprite 61892 | `_DAT_100a0ae0` | yes | indexed (see the class Setup) |
+| 139 | single | 3082 (0xc0a) | 1 | 1 | yes | .InitBackgroundSprite 61892 | `_DAT_100a0ae0` | yes | indexed (see the class Setup) |
+| 140 | single | 3083 (0xc0b) | 1 | 1 | yes | .InitBackgroundSprite 61892 | `_DAT_100a0ae0` | yes | indexed (see the class Setup) |
+| 141 | single | 3084 (0xc0c) | 1 | 1 | yes | .InitBackgroundSprite 61892 | `_DAT_100a0ae0` | yes | indexed (see the class Setup) |
+| 142 | single | 3085 (0xc0d) | 1 | 1 | yes | .InitBackgroundSprite 61892 | `_DAT_100a0ae0` | yes | indexed (see the class Setup) |
+| 143 | single | 3086 (0xc0e) | 1 | 1 | yes | .InitBackgroundSprite 61892 | `_DAT_100a0ae0` | yes | indexed (see the class Setup) |
+| 144 | single | 3087 (0xc0f) | 1 | 1 | yes | .InitBackgroundSprite 61892 | `_DAT_100a0ae0` | yes | indexed (see the class Setup) |
+| 145 | single | 3000 (0xbb8) | 1 | 1 | yes | .InitBackgroundSprite 61899 | `_DAT_100a0adc` | yes | indexed (see the class Setup) |
+| 146 | single | 3001 (0xbb9) | 1 | 1 | yes | .InitBackgroundSprite 61899 | `_DAT_100a0adc` | yes | indexed (see the class Setup) |
 | 147 | single | 3002 (0xbba) | 1 | 1 | yes | .InitBackgroundSprite 61899 | `_DAT_100a0adc` | yes | indexed (see the class Setup) |
-| 148 | single | 3003 (0xbbb) | 1 | 1 | yes | .InitBackgroundSprite 61899 | `_DAT_100a0adc` | **no** | indexed (see the class Setup) |
-| 149 | single | 3004 (0xbbc) | 1 | 1 | yes | .InitBackgroundSprite 61899 | `_DAT_100a0adc` | **no** | indexed (see the class Setup) |
-| 150 | single | 3005 (0xbbd) | 1 | 1 | yes | .InitBackgroundSprite 61899 | `_DAT_100a0adc` | **no** | indexed (see the class Setup) |
-| 151 | single | 1480 (0x5c8) | 1 | 0 | yes | .InitBackgroundSprite 61905 | `PTR_DAT_100a09f4` | **no** | indexed (see the class Setup) |
-| 152 | single | 1481 (0x5c9) | 1 | 0 | yes | .InitBackgroundSprite 61905 | `PTR_DAT_100a09f4` | **no** | indexed (see the class Setup) |
-| 153 | single | 1482 (0x5ca) | 1 | 0 | yes | .InitBackgroundSprite 61905 | `PTR_DAT_100a09f4` | **no** | indexed (see the class Setup) |
-| 154 | single | 1483 (0x5cb) | 1 | 0 | yes | .InitBackgroundSprite 61905 | `PTR_DAT_100a09f4` | **no** | indexed (see the class Setup) |
-| 155 | single | 1484 (0x5cc) | 1 | 0 | yes | .InitBackgroundSprite 61905 | `PTR_DAT_100a09f4` | **no** | indexed (see the class Setup) |
+| 148 | single | 3003 (0xbbb) | 1 | 1 | yes | .InitBackgroundSprite 61899 | `_DAT_100a0adc` | yes | indexed (see the class Setup) |
+| 149 | single | 3004 (0xbbc) | 1 | 1 | yes | .InitBackgroundSprite 61899 | `_DAT_100a0adc` | yes | indexed (see the class Setup) |
+| 150 | single | 3005 (0xbbd) | 1 | 1 | yes | .InitBackgroundSprite 61899 | `_DAT_100a0adc` | yes | indexed (see the class Setup) |
+| 151 | single | 1480 (0x5c8) | 1 | 0 | yes | .InitBackgroundSprite 61905 | `PTR_DAT_100a09f4` | yes | indexed (see the class Setup) |
+| 152 | single | 1481 (0x5c9) | 1 | 0 | yes | .InitBackgroundSprite 61905 | `PTR_DAT_100a09f4` | yes | indexed (see the class Setup) |
+| 153 | single | 1482 (0x5ca) | 1 | 0 | yes | .InitBackgroundSprite 61905 | `PTR_DAT_100a09f4` | yes | indexed (see the class Setup) |
+| 154 | single | 1483 (0x5cb) | 1 | 0 | yes | .InitBackgroundSprite 61905 | `PTR_DAT_100a09f4` | yes | indexed (see the class Setup) |
+| 155 | single | 1484 (0x5cc) | 1 | 0 | yes | .InitBackgroundSprite 61905 | `PTR_DAT_100a09f4` | yes | indexed (see the class Setup) |
 | 156 | single | 1485 (0x5cd) | 1 | 0 | yes | .InitBackgroundSprite 61905 | `PTR_DAT_100a09f4` | yes | indexed (see the class Setup) |
-| 157 | single | 1486 (0x5ce) | 1 | 0 | yes | .InitBackgroundSprite 61905 | `PTR_DAT_100a09f4` | **no** | indexed (see the class Setup) |
-| 158 | single | 1487 (0x5cf) | 1 | 0 | yes | .InitBackgroundSprite 61905 | `PTR_DAT_100a09f4` | **no** | indexed (see the class Setup) |
-| 159 | single | 1488 (0x5d0) | 1 | 0 | yes | .InitBackgroundSprite 61905 | `PTR_DAT_100a09f4` | **no** | indexed (see the class Setup) |
-| 160 | single | 1489 (0x5d1) | 1 | 0 | **absent** | .InitBackgroundSprite 61905 | `PTR_DAT_100a09f4` | **no** | indexed (see the class Setup) |
-| 161 | single | 2700 (0xa8c) | 1 | 1 | yes | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | **no** | indexed (see the class Setup) |
-| 162 | single | 2701 (0xa8d) | 1 | 1 | yes | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | **no** | indexed (see the class Setup) |
-| 163 | single | 2702 (0xa8e) | 1 | 1 | yes | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | **no** | indexed (see the class Setup) |
-| 164 | single | 2703 (0xa8f) | 1 | 1 | yes | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | **no** | indexed (see the class Setup) |
-| 165 | single | 2704 (0xa90) | 1 | 1 | yes | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | **no** | indexed (see the class Setup) |
-| 166 | single | 2705 (0xa91) | 1 | 1 | yes | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | **no** | indexed (see the class Setup) |
-| 167 | single | 2706 (0xa92) | 1 | 1 | yes | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | **no** | indexed (see the class Setup) |
-| 168 | single | 2707 (0xa93) | 1 | 1 | yes | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | **no** | indexed (see the class Setup) |
-| 169 | single | 2708 (0xa94) | 1 | 1 | yes | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | **no** | indexed (see the class Setup) |
-| 170 | single | 2709 (0xa95) | 1 | 1 | yes | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | **no** | indexed (see the class Setup) |
+| 157 | single | 1486 (0x5ce) | 1 | 0 | yes | .InitBackgroundSprite 61905 | `PTR_DAT_100a09f4` | yes | indexed (see the class Setup) |
+| 158 | single | 1487 (0x5cf) | 1 | 0 | yes | .InitBackgroundSprite 61905 | `PTR_DAT_100a09f4` | yes | indexed (see the class Setup) |
+| 159 | single | 1488 (0x5d0) | 1 | 0 | yes | .InitBackgroundSprite 61905 | `PTR_DAT_100a09f4` | yes | indexed (see the class Setup) |
+| 160 | single | 1489 (0x5d1) | 1 | 0 | **absent** | .InitBackgroundSprite 61905 | `PTR_DAT_100a09f4` | yes | indexed (see the class Setup) |
+| 161 | single | 2700 (0xa8c) | 1 | 1 | yes | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | yes | indexed (see the class Setup) |
+| 162 | single | 2701 (0xa8d) | 1 | 1 | yes | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | yes | indexed (see the class Setup) |
+| 163 | single | 2702 (0xa8e) | 1 | 1 | yes | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | yes | indexed (see the class Setup) |
+| 164 | single | 2703 (0xa8f) | 1 | 1 | yes | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | yes | indexed (see the class Setup) |
+| 165 | single | 2704 (0xa90) | 1 | 1 | yes | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | yes | indexed (see the class Setup) |
+| 166 | single | 2705 (0xa91) | 1 | 1 | yes | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | yes | indexed (see the class Setup) |
+| 167 | single | 2706 (0xa92) | 1 | 1 | yes | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | yes | indexed (see the class Setup) |
+| 168 | single | 2707 (0xa93) | 1 | 1 | yes | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | yes | indexed (see the class Setup) |
+| 169 | single | 2708 (0xa94) | 1 | 1 | yes | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | yes | indexed (see the class Setup) |
+| 170 | single | 2709 (0xa95) | 1 | 1 | yes | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | yes | indexed (see the class Setup) |
 | 171 | single | 2710 (0xa96) | 1 | 1 | yes | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | yes | indexed (see the class Setup) |
-| 172 | single | 2711 (0xa97) | 1 | 1 | yes | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | **no** | indexed (see the class Setup) |
-| 173 | single | 2712 (0xa98) | 1 | 1 | yes | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | **no** | indexed (see the class Setup) |
+| 172 | single | 2711 (0xa97) | 1 | 1 | yes | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | yes | indexed (see the class Setup) |
+| 173 | single | 2712 (0xa98) | 1 | 1 | yes | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | yes | indexed (see the class Setup) |
 | 174 | single | 2713 (0xa99) | 1 | 1 | yes | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | yes | indexed (see the class Setup) |
 | 175 | single | 2714 (0xa9a) | 1 | 1 | yes | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | yes | indexed (see the class Setup) |
-| 176 | single | 2715 (0xa9b) | 1 | 1 | yes | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | **no** | indexed (see the class Setup) |
-| 177 | single | 2716 (0xa9c) | 1 | 1 | yes | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | **no** | indexed (see the class Setup) |
-| 178 | single | 2717 (0xa9d) | 1 | 1 | yes | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | **no** | indexed (see the class Setup) |
-| 179 | single | 2718 (0xa9e) | 1 | 1 | **absent** | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | **no** | indexed (see the class Setup) |
-| 180 | single | 2719 (0xa9f) | 1 | 1 | **absent** | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | **no** | indexed (see the class Setup) |
-| 181 | single | 2720 (0xaa0) | 1 | 1 | **absent** | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | **no** | indexed (see the class Setup) |
-| 182 | single | 2721 (0xaa1) | 1 | 1 | **absent** | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | **no** | indexed (see the class Setup) |
-| 183 | single | 2722 (0xaa2) | 1 | 1 | **absent** | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | **no** | indexed (see the class Setup) |
-| 184 | single | 2723 (0xaa3) | 1 | 1 | **absent** | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | **no** | indexed (see the class Setup) |
-| 185 | single | 2724 (0xaa4) | 1 | 1 | **absent** | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | **no** | indexed (see the class Setup) |
-| 186 | single | 2725 (0xaa5) | 1 | 1 | **absent** | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | **no** | indexed (see the class Setup) |
-| 187 | single | 2726 (0xaa6) | 1 | 1 | **absent** | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | **no** | indexed (see the class Setup) |
-| 188 | single | 2727 (0xaa7) | 1 | 1 | **absent** | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | **no** | indexed (see the class Setup) |
-| 189 | single | 2728 (0xaa8) | 1 | 1 | **absent** | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | **no** | indexed (see the class Setup) |
-| 190 | single | 2729 (0xaa9) | 1 | 1 | **absent** | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | **no** | indexed (see the class Setup) |
+| 176 | single | 2715 (0xa9b) | 1 | 1 | yes | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | yes | indexed (see the class Setup) |
+| 177 | single | 2716 (0xa9c) | 1 | 1 | yes | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | yes | indexed (see the class Setup) |
+| 178 | single | 2717 (0xa9d) | 1 | 1 | yes | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | yes | indexed (see the class Setup) |
+| 179 | single | 2718 (0xa9e) | 1 | 1 | **absent** | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | yes | indexed (see the class Setup) |
+| 180 | single | 2719 (0xa9f) | 1 | 1 | **absent** | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | yes | indexed (see the class Setup) |
+| 181 | single | 2720 (0xaa0) | 1 | 1 | **absent** | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | yes | indexed (see the class Setup) |
+| 182 | single | 2721 (0xaa1) | 1 | 1 | **absent** | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | yes | indexed (see the class Setup) |
+| 183 | single | 2722 (0xaa2) | 1 | 1 | **absent** | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | yes | indexed (see the class Setup) |
+| 184 | single | 2723 (0xaa3) | 1 | 1 | **absent** | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | yes | indexed (see the class Setup) |
+| 185 | single | 2724 (0xaa4) | 1 | 1 | **absent** | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | yes | indexed (see the class Setup) |
+| 186 | single | 2725 (0xaa5) | 1 | 1 | **absent** | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | yes | indexed (see the class Setup) |
+| 187 | single | 2726 (0xaa6) | 1 | 1 | **absent** | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | yes | indexed (see the class Setup) |
+| 188 | single | 2727 (0xaa7) | 1 | 1 | **absent** | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | yes | indexed (see the class Setup) |
+| 189 | single | 2728 (0xaa8) | 1 | 1 | **absent** | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | yes | indexed (see the class Setup) |
+| 190 | single | 2729 (0xaa9) | 1 | 1 | **absent** | .InitBackgroundSprite 61911 | `_DAT_100a0ad8` | yes | indexed (see the class Setup) |
 | 40 | set | 1130 (0x46a) | 6 (48×48, 6) | 0 | yes | .InitEnemyShotSprite 51434 | `_DAT_100a0848` | yes | 74420, 75635, 76354 |
 | 41 | set | 1130 (0x46a) | 6 (64×64, 6) | 0 | yes | .InitEnemyShotSprite 51435 | `_DAT_100a0844` | yes | 74421 |
 | 42 | set | 1130 (0x46a) | 6 (64×64, 6) | 0 | yes | .InitEnemyShotSprite 51436 | `_DAT_100a0840` | yes | 74422, 76356 |
@@ -1229,35 +1229,35 @@ around their own calls only (M l. 75020/75026, 75582/75586, 76216/76233).
 | 55 | set | 1820 (0x71c) | 8 (180×160, 8) | 0 | yes | .InitWarriorSprite 72982 | `PTR_DAT_100a0d50` | yes | 73028 |
 | 56 | set | 1821 (0x71d) | 8 (180×160, 8) | 0 | yes | .InitWarriorSprite 72983 | `_DAT_100a0d4c` | yes | 73029 |
 | 57 | set | 1822 (0x71e) | 6 (180×160, 6) | 0 | yes | .InitWarriorSprite 72984 | `_DAT_100a0d48` | yes | 73030 |
-| 58 | set | 1831 (0x727) | 8 (192×140, 8) | 1 | yes | .InitWizardSprite 75583 | `PTR_DAT_100a0dbc` | **no** | 75632 |
-| 59 | set | 1832 (0x728) | 8 (192×140, 8) | 1 | yes | .InitWizardSprite 75584 | `_DAT_100a0db8` | **no** | 75633 |
-| 192 | single | 1830 (0x726) | 1 | 1 | yes | .InitWizardSprite 75585 | `_DAT_100a0db4` | **no** | 75634 |
-| 60 | set | 1911 (0x777) | 4 (256×254, 4) | 1 | yes | .InitChiefSprite 75021 | `PTR_DAT_100a0da4` | **no** | 75069 |
-| 61 | set | 1912 (0x778) | 4 (256×254, 4) | 1 | yes | .InitChiefSprite 75022 | `_DAT_100a0da0` | **no** | 75071 |
-| 62 | set | 1913 (0x779) | 4 (256×254, 4) | 1 | yes | .InitChiefSprite 75023 | `_DAT_100a0d9c` | **no** | 75073 |
-| 63 | set | 1914 (0x77a) | 4 (256×254, 4) | 1 | yes | .InitChiefSprite 75024 | `_DAT_100a0d98` | **no** | 75074 |
-| 193 | single | 1910 (0x776) | 1 | 1 | yes | .InitChiefSprite 75025 | `_DAT_100a0d94` | **no** | 75067 |
-| 64 | set | 1920 (0x780) | 6 (144×116, 3) | 0 | yes | .InitDemonSprite 74342 | `PTR_DAT_100a0d84` | **no** | 74413 |
-| 65 | set | 1921 (0x781) | 6 (144×116, 3) | 0 | yes | .InitDemonSprite 74343 | `_DAT_100a0d80` | **no** | 74415 |
-| 66 | set | 1922 (0x782) | 3 (144×116, 3) | 0 | yes | .InitDemonSprite 74344 | `_DAT_100a0d7c` | **no** | 74417 |
-| 67 | set | 1923 (0x783) | 4 (144×116, 4) | 0 | yes | .InitDemonSprite 74345 | `_DAT_100a0d78` | **no** | 74418 |
-| 68 | set | 1924 (0x784) | 2 (96×96, 2) | 0 | yes | .InitDemonSprite 74349 | `_DAT_100a0d74` | **no** | 74419 |
-| 69 | set | 1980 (0x7bc) | 4 (240×200, 2) | 1 | yes | .InitXichraSprite 76217 | `_DAT_100a0e0c` | **no** | 76326 |
-| 70 | set | 1981 (0x7bd) | 4 (240×200, 2) | 1 | yes | .InitXichraSprite 76218 | `_DAT_100a0e08` | **no** | 76324 |
-| 71 | set | 1982 (0x7be) | 2 (240×200, 2) | 1 | yes | .InitXichraSprite 76219 | `_DAT_100a0e04` | **no** | 76322 |
-| 72 | set | 1983 (0x7bf) | 4 (240×200, 2) | 1 | yes | .InitXichraSprite 76220 | `_DAT_100a0e00` | **no** | 76330 |
-| 73 | set | 1984 (0x7c0) | 2 (240×200, 2) | 1 | yes | .InitXichraSprite 76221 | `_DAT_100a0dfc` | **no** | 76328 |
-| 74 | set | 1985 (0x7c1) | 4 (240×200, 2) | 1 | yes | .InitXichraSprite 76222 | `_DAT_100a0df8` | **no** | 76336 |
-| 75 | set | 1986 (0x7c2) | 4 (240×200, 2) | 1 | yes | .InitXichraSprite 76223 | `_DAT_100a0df4` | **no** | 76334 |
-| 76 | set | 1987 (0x7c3) | 4 (240×200, 2) | 1 | yes | .InitXichraSprite 76224 | `_DAT_100a0df0` | **no** | 76332 |
-| 77 | set | 1970 (0x7b2) | 4 (240×200, 2) | 1 | yes | .InitXichraSprite 76225 | `_DAT_100a0dec` | **no** | 76342 |
-| 78 | set | 1971 (0x7b3) | 4 (240×200, 2) | 1 | yes | .InitXichraSprite 76226 | `_DAT_100a0de8` | **no** | 76340 |
-| 79 | set | 1972 (0x7b4) | 2 (240×200, 2) | 1 | yes | .InitXichraSprite 76227 | `_DAT_100a0de4` | **no** | 76338 |
-| 80 | set | 1973 (0x7b5) | 4 (240×200, 2) | 1 | yes | .InitXichraSprite 76228 | `_DAT_100a0de0` | **no** | 76346 |
-| 81 | set | 1974 (0x7b6) | 2 (240×200, 2) | 1 | yes | .InitXichraSprite 76229 | `_DAT_100a0ddc` | **no** | 76344 |
-| 82 | set | 1975 (0x7b7) | 4 (240×200, 2) | 1 | yes | .InitXichraSprite 76230 | `_DAT_100a0dd8` | **no** | 76352 |
-| 83 | set | 1976 (0x7b8) | 4 (240×200, 2) | 1 | yes | .InitXichraSprite 76231 | `_DAT_100a0dd4` | **no** | 76350 |
-| 84 | set | 1977 (0x7b9) | 4 (240×200, 2) | 1 | yes | .InitXichraSprite 76232 | `_DAT_100a0dd0` | **no** | 76348 |
+| 58 | set | 1831 (0x727) | 8 (192×140, 8) | 1 | yes | .InitWizardSprite 75583 | `PTR_DAT_100a0dbc` | yes | 75632 |
+| 59 | set | 1832 (0x728) | 8 (192×140, 8) | 1 | yes | .InitWizardSprite 75584 | `_DAT_100a0db8` | yes | 75633 |
+| 192 | single | 1830 (0x726) | 1 | 1 | yes | .InitWizardSprite 75585 | `_DAT_100a0db4` | yes | 75634 |
+| 60 | set | 1911 (0x777) | 4 (256×254, 4) | 1 | yes | .InitChiefSprite 75021 | `PTR_DAT_100a0da4` | yes | 75069 |
+| 61 | set | 1912 (0x778) | 4 (256×254, 4) | 1 | yes | .InitChiefSprite 75022 | `_DAT_100a0da0` | yes | 75071 |
+| 62 | set | 1913 (0x779) | 4 (256×254, 4) | 1 | yes | .InitChiefSprite 75023 | `_DAT_100a0d9c` | yes | 75073 |
+| 63 | set | 1914 (0x77a) | 4 (256×254, 4) | 1 | yes | .InitChiefSprite 75024 | `_DAT_100a0d98` | yes | 75074 |
+| 193 | single | 1910 (0x776) | 1 | 1 | yes | .InitChiefSprite 75025 | `_DAT_100a0d94` | yes | 75067 |
+| 64 | set | 1920 (0x780) | 6 (144×116, 3) | 0 | yes | .InitDemonSprite 74342 | `PTR_DAT_100a0d84` | yes | 74413 |
+| 65 | set | 1921 (0x781) | 6 (144×116, 3) | 0 | yes | .InitDemonSprite 74343 | `_DAT_100a0d80` | yes | 74415 |
+| 66 | set | 1922 (0x782) | 3 (144×116, 3) | 0 | yes | .InitDemonSprite 74344 | `_DAT_100a0d7c` | yes | 74417 |
+| 67 | set | 1923 (0x783) | 4 (144×116, 4) | 0 | yes | .InitDemonSprite 74345 | `_DAT_100a0d78` | yes | 74418 |
+| 68 | set | 1924 (0x784) | 2 (96×96, 2) | 0 | yes | .InitDemonSprite 74349 | `_DAT_100a0d74` | yes | 74419 |
+| 69 | set | 1980 (0x7bc) | 4 (240×200, 2) | 1 | yes | .InitXichraSprite 76217 | `_DAT_100a0e0c` | yes | 76326 |
+| 70 | set | 1981 (0x7bd) | 4 (240×200, 2) | 1 | yes | .InitXichraSprite 76218 | `_DAT_100a0e08` | yes | 76324 |
+| 71 | set | 1982 (0x7be) | 2 (240×200, 2) | 1 | yes | .InitXichraSprite 76219 | `_DAT_100a0e04` | yes | 76322 |
+| 72 | set | 1983 (0x7bf) | 4 (240×200, 2) | 1 | yes | .InitXichraSprite 76220 | `_DAT_100a0e00` | yes | 76330 |
+| 73 | set | 1984 (0x7c0) | 2 (240×200, 2) | 1 | yes | .InitXichraSprite 76221 | `_DAT_100a0dfc` | yes | 76328 |
+| 74 | set | 1985 (0x7c1) | 4 (240×200, 2) | 1 | yes | .InitXichraSprite 76222 | `_DAT_100a0df8` | yes | 76336 |
+| 75 | set | 1986 (0x7c2) | 4 (240×200, 2) | 1 | yes | .InitXichraSprite 76223 | `_DAT_100a0df4` | yes | 76334 |
+| 76 | set | 1987 (0x7c3) | 4 (240×200, 2) | 1 | yes | .InitXichraSprite 76224 | `_DAT_100a0df0` | yes | 76332 |
+| 77 | set | 1970 (0x7b2) | 4 (240×200, 2) | 1 | yes | .InitXichraSprite 76225 | `_DAT_100a0dec` | yes | 76342 |
+| 78 | set | 1971 (0x7b3) | 4 (240×200, 2) | 1 | yes | .InitXichraSprite 76226 | `_DAT_100a0de8` | yes | 76340 |
+| 79 | set | 1972 (0x7b4) | 2 (240×200, 2) | 1 | yes | .InitXichraSprite 76227 | `_DAT_100a0de4` | yes | 76338 |
+| 80 | set | 1973 (0x7b5) | 4 (240×200, 2) | 1 | yes | .InitXichraSprite 76228 | `_DAT_100a0de0` | yes | 76346 |
+| 81 | set | 1974 (0x7b6) | 2 (240×200, 2) | 1 | yes | .InitXichraSprite 76229 | `_DAT_100a0ddc` | yes | 76344 |
+| 82 | set | 1975 (0x7b7) | 4 (240×200, 2) | 1 | yes | .InitXichraSprite 76230 | `_DAT_100a0dd8` | yes | 76352 |
+| 83 | set | 1976 (0x7b8) | 4 (240×200, 2) | 1 | yes | .InitXichraSprite 76231 | `_DAT_100a0dd4` | yes | 76350 |
+| 84 | set | 1977 (0x7b9) | 4 (240×200, 2) | 1 | yes | .InitXichraSprite 76232 | `_DAT_100a0dd0` | yes | 76348 |
 | 85 | set | 1780 (0x6f4) | 6 (100×80, 6) | 0 | yes | .InitFloaterSprite 69827 | `PTR_DAT_100a0cc0` | yes | 69876 |
 | 86 | set | 1790 (0x6fe) | 8 (88×100, 8) | 0 | **absent** | .InitFloaterSprite 69828 | `_DAT_100a0cbc` | yes | 69870 |
 | 87 | set | 1791 (0x6ff) | 8 (88×100, 8) | 0 | **absent** | .InitFloaterSprite 69829 | `_DAT_100a0cb8` | yes | 69871 |
@@ -1267,7 +1267,7 @@ around their own calls only (M l. 75020/75026, 75582/75586, 76216/76233).
 | 91 | set | 1772 (0x6ec) | 4 (32×32, 4) | 0 | yes | .InitGremlinSprite 69120 | `_DAT_100a0ca4` | yes | 69183 |
 | 92 | set | 1810 (0x712) | 9 (80×100, 9) | 0 | yes | .InitSalamanderSprite 70649 | `_DAT_100a0ce0` | yes | 70680 |
 
-Registered: 92 sets + 193 singles = 285 records, 805 faces in all. The port registers 52 sets + 44 singles = 96 today. Port subset in the original order: sets in order; singles in order.
+Registered: 92 sets + 193 singles = 285 records, 805 faces in all. The port registers 92 sets + 193 singles = 285 today. Port subset in the original order: sets in order; singles in order.
 <!-- /LL:cache -->
 
 **Transcribing the whole list once is feasible.** Every record's geometry and flag is a literal in its Init call (or a
