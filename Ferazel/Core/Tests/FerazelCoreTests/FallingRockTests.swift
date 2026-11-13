@@ -66,9 +66,10 @@ final class FallingRockTests: XCTestCase {
         return Scene(w: w, player: pid, rock: w.active.insert(r))
     }
 
-    /// Everything the arm can touch: the slots, the player globals, the stream, the particle store's count.
-    private func state(_ s: Scene) -> (ActiveList, PlayerState, Int32, Int16) {
-        (s.w.active, s.w.player, s.w.rng.seed, s.w.particles.counters.count)
+    /// Everything the arm can touch: the slots, the player globals, the stream, the particle store's count, the game
+    /// globals (`G`: the coins `.HurtPlayer` takes).
+    private func state(_ s: Scene) -> (ActiveList, PlayerState, Int32, Int16, GameGlobals) {
+        (s.w.active, s.w.player, s.w.rng.seed, s.w.particles.counters.count, s.w.globals)
     }
 
     /// The scene after `.HitPlayerSprite(player, rock)`.
@@ -92,6 +93,7 @@ final class FallingRockTests: XCTestCase {
         XCTAssertEqual(g.1, e.1, "player globals", file: file, line: line)
         XCTAssertEqual(g.2, e.2, "stream", file: file, line: line)
         XCTAssertEqual(g.3, e.3, "particles", file: file, line: line)
+        XCTAssertEqual(g.4, e.4, "globals", file: file, line: line)
         let p = try XCTUnwrap(got.w.active.record(id: got.player), file: file, line: line)
         XCTAssertEqual(p.hp, 0x400 - damage, file: file, line: line)
         XCTAssertEqual(p.invulnerable, invul, file: file, line: line)
@@ -111,6 +113,7 @@ final class FallingRockTests: XCTestCase {
         XCTAssertEqual(g.1, e.1, "player globals", file: file, line: line)
         XCTAssertEqual(g.2, e.2, "stream", file: file, line: line)
         XCTAssertEqual(g.3, e.3, "particles", file: file, line: line)
+        XCTAssertEqual(g.4, e.4, "globals", file: file, line: line)
         XCTAssertEqual(got.w.active.record(id: got.player)?.hp, 0x400, file: file, line: line)
         XCTAssertEqual(got.w.active.record(id: got.rock)?.dead, false, file: file, line: line)
     }
@@ -135,6 +138,15 @@ final class FallingRockTests: XCTestCase {
         XCTAssertEqual(s.w.active.record(id: s.player)?.invulnerable, 5)
         XCTAssertEqual(s.w.active.record(id: s.rock)?.dead, true)
         XCTAssertEqual(s.w.player.cues.map(\.snd), [424])
+        // `.HurtPlayer`'s last argument is 0 (l. 49176): a player with 10 coins keeps all 10. The attacker is the rock
+        // (l. 49176's second argument): `.HurtSprite` adds the attacker's vx to his (0 + 0x200).
+        let c = try scene(0x433, c160: 0, rockY: above, vy: 2000)
+        c.w.globals.coins = 10
+        c.w.active.update(id: c.rock) { $0.vx = 0x200 }
+        HitPlayerSprite.hit(c.w, player: c.player, other: c.rock)
+        XCTAssertEqual(c.w.active.record(id: c.player)?.hp, 0x400 - 0x38)
+        XCTAssertEqual(c.w.globals.coins, 10)
+        XCTAssertEqual(c.w.active.record(id: c.player)?.vx, 0x200)
     }
 
     func testRock434HurtsHarder() throws {
@@ -160,6 +172,7 @@ final class FallingRockTests: XCTestCase {
             XCTAssertEqual(after.1, before.1)
             XCTAssertEqual(after.2, before.2)
             XCTAssertEqual(after.3, before.3)
+            XCTAssertEqual(after.4, before.4)
             // The same scene with a boulder 0x42e falls through to `.PlatformBounce` and moves the player.
             let twin = try scene(0x42e, c160: c160, rockY: rockY, vy: vy)
             let p0 = twin.w.active.record(id: twin.player)
@@ -197,5 +210,18 @@ final class FallingRockTests: XCTestCase {
             try assertFallsThrough(t, c160: 0, rockY: above, vy: 599)
             try assertHurts(t, c160: 0, rockY: above, vy: 600, damage: damage, invul: invul)
         }
+        // The centre y is a short (`*(short *)(+0xe)`): 0x8000 is −32768, above the player.
+        try assertHurts(0x433, c160: 0, rockY: 0x8000 - 16, vy: 2000, damage: 0x38, invul: 0x1e)
+        // The arm comes after the see-saw gate (l. 49155–49166): a see-saw-class slot of a rock's type, falling fast
+        // above the player but with his x (250) left of its span [300, 328], returns at the gate — nothing written.
+        let g = try scene(0x433, c160: 0, rockY: above, vy: 2000)
+        g.w.active.update(id: g.rock) { $0.handler = .seeSawSegment; $0.x = 300 }
+        let before = state(g)
+        HitPlayerSprite.hit(g.w, player: g.player, other: g.rock)
+        let after = state(g)
+        XCTAssertEqual(after.0, before.0)
+        XCTAssertEqual(after.1, before.1)
+        XCTAssertEqual(after.2, before.2)
+        XCTAssertEqual(after.4, before.4)
     }
 }
