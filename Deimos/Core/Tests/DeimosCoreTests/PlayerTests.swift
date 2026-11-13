@@ -299,7 +299,7 @@ final class PlayerTests: XCTestCase {
         s.players[0].money = 67
         s.scoreBar.setShownShield(index: 0, 55); s.scoreBar.setShownPower(index: 0, 40)
         let first = s.world.nextSerial
-        s.killPlayer(0, now: s.flags.gameTime)
+        s.killPlayer(0, now: 310)                                       // the caller's now (r4), not game time
         let made = spawned(s, after: first)
         let ids = made.map(\.id)
         let death = s.players[0].definition.deathSpawn
@@ -314,13 +314,51 @@ final class PlayerTests: XCTestCase {
         XCTAssertEqual(s.scoreBar.records[0].shownShield, 0)
         XCTAssertEqual(s.scoreBar.records[0].shownPower, 0)
         XCTAssertEqual(s.players[0].lifeState, 3)
-        XCTAssertEqual(s.players[0].stateEntered, 300)
+        XCTAssertEqual(s.players[0].stateEntered, 310)                  // 10028108..10028110: state 3 at now
+        XCTAssertEqual(s.flags.gameTime, 300)
         XCTAssertTrue(s.players[0].invulnerable)
         XCTAssertEqual(s.players[0].multiplier, 1)
         let mux = try XCTUnwrap(s.world.entities.indices.first { s.world.entities[$0].serial == indicator })
         XCTAssertTrue(s.world.entities[mux].deleted)
         XCTAssertEqual(s.players[0].lastHit, 0); XCTAssertEqual(s.players[0].lastHitSpawn, 0)
         XCTAssertFalse(s.players[0].shieldWarningShown)
+    }
+
+    /// `killPlayer` runs `FUN_10034b90(player)` (`10027e70..10027e74`) before the death spawn (`10027e7c..10027f18`):
+    /// a P1-owned `fgnt` (every state `canBeDestroyedOnOwnerDestruction`; destruct particles `med `, destruct spawn
+    /// `pi5k`) is destroyed — its particle and spawn draws taken — before `plde` is requested. A copy that runs only
+    /// the owned-destruction step and then the death spawn must reach the same entities and generator state.
+    func testOwnerDestructionPrecedesDeathSpawn() throws {
+        var s = try world()
+        toActive(&s)
+        s.flags.gameTime = 300
+        var req = SpawnRequest(unit: FourCC("fgnt")!, x: 200, y: 200)
+        req.player = 0
+        let f = try XCTUnwrap(s.spawn(req)).entity
+        XCTAssertEqual(s.world.entities[f].ownerPlayer, 0)
+        XCTAssertEqual(s.currentState(f)?.canBeDestroyedOnOwnerDestruction, true)
+        let death = s.players[0].definition.deathSpawn
+        XCTAssertEqual(death, FourCC("plde"))
+        let first = s.world.nextSerial
+        let draws = s.rng.draws
+
+        var t = s                                                       // the reference: step 1 alone, then step 2
+        t.destroyEntitiesOwned(byPlayer: 0)
+        XCTAssertTrue(t.world.entities[f].deleted)
+        XCTAssertTrue(t.world.entities[f].destroyed)
+        XCTAssertGreaterThan(t.rng.draws, draws)                        // the fgnt's destruction draws
+        let ownedSerials = spawned(t, after: first).map(\.e.serial)
+        XCTAssertTrue(spawned(t, after: first).contains { $0.id == FourCC("pi5k")! })
+        t.spawnAtPlayer(0, death, owned: true)
+
+        s.killPlayer(0, now: 300)
+        XCTAssertTrue(s.world.entities[f].deleted)
+        XCTAssertTrue(s.world.entities[f].destroyed)
+        let made = spawned(s, after: first)
+        let deaths = made.filter { $0.id == death }
+        XCTAssertFalse(deaths.isEmpty)
+        XCTAssertTrue(deaths.allSatisfy { d in ownedSerials.allSatisfy { $0 < d.e.serial } })   // pi5k first
+        XCTAssertEqual(deaths.map(\.e), spawned(t, after: first).filter { $0.id == death }.map(\.e))
     }
 
     func testDyingAndRespawn() throws {

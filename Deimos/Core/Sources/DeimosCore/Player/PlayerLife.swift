@@ -112,7 +112,7 @@ extension GameState {
         players[i].setAppearFade()                                           // 10029e0c..10029e34
         spawnAtPlayer(i, players[i].definition.entrySpawn, owned: true)      // 10029e38..10029ed8
         showMultiplierIndicator(i)                                           // 10029ee4 FUN_10029fe0
-        players[i].resetHandler(levelStart: false)                           // 10029ef4 FUN_1003af90(h, 0)
+        players[i].resetHandler(levelStart: false, sector: flags.sector)     // 10029ef4 FUN_1003af90(h, 0)
     }
 
     /// A request for `unit` at the player's position (`FUN_100128d0` into req+4/+8) from the player template

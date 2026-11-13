@@ -65,6 +65,9 @@ extension GameState {
                 }
                 if u.deletionSpawn != .none, !world.entities[e].destroyed,   // 10036774..1003678c
                    mediaGate(e) {                                            // 10036790..100367a0
+                    // The deletion template r2+0x50ec (`0x100eb41c`) equals the shared template `childRequest`
+                    // builds from: the static initialisers leave the seven spawn templates differing only by
+                    // +0x24 = −1, which `SpawnRequest.template` carries.
                     spawn(childRequest(e, unit: u.deletionSpawn))            // 100367a4..1003683c (r2+0x50ec)
                 }
                 let byPlayer = world.entities[e].killer != -1                // 10036840..10036860
@@ -196,9 +199,9 @@ extension GameState {
                 let e = world.groups[g].members[k]
                 if world.entities[e].ownerPlayer == player, let st = currentState(e) {   // 10034c48..10034c60
                     if st.canBeDestroyedOnOwnerDestruction {                 // 10034c68..10034c84
-                        removeMemberStub(group: g, entity: e, destroyed: true)
+                        removeMember(group: g, entity: e, destroyed: true, byPlayer: false)
                     } else if st.canBeDeletedOnOwnerDeletion {               // 10034c8c..10034ca8
-                        removeMemberStub(group: g, entity: e, destroyed: false)
+                        removeMember(group: g, entity: e, destroyed: false, byPlayer: false)
                     }
                 }
                 k += 1
@@ -217,16 +220,10 @@ extension GameState {
             for k in 0..<memberCount {
                 let e = world.groups[g].members[k]
                 guard world.entities[e].serial == serial else { continue }   // 10034e88..10034e94
-                removeMemberStub(group: g, entity: e, destroyed: false)      // 10034e98..10034ea4
+                removeMember(group: g, entity: e, destroyed: false, byPlayer: false)   // 10034e98..10034ea4
                 return
             }
         }
-    }
-
-    /// `FUN_10036120(group, e, destroyed, 0)` — the direct removers' call (byPlayer 0); the name is C14's (plan C11b
-    /// amendment: moved here under the same name and wired to the real `removeMember`).
-    mutating func removeMemberStub(group g: Int, entity e: Int, destroyed: Bool) {
-        removeMember(group: g, entity: e, destroyed: destroyed, byPlayer: false)
     }
 
     // MARK: - The wreck stamp

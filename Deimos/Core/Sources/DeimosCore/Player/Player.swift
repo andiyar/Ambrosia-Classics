@@ -228,7 +228,8 @@ public struct Player: Sendable {
     /// The sector given to `setup` — a per-player copy of game +0x14 (`FUN_10005cd0`) kept only for callers that
     /// pass no sector: the ◇ Phase-1 session (`DeimosSession`, deleted by C18b), `levelStart` / `scoreBarIcons()`
     /// without a `sector:` argument and `ScoreBarState` without one. The original reads G+0x14 everywhere: every
-    /// `GameState` path passes `flags.sector` (C15 review); not a model of any original field.
+    /// `GameState` path passes `flags.sector` (C15 review); not a model of any original field. Retired by C18a;
+    /// `scoreBarIcons(sector:)` is the API.
     public var sector: Int32 = 1
 
     /// pf[2] (`0x100d6fc8` + 8): the shield obfuscation bias.

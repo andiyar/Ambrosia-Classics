@@ -394,7 +394,7 @@ final class WeaponTests: XCTestCase {
         g.players[0].handler.bombsPending = 3
         let other = g.assets.definitions.weapons[1]
         g.players[0].handler.pendingGround = other
-        g.players[0].resetHandler(levelStart: false)
+        g.players[0].resetHandler(levelStart: false, sector: g.flags.sector)
         XCTAssertFalse(g.players[0].handler.previousFireGround)
         XCTAssertFalse(g.players[0].handler.previousFireAir)
         XCTAssertFalse(g.players[0].handler.previousSelect)

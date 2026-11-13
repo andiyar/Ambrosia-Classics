@@ -58,6 +58,8 @@ final class DestructionTests: XCTestCase {
         let b = try put(&s, "bsgr", x: 200, y: 300)[0]
         s.world.entities[b].object.hitGlowOn = true
         let created = s.flags.groundDestroyed
+        var copy = s.rng                                                      // replayed below
+        let draws0 = s.rng.draws
         var steps: [DestroyStep] = []
         s.destroyEntity(b, killer: 0, now: 100) { steps.append($0) }
         XCTAssertEqual(steps.count, 8)
@@ -66,7 +68,14 @@ final class DestructionTests: XCTestCase {
                                                 .spawn(FourCC("bsdt")!), .sound(FourCC("shat")!), .flags,
                                                 .accuracyCount])
         guard case let .randomBonus(r, object) = steps[7] else { return XCTFail("bonus last: \(steps[7])") }
-        XCTAssertTrue((0...100).contains(r))
+        // The bonus `R(0, 100)` (`10016530`) is the destroy's last draw: replay every earlier one on the copy.
+        let n = s.rng.draws - draws0
+        XCTAssertGreaterThan(n, 1)
+        for _ in 1..<n { _ = copy.rand() }
+        XCTAssertEqual(r, copy.range(Int32(0), 100))
+        XCTAssertEqual(copy, s.rng)
+        XCTAssertEqual(r, 35)                                                 // seed 0x469c2
+        XCTAssertEqual(object, FourCC("rb01"))                                // 35 < F(209) = 70
         var t = try world()
         XCTAssertEqual(object, t.randomBonusObject(r))
         XCTAssertFalse(s.world.entities[b].object.hitGlowOn)
@@ -138,13 +147,16 @@ final class DestructionTests: XCTestCase {
     /// `FUN_10036120` releases the 2 coins (killer P1, not collected).
     func testPlatformSevenBombHits() throws {
         var s = try world()
+        let plbo = try XCTUnwrap(s.assets.definitions.units.first { $0.id == FourCC("plbo")! })
+        let damage = plbo.damage                                              // `#damage_FLOAT`
+        XCTAssertEqual(damage.bitPattern, Float(0.4).bitPattern)
         let p = try put(&s, "plla", x: 200, y: 300)[0]
         XCTAssertEqual(s.world.entities[p].shields.bitPattern, Float(2.6).bitPattern)
         let expected: [Float] = [2.1999998, 1.7999998, 1.3999999, 0.9999999, 0.5999999, 0.1999999, 0]
         let score = s.players[0].score
         for (k, v) in expected.enumerated() {
             XCTAssertFalse(s.world.entities[p].deleted, "hit \(k + 1)")
-            s.damageEntity(p, damage: 0.4, killer: 0, now: 200 + 2 * Int32(k))
+            s.damageEntity(p, damage: damage, killer: 0, now: 200 + 2 * Int32(k))
             XCTAssertEqual(s.world.entities[p].shields.bitPattern, v.bitPattern, "hit \(k + 1)")
         }
         XCTAssertTrue(s.world.entities[p].deleted)
