@@ -475,7 +475,7 @@ final class SpawnTests: XCTestCase {
 
     func testLoadPassBand() throws {
         var s = try state(active: false)
-        var total = 0, spawned = 0
+        var total = 0, spawned = 0, perLevel: [Int] = []
         let levels = s.assets.definitions.levels
         XCTAssertEqual(levels.count, 12)
         for level in levels {
@@ -488,6 +488,7 @@ final class SpawnTests: XCTestCase {
             s.spawnLoadPassLevelObjects(log: { if case .sized = $0 { rows.append(0) } })
             XCTAssertEqual(before - s.world.pendingLevelObjects.count, rows.count, "\(level.id)")
             spawned += rows.count
+            perLevel.append(rows.count)
             if level.id == FourCC("le07")! { XCTAssertEqual(rows.count, 0) }
             let top = s.scroll.window.top, bottom = s.scroll.window.bottom      // this level's own window
             XCTAssertEqual(bottom - top, 480)
@@ -498,5 +499,130 @@ final class SpawnTests: XCTestCase {
         }
         XCTAssertEqual(total, 565)
         XCTAssertEqual(spawned, 13)
+        XCTAssertEqual(perLevel, [2, 1, 2, 1, 3, 0, 0, 0, 0, 1, 2, 1])            // level-list order, pinned
+    }
+
+    /// Test-only: the shipped assets with one unit edited (no shipped unit combines the draw sites below, and none
+    /// sets `doNotSpawnIfTypeAlreadyExists`). `DeimosAssets` / `DefinitionLists` keep their fields `let`, so the
+    /// edited list is written through the stored properties' offsets into local copies (as `MotionTests.patched`).
+    private func patchedUnit(_ a: DeimosAssets, _ id: String,
+                             _ edit: (inout UnitDefinition) -> Void) throws -> DeimosAssets {
+        let ui = try XCTUnwrap(a.unitIndex[FourCC(id)!], id)
+        var units = a.definitions.units
+        edit(&units[ui])
+        var defs = a.definitions
+        let uo = try XCTUnwrap(MemoryLayout<DefinitionLists>.offset(of: \DefinitionLists.units))
+        withUnsafeMutableBytes(of: &defs) {
+            $0.baseAddress!.advanced(by: uo).assumingMemoryBound(to: [UnitDefinition].self).pointee = units
+        }
+        var out = a
+        let d = try XCTUnwrap(MemoryLayout<DeimosAssets>.offset(of: \DeimosAssets.definitions))
+        withUnsafeMutableBytes(of: &out) {
+            $0.baseAddress!.advanced(by: d).assumingMemoryBound(to: DefinitionLists.self).pointee = defs
+        }
+        return out
+    }
+
+    /// One request's draws in site order (`FUN_10033220` → `FUN_10035cd0`): the size (`10036a3c`), the appears
+    /// draws (`10036a80`), then per member the placement (`10037a54`), the scale tolerance (`10014b14`), the flee
+    /// point (`rave`: `100178c8` then `100178ec`/`10017920`), the spawn-set arming (`10017d64`, `10017d7c`,
+    /// `10017dbc`), the group delay (`10035fc8`) and the cyclic start (`10037f04`…`10038034`). A synthetic unit
+    /// on pdex (one of the 17 shipped units that draw the scale tolerance) with every other range closed.
+    func testSpawnDrawSitesInOrder() throws {
+        let base = try TestAssets.loaded.get()
+        XCTAssertEqual(base.definitions.units.filter { $0.initialScalePercentTolerance != 0 }.count, 17)
+        let pdex = base.definitions.units[try XCTUnwrap(base.unitIndex[FourCC("pdex")!])]
+        var set = try XCTUnwrap(pdex.states.first?.spawnSets.first { $0.stateSpawnSetSpawn != .none })
+        set.stateSpawnSetRateMin = 100; set.stateSpawnSetRateMax = 200
+        set.stateSpawnSetNumInVolleyMin = 1; set.stateSpawnSetNumInVolleyMax = 3
+        set.stateSpawnSetDelayBetweenEntitiesMin = 4; set.stateSpawnSetDelayBetweenEntitiesMax = 9
+        let a = try patchedUnit(base, "pdex") { u in
+            u.numInGroupMin = 2; u.numInGroupMax = 3; u.appearsPercent = 60
+            u.xOffsetMin = -50; u.xOffsetMax = 50; u.yOffsetMin = 0; u.yOffsetMax = 0
+            u.initialSpeedMin = 2; u.initialSpeedMax = 2; u.initialHeadingTolerance = 0
+            u.initialHeadingSetInEditor = false; u.initiallyHuntsClosestPlayer = false
+            u.doBurst = false; u.doImplode = false
+            u.canBeSpawnedOnlyWhenPlayersActive = false; u.doNotSpawnIfTypeAlreadyExists = false
+            u.deleteExistingEntitiesOfThisTypeOwnedByPlayer = false; u.entryNotice = ""
+            u.initialScalePercent = 100; u.initialScalePercentTolerance = 40
+            u.groupDelayMin = 3; u.groupDelayMax = 9
+            u.states[0].stateOnTimerMin = 50; u.states[0].stateOnTimerMax = 50
+            u.states[0].stateSpriteFrameMin = 0; u.states[0].stateSpriteFrameMax = 0
+            u.states[0].stateFlee = FourCC("rave")!
+            u.states[0].stateCyclicMotion = true
+            u.states[0].stateOnCounter = 0
+            u.states[0].stateUseParentDirection = false; u.states[0].stateLockToOwnerLoc = false
+            u.states[0].spawnSets = [set]
+        }
+        let w = a.floats[54], north = a.floats[14], south = a.floats[15]
+        var spawnedSeeds = 0
+        for seed: UInt32 in 1...12 {                                           // bounded: 12 seeds
+            var s = GameState(assets: a, prefs: DeimosPrefs.fresh, seed: seed)
+            s.flags.sector = 1
+            s.scroll.levelStart(rect: MacRect(top: 0, left: 0, bottom: 3600, right: 480))
+            var members: [Int] = []
+            let out = s.spawn(SpawnRequest(unit: FourCC("pdex")!, x: 200, y: 200),
+                              log: { if case let .member(slot, _) = $0 { members.append(slot) } })
+            var o = Oracle(seed: seed)
+            let n = o.r(2, 3)                                                  // size
+            var kept = n
+            for _ in 0..<n where o.r(0, 100) > 60 { kept -= 1 }               // appears, all before any member
+            XCTAssertEqual(members.count, Int(kept), "seed \(seed)")
+            if kept == 0 { XCTAssertNil(out); XCTAssertEqual(s.rng.state, o.state); continue }
+            spawnedSeeds += 1
+            var delay: Int32 = 0
+            for (k, i) in members.enumerated() {
+                let x = 200 + Float(o.r(-50, 50))                              // placement
+                let pct = 100 + o.r(-20, 20)                                   // scale tolerance
+                let up = o.r(0, 1) != 0                                        // flee axis
+                let fx = o.f(0, w)                                             // flee x
+                let rate = o.r(100, 200), volley = o.r(1, 3), countdown = o.r(4, 9)   // arming
+                delay += o.r(3, 9)                                             // group delay
+                for _ in 0..<6 { _ = o.rand() }                                // cyclic start (y 200 > 120: six)
+                let e = s.world.entities[i]
+                let tag = "seed \(seed) member \(k)"
+                XCTAssertEqual(e.object.x, x, tag)
+                XCTAssertEqual(e.object.y, 200, tag)
+                XCTAssertEqual(e.object.scale.bitPattern, (Float(pct) / Float(100)).bitPattern, tag)
+                XCTAssertTrue(e.fleeing, tag)
+                XCTAssertEqual(e.targetX.bitPattern, fx.bitPattern, tag)
+                XCTAssertEqual(e.targetY, up ? north : south, tag)
+                let r = e.spawnRecords[0][0]
+                XCTAssertEqual([r.rate, r.volley, r.remaining, r.countdown], [rate, volley, volley, countdown], tag)
+                XCTAssertEqual(e.spawnCountdown, delay, tag)
+                XCTAssertEqual(e.timer, 50, tag)
+            }
+            XCTAssertEqual(Int(s.rng.draws), o.draws, "seed \(seed)")
+            XCTAssertEqual(s.rng.state, o.state, "seed \(seed)")
+        }
+        XCTAssertGreaterThan(spawnedSeeds, 3)
+    }
+
+    /// `doNotSpawnIfTypeAlreadyExists` (`10033304..1003331c`): the test comes after the size draw, and a member
+    /// flagged deleted but not yet reaped (`FUN_10036af0` walks the group lists) still counts. No shipped unit sets
+    /// the flag; a synthetic bu01 (5…6, appears 100: one size draw).
+    func testTypeExistsRefusal() throws {
+        let base = try TestAssets.loaded.get()
+        XCTAssertFalse(base.definitions.units.contains { $0.doNotSpawnIfTypeAlreadyExists })
+        let a = try patchedUnit(base, "bu01") { $0.doNotSpawnIfTypeAlreadyExists = true }
+        var s = GameState(assets: a, prefs: DeimosPrefs.fresh, seed: 5)
+        s.flags.sector = 1
+        s.scroll.levelStart(rect: MacRect(top: 0, left: 0, bottom: 3600, right: 480))
+        s.players[0].lifeState = 4
+        s.players[0].object.x = 208; s.players[0].object.y = 400
+        let req = SpawnRequest(unit: FourCC("bu01")!, x: 208, y: 100)
+        let first = try XCTUnwrap(s.spawn(req))                                 // none exists yet
+        let g = try XCTUnwrap(s.world.groups.firstIndex { $0.members.contains(first.entity) })
+        for m in s.world.groups[g].members { s.world.entities[m].deleted = true }   // flagged, not reaped
+        let groups = s.world.groups.count, live = s.world.liveCount
+        let draws = s.rng.draws
+        var o = Oracle(seed: s.rng.state)
+        var events: [SpawnEvent] = []
+        XCTAssertNil(s.spawn(req, log: { events.append($0) }))
+        XCTAssertEqual(events, [.sized(unit: FourCC("bu01")!, n: o.r(5, 6)), .refused(.typeExists)])
+        XCTAssertEqual(s.rng.draws - draws, 1)
+        XCTAssertEqual(s.rng.state, o.state)
+        XCTAssertEqual(s.world.groups.count, groups)
+        XCTAssertEqual(s.world.liveCount, live)
     }
 }

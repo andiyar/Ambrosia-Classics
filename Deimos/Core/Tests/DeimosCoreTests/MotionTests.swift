@@ -100,17 +100,18 @@ final class MotionTests: XCTestCase {
         func keep(_ x: Float, _ y: Float) -> Bool {
             s.world.entities[i].object.x = x; s.world.entities[i].object.y = y
             s.world.entities[i].object.vx = 0; s.world.entities[i].object.vy = 0
-            s.world.entities[i].object.halfWidth = 10; s.world.entities[i].object.halfHeight = 10
+            s.world.entities[i].object.halfWidth = 10; s.world.entities[i].object.halfHeight = 14
             return s.integrateAndCull(i, margin: 128)
         }
+        // Unequal half sizes (hw 10, hh 14), so a test that took the other axis's half size is seen.
         XCTAssertTrue(keep(-138, 100))                               // x + hw = −128 ≥ −128
         XCTAssertFalse(keep(-138.5, 100))
         XCTAssertTrue(keep(554, 100))                                // x − hw = 544 ≤ 416 + 128
         XCTAssertFalse(keep(554.5, 100))
         XCTAssertTrue(keep(100, -128))                               // the centre, no half-height on the top test
         XCTAssertFalse(keep(100, -128.5))
-        XCTAssertTrue(keep(100, 618))                                // y − hh = 608 ≤ 480 + 128
-        XCTAssertFalse(keep(100, 618.5))
+        XCTAssertTrue(keep(100, 622))                                // y − hh = 608 ≤ 480 + 128
+        XCTAssertFalse(keep(100, 622.5))
         // Constrain (FUN_10016da0, W 416, H 480): each hit negates v, accel and desired on that axis only.
         func constrain(_ x: Float, _ y: Float) -> Entity {
             var e = s.world.entities[i]

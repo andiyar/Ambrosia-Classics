@@ -35,7 +35,7 @@ extension GameState {
         guard world.entities[i].hasSpawnSets, let st = currentState(i) else { return }   // 10015b6c..10015b74
         let count = recordsOfCurrentState(i).count                            // 10015b78..10015bac
         var k = 0
-        while k < count {                                                      // 10015bb0..10016198
+        while k < count && k < st.spawnSets.count {                            // 10015bb0..10016198 (+ bound)
             defer { k += 1 }
             let set = st.spawnSets[k]                                          // 10015bb8..10015bc4
             let s = Int(world.entities[i].state)                               // 10015bc8..10015be0

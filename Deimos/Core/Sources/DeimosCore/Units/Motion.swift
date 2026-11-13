@@ -23,7 +23,9 @@ public struct NearestPlayer: Equatable, Sendable {
 /// (`10012ca0..10012f18`). Every float operation is single precision (`fadds`/`fsubs`/`fmuls`/`fdivs`).
 ///
 /// **RNG draws (C9 owns them, invariant 6):** the controller's only own sites are the cyclic motion's two
-/// int draws per tick, `10017024` a = `R(trunc(Max)/2, trunc(Max))` then `10017054` b = `R(1, 100)`. The
+/// int draws per tick, `10017024` a = `R(trunc(Max)/2, trunc(Max))` then `10017054` b = `R(1, 100)` — two draws
+/// unless trunc(MaxSpeed) = 0 (then a's range is closed and only b draws; no shipped cyclic state is below 1:
+/// 40 cyclic states, max speeds 1, 2, 4). The
 /// range trigger's state entry (C8's `enterState`) and the no-player flee (`setFleePoint`) make theirs inside
 /// the controller call, in that position.
 extension GameState {
@@ -31,7 +33,8 @@ extension GameState {
     /// entity: for players 0, 1 `d = root(fctiwz(fmadds(dx, dx, dy·dy)))` with `dy = py − y`, `dx = px − x`
     /// (`10005dd8..10005e04`); the first kept, replaced only on strictly smaller d (`10005e40 fcmpo; bge` — ties to
     /// P1). Not found: the original's position out is the uninitialised stack slot `local_64[−1]` (units NR 3,
-    /// never read — gameplay-leftovers §7.3); here (0, 0), distance 0, player −1 (`10005e90`).
+    /// never read — gameplay-leftovers §7.3); here (0, 0), distance 0.0 — the original's initial distance,
+    /// `0x100d6354` (`10005d48..10005d68`, stored at `10005e88`), not a placeholder — and player −1 (`10005e90`).
     func nearestActivePlayer(to i: Int) -> NearestPlayer {
         let ex = world.entities[i].object.x, ey = world.entities[i].object.y
         var best: NearestPlayer? = nil
@@ -42,7 +45,7 @@ extension GameState {
                                      player: players[p].index)
             }
         }
-        return best ?? NearestPlayer(found: false, x: 0, y: 0, distance: 0, player: -1)
+        return best ?? NearestPlayer(found: false, x: 0, y: 0, distance: 0, player: -1)   // distance: 0x100d6354
     }
 
     /// `FUN_10017ef0(e, range, &tgt, &no) @ 10017ef0` — rule conditions #8/#9: an active player exists, `range ≠ 0`

@@ -236,7 +236,10 @@ final class StateMachineTests: XCTestCase {
         let r5 = rule("NULL", "No Destroyable Ground Entities Are Active")
         XCTAssertEqual(s.ruleCondition(ctl, r5), true)                          // x 420 > trunc(416): off screen
         for (x, y, held) in [(Float(400), Float(100), true), (416, 100, true), (416.5, 100, false), (0, 0, true),
-                             (-0.5, 100, false), (100, 480, true), (100, 480.5, false), (100, -0.5, false)] {
+                             (-0.5, 100, false), (100, 480, true), (100, 480.5, false), (100, -0.5, false),
+                             // NaN x passes both x tests (10016bf4 blt, 10016c38 bgt: unordered is neither);
+                             // NaN y fails the last (10016c8c ble keeps: unordered culls).
+                             (.nan, 100, true), (100, .nan, false)] {
             s.world.entities[g].object.x = x; s.world.entities[g].object.y = y
             XCTAssertEqual(s.ruleCondition(ctl, r5), !held, "(\(x), \(y))")
             XCTAssertEqual(s.isOnScreen(g), held, "(\(x), \(y))")
@@ -340,6 +343,7 @@ final class StateMachineTests: XCTestCase {
         }
         XCTAssertEqual(requests.count, 3)
         guard requests.count == 3, rates.count >= 2 else { return XCTFail("rates \(rates)") }
+        XCTAssertEqual(requests, [1000, 1125, 1245])                           // seed 0x469c2, pinned
         XCTAssertEqual(requests, [t0, t0 + rates[0] + 1, t0 + rates[0] + rates[1] + 1])
         for r in rates { XCTAssertTrue((120...125).contains(r)) }
         XCTAssertEqual(s.world.entities[c].state, stateIndex(s, c, "Pause"))  // T0 + 300

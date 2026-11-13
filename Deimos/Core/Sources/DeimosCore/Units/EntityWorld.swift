@@ -44,8 +44,8 @@ public struct EntityWorld: Equatable, Sendable {
     public var entities: [Entity]
     /// The pool's slot in-use bytes (slot + 8).
     public var inUse: [Bool]
-    /// Pool +0: the free hint, −1 = none (alloc clears it; free sets it; the level reset stores 0).
-    public var freeHint: Int = -1
+    /// Pool +0: the free hint, −1 = none (alloc clears it; free sets it; the level reset stores 0, `10038450`).
+    public var freeHint: Int = 0
     /// Pool +4: slots in use.
     public var liveCount: Int = 0
     /// `_DAT_100e0228` (−0x6108): the active group list, PERM first.

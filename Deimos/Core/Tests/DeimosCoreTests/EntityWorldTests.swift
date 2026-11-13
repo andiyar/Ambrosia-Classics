@@ -100,6 +100,7 @@ final class EntityWorldTests: XCTestCase {
 
     func testPoolCapAndHint() {
         var world = EntityWorld()
+        XCTAssertEqual(world.freeHint, 0)                                      // FUN_10038450 stores 0 (10038450..1003845c)
         var slots: [Int] = []
         for _ in 0..<EntityWorld.capacity {                                    // bounded: 1000 allocations
             guard let s = world.allocate() else { return XCTFail("refused before 1000 live") }
@@ -121,6 +122,12 @@ final class EntityWorldTests: XCTestCase {
         world.freeHint = -1
 
         world.entities[417].shields = 2.5                                      // a field FUN_100142f0 keeps
+        // The other fields FUN_100142f0 never writes: +0xb8, +0x100…+0x114, +0x138.
+        world.entities[417].timer = 77
+        world.entities[417].spawnVX = 1.5; world.entities[417].spawnVY = -2.5
+        world.entities[417].desiredVX = 3.5; world.entities[417].desiredVY = -4.5
+        world.entities[417].accelX = 0.25; world.entities[417].accelY = -0.75
+        world.entities[417].heading = 271
         world.entities[417].deleted = true
         // The object reset FUN_10012650 writes none of +0x64, +0x75, +0x78, +0x7c, +0x80 (micro-wave §3.6).
         world.entities[417].object.glowTintColour = 0x1234
@@ -143,6 +150,10 @@ final class EntityWorldTests: XCTestCase {
         XCTAssertEqual(e.ownerSerial, -1)
         XCTAssertEqual(e.shownWeapon, .none)
         XCTAssertEqual(e.shields, 2.5)                                         // not reset: stale, as in the pool
+        XCTAssertEqual(e.timer, 77)                                            // +0xb8
+        XCTAssertEqual([e.spawnVX, e.spawnVY, e.desiredVX, e.desiredVY, e.accelX, e.accelY],
+                       [1.5, -2.5, 3.5, -4.5, 0.25, -0.75])                    // +0x100…+0x114
+        XCTAssertEqual(e.heading, 271)                                         // +0x138
         XCTAssertEqual(e.object.glowTintColour, 0x1234)
         XCTAssertTrue(e.object.hitGlowFalling)
         XCTAssertEqual(e.object.hitGlowLevel, 12)
