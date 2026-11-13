@@ -144,8 +144,10 @@ Sources: the world file's `Mlvl` / `Mcnv`; `docs/ferazel/gap-ledger/placements-a
    - springs 1150…1153: each marks its own set — 0x47f (M l. 62047), 0x47e (M l. 62186–62187), 0x480 for 0x480 / 0x481
      (M l. 62197–62210, `iVar9 = _DAT_100a0b00` at M l. 61958); none of the three sets is in `CachedFaces.sets` and
      `marks` has no spring arm. Levels 15, 30, 31, 40, 50, 62.
-   - maces / balls 0x5c8…0x5d0: every type marks its own single, `PTR_DAT_100a09f4[type·0x10 − 0x5c7f] = 1` (M l. 62321);
-     the port registers and marks only 0x5cd (1485). Levels 20, 21, 22, 30, 31, 50, 62 (1480–1488).
+   - maces / balls 0x5c8…0x5d1: every type marks its own single, `PTR_DAT_100a09f4[type·0x10 − 0x5c7f] = 1` — the arm
+     is the `else` of `t < 0x5c8` guarded `t < 0x5d2` (M l. 62312–62321), so it runs to 0x5d1 (1489, an absent record,
+     finding 9), not 0x5d0 (corrected at 6A-CF, dump over ledger); the port registered and marked only 0x5cd (1485).
+     Levels 20, 21, 22, 30, 31, 50, 62 (1480–1488).
    - the passage 0xb55 (2901): marks its single (M l. 62585–62587); the port registers and marks 0xb54 only. Level 62.
    - the hang glider 0xbea (3050): marks the four Player cache sets 0x41a…0x41d (M l. 52616–52624) — registration
      records set #1…#4, first in the whole list, not in `CachedFaces`. Level 20.
@@ -158,8 +160,10 @@ Sources: the world file's `Mlvl` / `Mcnv`; `docs/ferazel/gap-ledger/placements-a
      (#33) and set 0x4b9 (#34) — `_DAT_100a0afc + 1` and `iVar8 + 1` with `iVar8 = _DAT_100a0af8` (M l. 62018–62019,
      61959). Levels 40, 50, 51, 62, 67.
 9. **23 registration records name a PICT no file holds** (2805–2807, 2950, 2966–2969, 1489, 2718–2729, 1790, 1791): the
-   load returns nothing and `.LoadCachedSpriteFaces` neither marks them loaded nor counts them (M l. 73822–73832,
-   73856–73859). A full transcription must keep them as never-counting records.
+   load returns nothing and `.LoadCachedSpriteFaces` never marks them loaded and makes no step for them (M l.
+   73822–73832, 73852–73859) — but they **are counted**: `.CountNeededCachedSpriteFaces` has no presence test (M l.
+   73749–73764), so a marked absent record adds its faces to n (q = 2n) at every load (corrected at 6A-CF, dump over
+   ledger: this finding said "nor counts them"). A full transcription keeps them as records that load nothing.
 10. **Cannons 1091 and 1093–1096 belong to 6B, not 6A.** Card 6A-BG1 lists "1091–1097" among the Background types of
     10–22; on levels 10–22 they are all p1 0 (built) except 1097 (p1 101, level 10) and 1092 (p1 101 on 15, 103 on 20).
     Their first refused records are on 40 (1093–1096) and 52 (1091); 62 also has refused 1096 records (5 of 7). The
@@ -488,7 +492,10 @@ Each level: (1) the switches new against 1–5 with owners; (2) its census types
 records; (3) the future-phase resources it reaches and which loader the original uses, plus the header-named resources
 new against 1–5 (tilesets, CLUTs, music, chapter card — the port's loaders are generic but have never opened them);
 (4) its conversations and whether the port's interpreter handles every opcode; (5) owners; (6) the cache records its
-new types mark, as positions in the original's two registration lists (§6).
+new types mark, as positions in the original's two registration lists (§6). Item 6 applies the MARKED_BY rule by type
+alone and so over-states one mark: the Bat 1851 marks set #48 (0x73b) only for a record with p1 < 0 (M l.
+68262–68267). Level 11's 1851 records have p1 −2 / 2 (marked); level 22's have p1 2 and level 31's p1 0, so **set #48
+is not marked on levels 22 and 31** although their item 6 lists it (6A-CF review; the generated blocks are unchanged).
 
 <!-- LL:per-level -->
 ### Level 10 — Unemployed In Greenland

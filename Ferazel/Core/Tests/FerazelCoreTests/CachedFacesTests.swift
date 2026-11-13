@@ -60,12 +60,16 @@ final class CachedFacesTests: XCTestCase {
             }
             guard cells.count > 7, cells[2] == "set" || cells[2] == "single" else { continue }
             let set = cells[2] == "set"
-            let faces = Self.digitRuns(Substring(cells[4]))
-            rows.append(LedgerRow(set: set, number: Self.digitRuns(Substring(cells[1]))[0],
-                                  pict: Int16(Self.digitRuns(Substring(cells[3]))[0]), faces: faces[0],
+            let number = Self.digitRuns(Substring(cells[1])), pict = Self.digitRuns(Substring(cells[3]))
+            let faces = Self.digitRuns(Substring(cells[4])), flag = Self.digitRuns(Substring(cells[5]))
+            // A mangled row fails here instead of trapping the test process.
+            guard number.count >= 1, pict.count >= 1, flag.count >= 1, faces.count >= (set ? 4 : 1) else {
+                XCTFail("LL §6 row unreadable: \(line)")
+                continue
+            }
+            rows.append(LedgerRow(set: set, number: number[0], pict: Int16(pict[0]), faces: faces[0],
                                   cellWidth: set ? faces[1] : 0, cellHeight: set ? faces[2] : 0,
-                                  columns: set ? faces[3] : 1, flag: Int16(Self.digitRuns(Substring(cells[5]))[0]),
-                                  present: cells[6] == "yes"))
+                                  columns: set ? faces[3] : 1, flag: Int16(flag[0]), present: cells[6] == "yes"))
         }
         return rows
     }
@@ -114,6 +118,9 @@ final class CachedFacesTests: XCTestCase {
         XCTAssertEqual(cache.loadedRecords, [.single(0)])
         XCTAssertEqual(cache.load(needed: need).map { [Int($0.0), Int($0.1)] }, [], "n 9 again, q 18, no step")
         XCTAssertEqual(cache.loadedRecords, [.single(0)])
+        XCTAssertEqual(cache.load(needed: CachedFaces.Needed(records: need.records.union([.single(1)])))
+                           .map { [Int($0.0), Int($0.1)] }, [[11, 20]],
+                       "the absent records counted again: n = 8 + 1 + 1")
         // No placed type on the world's 24 levels marks an absent record (a data pin: unreachable as shipped).
         let levels = r.world.resources(of: "Mlvl")
         XCTAssertEqual(levels.count, 24)
@@ -154,6 +161,10 @@ final class CachedFacesTests: XCTestCase {
         XCTAssertTrue(types.contains(3050))
         XCTAssertEqual(CachedFaces.markedRecords(type: 3050), [.set(0), .set(1), .set(2), .set(3)])
         XCTAssertEqual(CachedFaces.sets[0...3].map(\.pict), [0x41a, 0x41b, 0x41c, 0x41d])
+        // The PICT-valued sheets of its marks come through the record cut (`sheet(record:)`), clut 200.
+        XCTAssertEqual(CachedFaces.sheets(markedBy: [Int16(3050)])
+                           .map { [Int($0.pict), $0.count, $0.columns, Int($0.clut)] },
+                       [[0x41a, 6, 3, 200], [0x41b, 4, 4, 200], [0x41c, 6, 3, 200], [0x41d, 4, 4, 200]])
         // The cannons 1092 / 1094 / 1096 mark set 0x442 (#29; M l. 62058–62061, LL §6 mark 62061).
         for t: Int16 in [1092, 1094, 1096] {
             XCTAssertTrue(types.contains(t), "\(t)")
@@ -175,9 +186,9 @@ final class CachedFacesTests: XCTestCase {
             XCTAssertTrue(types.contains(t), "\(t)")
             XCTAssertEqual(CachedFaces.markedRecords(type: t), [.set(28)], "\(t)")
         }
-        // Each mace / ball 0x5c8…0x5d0 marks its own single (`PTR_DAT_100a09f4[type·0x10 − 0x5c7f] = 1`, M l. 62321;
-        // singles #151…#159).
-        let maces = types.filter { (0x5c8...0x5d0).contains($0) }.sorted()
+        // Each mace / ball 0x5c8…0x5d1 marks its own single (`PTR_DAT_100a09f4[type·0x10 − 0x5c7f] = 1`, M l.
+        // 62312–62321; singles #151…#160).
+        let maces = types.filter { (0x5c8...0x5d1).contains($0) }.sorted()
         XCTAssertEqual(maces, [1480, 1485])
         for t in maces {
             let k = CachedFaces.RecordKey.single(150 + Int(t - 0x5c8))
@@ -249,6 +260,24 @@ final class CachedFacesTests: XCTestCase {
         let more = cache.load(needed: CachedFaces.Needed(records: [CachedFaces.fireball0844, CachedFaces.fireball0848]))
         XCTAssertEqual(more.map { [Int($0.0), Int($0.1)] }, [[12, 12]])
         XCTAssertEqual(cache.loadedRecords, [CachedFaces.fireball0844, CachedFaces.fireball0848])
+        // Then `0848` alone: `0844` is disposed by record, `0848` stays.
+        XCTAssertEqual(cache.load(needed: CachedFaces.Needed(records: [CachedFaces.fireball0848])).count, 0)
+        XCTAssertEqual(cache.loadedRecords, [CachedFaces.fireball0848])
+        // CF's marks of built types (LL §1 finding 8), every type of each arm: the cannons 0x442…0x44a (M l.
+        // 62057–62061), the springs 0x47e…0x481 (62046–62047, 62186–62210), the maces 0x5c8…0x5d1 (62312–62321),
+        // the passage 0xb55 (62585–62587).
+        for t in Int16(0x442)...0x44a { XCTAssertEqual(CachedFaces.markedRecords(type: t), [.set(28)], "\(t)") }
+        XCTAssertEqual([Int16(0x47e), 0x47f, 0x480, 0x481].map { CachedFaces.marks(type: $0).sets },
+                       [[0x47e], [0x47f], [0x480], [0x480]])
+        for t in Int16(0x5c8)...0x5d1 {
+            XCTAssertEqual(CachedFaces.markedRecords(type: t), [.single(150 + Int(t - 0x5c8))], "\(t)")
+        }
+        XCTAssertEqual(CachedFaces.marks(type: 0xb55).singles, [0xb55])
+        // No built type marks a record of a shared PICT yet — the first boss task that marks a 0x46a record (6B-WZ /
+        // the Demon / Xichra) re-derives this. The record cut is nil for a flag-1 record (#58) and an absent one (#86).
+        XCTAssertTrue(CachedFaces.recordSheets(markedBy: Int16(0)...0x0d00).isEmpty)
+        XCTAssertNil(CachedFaces.sheet(record: .set(57)))
+        XCTAssertNil(CachedFaces.sheet(record: .set(85)))
         // A PICT-valued `Needed` marks every record of the PICT: 0x46a's three — 18 faces, three steps.
         var fresh = CachedFaces()
         XCTAssertEqual(CachedFaces.Needed(sets: [0x46a]).records,

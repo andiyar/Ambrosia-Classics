@@ -1174,6 +1174,24 @@ ids; its `--check` reads this table):
   `LevelFiveTests` and `GremlinFloaterTests` green with the re-anchored neighbours; levels 1–5 load-bar step counts
   printed before and after — identical. **Commit:** `FerazelCore: the picture cache in full (285
   records, keyed by record), the missing marks of built types, the fireball's three records; 6 tests`.
+- **As executed — 6A-CF (run 51):** task dc1d65c (6 tests: 5 in `CachedFacesTests`, `FaceTests.testFireballCutsByRecord`),
+  review fix round asserts only (no new test). The 285 rows match the dump row for row (both legs). Levels 1–5 load
+  bars identical before and after; no golden moved. **Files beyond the card:** `Sources/FerazelRender/Frame/SpriteBlitter.swift`
+  (the face store is `SpriteBlitter.Faces`: `recordSheets`, the `records:` init parameter, the record fallback in
+  `face(_:)` — FrameRenderer cannot key by record without it); `tools/windows/proof-b-ferazel.sh` (fix round: the
+  ledger copied into the Windows proof run's work tree — `CachedFacesTests` reads it five levels above `#filePath`).
+  **Dump over card:** (a) the mace / ball arm runs **0x5c8…0x5d1** (singles #151…#160), not …0x5d0 — the `else` of
+  `t < 0x5c8` guarded `t < 0x5d2` (M l. 62312–62321); 0x5d1 is the absent PICT 1489 and placed nowhere; (b) a marked
+  absent record **is counted in n** (q = 2n) at every load — `.CountNeededCachedSpriteFaces` has no presence test (M l.
+  73749–73764) — and makes no step (M l. 73822–73832, 73852–73859). LL §1 findings 8 and 9 corrected to match; LL §4's
+  preamble notes that the Bat 1851 marks set #48 0x73b only for p1 < 0 (M l. 68262–68267), so not on levels 22 / 31.
+  Measured at CF's point: level 20 needs 10 records, n 51, q 102, 10 steps; level 22 33 / 168 / 336 / 33.
+  **`later:` for the first task that marks a 0x46a record (6B-WZ1 / the Demon / Xichra):** the Setup-level per-record
+  mark asserts (the Wizard `0848` only, the Demon all three, Xichra `0848` + `0840`); assert the opened level's
+  `renderer.sprites.faces.recordSheets.keys`; extend `DrawModeAuditTests`' per-sheet probes to `recordSheets`;
+  re-derive `testCacheMarksPerRecord`'s `recordSheets(markedBy: 0…0xd00).isEmpty`; and either route
+  `CachedFaces.sharedPict` refs to the record store first in `SpriteBlitter.Faces.face` or retire
+  `EnemyShot.cachedSheets` (a PICT-keyed 0x46a sheet would shadow the record cuts and refuse 0x46b / 0x46c's faces).
 
 #### 6A-FR — minor — the falling rocks' player arm (→ 633)
 - **Files:** `Sources/FerazelCore/Player/HitPlayerSprite.swift` (`:177`, the `// later: Phase 6` arm),

@@ -5,7 +5,8 @@
 #
 # Never touches the repo's Ferazel/Core: it works on a copy under $WIN_CROSS/work/proof-b-ferazel laid out like the
 # repo (Ferazel/Core reaches HectorKit through ../../../HectorKit = $WIN_CROSS/work/HectorKit, the same symlink
-# proof-b.sh makes; CensusTests finds docs/ferazel/data-census.md five levels above its #filePath).
+# proof-b.sh makes; CensusTests finds docs/ferazel/data-census.md and CachedFacesTests
+# docs/ferazel/later-levels-ledger.md five levels above their #filePath).
 # Builds into $work/build (never the gates' $WIN_CROSS/build/ferazel, never BTX's build/Core — Ruling 19).
 #
 #   (no argument)   run the whole suite ONCE (one CrossOver launch, plus a short --list-tests launch for the count)
@@ -60,6 +61,7 @@ core="$work/Ferazel/Core"
 mkdir -p "$core" "$work/docs/ferazel"
 rsync -a --delete --exclude .build --exclude .swiftpm "$repo/Ferazel/Core/" "$core/"
 cp "$repo/docs/ferazel/data-census.md" "$work/docs/ferazel/"
+cp "$repo/docs/ferazel/later-levels-ledger.md" "$work/docs/ferazel/"
 ln -sfn "${hk:A}" "$WIN_CROSS/work/HectorKit"
 
 # ---- Build --------------------------------------------------------------------------------------------
