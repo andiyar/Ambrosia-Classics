@@ -174,8 +174,8 @@ extension HitPlayerSprite {
     /// 2. a see-saw segment (l. 49155–49166): the player's x + (rect left + right) >> 1 outside the segment's
     ///    [x + left, x + right] → return; else the segment's `+0xb2 = 1`, `_DAT_100a067c = 1`;
     /// 3. d = (player `+0x10` − `+0xc`, `+0xe` − `+0xa`) (l. 49167–49168) — his own centre offset;
-    /// 4. the special arms of l. 49170–49303: // later: Phase 6 — falling rocks 0x433/0x434 (`+0x160`, `.HurtPlayer` +
-    ///    `.KillBox`), spiked balls 0x5c3/0x5c4 (`FastRand(100)` + `.HurtPlayer`); the doors 0xb5e/0xb5f, the chest
+    /// 4. the special arms of l. 49170–49303: the falling rocks 0x433 / 0x434 (6A-FR, `rock`, built — l. 49170–49188);
+    ///    // later: Phase 6 — spiked balls 0x5c3/0x5c4 (`FastRand(100)` + `.HurtPlayer`); the doors 0xb5e/0xb5f, the chest
     ///    0x51c and the timer 0xb5b (BX2, `lockAndKey`, built); NPC `.Conversation` and the sign / grave texts (C1,
     ///    built, below). None of their types is placed on levels 1–2 except the NPCs, doors, chests and signs, whose arms need
     ///    the item and conversation systems. The NPC arm 0xb87…0xb99 (l. 49199–49210) returns on every path before `.PlatformBounce` — NPCs are
@@ -209,6 +209,7 @@ extension HitPlayerSprite {
             w.player.seeSawTouch = true
         }
         let d = SpriteSlot.Point(x: h(p.centre.x - p.x), y: h(p.centre.y - p.y))
+        if rock(w, player: pID, other: oID) { return }                  // 6A-FR (l. 49170–49188)
         if npcs.contains(o.type) {
             npc(w, other: oID)
             return
@@ -219,6 +220,37 @@ extension HitPlayerSprite {
             return
         }
         boxTail(w, player: pID, other: oID, entryVY: entryVY, d: d, rect: p.hotRect, keys: keys)
+    }
+
+    /// The falling rocks' arm (M l. 49170–49188; phase6-engine-contracts §2.12, phase6-boss-contracts §2.7), with t the
+    /// rock's type (`+4`), `+0x160` its hover counter (`classWord160`, < 0 while a Wizard holds it — `BoxSprite.boulder`):
+    /// - t 0x434 with `+0x160 < 0` → return at once (l. 49170–49172): nothing else in the routine runs;
+    /// - t 0x433 with `-1 < +0x160` (l. 49173): the rock's `+0xe` < the player's `+0xe` (the centre y, compared as
+    ///   signed shorts, strict) and `599 < +0x2c` (its vy, a signed int) → `.HurtPlayer(player, rock, 0x38, 1, 0x1e, 0)`
+    ///   and `.KillBox(rock)`, return — whether or not the hurt landed (l. 49174–49179);
+    /// - t 0x434 with `-1 < +0x160` (l. 49181): the same test with `.HurtPlayer(player, rock, 0x70, 1, 0x3c, 0)` (l.
+    ///   49182–49187);
+    /// - otherwise — a slow, level or lower rock, or a 0x433 with `+0x160 < 0`, which matches none of the three arms
+    ///   (l. 49173, 49181, 49189) — the routine goes on (the rock is solid through `.PlatformBounce`).
+    /// Returns whether the routine returned. No rock is placed on any level: the Warrior, the Wizard and Xichra spawn
+    /// them (6A-W1 on).
+    static func rock(_ w: SpriteWorld, player pID: Int, other oID: Int) -> Bool {
+        guard let p = w.active.record(id: pID), let o = w.active.record(id: oID) else { return false }
+        if o.type == 0x434 && o.classWord160 < 0 { return true }
+        let damage: Int16, invulnerable: Int16
+        if o.type == 0x433 && -1 < o.classWord160 {
+            (damage, invulnerable) = (0x38, 0x1e)
+        } else if o.type == 0x434 && -1 < o.classWord160 {
+            (damage, invulnerable) = (0x70, 0x3c)
+        } else {
+            return false
+        }
+        guard Int16(truncatingIfNeeded: o.centre.y) < Int16(truncatingIfNeeded: p.centre.y), 599 < o.vy
+        else { return false }
+        HurtPlayer.hurt(w, player: pID, attacker: oID, damage: damage, blood: true, invulnerable: invulnerable,
+                        coins: 0)
+        BoxSprite.killBox(w, id: oID)
+        return true
     }
 
     /// The Box arm from the sign gate on (steps 5–10 above; l. 49304ff).
