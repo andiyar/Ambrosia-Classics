@@ -20,7 +20,7 @@ The little brother of [EV ARM](https://github.com/andiyar/ambrosia). Escape Velo
 
 The rule for every game is the same: **replicate the original 100%**. Each app loads the original pictures, sounds, strings and dialogs by their original file names, and reproduces the original's timings, rules and quirks, oddities included. No modern extras — apart from the optional Remastered Art and a modern app icon.
 
-The list: **Aki — Mahjong Solitaire** and **Bubble Trouble X** (both released), **Ferazel's Wand** (being built now, the first five levels playable), then **Deimos Rising** and **Cythera** (started, parked until Ferazel is done).
+The list: **Aki — Mahjong Solitaire** and **Bubble Trouble X** (both released), **Ferazel's Wand** (being built now, the first five levels playable), then **Deimos Rising** and **Cythera** (started and planned, next after Ferazel).
 
 I just played my first game of Aki in a decade. I am so happy!
 
@@ -55,13 +55,13 @@ There's also an **iPad version** (same game, same data, touch in place of the mo
 **The first five levels play**, on Mac and Windows, from the original Ferazel's Wand 1.0.3 data. The front end, world map and saved games (in the original's own file format) are in, along with Ferazel's moves, spells and items, the lighting, water and machinery of the levels, sound, music and game controllers. The enemies are alive: goblins, bats, frogs, blobs and the rest walk, fly, throw, block and die the way the original's code says. Level 5 runs up to the first boss, the Manditraki Warrior, who for now just stands in his arena. Being built now: the Warrior fight and everything after it, through to the Goblin Chief. I've played everything up to level 4 and it feels right; I haven't played the build with the enemies yet. There's no download yet: Mac and Windows come together at 1.0.
 
 ### Deimos Rising
-![status](https://img.shields.io/badge/status-parked-lightgrey) &nbsp;
+![status](https://img.shields.io/badge/status-planned-blue) &nbsp;
 ![level 1](https://img.shields.io/badge/level%201-looks%20right-green)
 
 Every function of the game's code has been read out of the decompile and written up. The original data is in the repo, and a census proves all 872 files open. **Level 1 looks right**: the app draws the first level, its ship, enemies, terrain and status panel the way the original did, at OS X's 60 Hz. Making level 1 actually play (shooting, enemies, destruction, bonuses, the end-of-level tally, game over) is most of the way there on a branch. The rest of the game is planned out and waits until Ferazel is done.
 
 ### Cythera
-![status](https://img.shields.io/badge/status-parked-lightgrey) &nbsp;
+![status](https://img.shields.io/badge/status-planned-blue) &nbsp;
 ![reverse engineering](https://img.shields.io/badge/reverse%20engineering-done-green)
 
 The whole binary is decompiled and read. Building has started: the data is in the repo, and the core can already unpack the game's files (its segment files, compression and world records) and decode its tiles, portraits and pictures. Next is the script decoder, then the first milestone: walking around Catamarca. Planned out, and waiting until Ferazel is done.
