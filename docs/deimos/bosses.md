@@ -62,6 +62,8 @@ tick *t* lets the scroll move again in *t+1*. [HIGH — dump lines quoted; `FUN_
 `if (DAT_100e0148 != 0) return; _DAT_100e0128 = 1;`, `FUN_1000ffe0` body `_DAT_100e0128 = 0;`;
 caller `FUN_10006b50 <- FUN_100051a0` (`$W/callers.txt`)]
 
+Phase 2 correction (2026-11): the full listing-addressed call order of `FUN_10006b50` is in engine-loop.md §3 (note #4).
+
 ### 2.2 Who asserts the pause (`FUN_10033850` step 6, exact)
 The return value is the byte `local_60` (stack `0x140(r1)`), cleared at entry and set only here:
 ```
@@ -351,6 +353,8 @@ Ramming any of them deals 100 (instant kill) to the target and a hit to the play
 [HIGH for data values, state graph, hit counts and the pause/scroll numbers; MED for: the
 spawned tank's entry path (movement executor not read), "both overlapping victims are hit"
 (group-list order and the bomb's own survival not traced), per-launch bomb count (flli 151/152 handling not read)]
+
+⚑ corrected (Phase 2, 2026-11) #7 — float32 values: the platform's shields go 2.5999999 → 2.1999998, 1.7999998, 1.3999999, 0.9999999, 0.5999999, 0.1999999, then −0.2000001 is computed but **0.0 is stored** (the damage clamp, damage-health-death.md §3 step 4); the table's 2.6, 2.2 … −0.2 are decimal shorthand. In player-physics.md's "hold up" worked example the float32 y is 325.19998 at tick 2, 298.40002 / 290.60004 / 282.80005 at ticks 6–8, and the rest position is 252.00006, not 252.0. [HIGH — float32 stepping]
 
 ## NOT RESOLVED (this file)
 1. ~~`FUN_10035070` range semantics: which position is passed (`param_2`) and the distance helper

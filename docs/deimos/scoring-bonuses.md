@@ -232,7 +232,7 @@ step(G+0x5c)  = bonus < 1 ? 0 : max(trunc((float)bonus * 0.02f), int(flli 199 = 
 (`flli 200 = 0.02` single: `10007530 fmuls f31,f31,f1`; `10007568 fcmpo; bge` keeps the larger.)
 Comparisons use the untruncated float, e.g. 94.99 % is tier 3.
 
-### 6.4 Accuracy tally — `FUN_100075e0 @ 100075e0 (frame)` [HIGH for 6, 8, 10; MED for 1–5, 7, 9]
+### 6.4 Accuracy tally — `FUN_100075e0 @ 100075e0 (frame)` [HIGH for every state — 1–5, 7, 9 raised from MED in Phase 2 (2026-11)]
 Every wait is `timer + N < frame` (strict) → lasts N+1 frames. Sounds: gaso 20 `MoneyCount`
 `moco`, 21 `nobo`, 22 `GroundAccuracyCount_MaxBonus` `acbo`, 23 `…_MissionBonus` `miac`.
 | state | action | exit |
@@ -258,6 +258,12 @@ Consequences [HIGH]:
   `FUN_100051a0`). ⚑ corrected waves-and-enemies.md §7 ("100 % = MissionBonus 100000 + miac"):
   a single 100 % level gives tier 1 (5000 × sector) + sound `acbo` + the reward flag (§7).
 
+⚑ corrected (Phase 2, 2026-11) #49 — tally details: every wait `timer + N < now` lasts N + 1 ticks; state 0 returns done; state 6 pays on its first tick (the timer still holds the level-end time) and, with nothing left to pay, goes to state 7 with no wait; states 8 and 10 stay done; state 9 sets alpha 0, and entering state 10 sets alpha 32 and the text "".
+
+⚑ corrected (Phase 2, 2026-11) #50 — states 1–5, 7 and 9 raised MED → HIGH (dump lines 4679–4898, `FUN_100075e0`); the section tag now reads HIGH for every state.
+
+⚑ corrected (Phase 2, 2026-11) #51 — table: `moco` (gaso 20) plays on the exits of states 1, 2 **and 3** (dump lines 4712, 4732, 4746); state 8's mission sound is played at **priority** 100 as well as volume 100, `FUN_10047670(id, 100, 100, 0)` (dump line 4847; the other tally sounds use priority 0x32).
+
 ### 6.5 Coin bonus — `FUN_10027670 @ 10027670 (player, frame, stacked)` + `FUN_10027930` [HIGH]
 Setup (`100276c8..100277ec`):
 ```
@@ -280,6 +286,8 @@ bonus < 1 else 20); 5 →6; 6 every 3rd frame (flli 176 = 2): money −= 1, `FUN
 when remaining < 1 →7; 7 wait flli 174 (30) →8; 8 wait flli 175 (20) → done. The money −1 per
 tick has no lasting effect (money is zeroed at the next level start). Coin bonus =
 **money × 100 × multiplier**, not sector-scaled in 1.0.6 (flli 170 = 0).
+
+⚑ corrected (Phase 2, 2026-11) #52 — the coin tally also plays `moco` (gaso 20) on the exits of states 2 and 3 (dump lines 23482, 23493); in state 6 `FUN_10029a10` is called even when the player is out of the game — only the money −1 is gated on `+0xc4` (dump lines 23536–23539).
 
 ## 7. Random-bonus selection — `FUN_10016300 @ 10016300` (selection only) [HIGH]
 When the destroyed unit has `destructReleaseRandomBonus` (+0x4b4): `r = RandomRange(0,100)`

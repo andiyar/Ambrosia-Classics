@@ -244,6 +244,8 @@ windowTop is `FUN_1000fec0` = `_DAT_100e5acc`. Both are named in level-scroll-ob
   - main pass unless `+0x54`; then the tint pass (§4.2), then the hit pass (§4.3). Each pass
     goes to `FUN_10019570` directly if `+0x35`, otherwise to the queue `FUN_10018a40`.
 
+⚑ corrected (Phase 2, 2026-11) #53 — the +0x90 "last stamp time" is set to 0 by the object init `FUN_10012650` (`1001273c stw r12,0x90(r3)`) and written only by the terrain-path sprite stamp (`100132a4 stw r26,0x90(r25)`). A state with `stateDrawToTerrain` makes the draw pass stamp every tick (`10034b54 bl 0x10012f20`), so a same-tick sweep stamp fails the `> +0x90` test — the "cannot happen" above does not hold for such entities.
+
 ### 3.3 Anchor = centre: the draw offset arithmetic (answers Q1) [HIGH]
 Unscaled (`cmd+0x18 == 1.0`), `FUN_10019570`:
 ```

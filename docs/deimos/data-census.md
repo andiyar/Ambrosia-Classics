@@ -50,6 +50,8 @@ Plan literals the bytes corrected (each pinned by a test; the tool output below 
     sprite faces 675 are `none` (878 name a group); of the 2,711 unit sound IDs 2,320 are `none` (391 name a tag).
 19. Pak entry counts in the files line are FILE entries (871); the central directories hold 886 (15 folders).
 
+Bank cross-reference (Phase 2, 2026-11): film provenance — the pak entry times of the four demos against the data and the binary, and `Last Film` = de01 byte for byte — is in engine-loop.md §7 (note #6).
+
 ---
 
 # Deimos Rising 1.0.6 — data census

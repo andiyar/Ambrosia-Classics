@@ -55,7 +55,7 @@ IMA nibble stream: it walks the 34-byte packets as 16-bit words, **drops word 0 
 (the per-packet predictor/step-index header) and swaps the two nibbles of every byte
 (`(w & 0x0f0f)<<4 | (w>>4) & 0x0f0f`); header = `{'asnd', sampleCount, rate, 'mIMA'}`.
 8/16-bit PCM is re-encoded to IMA (`FUN_100d3170`); every shipped effect is already ima4.
-[MED for the drop/swap (dump:106741–106752; ⚑ label audit (review wave 2): was HIGH on the dump only); MED for the
+[HIGH for the drop/swap (`FUN_100d1d90` listing, raised Phase 2, 2026-11; earlier MED on dump:106741–106752; ⚑ label audit (review wave 2): was HIGH on the dump only); MED for the
 consequences below]
 - The decoder never re-syncs to the dropped packet headers; it carries predictor/index across
   packets. Differences from a reference ima4 decode are rounding-level. [MED]
@@ -63,6 +63,14 @@ consequences below]
   the last 2·P samples decode zero nibbles from the zeroed tail of the buffer (a held, slowly
   decaying DC level). `icbu` (P = 239): 478 extra samples ≈ 10.8 ms. [MED — arithmetic from the
   decompile `uVar10 = (uVar10 - uVar10/0x22) * 2`; inaudible in practice]
+
+⚑ corrected (Phase 2, 2026-11) #10 — the IMA difference is `(16m + 8)·step >> 6` = ⌊(2m + 1)·step / 8⌋, m = the nibble's low 3 bits (`100d3374 rlwinm r8,r14,0x4,…`, `100d3384 ori r8,r8,0x8`, `100d33a0 mullw r9,r8,r15`, `100d33a8 srawi r8,r9,0x6`), not the reference decoder's shift-sum: nibble 7 at step 7 gives 13, not 11.
+
+⚑ corrected (Phase 2, 2026-11) #11 — "differences from a reference ima4 decode are rounding-level" holds per sample only: with no re-sync to the dropped packet headers the differences accumulate over the whole sound. The drop/swap rows are raised MED → HIGH (`FUN_100d1d90` listing).
+
+⚑ corrected (Phase 2, 2026-11) #12 — the 2·P tail is not a held, slowly decaying DC level: each zero nibble adds ⌊step/8⌋ (#10 with m = 0) while the step index falls, so the level creeps upward until step < 8 and then holds.
+
+⚑ corrected (Phase 2, 2026-11) #15 — sample loading: the bytes converted are SSND chunk size − 8 − offset (`100d2674`), not a count from COMM's packets; the dropped word is word k with k % 17 == 0; the nibble swap masks are 0xF0F0 / 0x0F0F (the formula above); and the ima4 path also requires COMM sampleSize 16 (`100d1db4`).
 
 ### 2.3 Play parameters (closes INDEX #11)
 Signature, from the listings:
@@ -161,6 +169,8 @@ live a new sound that ranks anywhere above the last one **evicts the last (lowes
 silently; one that ranks below all 16 is refused. The order is fixed at insertion — it is never
 re-sorted.
 
+⚑ corrected (Phase 2, 2026-11) #16 — the priority compare is unsigned (`100d1978 cmplw`) and the gain-sum compare signed (`100d1998 cmpw`); with a full list the 16th (last) voice is dropped to make room.
+
 ### 3.2 Mixing — `FUN_100d21a0` (double-buffer callback via `FUN_100d2340`)
 Zero the stereo buffer; for each voice index `i < count`: if `i < numChannels` (8) decode-and-mix
 into the buffer, else run the same decoder with a NULL destination (position advances, nothing
@@ -186,6 +196,12 @@ playing silently and become audible mid-sample when a voice above them finishes.
 
 `FUN_100d1be0(x)` stops voices matching id / data / all (x = 0) and compacts the list. [HIGH —
 listing `100d1c30–100d1cc4`]
+
+⚑ corrected (Phase 2, 2026-11) #9 — the predictor clamp and the mix clamp are −32768…32767, not ±32767: predictor `100d33b4 cmpwi r19,-0x8000` / `100d33c8 cmpwi r19,0x7fff`; saturating add into the buffer `100d3440`, `100d3470` (`cmpwi r14,-0x8000`). This applies to the "±32767" lines above and in the worked example.
+
+⚑ corrected (Phase 2, 2026-11) #13 — the position accumulator and `prev` are reset to 0 at every 1024-frame block (`100d32e4 li r12,0x0`, `100d32ec li r0,0x0` at the top of `FUN_100d32d0`), so the fractional position is lost at each block boundary; an early exit when the buffer is full leaves the stored last output stale.
+
+⚑ corrected (Phase 2, 2026-11) #14 — `FixMul`/`FixDiv` (`FUN_1006e250`/`FUN_1006e2b0`) truncate, and overflow gives 0xFFFFFFFF; the voice-id counter starts at 1 (`100d1514 li r4,0x1`, `100d1520 stw r4,0x0(r3)`); the mixer's divisions are unsigned (`divwu`).
 
 ## 4. Master volume, sound off, device volume
 
@@ -319,6 +335,8 @@ Fade: `FUN_100d04d8(ms)` sets a negative step so that the double-buffer callback
 nothing resets it to 0x100, so music started after a fade would be silent; the only fade is at
 quit, so this is never heard. [HIGH — TOC-displacement scan of the code image for `-0x5c00(r2)`]
 
+⚑ corrected (Phase 2, 2026-11) #17 — the music level `m` (`0x100e072e`) also starts at 0x100, like `fade` (`0x100e0730`); both confirmed in the data image.
+
 ### 6.3 Streaming and loop points
 `FUN_100cfe64`: open the pak's data fork, seek to the entry, parse AIFC (`FUN_100d0ef8`) for the
 SSND start/length, two half-buffers of `min(204800/2, ssndLen/2)` = 102400 bytes, new channel
@@ -328,6 +346,8 @@ with `PBReadAsync`; at the end of SSND with loop set it continues from the SSND 
 buffer (`FUN_100d0968`: `*(iVar1+0x2e) = ssndStart`), else it marks the last buffer.
 ⇒ **Loop point = whole sound data, seamless, no intro/loop markers.** Music is never resident.
 [HIGH for the call chain (imports + decompile); MED for byte-exact wrap]
+
+⚑ corrected (Phase 2, 2026-11) #18 — loop: for all three shipped music tracks the SSND body is exactly packets × 68 bytes, so carrying the decoder state across the wrap and resetting it give identical output; NOT RESOLVED 6's byte-exact wrap has no audible consequence.
 
 ### 6.4 When which music plays [HIGH unless marked — call-site scan + listings]
 | moment | code | music |
@@ -442,6 +462,8 @@ Plain tap-fire for comparison: each shot spawns two `icb ` bullets whose state s
 vol 70 → gain 89, prio 40, pitch 0.8–1.2 → two instances per shot, the second (right) in front
 of the first, both behind any prio ≥ 40 sound of equal-or-greater gain.
 
+Phase 2 correction (2026-11): the clipping range in step 4 is −32768…32767, not ±32767 (§3.2, note #9).
+
 ## NOT RESOLVED (this file)
 1. Pitch direction by ear: the code makes `pitch` a duration multiplier (speed 1/p). Settle: Ben
    listens to a bullet impact (`exsl` at 0.5) or `icbu` in the original — short/high confirms.
@@ -451,6 +473,7 @@ of the first, both behind any prio ≥ 40 sound of equal-or-greater gain.
    parsed) — INDEX #13.~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: timing-frame.md §6 (DITL 190 item labels: item 10 "Bypass System Volume" (byte pref 7, enables slider 12), item 12/13 "Sound Volume:", 15/16 "Music Volume:"; slider ranges remain INDEX #13) (critic wave 3 §3).
 4. `FUN_1001f950(0,id,2)` (on-demand resource load) and whether any shipped path plays a sound
    that was not preloaded (would trigger the wrong-sound bug of §2.3 step 4).
+   ⚑ corrected (Phase 2, 2026-11) #19 — closed for shipped data: all 96 effects are preloaded, and every `gaso` id, every SoundRecord id and `publ` is among them, so the wrong-sound path of §2.3 step 4 is never reached (INDEX #51).
 5. Writers of `DAT_100e01b6`/`DAT_100e01b5` (menu "returned"/"in pause") and which UI events call
    the suspend helpers `FUN_10023da0/10025190/10025270` (browser launch? registration?).
 6. `FUN_100d0ef8`/`FUN_100d0cf0` (stream header, frames-per-buffer) and the exact byte at which a

@@ -54,6 +54,8 @@ loop runs the scroll (`FUN_10010000`) and the players before `FUN_10033850` (eng
 so entities see this tick's scroll delta and this tick's player positions. [HIGH — dump order;
 the `FUN_10010000`→entities order is engine-loop.md's HIGH reading]
 
+⚑ corrected (Phase 2, 2026-11) #42 — the lock/link/orbit calls (`1003401c..10034054`) are gated on the state read **before** the motion controller (r18, set at `10033e08`), not on a state the controller may have just entered.
+
 ## 2. Coordinates, units, heading, trig
 
 ### 2.1 Position and velocity [HIGH]
@@ -81,6 +83,8 @@ the `FUN_10010000`→entities order is engine-loop.md's HIGH reading]
   Game-area coordinates: the cull and on-screen tests compare against PermFloat 54
   `VisibleGameWidth` = 416 and 55 `VisibleGameHeight` = 480 directly (§7), and ground units shift
   by the scroll delta, so y is **screen-relative**, not map-relative. [HIGH]
+
+Phase 2 correction (2026-11): the exact cull bounds (mode 1 and mode 0, listing-addressed) are in level-scroll-objects.md §7 (note #1); §7 below agrees.
 
 ### 2.2 Heading convention [HIGH]
 - Entity `+0x138` (int) = compass heading in degrees, written only at spawn (`FUN_10035cd0`,
@@ -125,6 +129,10 @@ no other range check. `FUN_10042f20(n)` = `n < 0x4000 ? sqrtTable[n] : (float)sq
 distance in this file is `FUN_10042f20(trunc(dx²+dy²))`. The tables are not in the data image
 (they are BSS); a replica computes them identically. [HIGH]
 
+⚑ corrected (Phase 2, 2026-11) #30 — exact table build: the sin/cos argument is fl32(`0x3c8efa35`·i) (a float multiply), widened to double for `sin`/`cos`, the result rounded to float; atan = trunc(atan(0.01·i)·57.2957795) with the truncated constant, so atan[100] = 44 and the up-right heading is 46; sqrt = (float)sqrt((double)(float)n). All entries are far from rounding edges.
+
+⚑ corrected (Phase 2, 2026-11) #36 — helpers: the unit-vector helper `FUN_10042bf0` squares the x term as trunc(dx)·dx (length = sqrt(trunc(trunc(dx)·dx + dy²)); listing `10042c1c–10042c44`, damage-health-death.md §1); callers include the initial motion `FUN_10037b50` (spawn-and-waves.md §3.3).
+
 ## 3. Entity fields used by motion (entity = 0x1ec-ish object, base `G_GameObject` 0x94 bytes)
 | off | type | meaning | key / writer | evidence |
 |---|---|---|---|---|
@@ -154,6 +162,10 @@ distance in this file is `FUN_10042f20(trunc(dx²+dy²))`. The tables are not in
 Init values: `FUN_100142f0` (entity reset) sets `+0x118 = −1`, target/velocity copies from
 `_DAT_100df134` = (0,0), `+0xa8 = −1`, `+0xf8 = 'none'`; base `FUN_10012650` sets air=1,
 draw layer `defa`, sprite `none`. [HIGH — dump]
+
+⚑ corrected (Phase 2, 2026-11) #33 — the reset `FUN_100142f0` does **not** reset +0xb8, +0x100…+0x114, +0x134 or +0x138 (none of its stores `100143c8..10014478` touch them): the velocity copies stay from the slot's previous entity. The target fields +0x11c…+0x130 are reset, as stated above.
+
+⚑ corrected (Phase 2, 2026-11) #35 — field widths: +0xd8, +0xd9 and +0x118 are bytes read sign-extended (−1 = none); +0x134 is a float (shields), +0x138 an int (compass heading), +0xdc a float (orbit radius), +0xe0 an int (orbit angle); PERM's +0x9c/+0xa0 hold garbage until its first request. (+0xbd, the cheated flag, is a **player** field — `FUN_10029be0`/`FUN_10029bf0`, scoring-bonuses.md §1.1; on an entity that byte lies inside the +0xbc int.)
 
 ## 4. Velocity set-up on state entry (`FUN_100146f0` block `10014bac..10014d7c`) [HIGH]
 When a state is entered (spawn: `param_2 = 1`; later transitions: 0), unless the **new** state has
@@ -257,6 +269,8 @@ then per axis: `v > L → v = L, accel = −accel`; `v < −L → v = −L, acce
 i.e. along +y) this makes the velocity sweep back and forth between ±L, L re-drawn every tick.
 Then §5.6 runs (desired = v, no change). Used by 40 states (cash pickups "Grow and Wait", …).
 
+Phase 2 correction (2026-11): these two draws were missing from engine-loop.md §9's per-entity order (note #8 there).
+
 ### 5.6 Ramp to desired `FUN_10017a10 @ 10017a10` [HIGH]
 `isStationary` (+0x13c) → v, desired, accel := (0,0) (`10017a20..10017a3c`, slot r2−0x71fc →
 `0x100d67f4` = 0.0). Else if `OrbitOwner` (+0x330): `vx` steps toward `MaxSpeed` by `Delta`
@@ -275,6 +289,8 @@ Bounce (negate v, accel and desired on that axis, and place on the edge):
 (W, H = PermFloat 54/55 truncated; table `0x100d6c8c` = {0, 360, 1, −32, 100, 0.5}, slot
 r2−0x71f8). Asymmetry (left edge uses the centre, right edge the sprite edge) is in the code.
 Runs before the integration of the same tick, so the bounce acts on last tick's position.
+
+⚑ corrected (Phase 2, 2026-11) #41 — the right-edge bounce uses the full scaled width +0x24, not the half-width: test `x + w > W + 32` (`10016e28 lwz r6,0x24(r31)`) and placement `x = W − w + 32` (`10016e74 subf r3,r6,r29`).
 
 ### 5.8 Range test `FUN_10017ef0(e, range, &tgt, &no) @ 10017ef0` (rule conditions #8/#9) [HIGH]
 `FUN_10005d40` then `found && range ≠ 0 && dist < (float)range` (`10017f50 fcmpo f2,f0 ;
@@ -307,6 +323,8 @@ nora 5, sora 4, soce 3, cega 3, rave 1, noce 1. A fleeing entity seeks the point
 `FleeSpeed`/`FleeDelta` (§5.2) until culled 128 px outside the field (§7) or until a state
 change clears the flag (§4). [HIGH]
 
+⚑ corrected (Phase 2, 2026-11) #44 — with no player, the flee target is stored as (0, 0).
+
 ## 7. Culling and on-screen tests [HIGH]
 `FUN_10012ca0(e, m=128, mode=1)` returns 1 (keep) iff, after integrating:
 `x + hw ≥ −m` (`10012da0 fcmpo ; blt`), `x − hw ≤ W + m` (`10012dd4 ; bgt`), **`y ≥ −m`** (centre,
@@ -335,6 +353,10 @@ frame+1. Backward: at `base` → not looping: stopped; `!DoAnimateBackwards`: fr
 `+0xc0 = 0`, frame = base+1; else frame−1. Then `+0xbc = gameTime`, dirty, frame pointer
 re-fetched. "Animation has stopped" (rule #10) = `+0xc2`, cleared on state entry. Note: the frame
 range ignores `SpriteFrameMin/Max` (those only seed the frame at entry).
+
+⚑ corrected (Phase 2, 2026-11) #43 — the random-frame draw at `10015a0c` happens even when the stopped flag (+0xc2) is set, if its gate passes: the `ContinuousFrameRandomisation` branch (`10015a08 beq`) comes before the stopped test (`10015a1c lbz r0,0xc2(r30)`).
+
+Phase 2 correction (2026-11): the `10015a0c` draw is one of the per-tick RNG consumers added to engine-loop.md §9 (note #8).
 
 ### 8.2 Turn toward target `FUN_100172d0(e, gameTime) @ 100172d0` and gate `FUN_10017150` [HIGH]
 Only for `DoRotateToTarget` states (else `+0xc1 = 0`, return 1). Needs a target: fleeing, or

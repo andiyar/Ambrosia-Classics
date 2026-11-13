@@ -213,6 +213,8 @@ slot. This fixes object addresses only. Update order comes from the group lists,
 unless the replica iterates its pool. Callers `FUN_10035cd0` / `FUN_10036610`. Who fills the slot's
 entity pointers (pre-allocation) was not read (MED for that).
 
+⚑ corrected (Phase 2, 2026-11) #32 — the pool reset `FUN_10038450` sets the free hint to **0**, not −1 (`10038454 li r3,0x0`, `1003845c stw r3,0x0(r4)`; count 0 at `10038468`), so the first alloc after a reset takes slot 0 without a scan; the PERM path overwrites PERM's position; `headingTo` of the same point returns 270.
+
 ### 3.8 Level-select flash stepper `FUN_1002fcc0()` [HIGH]
 State `*(r2−0x6f7c)` = `0x1010332c` (bss): +0 mode (0 off / 1 accept / 2 fail), +2 u16, +4 alpha,
 +8 scale (float), +0xc growing flag. Base scale `*(r2−0x6f90)` = `0x100d70dc` = 1.0f (code image).
@@ -248,6 +250,8 @@ Only when life state `+0xc6 == 4` (`100298d4..100298dc`):
 
 The shadow and sprite are submitted as two separate draw-entry calls, so the shadow is queued before the
 sprite. Caller `FUN_10007070`.
+
+⚑ corrected (Phase 2, 2026-11) #3 — the player draw continues after the sprite pass (`10029930..100299a0`): when the coin-tally state `+0xd8` ≠ 0 and its alpha `+0xe0` < 32, it draws text format **30** (`1002994c li r3,0x1e`) = `plmc` with the text at `+0xec`, BlendAmount = alpha, `+0x10c` = 15, `+0x10d` = 1, `+0x110` = 0, Loc_Y += `+0x1f8`, through `FUN_1000d380` — in life state 4 only (the whole function is gated on it). Format 30 = `plmc` corroborates INDEX #62's 0-based format indexing (30 = `plmc`, 27/28 = `lsca`/`lscf`).
 
 ### 3.10 Load level by sector `FUN_10011fd0(sector, a, b)` [HIGH]
 - `10011ff0 lbz r0,−0x61df(r2)`: editor/abort flag `0x100e0151` ≠ 0 → `FUN_10000f30("FALSE",

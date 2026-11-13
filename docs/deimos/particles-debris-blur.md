@@ -220,6 +220,8 @@ Quirks: the outer weights are capped at 31, so the A/B/C pixels keep 1/32 of the
 even at f = 32. The centre is solid at f = 0, fades over f = 1..6, then **snaps back** to solid at
 f = 7 and ends at 7/32 colour (`10043d30 cmplwi r4,6; ble; subi r31,r4,7`).
 
+⚑ corrected (Phase 2, 2026-11) #29 — the stamp offsets +2 (core) / +4 (fringe) are relative to r6 = particle slot + 4 (`10043c80 addi r6,r30,0x4`), not to the slot base.
+
 ## 3. Debris = ground-obstacle rectangles (G_Debris.cc) [HIGH — listings]
 
 There are no sprites and no particles here. "Debris" is a list of int rects `{top, left, bottom,
@@ -275,6 +277,10 @@ and does not scroll with the ground. The frame buffer is not post-processed.
 Quirk: `FUN_10046d30` sets the cached free index to **0** (not −1), so the first blur of a level
 takes slot 0 without a scan. That is harmless.
 
+⚑ corrected (Phase 2, 2026-11) #27 — the motion-blur limit (`10046ef4`) posts "Reached Motion Blur Limit" as a type-1 message (`10046ef8 li r4,0x1`, `10046f04 bl 0x1002dbd0`).
+
+⚑ corrected (Phase 2, 2026-11) #28 — `FUN_10046d30` clears the inUse byte of all 1000 slots: 25 iterations (`10046d38 li r0,0x19`, `mtctr`) of 40 stores each.
+
 ### 4.3 Emit, update, draw [HIGH — listings]
 Emit `FUN_10046840(req)` is called only from `FUN_10033850` (`100343a4`):
 - Gate (`10034318..1003435c`): entity not deleted (+0xcb == 0), state `MotionBlur_Required`
@@ -305,6 +311,8 @@ draw and they blur every tick (`now > last + 0`). Initial/Delta pairs: 50/10 ×1
 trail), 100/20 ×6, 60/20 ×2, 100/25 ×1, 100/30 ×1. AllowGlow is FALSE everywhere.
 (Python regex over all `*.unde.txt` blocks between `state_MotionBlur_Required_BOOL <TRUE>` and
 `stateParticles_ID`.)
+
+⚑ corrected (Phase 2, 2026-11) #26 — a 50/10 blur is in the list for 6 draw passes (visibility 50, 40, 30, 20, 10, 0) but only 5 are visible: the 6th has visibility 0.0 and is skipped by `FUN_10012f20`'s ≤ 0 test (`10012f40 fcmpo`, `10012f44 cror eq,lt,eq`, `10012f48 beq`).
 
 ## 5. Feedback into gameplay [HIGH]
 - Particles: the group list, the tables and the indices are touched only by module code (§2.1, §2.5

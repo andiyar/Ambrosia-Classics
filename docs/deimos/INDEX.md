@@ -200,6 +200,7 @@ Engine
 14. OS X keyboard/HID control path and the default key table (`M_ControlsConfigure.cc`,
     `M_HIDConfigure.cc`, `STR#` 130). ⚑ narrowed (wave 2, 2026-10-03): the default key codes
     (2 players × 7) written by `FUN_100050f0` are listed in timing-frame.md §6; consumer not found.
+    Phase 2 (2026-11): slots 4/5/6 = fire air / fire ground / select, pinned from the guide's Default Controls and the film census (timing-frame.md §6, note #5); the consumer is still not found.
 15. ~~ISp y-axis polarity (which input byte is "up").~~ → engine-loop.md §8: [0]=up, [2]=down
     (HIGH, `FUN_10028170` disassembly). ⚑ corrected (review 2026-10-03) #5
 16. ~~`srand` argument at game start.~~ → engine-loop.md §9: `srand(TickCount())`, same value =
@@ -350,8 +351,10 @@ Wave 2 additions (2026-10-03)
     to `exsl` at 0.5 or `icbu` — sound-music.md NR 1.
 50. `ampCmd` full scale on a sampled-sound channel (255 or 256): decides whether music at pref 100
     is −6 dB vs effects — sound-music.md NR 2.
-51. Whether any shipped path plays a sound that was not preloaded (would trigger the wrong-sound
-    path of §2.3 step 4; `FUN_1001f950(0,id,2)`) — sound-music.md NR 4.
+51. ~~Whether any shipped path plays a sound that was not preloaded (would trigger the wrong-sound
+    path of §2.3 step 4; `FUN_1001f950(0,id,2)`) — sound-music.md NR 4.~~ → closed for shipped data
+    (Phase 2, 2026-11): all 96 effects are preloaded and every gaso and SoundRecord id (and `publ`) is among
+    them — sound-music.md NR 4, note #19.
 52. Physical keys for menu volume charCodes 0x9D / 0x8A (Mac Roman `ù` / `ä`) —
     front-end.md NR 1.
 53. ~~Screen rect `+0x50..+0x5c` that suppresses menu hover (set in `FUN_1000ae20`) —
@@ -618,3 +621,64 @@ number). Table 938 = 698/240/0 → **938 = 716/222/0**.
 | #54 | — | closed: `inmu` plays on through a film; `FUN_10007170` → HIGH | INDEX #54 struck; front-end.md NR 4; loose-ends-combat.md, level-scroll-objects.md role rows |
 | #60 | — | closed: film +0xc/+0x10 are always NULL; `FUN_100094a0`, `FUN_10009680` → HIGH | INDEX #60 struck; gameplay-leftovers.md NR 1 |
 | new | — | #62 flash start values (narrowed by the fold-in: starter `FUN_1002fe40`, not `FUN_1002e310`), #63 pool pre-allocation, #64 `12gc` S2 spawn-set delay; micro-wave NR 3 (`FUN_10000f30`/`f80` return) is already covered by loose-ends-session.md §8.2 (they end in the non-fatal `FUN_10000fd0`) and gets no new number; NR 5 = existing #13, #59 | INDEX #62–#64; front-end.md NR 9, gameplay-leftovers.md NR 2 struck/narrowed |
+
+**2026-11 — Phase 2 audit: bank corrections** (plan `docs/superpowers/plans/2026-11-05-deimos-remainder.md`,
+Task 2.3). The audit of the Phase 2 code (which follows the binary) found 53 places where the bank was wrong or
+too weak. Each is one inline note `corrected (Phase 2, 2026-11) #<n>`, flagged with the usual glyph, in the file
+named below; second files carry a plain cross-reference. Dump lines cite the committed
+`ghidra/deimos/Deimos_pef.decompiled.c`.
+| # | sev | finding | landed in |
+|---|---|---|---|
+| 1 | — | cull bounds exact: mode 1 `y ≥ −m` (no half-height), mode 0 constants; MED → HIGH | level-scroll-objects.md §7; units-movement.md §2.1 |
+| 2 | — | death order from the listing; displayed shield/power set to 0.0 (new); MED → HIGH | damage-health-death.md §5.3 (tag raised) |
+| 3 | — | player draw: coin-tally text = format 30 `plmc`, state 4 only; corroborates #62 0-based formats | micro-wave-2026-10-06.md §3.9 |
+| 4 | — | `FUN_10006b50` full call order with listing addresses | engine-loop.md §3; bosses.md §2.1 |
+| 5 | — | default-key slots 4/5/6 = fire air / fire ground / select (guide); select-bit film census | timing-frame.md §6; engine-loop.md §8; INDEX #14 |
+| 6 | — | film provenance (pak entry times, binary date); `Last Film` = de01 | engine-loop.md §7; data-census.md header |
+| 7 | — | float32 values: platform shields (−0.2 computed, 0.0 stored), hold-up y | bosses.md worked example; player-physics.md worked example |
+| 8 | — | RNG consumers missing from §9: cyclic motion (2/tick), random frame | engine-loop.md §9; units-movement.md §5.5, §8.1 |
+| 9 | — | predictor and mix clamp −32768…32767 | sound-music.md §3.2 (+ worked example) |
+| 10 | — | IMA difference = (16m+8)·step>>6 | sound-music.md §2.2 |
+| 11 | — | decode differences accumulate (no re-sync); drop/swap MED → HIGH | sound-music.md §2.2 (tag raised) |
+| 12 | — | the 2·P tail creeps upward, then holds | sound-music.md §2.2 |
+| 13 | — | accumulator/prev reset every 1024-frame block; stale last on early exit | sound-music.md §3.2 |
+| 14 | — | FixMul/FixDiv truncate (overflow 0xFFFFFFFF); voice ids from 1; unsigned divisions | sound-music.md §3.2 |
+| 15 | — | sample loading: SSND size − 8 − offset; k%17; swap masks; sampleSize 16 gate | sound-music.md §2.2 |
+| 16 | — | insertion: priority unsigned, gain sum signed; full list drops the 16th | sound-music.md §3.1 |
+| 17 | — | music level m starts at 0x100 (data image) | sound-music.md §6.2 |
+| 18 | — | loop wrap: SSND = packets × 68 on all tracks; carry vs reset identical | sound-music.md §6.3 |
+| 19 | — | every played sound is preloaded in shipped data | sound-music.md NR 4; INDEX #51 struck |
+| 20 | — | notice with delay > 0: start/sound one tick after it becomes drawable (dead in data) | messages-notices-console.md §4.3 |
+| 21 | — | notice tick stores lastTick before the active test | messages-notices-console.md §4.3 |
+| 22 | — | message pass 2 j counts normal entries only; strip blend fade + 16 vs notice | messages-notices-console.md §2.4 |
+| 23 | — | uppercase = MSL toupper over Mac Roman (55 bytes, 29 high) | messages-notices-console.md §2.2 |
+| 24 | — | console reset clears the draw flag; unknown command not saved, silent; recall; FPS clip | messages-notices-console.md §5.1 |
+| 25 | — | FPS init seeds the frame counter with 30 → first window 30 + N | timing-frame.md §2.6 |
+| 26 | — | 50/10 blur: 6 passes, 5 visible | particles-debris-blur.md §4.4 |
+| 27 | — | motion-blur limit message is type 1 | particles-debris-blur.md §4.2 |
+| 28 | — | `FUN_10046d30` clears all 1000 slots (25 × 40) | particles-debris-blur.md §4.2 |
+| 29 | — | particle stamp offsets relative to slot + 4 | particles-debris-blur.md §2.9 |
+| 30 | — | trig/atan/sqrt table build exact (atan[100] = 44) | units-movement.md §2.3 |
+| 31 | — | round-trip quirk: 34 headings, not 30 | loose-ends-combat.md §1.3 |
+| 32 | — | entity pool reset: free hint 0; PERM position; headingTo same point = 270 | micro-wave-2026-10-06.md §3.7 |
+| 33 | — | entity reset leaves +0xb8, +0x100…+0x114, +0x134, +0x138 | units-movement.md §3 |
+| 34 | — | entity reset: exact stores `100143c8..10014478` | loose-ends-combat.md §4.2 |
+| 35 | — | entity field widths; PERM +0x9c/+0xa0; +0xbd is a player field | units-movement.md §3 |
+| 36 | — | unit-vector helper x term trunc(dx)·dx | units-movement.md §2.3 (helpers) |
+| 37 | — | state-0 entry at spawn skips `FUN_10033600`; called once after entry | spawn-and-waves.md §3.2 |
+| 38 | — | `FUN_10033600` on state change also needs +0xa0 ≠ −1 | spawn-and-waves.md §4 |
+| 39 | — | type-exists check counts deleted-but-unreaped members | spawn-and-waves.md §3.1 |
+| 40 | — | rotated spawn offset uses facing + HeadingDegrees with SetHeading | spawn-and-waves.md §2.5 |
+| 41 | — | right-edge bounce uses full width +0x24 | units-movement.md §5.7 |
+| 42 | — | lock/link/orbit gated on the pre-controller state | units-movement.md §1 |
+| 43 | — | random-frame draw runs even when stopped | units-movement.md §8.1 |
+| 44 | — | no player → flee target (0, 0) | units-movement.md §6 |
+| 45 | — | on-hit state change: old state pointer kept; collision counts read once | damage-health-death.md §3 |
+| 46 | — | overload glow at +0x58 (+0x214 always 0.0); refused indicator spawn +0xb8 | weapons-projectiles.md §2.6 |
+| 47 | — | release stream idle at r+39 | weapons-projectiles.md worked example 4a |
+| 48 | — | sector 1 select always plays `wesw` | weapons-projectiles.md §2.4 |
+| 49 | — | accuracy tally state details (0, 6, 8, 9, 10) | scoring-bonuses.md §6.4 |
+| 50 | — | accuracy tally states 1–5, 7, 9 MED → HIGH | scoring-bonuses.md §6.4 (tag raised) |
+| 51 | — | `moco` on state 3 exit too; mission sound priority 100 | scoring-bonuses.md §6.4 |
+| 52 | — | coin tally `moco` on states 2/3 exits; state 6 pays when out of game | scoring-bonuses.md §6.5 |
+| 53 | — | +0x90 stamp time: init 0, one writer; DrawToTerrain stamps every tick | sprite-geometry-draw.md §3.2 |

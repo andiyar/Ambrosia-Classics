@@ -100,6 +100,8 @@ that re-enters a state (U §4 recomputes h' from v) can turn by 1°. A replica m
 float tables, double atan and truncation. MED, not HIGH: the exact set depends on the Mac
 MathLib `atan` agreeing to the last ulp.
 
+⚑ corrected (Phase 2, 2026-11) #31 — the round-trip quirk headings number 34, not 30.
+
 ### 1.4 Consequences for open items
 - **B NR5, Pulse Tank [HIGH for the vector, MED for the timing].** `tapu` is spawned by the
   `Tank` set (`SetHeading`, 285°, absolute (480,140)) → `FUN_10033220` heading arg = req+0x10 =
@@ -279,6 +281,8 @@ found by owner id `+0x144`). Census: all 54/58 such parents have spawn sets. **D
 `FUN_100142f0 @ 100142f0` is the entity field reset (callers `FUN_100141a0`, pool allocator
 `FUN_100385d0`). It zeroes +0xac…+0xda and +0x13c..+0x13e and sets +0xd8 = +0xd9 = +0x118 = −1
 (`1001439c li r6,-0x1`).
+
+⚑ corrected (Phase 2, 2026-11) #34 — "zeroes +0xac…+0xda" is too loose; the exact stores are `100143c8..10014478`: −1 (r6) to the words +0x148, +0x9c, +0xa0, +0xa8 and the bytes +0xd8, +0xd9, +0x118; 0 (r5) to the words +0xa4, +0xb0, +0xb4, +0xbc, +0xc4, +0xd0, +0xd4, +0xe0, +0xe4…+0xf4, +0xfc and the bytes +0xac, +0xc0…+0xc3, +0xc8, +0xca…+0xcd, +0xda, +0x13c…+0x13e; a float to +0xdc; `'none'` to +0xf8; the floats +0x11c…+0x130. Inside +0xac…+0xdb it leaves +0xad…+0xaf, +0xb8…+0xbb, +0xc9, +0xce, +0xcf and +0xdb untouched.
 
 ### 4.3 Entity `+0xd8` owner index for spawned entities (D NR2, INDEX #32) [HIGH]
 `FUN_10035cd0` sets `+0xd8 = req+0x14` (`10035d94 lbz r0,0x14(r22); stb r0,0xd8(r28)`) and `+0xd9 = −1`

@@ -218,6 +218,8 @@ r0,0x12e(r29)`, `10015f34..74` (absolute: `fsubs` of the int→float magic only)
 `fctiwz` both), `10016140..88`. MED that `FUN_10042ee0`/`FUN_10042f00` are cos/sin (empty
 decompiles = table lookups; the rotation form fixes which is which only up to that naming)]
 
+⚑ corrected (Phase 2, 2026-11) #40 — with `SetHeading` the rotated offset uses facing + HeadingDegrees, not facing alone: `10015f9c add r19,r19,r0` (h + HeadingDegrees, wrapped at `10015fa0..10015fa8`), then `10015fb4 or r3,r19,r19` → `bl 0x10042ee0` feeds that sum to the cos/sin lookups (`10015f8c…10015fb4`). The "(note: the rotation uses the facing **without** HeadingDegrees)" above is wrong.
+
 ### 2.6 Key → executor behaviour (closes NOT-RESOLVED #20)
 | key (record off) | behaviour | label |
 |---|---|---|
@@ -259,6 +261,8 @@ r3/r4 confirmed: `10036a04 lwz r3,0x194(r3); lwz r4,0x198(r27) … bl 0x10046580
 equal; then per member `R(0,100)` unless `appearsPercent` ∈ {0,100}. [HIGH — ⚑ corrected: the
 bank said MED "arguments dropped"]
 
+⚑ corrected (Phase 2, 2026-11) #39 — the type-already-exists check (`doNotSpawnIfTypeAlreadyExists`, `FUN_10036af0`) also counts members that are deleted but not yet reaped.
+
 ### 3.2 Per-member creation `FUN_10035cd0` — exact order (replay)
 1. Allocate from the pool, append to the group list, `FUN_100144a0` (spawn records).
 2. Owner/player/ids/flags; shields by sector (waves-and-enemies.md §3).
@@ -290,6 +294,8 @@ no draws) → `10014d74 bl 0x10033600` → `10014d90 bl 0x10017510` (flee point:
 tolerance → state-0 timer; it misses D1 (before placement), the other state-0 draws, the
 group-delay draw and `FUN_10037ed0`, and the `FUN_10037b50` tolerance draw happens only in its
 default-heading branch (§3.3).
+
+⚑ corrected (Phase 2, 2026-11) #37 — at spawn the state-0 entry does **not** call `FUN_10033600` at `10014d74`: the spawning branch jumps over it to `10014d7c` (`10014c84 b 0x10014d7c`), so the "→ `10014d74 bl 0x10033600`" step above runs only on later state changes. `FUN_10035cd0` calls `FUN_10033600` once, after the state entry (`10035fb4`, step 7). The state entry at spawn reads its "old state" from a zeroed header (harmless).
 
 ### 3.3 Initial motion `FUN_10037b50 @ 10037b50` (MED → HIGH)
 Args `(group r25, entity r30, flag r26, heading r28, owner r27, mult f30)`.
@@ -364,6 +370,8 @@ owning player's position (`FUN_10006090(player,&pos)`) if +0xd8 ≠ −1, else n
 - `FUN_10036930(e, owner, vis, scale, hits)`: copies owner visibility +0x68 (`useOwnersVisibility`
   0x327), scale +0x34/+0x84/+0x88/+0x8c (`useOwnersScale` 0x328) and hit-glow +0x74..+0x80
   (`visuallyReflectOwnerHits` 0x32c). [MED — decompile; caller args from `FUN_10033850`]
+
+⚑ corrected (Phase 2, 2026-11) #38 — `FUN_100146f0` calls `FUN_10033600` only when not spawning, the new state is not LockToOwnerLoc, **and** `+0xa0 ≠ −1` (`10014d64 lwz r0,0xa0(r31)`, `10014d68 cmpwi r0,-0x1`, `10014d6c beq 0x10014d7c`).
 
 ## 5. Removal, children, PERM (`FUN_10036610`, `FUN_10036120`)
 `FUN_10036610 @ 10036610` (end of every `FUN_10033850` pass) — for every entity with +0xcb:

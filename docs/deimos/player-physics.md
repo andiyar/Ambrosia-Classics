@@ -375,6 +375,8 @@ crosshair shown, cy = y − 121 throughout (adj stays 0: not pinned at the botto
 tick 10. Holding "right" instead from frame 0 would bank 0 → 4 on tick 1 (`+0xd4` = 0), → 5 on
 tick 3, → 6 on tick 5, and shift the view +1 per tick (10 px after 10 ticks, capped at offset 31).
 
+Phase 2 correction (2026-11): float32 y at tick 2 (325.19998), ticks 6–8 (298.40002 / 290.60004 / 282.80005) and the rest position (252.00006, not 252.0) are in bosses.md's worked example (note #7).
+
 ## NOT RESOLVED (this file)
 1. ~~Consumers of `plde` keys not read in this range: `waitingTime` (+0x74), `filmIntroTime`
    (+0x78), `introTime` (+0x7c), `entry_StartVelocityX/Y` (+0xa4/+0xa8, −7.2),

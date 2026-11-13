@@ -259,6 +259,8 @@ to the victim. The attacker still takes its own damage (it has its own +0xb4), s
 bullet arriving in the delay window dies without effect. (c) `+0xb4` starts at 0
 (`FUN_100142f0` entity reset, dump l. 11838) [MED].
 
+⚑ corrected (Phase 2, 2026-11) #45 — after an on-hit state change (step 8) `FUN_10014f10` keeps the **old** state pointer: the glow (step 10), sound (step 12) and collision spawn (step 13) use the pre-change state. `FUN_10036cf0` reads the counts once.
+
 ## 4. Destruction and deletion
 
 ### 4.1 `FUN_10016300(e, killer r4, now r5) @ 10016300` [HIGH — listing `10016300–10016528`]
@@ -369,7 +371,7 @@ Its only caller is `FUN_10033850` §2.3, with f1 = the entity's `damage_FLOAT`.
      spawn `active_ShieldWarningObject_ID` (+0xcc) if ≠ none, then `+0xd1 = 1`. The warning fires
      once per life; `+0xd1` is reset on respawn (`FUN_1002a150`) and on death (`FUN_10027e50`).
 
-### 5.3 Death `FUN_10027e50(player, now)` [MED — decompile]
+### 5.3 Death `FUN_10027e50(player, now)` [HIGH — listing `10027e74..10028150`, raised Phase 2 (2026-11); was MED — decompile]
 `FUN_10034b90(index)`: every entity owned by this player (+0xd8 == index) whose state has
 `canBeDestroyedOnOwnerDestruction` (+0x329) is destroyed (`FUN_10036120(…,1,0)`, no coins). With
 `canBeDeletedOnOwnerDeletion` (+0x32a) it is deleted instead. Then: spawn `death_Spawn_ID`
@@ -384,6 +386,8 @@ Lives / respawn hook (player reader): in state 3, `FUN_1002a150` waits `finalDyi
 (+0x88) when `lives == 1`, else `dyingTime` (+0x84). Then it sets `lives = max(lives − 1, 0)`
 (only if its `param_3` and `+0xc4`). If lives < 1: state 1. Else: respawn `FUN_10029cc0` and set
 shields to `defaultShieldPercentage` (if +0xc4, else 0) [MED].
+
+⚑ corrected (Phase 2, 2026-11) #2 — death order, MED → HIGH (listing `10027e74..10028150`): `FUN_10034b90` (owned entities destroyed or deleted) → `death_Spawn_ID` request (`10027f18`) → shields zeroed if not in game (`+0xc4 == 0`) → `+0x204/+0x208/+0xd1` = 0 → **the displayed shield and power are set to 0.0** (`FUN_10031710` at `10027f4c`, `FUN_10031760` at `10027f5c`, value `0x100d6fc8` = 0.0 — a step the reading above lacked) → coin loops 50/10/5/1 (`10028044…100280ec`) → money 0 → state 3 → `+0xce` → multiplier check and reset.
 
 ## 6. Pickups — `FUN_10037580(player, e) → bool` [HIGH — listing `10037580–100376f0`]
 Dispatch on `pickup_Type_ID` (+0x4d4). The return value says whether the pickup is consumed:

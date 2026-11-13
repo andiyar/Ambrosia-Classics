@@ -245,9 +245,11 @@ Same-row objects spawn in file order in the same call. [HIGH]
 - Cull: the entity update deletes an entity whose `FUN_10012ca0(e, 128, 1)` is false — x outside
   [−128, 416+128] or y outside [−128, 480+128], give or take the half-extents (the exact mode-1
   expression is not settled). The spawn row y = −64 is inside that margin either way. [HIGH for
-  the call and margin `cVar10 = FUN_10012ca0(iVar15,0x80,1)` → `+0xcb = 1`; MED for the bounds]
+  the call and margin `cVar10 = FUN_10012ca0(iVar15,0x80,1)` → `+0xcb = 1`; HIGH for the bounds since the Phase 2 note below (2026-11)]
 - Whether entity (x, y) is the sprite centre or corner is not settled here (the half-extents
   +0x2c/+0x30 = w/2, h/2 are computed by `FUN_10012940`, suggesting centre). [MED]
+
+⚑ corrected (Phase 2, 2026-11) #1 — cull bounds, MED → HIGH: `FUN_10012ca0(e, m, 1)` keeps the entity iff `x + hw ≥ −m`, `x − hw ≤ W + m`, **`y ≥ −m` (no half-height)** and `y − hh ≤ H + m` (W 416, H 480; float compares of int→float conversions; listing `10012d48..10012e38`). So with m = 128 an entity is culled once its centre is above y = −128, whatever its height. Mode 0 (`10012e3c..10012f00`, no caller) uses `x + hw ≥ C+0xc`, `x − hw ≤ W + 32`, `y + hh ≥ C+0`, `y − hh ≤ H` with C = `*(r2−0x7240)`. Agrees with units-movement.md §7. [HIGH — listing]
 
 ## 8. Session and level progression (G_Game.cc)
 Game struct at `PTR_DAT_100defd0` (0x180 bytes, zeroed once): fields used here:

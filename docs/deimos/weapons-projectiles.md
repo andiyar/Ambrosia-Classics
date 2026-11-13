@@ -217,6 +217,8 @@ stfs f1,0x124(r27)`, `1003ae64 stw r0,0xd8(r27)` (`lis r3,0x706c` = 'pl..'), `10
   `{face, frame}` pairs: current (or pending) air weapon, next in cycle, the one after. A pair is replaced by
   `none` if it repeats an earlier one. [HIGH (read)]
 
+⚑ corrected (Phase 2, 2026-11) #48 — in sector 1 (Ion the only air weapon in the cycle) select always plays `wesw` (gaso 0x12, `(0x12, 0x4b, 100, 1)` = priority 75, volume 100, allowMultiple 1).
+
 ### 2.5 Air power-up / overload machine (`FUN_1003c0d0 @ 1003c0d0`)
 Runs only if `ActivationSpawn_ID` or `ReleaseSpawn_ID` ≠ `none`. Times are gameTime ticks; T0 = activation tick.
 | state | test (listing) | effect |
@@ -264,6 +266,8 @@ Timeline with shipped values, S = overload tick (`FUN_10026ee0` runs before the 
 `FUN_10028170`, so it first acts at S+1): flashes at S+9, S+17, S+24, S+30, S+36, S+42, S+48 (sound
 each) and death at **S+54** (≈1.8 s at 30 fps). [HIGH for the rules and offsets (decompile + plde
 parser); MED for the tick timeline (assumes tint 0 at start; call order from the decompile)]
+
+⚑ corrected (Phase 2, 2026-11) #46 — the overload flash ramps the glow at +0x58 (`10026fe0..10027008`, `10027080..100270ac`; copied to +0x5c at `100270c4`), not at +0x214: +0x214 is only ever written with 0.0 (`10026f38`, `10026f90`). A refused indicator spawn stores uninitialised stack at +0xb8; the replica stores −1 instead (disclosed).
 
 ### 2.7 Bombs (`FUN_1003beb0 @ 1003beb0`)
 On a fresh fireGround press with `now > +0x78 + delayBetweenLaunches`:
@@ -397,6 +401,7 @@ Every function in both ranges is listed in this file. None is "not read".
    `stateUseThisStateOnWeaponPowerupRelease`, 50 ticks then Delete). `icps` is spawned at the ship at r, r+2,
    …, r+38 (20 spawns, TBRS 1). At r+40 level 0 → idle. Each `icps` lives 6 ticks in "Spawn Bullet,
    Expand" (spawn set `icpb`), then "Dwindle & Delete" 12 ticks.
+   ⚑ corrected (Phase 2, 2026-11) #47 — the release stream goes idle at **r+39**, not r+40: the level ≤ 0 test (`1003c35c..64`) comes before the timing test (`1003c368`), so the tick after the 20th spawn (r+38) already finds level 0.
 4b. Keep holding: at T0+181 (t+195, 6.5 s after the press) overload → state 2, return 1, player warning:
    flashes at S+9 … S+48 with `wewa` each, and at S+54 (t+249, ≈8.3 s after the press) `FUN_10027e50` kills the
    player (death spawn `plde`, coins spilled). Releasing at any tick before S+54 → state 3 (20 release spawns)

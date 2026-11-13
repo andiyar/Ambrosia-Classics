@@ -65,6 +65,8 @@ Timebases [HIGH]:
 5. Sticky messages are inserted at the list head (`FUN_10000910`, U_LinkedList prepend). Normal messages are
    appended (`FUN_100009e0`).
 
+⚑ corrected (Phase 2, 2026-11) #23 — "uppercase" is MSL `toupper`, which uppercases Mac Roman: class table `0x100f0f94` (bit 0x40), map `0x100f1194`; 55 byte values change, 29 of them high bytes (≥ 0x80).
+
 ### 2.3 Aging `FUN_1002dd90 @ 1002dd90 (frame)`, every begin frame [HIGH: listing `1002dd90..1002de9c`]
 ```
 clock = frame
@@ -108,6 +110,8 @@ Font: all draws go through `FUN_1000d380`, which uses the single sprite font `_D
 `tesm` "Text – Small" glyph order, data-tags.md §5) [MED: renderer not read]. Whether Loc is
 screen-absolute (640-wide) or game-area-relative is NOT RESOLVED (§NR 2). Screen-absolute is likely,
 because one format option is "centre in game area".
+
+⚑ corrected (Phase 2, 2026-11) #22 — pass 2's j counts normal entries only (`1002e134 addi r27,r27,0x1`, in the normal-entry loop); the strip blend is fade + 16 for messages (`1002e13c addi r0,r4,0x10`), whereas the notice draw adds its alpha to the template's strip value (§4.3).
 
 ### 2.5 Every poster of `FUN_1002dbd0` (decompile census + raw call scan) [HIGH]
 | poster | text | type | reachable in 1.0.6? |
@@ -194,6 +198,10 @@ Draw `FUN_100184b0` (world draw): if active, text non-empty and `delay < 1`, loa
 alpha, strip blend += alpha (strip off above 32), alignment = `N+0x68` (`10018540 lwz r0,0x68(r31);
 10018554 stw r0,0x140(r1)`, buffer r1+0x38 so field +0x108). [HIGH]
 
+⚑ corrected (Phase 2, 2026-11) #20 — with delay > 0 the notice is drawable on the tick its delay reaches 0 (the draw tests `delay < 1`), but the start reset and the sound come one tick later, on the next tick's `delay == 0` test (`10018360`). Dead in shipped data.
+
+⚑ corrected (Phase 2, 2026-11) #21 — the tick stores lastTick (`10018350 stw r29,-0x61d4(r2)`) **before** the active test (`10018358 beq`), so an inactive notice still advances it.
+
 ### 4.4 Who posts notices, and what a player can actually see [HIGH]
 All seven `bl 0x100181e0` sites (raw bl-scan) were read (`100164d0`, `100183ec`, `100304dc`, `100308d0`,
 `10038200`, `10018630`, `1002e908`):
@@ -259,6 +267,8 @@ spawn request, not `FUN_100181e0`]
   8 bytes). When closed: if fade < 32 − (4 − 1) then fade += Console_FadeOutRate (flli 23 = 4), and at ≥ 32
   visible = 0. So the fade-out lasts **8 frames**. Draw format 33 (`>` at 30,448, green, black strip min
   width 336), and format 34 (typed text at 42,448) if the buffer is non-empty. Both use BlendAmount = fade.
+
+⚑ corrected (Phase 2, 2026-11) #24 — the console reset **clears** the draw flag (`1002d060 stb r0,-0x6140(r2)` with r0 = 0 from `1002d04c`); the text above says it sets it. An unknown command is not saved for up-arrow recall and plays no sound; up-arrow recall keeps the old buffer bytes past the end of the recalled line; the FPS draw never sets keep-template-clip.
 
 ### 5.2 Command record and the registration gate [HIGH: listing `1002d080..1002d184`, all call sites]
 `FUN_1002d080(name, help, handlerTV, resultSound, debugOnly, hidden)` builds a 300-byte record:

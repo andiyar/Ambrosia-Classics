@@ -112,6 +112,8 @@ end-of-level detection → end-of-level tallies (§5) → entity groups `FUN_100
 whose return value pauses (`FUN_1000ffe0`) or resumes (`FUN_1000ffc0`) vertical scrolling.
 [HIGH for the call order; MED for callee roles]
 
+⚑ corrected (Phase 2, 2026-11) #4 — `FUN_10006b50` call order, HIGH (listing): `10006b7c` input clear (`FUN_1004aa20`) → `10006b84` console-open test (`FUN_1002d190`) → `10006b94` ISp read (`FUN_1004aa90`) → `10006bb0` P1 state == 4 (`FUN_10026c60`) → `10006bd0` notices → `10006bd8` debris → `10006be0` particles → `10006be8` blurs → `10006c14` players (loop, `FUN_10028170`) → `10006c34` score bar → `10006c4c…10006d6c` game over (`nogo`) → `10006d9c` scroll step (`FUN_10010000`) → `10006dd4…10006f44` first level-end tick (`noal`/`nole`, `FUN_10027de0`, `FUN_100072c0`) → `10006f58` accuracy tally (`FUN_100075e0`) → `10006f7c…10006ff4` coin bonus (`FUN_10027670`/`FUN_10027930`) → `1000702c` entities (`FUN_10033850`) → `1000703c`/`10007048` scroll pause/resume (`FUN_1000ffe0`/`FUN_1000ffc0`).
+
 ## 4. Frame cadence (frame controller `0x10030190…0x10030df0`, unattributed, between G_LevelSelection.cc and G_ScoreBar.cc)
 
 Begin frame `FUN_10030360`: `FUN_10047f50` (music service), console key 0x32 (`` ` ``) opens
@@ -312,6 +314,8 @@ de02 le06, de03 le02, de04 le08 (seeds 0x469c2, 0x4f655, 0x54c83, 0x5afed). [HIG
 Attract mode: `FUN_100069b0` cycles through `film` tags whose name contains "Demo"
 (`_DAT_100e00f8` → "Demo"), wrapping; a normal game saves itself as tag `last` ("Last Film").
 
+⚑ corrected (Phase 2, 2026-11) #6 — film provenance: the `Game.pak` ZIP entry times are de01 2001-12-03 13:39, de02 13:51, de03 13:58, de04 14:02; the newest `unde` is 2001-12-02 16:11 (`07e1`), `leve` 12:47 (`le09`), `flli`/`idli` 2001-11-12, `wede`/`plde` 2001-10-14; only the `stli` string lists are newer (`cred` 2002-05-01). The binary is 1.0.6 (2004-01-02). `Local/film/Last Film[last].film` is byte-identical to de01. [HIGH — `zipinfo -T Game.pak`, `cmp`]
+
 ## 8. Input (InputSprocket path; M_Application/`0x1004a8b0…0x1004b270`)
 `FUN_1004abd0` builds 10 ISp needs (5 per player; strings in order): "Player n Horizontal
 Movement" (axis x), "Vertical Movement" (axis y), "Fire Ground" (button `fire`), "Fire Air"
@@ -349,6 +353,8 @@ Defaults (guide, cite only): arrows move, Command fire air, Space select weapon,
 ground, Esc quit, Caps Lock pause, F6 interlace, ~ console. The resource fork `STR#` 130 is a
 key-name table indexed by virtual key code ("A","S","D","F","H","G","Z","X",…) used by a key
 configurator. The OS X key/HID mapping code and the default key table are NOT RESOLVED. ⚑ corrected (review wave 3, 2026-10-06) #S: narrowed — the default key codes (2 × 7) are listed in timing-frame.md §6, and a `0x14b8` D-form scan finds no consumer in the PEF beyond the defaults writer and the prefs copy routines `FUN_100047f0`/`FUN_10004c30` (critic wave 3 §3); what is left is a ruling for Ben (INDEX #14).
+
+Phase 2 correction (2026-11): the per-slot meaning of the default key table (slots 4/5/6 = fire air / fire ground / select) and the select-bit film census are in timing-frame.md §6 (note #5); INDEX #14.
 
 ## 9. RNG
 `FUN_100553e0 @ 100553e0` (MSL `rand`):
@@ -432,6 +438,9 @@ so they are not a complete draw order:
 | `FUN_10043340` particle emitter (284 lines; calls `FUN_10046580`) | `FUN_10014f10` (entity hit), `FUN_10016300` (entity destroyed), `FUN_10033850` (entity update) | in-game, per hit / kill / update; its draws interleave with the gameplay draws above |
 | motion blur: the interval draw `R(state+0x2f0, state+0x2f4)` sits in `FUN_10033850` itself (per qualifying entity per tick); the blur functions `FUN_100467c0` reset, `FUN_10046840` emit, `FUN_10046a10` update, `FUN_10046ae0` draw (+ `FUN_10046ba0` `FUN_10046c70` `FUN_10046d30` `FUN_10046e20` `FUN_10046eb0` `FUN_100470f0`) do **not** call `FUN_10046580`/`FUN_100465e0` directly | `FUN_100467c0` ← `FUN_100064d0`; `FUN_10046840` ← `FUN_10033850`; `FUN_10046a10` ← `FUN_10006b50`; `FUN_10046ae0` ← `FUN_10007070`; `FUN_10046eb0` ← `FUN_10046840`; `FUN_100470f0` ← `FUN_10046a10` | the draw is per entity per tick in the entity update; indirect draws through the blur module are not excluded (jump-table/indirect calls are missed by `callers.txt`) |
 | `FUN_10044630` init-time table (79 lines; two `FUN_10046580` per table entry) | `FUN_100431f0` ← `FUN_100000e0` (app boot) | runs at app start, so before the `srand(TickCount())` of a new game — matters only if the LCG state is not reseeded (it is, §9 seeding); listing not walked |
+
+⚑ corrected (Phase 2, 2026-11) #8 — per-tick RNG consumers missing from this section's per-entity order: cyclic motion `FUN_10016fe0` (`10017024`, `10017054`: two int draws per tick per cyclic entity, units-movement.md §5.5) and the random animation frame `FUN_10015930` (`10015a0c`: one int draw per animation step of a state with `ContinuousFrameRandomisation`, units-movement.md §8.1). In le07 they are reached by 30 cyclic coin states and the `plsh` player-shield states. [HIGH — listing]
+
 File: System Folder `Preferences` (`FindFolder(kOnSystemDisk, 'pref')`), name Pascal
 "Deimos Rising Preferences" (`_DAT_100df59c`+0x5d), type `pref`, creator `Deim`
 (`FUN_10048ac0`). Fallback when absent: a `pref`/`pref` tag in the pak hierarchy (`FUN_10004f80`).

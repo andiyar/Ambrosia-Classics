@@ -182,6 +182,8 @@ TickCount). So with the limiter off the FPS readout still updates every > 60-tic
 deficiency logic is gated. (Pref 10 cannot be cleared in a stock build, §6.) [HIGH arithmetic;
 the "31" is MED — it assumes the present stamp falls on the tick boundary, see §4]
 
+⚑ corrected (Phase 2, 2026-11) #25 — the init writes 30 into the frame counter `+0x20` as well as `+0x24`, so the first window publishes 30 + N (N = frames counted in that window), not 31; later windows count from 0 (`1003075c`).
+
 ## 3. INDEX #12 — the speed divider is never set: the game always runs at "Normal"
 
 - Stores to `+0x2c` inside the controller methods: only `10030794 stw r4,0x2c(r3)` (r4 = 0,
@@ -306,6 +308,8 @@ Default key table (prefs `+0x14b8…+0x14ec`, 14 ints of Mac virtual key codes, 
 0x58 kp6, 0x57 kp5, 0x77 End, 0x75 Fwd-Delete, 0x79 Page Down — two players × 7 controls. Only the
 prefs load/save copies (`100049ec…`, `10004e2c…`) touch it; no game-side consumer found (likely the
 OS X keyboard path of INDEX #14). [HIGH values; LOW for the per-slot meaning]
+
+⚑ corrected (Phase 2, 2026-11) #5 — button slots (cite only): the guide's Default Controls (Fire Air = Command, Select Air = Space, Fire Ground = Option; also Esc, Caps Lock, F6, Tilde) pin slots 4/5/6 of each player's 7 defaults above (0x37 Command, 0x3A Option, 0x31 Space) to fire air / fire ground / select. Film census: the select bit (bit 6) appears in de02 (15 ticks), de03 (26) and de04 (3) and never in de01 (one air weapon). [cite: guide + film bytes]
 
 ## 7. Film replay is per tick (engine-loop.md §7)
 
