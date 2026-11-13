@@ -4,6 +4,19 @@
 > only). Nothing current reads this file; the live state is `docs/STATE.md`. Each later close that settles something
 > adds a dated section at the top, newest first. The two snapshots below are verbatim (headings demoted only).
 
+## Settled at run 51's close (2026-11-13)
+
+- **Run 50's Ferazel block** (main 6a196f2): the 6A plan written and reviewed, the launch checks done, nothing owed.
+  Run 51 replaced it: the first three 6A tasks merged (6A-BL, 6A-CF ⚑, 6A-FR), Core 620 → 633.
+- **How run 51 went:** each task had one implementer, two Opus review legs and a fix round. Verdicts: BL MERGEABLE /
+  MERGEABLE WITH FIXES (0 critical, 0 important); CF MERGEABLE WITH FIXES twice (0 critical, 2 important: the Windows
+  proof run did not copy the ledger the new test reads; most of CF's own missing marks were unpinned — both fixed); FR
+  MERGEABLE twice. The app restarted mid-run: CF's quality leg and the seat's suite runs were lost and run again. CF
+  broke the ledger's check script (it parsed the old list shape): repaired and regenerated the same run (D48.5).
+- **The seat's suite runs:** 620 at 6a196f2 (the head), 633 at 8919326 and again at 8c93e9e (the final code head) —
+  0 failed, the two opt-in skips by name each time. The 622 and 628 points were not run separately (lost in the
+  restart; the final total is the ladder's).
+
 ## Settled at run 50's close (2026-11-11)
 
 - **Run 49's Ferazel block** (main efeb66f): the Phase 6 research done, the 6A plan and the four launch checks owed.

@@ -319,9 +319,9 @@ states; sound handles are TOC slots (pickups-boxes-2 §1.2); colourised CopyBits
 - **Seam addition:** `DrawOp.omniPx(OmniPxFrame)` (OX) — one `.UpdateOmniPx` at M l. 9434: the base cell and the two
   faces' (x, y) for this drawn frame; Render composites the 128×128 port. `FrameRenderer` executes it as PxBack slot 0
   for the backdrop compositor, the factors zeroed for modes 1–3 and ≥ 8 as `.TurnOnOmniPx` does.
-- **`BuiltLevels.range`** (`Front/BuiltLevels.swift:11`, `1...5` today — LV5 widened it from `1...4`), with the report "Level n is not
-  built yet (Phase 6)."; it becomes the explicit sorted `BuiltLevels.list` at 6A-BL (the scripts read it through
-  `tools/ferazel-built-levels.sh`), and each level task adds its ids.
+- **`BuiltLevels.list`** (`Front/BuiltLevels.swift`, `[1, 2, 3, 4, 5]` since 6A-BL, run 51 — an explicit sorted list;
+  every reader asks `contains`), with the report "Level n is not built yet (Phase 6)."; the scripts read it through
+  `tools/ferazel-built-levels.sh`, and each level task adds its ids.
 - **Faces of run-time-spawned sprites:** every task that spawns a type at run time adds its sheet where the original
   loads it — the boot list `Sprites/BootFaces.swift` or the level-load picture cache (`Front/LevelRun.swift`
   `CachedFaces`: `sets`, `singles`, `marks`, `handleSets`), registered **at the original's position** in `.InitSprites`'
@@ -1106,6 +1106,16 @@ ids; its `--check` reads this table):
   the bot's quick mode on level 1 through the new parse (`FERAZEL_BOT_LEVELS=1`) exits 0 and a bad level (`=6`) exits 2;
   `tools/ferazel-watchdog-selftest.sh` still passes. **Commit:** `Ferazel: BuiltLevels becomes an explicit list; the
   scripts read it from one source; 2 tests`.
+- **As executed — 6A-BL (run 51):** task 3831cb6 (2 tests, `BuiltLevelsTests`), review fix round 0cbab29 (asserts and
+  self-test rows only). Two Opus legs: MERGEABLE (0 / 0 / 8 minor), then MERGEABLE WITH FIXES (0 / 0 / 11 minor; 11
+  surviving mutations, all killed by the fix round). **Card against code:** `BootFacesTests` `:359` and `FaceTests`'
+  loop were literal `1...5` loops, not reads of the range — both retargeted to the list. **Beyond the card (seat's
+  rulings):** the visit sweep now checks `FERAZEL_VISIT_LEVELS` (it never did) and both scripts parse their level
+  setting alike — an unbuilt level, a repeated id or a set-but-empty value exits 2 before any worker starts, and the
+  message names the setting; `tools/ferazel-watchdog-selftest.sh` admitted to Files (it now runs the helper and the bad
+  level settings: 55 → 63 verdicts); `testContinueRefusals` gains the level-10 save. Left: a bot run with no
+  `FERAZEL_BOT_LEVELS` at all has no self-test row (it would run the real bot). "Shared architecture"'s
+  `BuiltLevels.range` paragraph now reads `BuiltLevels.list`.
 
 #### 6A-CF — ⚑ MAJOR — the picture cache in full, keyed by record (+ the fireball records) (→ 628)
 - **⚑ because** more than five files outside `CachedFaces` change (EnemyShot, FrameRenderer, two re-anchored tests, the
@@ -1206,6 +1216,14 @@ ids; its `--check` reads this table):
   `testRockSlowOrBelowFallsThrough` · `testRockBoundaries` (a 0x433 with `+0x160 < 0` falls through; equal centre y
   falls through; vy 599 falls through, 600 hurts). Asserts: ENG §2.12's three.
 - **Gate:** Gate-F (G2 633). **Commit:** `FerazelCore: the falling rocks' player arm (0x433 / 0x434); 5 tests`.
+- **As executed — 6A-FR (run 51):** task 5c95d75 (5 tests, `FallingRockTests`), review fix round 8919326 (tests only;
+  the Sources file byte-identical to the task commit). Two Opus legs: MERGEABLE (0 / 0 / 4 minor), MERGEABLE (0 / 0 /
+  6 minor; 32 mutations, 30 killed after the fix round, 2 equivalent: the arm before or after the NPC test — a rock type
+  is never an NPC type). No disagreement between dump, documents and card (BOS's "vy ≥ 600" is the dump's `599 < vy`).
+  The arm sits in the Box arm before the NPC test, as M l. 49170–49188 orders it. The tests build a world from level
+  1's header without a level run. `DrawModeAuditTests`: three `HitPlayerSprite` rows re-anchored, values unchanged.
+  **`later:` for 6A-W1 (it spawns the rocks):** type 0x434 has no row in `SpriteClassTable`; the `classWord160` doc
+  comment should name the rock's hover counter.
 
 #### 6A-W1 — ⚑ MAJOR ◈ — the Warrior's Handle: the crates, the decide, the walk and run, the swing and shot, the dying (→ 642)
 - **Files:** `Sources/FerazelCore/World/Enemies/Warrior.swift` (the ◇ Handle replaced in place; the stand-in markers
