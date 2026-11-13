@@ -234,7 +234,7 @@ final class BootFacesTests: XCTestCase {
         let present: (Int16) -> Bool = { res.resource(type: "PICT", id: $0, chain: .frontEnd) != nil }
         let always = Set(BootFaces.sheets.map(\.pict) + Self.classSheets.map(\.pict))
         var cachedSomewhere = Set<Int16>()
-        for level in BuiltLevels.range {
+        for level in BuiltLevels.list {
             let r = try FrameRenderer(resources: res, level: level, search: ColorSearch(model: .ruled, tieBreak: .lowest),
                                       dither: .errorDiffusion, text: StatusBarTests.BoxRasterizer(), prefs: FerazelPrefs())
             let loaded = r.sprites.faces.sheets
@@ -300,7 +300,7 @@ final class BootFacesTests: XCTestCase {
         for (base, form) in Self.computedFaceIds {
             XCTAssertTrue(form.picts.contains(where: present), "\(form.what) (\(base) + …): the data holds none")
         }
-        for level in BuiltLevels.range {
+        for level in BuiltLevels.list {
             let r = try FrameRenderer(resources: res, level: level, search: ColorSearch(model: .ruled, tieBreak: .lowest),
                                       dither: .errorDiffusion, text: StatusBarTests.BoxRasterizer(), prefs: FerazelPrefs())
             let loaded = r.sprites.faces.sheets
@@ -356,7 +356,7 @@ final class BootFacesTests: XCTestCase {
             return String(Self.fnv(words + f.tokens), radix: 16)
         }
         var measured: [String: (rows: Int, fnv: UInt64)] = [:]
-        for level in 1...5 {
+        for level in BuiltLevels.list {
             let r = try FrameRenderer(resources: res, level: level, search: ColorSearch(model: .ruled, tieBreak: .lowest),
                                       dither: .errorDiffusion, text: StatusBarTests.BoxRasterizer(), prefs: FerazelPrefs())
             let faces = r.particleFaces

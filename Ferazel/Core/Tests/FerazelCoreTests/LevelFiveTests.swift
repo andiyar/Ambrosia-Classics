@@ -317,7 +317,7 @@ final class LevelFiveTests: XCTestCase {
     }
 
     func testBuiltLevelsFive() throws {
-        XCTAssertEqual(BuiltLevels.range, 1...5)
+        XCTAssertEqual(BuiltLevels.list, [1, 2, 3, 4, 5])
         XCTAssertEqual(BuiltLevels.notBuiltReport(10), "Level 10 is not built yet (Phase 6).")
         let r = try resources()
         // `startLevel` 5 (the hidden `FerazelLevel` switch) is accepted: New Game at level 5, nothing asked.

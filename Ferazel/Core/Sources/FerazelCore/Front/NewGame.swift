@@ -65,7 +65,7 @@ extension GameFlow {
             },
             { f, _, _, out in
                 // `OpenDefaultWorldLevel(1)` (`_DAT_100ab9ba = *feac = 1`); a nil level → the report, `ReportMem`, return.
-                let n = BuiltLevels.range.contains(f.startLevel) ? f.startLevel : 1
+                let n = BuiltLevels.contains(f.startLevel) ? f.startLevel : 1
                 f.levelNumber = n
                 guard f.levelExists(n) else {
                     f.report(Self.levelLoadError, &out)
@@ -274,7 +274,7 @@ extension GameFlow {
             // `GammaFadeOut(10)`, `DAT_100a5106 = 1` (M l. 5827–5828).
             gammaFadeOut(now, &out, 10)
             loopEnded = true
-        } else if !BuiltLevels.range.contains(n) {
+        } else if !BuiltLevels.contains(n) {
             // ◇ D35: the level is not built yet — the report, then the map again at the node the player chose, nothing
             // new unlocked (the exits are −1 since the map's loop began). // later: Phase 6 (6A-BL; gone at 6C-END).
             report(BuiltLevels.notBuiltReport(n), &out)

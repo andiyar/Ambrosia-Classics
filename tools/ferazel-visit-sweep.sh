@@ -1,7 +1,7 @@
 #!/bin/bash
 # Ferazel's Wand — the "visit every object" sweep (2026-10-29, after the Windows beta's teleporter and level-2 quits).
 #
-# For every level in the playable scope (VisitSweep.levels = BuiltLevels.range) and every spawned placement record,
+# For every level in the playable scope (VisitSweep.levels = BuiltLevels.list) and every spawned placement record,
 # Ferazel is put beside the record by a checkpoint save (on it, 48 px left, 48 px right, 64 px above), the real flow
 # continues that save (GameFlow → LevelRun, the real renderers) and plays ~4 s of keys (stand, walk into it, tap up,
 # down, cast, jump, use); conversations are read through and left by their last answer, dialogs answered as the shells
@@ -31,7 +31,8 @@
 #   (nothing is left running; exit 130 / 143). A run started in the background from a script or any other
 #   non-interactive shell CANNOT be stopped with Ctrl-C or `kill -INT`: bash starts such background jobs with
 #   interrupts ignored, and an ignored signal cannot be caught. Stop it with `kill <script pid>`.
-#   FERAZEL_VISIT_LEVELS=2,3  FERAZEL_VISIT_OFFSETS=on,above  FERAZEL_VISIT_LIMIT=n   narrow it (a quick look)
+#   FERAZEL_VISIT_LEVELS=2,3  FERAZEL_VISIT_OFFSETS=on,above  FERAZEL_VISIT_LIMIT=n   narrow it (a quick look); every
+#                     FERAZEL_VISIT_LEVELS id must be in BuiltLevels.list (tools/ferazel-built-levels.sh), else exit 2
 # Exit 0 = no rows; 1 = rows (the table is printed; a shard that ended without finishing is a row too); 2 = a build
 # failed or a bad setting; 130 / 143 / 129 = stopped (INT / TERM / HUP).
 # Release builds (-enable-testing): a debug build is far too slow. Headless: no window, no audio device, nothing
@@ -40,7 +41,7 @@
 # THE UNATTENDED LOOP runs it at every phase end (before staging, beside the gate card), from the phase's worktree:
 #     tools/ferazel-visit-sweep.sh both > "$OUT/visit-sweep.txt" 2>&1; echo "exit $?"
 # A non-zero exit blocks the phase end: every row is a game-ending bug for a player (both shells quit on a render
-# failure) — file each as a fix task, do not stage. When a phase adds levels, BuiltLevels.range grows and the sweep
+# failure) — file each as a fix task, do not stage. When a phase adds levels, BuiltLevels.list grows and the sweep
 # follows. Paste the summary lines (visits, teleporter arrivals, exits that reached the map) into the gate card.
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -51,6 +52,17 @@ case "$WHICH" in core|windows|both) ;; *) echo "usage: $0 [core|windows|both]"; 
 . "$ROOT/tools/ferazel-worker-watchdog.sh"
 ww_number JOBS 4
 [ "$JOBS" -gt 6 ] && JOBS=6
+# The scope, read from the source the test reads (BuiltLevels.list, through tools/ferazel-built-levels.sh): a
+# FERAZEL_VISIT_LEVELS id outside it is refused here (the test would drop it silently and sweep less than asked).
+BUILT="$("$ROOT/tools/ferazel-built-levels.sh")" || { echo "visit sweep: cannot read BuiltLevels.list"; exit 2; }
+if [ -n "${FERAZEL_VISIT_LEVELS:-}" ]; then
+    for l in $(echo "$FERAZEL_VISIT_LEVELS" | tr ',' ' '); do
+        case ",$BUILT," in
+            *",$l,"*) ;;
+            *) echo "visit sweep: level $l is not in BuiltLevels.list ($BUILT)"; exit 2 ;;
+        esac
+    done
+fi
 OUT="${OUT:-$(mktemp -d "${TMPDIR:-/tmp}/ferazel-visit-sweep.XXXXXX")}"
 mkdir -p "$OUT"
 export FERAZEL_VISIT_SWEEP=1

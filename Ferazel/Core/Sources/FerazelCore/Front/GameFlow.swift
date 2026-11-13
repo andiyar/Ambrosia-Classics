@@ -167,7 +167,7 @@ public final class GameFlow {
     // MARK: F1b — the game's state
 
     /// The hidden `FerazelLevel` switch (D35, kept): New Game starts at this level instead of the literal 1 (raw
-    /// `1000b2b8..1000b2cc`). The App passes it (A1a); a level outside `BuiltLevels.range` starts level 1.
+    /// `1000b2b8..1000b2cc`). The App passes it (A1a); a level not in `BuiltLevels.list` starts level 1.
     public var startLevel = 1
     /// The stage screens' sound lengths (snd id → ticks; `StageSounds`) — the App fills them from its `SoundBank` (A1a).
     public var soundLengths: [Int16: Int] = [:]

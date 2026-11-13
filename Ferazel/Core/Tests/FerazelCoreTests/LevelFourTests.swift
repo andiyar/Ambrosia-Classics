@@ -155,7 +155,7 @@ final class LevelFourTests: XCTestCase {
     }
 
     func testBuiltLevelsFour() throws {
-        XCTAssertTrue(BuiltLevels.range.contains(4))
+        XCTAssertTrue(BuiltLevels.contains(4))
         let r = try resources()
         // Level 2's exit p1 2 (record 98) → node 4 → Return → level 4 runs, its every record set up by the session.
         let rig = Rig(r, start: 2)
@@ -180,7 +180,7 @@ final class LevelFourTests: XCTestCase {
 
     func testStartLevelSwitch() throws {
         // The hidden `FerazelLevel` switch (`GameFlow.startLevel`, GameFlow.swift:170): 4 → New Game at level 4; 5 →
-        // level 5 (LV5: inside `BuiltLevels.range`; before it, `NewGame`'s clamp sent it to level 1).
+        // level 5 (LV5: in `BuiltLevels.list`; before it, `NewGame`'s clamp sent it to level 1).
         let r = try resources()
         let four = Rig(r, start: 4)
         four.newGame(level: 4)

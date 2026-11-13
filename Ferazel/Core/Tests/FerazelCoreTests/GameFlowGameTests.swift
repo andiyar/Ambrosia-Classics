@@ -246,7 +246,7 @@ final class GameFlowGameTests: XCTestCase {
         XCTAssertEqual(rig2.levels.prepared, [1])
         // The hidden `FerazelLevel` switch starts at its level (∈ BuiltLevels) instead, Option or not; a level outside
         // BuiltLevels (6 and 0) starts level 1 (LV4: level 4 is built; LV5: level 5 is built, 6 is the first outside).
-        XCTAssertEqual(BuiltLevels.range, 1...5)
+        XCTAssertEqual(BuiltLevels.list, [1, 2, 3, 4, 5])
         for (start, option, expected) in [(2, true, 2), (4, false, 4), (5, false, 5), (6, false, 1), (0, false, 1)] {
             let rig3 = Rig(r, startLevel: start)
             rig3.toMenu()

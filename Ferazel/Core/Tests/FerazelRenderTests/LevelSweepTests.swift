@@ -2,7 +2,7 @@ import XCTest
 import FerazelCore
 @testable import FerazelRender
 
-/// Levels 1–4 (`BuiltLevels.range`) through the renderer as the shells drive it: any refusal here is a game that quits
+/// Levels 1–4 (`BuiltLevels.list`) through the renderer as the shells drive it: any refusal here is a game that quits
 /// ("the screen could not be drawn"). Each level's full set-up — every face set and light face, the Setup lights, the
 /// tint table — then frames of the real session applied with no refusal, the player pressing a changing mix of the
 /// game's keys, the modals answered at once. Starts: the level start, and beside every rope (whose segments carry the
@@ -57,7 +57,7 @@ final class LevelSweepTests: XCTestCase {
     /// Every level's set-up builds; all twelve `.Load1LightFaceFromPICT` call sites load (806 shrunk to 84 × 84).
     func testEveryLevelSetsUp() throws {
         let res = try Self.resources.get()
-        for level in BuiltLevels.range {
+        for level in BuiltLevels.list {
             let r = try renderer(level: level)
             let s = try FerazelSession(resources: res, prefs: FerazelPrefs(), level: level, seed: 1,
                                        faceBounds: r.faceBounds, particleFaces: r.particleFaces,
@@ -72,12 +72,12 @@ final class LevelSweepTests: XCTestCase {
     }
 
     func testEveryLevelPlaysFromItsStart() throws {
-        for level in BuiltLevels.range { try play(level: level, start: nil, frames: 240, label: "level \(level)") }
+        for level in BuiltLevels.list { try play(level: level, start: nil, frames: 240, label: "level \(level)") }
     }
 
     func testEveryRopeDraws() throws {
         var ropes = 0
-        for level in BuiltLevels.range {
+        for level in BuiltLevels.list {
             let L = try LevelFile.load(from: try Self.resources.get(), level: Int16(level))
             for p in L.placements where RopeSprite.types.contains(p.type) {
                 ropes += 1

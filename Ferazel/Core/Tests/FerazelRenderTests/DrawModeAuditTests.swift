@@ -4,7 +4,7 @@ import XCTest
 
 /// DA (docs/plans/2026-10-30-ferazel-phase5.md, Q15 item 2; Invariant 8, Ruling 6): the standing draw-mode audit.
 ///
-/// 1. `testEveryWrittenModeIsDrawable` — for every level in `BuiltLevels.range`, every draw input Core can write
+/// 1. `testEveryWrittenModeIsDrawable` — for every level in `BuiltLevels.list`, every draw input Core can write
 ///    (`SpriteDraw` mode word, rotation, scale, mirror, the dynamic-light byte case, water kind, clip, backdrop mode,
 ///    OmniPx mode) is drawn by `SpriteBlitter` / `FrameRenderer` with no refusal: every value of every row of
 ///    `writers` (one row per writer site in `Sources/FerazelCore`, file:line — a source scan fails on a writer without
@@ -928,7 +928,7 @@ final class DrawModeAuditTests: XCTestCase {
         }
     }
 
-    nonisolated(unsafe) private static let audits = Result { try BuiltLevels.range.map { try audit(level: $0) } }
+    nonisolated(unsafe) private static let audits = Result { try BuiltLevels.list.map { try audit(level: $0) } }
 
     // MARK: - Drawing one value
 
@@ -1753,7 +1753,7 @@ final class DrawModeAuditTests: XCTestCase {
         case .levelsLoad:
             // Every built level's renderer was built (faces, tile sets, tables, parallax, status bar), its Setup lights
             // and tint table attached and PICT 129 drawn by the run; every `.Load1LightFaceFromPICT` site loads.
-            XCTAssertEqual(audits.map(\.level.number), Array(BuiltLevels.range))
+            XCTAssertEqual(audits.map(\.level.number), BuiltLevels.list)
             for a in audits { XCTAssertTrue(a.seen.refusals.isEmpty, "\(c): level \(a.level.number) \(a.seen.refusals)") }
             for site in LightFace.callSites {
                 XCTAssertNoThrow(try LightFace.load(pict: site.pict, width: site.width, height: site.height, from: res,

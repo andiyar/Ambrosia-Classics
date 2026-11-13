@@ -14,8 +14,8 @@ import Foundation
 // conversations Return), so only a real refusal, throw or stuck suspension becomes a row.
 
 enum VisitSweep {
-    /// The playable scope: the levels the sweep visits. Later phases extend `BuiltLevels.range`; the sweep follows.
-    static let levels: [Int] = Array(BuiltLevels.range)
+    /// The playable scope: the levels the sweep visits. Later phases extend `BuiltLevels.list`; the sweep follows.
+    static let levels: [Int] = BuiltLevels.list
 
     /// Where Ferazel starts relative to the record's top-left (px; the save's start is the player sprite's top-left).
     enum Offset: String, CaseIterable, Sendable {

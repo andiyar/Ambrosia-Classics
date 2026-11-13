@@ -1,7 +1,7 @@
 #!/bin/bash
 # Ferazel's Wand — the random-play bot (Phase 5 task RB, D44; Ben's "yes" to Q15 item 5).
 #
-# For every level in the playable scope (RandomPlay.levels = BuiltLevels.range) and FERAZEL_BOT_SEEDS seeds, a fresh
+# For every level in the playable scope (RandomPlay.levels = BuiltLevels.list) and FERAZEL_BOT_SEEDS seeds, a fresh
 # game boots, New Game starts at the level by the hidden FerazelLevel switch, and a seeded bot (its own random stream,
 # never the game's) plays FERAZEL_BOT_MINUTES minutes (30 steps a second, two game ticks a step) through the real path:
 # held directions in runs of 5-60 steps, jump/run/use/cast taps and holds, item stepping, mashing bursts, now and then
@@ -41,7 +41,7 @@
 #   Quick mode for a class task: FERAZEL_BOT_LEVELS=n FERAZEL_BOT_MINUTES=1 tools/ferazel-random-play.sh core
 # Exit 0 = no rows and every expected run (levels x seeds) reported; 1 = rows (the table is printed: a failed or
 # skipped test, a run that never reported, a watchdog kill, a trap, the bot's own rows); 2 = a build failed or a bad
-# setting (a level outside BuiltLevels.range, a number that is not a plain positive whole number); 130 / 143 / 129 =
+# setting (a level not in BuiltLevels.list, a number that is not a plain positive whole number); 130 / 143 / 129 =
 # stopped (INT / TERM / HUP).
 # At its start it deletes only the files it writes in OUT (build logs, <path>-runs/-failures.tsv, the shard folders'
 # runs/failures/progress/logs), so a reused OUT starts clean.
@@ -71,22 +71,20 @@ bad() { echo "random play: $1"; exit 2; }
 # A plain positive whole number (no leading zero: bash reads "08" as a broken octal number).
 positive() { case "$1" in ''|0*|*[!0-9]*|??????????*) return 1 ;; esac; }
 
-# The scope, read from the source the test reads (BuiltLevels.range), and the settings the test will see, checked here
-# so the summary can say how many runs there should have been.
-RANGE="$(sed -nE 's/.*static let range = ([0-9]+)\.\.\.([0-9]+).*/\1 \2/p' "$ROOT/Ferazel/Core/Sources/FerazelCore/Front/BuiltLevels.swift")"
-read -r LO HI <<< "$RANGE"
-positive "${LO:-}" && positive "${HI:-}" || bad "cannot read BuiltLevels.range"
+# The scope, read from the source the test reads (BuiltLevels.list, through tools/ferazel-built-levels.sh), and the
+# settings the test will see, checked here so the summary can say how many runs there should have been.
+BUILT="$("$ROOT/tools/ferazel-built-levels.sh")" || bad "cannot read BuiltLevels.list"
 SEEDS="${FERAZEL_BOT_SEEDS:-4}"; positive "$SEEDS" || bad "FERAZEL_BOT_SEEDS=$SEEDS is not a positive number"
 MINUTES="${FERAZEL_BOT_MINUTES:-3}"; positive "$MINUTES" || bad "FERAZEL_BOT_MINUTES=$MINUTES is not a positive number"
 LEVELS=""
 if [ -n "${FERAZEL_BOT_LEVELS:-}" ]; then
     for l in $(echo "$FERAZEL_BOT_LEVELS" | tr ',' ' '); do
-        positive "$l" && [ "$l" -ge "$LO" ] && [ "$l" -le "$HI" ] \
-            || bad "level $l is outside BuiltLevels.range ($LO...$HI)"
+        positive "$l" && case ",$BUILT," in *",$l,"*) true ;; *) false ;; esac \
+            || bad "level $l is not in BuiltLevels.list ($BUILT)"
         LEVELS="$LEVELS${LEVELS:+,}$l"
     done
 fi
-[ -n "$LEVELS" ] || LEVELS="$(seq -s, "$LO" "$HI")"
+[ -n "$LEVELS" ] || LEVELS="$BUILT"
 export FERAZEL_BOT_SEEDS="$SEEDS" FERAZEL_BOT_MINUTES="$MINUTES" FERAZEL_BOT_LEVELS="$LEVELS"
 # Every expected run, in the test's order (levels outer, seeds inner): "level<TAB>seed".
 EXPECTED="$(for l in $(echo "$LEVELS" | tr ',' ' '); do for ((s = 1; s <= SEEDS; s++)); do printf '%s\t%s\n' "$l" "$s"; done; done)"

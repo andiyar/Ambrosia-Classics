@@ -352,7 +352,7 @@ final class LevelThreeTests: XCTestCase {
 
     func testMapEntersLevel3() throws {
         let r = try resources()
-        XCTAssertTrue(BuiltLevels.range.contains(3))
+        XCTAssertTrue(BuiltLevels.contains(3))
         /// New Game at level 2 (the hidden `FerazelLevel` switch), then level 2's exit `record` → the map's auto-walk;
         /// Return on the map. The flow and the dialogs asked on the way.
         func viaExit(_ record: Int, node level: Int) throws -> (GameFlow, Levels, [FerazelDialog]) {

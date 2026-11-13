@@ -116,8 +116,8 @@ struct RandomPlayGenerator {
 }
 
 enum RandomPlay {
-    /// The playable scope (the visit sweep's): `BuiltLevels.range`.
-    static let levels: [Int] = Array(BuiltLevels.range)
+    /// The playable scope (the visit sweep's): `BuiltLevels.list`.
+    static let levels: [Int] = BuiltLevels.list
     /// Two game ticks a step: 30 steps a second.
     static let ticksPerStep = 2
     static let stepsPerMinute = 1800

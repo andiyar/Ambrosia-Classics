@@ -663,7 +663,7 @@ final class FaceTests: XCTestCase {
             4: [(0xc81, 1), (0x51d, 9), (0x516, 9)],
             5: [],
         ]
-        for n in 1...5 {
+        for n in BuiltLevels.list {
             let frame = n == 1 ? one : try renderer(n)
             want("level \(n) balloon", BoxSprite.balloon, in: frame)
             if (2...4).contains(n) { want("level \(n) bat set", Bat.batSet, cells: 11, in: frame) }
