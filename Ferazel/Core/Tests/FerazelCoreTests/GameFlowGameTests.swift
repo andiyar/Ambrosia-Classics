@@ -722,8 +722,9 @@ final class GameFlowGameTests: XCTestCase {
         all.preview = 1
         all.demo = 1
         let seven = try checkpoint(r, level: 5)                            // an original full-game save (LV5: built)
+        let ten = try checkpoint(r, level: 10)                             // a level not built yet
         rig.files.blocks = [url("preview"): preview, url("demo"): demo, url("eighty"): eighty, url("both"): both,
-                            url("previewDemo"): previewDemo, url("all"): all, url("seven"): seven]
+                            url("previewDemo"): previewDemo, url("all"): all, url("seven"): seven, url("ten"): ten]
         let previewText = "Sorry, this saved game was saved with a preview version of Ferazel and can not be used with this version."
         let demoText = "Sorry, this saved game was saved with a demo version of Ferazel and can not be used with this version."
         for (name, expected) in [("preview", [previewText]), ("demo", [demoText]), ("eighty", [demoText]),
@@ -765,6 +766,16 @@ final class GameFlowGameTests: XCTestCase {
         flow.dialogDone(.ok)
         rig.drive { $0.state == .mainMenu }
         XCTAssertNil(flow.levelRun)
+        // A save naming a level outside `BuiltLevels` (10): the not-built report, the menu again, nothing prepared.
+        rig.press(0x0f)                                                    // R
+        rig.drive { _ in self.askedFile(rig.last) }
+        flow.fileDone(.chosen(SavedGameRef(url: url("ten"), displayName: "ten")))
+        let ten10 = rig.drive { _ in self.asked(rig.last) }
+        XCTAssertEqual(dialogs(ten10), [.report(text: "Level 10 is not built yet (Phase 6).")])
+        flow.dialogDone(.ok)
+        rig.drive { $0.state == .mainMenu }
+        XCTAssertNil(flow.levelRun)
+        XCTAssertTrue(rig.levels.prepared.isEmpty)
         // LV5: the "seven" save (level 5, an original full-game save) no longer meets the not-built report — level 5 is
         // in `BuiltLevels`, so `.ContinueGame` enters it, nothing asked.
         rig.press(0x0f)                                                    // R

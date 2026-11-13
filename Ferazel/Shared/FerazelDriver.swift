@@ -9,7 +9,7 @@ import Foundation
 struct FerazelSettings: Equatable {
     /// The hidden defaults key for the starting level (Ben D33, D35 kept as a hidden test path): `-FerazelLevel 2` on
     /// the command line makes New Game start at level 2 for one launch (`GameFlow.startLevel`); absent or not in
-    /// `BuiltLevels.list` (1…5) → level 1, "A Scent Of Peril".
+    /// `BuiltLevels.list` → level 1, "A Scent Of Peril".
     static let levelKey = "FerazelLevel"
     /// The hidden defaults key for Ben's duplicate-colour tie-break (D26, 2026-10-07): "lowest" → `.lowest`, anything
     /// else → `.highest` — the app's default since Ben's ruling of 2026-10-10 (his Let's Play at 02:12: clean FG rock
@@ -37,7 +37,7 @@ struct FerazelSettings: Equatable {
     }
 
     /// The switches from `lookup` and `environment`. `FerazelLevel` (Ben D33): 1 when absent or not in
-    /// `BuiltLevels.list` (1…5 since Phase 5 LV5).
+    /// `BuiltLevels.list`.
     static func parse(lookup: Lookup, environment: [String: String]) -> FerazelSettings {
         var s = FerazelSettings()
         let n = lookup.integer(levelKey)

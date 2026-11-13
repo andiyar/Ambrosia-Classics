@@ -2,7 +2,7 @@ import XCTest
 import FerazelCore
 @testable import FerazelRender
 
-/// Levels 1–4 (`BuiltLevels.list`) through the renderer as the shells drive it: any refusal here is a game that quits
+/// The built levels (`BuiltLevels.list`) through the renderer as the shells drive it: any refusal here is a game that quits
 /// ("the screen could not be drawn"). Each level's full set-up — every face set and light face, the Setup lights, the
 /// tint table — then frames of the real session applied with no refusal, the player pressing a changing mix of the
 /// game's keys, the modals answered at once. Starts: the level start, and beside every rope (whose segments carry the
@@ -56,6 +56,9 @@ final class LevelSweepTests: XCTestCase {
 
     /// Every level's set-up builds; all twelve `.Load1LightFaceFromPICT` call sites load (806 shrunk to 84 × 84).
     func testEveryLevelSetsUp() throws {
+        // The visit sweep's and the bot's scope is the built list (their own tests are opt-in).
+        XCTAssertEqual(VisitSweep.levels, BuiltLevels.list)
+        XCTAssertEqual(RandomPlay.levels, BuiltLevels.list)
         let res = try Self.resources.get()
         for level in BuiltLevels.list {
             let r = try renderer(level: level)

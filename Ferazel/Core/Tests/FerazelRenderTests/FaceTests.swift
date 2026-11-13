@@ -672,8 +672,8 @@ final class FaceTests: XCTestCase {
             if n == 5 {
                 for sh in Warrior.sheets { want("level 5 Warrior set", sh.pict, cells: sh.count, in: frame) }
             }
-            for k in keys[n]! { want("level \(n) key face", k, in: frame) }
-            for (pict, cells) in drops[n]! { want("level \(n) drop", pict, cells: cells, in: frame) }
+            for k in try XCTUnwrap(keys[n], "level \(n): no key row") { want("level \(n) key face", k, in: frame) }
+            for (pict, cells) in try XCTUnwrap(drops[n], "level \(n): no drop row") { want("level \(n) drop", pict, cells: cells, in: frame) }
             for sh in BoxSprite.dropSheets(frame.level.placements) {
                 want("level \(n) drop sheet", sh.pict, cells: sh.count, in: frame)
             }

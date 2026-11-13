@@ -52,16 +52,26 @@ case "$WHICH" in core|windows|both) ;; *) echo "usage: $0 [core|windows|both]"; 
 . "$ROOT/tools/ferazel-worker-watchdog.sh"
 ww_number JOBS 4
 [ "$JOBS" -gt 6 ] && JOBS=6
-# The scope, read from the source the test reads (BuiltLevels.list, through tools/ferazel-built-levels.sh): a
-# FERAZEL_VISIT_LEVELS id outside it is refused here (the test would drop it silently and sweep less than asked).
-BUILT="$("$ROOT/tools/ferazel-built-levels.sh")" || { echo "visit sweep: cannot read BuiltLevels.list"; exit 2; }
+# The scope, read from the source the test reads (BuiltLevels.list, through tools/ferazel-built-levels.sh). A set
+# FERAZEL_VISIT_LEVELS is parsed as the bot parses FERAZEL_BOT_LEVELS — ids split on commas and blanks (no file-name
+# expansion), each a plain positive whole number in the list, named once — and exported again comma-joined, the form
+# the test splits; an id outside the list, a repeated id or a value naming no level (",,") is refused here (the test
+# would drop it silently and sweep less than asked).
+refuse() { echo "visit sweep: $1"; exit 2; }
+positive() { case "$1" in ''|0*|*[!0-9]*|??????????*) return 1 ;; esac; }
+BUILT="$("$ROOT/tools/ferazel-built-levels.sh")" || refuse "cannot read BuiltLevels.list"
 if [ -n "${FERAZEL_VISIT_LEVELS:-}" ]; then
+    LEVELS=""
+    set -f
     for l in $(echo "$FERAZEL_VISIT_LEVELS" | tr ',' ' '); do
-        case ",$BUILT," in
-            *",$l,"*) ;;
-            *) echo "visit sweep: level $l is not in BuiltLevels.list ($BUILT)"; exit 2 ;;
-        esac
+        positive "$l" && case ",$BUILT," in *",$l,"*) true ;; *) false ;; esac \
+            || refuse "FERAZEL_VISIT_LEVELS: level $l is not in BuiltLevels.list ($BUILT)"
+        case ",$LEVELS," in *",$l,"*) refuse "FERAZEL_VISIT_LEVELS: level $l is named twice" ;; esac
+        LEVELS="$LEVELS${LEVELS:+,}$l"
     done
+    set +f
+    [ -n "$LEVELS" ] || refuse "FERAZEL_VISIT_LEVELS=$FERAZEL_VISIT_LEVELS names no level"
+    export FERAZEL_VISIT_LEVELS="$LEVELS"
 fi
 OUT="${OUT:-$(mktemp -d "${TMPDIR:-/tmp}/ferazel-visit-sweep.XXXXXX")}"
 mkdir -p "$OUT"

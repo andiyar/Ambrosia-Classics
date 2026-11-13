@@ -14,7 +14,9 @@
 #   the brake during `both`: the second path is never built
 #   free memory still low after the wait (MEMORY_WAIT_S): it refuses, nothing built
 #   a normal end (exit 0, no rows), sweep and bot
-#   a bad setting (WW_SAMPLE_S=08, …): refuses to start, exit 2, nothing started
+#   a bad setting (WW_SAMPLE_S=08, …, a level outside BuiltLevels.list, a level list naming none): refuses to start,
+#     exit 2, nothing started
+#   the built-level helper: the real list as one line; a source with the list line twice is refused
 #   a worker that dies without a row (its test process ended, or still running): a row, exit 1, nothing left running
 #   no reading from top or memory_pressure: one warning each per worker
 #   stopping it: TERM to the script and its worker subshells (as `pkill -f` would), TERM to the script alone, Ctrl-C
@@ -111,6 +113,21 @@ real=$( (unset MAX_WORKER_MB MIN_RUNNING_FREE_PCT WW_SAMPLE_S MIN_FREE_PCT MEMOR
 case "$real" in ''|*[!0-9]*) echo "  the real memory_pressure gave: '$real'"; verdict "the real memory_pressure is read" 0 ;;
     *) verdict "the real memory_pressure is read ($real% free)" 1 ;; esac
 
+# The built-level list helper both scripts take their scope from (6A-BL): the real source gives one line of plain
+# positive ids joined by commas; a copy of BuiltLevels.swift with its list line twice is refused (exit 2, the count
+# named on stderr, nothing on stdout).
+bl=$("$ROOT/tools/ferazel-built-levels.sh" 2>/dev/null); rc=$?
+[ "$rc" = 0 ] && [ "$(printf '%s\n' "$bl" | grep -c .)" = 1 ] \
+    && printf '%s\n' "$bl" | grep -qxE '[1-9][0-9]{0,8}(,[1-9][0-9]{0,8})*'
+verdict "the built-level helper prints the list as one line ($bl)" $((1 - $?))
+BL="$T/built-levels-root"; BLSRC="Ferazel/Core/Sources/FerazelCore/Front/BuiltLevels.swift"
+mkdir -p "$BL/tools" "$BL/$(dirname "$BLSRC")"
+cp -p "$ROOT/tools/ferazel-built-levels.sh" "$BL/tools/"
+sed -E '/^[[:space:]]*public static let list: \[Int\] = /p' "$ROOT/$BLSRC" > "$BL/$BLSRC"
+bl=$("$BL/tools/ferazel-built-levels.sh" 2> "$T/built-levels-twice.err"); rc=$?
+[ "$rc" = 2 ] && [ -z "$bl" ] && grep -q "found 2" "$T/built-levels-twice.err"
+verdict "the built-level helper refuses a source with its list line twice" $((1 - $?))
+
 # Memory.
 run sweep-memory hog ferazel-visit-sweep.sh MAX_WORKER_MB=100
 check "sweep: a worker past the limit is killed, one memory row" 1 "$RC" "$OUTF" "worker killed at"
@@ -160,7 +177,8 @@ check "bot: a worker that ends by itself leaves no row" 0 "$RC" "$OUTF" ""
 # Bad settings: refuse to start (exit 2), never default silently, never run unguarded.
 for bad in "sweep WW_SAMPLE_S=08" "sweep WW_SAMPLE_S=09" "bot WW_SAMPLE_S=08" "sweep MAX_WORKER_MB=0" \
            "bot MIN_RUNNING_FREE_PCT=abc" "sweep JOBS=08" "bot JOBS=x" "sweep MIN_FREE_PCT=" "bot MEMORY_WAIT_S=-1" \
-           "bot FERAZEL_BOT_MINUTES=08" "bot FERAZEL_BOT_WATCHDOG=010"; do
+           "bot FERAZEL_BOT_MINUTES=08" "bot FERAZEL_BOT_WATCHDOG=010" "bot FERAZEL_BOT_LEVELS=6" \
+           "sweep FERAZEL_VISIT_LEVELS=6" "sweep FERAZEL_VISIT_LEVELS=,,"; do
     who="${bad%% *}"; setting="${bad#* }"; name="bad-$who-$(echo "$setting" | tr -c 'A-Za-z0-9\n' '_')"
     script=ferazel-visit-sweep.sh; [ "$who" = bot ] && script=ferazel-random-play.sh
     run "$name" pass "$script" "$setting" SELFTEST_BUILDS="$T/$name.builds"

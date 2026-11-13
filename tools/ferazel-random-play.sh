@@ -76,13 +76,19 @@ positive() { case "$1" in ''|0*|*[!0-9]*|??????????*) return 1 ;; esac; }
 BUILT="$("$ROOT/tools/ferazel-built-levels.sh")" || bad "cannot read BuiltLevels.list"
 SEEDS="${FERAZEL_BOT_SEEDS:-4}"; positive "$SEEDS" || bad "FERAZEL_BOT_SEEDS=$SEEDS is not a positive number"
 MINUTES="${FERAZEL_BOT_MINUTES:-3}"; positive "$MINUTES" || bad "FERAZEL_BOT_MINUTES=$MINUTES is not a positive number"
+# FERAZEL_BOT_LEVELS: ids split on commas and blanks (no file-name expansion), each in the list once; set but naming
+# no level (",,") is refused, never widened to every level.
 LEVELS=""
 if [ -n "${FERAZEL_BOT_LEVELS:-}" ]; then
+    set -f
     for l in $(echo "$FERAZEL_BOT_LEVELS" | tr ',' ' '); do
         positive "$l" && case ",$BUILT," in *",$l,"*) true ;; *) false ;; esac \
-            || bad "level $l is not in BuiltLevels.list ($BUILT)"
+            || bad "FERAZEL_BOT_LEVELS: level $l is not in BuiltLevels.list ($BUILT)"
+        case ",$LEVELS," in *",$l,"*) bad "FERAZEL_BOT_LEVELS: level $l is named twice" ;; esac
         LEVELS="$LEVELS${LEVELS:+,}$l"
     done
+    set +f
+    [ -n "$LEVELS" ] || bad "FERAZEL_BOT_LEVELS=$FERAZEL_BOT_LEVELS names no level"
 fi
 [ -n "$LEVELS" ] || LEVELS="$BUILT"
 export FERAZEL_BOT_SEEDS="$SEEDS" FERAZEL_BOT_MINUTES="$MINUTES" FERAZEL_BOT_LEVELS="$LEVELS"

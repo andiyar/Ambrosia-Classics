@@ -14,13 +14,14 @@ final class BuiltLevelsTests: XCTestCase {
         }
         XCTAssertEqual(Set(BuiltLevels.list).count, BuiltLevels.list.count)
         for n in BuiltLevels.list { XCTAssertTrue(BuiltLevels.contains(n), "level \(n)") }
-        // 6–9 have no level data; 10 is not built yet; 0 is no level.
-        for n in [0, 6, 7, 8, 9, 10] { XCTAssertFalse(BuiltLevels.contains(n), "level \(n)") }
+        // 6–9 have no level data; 10 and 11 are not built yet; 0 and −1 are no level.
+        for n in [-1, 0, 6, 7, 8, 9, 10, 11] { XCTAssertFalse(BuiltLevels.contains(n), "level \(n)") }
         XCTAssertEqual(BuiltLevels.notBuiltReport(10), "Level 10 is not built yet (Phase 6).")
     }
 
     /// The shape `tools/ferazel-built-levels.sh` reads: after leading blanks, this prefix, then digits, commas and
-    /// spaces, then `]` and only trailing blanks.
+    /// spaces, then `]` and only trailing blanks; each entry a plain positive whole number (no empty entry, no leading
+    /// zero, at most 9 digits — the helper's `''|0*|*[!0-9]*|??????????*` refusal).
     static let shapePrefix = "public static let list: [Int] = ["
 
     /// The helper's parse of one line, in plain Swift: the ids, or nil when the line is not of the shape.
@@ -33,7 +34,8 @@ final class BuiltLevelsTests: XCTestCase {
         guard inner.allSatisfy({ $0 == "," || $0 == " " || ("0"..."9").contains($0) }) else { return nil }
         var ids: [Int] = []
         for piece in inner.split(separator: ",", omittingEmptySubsequences: false) {
-            guard let n = Int(String(piece.filter { $0 != " " })) else { return nil }
+            let digits = String(piece.filter { $0 != " " })
+            guard !digits.isEmpty, digits.first != "0", digits.count <= 9, let n = Int(digits) else { return nil }
             ids.append(n)
         }
         return ids
