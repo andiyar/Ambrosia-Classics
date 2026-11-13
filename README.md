@@ -50,8 +50,7 @@ There's also an **iPad version** (same game, same data, touch in place of the mo
 ### Ferazel's Wand
 ![status](https://img.shields.io/badge/status-building-yellow) &nbsp;
 ![levels](https://img.shields.io/badge/levels%201–5-playable-green) &nbsp;
-![enemies](https://img.shields.io/badge/enemies-alive-green) &nbsp;
-[![Windows](https://img.shields.io/badge/Windows-test%20build-blue)](https://github.com/andiyar/Ambrosia-Classics/releases/tag/ferazel-windows-test-4)
+![enemies](https://img.shields.io/badge/enemies-alive-green)
 
 **The first five levels play**, on Mac and Windows, from the original Ferazel's Wand 1.0.3 data. What's in:
 
@@ -65,7 +64,7 @@ Level 5 runs up to the first boss, the Manditraki Warrior, who for now just stan
 
 I've played and passed everything up to level 4; the enemies build is waiting for my hands-on check. Behind it sit 633 automated tests, a robot that visits every object on every built level (3,488 visits, on both the Mac and Windows code), and a random-play bot.
 
-There's no Mac download yet. An **early Windows test build** is on the [releases page](https://github.com/andiyar/Ambrosia-Classics/releases/tag/ferazel-windows-test-4): it's older than the above (levels 1–4, enemies standing still), unsigned, and only there for testers.
+There's no download yet: Mac and Windows come together at 1.0.
 
 ### Deimos Rising
 ![status](https://img.shields.io/badge/status-parked-lightgrey) &nbsp;
