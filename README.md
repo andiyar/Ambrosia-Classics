@@ -9,7 +9,7 @@
 ![status](https://img.shields.io/badge/Aki-1.0-green) &nbsp;
 ![status](https://img.shields.io/badge/Bubble%20Trouble%20X-1.0-green) &nbsp;
 ![status](https://img.shields.io/badge/Ferazel's%20Wand-building-yellow) &nbsp;
-![Windows](https://img.shields.io/badge/Windows-BTX%20%2B%20Ferazel-blue) &nbsp;
+![Windows](https://img.shields.io/badge/Windows-BTX-blue) &nbsp;
 ![type](https://img.shields.io/badge/type-fan%20preservation-orange)
 
 </div>
