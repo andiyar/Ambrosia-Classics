@@ -92,7 +92,7 @@ extension Player {
         setLifeState(4, now: now)                                    // 10029e04..10029e08
         setAppearFade()                                              // 10029e0c..10029e34
         // 10029e38..10029ee8: entry spawn (`plen`) and FUN_10029fe0 — entities are Phase 2.
-        resetHandler(levelStart: false)                              // 10029ef4 FUN_1003af90(h, 0)
+        resetHandler(levelStart: false, sector: sector)              // 10029ef4 FUN_1003af90(h, 0)
     }
 
     /// The crosshair part of `FUN_1003b3c0` (`1003b9ec..1003ba30`).

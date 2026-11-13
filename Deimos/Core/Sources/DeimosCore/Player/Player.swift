@@ -57,6 +57,11 @@ public struct GameObject: Equatable, Sendable {
     public var hitGlowOn = false
     public var hitGlowLevel: Int32 = 0
     public var hitGlowColour: UInt16 = 0
+    /// +0x75 / +0x7c: the hit glow's phase — 1 = level falling 32 → 4, 0 = rising back to 32 (toggled by
+    /// `FUN_10012c10` `10012c4c..10012c58` / `10012c88..10012c94`) — and its step per tick (`FUN_10012bc0`
+    /// `10012bf0 stb r6,0x75`, `10012bf4 stw r5,0x7c`). Like +0x78/+0x80, not reset by `FUN_10012650`.
+    public var hitGlowFalling = false
+    public var hitGlowStep: Int32 = 0
     /// +0x84 / +0x88 / +0x8c: scale current / target / step.
     public var scale: Float = 1
     public var scaleTarget: Float = 1
@@ -98,6 +103,36 @@ public struct GameObject: Equatable, Sendable {
         }
     }
 
+    /// `FUN_10012bc0 @ 10012bc0(obj, colour, step, force)` — start the hit glow (listing `10012bc0..10012bfc`):
+    /// already on and not `force` → nothing; else on, level 32, falling, step, colour.
+    public mutating func startHitGlow(colour: UInt16, step: Int32, force: Bool) {
+        if hitGlowOn && !force { return }                            // 10012bc0..10012bdc
+        hitGlowOn = true                                             // 10012be4
+        hitGlowLevel = 32                                            // 10012be8..10012bec
+        hitGlowFalling = true                                        // 10012bf0
+        hitGlowStep = step                                           // 10012bf4
+        hitGlowColour = colour                                       // 10012bf8
+    }
+
+    /// `FUN_10012c10 @ 10012c10` — the hit-glow tick (listing `10012c10..10012c9c`, unsigned compares):
+    /// falling → level −= step; level (unsigned) < 4 → 4 and rising. Rising → level += step; level
+    /// (unsigned) > 32 → 32, falling again and the glow off.
+    public mutating func stepHitGlow() {
+        guard hitGlowOn else { return }                              // 10012c10..10012c18
+        if hitGlowFalling {
+            hitGlowLevel = hitGlowLevel &- hitGlowStep               // 10012c28..10012c34
+            if UInt32(bitPattern: hitGlowLevel) >= 4 { return }      // 10012c3c cmplwi; bgelr
+            hitGlowLevel = 4                                         // 10012c44..10012c48
+            hitGlowFalling = false                                   // 10012c4c..10012c58 (cntlzw toggle)
+        } else {
+            hitGlowLevel = hitGlowLevel &+ hitGlowStep               // 10012c60..10012c6c
+            if UInt32(bitPattern: hitGlowLevel) <= 32 { return }     // 10012c74 cmplwi; blelr
+            hitGlowLevel = 32                                        // 10012c7c..10012c80
+            hitGlowFalling = true                                    // 10012c88..10012c94
+            hitGlowOn = false                                        // 10012c98
+        }
+    }
+
     /// `FUN_10012940 @ 10012940` — half-size refresh, only when +0x34 is set: face `none` → 0, 0;
     /// else w′, h′ from the frame (`FUN_10019ca0(face, frame, scale)`; +0x50 is 0 for the player and the
     /// crosshair) and half = C division by 2 (`rlwinm; add; srawi`); clears +0x34. `frameSize` returns the
@@ -115,48 +150,11 @@ public struct GameObject: Equatable, Sendable {
     }
 }
 
-/// The weapon handler embedded at player +0x240 (weapons-projectiles.md §2.2), the fields Phase 1 uses.
-/// Offsets are handler-relative (player offset = handler offset + 0x240).
-public struct WeaponHandler: Equatable, Sendable {
-    /// +0x00 / +0x04: copy of the player's x, y (`FUN_1003bb00`, each active tick).
-    public var x: Float = 0
-    public var y: Float = 0
-    /// +0x08: "score-bar icons need rebuilding" — set by every reset `FUN_1003af90` and every select,
-    /// cleared only by setup (hud-scorebar §6.1, loose-ends-combat §6.4).
-    public var iconsDirty = false
-    /// +0x24: air power percent (score-bar power target, `FUN_1003bb20`); 0.0 after reset.
-    public var powerPercent: Float = 0
-    /// +0x50 / +0x54: pending air / ground weapon.
-    public var pendingAir: WeaponDefinition?
-    public var pendingGround: WeaponDefinition?
-    /// +0x58: current air weapon.
-    public var air = WeaponDefinition()
-    /// +0x74: current ground weapon.
-    public var ground = WeaponDefinition()
-    /// +0x8c…: the crosshair sprite object. Constructed by the handler constructor `FUN_1003acc0`
-    /// (`FUN_100125d0` → the `FUN_10012650` reset: layer `defa`); its +0x4c layer (handler +0xd8) becomes
-    /// `plui` only in setup (`1003ae64`, `Player.setupHandler`).
-    public var crosshair = GameObject()
-    /// +0x120: crosshair shown — set on every handler tick (`1003b9ec`), never cleared (loose-ends-combat §6.2).
-    public var crosshairShown = false
-    /// +0x121: crosshair locked (over a ground target).
-    public var crosshairLocked = false
-    /// +0x122: owner player index.
-    public var owner: Int8 = -1
-    /// +0x124 / +0x128: flli 149 / 150 Crosshair_FadeIn / FadeOutPercentageRate (+0x128 has no reader).
-    public var crosshairFadeInRate: Float = 0
-    public var crosshairFadeOutRate: Float = 0
-
-    public init() {}
-
-    /// `FUN_1003bce0`: the pending air weapon, else the current one.
-    public var effectiveAir: WeaponDefinition { pendingAir ?? air }
-}
-
 /// The player object (G_Player.cc, 0x36c bytes; player-physics.md §1). Field comments cite the original
 /// offsets. Obfuscated stores (lives +0x1524dcef, money +0xb2cce, score +0x5532a3e — integer, lossless)
 /// are kept plain; the shield's float obfuscation is lossy and is reproduced (`shield`).
-/// ★ LOCKED name (plan S2); the update is the ◇ Phase-1 stub `updatePhase1` (PlayerPhase1.swift).
+/// ★ LOCKED name (plan S2). The update is `GameState.updatePlayer(_:input:)` (PlayerUpdate.swift, C14); the ◇ Phase-1
+/// stub `updatePhase1` (PlayerPhase1.swift) stays until C18b deletes it.
 public struct Player: Sendable {
     let assets: DeimosAssets
 
@@ -179,6 +177,13 @@ public struct Player: Sendable {
     public var score: Int32 = 0
     /// +0xb4: score multiplier.
     public var multiplier: UInt8 = 1
+    /// +0xb8: serial of the multiplier indicator unit, −1 none (constructor `100262d8`; `FUN_10029fe0`;
+    /// scoring-bonuses §1.1). Declared by C7 (field only).
+    public var multiplierIndicator: Int32 = -1
+    /// +0xbd: cheated this game — set by every console cheat (`bl 0x10029bf0` with r4 = 1,
+    /// `0x10008118–0x100091bc`; scoring-bonuses §1.1); 0 from the constructor (`100262e0`). Declared by C7
+    /// (field only; C19 sets it).
+    public var cheated = false
     /// +0xc0: level reference (game +0x18) given at level start.
     public var levelRef: FourCC = .none
     /// +0xc4: in game (not eliminated).
@@ -220,9 +225,11 @@ public struct Player: Sendable {
     public var integrityPasses: Int32 = 0
     /// +0x240: the weapon handler.
     public var handler = WeaponHandler()
-    /// Game +0x14, the sector (`FUN_10005cd0`), read by the handler reset and the icon builder. Kept on
-    /// the player because Phase 1 has one level; set by `setup`. A per-player copy of one game field (C4
-    /// review m4): when the session gains level advance (Phase 2) the game's sector should be passed in instead.
+    /// The sector given to `setup` — a per-player copy of game +0x14 (`FUN_10005cd0`) kept only for callers that
+    /// pass no sector: the ◇ Phase-1 session (`DeimosSession`, deleted by C18b), `levelStart` / `scoreBarIcons()`
+    /// without a `sector:` argument and `ScoreBarState` without one. The original reads G+0x14 everywhere: every
+    /// `GameState` path passes `flags.sector` (C15 review); not a model of any original field. Retired by C18a;
+    /// `scoreBarIcons(sector:)` is the API.
     public var sector: Int32 = 1
 
     /// pf[2] (`0x100d6fc8` + 8): the shield obfuscation bias.
@@ -272,9 +279,10 @@ public struct Player: Sendable {
         score = 0                                                    // 1002688c FUN_100299c0
         multiplier = 1                                               // 10026898 FUN_10029fd0
         resetShield(full: true)                                      // 100268a8 FUN_10027400(p, 1)
-        try setupHandler(now: now)                                   // 100268c0 FUN_1003ade0
+        try setupHandler(now: now, sector: Int32(sector))            // 100268c0 FUN_1003ade0
         maxSpeed = plde.activeDefaultMaxSpeed                        // 100268cc FUN_10026cb0
         resetShield(full: false)                                     // 100268dc FUN_10027400(p, 0)
+        cheated = false                                              // 100268ec FUN_10029bf0(p, 0)
         clearOverload()                                              // 10026904 FUN_10026ea0
         if inGame {
             setLifeState(2, now: now)                                // 10026924
@@ -288,14 +296,16 @@ public struct Player: Sendable {
     /// returns at once when not in game. Else `+0xd0` = 0; handler reset `FUN_1003af90(h, 1)`; `+0xc5` = 0;
     /// `+0xc0` = levelRef; ship sprite `FUN_10029f10`; size `FUN_10012940`; start position, velocity 0,
     /// crosshair adjust 0, overload cleared `FUN_10026b10`; **state 2 at now** (`10026a20`); glow off
-    /// `FUN_10012c00`; money 0; money counter reset (`FUN_10027630`, not modelled); shield
+    /// `FUN_10012c00`; money 0; money counter reset (`FUN_10027630` — modelled by `GameState.playerLevelStart` on `TallyState.coin`); shield
     /// `FUN_10027400(p, 1)`; overload cleared; appear fade = flli 163/164/165 (`10026a6c..10026a98`); then
     /// exactly one `FUN_10046580(400, 2000)` (`10026a9c`), whose result only P1 keeps: `+0x234` = now + R,
     /// `+0x238` = 0 (`10026ab4 extsb.; bne`; the registration reads `FUN_1007ec40…` are not modelled).
-    public mutating func levelStart(now: Int32, rng: inout MSLRandom, levelRef: FourCC = .none) {
+    /// `sector` = game +0x14 for the reset's `FUN_1003cd30`; nil → the copy given to `setup` (Phase-1 callers).
+    public mutating func levelStart(now: Int32, rng: inout MSLRandom, levelRef: FourCC = .none,
+                                    sector: Int32? = nil) {
         guard inGame else { return }                                 // 100269c4..100269cc
         hitThisLevel = false                                         // 100269d4
-        resetHandler(levelStart: true)                               // 100269e0 FUN_1003af90(h, 1)
+        resetHandler(levelStart: true, sector: sector ?? self.sector)   // 100269e0 FUN_1003af90(h, 1)
         appearing = false                                            // 100269ec
         self.levelRef = levelRef                                     // 100269f4
         resetShipSprite()                                            // 100269f8 FUN_10029f10
@@ -347,16 +357,23 @@ public struct Player: Sendable {
     /// `FUN_10029f10` → `FUN_10029f60`: face = the effective air weapon's appearance for this index
     /// (`+0x144` P1, `+0x148` P2), `+0x34` = 1; then frame 0, `+0xd4` = 0, `+0x4c` = `play`.
     mutating func resetShipSprite() {
+        refreshFaceFromWeapon()                                      // 10029f24 FUN_10029f60
+        object.frame = 0                                             // 10029f30
+        lastBankingTick = 0                                          // 10029f3c
+        object.layer = FourCC("play")!                               // 10029f40
+    }
+
+    /// `FUN_10029f60 @ 10029f60` — face = the effective air weapon's appearance for this index (`+0x144`
+    /// P1, `+0x148` P2; any other index leaves the face), `+0x34` = 1. Also called by the player update when
+    /// the handler tick reports a select (`10029104..10029118`; C15's `tickWeapons` calls it).
+    mutating func refreshFaceFromWeapon() {
         let w = handler.effectiveAir                                 // 10029f78 FUN_1003bce0
         switch index {                                               // 10029f80..10029fb0
         case 0: object.face = w.player1AppearanceFace
         case 1: object.face = w.player2AppearanceFace
         default: break
         }
-        object.sizeDirty = true                                      // 10029fb8
-        object.frame = 0                                             // 10029f30
-        lastBankingTick = 0                                          // 10029f3c
-        object.layer = FourCC("play")!                               // 10029f40
+        object.sizeDirty = true                                      // 10029fb4..10029fb8
     }
 
     /// `FUN_10026b10`: solo start (`entry_soloStartX/Y`) when `+0xcd == 1`, else the multi start; int →
@@ -395,106 +412,6 @@ public struct Player: Sendable {
         let f = g.frames[Int(frame)]
         if scale == 1 { return (Int32(f.width), Int32(f.height)) }
         return (Int32(Float(f.width) * scale), Int32(Float(f.height) * scale))
-    }
-
-    /// `FUN_1003ade0 @ 1003ade0(h, playerIdx, now, sector)` subset (weapons-projectiles §2.1): pending
-    /// air/ground 0, reset `FUN_1003af90(h, 0)`, `+0x08` = 0 (`1003ae34`), owner, `+0x124`/`+0x128` = flli
-    /// 149/150, crosshair layer `plui` (`1003ae64`); ground = `FUN_1003cca0(1)` (first `DEAG` default),
-    /// air = `FUN_1003cdb0(sector)`. Either missing → the original's fatal assert (thrown here).
-    mutating func setupHandler(now: Int32) throws {
-        handler.pendingAir = nil                                     // 1003ae18
-        handler.pendingGround = nil                                  // 1003ae24
-        resetHandler(levelStart: false)                              // 1003ae28
-        handler.iconsDirty = false                                   // 1003ae34
-        handler.owner = index                                        // 1003ae3c
-        handler.crosshairFadeInRate = assets.floats[149]             // 1003ae48
-        handler.crosshairFadeOutRate = assets.floats[150]            // 1003ae5c
-        handler.crosshair.layer = FourCC("plui")!                    // 1003ae64 (handler +0xd8)
-        let weapons = assets.definitions.weapons
-        guard let ground = weapons.first(where: { $0.default == FourCC("DEAG")! }) else {   // FUN_1003cca0(1)
-            throw PlayerError.missingDefinition(type: "wede", id: "DEAG")
-        }
-        handler.ground = ground                                      // 1003aed4
-        guard let air = Self.startWeapon(sector: sector, weapons: weapons) else {           // FUN_1003cdb0
-            throw PlayerError.missingDefinition(type: "wede", id: "PEAA")
-        }
-        handler.air = air                                            // 1003af30
-    }
-
-    /// `FUN_1003af90 @ 1003af90(h, arg)` subset (loose-ends-combat §6.2, §6.5): `+0x08` = 1 (`1003afd4`),
-    /// power 0.0 (`1003b084`); pending ground applied; with arg 1 (level start) the `PEAA` def whose
-    /// minimum == sector (`FUN_1003cd30`) is equipped and the pending air dropped, otherwise (arg 0) the
-    /// pending air is applied (`1003b0d4..1003b134`); `FUN_1003bab0(h, 0)`; crosshair visibility = 0.0,
-    /// target 100.0, step `+0x124` (`1003b148..1003b15c`). The fire/power/bomb/aux timers are not modelled.
-    mutating func resetHandler(levelStart: Bool) {
-        handler.iconsDirty = true                                    // 1003afd4
-        handler.powerPercent = 0                                     // 1003b084
-        if let g = handler.pendingGround {                           // 1003b0ac..1003b0d0
-            handler.ground = g
-            handler.pendingGround = nil
-        }
-        if levelStart {
-            if let w = assets.definitions.weapons.first(where: {     // 1003b0dc..1003b108 FUN_1003cd30
-                $0.type == FourCC("PEAA")! && $0.minimumLevelAvailable == sector
-            }) {
-                handler.air = w                                      // FUN_1003b180 (air state 0: immediate)
-                handler.pendingAir = nil
-            }
-        } else if let w = handler.pendingAir {                       // 1003b110..1003b134
-            handler.air = w
-            handler.pendingAir = nil
-        }
-        if handler.crosshairShown {                                  // 1003b140 FUN_1003bab0(h, 0)
-            handler.crosshair.frame = handler.ground.crosshairFrame
-            handler.crosshairLocked = false
-        }
-        handler.crosshair.visibility = 0                             // 1003b148..1003b150
-        handler.crosshair.visibilityTarget = 100                     // 1003b14c..1003b154
-        handler.crosshair.visibilityStep = handler.crosshairFadeInRate   // 1003b158..1003b15c
-    }
-
-    /// `FUN_1003cdb0(L)`: among `PEAA` with min ≤ L ≤ max, the largest minimum (first wins ties).
-    static func startWeapon(sector: Int32, weapons: [WeaponDefinition]) -> WeaponDefinition? {
-        var best: WeaponDefinition?
-        for w in weapons where w.type == FourCC("PEAA")!
-            && w.minimumLevelAvailable <= sector && sector <= w.maximumLevelAvailable {
-            if best == nil || w.minimumLevelAvailable > best!.minimumLevelAvailable { best = w }
-        }
-        return best
-    }
-
-    /// `FUN_1002adb0(type, cur, L)` — the select cycle (weapons-projectiles §1.3, HIGH): the matches are
-    /// the definitions of `type` with min ≤ L ≤ max, in list order; `cur` none → the first; else the match
-    /// after `cur`, wrapping to the first when `cur` is last or not a match; nil when nothing matches.
-    static func nextWeapon(type: FourCC, after cur: FourCC, sector: Int32,
-                           weapons: [WeaponDefinition]) -> WeaponDefinition? {
-        let matches = weapons.filter {
-            $0.type == type && $0.minimumLevelAvailable <= sector && sector <= $0.maximumLevelAvailable
-        }
-        guard let first = matches.first else { return nil }
-        guard cur != .none, let i = matches.firstIndex(where: { $0.id == cur }), i + 1 < matches.count else {
-            return first
-        }
-        return matches[i + 1]
-    }
-
-    /// `FUN_1003bb40 @ 1003bb40(handler, out[6])` (hud-scorebar §6, HIGH): {face, frame} of the effective
-    /// air weapon, the next in the select cycle and the one after; a pair that repeats an earlier one
-    /// (by face + frame) is `none`.
-    public func scoreBarIcons() -> [ScoreBarState.Icon] {
-        let weapons = assets.definitions.weapons
-        let peaa = FourCC("PEAA")!
-        let cur = handler.effectiveAir
-        func icon(_ w: WeaponDefinition) -> ScoreBarState.Icon {
-            ScoreBarState.Icon(face: w.scoreBarPreviewFace, frame: w.scoreBarPreviewFrame)
-        }
-        let slot0 = icon(cur)
-        let n1 = Self.nextWeapon(type: peaa, after: cur.id, sector: sector, weapons: weapons)
-        let slot1 = n1.map(icon) ?? slot0
-        if slot1 == slot0 { return [slot0, .none, .none] }
-        let n2 = Self.nextWeapon(type: peaa, after: n1!.id, sector: sector, weapons: weapons)
-        let slot2 = n2.map(icon) ?? slot0
-        return [slot0, slot1, (slot2 == slot0 || slot2 == slot1) ? .none : slot2]
     }
 }
 

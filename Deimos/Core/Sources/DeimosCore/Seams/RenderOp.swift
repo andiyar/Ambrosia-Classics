@@ -54,4 +54,17 @@ public enum RenderOp: Equatable, Sendable {
     case limit
     /// The end-frame present.
     case present(PresentKind)
+    /// `FUN_10043ba0` at `10030cd0`: the pass's particle stamps, written into the back buffer between flush
+    /// 2…5 and flush 6…15 (particles-debris-blur §2.9). Phase 2 (plan S3).
+    case particles([ParticleStamp])
+    /// `FUN_10030870` → `FUN_10022ef0`: blocking; the host waits for Caps Lock up, then presents. Phase 2 (plan S3).
+    case pauseWait(PresentKind)
+
+    /// The ops the host steps itself (`DeimosRenderer.apply` traps on them): `.fade`, `.limit`, `.pauseWait`.
+    public static func isHostOp(_ op: RenderOp) -> Bool {
+        switch op {
+        case .fade, .limit, .pauseWait: return true
+        default: return false
+        }
+    }
 }

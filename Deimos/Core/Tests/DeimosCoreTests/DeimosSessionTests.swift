@@ -42,6 +42,8 @@ final class DeimosSessionTests: XCTestCase {
         case .fade: return "fade"
         case .limit: return "limit"
         case .present: return "present"
+        case .particles: return "particles"
+        case .pauseWait: return "pauseWait"
         }
     }
 

@@ -29,6 +29,9 @@ public struct DeimosAssets: Sendable {
     /// `coli gaco` (1: the score-bar digit colour).
     public let colors: [UInt16]
     public let definitions: DefinitionLists
+    /// `unde` tag ID → index into `definitions.units` (`FUN_1003d2f0` / `FUN_1003d550`: the first match of a
+    /// linear scan, so a duplicated tag keeps its first index). Phase 2 (plan S3).
+    public let unitIndex: [FourCC: Int]
     public let levelOrder: LevelOrder
     private let cache: SpriteGroupCache
 
@@ -76,6 +79,9 @@ public struct DeimosAssets: Sendable {
             return TextFormat(data: try index.data(for: r), tagName: r.tagName)
         }
         definitions = try DefinitionLists(index: index)
+        var unitIndex: [FourCC: Int] = [:]
+        for (i, u) in definitions.units.enumerated() where unitIndex[u.id] == nil { unitIndex[u.id] = i }
+        self.unitIndex = unitIndex
         levelOrder = LevelOrder(levels: definitions.levels)
         cache = SpriteGroupCache()
     }
