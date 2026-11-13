@@ -209,13 +209,31 @@ def face_refusal():
 
 def cached_records():
     """CachedFaces.sets / .singles (LevelRun.swift) as the port registers them today: [(pict, faces, flag)]."""
+    # Since 6A-CF each list is a closure: sets are `set(pict, faces, w, h, cols[, flag: F])` rows; singles are
+    # `one(pict[, flag: F])`, `run(base, n[, flag: F])` (base … base + n − 1) and `for p: Int16 in [..] { one(p[, flag: F]) }`.
     L = src_lines(os.path.join(SRC, LR))
+    num = r'(0x[0-9a-f]+|\d+)'
+    val = lambda s: int(s, 0)
     out = {}
     for key in ('sets', 'singles'):
-        a = next(i for i, l in enumerate(L) if re.search(r'static let %s: \[Record\] = \[' % key, l))
-        b = next(i for i in range(a, len(L)) if L[i].strip() == ']')
-        out[key] = [(int(p, 16), int(n), int(fl)) for l in L[a:b]
-                    for p, n, fl in re.findall(r'Record\(pict: 0x([0-9a-f]+), faces: (\d+), flag: (\d)\)', l)]
+        a = next(i for i, l in enumerate(L) if re.search(r'static let %s: \[Record\] = \{' % key, l))
+        b = next(i for i in range(a, len(L)) if L[i].strip() == '}()')
+        body = '\n'.join(l.split('//')[0] for l in L[a:b])
+        if key == 'sets':
+            out[key] = [(val(m[0]), val(m[1]), int(m[5] or 0)) for m in
+                        re.findall(r'\bset\(%s, %s, %s, %s, %s(?:, flag: (\d))?\)' % ((num,) * 5), body)]
+            continue
+        recs = []
+        for m in re.finditer(r'for p: Int16 in \[([^\]]*)\] \{ one\(p(?:, flag: (\d))?\) \}'
+                             r'|\bone\(%s(?:, flag: (\d))?\)|\brun\(%s, %s(?:, flag: (\d))?\)' % (num, num, num), body):
+            if m.group(1) is not None:
+                recs += [(val(p.strip()), 1, int(m.group(2) or 0)) for p in m.group(1).split(',') if p.strip()]
+            elif m.group(3) is not None:
+                recs.append((val(m.group(3)), 1, int(m.group(4) or 0)))
+            else:
+                base, n = val(m.group(5)), val(m.group(6))
+                recs += [(base + i, 1, int(m.group(7) or 0)) for i in range(n)]
+        out[key] = recs
     return out
 
 
