@@ -8,7 +8,8 @@
 ![arch](https://img.shields.io/badge/arch-Apple%20Silicon-blue) &nbsp;
 ![status](https://img.shields.io/badge/Aki-1.0-green) &nbsp;
 ![status](https://img.shields.io/badge/Bubble%20Trouble%20X-1.0-green) &nbsp;
-![Windows](https://img.shields.io/badge/Windows-BTX-blue) &nbsp;
+![status](https://img.shields.io/badge/Ferazel's%20Wand-building-yellow) &nbsp;
+![Windows](https://img.shields.io/badge/Windows-BTX%20%2B%20Ferazel-blue) &nbsp;
 ![type](https://img.shields.io/badge/type-fan%20preservation-orange)
 
 </div>
@@ -19,7 +20,7 @@ The little brother of [EV ARM](https://github.com/andiyar/ambrosia). Escape Velo
 
 The rule for every game is the same: **replicate the original 100%**. Each app loads the original pictures, sounds, strings and dialogs by their original file names, and reproduces the original's timings, rules and quirks, oddities included. No modern extras — apart from the optional Remastered Art and a modern app icon.
 
-The list, in order: **Aki — Mahjong Solitaire** (first), **Bubble Trouble X**, then **Ferazel's Wand**, **Deimos Rising** and **Cythera**.
+The list: **Aki — Mahjong Solitaire** and **Bubble Trouble X** (both released), **Ferazel's Wand** (being built now, the first five levels playable), then **Deimos Rising** and **Cythera** (started, parked until Ferazel is done).
 
 I just played my first game of Aki in a decade. I am so happy!
 
@@ -44,23 +45,39 @@ There's also an **iPad version** (same game, same data, touch in place of the mo
 
 **Bubble Trouble X 1.0 is out.** [Download it here](https://github.com/andiyar/Ambrosia-Classics/releases/tag/btx-1.0): a signed, notarized Mac app with the original Bubble Trouble X 1.1 data inside. Everything in the game comes from that data, and every sound effect and each level set's music has been checked against the original. My playtest is done. Not in yet: the separate BT Level Editor, and so custom levels. It also runs on Windows 10/11 (64-bit), cross-compiled from the same Swift code: the same release has **BubbleTroubleX-1.0-Windows.zip**. It isn't code-signed for Windows, so Windows asks once ("More info" → "Run anyway").
 
-### Deimos Rising
-![status](https://img.shields.io/badge/status-building-yellow) &nbsp;
-![gate 1](https://img.shields.io/badge/level%201%20look-passed-green)
-
-Every function of the game's code has been read out of the decompile and written up. The original data is in the repo, and a census proves all 872 files open. **Level 1 looks right**: the app draws the first level, its ship, enemies, terrain and status panel the way the original did, at OS X's 60 Hz. I checked it by eye on 2026-10-07 ("it looks okay!"). Now making level 1 actually play: shooting, enemies, destruction, bonuses, the end-of-level tally and game over are in progress on a branch.
+**Coming in 1.1: game controllers**, on Mac and Windows. It's built and has passed my controller check on the Mac; the release is in its final check before I publish it.
 
 ### Ferazel's Wand
 ![status](https://img.shields.io/badge/status-building-yellow) &nbsp;
-![renderer](https://img.shields.io/badge/level%201%20renderer-done-green)
+![levels](https://img.shields.io/badge/levels%201–5-playable-green) &nbsp;
+![enemies](https://img.shields.io/badge/enemies-alive-green) &nbsp;
+[![Windows](https://img.shields.io/badge/Windows-test%20build-blue)](https://github.com/andiyar/Ambrosia-Classics/releases/tag/ferazel-windows-test-4)
 
-The data is in the repo and all 1,108 items in it open. The level-1 renderer is done in the core: tiles, lighting and darkness, the parallax backgrounds, the sprites in their starting poses, the status bar and the game-screen frame, all following the original's own drawing code (100 tests, with whole-frame reference images). Next is the app itself, so level 1 can be seen on screen and checked against the original's look.
+**The first five levels play**, on Mac and Windows, from the original Ferazel's Wand 1.0.3 data. What's in:
+
+- **The whole front end**: title, main menu, the world map, stage screens, Options, saved games in the original's own file format (an original save opens), save points, dying and the death screen, pause, conversations and signs.
+- **Ferazel himself**: running, jumping, climbing, swimming, the hang glider, casting every spell, the inventory and using items, pickups and upgrades, power-up timers, the Shadow Double and the Pentashield.
+- **The world**: lighting and darkness, parallax backgrounds, water, moving platforms and pendulums, crates, boulders, mine carts, chests, doors and keys, buttons and gates, teleporters, ice, geysers, pipes and traps.
+- **The enemies**: goblins (axe throwers, spear guards, boulder throwers), crawlers, roaches, bats, frogs, salamanders, blobs, crabs, gremlins, wraiths and the Dillo. They walk, fly, throw, block, hurt you and die the way the original's code says.
+- **Sound and music**, and **game controllers**.
+
+Level 5 runs up to the first boss, the Manditraki Warrior, who for now just stands in his arena. Being built at the moment: the Warrior fight and everything after it, through to the Goblin Chief. After that come two more stretches (to the Wizard, then the rest of the game), and then one release, **Ferazel 1.0**, for Mac and Windows together.
+
+I've played and passed everything up to level 4; the enemies build is waiting for my hands-on check. Behind it sit 633 automated tests, a robot that visits every object on every built level (3,488 visits, on both the Mac and Windows code), and a random-play bot.
+
+There's no Mac download yet. An **early Windows test build** is on the [releases page](https://github.com/andiyar/Ambrosia-Classics/releases/tag/ferazel-windows-test-4): it's older than the above (levels 1–4, enemies standing still), unsigned, and only there for testers.
+
+### Deimos Rising
+![status](https://img.shields.io/badge/status-parked-lightgrey) &nbsp;
+![gate 1](https://img.shields.io/badge/level%201%20look-passed-green)
+
+Every function of the game's code has been read out of the decompile and written up. The original data is in the repo, and a census proves all 872 files open. **Level 1 looks right**: the app draws the first level, its ship, enemies, terrain and status panel the way the original did, at OS X's 60 Hz. I checked it by eye on 2026-10-07 ("it looks okay!"). Making level 1 actually play (shooting, enemies, destruction, bonuses, the end-of-level tally, game over) is most of the way there on a branch. The rest of the game is planned out and waits until Ferazel is done.
 
 ### Cythera
-![status](https://img.shields.io/badge/status-building-yellow) &nbsp;
+![status](https://img.shields.io/badge/status-parked-lightgrey) &nbsp;
 ![reverse engineering](https://img.shields.io/badge/reverse%20engineering-done-green)
 
-The whole binary is decompiled and read. Building has started: the data is in the repo, and the core can already unpack the game's files (its segment files, compression and world records) and decode its tiles, portraits and pictures. Next is the script decoder, then the first gate: walking around Catamarca.
+The whole binary is decompiled and read. Building has started: the data is in the repo, and the core can already unpack the game's files (its segment files, compression and world records) and decode its tiles, portraits and pictures. Next is the script decoder, then the first gate: walking around Catamarca. Planned out, and waiting until Ferazel is done.
 
 <details>
 <summary><strong>Aki milestone status</strong></summary>
@@ -139,6 +156,7 @@ cd Aki/Core && swift test                          # the rules engine
 xcodegen generate && xcodebuild -scheme Aki build  # the app (project.yml is the truth; never edit the pbxproj)
 python3 tools/upscale-aki-art.py                   # the Remastered Art → Resources/Aki/hd-4x (optional, see below)
 tools/stage-aki.sh                                 # builds Release and copies your Aki data in → out/Aki/Aki.app
+xcodebuild -scheme Ferazel build                   # Ferazel's Wand so far (its data is in the repo)
 ```
 
 `stage-aki.sh` looks for the original Aki 1.2.0 app at `Resources/Aki/1.2.0.app` (a symlink is fine). Aki's and Bubble Trouble X's data aren't in the repo yet (the release downloads carry them); Ferazel's Wand, Deimos Rising and Cythera's original data are, under `Resources/`.
