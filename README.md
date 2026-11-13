@@ -52,19 +52,7 @@ There's also an **iPad version** (same game, same data, touch in place of the mo
 ![levels](https://img.shields.io/badge/levels%201–5-playable-green) &nbsp;
 ![enemies](https://img.shields.io/badge/enemies-alive-green)
 
-**The first five levels play**, on Mac and Windows, from the original Ferazel's Wand 1.0.3 data. What's in:
-
-- **The whole front end**: title, main menu, the world map, stage screens, Options, saved games in the original's own file format (an original save opens), save points, dying and the death screen, pause, conversations and signs.
-- **Ferazel himself**: running, jumping, climbing, swimming, the hang glider, casting every spell, the inventory and using items, pickups and upgrades, power-up timers, the Shadow Double and the Pentashield.
-- **The world**: lighting and darkness, parallax backgrounds, water, moving platforms and pendulums, crates, boulders, mine carts, chests, doors and keys, buttons and gates, teleporters, ice, geysers, pipes and traps.
-- **The enemies**: goblins (axe throwers, spear guards, boulder throwers), crawlers, roaches, bats, frogs, salamanders, blobs, crabs, gremlins, wraiths and the Dillo. They walk, fly, throw, block, hurt you and die the way the original's code says.
-- **Sound and music**, and **game controllers**.
-
-Level 5 runs up to the first boss, the Manditraki Warrior, who for now just stands in his arena. Being built at the moment: the Warrior fight and everything after it, through to the Goblin Chief. After that come two more stretches (to the Wizard, then the rest of the game), and then one release, **Ferazel 1.0**, for Mac and Windows together.
-
-I've played and passed everything up to level 4; the enemies build is waiting for my hands-on check. Behind it sit 633 automated tests, a robot that visits every object on every built level (3,488 visits, on both the Mac and Windows code), and a random-play bot.
-
-There's no download yet: Mac and Windows come together at 1.0.
+**The first five levels play**, on Mac and Windows, from the original Ferazel's Wand 1.0.3 data. The front end, world map and saved games (in the original's own file format) are in, along with Ferazel's moves, spells and items, the lighting, water and machinery of the levels, sound, music and game controllers. The enemies are alive: goblins, bats, frogs, blobs and the rest walk, fly, throw, block and die the way the original's code says. Level 5 runs up to the first boss, the Manditraki Warrior, who for now just stands in his arena. Being built now: the Warrior fight and everything after it, through to the Goblin Chief. I've played and passed everything up to level 4; the enemies build is waiting for my hands-on check. There's no download yet: Mac and Windows come together at 1.0.
 
 ### Deimos Rising
 ![status](https://img.shields.io/badge/status-parked-lightgrey) &nbsp;
