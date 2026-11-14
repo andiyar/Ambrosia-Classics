@@ -1479,6 +1479,41 @@ ids; its `--check` reads this table):
   kept at 6A-L10L11; 6A-WD may move it, ◈ — "New goldens"). Asserts: ENG §2.1's seven.
 - **Gate:** Gate-F (G2 663; the new `FaceSetKind` case compiles in both shells — G5, GW1–GW4; no shell source switches on
   it). **Commit:** `Ferazel: the horizon strip — draw mode 8, the strip sprites of six levels; 11 tests`.
+- **As executed — 6A-S8 (run 52, continued):** task 06f7250 (11 tests: 1 Core `HorizonStripSetupTests`, 9
+  `HorizonStripTests`, 1 `FeatureGoldenTests`), review fix round cdaf65d. Two Opus legs: MERGEABLE AFTER FIXES (0 / 1 /
+  11 minor — the clipped mode-8 routine matched to the raw assembly instruction by instruction, the unclipped one to the
+  decompile), MERGEABLE AFTER FIXES (0 / 3 / 8 minor; 104 mutations: 86 killed, 13 equivalent, 5 survivors — all killed
+  after the fix round, with 2 more on the chain search). Strip sprites on 10 / 30 / 40 / 45 / 62 / 67: 9 / 12 / 12 /
+  3 / 9 / 2 (recounted from the headers by leg 1). Levels 1–5 never reach the new code (header `0x2716` is 0 on them);
+  no existing pinned value moved; a mutation forcing a strip onto every level fails `BootFacesTests`, `FrameGoldenTests`,
+  `Phase2GoldenTests` and the level-21 fixture.
+  **The feature golden (new; two frames in `testLevel10StripFeatureGolden`, the seat's ruling):** the level-10 fixture
+  (31 left out), seed 1, **the player started at (600, 1150)** — from the header's start no strip pixel appears in
+  6,000 ticks; tick **1612** `e471fa3eeca627d3` (the first presented frame: the first 1,611 ticks are the chapter
+  card; without the strip `21292f5bec5e2c00`) **and tick 1658** `e8fc9d1805afb1d5` (the first frame where a drawn tile
+  hides strip pixels — at 1612 the strip is wholly over open sky and cannot tell mode 8 from a plain copy). **6A-WD's ◈
+  covers both frames of this one golden.**
+  **Colour table:** clut 200 on 10 / 30 / 40 / 45 / 67, the level+base table (clut 240) on 62; the restart fast path
+  also 200. The 25 functions naming `_DAT_1009ff94` — stores: `.InitGameGlobals`, `.InitTiles`, `.LoadBGTileset`,
+  `.LoadFGPatternTileset`, `.LoadPxBackTileset`, `.LoadPxMidTileset`, `.LoadLevelTilesets`, `.SetupLevel`, `.main`,
+  `.PreparePaintFrame`, `.SetupOmniPx`, `.Load1LightFaceFromPICT`, `.MTAddPxSprite`, `.InitBackgroundSprite`,
+  `.InitMapFaces`, `.InitRopeSprite`, `.LoadCachedSpriteFaces`; reads only: `.BuildMaskRegion` and the seven
+  `.Load…FaceFromPICT` loaders. The port does not model the pointer the fast path carries (a doc line says why 200).
+  **The strip face is found down the resource chain** (fix round; the one behaviour change): `GetPicture` (M l. 28038)
+  searches Backgrounds (just opened on top, M l. 2256 / 2276), then Sprites, Sounds, Titles, the app; one helper
+  `PxSprites.facePicture` serves Core and the renderer. PT's strip patch in `GameFlowGameTests` (PICT 5000, in the
+  Sprites file only) now asserts what the original does: the strip is made — 2 sprites on patched level 1.
+  **Dump over card / documents:** `.SetupOmniPx` writes `*_DAT_1009ff94` (M l. 13184), not `ff8c` as the card says;
+  the Sprites file's PICT 265 is byte-identical to the Backgrounds one (ENG §2.1 expected a difference);
+  `.MTNewSprite` overwrites the Setup's record index with −1 (M l. 30718); the face load is at M l. 30888.
+  **Files beyond the card, accepted by leg 1 and the seat:** `SetupFaces.swift` (spawns into the existing sprite list,
+  so the strip sprites stay at its head — equivalent on levels 1–5), `SpriteSlot.swift` (the strip Handle's case),
+  `SpriteDrawTests.swift` (mode 8 no longer refused), `ParallaxTests.swift` (uses the real routine; the old
+  `init?(header:)` model removed), the ledger script (two data rows) and document (rows made true + anchors). The
+  second Handle pass sits in the session's camera wrapper — the only caller of `Camera.findUpperLeftCorner`. No
+  exhaustive `switch` over `FaceSetKind` exists. Gates: G5, GW1 0 / 2, GW3 0 / 1, GW4 green; GW2 82 / 0 / 2 at 06f7250.
+  Left open: no bounds check in the blitters (a policy for all of them — open carry); the strip costs 29 µs a frame
+  (release).
 
 #### 6A-WD — minor ◈ (one fixture golden) — wind cells (→ 672)
 - **Files:** `Sources/FerazelCore/Physics/StandardSprite.swift` (`:60`, the empty `// later: wind` branch; the
