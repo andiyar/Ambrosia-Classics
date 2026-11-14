@@ -33,6 +33,7 @@ public enum InstructionDecoder {
         let row = ScriptOpcodes.statement(op)
         var mnemonic = row.mnemonic
         var targets: [Int] = []
+        var refs: [ScriptReference] = []
 
         switch row.form {
         case .none:
@@ -44,29 +45,31 @@ public enum InstructionDecoder {
             try r.skip(2, for: offset)
         case .slotExpr:
             let slot = try r.byte(for: offset)
-            if slot < 0x40 { try skipExpressions(&r, 1) }       // ≥ 0x40: the slot byte only (§8)
+            if slot < 0x40 { try skipExpressions(&r, 1, &refs) }  // ≥ 0x40: the slot byte only (§8)
         case .word16Expr:
-            try r.skip(2, for: offset); try skipExpressions(&r, 1)
+            let word = try r.u16(for: offset)
+            try skipExpressions(&r, 1, &refs)
+            refs.append(.word(word))                             // `Dis.stmt` 0x83: after its expression
         case .threeExprs:
-            try skipExpressions(&r, 3)
+            try skipExpressions(&r, 3, &refs)
         case .seg16Off16Expr:
-            try r.skip(4, for: offset); try skipExpressions(&r, 1)
+            try r.skip(4, for: offset); try skipExpressions(&r, 1, &refs)
         case .byteTwoExprs:
-            try r.skip(1, for: offset); try skipExpressions(&r, 2)
+            try r.skip(1, for: offset); try skipExpressions(&r, 2, &refs)
         case .byteExpr:
-            try r.skip(1, for: offset); try skipExpressions(&r, 1)
+            try r.skip(1, for: offset); try skipExpressions(&r, 1, &refs)
         case .target16:
             targets = [try r.u16(for: offset)]
         case .switchTable:
-            try skipExpressions(&r, 1)
+            try skipExpressions(&r, 1, &refs)
             let n = try r.u16(for: offset)
             guard n * 2 <= bytes.count - r.pc else { throw ScriptDecodeError.truncated(offset: offset) }
             targets.reserveCapacity(n)
             for _ in 0..<n { targets.append(try r.u16(for: offset)) }
         case .expr:
-            try skipExpressions(&r, 1)
+            try skipExpressions(&r, 1, &refs)
         case .exprTarget16:
-            try skipExpressions(&r, 1)
+            try skipExpressions(&r, 1, &refs)
             targets = [try r.u16(for: offset)]
         case .promptString:
             r.pc = try terminator(in: bytes, from: offset + 1, stopHigh: true, start: offset) + 1
@@ -83,53 +86,78 @@ public enum InstructionDecoder {
         case .routineArgs:
             let seg = try r.u16(for: offset)
             let first = r.pc
-            try skipExpressions(&r, 1)
+            try skipExpressions(&r, 1, &refs)
             // `scriptdis.py` lists `call` when seg ≠ 0xFFFF and the integer operand is one constant integer
             // (0x41, 0x42 or a tag-0 0x43, then 0x40); otherwise `callx` (computed seg + int, or seg 0xFFFF).
             if seg != 0xFFFF && isConstantInteger(bytes[first..<r.pc]) { mnemonic = "call" }
-            try skipExpressions(&r, 1)
+            try skipExpressions(&r, 1, &refs)
         case .classArgs, .sendArgs:
-            try r.skip(1, for: offset); try skipExpressions(&r, 1)
-        case .subroutineArgs, .callArgs:
-            try r.skip(2, for: offset); try skipExpressions(&r, 1)
+            try r.skip(1, for: offset); try skipExpressions(&r, 1, &refs)
+        case .subroutineArgs:
+            let sub = try r.u16(for: offset)
+            try skipExpressions(&r, 1, &refs)
+            refs.append(.subroutine(sub))                        // `Dis.callform` 0x9E: after its arguments
+        case .callArgs:
+            try r.skip(2, for: offset); try skipExpressions(&r, 1, &refs)
         case .builtinArgs:
-            try skipExpressions(&r, 1)
+            try skipExpressions(&r, 1, &refs)
         case .invalid, .end, .fixed, .inlineString, .inlineBlock:
             throw ScriptDecodeError.invalidOpcode(offset: offset, byte: op)
         case .nullBuiltin:
             throw ScriptDecodeError.nullBuiltin(offset: offset)
         }
         return ScriptInstruction(offset: offset, length: r.pc - offset, mnemonic: mnemonic,
-                                 jumpTargets: targets, kind: .statement)
+                                 jumpTargets: targets, kind: .statement, references: refs)
     }
 
     /// The offset just past the 0x40 that ends the expression starting at `offset`.
     public static func expressionEnd(in bytes: [UInt8], at offset: Int) throws -> Int {
         var r = Reader(bytes: bytes, pc: offset)
-        try skipExpressions(&r, 1)
+        var refs: [ScriptReference] = []
+        try skipExpressions(&r, 1, &refs)
         return r.pc
     }
 
-    /// Skips `count` consecutive expressions. Nested call forms open their own expressions, each ended by its own
-    /// 0x40 before the enclosing one continues, so a pending count replaces recursion (no stack depth from input).
-    private static func skipExpressions(_ r: inout Reader, _ count: Int) throws {
+    /// Skips `count` consecutive expressions, appending the references it passes in the order `Dis` meets them
+    /// (C9: 0x43 code pointers, 0x45 blocks and 0x47 words where they stand; a 0x9E target after its argument
+    /// expression). Nested call forms open their own
+    /// expressions, each ended by its own 0x40 before the enclosing one continues, so a pending count replaces
+    /// recursion (no stack depth from input); a 0x9E's target is emitted when the count falls back to its level.
+    private static func skipExpressions(_ r: inout Reader, _ count: Int, _ refs: inout [ScriptReference]) throws {
         var pending = count
+        var subroutines: [(level: Int, target: Int)] = []
         while pending > 0 {
             let at = r.pc
             let op = try r.byte(for: at)
             switch ScriptOpcodes.expression(op).form {
             case .end:
                 pending -= 1
+                while let last = subroutines.last, last.level == pending {
+                    refs.append(.subroutine(last.target))
+                    subroutines.removeLast()
+                }
             case .fixed(let size):
+                let operand = r.pc
                 try r.skip(size - 1, for: at)
+                let b = r.bytes
+                if op == 0x43, b[operand] & 0x80 != 0 {
+                    refs.append(.pointer(UInt32(b[operand]) << 24 | UInt32(b[operand + 1]) << 16
+                                         | UInt32(b[operand + 2]) << 8 | UInt32(b[operand + 3])))
+                } else if op == 0x47 {
+                    refs.append(.word(Int(b[operand]) << 8 | Int(b[operand + 1])))
+                }
             case .inlineString:
                 r.pc = try terminator(in: r.bytes, from: r.pc, stopHigh: false, start: at) + 1
             case .inlineBlock:
                 let length = try r.u16(for: at)
+                let start = r.pc
                 try r.skip(length, for: at)
+                refs.append(.inlineBlock(start..<(start + length)))
             case .classArgs, .sendArgs:
                 try r.skip(1, for: at); pending += 1
-            case .subroutineArgs, .callArgs:
+            case .subroutineArgs:
+                subroutines.append((pending, try r.u16(for: at))); pending += 1
+            case .callArgs:
                 try r.skip(2, for: at); pending += 1
             case .routineArgs:
                 try r.skip(2, for: at); pending += 2
