@@ -28,14 +28,15 @@ final class WarriorTests: XCTestCase {
     /// The Warrior's crate slots `+0x1d4` / `+0x1d8` / `+0x1dc`.
     private func slots(_ s: SpriteSlot) -> [Int?] { [s.siblings.first, s.siblings.second, s.siblings.third] }
 
-    /// The first seed ≥ 1 whose stream makes `pick` true.
+    /// The first seed in 1…10,000,000 whose stream makes `pick` true (the rarest pick here, the far egg edge, needs
+    /// 1,024,787); none → a failure, not a hang.
     private func seed(_ pick: (inout FastRand) -> Bool) -> Int32 {
-        var s: Int32 = 1
-        while true {
+        for s: Int32 in 1...10_000_000 {
             var r = FastRand(seed: s)
             if pick(&r) { return s }
-            s += 1
         }
+        XCTFail("no seed in 1…10,000,000 makes the pick true")
+        return 1
     }
 
     private func f(_ pict: Int16, _ i: Int) -> FaceRef { FaceRef(pict: pict, index: i, set: .encoded) }
@@ -113,6 +114,16 @@ final class WarriorTests: XCTestCase {
             XCTAssertEqual(try slot(t.world, tid), held, "\(label): nothing written")
             XCTAssertFalse(t.world.active.sprites.contains { $0.type == 0x433 }, "\(label): no crate")
         }
+        // The hot rect for both facings (M l. 73144–73150): left − 10 facing left, right + 10 facing right.
+        let hr = try session()
+        let hid = try warriorID(hr)
+        for m in [true, false] {
+            hr.world.active.update(id: hid) { $0.mirrored = m }
+            handle(hr.world, hid)
+            XCTAssertEqual(try slot(hr.world, hid).hotRect,
+                           m ? IdleSprites.Rect(top: 0x3c, left: 0x2a, bottom: 0x88, right: 0x93)
+                             : IdleSprites.Rect(top: 0x3c, left: 0x20, bottom: 0x88, right: 0x89), "mirrored \(m)")
+        }
     }
 
     // MARK: - 2
@@ -143,9 +154,10 @@ final class WarriorTests: XCTestCase {
         var w = try slot(s.world, id)
         XCTAssertEqual(w.classWord16c, 14, "emptied on the frame it died: 15 → 14")
         // The dead crate is still a record with `+0xe9` set — killed by its own Handle this frame, before his.
-        XCTAssertNotEqual(try slot(s.world, try XCTUnwrap(held[0])).killCount, 0)
-        // The Warrior's current `+0xa` moved: the respawn reads it (M l. 73167, 73173, 73179).
-        s.world.active.update(id: id) { $0.y = 200 }
+        XCTAssertNotEqual(try slot(s.world, try XCTUnwrap(held.first ?? nil)).killCount, 0)
+        // The Warrior's current `+0xa` moved: the respawn reads it (M l. 73167, 73173, 73179). His `+0xc` moved too:
+        // the respawn x is the home `+0x168` (875) + d, not his current x.
+        s.world.active.update(id: id) { $0.y = 200; $0.x = 900 }
         for frame in (k + 1)...(k + 13) {
             _ = s.step(keys: KeyState())
             w = try slot(s.world, id)
@@ -167,21 +179,23 @@ final class WarriorTests: XCTestCase {
 
         // (b) A crate killed in the collide pass (after every Handle of frame k — the crush's or the player arm's
         // `.KillBox`): his next Handle (k + 1) sees it first, so the new crate comes on k + 15.
-        let t = try session()
-        let tid = try warriorID(t)
-        for _ in 0..<3 { _ = t.step(keys: KeyState()) }
-        let victim = try XCTUnwrap(slots(try slot(t.world, tid))[1])
-        let kb = 3
-        BoxSprite.killBox(t.world, id: victim)                    // the collide pass of frame kb
-        XCTAssertEqual(slots(try slot(t.world, tid))[1], victim, "frame kb's Handle had already run")
-        for frame in (kb + 1)...(kb + 14) {
+        for vi in [1, 2] {
+            let t = try session()
+            let tid = try warriorID(t)
+            for _ in 0..<3 { _ = t.step(keys: KeyState()) }
+            let victim = try XCTUnwrap(slots(try slot(t.world, tid))[vi])
+            let kb = 3
+            BoxSprite.killBox(t.world, id: victim)                    // the collide pass of frame kb
+            XCTAssertEqual(slots(try slot(t.world, tid))[vi], victim, "frame kb's Handle had already run")
+            for frame in (kb + 1)...(kb + 14) {
+                _ = t.step(keys: KeyState())
+                let v = try slot(t.world, tid)
+                if frame == kb + 1 { XCTAssertNil(slots(v)[vi]); XCTAssertEqual(v.classWord16c, 14) }
+                if frame < kb + 15 { XCTAssertNil(slots(v)[vi], "frame \(frame)") }
+            }
             _ = t.step(keys: KeyState())
-            let v = try slot(t.world, tid)
-            if frame == kb + 1 { XCTAssertNil(slots(v)[1]); XCTAssertEqual(v.classWord16c, 14) }
-            if frame < kb + 15 { XCTAssertNil(slots(v)[1], "frame \(frame)") }
+            XCTAssertNotNil(slots(try slot(t.world, tid))[vi], "slot \(vi): frame kb + 15")
         }
-        _ = t.step(keys: KeyState())
-        XCTAssertNotNil(slots(try slot(t.world, tid))[1], "frame kb + 15")
 
         // (c) No free record (known deviation 6, Ruling 16 widened): the full table refuses the spawn, the slot stays
         // empty and re-tries every frame, `+0x16c` keeps counting below 1, each refusal counted.
@@ -243,15 +257,25 @@ final class WarriorTests: XCTestCase {
         XCTAssertEqual(a6, [2, 1, 0, 0, 0], "`+0xa6` counts to 0 and stays")
         XCTAssertTrue(s.world.player.cues.allSatisfy { $0.snd != 703 }, "no snd 703")
 
-        // 2.11 item 21: locked, every state reaches `.ApplyGravityAndSeparateFromTiles` with gravity 0x122 — here state
-        // 0 (no arm) in the air: one frame adds 0x122 to vy.
-        let t = try session()
-        let tid = try locked(t, state: 0) { w in w.vy = 0 }
-        let up = try slot(t.world, tid)
-        handle(t.world, tid)
-        let down = try slot(t.world, tid)
-        XCTAssertEqual(down.vy, 0x122, "gravity 0x122 (M l. 73399)")
-        XCTAssertGreaterThan(down.y256, up.y256)
+        // 2.11 item 21: locked, every state reaches `.ApplyGravityAndSeparateFromTiles` with gravity 0x122 — here
+        // states 0, 1, 3, 5 and 8 (no arm: state, `+0x46` and vx untouched) in the air: one frame adds 0x122 to vy;
+        // then `.StandardSpriteCleanup` clears `+0xd6` (M l. 32660) and re-centres.
+        for st: Int16 in [0, 1, 3, 5, 8] {
+            let t = try session()
+            let tid = try locked(t, state: st) { w in w.vy = 0; w.vx = 0; w.phase = 3; w.slope = 5 }
+            let up = try slot(t.world, tid)
+            handle(t.world, tid)
+            let down = try slot(t.world, tid)
+            XCTAssertEqual(down.vy, 0x122, "gravity 0x122 (M l. 73399)")
+            XCTAssertGreaterThan(down.y256, up.y256)
+            XCTAssertEqual([down.subtype, down.phase], [st, 3], "state \(st): no arm")
+            XCTAssertEqual(down.vx, 0)
+            XCTAssertEqual(down.slope, 0, "Cleanup clears `+0xd6`")
+            let hr = down.hotRect
+            let centre = SpriteSlot.Point(x: down.x + hr.left + ((hr.right - hr.left) >> 1),
+                                          y: down.y + hr.top + ((hr.bottom - hr.top) >> 1))
+            XCTAssertEqual(down.centre, centre, "Cleanup ran")
+        }
     }
 
     // MARK: - 4
@@ -261,15 +285,17 @@ final class WarriorTests: XCTestCase {
         // 0x13; r > T → state 7, `+0x46 = 1`, face 0x71c[0], `+0xa6 = R(3) + 2`; R(100) > 100 − T → run, else walk and
         // R(100) > 0x50 → `.WarriorLayEgg` (R(2)); then the bound facing. Then vx × 0.5.
         struct Case { let label: String; let near: Bool; let pick: (inout FastRand) -> Bool }
-        func walkPick(near: Bool, run: Bool, egg: Bool) -> (inout FastRand) -> Bool {
+        func walkPick(near: Bool, run: Bool, egg: Bool, edge: Bool = false) -> (inout FastRand) -> Bool {
             let t: Int16 = near ? 0x41 : 0x13
             return { g in
-                guard t < g.next(100) else { return false }
+                let r0 = g.next(100)
+                guard t < r0, !edge || r0 == t + 1 else { return false }
                 _ = g.next(3)
                 let rr = g.next(100)
-                if run { return 100 - t < rr }
-                guard rr <= 100 - t else { return false }
-                return egg == (0x50 < g.next(100))
+                if run { return 100 - t < rr && (!edge || rr == 101 - t) }
+                guard rr <= 100 - t, !edge || rr == 100 - t else { return false }
+                let e = g.next(100)
+                return egg == (0x50 < e) && (!edge || e == (egg ? 0x51 : 0x50))
             }
         }
         let cases = [Case(label: "near run", near: true, pick: walkPick(near: true, run: true, egg: false)),
@@ -277,12 +303,20 @@ final class WarriorTests: XCTestCase {
                      Case(label: "near walk + egg", near: true, pick: walkPick(near: true, run: false, egg: true)),
                      Case(label: "far run", near: false, pick: walkPick(near: false, run: true, egg: false)),
                      Case(label: "far walk", near: false, pick: walkPick(near: false, run: false, egg: false)),
-                     Case(label: "far walk + egg", near: false, pick: walkPick(near: false, run: false, egg: true))]
+                     Case(label: "far walk + egg", near: false, pick: walkPick(near: false, run: false, egg: true)),
+                     // The edges: r = T + 1 walks; R(100) 101 − T runs, 100 − T walks; egg draw 0x51 lays, 0x50 not.
+                     Case(label: "near run edge", near: true,
+                          pick: walkPick(near: true, run: true, egg: false, edge: true)),
+                     Case(label: "far walk edge", near: false,
+                          pick: walkPick(near: false, run: false, egg: false, edge: true)),
+                     Case(label: "far egg edge", near: false,
+                          pick: walkPick(near: false, run: false, egg: true, edge: true))]
         for c in cases {
             let k = seed(c.pick)
             let s = try session()
             let id = try locked(s, state: 6) { w in
                 w.counterA6 = 0
+                w.classTimer = 7
                 w.vx = 0x301
                 w.mirrored = false
                 w.x = 875
@@ -359,15 +393,29 @@ final class WarriorTests: XCTestCase {
         a.world.rng = FastRand(seed: k0)
         handle(a.world, aid)
         XCTAssertEqual(try slot(a.world, aid).subtype, 2)
-        // A decide not yet due (`+0xa6` 2 → 1): no draw, vx still halved.
+        // Near, equal centres: "face the player" (playerCX > cx, the signed-compare idiom, M l. 73350–73352) is left.
+        let q = try session()
+        let qid = try locked(q, state: 6) { w in
+            w.counterA6 = 0
+            w.mirrored = true
+            w.centre = SpriteSlot.Point(x: 960, y: 300)
+        }
+        q.world.player.centreX = 960
+        q.world.player.centreY = 300
+        handle(q.world, qid)
+        XCTAssertFalse(try slot(q.world, qid).mirrored, "equal centres: facing left")
+        // A decide not yet due (`+0xa6` 2 → 1): no draw, vx still halved; locked, state 6 still writes face 0x71c[0]
+        // (2.11 item 5, M l. 73334).
         let n = try session()
         let nid = try locked(n, state: 6) { w in
             w.counterA6 = 2
             w.vx = -0x301
+            w.face = nil
         }
         let seed0 = n.world.rng.seed
         handle(n.world, nid)
         XCTAssertEqual(n.world.rng.seed, seed0)
+        XCTAssertEqual(try slot(n.world, nid).face, f(Warrior.walkSet, 0), "locked, no decide: the head's face")
         XCTAssertEqual([try slot(n.world, nid).counterA6], [1])
         XCTAssertEqual(try slot(n.world, nid).vx, -0x180, "(int)(−769 · 0.5) toward zero")
     }
@@ -379,9 +427,10 @@ final class WarriorTests: XCTestCase {
         // `+0x46 = 0`, `+0x154 = 0`, `+0xa6 = 0x10`, `+0x14c = R(2) + 1`.
         for near in [true, false] {
             let t: Int16 = near ? 0x41 : 0x13
-            // A seed whose discarded draw and swing draw differ in what they would give, so a skipped discard shows.
+            // r = T exactly (the edge: r ≤ T attacks), and a seed whose discarded draw and swing draw differ in what
+            // they would give, so a skipped discard shows.
             let k = seed { g in
-                guard g.next(100) <= t else { return false }
+                guard g.next(100) == t else { return false }
                 let d = g.next(100)
                 return (d & 1) != g.next(2)
             }
@@ -422,13 +471,17 @@ final class WarriorTests: XCTestCase {
             let id = try locked(s, state: 2) { w in
                 w.phase = 0
                 w.classTimer = 2
-                w.mirrored = right
+                w.mirrored = !right                               // facing away: n 0 turns him to the player
                 w.vx = 0x300
+                w.centre = SpriteSlot.Point(x: 960, y: 300)
             }
-            s.world.player.centreX = right ? 2000 : 0             // "face the player" keeps the facing
+            s.world.player.centreX = right ? 2000 : 0
             var phases: [Int16] = [], frames = 0, shotID: Int?
             _ = s.world.player.drainFrameOutputs()
             while try slot(s.world, id).subtype == 2 && frames < 60 {
+                // A live vx entering n 9, so the record written back before the shot's spawn shows (`SpriteWorld`
+                // rule 2): a stale re-read would bring back the un-dragged vx.
+                if try slot(s.world, id).phase == 9 { s.world.active.update(id: id) { $0.vx = 0x300 } }
                 let w0 = try slot(s.world, id)
                 let n = w0.phase
                 let seedBefore = s.world.rng.seed
@@ -568,27 +621,38 @@ final class WarriorTests: XCTestCase {
             XCTAssertEqual(w.subtype, 6, "x \(x): outside [525, 1225] ends the walk")
             XCTAssertEqual(w.counterA6, e.next(9) + 4)
         }
-        // Inside the bounds the same cycle end only counts down.
-        let i = try session()
-        let iid = try locked(i, state: 7) { w in
-            w.classTimer = 1
-            w.phase = 7
-            w.counterA6 = 9
+        // Inside the bounds — the bounds themselves included (strict compares, M l. 73290–73291 walk, 73314–73315
+        // run) — the same cycle end only counts down.
+        for x in [875, 1225, 525] {
+            let i = try session()
+            let iid = try locked(i, state: 7) { w in
+                w.classTimer = 1
+                w.phase = 7
+                w.counterA6 = 9
+                w.x = x
+                w.x256 = Int32(x) << 8
+            }
+            handle(i.world, iid)
+            XCTAssertEqual([try slot(i.world, iid).subtype, try slot(i.world, iid).counterA6], [7, 8], "x \(x)")
         }
-        handle(i.world, iid)
-        XCTAssertEqual([try slot(i.world, iid).subtype, try slot(i.world, iid).counterA6], [7, 8])
     }
 
     // MARK: - 8
 
     func testWarriorDeathAndGlow() throws {
-        // HP < 1 with state ≠ 4 → state 4, `+0x46 = +0xa6 = 0`, snd 703 (3D, 1, 0x100) (M l. 73393–73398).
+        // HP < 1 with state ≠ 4 → state 4, `+0x46 = +0xa6 = 0`, snd 703 (3D, 1, 0x100) at his centre as the Handle
+        // found it, before Cleanup re-centres (M l. 73393–73398). HP 1 is alive.
+        let h1 = try session()
+        let h1id = try locked(h1, state: 7) { w in w.hp = 1; w.classTimer = 0; w.phase = 3 }
+        handle(h1.world, h1id)
+        XCTAssertEqual(try slot(h1.world, h1id).subtype, 7, "HP 1: alive")
         let s = try session()
         let id = try locked(s, state: 7) { w in
             w.hp = 0
             w.classTimer = 0
             w.phase = 3
             w.vx = 1000
+            w.centre = SpriteSlot.Point(x: 960, y: 300)
         }
         _ = s.world.player.drainFrameOutputs()
         handle(s.world, id)
@@ -596,18 +660,17 @@ final class WarriorTests: XCTestCase {
         XCTAssertEqual([w.subtype, w.phase, w.counterA6], [4, 0, 0])
         let cue = try XCTUnwrap(s.world.player.drainFrameOutputs().cues.first { $0.snd == 703 })
         XCTAssertEqual([cue.call == .threeD, cue.priority == 1, cue.volume == 0x100], [true, true, true])
+        XCTAssertEqual(cue.position, SpriteSlot.Point(x: 960, y: 300), "the centre before Cleanup")
         // Dying (M l. 73268–73279): vx × 0.9, face 0x71e[n >> 2] (n capped at 0x17 → index ≤ 5), `+0xa6` + 1; at 0x2d
         // `+0x1a2 = 1` — dying frame 45.
         s.world.active.update(id: id) { $0.vx = 1000 }
         for frame in 1...45 {
-            let w0 = try slot(s.world, id)
             handle(s.world, id)
             w = try slot(s.world, id)
             XCTAssertEqual(w.face, f(Warrior.deathSet, min(frame - 1, 0x17) >> 2), "dying frame \(frame)")
             XCTAssertEqual(w.phase, Int16(min(frame, 0x17)))
             XCTAssertEqual(w.counterA6, Int16(frame))
             if frame == 1 { XCTAssertEqual(w.vx, 900, "vx × 0.9") }
-            _ = w0
             if frame < 45 { XCTAssertEqual(w.burnRow, 0, "dying frame \(frame)") }
         }
         XCTAssertNotEqual(w.burnRow, 0, "the burn starts on dying frame 45")
@@ -638,6 +701,13 @@ final class WarriorTests: XCTestCase {
             XCTAssertEqual([try slot(g.world, gid).voicePitch], [period], "HP \(hp)")
             XCTAssertEqual(try slot(g.world, gid).mode, 0)
         }
+        // The band edges: v 1 (from 2) tints at 1000 HP; v 2 (from 3) at 1001 HP leaves `+0xb8`.
+        g.world.active.update(id: gid) { w in w.hp = 1000; w.voicePitch = 2; w.mode = 0x77 }
+        handle(g.world, gid)
+        XCTAssertEqual(try slot(g.world, gid).mode, 0x10008, "v 1 tints")
+        g.world.active.update(id: gid) { w in w.hp = 1001; w.voicePitch = 3; w.mode = 0x77 }
+        handle(g.world, gid)
+        XCTAssertEqual(try slot(g.world, gid).mode, 0x77, "band 1 above 1000 HP")
         // Above 1000 HP no tint is written, but the reload still clears `+0xb8`.
         g.world.active.update(id: gid) { w in w.hp = 1001; w.voicePitch = 6; w.mode = 0x77 }
         handle(g.world, gid)
@@ -696,6 +766,11 @@ final class WarriorTests: XCTestCase {
             XCTAssertEqual(wa, wb, "kind \(c.kind) \(c.layer) done \(c.done)")
             if wa != before { changed += 1 }
             if c.done && c.kind >= 200 { XCTAssertEqual(wa, before, "`+0x140` set: no `.HandleUnderWater`") }
+            // One band's own writes, not only the sameness: water (200…209) with `+0x140` clear runs
+            // `.HandleUnderWater`, which ends `+0x140 = 1` with `+0x11c` at least 1 (M l. 38178–38179, 38218).
+            if !c.done && c.kind >= 200 {
+                XCTAssertEqual([wa.underwaterDone, wa.waterRow >= 1], [true, true], "kind \(c.kind): in the water")
+            }
         }
         XCTAssertGreaterThan(changed, 4, "the bands write")
         let z = try session()

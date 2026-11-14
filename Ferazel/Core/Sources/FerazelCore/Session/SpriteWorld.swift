@@ -58,8 +58,9 @@ public final class SpriteWorld {
     private var reserved = 0
     /// 6A-W1: the spawns `newSprite` refused because all 700 records were in use (known deviation 6, D47 — the
     /// original gets 0 back and its caller writes through it; the port drops those writes and still makes the draws).
-    /// A diagnostic only — no behaviour reads it; every level task asserts it 0 at the end of
-    /// `testLevel<N>SetsUpEveryRecord`, since a dropped spawn is otherwise silent.
+    /// A diagnostic only — no behaviour reads it. Since a dropped spawn is otherwise silent,
+    /// `testLevel5SetsUpEveryRecord` asserts it 0 after level 5's first frames (each later level task adds the same
+    /// assert to its `testLevel<N>SetsUpEveryRecord`), and `WarriorTests` counts the refusals with a full record table.
     public internal(set) var refusedSpawns = 0
     /// `*_DAT_1009ffa8`: the player is dying / dead — `.HandleSprites` then skips the player pass.
     /// Set only after the game loop exits, when G+4 < 1 (decompile l. 5303) — not by the death trigger (row 41).

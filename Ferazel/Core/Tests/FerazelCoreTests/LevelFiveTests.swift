@@ -5,9 +5,9 @@ import HectorResources
 /// LV5 (docs/superpowers/plans/2026-11-04-ferazel-remainder.md `#### LV5`): level 5 "Manditraki Warrior" enterable up
 /// to the Warrior's arena — every one of its 32 records sets up (16 types; new: the Warrior 1820 and the decorations
 /// 2822, 2826, 2829, 2840, 2841), the arena lock at x 1384 with the camera's 40-frame pan (`BossArena`, bosses §1.3),
-/// the gate 2940 (p1 −1) shut while the Warrior stands, the boss-music rule at both `.GameLoop` sites reading "no boss
-/// alive" live, the ◇ Warrior, and `BuiltLevels = 1...5`. Against the committed `Resources/Ferazel` (D26); a missing
-/// data file is a FAILURE, never a skip.
+/// the gate 2940 (p1 −1) shut while the Warrior is alive, the boss-music rule at both `.GameLoop` sites reading "no
+/// boss alive" live, the Warrior (his Handle real since 6A-W1, his ◇ Hit until 6A-W2), and `BuiltLevels = 1...5`.
+/// Against the committed `Resources/Ferazel` (D26); a missing data file is a FAILURE, never a skip.
 final class LevelFiveTests: XCTestCase {
 
     private func resources() throws -> FerazelResources { try FerazelData.open(try FerazelData.dataDirectory()) }
@@ -147,6 +147,12 @@ final class LevelFiveTests: XCTestCase {
         HitPlayerSprite.hit(session.world, player: pid, other: wid)
         let hurt = try player(session)
         XCTAssertEqual([hurt.hp, hurt.invulnerable], [0x300 - 0x70, 0x3c], "the Warrior's contact damage")
+
+        // No spawn refused for want of a record (known deviation 6's diagnostic): a fresh session's first 30 frames,
+        // the Warrior's three crates among them.
+        let run = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: 5)
+        for _ in 0..<30 { _ = run.step(keys: KeyState()) }
+        XCTAssertEqual(run.world.refusedSpawns, 0)
     }
 
     func testArenaLocksAtX1384() throws {
