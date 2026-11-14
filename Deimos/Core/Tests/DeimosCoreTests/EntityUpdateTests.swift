@@ -162,6 +162,40 @@ final class EntityUpdateTests: XCTestCase {
             now += 1
         }
         XCTAssertTrue(visited, "no member appended within the bound")
+
+        // The spawn-in countdown (`10033a54..10033a78`): while +0xb0 − 1 > 0 the state start is re-stamped to now and
+        // nothing else runs, so a timed state entered at 90 with countdown 3 counts its timer from 101 (the last
+        // counting tick), not from 90. no01's "Contract and Die" timer ends in a removal: the tick it fires logs the
+        // timer and no animation.
+        var w = try state(at: 90)
+        let n = try put(&w, "no01", x: 208, y: 240)
+        w.enterState(n, named: "Contract and Die", spawning: false, now: 90)
+        let delay = w.world.entities[n].timer
+        XCTAssertGreaterThan(delay, 12)                                       // fires after the countdown either way
+        XCTAssertEqual(w.world.entities[n].stateStart, 90)
+        w.world.entities[n].spawnCountdown = 3
+        var fired: Int32? = nil
+        var tick: Int32 = 100
+        while tick < 400 && fired == nil {                                    // bound 300 ticks
+            w.flags.gameTime = tick
+            var log: [EntityUpdateStep] = []
+            w.updateEntities { log.append($0) }
+            switch tick {
+            case 100, 101:
+                XCTAssertEqual(w.world.entities[n].stateStart, tick, "re-stamp at \(tick)")
+                XCTAssertEqual(w.world.entities[n].spawnCountdown, 102 - tick)
+                XCTAssertFalse(log.contains(.particles(n)), "counting at \(tick)")
+            case 102:
+                XCTAssertEqual(w.world.entities[n].spawnCountdown, 0)
+                XCTAssertEqual(w.world.entities[n].stateStart, 101)          // spawned in: no re-stamp
+                XCTAssertTrue(log.contains(.particles(n)))
+            default: break
+            }
+            if log.contains(.timer(n)) && !log.contains(.animation(n)) { fired = tick }
+            tick += 1
+        }
+        XCTAssertNotNil(fired, "no timer within the bound")
+        XCTAssertEqual(fired, 101 + delay)
     }
 
     /// `FUN_10006b50` (`10006b50..10007060`): input clear, console test, ISp read (skipped while the console is open),
@@ -259,14 +293,15 @@ final class EntityUpdateTests: XCTestCase {
         XCTAssertEqual(s.flags.levelEndTime, 3918)
     }
 
-    /// le07 with only `01b1`: created 2543; its spawn set puts `tapu` at absolute (480, 140) heading 285 at 2583; its
+    /// le07 with only `01b1`: created 2543; its spawn set puts `tapu` at absolute (480, 140) heading 285 at 2583 (one
+    /// motion step later by that tick's end); its
     /// state S1 (pauses, rule #5) at 2773; the top frozen from 2774 at 346. Bound 2,900 ticks.
     func testBridgeControllerPausesAtTop346() throws {
         var s = try level1(only: "01b1")
         let id = FourCC("01b1")!, tank = FourCC("tapu")!
         let units = s.assets.definitions.units
         var created: Int32? = nil
-        var tankAt: (t: Int32, slot: Int)? = nil
+        var tankAt: (t: Int32, x: Float, y: Float, heading: Int32)? = nil
         var s1: Int32? = nil
         var tops: [Int32: Int32] = [:]
         var t: Int32 = 0
@@ -282,7 +317,8 @@ final class EntityUpdateTests: XCTestCase {
                 }
             }
             if tankAt == nil, let m = s.world.groups.flatMap(\.members).first(where: { units[s.world.entities[$0].unit].id == tank }) {
-                tankAt = (t, m)
+                let e = s.world.entities[m]                                   // first tick it exists: its creation tick
+                tankAt = (t, e.object.x, e.object.y, e.heading)
             }
             if s1 == nil, let c = s.world.groups.flatMap(\.members).first(where: { units[s.world.entities[$0].unit].id == id }),
                s.world.entities[c].state == 1 {
@@ -292,9 +328,14 @@ final class EntityUpdateTests: XCTestCase {
             t += 1
         }
         XCTAssertEqual(created, 2543)
+        // The tank is spawned at absolute (480, 140) heading 285 (the spawn-set data below is the witness). An entity
+        // appended during a pass is visited by the same pass (`100345a0` / `100345c0`), so by the end of tick 2583 —
+        // the first tick it exists, read after `updateWorld` returns — it has taken one motion step.
         XCTAssertEqual(tankAt?.t, 2583)
-        if let m = tankAt?.slot { XCTAssertEqual(s.world.entities[m].heading, 285) }
-        let ctl = try XCTUnwrap(units.first { $0.id == id })
+        XCTAssertEqual(tankAt?.x.bitPattern, 1139777639)                      // 479.2531
+        XCTAssertEqual(tankAt?.y.bitPattern, 1124912325)                      // 140.79988
+        XCTAssertEqual(tankAt?.heading, 285)
+        let ctl = try XCTUnwrap(units.first { $0.id == id })                 // the spawn set: (480, 140), 285
         let spawnTank = try XCTUnwrap(ctl.states.first { $0.stateName == "Spawn Tank, Wait" })
         let set = try XCTUnwrap(spawnTank.spawnSets.first { $0.stateSpawnSetSpawn == tank })
         XCTAssertTrue(set.stateSpawnSetAbsoluteCoordinates)
@@ -365,6 +406,24 @@ final class EntityUpdateTests: XCTestCase {
         pre.players[0].handler.crosshair.y = midY
         pre.updateEntities()
         XCTAssertEqual(pre.players[0].handler.crosshair.frame, 77)
+        // Player 2 (p = 1 of the same loop): its crosshair inside the rect locks it; P1's, far away, does not.
+        var two = base
+        try two.setupPlayer(1)
+        two.flags.numPlayers = 2
+        two.players[1].lifeState = 4
+        two.players[1].object.x = 208
+        two.players[1].object.y = 400
+        two.players[1].handler.crosshairShown = true
+        two.players[1].handler.crosshair.x = midX
+        two.players[1].handler.crosshair.y = midY
+        two.players[1].handler.crosshair.frame = 77
+        two.players[0].handler.crosshair.frame = 77
+        two.updateEntities()
+        XCTAssertEqual(two.entityRect(i), r)
+        XCTAssertTrue(two.players[1].handler.crosshairLocked)
+        XCTAssertEqual(two.players[1].handler.crosshair.frame, two.players[1].handler.ground.crosshairLockedFrame)
+        XCTAssertFalse(two.players[0].handler.crosshairLocked)
+        XCTAssertEqual(two.players[0].handler.crosshair.frame, 77)
         // A harmless unit (bocr) under the crosshair never locks. No shipped harmless unit can be hit by a player
         // projectile or has a targetable state, so the harmless clause cannot be isolated from those two.
         XCTAssertFalse(units.contains {
@@ -416,6 +475,24 @@ final class EntityUpdateTests: XCTestCase {
         let blur = s.blurs.slots[s.blurs.list[29]]
         XCTAssertEqual(blur.visibility, st.stateMotionBlurInitialVisibilityPercent)
         XCTAssertEqual(blur.visibilityStep, st.stateMotionBlurVisibilityDeltaPercent)
+        // The draw before the interval test (`10034348` then `1003435c`), on a copied state no shipped unit has:
+        // Min 5 ≠ Max 9 and +0xec = now — one draw, then the test fails, so no blur and +0xec kept.
+        var d = try state()
+        let k = try put(&d, "no01", x: 208, y: 240)
+        d.enterState(k, named: "Contract and Die", spawning: false, now: 100)
+        var wide = try XCTUnwrap(d.currentState(k))
+        wide.stateMotionBlurMinTimeBetweenBlurs = 5
+        wide.stateMotionBlurMaxTimeBetweenBlurs = 9
+        d.world.entities[k].lastBlur = 100
+        let rngBefore = d.rng
+        var oneDraw = d.rng
+        _ = oneDraw.range(Int32(5), Int32(9))
+        XCTAssertNotEqual(oneDraw, rngBefore)
+        let blursBefore = d.blurs.list.count
+        d.motionBlur(k, wide, now: 100)
+        XCTAssertEqual(d.rng, oneDraw)                                        // exactly one draw
+        XCTAssertEqual(d.blurs.list.count, blursBefore)                       // no blur
+        XCTAssertEqual(d.world.entities[k].lastBlur, 100)
         // The limit: refused with the message once, then silently.
         var full = try state()
         let m = try put(&full, "no01", x: 208, y: 240)

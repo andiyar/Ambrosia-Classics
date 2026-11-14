@@ -74,7 +74,8 @@ public enum EntityUpdateStep: Equatable, Sendable {
 ///       enterCount[state] == 1 → +0xe8 == 0; else RepeatOnStateChange → +0xe8 == 0) → `AllowOnlyOneInstance` asks
 ///       `FUN_100476e0` (the mixer) — **"not playing" here** (invariant 10: dead in shipped data, census-asserted) —
 ///       then (MaxNumToPlay == 0 or +0xe8 < Max → `FUN_100475e0(state, 1)` = `SoundPlay.record`, its one pitch draw
-///       `10047618`); +0xe8 += 1, +0xe4 = now. Every entity, every tick.
+///       `10047618`); +0xe8 += 1, +0xe4 = now. The step runs every tick; the pitch draw happens only when its gates
+///       pass.
 ///    4. `10033c58..10033d6c` the timer (`stepStateTimer`): Delete / Destroy / a state entry that deletes or destroys
 ///       → done (`b 0x10034598`); else r18 re-read.
 ///    5. `10033d70..10033d80` the pause test on r18 (the timer's new state counts).
@@ -314,7 +315,7 @@ extension GameState {
     }
 
     /// Step 19 (`10034324..100343a8`).
-    private mutating func motionBlur(_ i: Int, _ st0: UnitState, now: Int32) {
+    mutating func motionBlur(_ i: Int, _ st0: UnitState, now: Int32) {
         guard st0.stateMotionBlurRequired, world.entities[i].object.face != .none else { return }   // 10034324..1003433c
         let r = rng.range(st0.stateMotionBlurMinTimeBetweenBlurs, st0.stateMotionBlurMaxTimeBetweenBlurs)   // 10034340..10034348
         guard now > world.entities[i].lastBlur &+ r else { return }          // 10034350..1003435c (cmpw; ble)
