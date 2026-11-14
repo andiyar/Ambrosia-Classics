@@ -18,7 +18,10 @@
   the gate; the boss-music test with music off; type 0x434's missing class row (the dump has none — a comment says
   so); the `classWord160` comment; the two unreviewed run-51 commits (read in the cross-check; the ledger check
   passes and its generated blocks were regenerated again after W1 / W2 moved code lines).
-- **Ben raised this session's context cap to 500k** (in chat); the run closed at about 290k.
+- **Ben raised this session's context cap to 500k** (in chat). The run first closed at about 290k (main d433a3e,
+  pushed), then went on under the cap and built 6A-FX, 6A-S8 and 6A-WD (Core 650 → 652 → 663 → 672), each with one
+  implementer, two Opus legs and a fix round; no blockers in any leg; no existing pinned value moved. Mutations: FX
+  31 (11 survivors), S8 104 (5), WD 73 (2) — every survivor killed by its fix round.
 
 ## Settled at run 51's close (2026-11-13)
 

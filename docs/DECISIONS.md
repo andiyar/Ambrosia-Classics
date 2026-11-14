@@ -2323,4 +2323,18 @@ file, reviewed by two Opus legs and cross-checked by Fable. The plan's own "Plan
    added) and the wording this run's tasks made stale (`BuiltLevels.swift`, `BossArena.swift`, `Camera.swift`,
    `ScreenFlash.swift`, `LevelFlow.swift`).
 4. **The context cap for run 52 was raised to 500k by Ben** (in chat, 2026-11-14), for this session only.
+5. **Run 52 continued past its chip under the raised cap** and built run 53's three tasks too: 6A-FX, 6A-S8, 6A-WD.
+6. **The level fixture gained signatures beyond the plan's two** (6A-FX fix round): an `open(resources:…)` overload
+   and, Render side, `LevelFixtureServices.open(…) -> (run, services)` — one patched data set for the run and its
+   renderer — plus `firstPresentedFrame`, the one helper every later golden uses. The plan's two signatures are
+   unchanged. The interface is written out in the plan's "As executed — 6A-FX".
+7. **The strip golden is two frames** (6A-S8): the first presented frame (tick 1612) lies wholly over open sky and
+   cannot tell draw mode 8 from a plain copy, so tick 1658 — the first frame where a drawn tile hides strip pixels —
+   is pinned beside it. The player is started at (600, 1150): from level 10's own start the strip never comes on
+   screen.
+8. **The strip face is looked up down the resource chain, as the original's `GetPicture` does** (Backgrounds, then
+   Sprites, Sounds, Titles, the app) — a behaviour change made in a review fix round, because an older test had been
+   retargeted to assert a failed load the original would not have. With the real data nothing changes.
+9. **The wind trace starts where the wind can hold the player** (6A-WD): the card's "first column" has wind weaker
+   than gravity. Start (7102, 1109); the values re-measured in the fix round are the task's own new values, not moves.
 

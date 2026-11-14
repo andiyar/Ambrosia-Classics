@@ -1541,6 +1541,30 @@ ids; its `--check` reads this table):
   keeps it when it deletes the golden beside it) · `testLevel10WindFeatureGolden` (the trace's last frame; **deleted at
   6A-L10L11**). Asserts: ENG §2.2's four.
 - **Gate:** Gate-F (G2 672). **Commit:** `FerazelCore: wind cells (levels 10 and 20), the crossed gates as written; 9 tests`.
+- **As executed — 6A-WD (run 52, continued):** task e7457f7 (9 tests: 7 `WindTests`, 2 `FeatureGoldenTests`), review
+  fix round 4134bbc (tests and wording; Sources comments only). Two Opus legs: MERGEABLE AFTER FIXES (0 / 1 / 4 minor —
+  the branch matches the raw assembly line by line, crossed gates included), MERGEABLE AFTER FIXES (0 / 1 / 6 minor; 73
+  mutations: 69 killed, 2 equivalent, 2 survivors — both killed after the fix round). No disagreement between dump,
+  ENG and card on the code.
+  ◈ **Nothing moved.** The strip golden's two frames, the open-mask frame, the level-21 fixture golden and levels 1–5
+  hold with the wind live: level 10's wind is at columns 222–235, the strip scene's player at column 18. No switch-off
+  check was needed for S8's golden.
+  **Census (leg 1 recounted level 10):** 103 wind cells on level 10 (4 crossed, o1 10), 2,899 on level 20 (36 crossed,
+  o1 12), 0 elsewhere.
+  **New values (measured; the fix round moved the start, the seat's ruling):** the card's "first column" start (7070,
+  1013) sits in strength-20 wind (push 280 < gravity 440): the player falls through, in wind on 13 of 60 frames. The
+  trace now starts at **(7102, 1109)** — centre at column 223, row 36, strength-50 cells — where the wind holds him
+  bobbing: in wind on frames 1…59 (on frame 0 the centre is still (0, 0)), the ramp 1…33 then held. Trace hash
+  `20b0a649c605b4d0`, last tick 1730; **wind feature golden `c9ad94cdb8b2d287`** (deleted at 6A-L10L11, as the card
+  says). With the wind branch stubbed: `74566742860b33a0` / `44817f3082fe3785`, and the trace test fails. The trace
+  cannot show the sideways push or the crossed gates (the wind never moves x on that cell) — the synthetic tests do.
+  Notes: (a) the gate row "h < 0, v ≥ 0" cannot be reached from any cell (o1 0…15 gives modes 18…33); it is tested on
+  the gate function the branch calls. (b) The wind branch and the water current commute (shown by mutation), so no
+  order between them is pinned. (c) **Levels 1–5 are protected by `WindTests`' admission checks and the census, not by
+  their goldens:** level 1 has 20 overlay cells with o1 100 and level 3 two with o1 −1, and a mutation admitting them
+  as wind survives the level 1–5 goldens but fails `WindTests`. (d) No measurable cost per frame. (e) Comment-only,
+  outside the card's Files: `WaterEffects.swift:311`; one doc line in ENG §2.2. Open: `WaterEffects.swift:40` has the
+  same stale "levels 10, 20 and 52" wording; ENG's `SpriteSlot.swift:443` anchor is now :449.
 
 #### 6A-RC — minor — the rotating cannon arm (p1 101…106) and its shot steering (→ 682)
 - **Files:** `Sources/FerazelCore/Sprites/SetupFaces.swift` (`:377–:380`, the p1 ≠ 0 refusal),
