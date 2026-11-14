@@ -2155,6 +2155,32 @@ after the wait (`10005ad8`) is missing on that one pass — H2. (9) Added outsid
 (10) `updateWorld` takes `inputWithheld` (console open); `playerCommands` takes `coinTally:` and `text:` (omitting
 `text:` drops the coin-tally text); `Player.levelStart(sector:)` lost its default when `Player.sector` was retired.
 
+**As built — wave 3 (2026-11-14).** C18b 84ac96b + e1fe3b6 and H2 626ce91 + cf72ebe, merged to local main as 3570cc3
+(`Deimos/Core` 335 → 336 → **344/0/0**); H3 0db6216 + 3b8c4d1, A3 5fa5445 + f98105e + d3a46bc, A4 8e1dda7 + fdee6d0 +
+b677675 + 644865e and the late bank notes 2d79551, merged as 05083af (`DeimosReplayTests` **4/0**). F1 was not needed:
+the replay gate was green at first run. Rulings by the seat (Fable 5.2), each checked by a review leg against the
+listing: (1) **the four shipped films are all asserted, not de01 alone** — de01 never leaves x1 and its score stops
+changing 43 reads before byte 4808, so it cannot see the multiplier rule (only de02 can) or a lost extra life (only
+de04 can); `testDemos02To04ReachTheirStoredScores` pins 116,180 @ 8,357, 57,520 @ 10,058, 24,670 @ 5,649 and
+`deimos-replay --all` exits 0 only if every film passes. The plan's H3 card ("INFO", 3 tests) is corrected. Still
+unseen by any film: the exact mid-tick instant of the score capture (the listing at `1002a414–1002a42c` /
+`10009920–1000993c` is the only witness; two legs re-read it) and an extra-life threshold moved by 5,000. (2) **On
+the background suspend the app pauses the music only and lets effects ring out** — the suspend handler `10023da0`
+touches no sound channel; the A3 card's "the stream is paused" was wrong and is corrected in the plan. (3) The tick
+that enters the active state reads input and moves the ship in the same tick (`10029048` → `1002905c`); the Phase-1
+stub's "x stays 208 on tick 56" was the stub's own behaviour — `testEntersActiveAtTick56` now pins both the
+no-input 208 and the left-held 206.4 (bits 0x434e6666). (4) The pause wait is the driver's: it holds while Caps
+Lock is on, the music resume reaches the sink only after it goes off, the end-of-session halt follows the wait; the
+original's wait reads the keyboard only and never pumps events, so the driver's handling of a suspend inside the
+wait is a host adaptation with the same end state. (5) The app sends the classic Mac character code for every key
+(the console's default case stores any byte); only the left Command and left Option keys fire, as GetKeys reports
+them on Mac OS X. (6) A film session that ends restarts the same film (◇ until Phase 4's menu); a film blocks the
+Caps Lock pause (`10030408`). (7) The game runs one tick per pass at 30 passes a second on the OS X rate (the
+limiter waits two 60 Hz ticks) — the idle-death times on the gate page are 34 / 36 / 40 s. (8) Call sites outside
+the cards' file lists: `EntityUpdateTests.swift` and `Player.swift` (C18b); comment-only edits to
+`DeimosSession.swift` and `TickTrace.swift` (H2 fix round). (9) No session launched the app: A3's 30-second launch
+check and A4's boot check wait for Ben's say-so.
+
 ## D45 — Ferazel's Wand re-planning pass: Ben's answers and the seat's rulings (2026-11-07)
 
 **Decided (Ben, in chat, 2026-11-07, answering the re-planning pass's five questions — spec

@@ -101,29 +101,31 @@ Settled history lives in docs/STATE-history.md.
   - Older small carries from Phases 2–4: listed in the history file's Snapshot B; each closes when a task next touches
     its file.
 
-## Deimos Rising — 2026-11-14 (wave 2b done: the per-tick update and the Phase 2 session are in; wave 3 next)
+## Deimos Rising — 2026-11-14 (wave 3 done: Phase 2 is built and staged; Ben's "level 1 plays" gate is queued)
 
-- **Where it stands:** Phase 1 "level 1 look" gate passed 2026-10-07 (60 Hz tick; staged `~/Desktop/Deimos
-  Rising.app`). Phase 2 "level 1 plays": everything built so far is on **local main, not pushed** (wave 2b merges
-  bcddbe6 and 28194b9; `origin/deimos-phase2` left for Ben). The core now runs a whole level tick by tick in the
-  original's order (entity update, world update, draw, end frame), plays demo films and pauses on Caps Lock; the
-  app itself still shows the Phase 1 picture until wave 3 wires the driver, sound and keys. `Deimos/Core`
-  **335/0/0** (without `DeimosReplayTests`) on HectorKit ef2c341 (370 executed: 366 passed + 4 Aki 1.1 skips);
-  Deimos, Aki and BubbleTroubleX build.
-- **The plan:** `docs/superpowers/plans/2026-11-05-deimos-remainder.md`. Next = wave 3 (C18b ∥ H2 first → 336 and
-  344; then H3 ∥ A3; F1 only if the de01 replay gate is red; A4 stages) and then Ben's "level 1 plays" gate. The
-  session brief is in `docs/handoff-2026-11-14-deimos-wave-2b.md`. Ben, 2026-11-14: sessions chain wave after wave
-  until a hard stop that needs him.
+- **Where it stands:** Phase 1 "level 1 look" gate passed 2026-10-07. Phase 2 "level 1 plays" is **built, merged to
+  local main (not pushed; wave 3 merges 3570cc3 and 05083af) and staged** at `~/Desktop/Deimos Rising.app` with
+  `~/Desktop/Deimos Rising — WHAT-TO-EXPECT.md` (the gate card). The app now runs the real game: enemies, weapons,
+  scoring, the level end, sound and music through the kit's stream voice, typed keys and the console, Caps Lock
+  pause, and `-film deNN` to watch a shipped demo. **Machine gate green:** all four shipped demo films replay to the
+  score the original recorded (de01 25,050; de02 116,180; de03 57,520; de04 24,670).
+  `Deimos/Core` **344/0/0** (without `DeimosReplayTests`) and `DeimosReplayTests` **4/0** on HectorKit ef2c341
+  (370 executed: 366 passed + 4 Aki 1.1 skips); Deimos, Aki and BubbleTroubleX build.
+- **Waiting on Ben:** (1) the staged app has never been launched by a session — the first run is his, or a muted
+  boot check on his say-so (how: the 2026-11-14 wave 3 handoff); (2) his "level 1 plays" verdict against the gate
+  card. Neither blocks planning the campaign.
+- **The plan:** `docs/superpowers/plans/2026-11-05-deimos-remainder.md` — Phase 2's cards are all closed. Next =
+  the Phase 3 (campaign) plan, written as its own plan from that file's "Phase 3" cards; the session brief is in
+  `docs/handoff-2026-11-14-deimos-wave-3.md`. Ben, 2026-11-14: sessions chain until a hard stop that needs him.
 - **Data:** `Resources/Deimos/` in git; `deimos-census` 872 entries, 0 failures.
-- **Open:** RE bank `docs/deimos/INDEX.md` #13, #59 residue, #62–#64 and 134 cross-file label mismatches; Ben's ear/eye
-  items from the RE waves; Phase 1 carries for Phase 2 (a `DeimosAudio` target, the `playerOps` return type,
-  `HeadlessRun` film parameters, the prefs file widening) as the plan places them.
-  From wave 2a: bank rows not independently confirmed (list in the 2026-11-14 handoff); the Deimos listing is
-  not committed (`ghidra/deimos-proj` is a symlink) and the sound-library addresses appear in no listing on disk.
-  From wave 2b (for H2 / A4): the driver's `.pauseWait` no-op and the re-firing pause under a held Caps Lock; the
-  missing end-of-session halt on a pause-and-quit pass; the mouse button does not end a film yet; frame checks do
-  not cover translucent or scaled draws or the pan-240 frame through an independent path; stale comments outside
-  the cards (`ScrollState.step` "Phase 2", `Removal.swift:59` naming); `MotionBlurPool.emit` copies +0x90.
+- **Open:** RE bank `docs/deimos/INDEX.md` #13, #59 residue, #62–#64 and 134 cross-file label mismatches; Ben's
+  ear/eye items (on the gate card). Not modelled until Phase 4: the mouse button ending a film; the quit flag
+  inside the Caps Lock wait; a film that ends restarts the same film (the original returned to its menu). Small
+  follow-ups: the film lookup by tag is written four times (tool, two test files, app) and belongs in one place;
+  a failed `--frames` write can hide a film's result line; `HeadlessRunner` traps on an end no rule explains;
+  stale comments (`ScrollState.step` "Phase 2", `Removal.swift:59`); `MotionBlurPool.emit` copies +0x90.
+  Not independently confirmed: sound actually reaching the speakers (an offline probe of the same audio graph
+  passed); frame checks under translucent or scaled draws.
 
 ## Cythera — 2026-11-08 (re-planned; waits for Ben's go)
 
