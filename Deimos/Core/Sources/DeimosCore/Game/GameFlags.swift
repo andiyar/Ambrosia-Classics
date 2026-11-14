@@ -22,7 +22,8 @@ public struct GameFlags: Equatable, Sendable {
     public var allLevels = false
     /// +0x0f: byte pref 5 (interlacing) was suspended at level start; restored at appear (`10005990..100059b0`).
     public var restoreInterlace = false
-    /// +0x10: levels started this session.
+    /// +0x10: levels started this session — incremented by every level start before its `none` test
+    /// (`1000667c..10006684`) — 13 at the campaign end of a game started at sector 1 (plan LT).
     public var levelsStarted: Int32 = 0
     /// +0x14: current sector (1–12).
     public var sector: Int32 = 0
@@ -57,7 +58,7 @@ public struct GameFlags: Equatable, Sendable {
     /// +0x44: levels finished at exactly 100 % this game.
     public var perfectLevels: Int32 = 0
     /// +0x16c / +0x170 / +0x174 / +0x178 / +0x17c: console cheat uses — `life`, `funds`, `score`, `shields`,
-    /// `mult` (zeroed at game start by `FUN_10007130`).
+    /// `mult` (zeroed at every level start by `FUN_10007130`, `10006514`).
     public var cheatLife: Int32 = 0
     public var cheatFunds: Int32 = 0
     public var cheatScore: Int32 = 0

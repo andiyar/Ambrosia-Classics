@@ -1,6 +1,6 @@
 import XCTest
 @testable import DeimosHost
-import DeimosCore
+@testable import DeimosCore
 import DeimosRender
 import DeimosAudio
 
@@ -154,6 +154,8 @@ final class DriverTests: XCTestCase {
             if clock.seconds > 120 { return XCTFail("no pass with Esc") }
         }
         XCTAssertEqual(driver.restarts, 0, "the Esc pass still runs to its end")
+        let loaded = driver.session.game.levels
+        XCTAssertEqual(loaded.definitions.count, 12, "the first session loaded the twelve levels")
         let presents = driver.presentCount
         var restartTicks: UInt32?
         var passesAtRestart = 0
@@ -171,6 +173,8 @@ final class DriverTests: XCTestCase {
                                           start: SessionStart(sector: 1, players: 1, film: nil),
                                           seed: try XCTUnwrap(restartTicks))
         XCTAssertEqual(driver.session.sector, 1)
+        XCTAssertTrue(driver.session.game.levels.isSameLoad(as: loaded),
+                      "the restart reuses the ended session's level set — no second decode of the twelve masks")
         XCTAssertEqual(driver.session.rng, reference.rng)
         XCTAssertFalse(driver.session.appeared)
         XCTAssertEqual(driver.lastPresent, try XCTUnwrap(restartTicks), "the new controller's stamp starts at 0, so its first limiter releases at once and stamps the restart's ticks")
@@ -526,6 +530,124 @@ final class DriverTests: XCTestCase {
         XCTAssertEqual(driver.session.sector, 1)
         XCTAssertEqual(driver.prefs.bytePrefs[5], 1, "carried again (restored at the appear)")
         XCTAssertEqual(driver.prefs.intPrefs[0], 40)
+    }
+
+    // MARK: - LT: the level transition
+
+    /// The cues around the transition's fade to black (`FUN_10007170`, `10007200..1000725c`): the music stop and `tran`
+    /// reach the sink when the transition pass begins, before the fade's first step; nothing while the 33 steps run;
+    /// the rest only once the fade's last step has been presented (each step ≥ 1 tick, `1000ba34..1000ba44`) — the new
+    /// level's cues at sector 1 → 2, the session end's halt and stop at sector 12 → `none` (`tran` is not halted
+    /// before the fade finishes). The frame controller's FPS window restarts at the tick the fade ended (`10030314`,
+    /// after `10007234`). The level is put one tick from its end by setting G+0x09 (the tallies done) with P1 in game.
+    /// Fake-clock cap 120 s per sector.
+    func testTransitionCuesSplitAroundFade() throws {
+        let assets = try ShippedAssets.get()
+        let tran = SoundPlay.perm(assets.sounds[3], priority: 75, volume: 100, allowMultiple: true)
+        for sector in [1, 12] {
+            let sink = RecordingSink()
+            var driver = try makeDriver(audio: sink, sector: sector)
+            var clock = FakeClock(rate: .classic)
+            let cap = 120.0
+            var idleTicks: UInt32 = 0                                   // the TickCount of the last idle
+            func idle() -> Bool {
+                idleTicks = clock.ticks
+                _ = driver.idle(seconds: clock.seconds, keys: HeldKeys())
+                clock.seconds += Self.poll
+                return clock.seconds <= cap
+            }
+            while driver.presentCount < 20 { guard idle() else { return XCTFail("no presents (sector \(sector))") } }
+            driver.session.game.flags.levelComplete = true
+            driver.session.game.flags.levelEnding = true
+            XCTAssertTrue(driver.session.players[0].inGame)
+
+            // The transition pass begins and stops at its fade's first step.
+            let applies = sink.applies.count, passes = driver.passCount
+            while driver.passCount == passes { guard idle() else { return XCTFail("no transition pass") } }
+            let fadeBegan = idleTicks
+            XCTAssertTrue(driver.isFading, "sector \(sector): the pass waits inside its fade")
+            let begin = Array(sink.applies.dropFirst(applies))
+            XCTAssertEqual(begin.count, 1, "sector \(sector)")
+            XCTAssertEqual(begin.first?.music, [.stop], "sector \(sector): 10007204 only")
+            XCTAssertEqual(begin.first?.sounds.last, tran, "sector \(sector): 1000720c..10007224")
+            XCTAssertNil(begin.first?.halt, "sector \(sector): tran is not halted before the fade")
+
+            // While the fade runs nothing reaches the sink.
+            var fadeEnded: UInt32?
+            while driver.isFading {
+                let before = sink.applies.count
+                guard idle() else { return XCTFail("the fade never ended") }
+                if driver.isFading {
+                    XCTAssertEqual(sink.applies.count, before, "sector \(sector): nothing during the fade")
+                } else {
+                    fadeEnded = idleTicks
+                }
+            }
+            let ended = try XCTUnwrap(fadeEnded)
+            XCTAssertGreaterThanOrEqual(ended &- fadeBegan, 33, "33 steps, each followed by a wait of ≥ 1 tick")
+            let after = Array(sink.applies.dropFirst(applies + 1))
+            XCTAssertGreaterThanOrEqual(after.count, 1)
+            if sector == 1 {
+                XCTAssertEqual(after.first?.music, [.play(FourCC("ammu")!, loop: true), .stop, .level(100)],
+                               "the new level's cues after the fade")
+                XCTAssertNil(after.first?.halt)
+                XCTAssertEqual(driver.session.sector, 2)
+                XCTAssertTrue(driver.session.running)
+                XCTAssertEqual(driver.restarts, 0, "a transition is not a restart")
+                XCTAssertEqual(driver.session.controller.fpsWindowStart, ended,
+                               "FUN_100302e0's FPS init runs at the tick the fade ended")
+            } else {
+                XCTAssertEqual(after.first, RecordingSink.Apply(sounds: [], music: [.resume, .stop], halt: 0),
+                               "1000669c resume, then the session end's halt (10005ad8) and stop (10005ae4)")
+                XCTAssertEqual(driver.restarts, 1, "the campaign end restarts (◇) after the pass")
+                XCTAssertEqual(after.dropFirst().first?.music, [.play(FourCC("ammu")!, loop: true), .stop, .level(100)],
+                               "then the new session's level start")
+            }
+        }
+    }
+
+    /// Characters typed while the transition's fade runs are dropped: `FUN_100302e0` flushes the event queue after
+    /// the fade (`10030328`). Byte pref 10 off (no limiter), so a pass's end returns from `idle` and the queue is
+    /// visible between passes. Characters typed after the fade still reach the next passes (the console takes one per
+    /// frame). Fake-clock cap 120 s.
+    func testTypedKeysDroppedAcrossTransitionFade() throws {
+        var prefs = DeimosPrefs.fresh
+        prefs.bytePrefs[10] = 0
+        var driver = try DeimosDriver(assets: try ShippedAssets.get(), prefs: prefs, rate: .classic,
+                                      start: SessionStart(sector: 1, players: 1, film: nil))
+        var clock = FakeClock(rate: .classic)
+        let cap = 120.0
+        func idle(_ keys: HeldKeys = HeldKeys()) -> Bool {
+            _ = driver.idle(seconds: clock.seconds, keys: keys)
+            clock.seconds += Self.poll
+            return clock.seconds <= cap
+        }
+        while driver.presentCount < 20 { guard idle() else { return XCTFail("no presents") } }
+        driver.session.game.flags.levelComplete = true
+        driver.session.game.flags.levelEnding = true
+        let passes = driver.passCount
+        while driver.passCount == passes { guard idle() else { return XCTFail("no transition pass") } }
+        XCTAssertTrue(driver.isFading)
+        let transitionPass = driver.passCount
+        var typedDuringFade = 0
+        while driver.isFading {
+            guard idle(HeldKeys(typed: [0x61])) else { return XCTFail("the fade never ended") }
+            if driver.isFading {
+                typedDuringFade += 1
+                XCTAssertEqual(driver.typedQueue.count, typedDuringFade, "queued while the fade runs")
+            }
+        }
+        XCTAssertGreaterThan(typedDuringFade, 30)
+        XCTAssertEqual(driver.passCount, transitionPass, "no pass began in the idle the fade ended")
+        XCTAssertEqual(driver.typedQueue, [], "FlushEvents after the fade (10030328)")
+        XCTAssertEqual(driver.session.sector, 2)
+
+        // After the fade: open the console, then type — the characters reach it.
+        guard idle(HeldKeys(held: [Self.consoleKey])) else { return XCTFail("cap") }
+        XCTAssertTrue(driver.session.console.isOpen)
+        guard idle(HeldKeys(typed: [0x62])) else { return XCTFail("cap") }
+        for _ in 0..<5 { guard idle() else { return XCTFail("cap") } }
+        XCTAssertEqual(driver.session.console.text, [0x62])
     }
 }
 

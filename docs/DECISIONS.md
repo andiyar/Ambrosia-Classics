@@ -2361,3 +2361,20 @@ level `none` resumes rather than stops the music); a state entered by its timer 
 flash sounds are at T0+6k+1); INDEX #64 is closed by the data. No film crosses a level boundary, plays sectors 5–12,
 fires the Photon Beam, has two players or reaches the finale: those are proved by tests, the sweep and Ben.
 
+**As built — Phase 3 (D50), task LT (2026-11-15).** 6d4bee9 + fix round 45a70ff, merged to local main
+(`Deimos/Core` 344 → **352/0/0**; `DeimosReplayTests` 4/0 unchanged; the first level byte-identical over a 300-pass
+dump of ops, cues, flags, RNG, players and scroll at sectors 1, 5 and 12). (1) `GameState.levelStart(film:)` is the
+level start's state part, called by the session's set-up and by `levelCompleteStep`; `DeimosSession.levelStartOps()`
+is the drawing part, emitted after the tick's ops when a tick started a level other than `none`. (2) `GameState`
+gained `levels` (a shared `LevelSet`: twelve definitions and masks, loaded and validated once and handed to
+restarted sessions through `DeimosSession.init(… levels:)`), `levelInfo` (the session's public `levelInfo` forwards)
+and `fadeToBlackCues`. (3) The transition pass's ops: the tick's stamps → fade to black → clear layers → level-start
+ops → draw world → no present; game time is 1 at its end. (4) The driver sends a pass's cues in two halves around a
+fade to black — the transition sound plays through the fade, the new level's cues and an end-of-session halt wait
+for its last step — drops characters typed during it, and restamps the FPS window at its end. (5) Caps Lock on the
+transition pass follows 1.0.6: the pause's present shows the new level unfaded (`10022fd4`). (6) `HeadlessRunner`
+has a campaign-end reason. (7) Two review mutants survived the first round and are now pinned by
+`testTransitionPassStartsNextSector`: the sector must be set before the players' level start (the forced Bacta Gun on
+entering sector 2), and the reward flag is armed from the perfect-last-level flag. (8) The plan's AP card now also
+owns the driver's restart sector (a restart starts at the launch's sector).
+
