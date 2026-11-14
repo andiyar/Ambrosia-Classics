@@ -64,7 +64,8 @@ public struct LevelCarry: Equatable, Sendable {
     /// and seed-explosion stores and `.PaintFrameWrap`'s step (M l. 8458, 47593, 51149, 9426–9433), the paint
     /// counter's +1 (M l. 9250) and the 1206 Setup / death (M l. 53743, 54090) — plus the boss routines' flash 3 stores
     /// (`_KillWarrior` M l. 73488, `_KillDemon` 74997, `_HandleChiefSprite` 75372, `_KillChief` 75525, `_KillWizard`
-    /// 76159, `_KillXichra` 77475; // later: Phase 6): data-section globals no level load,
+    /// 76159, `_KillXichra` 77475; the Warrior's built in 6A-W2, `Warrior.kill`; the others // later: Phase 6):
+    /// data-section globals no level load,
     /// death, map or new game touches, so they run on through all of them.
     public var flash = ScreenFlash()
     public var paintCounter: UInt32 = 0

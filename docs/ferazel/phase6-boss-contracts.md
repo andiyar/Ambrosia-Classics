@@ -309,6 +309,11 @@ The head (count, `+0xe9 = 1`, `+0xea = 1`), then with `+0x170 ≠ 0` the tail of
 8. `testWarriorScriptedKill` — see 2.10.
 
 ### 2.10 Scripted kill — measured by the build, not derivable on paper (the §0 ruling)
+
+> **Corrected by the build (6A-W2, run 52; DECISIONS D49.1):** the starting key script below cannot win — the crates
+> rest on the ledges and never fall on him. The fight is won by pushing a crate off the right-hand ledge onto him; the
+> script that does it and the measured frames (HP 0 at 4966, Kill at 5051) are in the plan's "As executed — 6A-W2" and
+> in `BossKillLevelRunTests`.
 What is fixed on paper: the death-to-Kill tail (45 dying frames, then `B − T` burn frames of face 0x71e[5], 1 row a
 frame, `+0x8c = +0x8d = 0`, plus one R(100) a row at effects 1) and the 10-crate arithmetic. What is not: the frame the
 tenth crate lands, which depends on the player's path into the arena (the lock at x < 1384), the RNG stream from the

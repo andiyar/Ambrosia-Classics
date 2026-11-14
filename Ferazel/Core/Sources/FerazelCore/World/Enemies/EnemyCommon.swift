@@ -86,8 +86,8 @@ public enum EnemyCommon {
     /// M l. 56153–56246, `.SetupRoachSprite` 64899–64957, `.SetupBatSprite` 68108ff, `.SetupBlobSprite` 67671–67735;
     /// `.InitSprite` zeroes `+0x50`, M l. 35571), so a burn on them ends in the default arm; the Blob dies through
     /// `.KillBlob` from its dead puddle (`BlobCrab`).
-    /// The Warrior arm counts and removes the Warrior when his burn ends (6A-W1: his dying state starts it); the
-    /// boss-kill tail (thunder, shake, flash, "no boss alive") is 6A-W2's. Classes' own parts are theirs. By id
+    /// The Warrior arm is `.KillWarrior` (6A-W2, `Warrior.kill`): the count, then with the boss flag the boss-kill tail
+    /// (thunder, shake, flash, "no boss alive" — the gate opens, the boss track). Classes' own parts are theirs. By id
     /// (`SpriteWorld` rule 2: a Kill tail writes and spawns) — a caller holding a copy of the slot writes it back first
     /// and re-reads after (`Burn.handle`).
     public static func killProc(_ w: SpriteWorld, id: Int) {
@@ -101,11 +101,12 @@ public enum EnemyCommon {
             case .frog: FrogSalamander.killFrog(w, &s)              // `.KillFrog` (FR): the count, then its score
             case .salamander: FrogSalamander.killSalamander(w, &s)  // `.KillSalamander` (FR)
             case .dillo: Dillo.killDillo(w, &s)                     // `.KillDillo` (DL): the count, then + 1500
+            case .warrior: Warrior.kill(w, &s)                      // `.KillWarrior` (6A-W2): the count, the boss tail
             default:
                 w.enemies.kill(&s, globals: &w.globals, level: w.levelIndex,
                                forGood: EnemyCounting.killsForGood(killer))
             }
-            // `.KillWalker` is the count alone (WK1). // later: 6A-W2 — `.KillWarrior`'s tail (M l. 73486–73493)
+            // `.KillWalker` is the count alone (WK1).
         case .gremlin:
             // `.KillGremlinSprite` (GF): `+0xe9 ≠ 0` → return (M l. 69736–69738, raw 100810e0 bnelr); the count, score
             // + 2000, the back layer and a mounted rider killed, the rider's backlink cleared.

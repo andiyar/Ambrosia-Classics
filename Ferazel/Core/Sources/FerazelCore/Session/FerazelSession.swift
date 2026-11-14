@@ -1213,9 +1213,8 @@ public final class FerazelSession {
     /// `.HitButtonSprite` (BT); `.HitEnemyShotSprite` (ES); `.HitWalkerSprite` (WK1; also the corpse raft's, kept
     /// under the Platform Handle); `.HitCrawlerSprite` / `.HitRoachSprite` (CR); `.HitBatSprite` /
     /// `.HitSwarmMemberSprite` (BA); `.HitFrogSprite` / `.HitSalamanderSprite` (FR); `.HitBlobSprite` / `.HitCrabSprite`
-    /// (BL); `.HitGremlinSprite` / `.HitFloaterSprite` (GF); `.HitDilloSprite` (DL); ◇ `.HitWarriorSprite` (LV5: an
-    /// empty body; the other side of each pair still gets its own hit). // later: Phase 6 (the bosses). The session's
-    /// form:
+    /// (BL); `.HitGremlinSprite` / `.HitFloaterSprite` (GF); `.HitDilloSprite` (DL); `.HitWarriorSprite` (6A-W2). The
+    /// other four bosses' Hits are Phase 6's (their sprites are `.inert`). The session's form:
     /// `hitCallback` on `lightTable`.
     private func hit(_ w: SpriteWorld, _ a: Int, _ b: Int) {
         let res = resources
@@ -1276,7 +1275,9 @@ public final class FerazelSession {
                                       faceBounds: faceBounds)
         case .dillo:                                                                    // `.HitDilloSprite` (DL)
             Dillo.hit(w, id: a, other: b, lights: &lights, effects: effects, faceWidth: faceWidth, faceBounds: faceBounds)
-        case .warrior: break                    // ◇ `.HitWarriorSprite` (LV5: `+0x5c` stored) // later: Phase 6
+        case .warrior:                                                                  // `.HitWarriorSprite` (6A-W2)
+            Warrior.hit(w, id: a, other: b, lights: &lights, effects: effects, faceWidth: faceWidth,
+                        faceBounds: faceBounds)
         case .background:                                                               // `.HitBackgroundSprite` (W2b)
             BackgroundSprite.hit(w, id: a, other: b, lights: &lights, effects: effects, faceWidth: faceWidth,
                                  faceBounds: faceBounds)

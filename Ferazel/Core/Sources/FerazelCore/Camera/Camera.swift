@@ -48,7 +48,8 @@ public struct Camera: Equatable, Sendable {
     public private(set) var scrollV: Int
     /// EF: `*_DAT_1009ffa0`, the screen shake (engine §5). Zeroed by `.InitGameGlobals` (M l. 821) and by nothing else;
     /// writers set it (the seed explosion 0x14, M l. 51150 — built, `SpriteWorld.shakeStore`; the bosses 0x1e / 0x16,
-    /// M l. 73488…77475 // later: Phase 6); `FindUpperLeftCorner` counts it down (M l. 6161). A shake still running at
+    /// M l. 73488…77475 — the Warrior's built in 6A-W2, `Warrior.kill`; the others // later: Phase 6);
+    /// `FindUpperLeftCorner` counts it down (M l. 6161). A shake still running at
     /// a level end runs on into the next level (`LevelCarry.shake`, EF review fix); the flow zeroes it in
     /// `GameFlow.initGameGlobals`.
     public var shake: Int16 = 0
