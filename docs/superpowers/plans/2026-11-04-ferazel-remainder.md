@@ -1391,6 +1391,31 @@ ids; its `--check` reads this table):
   frame FNV, pinned — a fixture golden under the "New goldens" rule).
 - **Gate:** Gate-F (G2 652; both test targets build with the link, GW1 0 / 2 cross-builds it; G6 — test files only).
   **Commit:** `Ferazel tests: the level fixture (one file linked into both test targets), proven on level 21; 2 tests`.
+- **As executed — 6A-FX (run 52, continued under Ben's raised cap):** task 520590c (2 tests), review fix round
+  213aa19 (test files only). Two Opus legs: MERGEABLE (0 / 1 / 8 minor; level 21's 30 records re-derived from the raw
+  data, the patch compared byte for byte, the data on disk checksummed), MERGEABLE AFTER FIXES (0 / 3 / 9 minor; 31
+  mutations: 18 killed, 2 equivalent, 11 survivors — all killed after the fix round, with 5 more). **The in-package
+  symlink works** on the Mac build, in a `git archive` copy, in the Windows cross-build (GW1 0 / 2) and in Proof B's
+  `rsync -a` copy (the link is relative and inside Core) — no fallback needed.
+  **The fixture golden (new):** level 21's fixture, seed 1, default prefs, the first presented frame (the first tick
+  whose level draws copy to the screen: tick 143, the first loop iteration) — FNV `fb80e30a68e4efb7`, hashed over the
+  screen's palette indices (the Windows references hash the presented RGBA).
+  **The interface the later tasks code against (the plan's two signatures unchanged; the rest added by the fix round,
+  the seat's ruling):**
+  `LevelFixture.resources(level:leaveOut:header:) -> FerazelResources` ·
+  `LevelFixture.open(level:leaveOut:header:start:prefs:carry:services:seed:) -> LevelRun` ·
+  `LevelFixture.open(resources:level:start:prefs:carry:services:seed:) -> LevelRun` (an already patched data set) ·
+  `LevelFixture.LeaveOut` (`.type(Int16)`, `.record(Int)`), `.HeaderPatch`, `.Misuse`, `.Headless`, `.level21`,
+  `leftOut(_:_:)`, `describe(_:level:)`, `firstDifferences(_:_:limit:)` — and, Render side,
+  **`LevelFixtureServices.open(level:leaveOut:header:start:prefs:carry:seed:) -> (run, services)`** (one patched data
+  set for the run and its renderer; **Render tests use this, never two separate builds**),
+  `LevelFixtureServices.step(_:now:input:)`, **`firstPresentedFrame(_:limit:) -> (ticks, renderer, fnv)`** (every
+  later golden uses this helper), `fnv1a(_:)`. Misuse throws: a type with no active record, an inactive or
+  out-of-range record, a header patch past the header or inside the placement table, a missing level.
+  Notes: the level-21 leave-out list lives in the shared fixture file (the Render target cannot see a Core test's
+  list) and is pinned again by the Core test's literal per-type counts — never edited by a later task. Sound lengths
+  are not passed (the runner reads them only for the stage-complete sound). A Render opening costs about 5 s (the
+  renderer's setup); a headless one 0.06 s.
 
 #### 6A-S8 — ⚑ MAJOR — the horizon strip (draw mode 8) (→ 663)
 - **Files:** `Sources/FerazelCore/Sprites/PxSprites.swift` (built R4, unused — becomes the real records; the strip
