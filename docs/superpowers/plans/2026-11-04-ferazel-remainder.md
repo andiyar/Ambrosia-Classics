@@ -1323,6 +1323,36 @@ ids; its `--check` reads this table):
   task since LV5, and the next full sweep is 6A-L10L11's). Wave 6A.1 end: G3, GWB by day
   **647 / 0 / 3 / 0 (of 650)**, GW4R by day, the Fable cross-check of BL…W2. **Commit:** `FerazelCore: the Warrior's Hit and
   Kill — crates crush him, the gate opens, the boss track; the scripted fight; 8 tests`.
+- **As executed — 6A-W2 (run 52):** task bcc67f2 (8 tests: 6 in `WarriorTests`, 2 in the new
+  `BossKillLevelRunTests`), review fix round 38ce1d9 (asserts, test tidying and wording; Sources comments only). Two
+  Opus legs: MERGEABLE (0 / 0 / 8 minor — Hit and Kill match the dump line by line), MERGEABLE AFTER FIXES (0 / 1 / 10
+  minor; 84 mutations: 68 killed, 6 equivalent, 10 survivors — all 10 killed after the fix round, with two more
+  mutants the fix round added). No disagreement between dump, BOS and card except the scripted kill, below.
+  **The scripted kill — the contract's starting script cannot win; replaced by the seat's ruling (D49.1).** With BOS
+  §2.10's script (hold left to the lock, then stand and jump the shots) the three crates come to rest on the
+  background ledges above his patrol line and never fall on him: his HP stays 2000 and the player dies (~frame 1369).
+  The fight is won as the data intends: a 0x433 crate is pushable (the Box Setup's push mass 0x8c, M l. 59068);
+  Ferazel climbs from the blinking platform (x 1274) onto the right-hand ledge (x 1184–1247) and pushes the crate over
+  the edge as the Warrior walks beneath; a new crate drops 14 frames after each crush. `WarriorFightScript` (in the
+  test file) does that with **keys only**, deciding from positions a player can see, seed 1, level 5 through the level
+  runner from the level start, cap 20,000 frames. **Measured and pinned (game-loop frames):** crushes at 350, 842,
+  1962, 2391, 2546, 2759, 3834, 4164, 4584, 4965; **HP 0 (the death entry) 4966; Kill 5051**; Kill − HP0 = 85 = 45 +
+  (B 151 − T 111) of face 0x71e[5]. Leg 1 re-ran the fight and checked that the script writes nothing.
+  ◈ **No value moved** (level 5's pins hold: init 46, f30 58, f120 58), so no switch-off check was needed.
+  Gate-B: the bot's quick mode on level 5 — `== core: random play — levels 1, seeds 4, steps 7200, deaths 1, exits 17,
+  conversations 0, saves 0, failures 0 in 168 s`; the level-5 visit sweep — `== core: 128 visits in 39 s (build
+  included); a teleport fired in 0, arrived in 0; a level exit taken in 8, reached the world map in 8; rows 0`, exit 0;
+  G5, GW1 0 / 2, GW3 0 / 1, GW4 green; GW2 not run (nothing Windows or Shared touched).
+  Closed Phase 5 carries: the Warrior's kill arm now opens the gate (tested through the level runner); the boss music
+  has a test with music off. Closed W1's accepted gap: `testWarriorLavaAndBrine` kills "liquids call removed" and
+  "class swapped" (a swap to `.blob` is equivalent — its rows equal the Dillo's).
+  Notes: (a) a real Statue (a petrified Walker) landing on him crushes for 200 with no crate-break draws — asserted.
+  (b) The burn's one R(100) a row is counted by replaying the burn on the run's own world after the Kill (the run
+  mixes other sprites' draws in). (c) The session's hit row handing the face bounds to the Hit is pinned through one
+  real session step with custom bounds — the same pattern fits every other enemy's row (open carry: none of them has
+  it). (d) Wording only, outside the card's Files by the seat's ruling: `BossArena.swift`, `Camera.swift`,
+  `ScreenFlash.swift`, `LevelFlow.swift`, `BuiltLevels.swift`. (e) **For 6A-CH2:** BOS §3.9's starting script for the
+  Chief is likewise unproven — the build task first finds from the data how that fight is won.
 
 #### 6A-FX — minor — the level fixture (→ 652)
 - **Files:** `Tests/FerazelCoreTests/LevelFixture.swift` (new), `Tests/FerazelRenderTests/LevelFixture.swift` (new, a git

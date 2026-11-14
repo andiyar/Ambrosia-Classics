@@ -2277,3 +2277,24 @@ file, reviewed by two Opus legs and cross-checked by Fable. The plan's own "Plan
    commit had review legs — the wave 6A.1 cross-check (run 52) reads both.
 6. **One review leg was run twice.** 6A-CF's quality leg was lost in an app restart after 40 minutes; the rerun reused
    the lost attempt's saved mutation results (same harness, same commit) and re-ran six of them to confirm.
+
+## D49 — Ferazel's Wand: run 52's rulings (6A-W1, 6A-W2 — the Warrior; 2026-11-14)
+
+1. **The Warrior's scripted fight uses a script the build found, not the contract's.** The boss contract's starting
+   script (walk in, stand, jump the shots) cannot win: the crates rest on the ledges above him and never fall. The
+   implementer stopped; the seat ruled that the build finds from the dump and the level data how the fight is won and
+   writes its own script under these rules — seed 1, level 5 through the level runner from the level start, **keys
+   only** (nothing patched, moved or written), keys decided from what a player can see, deterministic, written out in
+   the test. The fight is won by pushing a crate off the right-hand ledge onto him as he walks beneath (a crate is
+   pushable in the dump); ten crushes. Measured and pinned: HP 0 at game frame 4966, Kill at 5051. D46.4 already made
+   the contract's script a starting point only. **The same holds for the Chief (6A-CH2):** its task first finds from
+   the data how that fight is won.
+2. **A test-only ledge in the Warrior's crate test.** On level 5 a crate that lands rests on a background ledge and
+   never breaks by landing, so the "new crate 14 frames after a crate dies" case patches a foreground ledge into the
+   in-memory map. Accepted as a test stand-in although the card says "no fixture".
+3. **Comment-only edits outside a card's Files are the seat's to allow**, named in As executed: 6A-FR's two follow-ups
+   (`SpriteSlot.swift`, `SpriteClassTable.swift` — the dump's sprite generation has no 0x434 arm, so no class row is
+   added) and the wording this run's tasks made stale (`BuiltLevels.swift`, `BossArena.swift`, `Camera.swift`,
+   `ScreenFlash.swift`, `LevelFlow.swift`).
+4. **The context cap for run 52 was raised to 500k by Ben** (in chat, 2026-11-14), for this session only.
+
