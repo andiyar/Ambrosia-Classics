@@ -198,7 +198,7 @@ final class DrawModeAuditTests: XCTestCase {
         W("Particles/Burn.swift:60", .clipTop, .range(1...0x100), "any", at: ["45", "50"],
           pins: ["s.burnRow = top", "s.burnRow &+= 1"]),
         // EC: the ground enemies' liquid hurt flash (`EnemyCommon.liquids`: 0xc for the Walker in water, else 0x11).
-        W("World/Enemies/EnemyCommon.swift:249", .flash, .range(0xc...0x11), "walker", "crawler", "roach", "dillo",
+        W("World/Enemies/EnemyCommon.swift:250", .flash, .range(0xc...0x11), "walker", "crawler", "roach", "dillo",
           "blob", at: ["234", "239", "240", "241"], pins: ["(0xc, 0x96, 0xc)", "(0x13, 100, 0x11)"]),
         // ES: the enemy shots — the egg's random facing (`R(100) > 0x32`) and its flash every 45 frames, the Warrior
         // shot's facing by vx, the Wraith shot's tint by age (`.HandleEnemyShotSprite` M l. 51711–51723).
@@ -297,15 +297,15 @@ final class DrawModeAuditTests: XCTestCase {
         // 73066). 6A-W1: the Handle's wounded glow `+0xb8` 0x10008 / 0x10009 / 0 (M l. 73193, 73200, 73211), the decide's
         // and the swing's "face the player" (M l. 73350–73352, 73227–73229) and the decide's bound facing (M l.
         // 73378, 73381).
-        W("World/Enemies/Warrior.swift:60", .flashTable, .flags([true]), "warrior"),
-        W("World/Enemies/Warrior.swift:81", .mirrored, .flags([false, true]), "warrior"),
-        W("World/Enemies/Warrior.swift:209", .mode, .words([0x10008]), "warrior"),
-        W("World/Enemies/Warrior.swift:211", .mode, .words([0x10009]), "warrior"),
-        W("World/Enemies/Warrior.swift:214", .mode, .words([0]), "warrior"),
-        W("World/Enemies/Warrior.swift:243", .mirrored, .flags([false, true]), "warrior"),
-        W("World/Enemies/Warrior.swift:264", .mirrored, .flags([false]), "warrior"),
-        W("World/Enemies/Warrior.swift:266", .mirrored, .flags([true]), "warrior"),
-        W("World/Enemies/Warrior.swift:320", .mirrored, .flags([false, true]), "warrior"),
+        W("World/Enemies/Warrior.swift:61", .flashTable, .flags([true]), "warrior"),
+        W("World/Enemies/Warrior.swift:82", .mirrored, .flags([false, true]), "warrior"),
+        W("World/Enemies/Warrior.swift:208", .mode, .words([0x10008]), "warrior"),
+        W("World/Enemies/Warrior.swift:210", .mode, .words([0x10009]), "warrior"),
+        W("World/Enemies/Warrior.swift:213", .mode, .words([0]), "warrior"),
+        W("World/Enemies/Warrior.swift:242", .mirrored, .flags([false, true]), "warrior"),
+        W("World/Enemies/Warrior.swift:263", .mirrored, .flags([false]), "warrior"),
+        W("World/Enemies/Warrior.swift:265", .mirrored, .flags([true]), "warrior"),
+        W("World/Enemies/Warrior.swift:319", .mirrored, .flags([false, true]), "warrior"),
         W("World/Enemies/Dillo.swift:70", .mode, .words([0x1000b]), "dillo"),
         W("World/Enemies/Dillo.swift:92", .mirrored, .flags([false, true]), "dillo"),
         W("World/Enemies/Dillo.swift:162", .mirrored, .flags([false]), "dillo"),

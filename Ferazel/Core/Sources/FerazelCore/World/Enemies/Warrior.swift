@@ -1,8 +1,9 @@
 import Foundation
 
 /// The Manditraki Warrior (types 0x71c…0x725, level 5's boss; bosses §2, phase6-boss-contracts §2): the Setup
-/// (`.SetupWarriorSprite @ 100878ac`, M l. 72989–73079; LV5) and the Handle (6A-W1: `.HandleWarriorSprite`,
-/// `.WarriorLayEgg`, `.RandomWarriorAttack`, the tile callback `.HitWarriorTileSprite`). Field map: `+0x170` the boss
+/// (`.SetupWarriorSprite @ 100878ac`, M l. 72989–73079; LV5), the Handle (6A-W1: `.HandleWarriorSprite`,
+/// `.WarriorLayEgg`, `.RandomWarriorAttack`, the tile callback `.HitWarriorTileSprite`), the Hit and the Kill (6A-W2:
+/// `.HitWarriorSprite`, `.KillWarrior`). Field map: `+0x170` the boss
 /// flag (record p4) = `classWord170`; `+0x15c` / `+0x160` the patrol bounds = `classWord15c` / `classWord160`; `+0x168`
 /// the home x = `bonusP4`; `+0x164` = `launchSpeed`; `+0xf0` the wounded-glow timer = `voicePitch`; `+0x17e` facing
 /// right = `mirrored`; `+0xb0` the state `subtype`; `+0x46` the face counter `phase`; `+0xa6` the timer `counterA6`;
@@ -43,7 +44,7 @@ public enum Warrior {
         s.particleOffsetX = 0                                           // `+0x86`
         s.layer = 0xc
         s.handler = .warrior
-        s.hasHit = true                                                 // `+0x5c` = `.HitWarriorSprite` (◇ body)
+        s.hasHit = true                                                 // `+0x5c` = `.HitWarriorSprite` (`hit`)
         s.hasTileHit = true                                             // `+0x1f8` = `.HitWarriorTileSprite`
         s.noWriteBack18a = true                                         // `+0x18a = 1`
         s.classWord170 = Int32(p.p4)                                    // `+0x170` = record `+0xe`
@@ -121,10 +122,8 @@ public enum Warrior {
     /// `+0xa6 < 1` → `decide`, then vx × 0.5 (M l. 73333–73390); states 0, 1, 3, 5 and > 7 nothing. Then HP < 1 with
     /// state ≠ 4 → state 4, `+0x46 = +0xa6 = 0`, snd 703 (3D, 1, 0x100; M l. 73393–73398);
     /// `.ApplyGravityAndSeparateFromTiles` with `pass`; the liquids (`EnemyCommon.liquids`, the Dillo's rows, M l.
-    /// 73400–73416); `.StandardSpriteCleanup`.
-    /// The Hit `+0x5c` and the Kill `+0x50` (`.HitWarriorSprite` M l. 73422–73462, `.KillWarrior`'s tail M l.
-    /// 73486–73493) are 6A-W2's: the Hit's body is still empty, so nothing but the liquids lowers his HP.
-    /// // later: 6A-W2 — `.HitWarriorSprite` (shots absorbed with snd 303, crates crush him 200) and `.KillWarrior`'s tail.
+    /// 73400–73416); `.StandardSpriteCleanup`. His HP falls by the Hit's crate crush (`hit`) and the liquids; the burn
+    /// the dying state starts ends in `kill` (`EnemyCommon.killProc`).
     public static func handle(world w: SpriteWorld, id: Int, solver: TileSolver,
                               faceWidth: (FaceRef) -> Int = { PlayerShot.cellRect($0).right }) {
         guard let s0 = w.active.record(id: id), !s0.dead, !s0.emerging else { return }
@@ -357,5 +356,76 @@ public enum Warrior {
         if 0x17 < s.phase { s.phase = 0x17 }
         s.counterA6 &+= 1
         if s.counterA6 == 0x2d { EnemyCommon.startBurn(&s) }
+    }
+
+    // MARK: - Hit
+
+    /// snd slots: `*_DAT_100a041c` 303 (the shot's clank), `*_DAT_100a0274` 701 (Crawler Ouch), `_DAT_100a0320`[0…1]
+    /// 477 / 478 (monster1 / 2), `*_DAT_1009fd68` 453 (the boss-kill thunder).
+    static let clankSound: Int16 = 303, ouchSound: Int16 = 701, monsterSounds: [Int16] = [477, 478]
+    static let thunderSound: Int16 = 453
+
+    /// `.HitWarriorSprite(s, other) @ 1008854c` (M l. 73422–73462; raw `1008854c..10088710`). Every Handle comparison
+    /// is `+0x4c ==` (`BackgroundSprite.runs`):
+    /// - a player shot (`PTR_PTR_100a04e8`) with `+0xa6 == 0` while HP `+0xa4` > 0 → `.KillPlayerShot(o, 0, 1)` (no hit
+    ///   sound, the impact effect), then `.STPlay3DSound(303, 1, 0x100, o +0xe)` — the shot's centre as the kill's
+    ///   Cleanup left it. Immune. The `.KillPlayerShot` r29 is the caller's (`.HitWarriorSprite` saves r30 / r31 only,
+    ///   raw `1008854c..10088568`): nil — no light changed [LOW], as `.HitDilloSprite`. A shot with `+0xa6 ≠ 0`, or a
+    ///   Warrior at HP ≤ 0, passes through. The Statue spell (type 1) is an ordinary shot (no `.TurnIntoStatue`);
+    /// - else a Statue (`PTR_PTR_100a01f8`) or a Box (`PTR_PTR_100a0484`): `.PlatformBounce(s, o, s's hot-rect centre
+    ///   offset (v = top + (bottom − top) >> 1), 0, s +0x34, 0)` == 2 and (o `+0x2c` > 0 or s `+0xce` ≠ 0), both read
+    ///   after the bounce → `.HurtSprite(s, 200, (i16)(o.vx >> 1), −1000, 2, 8)` (whether or not it lands), `+0xf0 = 0`,
+    ///   `.KillBox(o)` (its own draws: snd 424's R(10000), the face's particles), then R(10000) → `.STPlay3DSoundPitched
+    ///   (701, 1, 0x100, s +0xe, 42000 + R)`, R(10000), R(2) → `.STPlay3DSoundPitched(_DAT_100a0320[R2], 1, 0x100, s
+    ///   +0xe, 42000 + R)`. 2000 / 200 = 10 crate hits.
+    /// No environmental-hazard arm (no 0x4b7 / 0x5a0 test).
+    public static func hit(_ w: SpriteWorld, id: Int, other oID: Int, lights: inout LightTable, effects: Int16 = 1,
+                           faceWidth: (FaceRef) -> Int = { PlayerShot.cellRect($0).right },
+                           faceBounds: (FaceRef) -> IdleSprites.Rect = PlayerShot.cellRect) {
+        guard let s = w.active.record(id: id), let o = w.active.record(id: oID) else { return }
+        let runs = BackgroundSprite.runs
+        if runs(o, .playerShot) && o.counterA6 == 0 && 0 < s.hp {
+            PlayerShotHits.kill(w, shot: oID, sound: false, effect: true, effects: effects, lights: &lights,
+                                faceWidth: faceWidth, faceBounds: faceBounds, staleSlot: nil)
+            let c = (w.active.record(id: oID) ?? o).centre                 // `lwz r6,0xe(r31)` after the kill
+            w.player.cue(PlayerCue(call: .threeD, snd: clankSound, priority: 1, volume: 0x100, position: c))
+        } else if runs(o, .statue) || runs(o, .box) {
+            let r = s.hotRect
+            let centre = SpriteSlot.Point(x: h16(r.left + h16((r.right - r.left) >> 1)),
+                                          y: h16(r.top + h16((r.bottom - r.top) >> 1)))
+            let b = w.platformBounce(mover: id, solid: oID, centre: centre, factor: 0, rect: r, bounce: false)
+            guard b == 2, let m = w.active.record(id: id), let solid = w.active.record(id: oID),
+                  0 < solid.vy || m.groundKind != 0 else { return }
+            HurtSprite.apply(w, id: id, damage: 200, dvx: Int16(truncatingIfNeeded: solid.vx >> 1), dvy: -1000,
+                             invulnerable: 2, flash: 8)
+            w.active.update(id: id) { $0.voicePitch = 0 }                  // `+0xf0 = 0`
+            BoxSprite.killBox(w, id: oID)
+            let at = (w.active.record(id: id) ?? m).centre                 // `+0xe`
+            let r1 = Int32(w.rng.next(10000))
+            w.player.cue(PlayerCue(call: .threeDPitched, snd: ouchSound, priority: 1, volume: 0x100, position: at,
+                                   rate: r1 + 42000))
+            let r2 = Int32(w.rng.next(10000))
+            let k = Int(w.rng.next(2))
+            w.player.cue(PlayerCue(call: .threeDPitched, snd: monsterSounds[k], priority: 1, volume: 0x100,
+                                   position: at, rate: r2 + 42000))
+        }
+    }
+
+    // MARK: - Kill
+
+    /// `.KillWarrior(s) @ 1008874c` (M l. 73465–73495), the Kill proc `+0x50`: the counting head (`+0xe9 == 0 ∧
+    /// +0x1b5` → live − 1 and `G+0x306+2L` + 1 — guarding the count only), `+0xe9 = 1`, `+0xea = 1`; then with `+0x170
+    /// ≠ 0` the boss-kill tail (M l. 73486–73493): `.STPlay3DSoundPitched(453, 1, 0x100, +0xe, 48000)` (no draw), the
+    /// shake `*_DAT_1009ffa0 = 0x1e`, the mask flash `*_DAT_100a00fc = 3`, `*_DAT_1009fed0 = 1` (no boss alive: the gate
+    /// 2940 p1 −1 opens from its next Handle, the loop rule fades to track 30). No score. A second call counts nothing
+    /// and replays the tail.
+    static func kill(_ w: SpriteWorld, _ s: inout SpriteSlot) {
+        w.enemies.kill(&s, globals: &w.globals, level: w.levelIndex, forGood: true)
+        guard s.classWord170 != 0 else { return }
+        w.player.cue(PlayerCue(call: .threeDPitched, snd: thunderSound, priority: 1, volume: 0x100, position: s.centre,
+                               rate: 48000))
+        w.shakeStore = 0x1e
+        w.flash.count = 3
+        w.arena.noBossAlive = 1
     }
 }
