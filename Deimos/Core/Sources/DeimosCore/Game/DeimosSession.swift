@@ -37,7 +37,7 @@ public enum SessionError: Error, Equatable, Sendable {
 /// - **Set-up** (`100051a0..100058a0`). The pre-seed draw `FUN_10046580(400, 2000)` at `100051d8` precedes the
 ///   seed and is not modelled (standing rule 5). G is fresh (`FUN_1000cd90(G, 0x180)`, +0x28 = 1 — `GameFlags()`);
 ///   the stack bytes p1Active / gameOverNoticed clear (`10005618`/`10005620`); `FUN_1003e510` (unit resources, no
-///   model); film flag G+0x20 = start has a film (`10005340`); the frame controller `FUN_10030190` +
+///   model); film flag G+0x20 = start has a film (`10005670..1000568c`); the frame controller `FUN_10030190` +
 ///   `FUN_10030210(ctrl, film, 1, 1)` (`FrameKeys.startSession`). Film (`FUN_100069b0`): level, player count and seed
 ///   from the film (`FUN_10009680`), `srand(seed)`; the cursors are 0 (`FUN_10009970`). Not a film: level = the
 ///   start's sector's, G+0x21 = players (`10005770`), `srand(TickCount())` (`100057c8..100057d4`, here `seed`), the
@@ -260,6 +260,10 @@ public struct DeimosSession: Sendable {
 
     /// One iteration of the `FUN_100051a0` loop (`100058b0..10005ab8`), in this order:
     ///
+    /// 0. [The unregistered limit `100058b0..100058f4`, before the begin frame: not yet armed, not a film, game time
+    ///    == the pre-seed draw `FUN_10046580(400, 2000)` (`100051d8`), the registration byte `-0x6234(r2)`
+    ///    (`FUN_10010f90`, `100051f8`) clear and the level outside the demo four (`FUN_10011b30`) → arm the cut-off
+    ///    (`-0x6233(r2)` = 1) — this is the registered game: unmodelled.]
     /// 1. Begin frame `FUN_10030360` (`10005904`): [music service] → `FUN_100189f0` (`10030388`, `.clearLayers`)
     ///    → the console, message aging, the volume keys and F6, Caps Lock, Esc, the tick flag's input
     ///    (`FrameKeys.beginFrame`); G+0x30 = its result (`10005910`); quit → `FUN_100064c0` (`1000591c`: G+0x08 = 0
@@ -289,13 +293,25 @@ public struct DeimosSession: Sendable {
     ///    `FUN_1000beb0` game screen, `FUN_1000bc60` full screen); then the wrapper (`FrameKeys.endFrameWrapper`):
     ///    Esc again (discarded), the pause screen (`FUN_10030870`: halt, `gaso 8`, music pause, `.pauseWait`,
     ///    the resume after the wait), the FPS monitor.
-    /// 6. The loop condition G+0x08 (`10005ab8..10005ac0`). Once clear and not a film: `FUN_100476a0` (halt every
-    ///    effect, `10005ad8`) and `FUN_10048120(0)` (music stop, `10005ae4`) — at the end of this pass's cues.
+    /// 6. The loop condition G+0x08 (`10005ab8..10005ac0`). Once clear: `FUN_1000c440(window)` (`10005ac4..10005ac8`
+    ///    → `FUN_1000abd0(window, 0)`: window +0xe = 0, a byte nothing reads — unmodelled); then, not a film
+    ///    (`10005ad0`): `FUN_100476a0` (halt every effect, `10005ad8`) and `FUN_10048120(0)` (music stop,
+    ///    `10005ae4`) — at the end of this pass's cues.
     ///
     /// **Cues: one holder.** `game.cues` collects every cue of the pass (and of the level start, before the first
     /// pass); the pass moves them into its output and clears them. The pause screen's resume (`PauseScreen
     /// .musicAfterWait`) is left in `game.cues` for the next pass, first in its music (that pass begins only after
     /// the host's wait — at most one frame late). `FrameKeysResult.volume` never becomes a gain cue (Ben, 2026-10-07).
+    ///
+    /// **Pause and session end in one pass** (Caps Lock and, say, Esc). The original runs the pause wrapper to the
+    /// end — halt, `gaso 8`, music pause, the wait, the resume (`10022fb4`) — and only then leaves the loop for the
+    /// halt and the stop (`10005ad8`, `10005ae4`). There is no next pass, so the resume goes into this pass's music
+    /// ahead of the stop (`[… .pause, .resume, .stop]`), and the halt index stays the pause's, so `gaso 8` is not cut
+    /// in the same apply. ◇ Inexact until H2 (the real wait): `PassOutput` holds one halt, so the session end's halt
+    /// after the wait is not expressed (`gaso 8` plays out instead of being cut when Caps Lock comes up), and the
+    /// resume and the stop reach the audio with the pass's other cues, before the host's wait rather than after it
+    /// (the music is silent either way: paused in the original, stopped here). A film never pauses (`10030408..
+    /// 1003041c`), and still skips the halt and the stop (`10005ad0`).
     ///
     /// The first pass also returns the level start's ops (before its own) and `.hideCursor`. Once the session has
     /// ended, `pass` returns an empty output with `sessionEnded` set. `ticks` = `TickCount()` (the FPS monitor's clock).
@@ -339,14 +355,21 @@ public struct DeimosSession: Sendable {
         // 5. End frame.
         let pause = endFrame(keys: keys, ticks: ticks, ops: &ops)
 
-        // 6. The loop condition; the session end's audio (not a film).
+        // 6. The loop condition; the session end's audio (not a film). A pause in a pass that also ends the session
+        // ran to completion inside the end frame (10022fb4, after the wait) before the loop test: its resume goes
+        // here, ahead of the stop, and its halt index stands (see `pass`'s comment, "Pause and session end").
+        if let pause, !game.flags.running {
+            game.cues.music += pause.musicAfterWait                  // 10022fb4 FUN_10048220(0), after the wait
+        }
         if !game.flags.running && !film {                            // 10005ab8..10005ad4
-            game.cues.haltEffects()                                  // 10005ad8 FUN_100476a0
+            if pause == nil { game.cues.haltEffects() }              // 10005ad8 FUN_100476a0
             game.cues.music.append(.stop)                            // 10005ae0..10005ae4 FUN_10048120(0)
         }
         let cues = game.cues
         game.cues = CueBuffer()
-        if let pause { game.cues.music = pause.musicAfterWait }      // 10022fb4 FUN_10048220(0), after the wait
+        if let pause, game.flags.running {
+            game.cues.music = pause.musicAfterWait                   // 10022fb4 FUN_10048220(0), after the wait
+        }
         return PassOutput(ops: ops, sounds: cues.sounds, music: cues.music, requests: requests, ticked: begin.tick,
                           sessionEnded: !game.flags.running, haltEffectsAt: cues.haltEffectsAt)
     }

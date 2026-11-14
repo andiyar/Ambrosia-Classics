@@ -305,8 +305,12 @@ final class FilmPlaybackTests: XCTestCase {
     }
 
     /// Esc ends a non-film session (`10005ad8..10005ae4`): the halt at the end of the pass's sounds and a music
-    /// stop last. In a film the same Esc ends the session without either.
+    /// stop last. In a film the same Esc ends the session without either. A pass that pauses (Caps Lock) and ends
+    /// (Esc) runs the pause to completion first — halt, `gaso 8`, pause, the wait, the resume (`10022fb4`) — and
+    /// only then the loop exit's stop (`10005ae4`): the music is `[… .pause, .resume, .stop]`, the halt index stays
+    /// the pause's (`gaso 8` is not cut in the same apply), and nothing carries to a next pass.
     func testSessionEndHaltsAudio() throws {
+        let a = try assets()
         var s = try session()
         for _ in 0..<30 { _ = s.pass(keys: HeldKeys(), ticks: 0) }
         let out = s.pass(keys: HeldKeys(held: [FrameKeys.escKey]), ticks: 0)
@@ -314,6 +318,21 @@ final class FilmPlaybackTests: XCTestCase {
         XCTAssertEqual(out.haltEffectsAt, out.sounds.count)
         XCTAssertEqual(out.music.last, .stop)
         XCTAssertEqual(s.game.cues, CueBuffer())
+
+        var p = try session()
+        for _ in 0..<30 { _ = p.pass(keys: HeldKeys(), ticks: 0) }
+        let po = p.pass(keys: HeldKeys(held: [FrameKeys.escKey], capsLock: true), ticks: 0)
+        XCTAssertTrue(po.sessionEnded)
+        XCTAssertEqual(po.ops.last, .pauseWait(.gameScreen))
+        XCTAssertEqual(Array(po.music.suffix(3)), [.pause, .resume, .stop])
+        let halt = try XCTUnwrap(po.haltEffectsAt)
+        XCTAssertLessThan(halt, po.sounds.count, "the pause's halt index, not the session end's")
+        if halt < po.sounds.count {
+            XCTAssertEqual(po.sounds[halt], SoundPlay.perm(a.sounds[8], priority: 0x32, volume: 100,
+                                                           allowMultiple: true))
+        }
+        XCTAssertEqual(p.game.cues, CueBuffer())
+        XCTAssertEqual(p.pass(keys: HeldKeys(), ticks: 0), PassOutput(sessionEnded: true))
 
         var f = try session(film: Self.film(frames: 500))
         for _ in 0..<30 { _ = f.pass(keys: HeldKeys(), ticks: 0) }
