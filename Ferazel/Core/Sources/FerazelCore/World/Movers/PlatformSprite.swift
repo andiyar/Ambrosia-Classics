@@ -399,7 +399,7 @@ public enum PlatformSprite {
         }
     }
 
-    /// `.FlipHRect(r, w) @ 10045258`: left = w − left, right = w − right, swapped when right < left.
+    /// `.FlipHRect(r, w) @ 10045258`: left = w − left, right = w − right, swapped when right < left (the one port; 6A-TR).
     static func flipH(_ r: IdleSprites.Rect, _ w: Int) -> IdleSprites.Rect {
         var o = r
         o.left = h(w - r.left)

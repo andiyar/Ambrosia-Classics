@@ -240,6 +240,9 @@ public enum SetupFaces {
         // 0x71c / 0x71d 8, 0x71e 6 × 0xb4×0xa0, one row each, flag 0).
         for p: Int16 in [0xb06, 0xb0a, 0xb0d, 0xb18, 0xb19] { all.append(one(p)) }
         all += Warrior.sheets.map { ($0.pict, $0) }
+        // 6A-TR: the trees 0xc08…0xc0f (`.InitBackgroundSprite` M l. 61889–61895: cache singles 0xc08 + i, flag 1 →
+        // the level+base CLUT, `levelClutCache`), faced by their Handle.
+        for p in BackgroundSprite.trees { all.append(one(p, clut: 202)) }
         all.append(one(placeholderPict))
         // BN: every face `.InitBonusSprite` loads (`BonusSprite.sheets`; the level-1/2 entries above are the same sheets).
         var table = Dictionary(uniqueKeysWithValues: all)
@@ -426,6 +429,9 @@ public enum SetupFaces {
                 // levels 1–5.
                 record = BackgroundSprite.setupDartTrap(&s, record: p)
                 face(BackgroundSprite.dartTrapSheet(Int16(t)), Int(s.phase >> 2), .handle)
+            case 0xc08...0xc0f:                                // trees (M l. 62597–62617; 6A-TR `setupTree`)
+                BackgroundSprite.setupTree(&s, record: p)
+                face(Int16(t), 0, .handle)                     // `+0xc0` stays 0: the Handle faces it from the cache
             case 0xcb1:                                        // level exit: `+0xc0 = 0` (l. 62593)
                 s.hotRect = IdleSprites.Rect(top: 0xc, left: 0xc, bottom: 0x54, right: 0x54)   // l. 62594 (W4)
             default:

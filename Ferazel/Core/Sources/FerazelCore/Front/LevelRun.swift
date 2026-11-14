@@ -1336,8 +1336,9 @@ public struct CachedFaces: Equatable, Sendable {
     /// LV5: every Warrior type 0x71c…0x725 → sets 0x71c, 0x71d, 0x71e (M l. 73029–73031); the level-5 decorations 2822,
     /// 2826, 2829, 2840, 2841 → their singles (59647); the Platform 1403, the save point 1065, the gate 2940, the exit
     /// 3249 and the Bonus 1059 / 1340 / 3100 / 3214 Setups store no mark.
+    /// 6A-TR: every tree 0xc08…0xc0f → its own single (`_DAT_100a0ae0[type − 0xc08]`, M l. 62603; #137–#144).
     /// Every other built type marks nothing. // later: Phase 6 — the marks of the types not built yet, with their
-    /// Setups (the trees, clouds, plants, scenery, the carpet set 0x438, fire 1208's 0x4b8 + 0x4b9, the bosses' own
+    /// Setups (the clouds, plants, scenery, the carpet set 0x438, fire 1208's 0x4b8 + 0x4b9, the bosses' own
     /// records and 0x46a's / 0x77b's: the Wizard `0848` only, the Chief 0x77b, the Demon all three 0x46a records,
     /// Xichra `0848` + `0840` + 0x77b — LL §1 finding 8).
     static func markedRecords(type t: Int16, p1: Int16 = 0) -> [RecordKey] {
@@ -1376,6 +1377,7 @@ public struct CachedFaces: Equatable, Sendable {
         case 0xbea: return [set(0x41a), set(0x41b), set(0x41c), set(0x41d)]
         case 0x5b5, 0x5b6: return [single(0x5b5)]
         case 0x5c8...0x5d1: return [single(t)]
+        case 0xc08...0xc0f: return [single(t)]
         case 0x5b8, 0xa96, 0xa99, 0xa9a, 0xbba, 0xb54, 0xb55, 0xb1a, 0xb20, 0xb21, 0xb87, 0xb88, 0xb8a, 0xb25,
              0xb36, 0xb37, 0xb3a, 0xb43, 0xb6a, 0xb6c, 0xb6d, 0xb6e, 0xb6f, 0xb70,
              0xafc, 0xafd, 0xb04, 0xb05, 0xb10, 0xb1b, 0xb34, 0xb35, 0xb44,

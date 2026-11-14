@@ -340,4 +340,85 @@ final class FeatureGoldenTests: XCTestCase {
         XCTAssertEqual(String(t.fnv[i], radix: 16), "1fe12083e4c9326e", "iteration 9: the cannon still drawn at aim 0")
         XCTAssertEqual(String(t.fnv[g], radix: 16), "1f159e3178d4733", "the level-10 rotating-cannon feature golden")
     }
+
+    // MARK: - 6A-TR: trees and their branches
+
+    /// 6A-TR's level-10 leave-out list (ENG §2.4 / §7.2; the card): the 14 records the port still refuses there once the
+    /// trees are built — the Box scenery, by type. A literal list, never computed from what the port refuses today.
+    static let level10Trees: [LevelFixture.LeaveOut] = [
+        // The Box scenery (6A-BX1a): 2816 ×5, 2817, 2837 ×3, 2846 ×2, 2847 ×2, 2861.
+        .type(2816), .type(2817), .type(2837), .type(2846), .type(2847), .type(2861),
+    ]
+
+    /// Where the player is dropped onto a mirrored tree's branch (`LevelRun`'s `start:`): level 10's record 35 (0xc08 at
+    /// (4929, 1358), p1 1, face 226 wide) plants its first branch, `SetRect(0x62, 0xc, 0xb4, 0x24)` flipped to (46, 12,
+    /// 128, 36), at (4975, 1370)…(5057, 1394). From (4945, 1270) the player's hot rect (x + 0x26…x + 0x3e, feet y + 0x55)
+    /// spans 4983…5007 — inside that branch, outside where the unflipped one would be (5027…5109) — with the feet 15 px
+    /// above its top.
+    static let treeStart = (x: 4945, y: 1270)
+
+    /// 6A-TR: level 10's fixture (`level10Trees`, 14 left out), seed 1, `FerazelPrefs()`, the player started at
+    /// `treeStart`, no input — the first presented frame that shows the player standing on a tree's mirrored branch.
+    /// Kept at 6A-L10L11 unless that task rules the frame redundant with level 10's first-frame golden (ENG §2.4).
+    func testLevel10TreeFeatureGolden() throws {
+        // The fixture's 14 records, by type, re-derived from the level file; the 13 trees are not among them.
+        let real = try LevelFile.load(from: try LevelFixture.base.get(), level: 10)
+        let out = try LevelFixture.leftOut(real, Self.level10Trees)
+        XCTAssertEqual(out.count, 14, "the 14 refused records")
+        var perType: [Int16: Int] = [:]
+        for i in out { perType[real.placements[i].type, default: 0] += 1 }
+        XCTAssertEqual(perType, [2816: 5, 2817: 1, 2837: 3, 2846: 2, 2847: 2, 2861: 1])
+        XCTAssertEqual(perType.count, Self.level10Trees.count)
+        XCTAssertEqual(real.activePlacements.filter { BackgroundSprite.trees.contains($0.type) }.count, 13)
+        let p35 = real.placements[35]
+        XCTAssertEqual([Int(p35.type), Int(p35.p1), Int(p35.x), Int(p35.y)], [0xc08, 1, 4929, 1358])
+
+        let (run, services) = try LevelFixtureServices.open(level: 10, leaveOut: Self.level10Trees, start: Self.treeStart)
+        let first = try services.firstPresentedFrame(run)
+        XCTAssertEqual(run.iterations, 1)
+        let session = try XCTUnwrap(run.session)
+        let w = session.world
+        // The tree's first Handle (iteration 1, after that iteration's draw) planted its three branches, mirrored.
+        let tree = try XCTUnwrap(w.active.sprites.first { $0.recordIndex == 35 && $0.handler == .background })
+        XCTAssertTrue(tree.setupDone)
+        XCTAssertTrue(tree.mirrored)
+        let ids = [tree.siblings.first, tree.siblings.second, tree.siblings.third].compactMap { $0 }
+        let branches = try ids.map { try XCTUnwrap(w.active.sprite(id: $0)) }
+        XCTAssertEqual(branches.map { [$0.x, $0.y] }, [[4929 + 226 - 0xb4, 1358 + 0xc], [4929 + 226 - 0x66, 1358 + 0x31],
+                                                       [4929 + 226 - 0xd6, 1358 + 0x4b]])
+        // The planting frame's branches are solid Boxes in `.SetupBoxSprite`'s head state (ENG §2.4 item 5): the two
+        // Xichrons (1055) placed on tree 35 are moved up onto the first and second branch in iteration 1's pass, and the
+        // one on the first branch (from y 1360 to 1340) is collected by the player above it — score 10, one Xichron
+        // (with the planting stubbed neither moves and nothing is collected).
+        XCTAssertEqual([Int(w.globals.score), Int(w.globals.xichrons)], [10, 1])
+        var now = first.ticks, fnv = [first.fnv], ticks = [first.ticks], riding: [Int?] = [], ys: [Int] = []
+        func sample() throws {
+            let p = try XCTUnwrap(w.active.sprite(id: session.playerID))
+            riding.append(p.ridden)
+            ys.append(p.y)
+        }
+        try sample()
+        while fnv.count < 6 {
+            let before = run.iterations
+            let presented = try services.step(run, now: now)
+            now += 1
+            guard run.iterations != before else { XCTAssertFalse(presented); continue }
+            XCTAssertTrue(presented, "every iteration presents")
+            try sample()
+            fnv.append(LevelFixtureServices.fnv1a(try XCTUnwrap(services.renderer).screen.pixels))
+            ticks.append(now)
+        }
+        // The player falls (iterations 1–3) and lands on the first branch in iteration 4's pass: he rides it, feet on
+        // its top (y + 0x55 = 1370). An iteration draws before its handle pass, so the landing first shows in iteration
+        // 5's frame — the golden.
+        XCTAssertEqual(ys, [1271, 1275, 1280, 1285, 1285, 1285])
+        XCTAssertEqual(riding.prefix(3).map { $0 == nil }, [true, true, true])
+        XCTAssertEqual(riding[3], ids[0], "standing on the mirrored first branch")
+        XCTAssertEqual(riding[4], ids[0])
+        // Measured at 6A-TR (FNV-1a 64 of the 640×480 screen indices after the iteration's draws, the test colour model).
+        // With the branch planting stubbed (one local patch, never committed) the player falls past and this frame is
+        // 707aa87324dfbee3 (he is at y 1295, still falling).
+        XCTAssertEqual(ticks[4], 1620)
+        XCTAssertEqual(String(fnv[4], radix: 16), "d7ba88433f138e72", "the level-10 tree feature golden")
+    }
 }

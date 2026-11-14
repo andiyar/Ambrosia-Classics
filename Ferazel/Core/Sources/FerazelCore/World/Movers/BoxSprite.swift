@@ -97,6 +97,25 @@ public enum BoxSprite {
         }
     }
 
+    /// 6A-TR: the trees' branches — Box 0xc08 (one-way) and 0xc09 (solid; 0xc0f's only), made only by `.SetupTree`
+    /// (`BackgroundSprite.plantBranches`). No face (`+0xc0 = 0`): invisible platforms.
+    public static let branch: Int16 = 0xc08
+    public static let solidBranch: Int16 = 0xc09
+
+    /// `.MTNewSprite(type, x, y, 0xb, −1, .SetupBoxSprite)` for a branch 0xc08 / 0xc09 (6A-TR; `.SetupTree`'s calls, M l.
+    /// 62705ff): the Setup reads the spawn copy `+8`/`+6` (`newRecord`'s pixel quirk undone first); no arm of
+    /// `.SetupBoxSprite` matches the type (the `< 0xc12` branch tests only 0xbfe, M l. 59497–59531; the trailing ranges
+    /// miss it), so the branch keeps the head — layer 2 over the argument 0xb (M l. 58939), before the insert — and the
+    /// tail. Nil with no free record (Ruling 16).
+    static func newBranch(_ w: SpriteWorld, type: Int16, x: Int, y: Int) -> Int? {
+        let none = Placement(index: -1, flag: 0, byte1: 0, type: type, p1: 0, p2: 0, p3: 0, p4: 0, y: 0, x: 0)
+        return w.newSprite(type: type, x: x, y: y, layer: 0xb, handler: .box) { s in
+            s.x = s.oldPosition.x
+            s.y = s.oldPosition.y
+            setup(&s, record: none, level: w.level)
+        }
+    }
+
     /// The Bonus faces the crates among `records` can drop (`.KillCrate`, p1 0 / 1, p2 > 0): `.InitBonusSprite` loads
     /// every Bonus face at boot, but `BonusSprite.sheets` names PICTs the data lacks (3109, 3200), so a renderer loads
     /// the drops of its level's crates only — a Bonus drop by its face PICT (0x41f → 0x421, 0x519 → 0x51d, 0x51a →
@@ -501,7 +520,8 @@ public enum BoxSprite {
     ///   `spoutArm`); the chest 0x51c (M l. 60101–60187; `chestArm`); the doors 0xb5e / 0xb5f (M l. 60803–60868;
     ///   `doorArm`); the geysers 0x5a0 / 0x5a5 (`LAB_1006df20`, M l. 60379–60483; GY, `Geyser.erupt`: the eruption,
     ///   the triple's re-targeting, `.HandleGeyserColumn`); the enemy pipes 0x5d2…0x5d5 (M l. 60624–60768; PI,
-    ///   `pipeArm`: `+0x15c == 0` returns without the tail);
+    ///   `pipeArm`: `+0x15c == 0` returns without the tail); the trees' branches 0xc08 / 0xc09 (M l. 60941–60947,
+    ///   61067–61075; 6A-TR): no hit, face, tile callback or gravity, one-way for 0xc08 only;
     /// - every other type reaches the block chain (M l. 61088–61151): the switch blocks (`switchBlockArm`), then the face
     ///   from the class caches — decorations 0xaf5…0xb21 (`0x1009b500 + type·0x10` = the cache entry), outcrops
     ///   0xb22…0xb35, mushrooms 0xb36…0xb49, furniture 0xb68…0xb70 (each `cache[type − first] + 4`); the NPCs 0xb87…0xb99
@@ -571,6 +591,16 @@ public enum BoxSprite {
             chestArm(w, id: id, lights: &lights, effects: effects)
         case doors:
             doorArm(w, id: id, lights: &lights, effects: effects)
+        case branch, solidBranch:
+            // The branches (M l. 60941–60947 for 0xc08, 61067–61075 for 0xc09 — `0xc08 < type < 0xc0a`; 6A-TR), every
+            // frame: `+0x5c = 0`, `+0xc0 = 0`, `+0x1f8 = 0`, gravity 0; one-way `+0x185` = 1 for 0xc08, 0 for 0xc09.
+            w.active.update(id: id) { s in
+                s.hasHit = false
+                s.face = nil
+                s.hasTileHit = false
+                s.gravity = 0
+                s.oneWay = t == branch
+            }
         default:
             // The block chain (M l. 61088–61151): the switch blocks (BT), then the class-cache faces.
             if switchBlocks.contains(t) { switchBlockArm(w, id: id) }

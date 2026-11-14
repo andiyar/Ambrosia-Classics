@@ -8,8 +8,9 @@ import Foundation
 /// occluder window, passages 0xb54 / 0xb55 (the Handle's face; the jump is `HitPlayerSprite`'s), and
 /// `.HitBackgroundSprite`. Part 3 (LV3, below): the retracting spikes 0x730…0x733. ES: the dart traps 0x76c…0x76f,
 /// Handle arm (`dartTrap`) and Setup arm (`setupDartTrap`), built as read — first placed on level 22, unreachable on
-/// levels 1–5. // later: fire 0x4b8 / 0x4bb…0x4bd, 0x73f / 0x740, 0xb4a…0xb4d, 0xbf4, trees 0xc08…0xc0f — none
-/// placed on levels 1–5.
+/// levels 1–5. 6A-TR: the trees 0xc08…0xc0f (`setupTree`, the Handle arm `tree`, `.SetupTree` = `plantBranches`) —
+/// first placed on level 10. // later: fire 0x4b8 / 0x4bb…0x4bd, 0x73f / 0x740, 0xb4a…0xb4d, 0xbf4 — none placed on
+/// levels 1–5.
 public enum BackgroundSprite {
     /// The radial bars (0x5c8…0x5cc) and balls (0x5cd…0x5d1).
     public static let maces: ClosedRange<Int16> = 0x5c8...0x5d1
@@ -113,10 +114,11 @@ public enum BackgroundSprite {
 
     /// The types whose `.HandleBackgroundSprite` arm is not built: their Handle is not run (as before W2a), so
     /// nothing of it — `.StandardSpriteHandles` included — changes them. // later: fire, 0x73f / 0x740, clouds,
-    /// 0xbf4, trees (none placed on levels 1–4, so `SetupFaces` refuses them; the spikes: LV3; the dart traps: ES).
+    /// 0xbf4 (none placed on levels 1–4, so `SetupFaces` refuses them; the spikes: LV3; the dart traps: ES; the trees:
+    /// 6A-TR).
     static func isUnbuiltArm(_ t: Int16) -> Bool {
         t == 0x4b8 || (0x4bb...0x4bd).contains(t) || (0x73f...0x740).contains(t)
-            || (0xb4a...0xb4d).contains(t) || t == 0xbf4 || (0xc08...0xc0f).contains(t)
+            || (0xb4a...0xb4d).contains(t) || t == 0xbf4
     }
 
     /// Modes 12…14's layer and harmful flag from the depth D (radial `+0x40`; l. 63167–63180, raw
@@ -138,6 +140,8 @@ public enum BackgroundSprite {
     ///   + 90` (− 360 past 359), `+0x88 = 0`, `+0x89 = 1`; modes 12…14: `depthBand` — the layer through
     ///   `.MTChangeSpriteLayer` (the F2 no-op guard), so the frame a ball comes **in front** moves it to the list's
     ///   tail and `.MTHandleSprites` handles it **twice** (Invariant 7).
+    /// - the trees 0xc08…0xc0f (M l. 63538–63546; 6A-TR, `tree`): `.SetupTree` on the first Handle, then the face and the
+    ///   mirror every frame.
     /// - The tail for every type no arm takes (l. 63549–63556): plants 0xa8c…0xaef → `+0xc0 = _DAT_100a0ad8[type −
     ///   0xa8c] + 4`, tunnels 3000…0xbc1 → `_DAT_100a0adc[type − 3000] + 4` (the caches hold 30 plants and 6 tunnels:
     ///   a higher type reads past them [LOW: none placed on levels 1–2]). This is what replaces the Phase-1 Setup faces
@@ -160,6 +164,8 @@ public enum BackgroundSprite {
             spike(w, id: id)
         } else if dartTraps.contains(t) {
             dartTrap(w, id: id)
+        } else if trees.contains(t) {
+            tree(w, id: id, faceWidth: faceWidth)
         } else if (0xa8c...0xaef).contains(t) || (3000...0xbc1).contains(t) {
             w.active.update(id: id) { $0.face = FaceRef(pict: t, index: 0, set: .encoded) }
         }
@@ -1100,5 +1106,105 @@ extension BackgroundSprite {
         s.hasHit = false
         s.hasTileHit = false
         return rec
+    }
+}
+
+// MARK: - 6A-TR: trees and their branches
+
+extension BackgroundSprite {
+    /// The trees 3080–3087 (ENG §2.4): placed on levels 10, 11 (0xc08…0xc0b) and 15 (0xc0c…0xc0e); 0xc0f on none.
+    public static let trees: ClosedRange<Int16> = 0xc08...0xc0f
+
+    /// The tree arm of `.SetupBackgroundSprite` (M l. 62597–62617, after the common part `setupCommon`): idle margins
+    /// `+0x1ca = +0x1c8 = +0x1cc = 0x80`, `+0x1ce = 0xa0`; the cache record `_DAT_100a0ae0[type − 0xc08]` marked
+    /// (`CachedFaces.markedRecords`); `+0x17c = 0`; layer 30000 (0xc0f: −10); the mirror `+0x17e` = the record's p1 as
+    /// a byte (`(char)` of the short — its low byte); `+0x88 = 0`; `+0x5c = +0x1f8 = 0`; the empty rect. `+0xc0` stays 0:
+    /// the Handle faces it (`tree`). The 24.8 position is `LAB_10072efc`'s (`SpriteSlot`'s, from the spawn copy).
+    public static func setupTree(_ s: inout SpriteSlot, record p: Placement) {
+        s.margins = SpriteSlot.Margins(left: 0x80, right: 0x80, top: 0x80, bottom: 0xa0)
+        s.setupDone = false
+        s.layer = s.type == 0xc0f ? -10 : 30000
+        s.mirrored = UInt8(truncatingIfNeeded: p.p1) != 0
+        s.lightOverlay = false
+        s.hasHit = false
+        s.hasTileHit = false
+        s.hotRect = IdleSprites.Rect(top: 0, left: 0, bottom: 0, right: 0)
+    }
+
+    /// One branch `.SetupTree` plants: the rect as `SetRect`'s (left, top, right, bottom), the type it spawns and the
+    /// slot its pointer goes to (0 `+0x1d4`, 1 `+0x1d8`, 2 `+0x1dc`, 3 `+0x1e0`).
+    struct Branch {
+        let left: Int, top: Int, right: Int, bottom: Int
+        let type: Int16
+        let slot: Int
+    }
+
+    /// `.SetupTree`'s branches per tree (M l. 62683–62886; ENG §2.4's table), in call order. 0xc0b's fifth goes to
+    /// `+0x1d4` again (the first pointer lost, as written); 0xc0c…0xc0e have no arm; 0xc0f's one branch is type 0xc09.
+    static let branches: [Int16: [Branch]] = {
+        func b(_ l: Int, _ t: Int, _ r: Int, _ bt: Int, _ slot: Int, _ type: Int16 = BoxSprite.branch) -> Branch {
+            Branch(left: l, top: t, right: r, bottom: bt, type: type, slot: slot)
+        }
+        return [
+            0xc08: [b(0x62, 0xc, 0xb4, 0x24, 0), b(0x10, 0x31, 0x66, 0x4a, 1), b(0x94, 0x4b, 0xd6, 0x5f, 2)],
+            0xc09: [b(0x27, 0xb, 0x6e, 0x15, 0), b(0x6c, 0x1f, 0xaf, 0x2c, 1), b(8, 0x3b, 0x5c, 0x50, 2),
+                    b(0x8e, 0x46, 0xd7, 0x59, 3)],
+            0xc0a: [b(0x42, 0x10, 0x8c, 0x23, 0), b(0x96, 0xe, 0xd0, 0x23, 1), b(0x14, 0x34, 0x5c, 0x49, 2),
+                    b(0xc0, 0x30, 0xfd, 0x44, 3)],
+            0xc0b: [b(0x43, 0xd, 0x96, 0x1d, 0), b(0x34, 0x48, 0x6d, 0x5f, 1), b(0x81, 0x3e, 0xbc, 0x4c, 2),
+                    b(10, 0x6f, 0x44, 0x84, 3), b(0x61, 0x7d, 0xa5, 0x98, 0)],
+            0xc0f: [b(0xb, 0x1b, 0x182, 0x46, 0, BoxSprite.solidBranch)],
+        ]
+    }()
+
+    /// The tree arm of `.HandleBackgroundSprite` (M l. 63538–63546): `+0x17c == 0` → `.SetupTree` (`plantBranches`);
+    /// then `+0xc0` = the cache face `_DAT_100a0ae0[type − 0xc08] + 4` and the mirror `+0x17e` = (byte) record p1 —
+    /// every frame, as at Setup (M l. 62606). A sprite without a record reads it as 0s [LOW: every tree is placed].
+    static func tree(_ w: SpriteWorld, id: Int, faceWidth: (FaceRef) -> Int) {
+        guard let s = w.active.record(id: id) else { return }
+        if !s.setupDone { plantBranches(w, id: id, faceWidth: faceWidth) }
+        let p1 = record(w, s)?.p1 ?? 0
+        w.active.update(id: id) { c in
+            c.face = FaceRef(pict: c.type, index: 0, set: .encoded)
+            c.mirrored = UInt8(truncatingIfNeeded: p1) != 0
+        }
+    }
+
+    /// `.SetupTree @ 10072f50` (M l. 62679–62886), inside the tree's Handle: `+0x17c = 1`; `+0xc0` = the cache face;
+    /// then each branch of `branches` in order — its rect mirrored by `.FlipHRect(rect, face +6)` when `+0x17e`
+    /// (`PlatformSprite.flipH`, the one port; the width the face just stored gives, `faceWidth`), offset by the tree's
+    /// `+0xc` / `+0xa` (16-bit), spawned `.MTNewSprite(type, left, top, 0xb, −1, .SetupBoxSprite)` (`BoxSprite.newBranch`:
+    /// `.SetupBoxSprite`'s head makes the layer 2 before the insert, so the branch goes in ahead of its tree and its first
+    /// Handle runs next frame), the pointer stored in the branch's slot, and the rect given back at the origin as the
+    /// branch's hot rect `+0x34/+0x38`; 0xc0f's child also gets `+0x185 = 0` (M l. 62885). With no free record the spawn
+    /// returns 0 (Ruling 16): the slot gets 0 (nil) and the writes through it are dropped.
+    static func plantBranches(_ w: SpriteWorld, id: Int, faceWidth: (FaceRef) -> Int) {
+        w.active.update(id: id) { c in
+            c.setupDone = true
+            c.face = FaceRef(pict: c.type, index: 0, set: .encoded)
+        }
+        guard let s = w.active.record(id: id), let face = s.face, let list = branches[s.type] else { return }
+        for b in list {
+            var r = IdleSprites.Rect(top: b.top, left: b.left, bottom: b.bottom, right: b.right)
+            if s.mirrored { r = PlatformSprite.flipH(r, faceWidth(face)) }
+            let dh = h(s.x), dv = h(s.y)                          // `.OffsetRect(r, +0xc, +0xa)`
+            r = IdleSprites.Rect(top: h(r.top + dv), left: h(r.left + dh), bottom: h(r.bottom + dv), right: h(r.right + dh))
+            let child = BoxSprite.newBranch(w, type: b.type, x: r.left, y: r.top)
+            w.active.update(id: id) { c in
+                switch b.slot {
+                case 0: c.siblings.first = child
+                case 1: c.siblings.second = child
+                case 2: c.siblings.third = child
+                default: c.siblings.fourth = child
+                }
+            }
+            guard let child else { continue }
+            // `.OffsetRect(r, −left, −top)`, then the 8 bytes into the child's `+0x34/+0x38`.
+            let origin = IdleSprites.Rect(top: 0, left: 0, bottom: h(r.bottom - r.top), right: h(r.right - r.left))
+            w.active.update(id: child) { k in
+                k.hotRect = origin
+                if s.type == 0xc0f { k.oneWay = false }
+            }
+        }
     }
 }
