@@ -29,6 +29,8 @@ enum LevelFixture {
         case typeNotPlaced(Int16)
         case recordNotActive(Int)
         case headerOutOfRange(offset: Int, count: Int)
+        /// A header patch inside the placement table (bytes 4 ..< 4 + 16·511): records change through `leaveOut` only.
+        case headerInPlacementTable(offset: Int, count: Int)
     }
 
     /// The shipped data (`FerazelData.open`), opened once per test process.
@@ -36,7 +38,10 @@ enum LevelFixture {
 
     /// Level 21's leave-out list (6A-FX; LL §4 "Level 21", ENG §7.2): its 30 refused records, by type — every record
     /// of each type. A literal list, never computed from what the port refuses today: a later task that builds one of
-    /// these types never edits it, so nothing this fixture pins moves.
+    /// these types never edits it, so nothing this fixture pins moves. It lives here, not in a test, because both halves
+    /// of 6A-FX's proof read it (the Render target cannot see a Core test's private list); it is frozen, and the Core test
+    /// pins it again with literals (13 entries, 30 records, the count per type). Later fixtures' lists live in their own
+    /// test files.
     static let level21: [LeaveOut] = [
         // The faces and talkers (6A-BX1b): 1061 ×14, 2921 ×2, 2962 ×1.
         .type(1061), .type(2921), .type(2962),
@@ -46,8 +51,9 @@ enum LevelFixture {
         .type(2827), .type(2831), .type(2833), .type(2834), .type(2836), .type(2850),
     ]
 
-    /// The active records (flag 1) of `level` that `leaveOut` names, in record order. Throws `Misuse` for a type with
-    /// no active record on the level or a record index that is not active.
+    /// The active records (flag 1) of `level` that `leaveOut` names, in record order (an entry named twice counts once).
+    /// Throws `Misuse` for a type with no active record on the level, or a record index that is not active or out of
+    /// range (`recordNotActive`).
     static func leftOut(_ level: LevelFile, _ leaveOut: [LeaveOut]) throws -> [Int] {
         var out = Set<Int>()
         for entry in leaveOut {
@@ -68,7 +74,9 @@ enum LevelFixture {
 
     /// The shipped resources with `Mlvl <level>` patched in memory: the left-out records' active flag (record i's
     /// byte `4 + 16·i`, `.SetupLevelSprites` spawns flag 1 only) set to 0, then each `header` patch written. Every other
-    /// resource of every file as shipped (the World Data collection copied, the `GameFlowGameTests` pattern).
+    /// resource of every file as shipped (the World Data collection copied, the `GameFlowGameTests` pattern). Throws
+    /// `Misuse` for a level with no `Mlvl`, a bad leave-out entry (`leftOut`), or a header patch past the header or
+    /// touching the placement table (records change through `leaveOut` only).
     static func resources(level: Int, leaveOut: [LeaveOut], header: [HeaderPatch] = []) throws -> FerazelResources {
         let r = try base.get()
         guard let mlvl = r.world.resource(type: "Mlvl", id: Int16(level)) else { throw Misuse.noLevel(level) }
@@ -78,6 +86,9 @@ enum LevelFixture {
         for p in header {
             guard p.offset >= 0, p.offset + p.bytes.count <= LevelFile.headerSize else {
                 throw Misuse.headerOutOfRange(offset: p.offset, count: p.bytes.count)
+            }
+            guard p.offset + p.bytes.count <= 4 || p.offset >= 4 + 16 * LevelFile.placementCount else {
+                throw Misuse.headerInPlacementTable(offset: p.offset, count: p.bytes.count)
             }
             for (k, b) in p.bytes.enumerated() { d[d.startIndex + p.offset + k] = b }
         }
@@ -97,13 +108,47 @@ enum LevelFixture {
     /// level setup runs as the game's does. Nothing is ticked yet: the caller ticks the run (its first ticks hold
     /// `.SetupLevel`'s draws, which a renderer must see). `start` nil → the header's start; `services` defaults to
     /// the headless stub (no faces) so the Core rules tests open fixtures directly; the Render tests pass
-    /// `LevelFixtureServices` built on the same patched resources.
+    /// `LevelFixtureServices.open`, which builds the patched resources once for the run and its renderer.
     static func open(level: Int, leaveOut: [LeaveOut], header: [HeaderPatch] = [], start: (x: Int, y: Int)? = nil,
                      prefs: FerazelPrefs = FerazelPrefs(), carry: LevelCarry = LevelCarry(),
                      services: LevelServices = Headless(), seed: Int32 = 1) throws -> LevelRun {
-        try LevelRun(resources: try resources(level: level, leaveOut: leaveOut, header: header), prefs: prefs,
-                     level: level, seed: seed, carry: carry, save: SaveBlock(), fade: ScreenFade(), music: MusicFade(),
-                     services: services, sounds: StageSounds(prefs: prefs, lengths: [:]), start: start)
+        try open(resources: try resources(level: level, leaveOut: leaveOut, header: header), level: level, start: start,
+                 prefs: prefs, carry: carry, services: services, seed: seed)
+    }
+
+    /// `open` on resources already patched (`resources(level:leaveOut:header:)`) — the one path both halves use, so a
+    /// run and its renderer (`LevelFixtureServices.open`) read one patched data set, built once. `StageSounds` carries
+    /// no sound lengths: `LevelRun` reads them only for the stage-complete sound at a level's end (`LevelRun.swift`,
+    /// `.stageComplete`), so a fixture test that finishes a level gets that sound with length 0. No `files:` and no
+    /// `date:`: the pause's prefs read sees defaults and a save writes no file.
+    static func open(resources: FerazelResources, level: Int, start: (x: Int, y: Int)? = nil,
+                     prefs: FerazelPrefs = FerazelPrefs(), carry: LevelCarry = LevelCarry(),
+                     services: LevelServices = Headless(), seed: Int32 = 1) throws -> LevelRun {
+        try LevelRun(resources: resources, prefs: prefs, level: level, seed: seed, carry: carry, save: SaveBlock(),
+                     fade: ScreenFade(), music: MusicFade(), services: services,
+                     sounds: StageSounds(prefs: prefs, lengths: [:]), start: start)
+    }
+
+    /// The first `limit` byte offsets where `a` and `b` differ (past the shorter one's end, every offset differs) — a
+    /// failure message's worth, never the ~1 MB a whole-level `XCTAssertEqual` prints.
+    static func firstDifferences(_ a: Data, _ b: Data, limit: Int = 8) -> [Int] {
+        let x = [UInt8](a), y = [UInt8](b)
+        return Array((0 ..< max(x.count, y.count)).lazy.filter { $0 >= x.count || $0 >= y.count || x[$0] != y[$0] }
+            .prefix(limit))
+    }
+
+    /// A refusal named by record as well as by type, for a failure message. A Setup refuses by type
+    /// (`SetupFaces.Error.notTranscribed` / `.unmapped`), so every active record of that type on `level` refuses: the
+    /// message names the level and those records' placement indices — what a leave-out list must name. Any other error
+    /// as it is.
+    static func describe(_ error: Error, level: LevelFile) -> String {
+        let type: Int16
+        switch error as? SetupFaces.Error {
+        case .notTranscribed(let t)?, .unmapped(let t)?: type = t
+        default: return "\(error)"
+        }
+        let records = level.activePlacements.filter { $0.type == type }.map(\.index)
+        return "\(error) — level \(level.id): active records \(records) of type \(type)"
     }
 
     /// The headless `LevelServices` (no faces) — the stub the Core `LevelRun` tests use (`SoundVoicesTests`).

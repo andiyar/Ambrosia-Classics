@@ -8,11 +8,15 @@ import HectorResources
 /// opens once its 30 refused records are left out. A missing data file is a FAILURE, never a skip.
 final class LevelFixtureTests: XCTestCase {
 
-    /// FNV-1a 64 (the data file's fingerprint before and after).
-    private func fnv(_ bytes: Data) -> UInt64 {
-        var h: UInt64 = 0xcbf29ce484222325
-        for b in bytes { h = (h ^ UInt64(b)) &* 0x100000001b3 }
-        return h
+    /// The six data files the fixture reads (`FerazelData.open`), as they are on disk now.
+    private func dataOnDisk() throws -> [String: Data] {
+        let dir = try FerazelData.dataDirectory()
+        var files: [String: Data] = [:]
+        for name in [FerazelData.appFile, FerazelData.worldFile, FerazelData.backgroundsFile, FerazelData.spritesFile,
+                     FerazelData.soundsFile, FerazelData.titlesFile] {
+            files[name] = try Data(contentsOf: dir.appendingPathComponent(name))
+        }
+        return files
     }
 
     /// The byte offsets where `a` and `b` (equal lengths) differ.
@@ -33,8 +37,7 @@ final class LevelFixtureTests: XCTestCase {
 
     func testLevelFixtureOpensLevel21Headless() throws {
         let base = try LevelFixture.base.get()
-        let disk = try FerazelData.dataDirectory().appendingPathComponent(FerazelData.worldFile)
-        let diskBefore = fnv(try Data(contentsOf: disk))
+        let diskBefore = try dataOnDisk()
         let file = try XCTUnwrap(base.world.resource(type: "Mlvl", id: 21)).data
         let real = try LevelFile(id: 21, data: file)
 
@@ -54,6 +57,24 @@ final class LevelFixtureTests: XCTestCase {
                                 1490: 1, 1491: 3, 1492: 1, 1493: 1,               // the L21 pipes
                                 2827: 1, 2831: 2, 2833: 1, 2834: 1, 2836: 1, 2850: 1])   // Box scenery
         XCTAssertTrue(out.allSatisfy { real.placements[$0].flag == 1 })
+        // By placement index too (level 10's 1090 records use it): one active record alone, and deduped against its
+        // type; a misuse throws, never patches. Type 0 has 186 records on level 21, none active.
+        XCTAssertEqual(try LevelFixture.leftOut(real, [.record(out[0])]), [out[0]])
+        XCTAssertEqual(try LevelFixture.leftOut(real, [.record(out[0])] + list), out)
+        let inactive = try XCTUnwrap(real.placements.firstIndex { $0.flag != 1 })
+        XCTAssertThrowsError(try LevelFixture.leftOut(real, [.record(inactive)])) {
+            XCTAssertEqual($0 as? LevelFixture.Misuse, .recordNotActive(inactive))
+        }
+        XCTAssertThrowsError(try LevelFixture.leftOut(real, [.record(LevelFile.placementCount)])) {
+            XCTAssertEqual($0 as? LevelFixture.Misuse, .recordNotActive(LevelFile.placementCount))
+        }
+        XCTAssertThrowsError(try LevelFixture.leftOut(real, [.type(0)])) {
+            XCTAssertEqual($0 as? LevelFixture.Misuse, .typeNotPlaced(0))
+        }
+        // A refusal is named by record as well as by type: every active record of the refused type on the level.
+        XCTAssertEqual(LevelFixture.describe(SetupFaces.Error.notTranscribed(type: 1491), level: real),
+                       "notTranscribed(type: 1491) — level 21: active records [35, 36, 135] of type 1491")
+        XCTAssertEqual(LevelFixture.describe(LevelFixture.Misuse.noLevel(9), level: real), "noLevel(9)")
 
         // The patched `Mlvl` differs from the file only in the 30 records' active flag (record i's byte 4 + 16·i,
         // 1 → 0); every other record, every header byte and the maps after the header as the level has them.
@@ -82,6 +103,29 @@ final class LevelFixtureTests: XCTestCase {
         let both = try LevelFixture.resources(level: 21, leaveOut: list, header: [(offset: 0x26c6, bytes: [1])])
         let b = try XCTUnwrap(both.world.resource(type: "Mlvl", id: 21)).data
         XCTAssertEqual(diff(file, b), (out.map { 4 + 16 * $0 } + [0x26c6]).sorted())
+        // A header patch past the header, or inside the placement table (where it could switch a left-out record back
+        // on), throws; so does a level with no `Mlvl`.
+        XCTAssertThrowsError(try LevelFixture.resources(level: 21, leaveOut: [],
+                                                        header: [(offset: LevelFile.headerSize - 1, bytes: [0, 0])])) {
+            XCTAssertEqual($0 as? LevelFixture.Misuse, .headerOutOfRange(offset: LevelFile.headerSize - 1, count: 2))
+        }
+        XCTAssertThrowsError(try LevelFixture.resources(level: 21, leaveOut: [.record(out[0])],
+                                                        header: [(offset: 4 + 16 * out[0], bytes: [1])])) {
+            XCTAssertEqual($0 as? LevelFixture.Misuse, .headerInPlacementTable(offset: 4 + 16 * out[0], count: 1))
+        }
+        XCTAssertThrowsError(try LevelFixture.resources(level: 999, leaveOut: [])) {
+            XCTAssertEqual($0 as? LevelFixture.Misuse, .noLevel(999))
+        }
+        // `level:` and `header:` reach the run: level 1 with its 0x26c6 byte flipped opens as that level, patched.
+        let file1 = try XCTUnwrap(base.world.resource(type: "Mlvl", id: 1)).data
+        var patched1 = file1
+        patched1[patched1.startIndex + 0x26c6] ^= 1
+        let flipped = patched1[patched1.startIndex + 0x26c6]
+        let one = try LevelFixture.open(level: 1, leaveOut: [], header: [(offset: 0x26c6, bytes: [flipped])])
+        XCTAssertEqual(one.levelNumber, 1)
+        let oneMlvl = try XCTUnwrap(one.resources.world.resource(type: "Mlvl", id: 1)).data
+        XCTAssertTrue(one.levelFile == (try LevelFile(id: 1, data: patched1)),
+                      "the run reads level 1 as patched; its Mlvl differs at \(LevelFixture.firstDifferences(oneMlvl, patched1))")
 
         // The level opens through `LevelRun` with `prefs:` and `carry:` as passed: every active record set up (a
         // refused one throws `notTranscribed` from the session init), none of the left-out ones.
@@ -94,12 +138,15 @@ final class LevelFixtureTests: XCTestCase {
         carry.globals = g
         let run = try LevelFixture.open(level: 21, leaveOut: list, prefs: prefs, carry: carry)
         XCTAssertEqual(run.levelNumber, 21)
-        XCTAssertEqual(run.levelFile, try LevelFile(id: 21, data: patched), "the run reads the patched level")
+        let runMlvl = try XCTUnwrap(run.resources.world.resource(type: "Mlvl", id: 21)).data
+        XCTAssertTrue(run.levelFile == (try LevelFile(id: 21, data: patched)),
+                      "the run reads the patched level; its Mlvl differs at \(LevelFixture.firstDifferences(runMlvl, patched))")
         XCTAssertEqual(run.prefs, prefs)
         XCTAssertEqual(run.carry, carry, "the carry as passed")
         let s: FerazelSession
         do { s = try session(run) } catch let e as SetupFaces.Error {
-            return XCTFail("level 21 refused a record the list does not leave out: \(e)")
+            return XCTFail("level 21 refused a record the list does not leave out: "
+                           + LevelFixture.describe(e, level: run.levelFile))
         }
         XCTAssertEqual(s.prefs, prefs)
         XCTAssertEqual(s.world.globals.score, 4321, "the carried G")
@@ -125,9 +172,14 @@ final class LevelFixtureTests: XCTestCase {
         XCTAssertEqual(Int(moved.world.player.pixelY), at.y)
         XCTAssertEqual(moved.prefs, FerazelPrefs(), "prefs default to FerazelPrefs()")
         XCTAssertEqual(moved.world.globals.score, 0, "carry defaults to a new game's")
+        // `seed:` reaches the run: seed 7 leaves the stream elsewhere after the Setups than the default seed 1.
+        let seeded = try session(try LevelFixture.open(level: 21, leaveOut: list, seed: 7))
+        XCTAssertNotEqual(seeded.seedAfterSetups, s.seedAfterSetups, "the seed as passed")
 
-        // The game data stays read-only: the patch was made in memory.
-        XCTAssertEqual(fnv(try Data(contentsOf: disk)), diskBefore)
+        // The game data stays read-only: the patch was made in memory (the six files the fixture reads, byte for byte).
+        let diskAfter = try dataOnDisk()
+        XCTAssertEqual(diskAfter.count, 6)
+        for (name, bytes) in diskBefore { XCTAssertTrue(diskAfter[name] == bytes, "\(name) unchanged on disk") }
         XCTAssertEqual(try XCTUnwrap(LevelFixture.base.get().world.resource(type: "Mlvl", id: 21)).data, file)
     }
 }

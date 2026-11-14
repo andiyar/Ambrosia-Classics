@@ -9,41 +9,13 @@ import XCTest
 /// missing data file is a FAILURE, never a skip.
 final class LevelFixtureRenderTests: XCTestCase {
 
-    private func fnv1a(_ bytes: [UInt8]) -> UInt64 {
-        var h: UInt64 = 0xcbf29ce484222325
-        for b in bytes { h = (h ^ UInt64(b)) &* 0x100000001b3 }
-        return h
-    }
-
-    /// Opens the fixture and ticks it, executing each tick's `.level` segments on the level's renderer (as
-    /// `GoblinBurnLevelRunTests` does), until the first presented level frame — the first tick whose level draws copy
-    /// the frame port to the screen (`.copyToScreen`, the first drawn `.GameLoop` iteration). Returns the renderer, the
-    /// run, and the FNV-1a 64 of the 640×480 screen indices after that tick.
+    /// Opens the fixture (`LevelFixtureServices.open`) and runs it to its first presented frame
+    /// (`LevelFixtureServices.firstPresentedFrame`, which defines it).
     private func firstFrame(seed: Int32) throws -> (r: FrameRenderer, run: LevelRun, services: LevelFixtureServices,
                                                     fnv: UInt64, tick: UInt32) {
-        let res = try LevelFixture.resources(level: 21, leaveOut: LevelFixture.level21)
-        let services = LevelFixtureServices(resources: res)
-        let run = try LevelFixture.open(level: 21, leaveOut: LevelFixture.level21, services: services, seed: seed)
-        var t: UInt32 = 0
-        while t < 4000 {
-            let out = try run.tick(now: t, input: FrontInput())
-            t &+= 1
-            var copied = false
-            for g in out.segments where g.target == .level {
-                let r = try XCTUnwrap(services.renderer, "the level's renderer exists before its first draw")
-                do { try r.apply(FrameOps(draws: g.output.draws)) } catch {
-                    XCTFail("tick \(t): the renderer refused: \(error)")
-                    throw error
-                }
-                copied = copied || g.output.draws.contains { if case .copyToScreen = $0 { return true }; return false }
-            }
-            if copied {
-                let r = try XCTUnwrap(services.renderer)
-                return (r, run, services, fnv1a(r.screen.pixels), t)
-            }
-        }
-        XCTFail("no presented level frame within 4000 ticks")
-        throw XCTSkip("unreachable")
+        let (run, services) = try LevelFixtureServices.open(level: 21, leaveOut: LevelFixture.level21, seed: seed)
+        let f = try services.firstPresentedFrame(run)
+        return (f.renderer, run, services, f.fnv, f.ticks)
     }
 
     func testLevelFixtureOpensLevel21WithFaces() throws {
@@ -54,7 +26,19 @@ final class LevelFixtureRenderTests: XCTestCase {
 
         let a = try firstFrame(seed: 1)
         // The renderer was made from the same patched level the run opened.
-        XCTAssertEqual(a.r.level, a.run.levelFile)
+        // (Compared as Bools with the first differing byte offsets: a whole-level XCTAssertEqual prints ~1 MB.)
+        let mine = try XCTUnwrap(a.services.resources.world.resource(type: "Mlvl", id: 21)).data
+        let runs = try XCTUnwrap(a.run.resources.world.resource(type: "Mlvl", id: 21)).data
+        let firstDiffs = LevelFixture.firstDifferences(mine, runs)
+        XCTAssertTrue(a.r.level == a.run.levelFile, "the renderer's level is the run's; their Mlvl bytes first differ at \(firstDiffs)")
+        XCTAssertTrue(mine == runs, "one patched data set; the Mlvl bytes first differ at \(firstDiffs)")
+        XCTAssertEqual(a.r.prefs, a.run.prefs, "the renderer has the run's prefs")
+        // ... and passed prefs reach the renderer (the level setup's `prepare` alone, no tick: ~4.5 s).
+        var prefs = FerazelPrefs()
+        prefs.musicVolume = 3
+        let (_, other) = try LevelFixtureServices.open(level: 21, leaveOut: LevelFixture.level21, prefs: prefs)
+        _ = try other.prepare(level: 21)
+        XCTAssertEqual(other.renderer?.prefs, prefs)
         XCTAssertEqual(a.r.level.activePlacements.count, 325 - 30)
         XCTAssertTrue(out.allSatisfy { a.r.level.placements[$0].flag == 0 })
 
@@ -75,9 +59,10 @@ final class LevelFixtureRenderTests: XCTestCase {
         XCTAssertTrue(held.isDisjoint(with: leftOutFaces), "no face for a left-out record: \(held.intersection(leftOutFaces).sorted())")
         XCTAssertTrue(a.r.sprites.faces.recordSheets.keys.allSatisfy { !leftOutFaces.contains(CachedFaces.record($0).pict) })
 
-        // The first presented frame drew with no refusal (`firstFrame` fails on one): the first `.GameLoop` iteration,
-        // at tick 143. Two openings with one seed give the same frame — pinned, measured at 6A-FX (a fixture golden:
-        // FNV-1a 64 of the 640×480 screen indices after that tick's level draws; seed 1, `FerazelPrefs()`).
+        // The first presented frame drew with no refusal (`firstPresentedFrame` throws on one): the first `.GameLoop`
+        // iteration, on the 143rd tick (now 142). Two openings with one seed give the same frame — pinned, measured at
+        // 6A-FX (a fixture golden: FNV-1a 64 of the 640×480 screen indices after that tick's level draws; seed 1,
+        // `FerazelPrefs()`).
         XCTAssertEqual(a.run.iterations, 1)
         XCTAssertEqual(a.tick, 143)
         let b = try firstFrame(seed: 1)
