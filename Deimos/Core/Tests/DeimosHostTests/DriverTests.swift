@@ -2,9 +2,10 @@ import XCTest
 @testable import DeimosHost
 import DeimosCore
 import DeimosRender
+import DeimosAudio
 
-/// The shipped assets, loaded once per test process (plan Landmine e).
-private enum ShippedAssets {
+/// The shipped assets, loaded once per test process (plan Landmine e) — shared by every DeimosHostTests file.
+enum ShippedAssets {
     static let loaded: Result<DeimosAssets, Error> = Result {
         try DeimosAssets.load(index: TagIndex(dataDirectory: DeimosData.dataDirectory()))
     }
@@ -25,9 +26,9 @@ final class DriverTests: XCTestCase {
     private static let poll = 0.004
     private static let escKey: UInt16 = 0x35
 
-    private func makeDriver() throws -> DeimosDriver {
+    private func makeDriver(audio: (any DeimosAudioSink)? = nil, sector: Int = 1) throws -> DeimosDriver {
         try DeimosDriver(assets: try ShippedAssets.get(), prefs: .fresh, rate: .classic,
-                         start: SessionStart(sector: 1, players: 1, film: nil))
+                         start: SessionStart(sector: sector, players: 1, film: nil), audio: audio)
     }
 
     func testTicksAtRate() {
@@ -112,23 +113,30 @@ final class DriverTests: XCTestCase {
         }
         XCTAssertEqual(clock.ticks, stallStamp + 2)
 
-        // Caps Lock: the pass that samples it carries `.pauseWait` (the renderer traps on it); the driver steps it as a
-        // no-op until H2 builds the real wait, so the hold runs on and the session keeps going.
+        // Caps Lock: the pass that samples it carries `.pauseWait` (the renderer traps on it). H2: the driver holds the
+        // loop there — no pass begins while Caps Lock stays down — and runs on once an idle sees it up.
         let caps = HeldKeys(capsLock: true)
         var probe = driver.session
         XCTAssertTrue(probe.pass(keys: caps).ops.contains { if case .pauseWait = $0 { return true } else { return false } })
         let passesBeforeCaps = driver.passCount
-        while driver.passCount < passesBeforeCaps + 3 {
+        for _ in 0..<500 {
             clock.seconds += Self.poll
             _ = driver.idle(seconds: clock.seconds, keys: caps)
-            if clock.seconds > 180 { return XCTFail("no passes with Caps Lock held") }
+        }
+        XCTAssertEqual(driver.passCount, passesBeforeCaps + 1, "one pass sampled Caps Lock, then the wait holds")
+        while driver.passCount < passesBeforeCaps + 3 {
+            clock.seconds += Self.poll
+            _ = driver.idle(seconds: clock.seconds, keys: HeldKeys())
+            if clock.seconds > 180 { return XCTFail("no passes after Caps Lock went up") }
         }
         XCTAssertTrue(driver.session.running)
     }
 
     func testEscStartsNewSession() throws {
         let assets = try ShippedAssets.get()
-        var driver = try makeDriver()
+        // Started at sector 2, so the restart's "sector 1" (◇ stand-in 3) is not the start's sector.
+        var driver = try makeDriver(sector: 2)
+        XCTAssertEqual(driver.session.sector, 2)
         var clock = FakeClock(rate: .classic)
         while driver.presentCount < 20 {
             _ = driver.idle(seconds: clock.seconds, keys: HeldKeys())
@@ -256,5 +264,281 @@ final class DriverTests: XCTestCase {
         let after = stamps.filter { $0 < 0x8000_0000 && $0 >= 2 }
         XCTAssertGreaterThan(after.count, 10)
         XCTAssertEqual(Set(zip(after.dropFirst(), after).map { $0 &- $1 }), [2], "the rhythm resumes after the wrap")
+    }
+
+    // MARK: - H2: the driver, Phase 2
+
+    private static let capsUp = HeldKeys()
+    private static let f6Key: UInt16 = 0x61
+    private static let minusKey: UInt16 = 0x1b
+    private static let consoleKey: UInt16 = 0x32
+
+    /// The pause (`FUN_10030870` → `FUN_10022ef0`, listing `10022f18..10023010`): the pass that samples Caps Lock
+    /// down carries halt, `gaso 8` and the music pause to the sink when it begins; `.pauseWait` then holds the loop
+    /// until an idle sees Caps Lock up (`10022f68..10022fa4`) — while it is held no pass begins, so the pause cannot
+    /// re-fire; while the app is suspended Caps Lock is not even tested (`10022f84..10022fa0`: r29 = !suspended), and
+    /// the resume handler is blocked by the pause flag r2−0x617b (`10023e7c..10023e8c`), so the music stays paused.
+    /// Up → the pause's present, and the next pass's cues lead with the resume (`10022fb4`, one frame late). Caps
+    /// Lock + Esc in one pass: the begin carries halt + gaso 8 + pause only; after the wait the resume (`10022fb4`),
+    /// the present, then the session end's halt and stop (`10005ad8`, `10005ae4`), then the new session.
+    /// Fake-clock cap 120 s.
+    func testPauseWaitHoldsUntilCapsUp() throws {
+        let assets = try ShippedAssets.get()
+        let gaso8 = assets.sounds[8]
+        let sink = RecordingSink()
+        var driver = try makeDriver(audio: sink)
+        var clock = FakeClock(rate: .classic)
+        let cap = 120.0
+        func idle(_ keys: HeldKeys) -> Bool {
+            _ = driver.idle(seconds: clock.seconds, keys: keys)
+            clock.seconds += Self.poll
+            return clock.seconds <= cap
+        }
+        while driver.presentCount < 20 { guard idle(Self.capsUp) else { return XCTFail("no presents") } }
+
+        // Caps Lock down: the next pass pauses; its cues reach the sink as it begins.
+        let caps = HeldKeys(capsLock: true)
+        var applies = sink.applies.count
+        let passesBefore = driver.passCount
+        while driver.passCount == passesBefore { guard idle(caps) else { return XCTFail("no pass with Caps Lock") } }
+        let pausePass = driver.passCount
+        XCTAssertEqual(sink.applies.count, applies + 1, "the pause pass's cues, once")
+        let pause = try XCTUnwrap(sink.applies.last)
+        XCTAssertEqual(pause.music.last, .pause)
+        XCTAssertFalse(pause.music.contains(.resume), "no resume before the wait")
+        XCTAssertEqual(pause.sounds.last?.id, gaso8)
+        XCTAssertEqual(pause.halt, pause.sounds.count - 1, "the halt runs just before gaso 8")
+
+        // Held for 3 s: no pass begins, the pause does not re-fire, nothing reaches the sink.
+        applies = sink.applies.count
+        let holdEnd = clock.seconds + 3
+        while clock.seconds < holdEnd { guard idle(caps) else { return XCTFail("cap") } }
+        XCTAssertEqual(driver.passCount, pausePass, "no pass while Caps Lock is down")
+        XCTAssertEqual(sink.applies.count, applies)
+
+        // Suspend during the wait: the music pause (10023dc8); Caps Lock up is not tested while suspended; resume
+        // sends no music resume (blocked by the pause flag).
+        driver.suspend()
+        XCTAssertEqual(sink.applies.count, applies + 1)
+        XCTAssertEqual(sink.applies.last, RecordingSink.Apply(sounds: [], music: [.pause], halt: nil))
+        for _ in 0..<20 { guard idle(Self.capsUp) else { return XCTFail("cap") } }
+        XCTAssertEqual(driver.passCount, pausePass, "suspended: the wait does not test Caps Lock")
+        driver.resume()
+        XCTAssertEqual(sink.applies.count, applies + 1, "the resume handler is blocked during the wait")
+        for _ in 0..<20 { guard idle(caps) else { return XCTFail("cap") } }
+        XCTAssertEqual(driver.passCount, pausePass)
+        XCTAssertFalse(sink.applies.flatMap(\.music).contains(.resume), "music stays paused")
+
+        // Caps Lock up: the wait ends in that idle — the pause's present — and the next pass begins, its music led by
+        // the resume.
+        applies = sink.applies.count
+        let presents = driver.presentCount
+        _ = idle(Self.capsUp)
+        XCTAssertEqual(driver.presentCount, presents + 1, "the pause's present after the wait")
+        XCTAssertEqual(driver.passCount, pausePass + 1)
+        XCTAssertEqual(sink.applies.count, applies + 1)
+        XCTAssertEqual(sink.applies.last?.music.first, .resume, "the resume reaches the sink after Caps Lock up")
+
+        // Caps Lock stays up: no second pause.
+        applies = sink.applies.count
+        while driver.passCount < pausePass + 30 { guard idle(Self.capsUp) else { return XCTFail("cap") } }
+        XCTAssertFalse(sink.applies.dropFirst(applies).flatMap(\.music).contains(.pause))
+
+        // Caps Lock + Esc in one pass.
+        let both = HeldKeys(held: [Self.escKey], capsLock: true)
+        applies = sink.applies.count
+        let p0 = driver.passCount
+        while driver.passCount == p0 { guard idle(both) else { return XCTFail("no pass with Caps Lock + Esc") } }
+        XCTAssertFalse(driver.session.running)
+        XCTAssertEqual(sink.applies.count, applies + 1)
+        let end = try XCTUnwrap(sink.applies.last)
+        XCTAssertEqual(end.music.last, .pause, "the begin carries the pause, not the resume or the stop")
+        XCTAssertFalse(end.music.contains(.resume))
+        XCTAssertFalse(end.music.contains(.stop))
+        XCTAssertEqual(end.sounds.last?.id, gaso8)
+        XCTAssertEqual(end.halt, end.sounds.count - 1, "the pause's halt")
+        let holdBoth = clock.seconds + 1
+        while clock.seconds < holdBoth { guard idle(both) else { return XCTFail("cap") } }
+        XCTAssertEqual(sink.applies.count, applies + 1, "nothing more until Caps Lock goes up")
+        XCTAssertEqual(driver.restarts, 0)
+        _ = idle(Self.capsUp)
+        XCTAssertEqual(driver.restarts, 1)
+        let after = Array(sink.applies.dropFirst(applies + 1))
+        XCTAssertEqual(after.count, 3)
+        guard after.count == 3 else { return }
+        XCTAssertEqual(after[0], RecordingSink.Apply(sounds: [], music: [.resume], halt: nil), "10022fb4, after the wait")
+        XCTAssertEqual(after[1], RecordingSink.Apply(sounds: [], music: [.stop], halt: 0), "10005ad8 halt, 10005ae4 stop")
+        XCTAssertEqual(after[2].music, [.play(FourCC("ammu")!, loop: true), .stop, .level(100)], "the new session")
+
+        // Outside a pause: resume only acts when suspended (10023e10..10023e34); suspend once per suspension
+        // (10023db4..10023dbc); a resume with no pause holding the music resumes it (10023e88..10023e8c).
+        applies = sink.applies.count
+        driver.resume()
+        XCTAssertEqual(sink.applies.count, applies, "not suspended: resume sends nothing")
+        driver.suspend()
+        driver.suspend()
+        driver.resume()
+        driver.resume()
+        XCTAssertEqual(Array(sink.applies.dropFirst(applies)), [RecordingSink.Apply(sounds: [], music: [.pause], halt: nil),
+                                                                RecordingSink.Apply(sounds: [], music: [.resume], halt: nil)])
+    }
+
+    /// Each pass's `sounds` / `music` / `haltEffectsAt` reach the sink once, in pass order, in the `idle` in which
+    /// the pass begins — checked in lockstep against a reference session fed the same keys and TickCount; F6's
+    /// `gaso 7` and the Esc pass's halt (at the end of its sounds, `10005ad8`) and stop (`10005ae4`) included.
+    func testCuesRoutedAtPassBegin() throws {
+        let assets = try ShippedAssets.get()
+        let sink = RecordingSink()
+        var driver = try makeDriver(audio: sink)
+        var clock = FakeClock(rate: .classic)
+        var ref = try DeimosSession(assets: assets, prefs: .fresh, start: SessionStart(sector: 1, players: 1, film: nil),
+                                    seed: 0, ticks: 0)
+        var expected: [RecordingSink.Apply] = []
+        var idles = 0
+        while driver.session.running {
+            let n = driver.passCount
+            var keys = HeldKeys()
+            if (100..<103).contains(n) { keys.held.insert(Self.f6Key) }
+            if n >= 200 { keys.held.insert(Self.escKey) }
+            let applies = sink.applies.count
+            _ = driver.idle(seconds: clock.seconds, keys: keys)
+            var thisIdle: [RecordingSink.Apply] = []
+            for _ in 0..<(driver.passCount - n) {
+                let out = ref.pass(keys: keys, ticks: clock.ticks)
+                if !(out.sounds.isEmpty && out.music.isEmpty && out.haltEffectsAt == nil) {
+                    thisIdle.append(RecordingSink.Apply(sounds: out.sounds, music: out.music, halt: out.haltEffectsAt))
+                }
+            }
+            XCTAssertEqual(Array(sink.applies.dropFirst(applies)), thisIdle, "idle \(idles)")
+            expected += thisIdle
+            clock.seconds += Self.poll
+            idles += 1
+            if idles > 20_000 { return XCTFail("bound: 20,000 idles") }
+        }
+        XCTAssertEqual(driver.restarts, 0)
+        XCTAssertEqual(driver.session.rng, ref.rng, "the reference ran the same passes")
+        XCTAssertEqual(sink.applies, expected)
+        XCTAssertEqual(sink.applies.first?.music, [.play(FourCC("ammu")!, loop: true), .stop, .level(100)])
+        XCTAssertTrue(sink.applies.contains { $0.music == [.play(FourCC("mu03")!, loop: true)] }, "the appear's music")
+        XCTAssertTrue(sink.applies.contains { $0.sounds.contains { $0.id == assets.sounds[7] } }, "F6's gaso 7")
+        let last = try XCTUnwrap(sink.applies.last)
+        XCTAssertEqual(last.halt, last.sounds.count, "the session end's halt after the pass's sounds")
+        XCTAssertEqual(last.music.last, .stop)
+    }
+
+    /// Typed characters (`HeldKeys.typed`, key-downs) accumulate across `idle` calls in which no pass begins and all
+    /// reach the next pass; the open console takes one per frame (`FUN_1002d230`), so three passes later its line
+    /// holds all three.
+    func testTypedQueueAcrossIdleCalls() throws {
+        var driver = try makeDriver()
+        var clock = FakeClock(rate: .classic)
+        while driver.presentCount < 20 {
+            _ = driver.idle(seconds: clock.seconds, keys: HeldKeys())
+            clock.seconds += Self.poll
+            if clock.seconds > 60 { return XCTFail("no presents") }
+        }
+        let opening = driver.passCount
+        while driver.passCount == opening {
+            _ = driver.idle(seconds: clock.seconds, keys: HeldKeys(held: [Self.consoleKey]))
+            clock.seconds += Self.poll
+            if clock.seconds > 120 { return XCTFail("no pass with the console key") }
+        }
+        XCTAssertTrue(driver.session.console.isOpen)
+        // The pass waits at its limiter: idles at the same clock begin no pass.
+        let passes = driver.passCount
+        for c: UInt8 in [0x61, 0x62, 0x63] {
+            _ = driver.idle(seconds: clock.seconds, keys: HeldKeys(typed: [c]))
+            XCTAssertEqual(driver.passCount, passes, "no pass began while typing")
+        }
+        while driver.passCount < passes + 3 {
+            clock.seconds += Self.poll
+            _ = driver.idle(seconds: clock.seconds, keys: HeldKeys())
+            if clock.seconds > 180 { return XCTFail("no passes after typing") }
+        }
+        XCTAssertEqual(driver.session.console.text, [0x61, 0x62, 0x63])
+    }
+
+    /// ◇ Stand-in 3: the Esc that ended a session is latched, and the latch clears on a release seen by ANY `idle` —
+    /// here one in which no pass begins (the driver waits at the new session's limiter). A fresh press then ends the
+    /// new session. (On the Phase-1 driver only a pass's sample cleared the latch, so this press was swallowed.)
+    func testEscLatchClearsOnSubPassRelease() throws {
+        var driver = try makeDriver()
+        var clock = FakeClock(rate: .classic)
+        while driver.presentCount < 20 {
+            _ = driver.idle(seconds: clock.seconds, keys: HeldKeys())
+            clock.seconds += Self.poll
+            if clock.seconds > 60 { return XCTFail("no presents") }
+        }
+        let esc = HeldKeys(held: [Self.escKey])
+        while driver.restarts == 0 {
+            _ = driver.idle(seconds: clock.seconds, keys: esc)
+            clock.seconds += Self.poll
+            if clock.seconds > 120 { return XCTFail("no restart") }
+        }
+        let passes = driver.passCount
+        _ = driver.idle(seconds: clock.seconds, keys: HeldKeys())
+        XCTAssertEqual(driver.passCount, passes, "the release idle began no pass")
+        var calls = 0
+        while driver.restarts == 1 {
+            clock.seconds += Self.poll
+            _ = driver.idle(seconds: clock.seconds, keys: esc)
+            calls += 1
+            if calls > 2_000 { return XCTFail("the fresh Esc press was swallowed by the latch") }
+        }
+        XCTAssertEqual(driver.restarts, 2)
+    }
+
+    /// ◇ Stand-in 6: a restart keeps the ended session's prefs — F6 (byte pref 5) and `-` (int pref 0, 50 → 40)
+    /// then Esc → the carried prefs; the new level start sees pref 5 set (suspended until its appear, `1000693c`).
+    /// ◇ Stand-in 2: game over (no input: the pilot dies; running clears at gameOverStart + 111) restarts the same
+    /// way at sector 1, carrying the prefs again. Bound: fake clock 300 s.
+    func testPrefsSurviveRestart() throws {
+        var driver = try makeDriver()
+        var clock = FakeClock(rate: .classic)
+        func idle(_ keys: HeldKeys) -> Bool {
+            _ = driver.idle(seconds: clock.seconds, keys: keys)
+            clock.seconds += Self.poll
+            return clock.seconds <= 300
+        }
+        while driver.presentCount < 20 { guard idle(HeldKeys()) else { return XCTFail("no presents") } }
+        XCTAssertEqual(driver.prefs.bytePrefs[5], 0)
+        XCTAssertEqual(driver.prefs.intPrefs[0], 50)
+        let p = driver.passCount
+        while driver.passCount == p {
+            guard idle(HeldKeys(held: [Self.f6Key, Self.minusKey])) else { return XCTFail("no F6 pass") }
+        }
+        XCTAssertEqual(driver.session.prefs.bytePrefs[5], 1)
+        XCTAssertEqual(driver.session.prefs.intPrefs[0], 40)
+
+        while driver.restarts == 0 { guard idle(HeldKeys(held: [Self.escKey])) else { return XCTFail("no restart") } }
+        XCTAssertEqual(driver.prefs.bytePrefs[5], 1, "carried: F6")
+        XCTAssertEqual(driver.prefs.intPrefs[0], 40, "carried: the volume")
+        XCTAssertEqual(driver.session.sector, 1)
+        XCTAssertTrue(driver.session.restoreInterlace, "the new level start saw pref 5 set")
+
+        var gameOver = false
+        while driver.restarts == 1 {
+            guard idle(HeldKeys()) else { return XCTFail("no game over") }
+            if !driver.session.running && driver.session.game.flags.noPlayerAlive { gameOver = true }
+        }
+        XCTAssertTrue(gameOver, "the second session ended on game over")
+        XCTAssertEqual(driver.restarts, 2)
+        XCTAssertEqual(driver.session.sector, 1)
+        XCTAssertEqual(driver.prefs.bytePrefs[5], 1, "carried again (restored at the appear)")
+        XCTAssertEqual(driver.prefs.intPrefs[0], 40)
+    }
+}
+
+/// A sink that records every `apply`, in order (single-threaded tests).
+final class RecordingSink: DeimosAudioSink, @unchecked Sendable {
+    struct Apply: Equatable {
+        var sounds: [SoundCue]
+        var music: [MusicCue]
+        var halt: Int?
+    }
+    private(set) var applies: [Apply] = []
+
+    func apply(sounds: [SoundCue], music: [MusicCue], haltEffectsAt: Int?) {
+        applies.append(Apply(sounds: sounds, music: music, halt: haltEffectsAt))
     }
 }

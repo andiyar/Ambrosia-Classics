@@ -8,7 +8,7 @@ public struct TickTrace: Equatable, Sendable {
         public var gameTime: Int32
         /// P1's film cursor (−1 when no film plays).
         public var cursor: Int32
-        /// P1: life state (+0xc6), decoded score, lives, displayed shield, money, multiplier.
+        /// P1: life state (+0xc6), decoded score, lives, decoded shield, money, multiplier.
         public var p1State: UInt8
         public var p1Score: Int32
         public var p1Lives: Int32

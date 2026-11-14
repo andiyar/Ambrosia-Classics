@@ -199,7 +199,7 @@ State byte `+0xc6`, entered at `+0xc8` (`FUN_10026c80` stores both). Dispatch `1
 |---|---|---|---|
 | 0 | none | — | |
 | 1 | out of lives | if `now > enter + gameOverTime` (+0x80, 20): `+0xc4 = 0` (player leaves the game) | `1002a24c..1002a268` |
-| 2 | entering (invisible, no input) | if `now > enter + entry_InitialDelay` (+0xb8, 55): `FUN_10029cc0` → state 4; else `FUN_10031710(index, 0.0)` (score bar) | `1002a1b4..1002a1e4` |
+| 2 | entering (invisible, no input) [⚑ corrected (Phase 2, 2026-11) #56: on the tick that enters state 4 the input IS read and the ship moves in that same tick — the life-state call `10029048` falls straight through to the input read `1002905c` (state re-read at `1002a3c4`) and the update re-reads the state at `100290c4` before the velocity step `100291dc` and the move `100294e0`; left held on tick 56 gives x 208 − 1.6] | if `now > enter + entry_InitialDelay` (+0xb8, 55): `FUN_10029cc0` → state 4; else `FUN_10031710(index, 0.0)` (score bar) | `1002a1b4..1002a1e4` |
 | 3 | dying | duration = `finalDyingTime` (+0x88, 40) if lives == 1 else `dyingTime` (+0x84, 80); after `now > enter + duration`: if `gate` and in game, lives = max(lives−1, 0); then lives < 1 → state 1 (enter = now); else `FUN_10029cc0` (respawn, state 4) and shield = `defaultShieldPercentage` (+0x48, 100) (0 if not in game), lastHit = lastSpawn = 0, `+0xd1 = 0` | `1002a290..1002a378` |
 | 4 | active | if invulnerable (`+0xce`) and level not complete (`FUN_10005cf0` = `game+0x39` == 0) and `now > enter + entry_InvulnerabilityTime` (+0x8c, 60) and in game and not sticky (`+0xcf`): clear `+0xce`, `+0xcf` | `1002a1e8..1002a23c` |
 Lives are decremented **at the end of the dying state**, not at the moment of death

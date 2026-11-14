@@ -245,11 +245,6 @@ public enum EntityDraw {
         t.format.locY = t.format.locY &+ c.textYOffset               // 10029974 / 10029994..1002999c
         return t
     }
-
-    /// `FUN_100298c0` as render ops — ◇ the Phase-1 session's wrapper (no coin-tally text); C18b deletes it.
-    public static func playerOps(_ p: inout Player, hOffset: Int32, floats: [Float]) -> [RenderOp] {
-        playerCommands(&p, hOffset: hOffset, floats: floats).map { .draw($0) }
-    }
 }
 
 /// The group draw (C12): `FUN_100345f0` and `FUN_10012f20` per entity, with the terrain branch (+0x36 →

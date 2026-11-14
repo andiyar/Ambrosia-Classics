@@ -17,6 +17,7 @@ let package = Package(
         .library(name: "DeimosHost", targets: ["DeimosHost"]),
         .library(name: "DeimosAudio", targets: ["DeimosAudio"]),
         .executable(name: "deimos-census", targets: ["deimos-census"]),
+        .executable(name: "deimos-replay", targets: ["deimos-replay"]),
     ],
     dependencies: [
         .package(path: Context.environment["HECTORKIT_PATH"] ?? "../../../HectorKit"),
@@ -29,9 +30,10 @@ let package = Package(
         // The renderer (Phase 1 R1–R3): RGB555 buffers, CopyBits, presents, fades, blitters. Foundation +
         // DeimosCore only (plan invariant 1) — executes Core's RenderOps on persistent buffers.
         .target(name: "DeimosRender", dependencies: ["DeimosCore"]),
-        // The host driver (Phase 1 H1): the Mac-tick clock, the FPS limiter and fade waits as yields, Esc restart.
-        // Foundation + DeimosCore + DeimosRender only (plan invariant 1) — no threads, no sleeping.
-        .target(name: "DeimosHost", dependencies: ["DeimosCore", "DeimosRender"]),
+        // The host driver (Phase 1 H1, Phase 2 H2): the Mac-tick clock, the FPS limiter, fade and pause waits as
+        // yields, Esc restart, the audio cues to a sink; the headless runner and replay trace. Foundation +
+        // DeimosCore + DeimosRender + DeimosAudio only (plan invariant 1) — no threads, no sleeping.
+        .target(name: "DeimosHost", dependencies: ["DeimosCore", "DeimosRender", "DeimosAudio"]),
         // The game's own audio (Phase 2 A1–A2): the 16-voice / 8-audible effects mixer over the continuous-IMA
         // sounds, and the music streamer, behind one pull source. Foundation + DeimosCore + HectorAudio only
         // (plan invariant 1; A2 adds Synchronization for the engine's Mutex — pulled on the audio thread).
@@ -50,7 +52,12 @@ let package = Package(
             .product(name: "HectorAudio", package: "HectorKit"),
             .product(name: "HectorGraphics", package: "HectorKit"),
         ]),
+        // The replay tool (Phase 2 H3): demo films through the headless runner, the G4 line and the triage numbers,
+        // the per-tick trace CSV, frames as PPM. Foundation + the four Deimos libraries only (plan invariant 1).
+        .executableTarget(name: "deimos-replay", dependencies: ["DeimosHost", "DeimosRender", "DeimosAudio", "DeimosCore"]),
         .testTarget(name: "DeimosCensusTests", dependencies: ["deimos-census", "DeimosCore"]),
+        // The replay gate G4 (H3): a separate bundle, excluded from G2 by `--skip DeimosReplayTests`.
+        .testTarget(name: "DeimosReplayTests", dependencies: ["deimos-replay", "DeimosHost", "DeimosCore"]),
         .testTarget(name: "DeimosCoreTests", dependencies: [
             "DeimosCore",
             .product(name: "HectorResources", package: "HectorKit"),
@@ -58,7 +65,7 @@ let package = Package(
             .product(name: "HectorGraphics", package: "HectorKit"),
         ]),
         .testTarget(name: "DeimosRenderTests", dependencies: ["DeimosRender", "DeimosCore"]),
-        .testTarget(name: "DeimosHostTests", dependencies: ["DeimosHost", "DeimosRender", "DeimosCore"]),
+        .testTarget(name: "DeimosHostTests", dependencies: ["DeimosHost", "DeimosRender", "DeimosCore", "DeimosAudio"]),
         .testTarget(name: "DeimosAudioTests", dependencies: ["DeimosAudio", "DeimosCore"]),
     ]
 )

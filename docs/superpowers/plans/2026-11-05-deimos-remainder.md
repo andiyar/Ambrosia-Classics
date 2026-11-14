@@ -640,7 +640,10 @@ Shared files, one owner at a time: `Package.swift` (H2 → H3), `EntityDraw.swif
   locator).
 - **Contract:** `deimos-replay <film tag>… [--trace file.csv] [--frames dir --every N] [--all]` — committed data
   (`DEIMOS_DATA` overrides); per film the G4 line plus the triage progress numbers (G4 step 3); `--all` = de01–de04
-  (de02–de04 print `INFO`). Exit 0 iff de01 passes.
+  (de02–de04 print `INFO`). Exit 0 iff de01 passes. **Corrected 2026-11-14 (wave 3, seat ruling after both review
+  legs):** de02–de04 are asserted too (`PASS`/`FAIL`, exit 0 iff every film run passes) and the bundle has a fourth test,
+  `testDemos02To04ReachTheirStoredScores` — de01 never leaves x1 and cannot see the multiplier rule or a lost extra
+  life; de02 and de04 can. G4 = 4 passed.
 - **Tests (3, G4 bundle):** `testDemo01ReachesScore25050AtRead4809` (G4: `scoreAtRead4808` = 25,050; `maxPasses`
   20,000) · `testReplayIsDeterministic` (two runs to game time 1,000 → identical trace hash) · `testCLISummaryLine`.
 - **Gate:** G2 = **344 / 0**; G4 green, or recorded "pending trace" → F1 (G4 step 2); G7 incl. `deimos-replay`.
@@ -652,7 +655,9 @@ Shared files, one owner at a time: `Package.swift` (H2 → H3), `EntityDraw.swif
   `Deimos/App/{DeimosController,DeimosMain}.swift`.
 - **Contract:** `DeimosAudioEngine` created at launch (failure → silent, like `FUN_10047160`'s non-fatal path) and
   attached with `ShellMixer.attachStream(_:)`; the driver gets it as `audio`; the stream is paused while the app is
-  suspended (`setStreamPaused`). Key-down characters (no repeats) mapped to Mac charCodes per the console's table
+  suspended (`setStreamPaused`) — **corrected 2026-11-14 (wave 3):** wrong against the listing; 1.0.6's suspend handler
+  (`10023da0`) pauses the music only and touches no sound channel, so the app calls `driver.suspend()` and leaves the
+  stream running (effects ring out). Key-down characters (no repeats) mapped to Mac charCodes per the console's table
   (NSEvent 0xF700-range arrows → 0x1C–0x1F; delete → 0x08; return → 0x0D) into `HeldKeys.typed`; Caps Lock into
   `capsLock`. ◇ `-film deNN` (stand-in 5).
 - **Gate:** G5, plus machine-observable checks: a DEBUG-only counter of cues routed and frames rendered by the engine

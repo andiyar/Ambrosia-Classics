@@ -304,12 +304,12 @@ matter. [HIGH]
 routines; `FUN_10009970` cursor reset has the callers `FUN_10009390`/`FUN_10009680` only). A
 multi-level game therefore records all its levels into one stream, but "Last Film" replays only
 the **start level** of that game.
-**Replay ends** when any key or mouse button is pressed (`FUN_10048e60`), or when P1's cursor > P1's
+**Replay ends** when any key or mouse button is pressed (`FUN_10048e60`) [⚑ corrected (Phase 2, 2026-11) #54: `FUN_10048e60` tests the MOUSE BUTTON only (`10048e6c`) — keys do not end a film; besides the button a film ends on Esc through the begin frame (`10005904`), on level complete or game over, or when it runs out (next clause). Re-read by two review legs, wave 2b], or when P1's cursor > P1's
 frames (`FUN_10009750`, brute-forced idiom = signed `cursor > frames` — ⚑ corrected (review wave 2, 2026-10-03) #M1 checked and
 **not** adopted: listing `10009758 xor; 1000975c srawi 1; 10009760 and r0,r0,r4; 10009764 subf;
 10009768 rlwinm r3,r0,0x1,0x1f,0x1f` is the signed compare, as for `FUN_10021470` §2.2; checked after every draw,
 `10005a24..10005a48`), or at level complete, or at game over. `FUN_100097a0` still reads the
-byte at `cursor == frames` (zero), so the replay runs one tick past the recording. P2's frames
+byte at `cursor == frames` (zero), so the replay runs one tick past the recording [⚑ corrected (Phase 2, 2026-11) #55: confirmed by machine, MED → HIGH — the replica replays all four shipped films to their stored scores, each ending with the cursor at frames + 1: de01 25,050 (4,809 frames, cursor 4,810), de02 116,180 (read 8,357), de03 57,520 (read 10,058), de04 24,670 (read 5,649). The four films postdate the 1.0.6 game data and agree with the 1.0.6 code]. P2's frames
 are never checked. While replaying, "REPLAY" (GameString 9) is drawn and cheats are refused.
 **Film modes** [HIGH]: `FUN_10024de0` = `FUN_100234d0(2,1)` attract demo. It cycles film tags whose
 name contains "Demo" with the counter `G+0x24`, wrapping to the first; `G+0x24` is not in the
@@ -461,7 +461,7 @@ would corrupt one row of the table.
 5. ~~Name-entry easter eggs at `0x100e8af8`/`0x100e8b63` (strings not decoded) and the ctype table
    `_DAT_100dea48` (exact accepted character set).~~ → ⚑ corrected (review wave 2, 2026-10-03) #C9 #S: front-end.md §4.3 —
    `BIKI` → "Filthy Communist", `FISJ` → "Daikajinn!!"; ctype table `0x100f0f94` checked.
-6. `FUN_10048e60` (replay abort) — which keys/buttons count (assumed any key or click).
+6. ~~`FUN_10048e60` (replay abort) — which keys/buttons count (assumed any key or click).~~ → ⚑ corrected (Phase 2, 2026-11) #54: closed — the mouse button only (`10048e6c`); see §"Replay ends" above.
 7. Pak directory order on modern file systems (HFS order = alphabetical by name), relevant only
    when duplicate tags exist across paks (none in 1.0.6).
 

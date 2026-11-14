@@ -156,6 +156,8 @@ targets:
         product: DeimosRender
       - package: DeimosCore
         product: DeimosHost
+      - package: DeimosCore
+        product: DeimosAudio
       - package: HectorKit
         product: HectorShell
     settings:
