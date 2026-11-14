@@ -55,10 +55,13 @@ public struct ScriptSegmentListing: Equatable, Sendable {
     public let deadCodeRuns: Int
     /// `.ai` only: the decoded header and entries.
     public let combatAI: CombatAISegment?
+    /// The structural shapes `scriptdis.py` lists with an "ANOMALY" note, in the order the walk meets them;
+    /// none in the shipped data (every listing header says "anomalies: 0").
+    public let anomalies: [ScriptAnomaly]
 
     public init(id: UInt16, kind: ScriptSegmentKind, length: Int, instructions: [ScriptInstruction],
                 dictionaryOffset: Int? = nil, methods: [ScriptMethod] = [], properties: [UInt16] = [],
-                deadCodeRuns: Int = 0, combatAI: CombatAISegment? = nil) {
+                deadCodeRuns: Int = 0, combatAI: CombatAISegment? = nil, anomalies: [ScriptAnomaly] = []) {
         self.id = id
         self.kind = kind
         self.length = length
@@ -68,5 +71,40 @@ public struct ScriptSegmentListing: Equatable, Sendable {
         self.properties = properties
         self.deadCodeRuns = deadCodeRuns
         self.combatAI = combatAI
+        self.anomalies = anomalies
+    }
+}
+
+/// A shape the walk lists the way `scriptdis.py` does but the tool flags as an anomaly (`Dis.anoms`). The
+/// structural categories only: the tool's expression-stack notes (no value, extra values, underflow, a send with
+/// no receiver), the 0x82 slot ≥ 0x40 and 0x90 terminator notes and its string-reference notes are not modelled.
+public struct ScriptAnomaly: Equatable, Hashable, Sendable {
+    public enum Kind: Equatable, Hashable, Sendable {
+        /// A same-segment code pointer past the end; `offset` = its target (not followed).
+        case pointerPastEnd
+        /// A jump target past the end; `offset` = the target (not followed).
+        case jumpPastEnd
+        /// The walk reached the middle of a non-text statement; `offset` = where (the path stops).
+        case midInstruction
+        /// The walk reached a literal block other than a word; `offset` = where (the path stops).
+        case intoLiteral
+        /// A statement covers a byte another (non-text pair) statement owns; `offset` = that byte, one per byte.
+        case overlappingDecode
+        /// An array or dictionary header claims more entries than fit; `offset` = the block (clamped).
+        case arrayPastEnd, dictPastEnd
+        /// A literal block whose header byte is none of string/array/dictionary; `offset` = the block.
+        case oddLiteral
+        /// A 0x45 block whose literal parses past its length; `offset` = the block's first byte.
+        case inlineBlockOverrun
+        /// A 0x47/0x83 segment word past the end; `offset` = the word offset.
+        case wordPastEnd
+    }
+
+    public let kind: Kind
+    public let offset: Int
+
+    public init(_ kind: Kind, at offset: Int) {
+        self.kind = kind
+        self.offset = offset
     }
 }
