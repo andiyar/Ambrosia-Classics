@@ -72,6 +72,11 @@ final class LevelTransitionTests: XCTestCase {
     func testTransitionPassStartsNextSector() throws {
         var s = try session(sector: 1)
         XCTAssertEqual(s.game.flags.levelsStarted, 1)
+        XCTAssertEqual(s.players[0].handler.air.id, FourCC("aiic"), "the sector-1 start weapon")
+        // The last level was perfect (G+0x0b, as FUN_100072c0 sets it at 100% ground accuracy, 10007384); the
+        // accuracy tier at this level's end only ever sets it.
+        s.game.flags.perfectThisLevel = true
+        XCTAssertFalse(s.game.flags.rewardArmed)
         let out = try XCTUnwrap(runToTransition(&s))
         XCTAssertFalse(out.sessionEnded, "a mid-game transition does not end the session")
         XCTAssertTrue(s.running)
@@ -84,6 +89,11 @@ final class LevelTransitionTests: XCTestCase {
         XCTAssertFalse(s.game.flags.levelComplete)                          // 1000723c..10007240
         XCTAssertFalse(s.game.flags.levelEnding)                            // 10007248
         XCTAssertFalse(s.game.flags.levelEndHandled)                        // 10006504
+        XCTAssertTrue(s.game.flags.rewardArmed, "G+0x0c takes the perfect flag (10006524..10006544)")
+        XCTAssertFalse(s.game.flags.perfectThisLevel, "… and G+0x0b is cleared (1000653c)")
+        // The weapon handler's level start reads G+0x14 (1003b0dc), set at 100066e8 before the players' level start
+        // (10006798): entering sector 2 equips the PEAA whose minimum level is 2 — the Bacta Gun (appendix A §4).
+        XCTAssertEqual(s.players[0].handler.air.id, FourCC("aibg"), "sector 2's forced air weapon")
         let fade = try XCTUnwrap(out.ops.firstIndex(of: .fade(.toBlack, .gameLayout)))
         XCTAssertFalse(out.ops[fade...].contains(where: Self.isPresent), "no present: appeared is 0 (10030d90)")
         // The new level's state: the scroll at its start (FUN_1000fa90), the le06 mask (FUN_1000fbc0), P1 waiting to

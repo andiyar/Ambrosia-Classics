@@ -94,18 +94,32 @@ public struct GameState: Sendable {
 /// The levels of `LevelOrder` (`FUN_10011de0` = 12), sector 1 first: each one's `leve` definition (what
 /// `FUN_10011fd0` fills the level info with) and its media mask (`FUN_1000fbc0`'s `_DAT_100e0138` / `_DAT_100e0134`)
 /// — decoded once, so the level start that `FUN_10007170` runs inside a pass (`1000725c`) cannot fail (plan LT).
+/// Immutable once loaded and shared by reference: a copy (another game state, a restarted session) holds the same load.
 public struct LevelSet: Sendable {
+    /// The one load, shared by every copy.
+    private final class Storage: Sendable {
+        let definitions: [LevelDefinition]
+        let masks: [MediaMask]
+        init(definitions: [LevelDefinition], masks: [MediaMask]) {
+            self.definitions = definitions
+            self.masks = masks
+        }
+    }
+    private let storage: Storage
+
     /// Index `sector − 1`.
-    public private(set) var definitions: [LevelDefinition] = []
+    public var definitions: [LevelDefinition] { storage.definitions }
     /// Index `sector − 1`.
-    public private(set) var masks: [MediaMask] = []
+    public var masks: [MediaMask] { storage.masks }
 
     /// Empty: not loaded yet.
-    public init() {}
+    public init() { storage = Storage(definitions: [], masks: []) }
 
     /// Every sector of the order: its level tag must name a `leve` definition (`SessionError.noLevel(sector:)` — the
     /// original's `10011da4` fatal error) and the definition's media mask must decode.
     public init(assets: DeimosAssets) throws {
+        var definitions: [LevelDefinition] = []
+        var masks: [MediaMask] = []
         for (i, tag) in assets.levelOrder.levels.enumerated() {
             guard tag != .none, let info = assets.definitions.levels.first(where: { $0.id == tag }) else {
                 throw SessionError.noLevel(sector: i + 1)
@@ -113,9 +127,13 @@ public struct LevelSet: Sendable {
             definitions.append(info)
             masks.append(try Self.loadMask(info, assets: assets))
         }
+        storage = Storage(definitions: definitions, masks: masks)
     }
 
     public var isEmpty: Bool { definitions.isEmpty }
+
+    /// Both are copies of the same load (no decode in between) — for tests of the restart's reuse.
+    func isSameLoad(as other: LevelSet) -> Bool { storage === other.storage }
 
     /// `FUN_1000fbc0`'s media mask: `info.mediaMask` (`+0x280`) as an im16 TGA, row-major top-down
     /// (`cells.count == width × height`, the index rule of `MediaMask.isWater`); `_DAT_100e0134` = map width / mask

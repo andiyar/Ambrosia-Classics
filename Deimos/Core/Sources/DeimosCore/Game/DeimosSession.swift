@@ -125,9 +125,11 @@ public struct DeimosSession: Sendable {
 
     /// `FUN_100051a0`'s set-up, then the level start `FUN_100064d0` (see the type's comment). `seed` is
     /// `TickCount()` at `100057c8` (ignored for a film, whose seed is used); `ticks` is the `TickCount()` the frame
-    /// controller's FPS monitor starts from (`FUN_100305e0` inside `FUN_10030210`).
+    /// controller's FPS monitor starts from (`FUN_100305e0` inside `FUN_10030210`). `levels` = an earlier session's
+    /// loaded `game.levels` over the same `assets` (a restart): reused as is, skipping the decode of the twelve masks;
+    /// nil (or empty) → loaded and validated here.
     public init(assets: DeimosAssets, prefs: DeimosPrefs, start: SessionStart, seed: UInt32,
-                ticks: UInt32 = 0) throws {
+                ticks: UInt32 = 0, levels: LevelSet? = nil) throws {
         // ScrollState hard-codes PermFloats 54/55 (VisibleGameWidth/Height); the pass reads 18 and 32 too.
         let f = assets.floats
         guard f.count > 55, f[54] == Float(ScrollState.visibleWidth), f[55] == Float(ScrollState.visibleHeight) else {
@@ -163,7 +165,11 @@ public struct DeimosSession: Sendable {
 
         // srand: the film's seed (FUN_100069b0 → FUN_10055400) or TickCount (100057d4).
         var g = GameState(assets: assets, prefs: prefs, seed: start.film?.seed ?? seed)
-        try g.loadLevels()                                           // plan LT: every level start in a pass is safe
+        if let levels, !levels.isEmpty {                             // a restart: the ended session's load
+            g.levels = levels
+        } else {
+            try g.loadLevels()                                       // plan LT: every level start in a pass is safe
+        }
         g.flags.filmPlaying = start.film != nil                      // 10005670..1000568c (G+0x20)
         g.film = start.film.map(FilmCursor.init(film:))              // FUN_100069b0: cursors 0 (FUN_10009970)
         g.flags.numPlayers = UInt8(truncatingIfNeeded: players)      // FUN_10009680 / 10005770 (G+0x21)
@@ -421,10 +427,9 @@ extension GameState {
     /// Levels started == 0 → the level of +0x18 (`10006560..10006588`); else sector(+0x18) + 1 (`10006594..100065a8`),
     /// level `none` above the order's count (`100065ac..100065bc`, `10006620..10006628`), else that sector's tag and
     /// level info (`100065c4..100065dc`). Levels started += 1 BEFORE the `none` test (`1000667c..10006684`); `none` →
-    /// music resume, running = 0, return before any player or world reset (`10006688..100066c8`) — false; else true
-    /// once the level is started.
-    @discardableResult
-    public mutating func levelStart(film: Bool) -> Bool {
+    /// music resume, running = 0, return before any player or world reset (`10006688..100066c8`). The first level
+    /// start needs G+0x18 (`flags.level`) set to a tag of the order.
+    public mutating func levelStart(film: Bool) {
         flags.gameTime = 0                                           // 10006500
         flags.levelEndHandled = false                                // 10006504
         flags.levelEndTime = flags.gameTime                          // 10006508..1000650c
@@ -448,6 +453,8 @@ extension GameState {
         let order = assets.levelOrder
         var sector = order.sector(of: flags.level) ?? 0              // FUN_10011e30 (0 when absent)
         if flags.levelsStarted == 0 {                                // 10006560..10006568
+            precondition(sector >= 1, "GameState.levelStart: the first level start needs flags.level (G+0x18) set "
+                         + "to a tag of the level order; it is \(flags.level)")
             levelInfo = levels.definitions[sector - 1]               // 10006580..10006588 FUN_10011fd0
         } else {
             sector += 1                                              // 10006598..100065a8
@@ -463,7 +470,7 @@ extension GameState {
         if flags.level == .none {                                    // 10006688..10006694
             cues.music.append(.resume)                               // 10006698..1000669c FUN_10048220(0)
             flags.running = false                                    // 100066c0..100066c4 (+0x0e: registered)
-            return false                                             // 100066c8 → 10006988
+            return                                                   // 100066c8 → 10006988
         }
         flags.sector = Int32(sector)                                 // 100066e8
         // [100066f0 FUN_1002b3a0 resource preload; 100066f8..1000674c the terrain buffer, superseded by the map load]
@@ -505,6 +512,5 @@ extension GameState {
             flags.restoreInterlace = false                           // 1000696c..10006970
         }
         // [10006974 the first terrain blit: the drawing part; 10006980 FUN_1000c2a0 window]
-        return true
     }
 }

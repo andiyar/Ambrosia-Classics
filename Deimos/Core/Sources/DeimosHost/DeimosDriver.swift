@@ -218,7 +218,8 @@ public struct DeimosDriver {
 
             if next == ops.count {
                 // The pass's ops are done.
-                if cuesAfterFade != nil { sendCuesAfterFade() }                      // (a mark without its fade)
+                assert(cuesAfterFade == nil,
+                       "a pass with fadeToBlackAt carries its .fade(.toBlack) op, whose end sent these cues")
                 if passBegun {
                     if endAfterPass {
                         guard !restartedThisCall else { return out }
@@ -334,10 +335,12 @@ public struct DeimosDriver {
         var halt = pass.haltEffectsAt
         if let mark = pass.fadeToBlackAt {                                   // 1000722c..10007234
             let ks = min(max(mark.sounds, 0), sounds.count), km = min(max(mark.music, 0), music.count)
-            send(sounds: Array(sounds[..<ks]), music: Array(music[..<km]), halt: halt.flatMap { $0 < ks ? $0 : nil })
+            assert(halt.map { $0 >= ks } ?? true,
+                   "halts come only from the pause and the session end, both after the tick's fade mark")
+            send(sounds: Array(sounds[..<ks]), music: Array(music[..<km]), halt: nil)
             sounds = Array(sounds[ks...])
             music = Array(music[km...])
-            halt = halt.flatMap { $0 >= ks ? $0 - ks : nil }
+            halt = halt.map { $0 - ks }
         }
         let paused = pass.ops.contains { if case .pauseWait = $0 { return true } else { return false } }
         if paused {
@@ -387,12 +390,16 @@ public struct DeimosDriver {
     }
 
     /// A fresh session (`srand(seed)`) with a fresh frame controller (limiter stamp 0). When `sector` cannot be
-    /// built (data without that level), the session falls back to `start`, which `init` validated.
+    /// built (data without that level), the session falls back to `start`, which `init` validated. The new session
+    /// reuses the current one's loaded level set (immutable, shared), so a restart inside `idle` decodes no masks.
     private mutating func newSession(seed: UInt32, sector: Int) {
         let s = SessionStart(sector: sector, players: start.players, film: start.film)
-        if let made = try? DeimosSession(assets: assets, prefs: prefs, start: s, seed: seed, ticks: seed) {
+        let levels = session.game.levels
+        if let made = try? DeimosSession(assets: assets, prefs: prefs, start: s, seed: seed, ticks: seed,
+                                         levels: levels) {
             session = made
-        } else if let made = try? DeimosSession(assets: assets, prefs: prefs, start: start, seed: seed, ticks: seed) {
+        } else if let made = try? DeimosSession(assets: assets, prefs: prefs, start: start, seed: seed, ticks: seed,
+                                                levels: levels) {
             session = made
         }
         lastPresent = 0

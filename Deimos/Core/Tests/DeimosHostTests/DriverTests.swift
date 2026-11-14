@@ -154,6 +154,8 @@ final class DriverTests: XCTestCase {
             if clock.seconds > 120 { return XCTFail("no pass with Esc") }
         }
         XCTAssertEqual(driver.restarts, 0, "the Esc pass still runs to its end")
+        let loaded = driver.session.game.levels
+        XCTAssertEqual(loaded.definitions.count, 12, "the first session loaded the twelve levels")
         let presents = driver.presentCount
         var restartTicks: UInt32?
         var passesAtRestart = 0
@@ -171,6 +173,8 @@ final class DriverTests: XCTestCase {
                                           start: SessionStart(sector: 1, players: 1, film: nil),
                                           seed: try XCTUnwrap(restartTicks))
         XCTAssertEqual(driver.session.sector, 1)
+        XCTAssertTrue(driver.session.game.levels.isSameLoad(as: loaded),
+                      "the restart reuses the ended session's level set — no second decode of the twelve masks")
         XCTAssertEqual(driver.session.rng, reference.rng)
         XCTAssertFalse(driver.session.appeared)
         XCTAssertEqual(driver.lastPresent, try XCTUnwrap(restartTicks), "the new controller's stamp starts at 0, so its first limiter releases at once and stamps the restart's ticks")
