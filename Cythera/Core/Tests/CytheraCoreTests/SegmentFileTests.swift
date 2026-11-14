@@ -234,4 +234,16 @@ final class SegmentFileTests: XCTestCase {
         XCTAssertNil(full.segment(0x0100))
         XCTAssertEqual(full.segment(0x0201), Data([1]))
     }
+
+    /// C9: the combat-AI band 0x0410–0x0436 is loaded with plain `GetSegment` (ai-scripts.md §3), so
+    /// `scriptSegment` returns it as stored; the rest of the script band is still decrypted.
+    func testAIBandReturnedAsStored() throws {
+        let file = try segmentFile()
+        XCTAssertEqual(SegmentFile.storedPlaintextBand, 0x0410...0x0436)
+        let ai = try XCTUnwrap(file.scriptSegment(0x0410))
+        XCTAssertEqual(ai.first, 0x0E)
+        XCTAssertEqual(String(decoding: ai.dropFirst().prefix(14), as: UTF8.self), "Attack Nearest")   // ASCII
+        XCTAssertEqual(file.scriptSegment(0x0436), file.segment(0x0436))
+        XCTAssertNotEqual(file.scriptSegment(0x0201), file.segment(0x0201))
+    }
 }

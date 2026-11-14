@@ -252,6 +252,37 @@ name; a `text` running past the segment end → `textRunsPastEnd`; never a trap)
 `grep -n '^// ==== .*DoInterpAt' …`) and confirms the prediction "0x1802 @02D4 decodes as `text` of 33 bytes with the pc
 left on 0x88".
 
+**As executed — session A1 (2026-11-15, Opus 5.5 seat; C8 alone, C9 split to session A2).** Commits 89ac2af (decoder,
+6 tests) and 9bb4b78 (review fix round: docs, every-prefix sweep, two 0x9C literal cases; no behaviour change); pushed
+to origin as a fast-forward; merged into local main as f932830. Seat's numbers at the merge head:
+
+| gate | value |
+|---|---|
+| G2 suite | 44 before · **50** after, 0 failed or skipped |
+| G6 scope | exactly the card's 5 files |
+| G7 layering · G9 clean tree | both empty · empty |
+| G1 HectorKit | ef2c341, `PASS: zero skips, zero failures, executed 370 == floor 370` |
+| grounding | 958 listings; `segment` at :118, `scriptSegment` at :128 |
+
+Both legs passed it. Leg 1 decoded all 18,864 instruction lines of the 944 non-AI committed listings with the Swift
+decoder: length and mnemonic equal on every line, 0 throws. Leg 2 re-derived 0x9C, 0x8F, 0x82 and the text rule from
+`DoInterpAt` and confirmed the @02D4 prediction (33 bytes, next byte 0x88) with its own Python decode.
+Deviations from this card, all accepted:
+- **0x9C reads seg16 + two expressions on BOTH branches** (decompile lines 42960–43016; script-vm.md §8): for 0xFFFF a
+  target expression then the argument; otherwise an integer expression added to seg, then the argument. The card's
+  contract 1 wording ("seg ≠ 0xFFFF: one int expr") is wrong; the code follows the binary.
+- A text running to the segment end throws `textRunsPastEnd` (scriptdis.py accepts it silently; no shipped site has one).
+- The tool's `nop` (0x00) and `nop91` (0x91) tokens are kept; they never occur in a shipped listing, so the 34 stand.
+- 0xFF is refused with a fourth error case, `ScriptDecodeError.nullBuiltin` (script-vm.md §4's table still lists 0xFF
+  as a builtin; §8 and the tool refuse it).
+- `jumpTargets` holds jump targets only (0x88/89/8C/8D/90 — the listing's `>` marks). **The 0x9E local-subroutine target
+  is not exposed: C9 adds it as its own field** (0x1802 @0060 is reached only by the callsubs at @0326 and @055F; corpus
+  15 local subroutines, 40 callsub sites, none inside an expression). 0x43 code pointers likewise.
+- `kind: .expressionOnly` exists but nothing produces it yet; `ScriptOpcodeRow` / `ScriptOperandForm` are public beyond
+  the locked surface.
+- The every-prefix sweep cuts every prefix for every statement offset except offsets inside a text that ends at the same
+  byte as its enclosing text (three cuts there; the full sweep took 6.6 s, now 0.15 s).
+
 #### Task C9 — ⚑ script segment model + canonical parity for 958 segments (→ 57) — needs C8
 
 **Scene.** The listing tool `scriptdis.py` classifies every script-band segment, walks reachability and prints one
@@ -340,6 +371,58 @@ Nearest"; entries (len − 32)/8) · `testCanonicalParityAll958` (every hash equ
 **Reviewer legs (two):** leg 2 re-derives the dictionary layout and `At`'s open-addressing probe from
 `At__7TInterpF5VAddrs @ 10083798` and confirms the prediction "deleting one byte from the 0x1802 listing's canon
 changes exactly one hash".
+
+**As executed — session A2 (2026-11-15, Opus 5.5 seat; C9 alone).** Commits ea8275f (tool + golden), 6cc6e98 (the
+decoder records the walk's references), fa7ccd6 (model, decoder, canon, 7 tests), a91f991 (review fix round: comments,
+data-derived checks, a class-segment mutation sweep, the walk's three anomaly branches, a locked test cache; no
+behaviour change); pushed to origin as a fast-forward; merged into local main as 102ce97. Seat's numbers at a91f991:
+
+| gate | value |
+|---|---|
+| G2 suite | 50 before · **57** after, 0 failed or skipped |
+| G8 parity | `PARITY-OK`; 958 hash lines; 22,166 canonical lines |
+| script_canon.py | 958 files · flags `-` 16,899 · `>` 4,665 · `x` 602 · 34 mnemonics = contract 4 |
+| kinds | class 700 · routine 218 · strtab 20 · ai 14 · data 3 · array 2 · dict 1 |
+| G6 scope | the card's 11 files + `Script/ScriptInstruction.swift`, `Script/InstructionDecoder.swift` (the seat's widening, from C8's review) |
+| G7 layering · G9 clean tree | both empty · empty |
+
+Both legs passed it (leg 1 PASS WITH FIXES, all minor and fixed in a91f991; leg 2 PASS). Leg 1 ported-walk check: the
+Swift walk follows `Dis` line by line; dead-code runs equal every listing header; method and property counts equal on
+all 700 classes; 40,666 hostile cuts and mutations listed or threw a named error, 0 traps. Leg 2 re-derived the
+dictionary from `At` (decompile l.43656–43760): first byte `(b>>4)−7` = 3 for 0xA0–0xAF; n = `hdr & 0xFFF`; 6-byte slots
+at +2+6i (u32 value, then u16 key); start key mod n; step from `s = s*3+1` (16-bit wrap) taken mod n, first non-zero;
+stop at a Nil value. Its own probe over all 701 dictionaries: 1,728 keys, 0 mismatches. The prediction held: one byte
+deleted from 0x1802's canon (and one flag byte changed in a listing copy) changes exactly one hash line; the Swift
+parity test then fails naming 0x1802.
+Deviations from this card, all accepted by both legs:
+- The walk needs more than the callsub target: 0x9E targets, 0x43 code pointers, 0x45 inline blocks and 0x47/0x83 word
+  offsets all go in one field, `ScriptInstruction.references` (in the order `Dis` meets them: a callsub target after
+  its arguments, a 0x83 word after its value), with a `subroutineTargets` view. `jumpTargets` is unchanged.
+- `ScriptInstruction.Kind.literal` is new; `ScriptSegmentListing` also carries `dictionaryOffset`, `methods`,
+  `properties`, `deadCodeRuns`, `combatAI` (the tests read them).
+- New named refusals: an AI id outside 0x0410–0x0436, literals nested deeper than 256, a truncated literal, a ragged AI
+  segment or an over-long name.
+- Classification takes the plaintext set from `SegmentFile` (the engine has no such set: it reads 0x0101/0x0210
+  unscrambled because they were stored so, script-vm.md §8) instead of the tool's raw-bytes fallback; the kinds agree
+  on all 958.
+- The card's "class 0x40 id 2" check in `testDictionaryAndMethods0x1802` was dropped: it could only be constant
+  arithmetic.
+**Fable cross-check over C8 + C9 (Ben, 2026-11-15: "One after C9"; diff bf8b9e0..a91f991): PASS WITH FIXES**, nothing
+blocking session B. It re-read the statement and expression interpreters row by row (every operand length matches; the
+0x9C deviation is right) and cross-checked jump targets, references, methods, properties and dead runs against every
+listing (0 mismatches; 60,000 fuzz cases, 0 traps). Fixed in 1e6eb5c (suite still 57/0, `PARITY-OK`, same 13 files):
+the walk now records the tool's anomaly kinds in `ScriptSegmentListing.anomalies` (0 over all 958, pinned); an empty
+0x45 block parses nothing; `listing(_:in:)` documents that it is a census/parity tool whose dead-code sweep refuses a
+whole segment on a bad byte, and names its three error types; signed-operand doc lines; `flag` is `internal(set)`;
+corpus totals pinned (own methods 1,023 · shared 7 · properties 643 · dead runs 599 · callsubs 40 · 0x45 blocks 176 ·
+words 4 · jump targets 6,845) and all 14 AI names; the INDEX listings row corrected. Carried into this plan's cards:
+the operand-oracle rule (Wave 5), the AI band width and listing the overlay (C13), the census SHA-256 and golden path
+(C11), the bank corrections and the public-surface lock (C12).
+Carried, not fixed: the canonical form leaves out operands (a changed `args=` count moves no hash) — parity proves
+lengths, mnemonics and flags only; the listing model does not carry the indented contents of 0x45 blocks (a Phase 2
+note); `script-vm.md` §1 omits three engine details of `At` that no shipped data reaches (the 16-bit step wrap, keys
+≥ 0x8000 never match, a full table loops forever); `ScriptDecoder` decrypts a segment before refusing an out-of-band AI
+id (harmless).
 
 ### Session B — C6, C7 ⚑, C10 (three lanes, disjoint files; none touches `Package.swift`)
 
@@ -508,6 +591,13 @@ colour-table order; three census refusals the original does not make are undocum
 overlay's write path (write, remove, flush, encrypted save) is NOT here — it is the Phase 4 card SV-OV; Phase 0 writes
 no file. One reviewer leg.
 
+**Carried from the C8 + C9 Fable cross-check (2026-11-15), decide here:** (a) `SegmentFile.storedPlaintextBand` is
+0x0410–0x0436 (the 14 shipped AIs), but the engine's AI slots run 0xB0–0xFF, i.e. segments 0x0410–0x045F
+(ai-scripts.md l.102–109, 263); `scriptSegment` would still scramble 0x0437–0x045F silently. Widen the band or record
+why not, before this task copies the set into the overlay. (b) `ScriptDecoder.listing(_:in:)` takes the concrete
+`SegmentFile`; once the overlay is a segment store it still cannot be listed (user AIs live in the player file) —
+take the protocol, or record it for Phase 4.
+
 **Files.** `Sources/CytheraCore/Segments/SegmentOverlay.swift` (:39 conformance; new `entry(_:)`, new
 `scriptSegment(_:)` using `SegmentFile.storedPlaintext` + `storedPlaintextBand`); `Sources/CytheraCore/World/LevelMap.swift`
 (:60 add `init(store: some SegmentStore, level: Int, maxMapDimension: Int16)`; :74 one comment line: the per-side cap
@@ -535,6 +625,10 @@ k's value == k, three colours pinned).
 **Gate:** G2 previous + 6; G6, G7, G9. **Commit:** `Cythera/Core: audit seams — overlay is a SegmentStore (+ scriptSegment), store-based map init, carried minors, comments; 6 tests`.
 
 #### Task C11 — minor — `cythera-census` + `docs/cythera/data-census.md` + `--render` (→ 91; previous + 5) — needs C6–C10, C13
+
+**Carried from the C8 + C9 Fable cross-check (2026-11-15):** the census's scripts line needs a SHA-256 outside the
+test target (C9's is private in `ScriptParityTests.swift`) and a way to find `docs/cythera/script-parity.sha256`,
+which is not under the data folder; the line can state the anomaly total (0 over 958, pinned since the Fable fix round).
 
 **Files.** Modify `Package.swift` (adds the executable `cythera-census` and the test target `CytheraCensusTests`, as
 §0b's package line); create `Sources/CytheraRender/Census/CytheraCensus.swift`, `Sources/cythera-census/main.swift`,
@@ -590,6 +684,16 @@ truncated to 0x1000 bytes → 1 and the line names the file) · `testOneLinePerS
 **Gate:** G2 **91/0** (when C13 precedes it), G3. **Commit:** `Cythera/Core: cythera-census + docs/cythera/data-census.md (1,558 segments, 198 resources, 0 failures); 5 tests`.
 
 #### Task C12 — minor — final gates, bank corrections, as-built (no tests)
+
+**Carried from the C8 + C9 Fable cross-check (2026-11-15), add to the bank corrections and the as-built:**
+`script-vm.md` §8 — 16-bit operands (jump and callsub targets, 0x83 words, the switch count, the 0x45 length) are
+signed in the engine (decompile l.41305, 42529–42533, 42570, 42670; the 0x9E target's signedness is unconfirmed —
+re-read it); §1 — `At`'s step wraps at 16 bits, keys ≥ 0x8000
+never match, a full table loops forever (l.43736–43752; no shipped data reaches any); §8 / script-census.md §2 — the
+encrypted read returns an already-cached segment without decrypting again (l.40794–40830, low confidence). The
+as-built paragraph says which public Script names beyond the ★ list are locked: `kind(of:bytes:)`,
+`maxLiteralDepth`, `ScriptMethod`, `ScriptReference`, the anomaly type, the three error enums, `BuiltinNames`, the
+expression-row names ("i8", "segword", "local"), and whether `.expressionOnly` (never produced) stays.
 
 **Steps.**
 - [ ] 1. Re-run G1 (with the `$AKI` override; record "gate PASS 370 at ef2c341" or the later clean main's SHA/floor),
@@ -723,6 +827,10 @@ VM-HP heap · BI-1…BI-6 builtins by family (iterators; props/items; party/char
 stubs; flags/variables/to-do) · EN-CK clock rates · EN-SC schedules · EN-AI `DoMove` + activity queue · EN-PF pathfinder
 · EN-HD hood/eggs/spawn · EN-SG signals · AU-MX mixer · AU-MU music cues → the shell's synth · TH-WR wait reasons ·
 PR-WE the worked-example goldens (spec §7 row "the VM") · PR-BOT the Catamarca day bot. Gate: a day in Catamarca.
+**From the C8 + C9 Fable cross-check (2026-11-15):** C9's parity proves instruction lengths, mnemonics, flags, jump
+targets and references — not operands (slots, selectors, constants, class bytes, frame counts, which builtin). The VM
+cards need their own operand-level oracle, and the VM must assert that its pc advance equals
+`InstructionDecoder.statement(…).length` for every statement it runs. 16-bit operands are signed in the engine.
 
 ## Waves 6–8 — Phases 3–8 (cards, one line each; each expanded in this file after its research)
 
