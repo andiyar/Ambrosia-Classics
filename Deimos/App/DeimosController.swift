@@ -1,22 +1,51 @@
 import AppKit
+import DeimosAudio
 import DeimosCore
 import DeimosHost
 import DeimosRender
 import HectorShell
+#if DEBUG
+import HectorAudio
+import Synchronization
+#endif
 
 /// The app delegate and shell owner (plan S6, A1): loads the original data, opens the 640×480 game window at the
 /// largest whole scale that fits (D27.3), and drives `DeimosDriver` from a 1/240 s idle timer — keys polled once per
 /// Mac tick (`GetKeys`; `heldKeys(seconds:)`), suspended while the app is hidden (`updateSuspension`), the window's RGB555 screen converted and presented whenever the driver says it changed, the
 /// cursor requests honoured. All timing (Mac ticks, the FPS limiter, fade steps) is the driver's; the App only asks
 /// often enough (every ~4 ms) that a tick boundary is never missed by more than a fraction of a tick.
+///
+/// Phase 2 (plan A3): the game's audio (`DeimosAudioEngine`, effects + music behind one pull source) rides the kit's
+/// output as one stream voice (`ShellMixer.attachStream`) and is the driver's `audio` sink; key-down characters reach
+/// the driver as Mac charCodes in `HeldKeys.typed` (the console); Caps Lock is `HeldKeys.capsLock` (the pause key);
+/// ◇ `-film deNN` plays a shipped demo film (stand-in 5).
 @MainActor final class DeimosController: NSObject, NSApplicationDelegate, ShellInputHandler {
     static let width = 640
     static let height = 480
     static let title = "Deimos Rising"
 
+    private let options: LaunchOptions
     private var driver: DeimosDriver!
     private var shell: ShellWindowController!
     private var timer: ShellIdleTimer!
+    /// The Mac's audio output and the game's stream voice on it; nil when sound is not available (the game then
+    /// runs silent — `FUN_10047160`'s non-fatal "Sound not available" path).
+    private var mixer: ShellMixer?
+    private var streamID: Int?
+    /// Key-down charCodes since the last `driver.idle` (the OS event queue the original's `GetOSEvent` reads):
+    /// handed to the driver once, in the next `heldKeys(seconds:)`, then cleared.
+    private var pendingTyped: [UInt8] = []
+    #if DEBUG
+    private var audioCounter: DebugAudioCounter?
+    private var launchSeconds = 0.0
+    private var lastDebugLog = 0.0
+    private var debugCapsLockDown = false
+    #endif
+
+    init(options: LaunchOptions) {
+        self.options = options
+        super.init()
+    }
     /// The window's image, refilled from `driver.screen` on every present (k = 1: the original's 640×480 pixels).
     private let bitmap = ShellBitmap(width: DeimosController.width, height: DeimosController.height)
 
@@ -43,9 +72,28 @@ import HectorShell
         }
         do {
             let assets = try DeimosAssets.load(dataDirectory: dataDirectory)
+            // ◇ `-film deNN` (stand-in 5): the session takes seed, level and player count from the film (`FUN_100069b0`).
+            var film: Film?
+            if let tag = options.film {
+                do {
+                    film = try Self.film(tag, in: assets)
+                } catch {
+                    // Like a missing data folder: DEBUG says so, then log and quit.
+                    #if DEBUG
+                    let alert = NSAlert()
+                    alert.messageText = "Deimos Rising has no demo film “\(tag)” it can play."
+                    alert.informativeText = "-film takes a shipped film tag: de01, de02, de03 or de04.\n\n\(error)"
+                    alert.runModal()
+                    #endif
+                    fail("cannot play -film \(tag): \(error)")
+                    return
+                }
+            }
+            let audio = startAudio(assets: assets)
             // Mac OS X's 60 Hz TickCount: Ben played Deimos on OS X (gate 1, DECISIONS D30; Q1).
             driver = try DeimosDriver(assets: assets, prefs: .fresh, rate: .osx,
-                                      start: SessionStart(sector: 1, players: 1, film: nil))
+                                      start: SessionStart(sector: 1, players: film?.playerCount ?? 1, film: film),
+                                      audio: audio)
         } catch {
             // The folder is there but its contents do not load (design §7.7): DEBUG says so, Release logs and quits.
             #if DEBUG
@@ -72,6 +120,10 @@ import HectorShell
         shell.windowedWindow.makeKeyAndOrderFront(nil)
         NSApp.activate()
 
+        #if DEBUG
+        launchSeconds = ProcessInfo.processInfo.systemUptime
+        lastDebugLog = launchSeconds
+        #endif
         timer = ShellIdleTimer(interval: 1.0 / 240.0) { [weak self] in self?.idleFired() }
         timer.start()
         idleFired()
@@ -111,6 +163,43 @@ import HectorShell
         NSApp.terminate(nil)
     }
 
+    /// No `film` record with this tag in the data (`-film` with an unknown or missing tag).
+    private struct NoSuchFilm: Error, CustomStringConvertible {
+        let tag: String
+        var description: String { "no film record \"\(tag)\" in the data" }
+    }
+
+    /// The shipped `film` record `tag` (de01–de04), decoded.
+    private static func film(_ tag: String, in assets: DeimosAssets) throws -> Film {
+        guard let type = FourCC("film"), let id = FourCC(tag),
+              let record = assets.index.record(type: type, id: id) else { throw NoSuchFilm(tag: tag) }
+        return try Film(data: assets.index.data(for: record))
+    }
+
+    /// Sound init (`FUN_10047160`): opens the Mac's output and the game's mixer and attaches the mixer as the
+    /// output's stream voice. Any failure is logged and the game runs silent (the original's "Sound not available"
+    /// path is non-fatal) — the driver then has no sink.
+    private func startAudio(assets: DeimosAssets) -> (any DeimosAudioSink)? {
+        do {
+            let output = try ShellMixer(voices: 0)          // the stream voice is the only voice
+            let engine = try DeimosAudioEngine(assets: assets)
+            #if DEBUG
+            let counter = DebugAudioCounter(engine: engine)
+            audioCounter = counter
+            streamID = output.attachStream(counter)
+            mixer = output
+            return counter
+            #else
+            streamID = output.attachStream(engine)
+            mixer = output
+            return engine
+            #endif
+        } catch {
+            NSLog("Deimos Rising: sound not available, running silent: %@", "\(error)")
+            return nil
+        }
+    }
+
     // MARK: Menu
 
     /// The app menu only (the original had no menus in play): Quit ⌘Q, plus a hidden Full Screen ⌃⌘F item — the
@@ -140,7 +229,13 @@ import HectorShell
     private func idleFired() {
         guard driver != nil, !suspended else { return }
         let seconds = ProcessInfo.processInfo.systemUptime
+        #if DEBUG
+        let before = audioCounter?.snapshot
+        #endif
         let out = driver.idle(seconds: seconds, keys: heldKeys(seconds: seconds))
+        #if DEBUG
+        debugAfterIdle(seconds: seconds, before: before)
+        #endif
         for request in out.requests {
             switch request {
             case .hideCursor: wantsCursorHidden = true
@@ -167,7 +262,14 @@ import HectorShell
         } else {
             state = shell.view.keyState
         }
-        return HeldKeys(held: state.held, capsLock: state.capsLock)
+        var capsLock = state.capsLock
+        #if DEBUG
+        if debugCapsLockHeld(seconds: seconds) { capsLock = true }
+        #endif
+        // The typed characters go to exactly one `idle` (the driver queues them into its next pass).
+        let typed = pendingTyped
+        pendingTyped = []
+        return HeldKeys(held: state.held, capsLock: capsLock, typed: typed)
     }
 
     /// Copies the driver's screen into the window bitmap (x1R5G5B5 → 0xAARRGGBB) and shows it.
@@ -190,6 +292,8 @@ import HectorShell
     /// catch-up, so on resume (`FUN_1000b8b0`: +0x65 = 0, show, bring to front) its next pass simply runs late, as
     /// the original's did. The original painted the window black on resume and let the next present restore the
     /// image; here the held screen is shown at once (the menu would otherwise stay black until a button redraws).
+    /// Audio (A3): the driver's suspend / resume handlers send the music pause / resume (`10023dc8`, `10023e88`; a
+    /// pause in progress keeps the music paused across them), and the game's stream voice is paused meanwhile.
     private func updateSuspension() {
         guard driver != nil, shell != nil else { return }
         let suspend = !NSApp.isActive || shell.windowedWindow.isMiniaturized
@@ -197,11 +301,15 @@ import HectorShell
         suspended = suspend
         if suspend {
             timer?.invalidate()
+            driver.suspend()
+            if let mixer, let streamID { mixer.setStreamPaused(streamID, true) }
             if cursorHidden {
                 NSCursor.unhide()
                 cursorHidden = false
             }
         } else {
+            driver.resume()
+            if let mixer, let streamID { mixer.setStreamPaused(streamID, false) }
             present()
             timer?.start()
             idleFired()
@@ -235,8 +343,33 @@ import HectorShell
 
     // MARK: ShellInputHandler
 
-    /// Play reads the keyboard by polling (`pollKeyState`); key-downs are not used (⌃⌘F is the hidden menu item).
-    func shellView(_ view: ShellView, keyDown event: NSEvent) {}
+    /// Play reads the held keys by polling (`pollKeyState`); a key-down (no auto-repeats — `GetOSEvent` keyDown) also
+    /// queues its Mac charCodes for the console (⌃⌘F and ⌘Q are menu key equivalents and never get here).
+    func shellView(_ view: ShellView, keyDown event: NSEvent) {
+        guard !event.isARepeat else { return }
+        pendingTyped += Self.macCharCodes(event.characters ?? "")
+    }
+
+    /// NSEvent characters → classic Mac keyDown charCodes (the codes `Console` switches on, `1002d2e0..1002d350`):
+    /// the arrow function keys 0xF700–0xF703 → 0x1E ↑ / 0x1F ↓ / 0x1C ← / 0x1D →; the delete key (NSEvent 0x7F) →
+    /// 0x08; return 0x0D stays 0x0D; other ASCII (0x01–0x7E: letters as typed, Esc 0x1B, keypad Enter 0x03, Tab)
+    /// is the Mac's own code. Anything else (other function keys, non-ASCII) has no charCode here and is dropped.
+    static func macCharCodes(_ characters: String) -> [UInt8] {
+        var codes: [UInt8] = []
+        for scalar in characters.unicodeScalars {
+            switch scalar.value {
+            case 0xF700: codes.append(Console.upArrow)          // NSUpArrowFunctionKey → 0x1E
+            case 0xF701: codes.append(0x1F)                     // NSDownArrowFunctionKey
+            case 0xF702: codes.append(0x1C)                     // NSLeftArrowFunctionKey
+            case 0xF703: codes.append(0x1D)                     // NSRightArrowFunctionKey
+            case 0x7F: codes.append(Console.backspace)          // NSDeleteCharacter (the delete key) → 0x08
+            case 0x0D: codes.append(Console.returnKey)
+            case 0x01...0x7E: codes.append(UInt8(scalar.value))
+            default: break
+            }
+        }
+        return codes
+    }
 
     /// ⌃⌘F: full screen (the largest whole multiple, black border — `.integerFit`) or back to the window.
     @objc private func toggleFullScreenChosen(_ sender: Any?) {
@@ -245,4 +378,90 @@ import HectorShell
     }
 
     func shellView(_ view: ShellView, mouseDown event: NSEvent) {}
+
+    // MARK: DEBUG checks (A3; compiled out of Release)
+
+    #if DEBUG
+    /// `-debugCapsLock <s>`: Caps Lock reads as down from `s` seconds after launch for `LaunchOptions.debugCapsLockHold`
+    /// seconds (through `HeldKeys`, as the real key would); each edge is logged.
+    private func debugCapsLockHeld(seconds: Double) -> Bool {
+        guard let at = options.debugCapsLockAt else { return false }
+        let t = seconds - launchSeconds
+        let down = t >= at && t < at + LaunchOptions.debugCapsLockHold
+        if down != debugCapsLockDown {
+            debugCapsLockDown = down
+            NSLog("Deimos Rising [DEBUG caps]: Caps Lock simulated %@ at %.1f s", down ? "DOWN" : "UP", t)
+        }
+        return down
+    }
+
+    /// After each `idle`: a music pause / resume routed by that pass is logged (the pause cue at a pass's begin means
+    /// the pass ends in `.pauseWait`; the resume means the wait saw Caps Lock up), and every 5 s the counters.
+    private func debugAfterIdle(seconds: Double, before: DebugAudioCounter.Snapshot?) {
+        let t = seconds - launchSeconds
+        if let before, let now = audioCounter?.snapshot {
+            if now.pauses > before.pauses {
+                NSLog("Deimos Rising [DEBUG pause]: music pause routed by a pass at %.1f s - the .pauseWait path is reached", t)
+            }
+            if now.resumes > before.resumes {
+                NSLog("Deimos Rising [DEBUG pause]: music resume routed at %.1f s - the pause wait ended", t)
+            }
+        }
+        guard seconds - lastDebugLog >= 5 else { return }
+        lastDebugLog = seconds
+        if let s = audioCounter?.snapshot {
+            NSLog("Deimos Rising [DEBUG audio]: %.0f s: cues routed %ld (sound %ld, music %ld; pause %ld, resume %ld), frames rendered %ld",
+                  t, s.sounds + s.music, s.sounds, s.music, s.pauses, s.resumes, s.frames)
+        } else {
+            NSLog("Deimos Rising [DEBUG audio]: %.0f s: no audio engine (running silent)", t)
+        }
+    }
+    #endif
 }
+
+#if DEBUG
+/// DEBUG only (A3's machine check, the SDL audio-out `framesRendered` pattern): the engine behind a counting wrapper —
+/// cues routed to the sink (game thread) and frames the engine rendered (audio thread). Counting here keeps
+/// `DeimosAudio` untouched; the wrapper forwards every call unchanged.
+final class DebugAudioCounter: DeimosAudioSink, PCMPullSource {
+    struct Snapshot {
+        var sounds: Int
+        var music: Int
+        var pauses: Int
+        var resumes: Int
+        var frames: Int
+    }
+
+    private let engine: DeimosAudioEngine
+    private let sounds = Atomic<Int>(0)
+    private let music = Atomic<Int>(0)
+    private let pauses = Atomic<Int>(0)
+    private let resumes = Atomic<Int>(0)
+    private let frames = Atomic<Int>(0)
+
+    init(engine: DeimosAudioEngine) { self.engine = engine }
+
+    var outputRate: Double { engine.outputRate }
+
+    func apply(sounds: [SoundCue], music: [MusicCue], haltEffectsAt: Int?) {
+        self.sounds.add(sounds.count, ordering: .relaxed)
+        self.music.add(music.count, ordering: .relaxed)
+        for cue in music {
+            if cue == .pause { pauses.add(1, ordering: .relaxed) }
+            if cue == .resume { resumes.add(1, ordering: .relaxed) }
+        }
+        engine.apply(sounds: sounds, music: music, haltEffectsAt: haltEffectsAt)
+    }
+
+    func render(into buffer: UnsafeMutableBufferPointer<Float>, frames: Int) {
+        engine.render(into: buffer, frames: frames)
+        self.frames.add(frames, ordering: .relaxed)
+    }
+
+    var snapshot: Snapshot {
+        Snapshot(sounds: sounds.load(ordering: .relaxed), music: music.load(ordering: .relaxed),
+                 pauses: pauses.load(ordering: .relaxed), resumes: resumes.load(ordering: .relaxed),
+                 frames: frames.load(ordering: .relaxed))
+    }
+}
+#endif
