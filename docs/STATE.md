@@ -103,23 +103,29 @@ Settled history lives in docs/STATE-history.md.
   - Older small carries from Phases 2–4: listed in the history file's Snapshot B; each closes when a task next touches
     its file.
 
-## Deimos Rising — 2026-11-14 (wave 2a done: fix round, Phase 2 merged to local main, bank notes; wave 2b started)
+## Deimos Rising — 2026-11-14 (wave 2b done: the per-tick update and the Phase 2 session are in; wave 3 next)
 
 - **Where it stands:** Phase 1 "level 1 look" gate passed 2026-10-07 (60 Hz tick; staged `~/Desktop/Deimos
-  Rising.app`). Phase 2 "level 1 plays": everything built so far is on **local main, not pushed** (merge 91982ac; local
-  branch `deimos-phase2` deleted, `origin/deimos-phase2` left for Ben). `Deimos/Core` **318/0/0** (without
-  `DeimosReplayTests`) on HectorKit ef2c341 (370 executed: 366 passed + 4 Aki 1.1 skips); Deimos, Aki and
-  BubbleTroubleX build. The research bank carries 53 Phase 2 correction notes.
-- **The plan:** `docs/superpowers/plans/2026-11-05-deimos-remainder.md`. Next = wave 2b (C12 → 327, then C18a → 335),
-  then wave 3 (C18b ∥ H2, H3 ∥ A3, A4) and Ben's "level 1 plays" gate. The session brief is in
-  `docs/handoff-2026-11-14-deimos-wave-2a.md`. Ben, 2026-11-14: sessions chain wave after wave until a hard stop that
-  needs him.
+  Rising.app`). Phase 2 "level 1 plays": everything built so far is on **local main, not pushed** (wave 2b merges
+  bcddbe6 and 28194b9; `origin/deimos-phase2` left for Ben). The core now runs a whole level tick by tick in the
+  original's order (entity update, world update, draw, end frame), plays demo films and pauses on Caps Lock; the
+  app itself still shows the Phase 1 picture until wave 3 wires the driver, sound and keys. `Deimos/Core`
+  **335/0/0** (without `DeimosReplayTests`) on HectorKit ef2c341 (370 executed: 366 passed + 4 Aki 1.1 skips);
+  Deimos, Aki and BubbleTroubleX build.
+- **The plan:** `docs/superpowers/plans/2026-11-05-deimos-remainder.md`. Next = wave 3 (C18b ∥ H2 first → 336 and
+  344; then H3 ∥ A3; F1 only if the de01 replay gate is red; A4 stages) and then Ben's "level 1 plays" gate. The
+  session brief is in `docs/handoff-2026-11-14-deimos-wave-2b.md`. Ben, 2026-11-14: sessions chain wave after wave
+  until a hard stop that needs him.
 - **Data:** `Resources/Deimos/` in git; `deimos-census` 872 entries, 0 failures.
 - **Open:** RE bank `docs/deimos/INDEX.md` #13, #59 residue, #62–#64 and 134 cross-file label mismatches; Ben's ear/eye
   items from the RE waves; Phase 1 carries for Phase 2 (a `DeimosAudio` target, the `playerOps` return type,
   `HeadlessRun` film parameters, the prefs file widening) as the plan places them.
   From wave 2a: bank rows not independently confirmed (list in the 2026-11-14 handoff); the Deimos listing is
   not committed (`ghidra/deimos-proj` is a symlink) and the sound-library addresses appear in no listing on disk.
+  From wave 2b (for H2 / A4): the driver's `.pauseWait` no-op and the re-firing pause under a held Caps Lock; the
+  missing end-of-session halt on a pause-and-quit pass; the mouse button does not end a film yet; frame checks do
+  not cover translucent or scaled draws or the pan-240 frame through an independent path; stale comments outside
+  the cards (`ScrollState.step` "Phase 2", `Removal.swift:59` naming); `MotionBlurPool.emit` copies +0x90.
 
 ## Cythera — 2026-11-08 (re-planned; waits for Ben's go)
 

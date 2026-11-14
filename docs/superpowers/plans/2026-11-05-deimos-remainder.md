@@ -172,12 +172,15 @@ volume-key behaviour, the 24→16 sprite colour cut, particle colours, last-ulp 
    appear tick; with no level select, a non-film session emits `[.play(ammu, loop: true), .stop]` at load (net
    silence) — Phase 4 makes `ammu` real.
 5. **Film launch argument** `-film deNN` (A3) plays a demo in the app (Ben's fallback oracle for G4) with the
-   original's film rules (any key ends it, `REPLAY` banner, no level music). The menu music `inmu` that the original
+   original's film rules (`REPLAY` banner, no level music; **corrected 2026-11-14, wave 2b:** a film ends when it runs
+   out, on Esc through the begin frame (`10005904`), on level complete or game over — **other keys do not end it**; the
+   original also ends it on the mouse button, see 8). The menu music `inmu` that the original
    keeps playing under a film is absent until Phase 4's attract mode replaces this argument.
 6. **Prefs live in memory only** — F6 (pref 5), `FPS` (pref 9), `supermunki` (pref 11) and the volume (int pref 0)
    persist across ◇ restarts (H2) but not across launches (Phase 4 writes the prefs file).
 7. **One player** in the app; two-player games are Phase 3 (the rules are tested for both indices).
-8. A film is not ended by the mouse (`FUN_10048e60` also tests the button) — `HeldKeys` carries no mouse (Phase 4).
+8. A film is not ended by the mouse — `HeldKeys` carries no mouse (Phase 4). **Corrected 2026-11-14:** `FUN_10048e60`
+   tests the mouse button and nothing else (`10048e6c`); it is the original's only "skip the film" input besides Esc.
 
 ### The review, measured (2026-11-05, the seat's own runs)
 
@@ -545,7 +548,8 @@ Mac OS X). Every end-of-level, notice, message, console, FPS and tally draw step
 `music`, `haltEffectsAt`) and clears it; nothing else holds cues across passes.
 
 **Film:** inputs from the film (`readPlayerInput`); the session ends when `film.finished` (checked after every draw) or
-any key is held. **Session end (not film):** `haltEffectsAt` = current index, `MusicCue.stop`.
+any key is held (**wrong — corrected 2026-11-14 by both review legs: keys do not end a film; see stand-ins 5 and 8;
+as built the film ends on finished, Esc, level complete or game over**). **Session end (not film):** `haltEffectsAt` = current index, `MusicCue.stop`.
 
 **Re-pointed (counts unchanged):** `DeimosSessionTests` (11 — `testInitOps` and `testSteadyPassOrder` gain the new
 ops; `testDeterministicReplay` asserts a different seed **changes** the outputs by the first spawn);
