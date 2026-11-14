@@ -47,6 +47,10 @@ public struct SegmentFile: SegmentStore {
     /// `GetEncryptedSegment` would decrypt them to garbage, and no code references either.
     /// `scriptSegment` returns them as stored (Invariant 3).
     public static let storedPlaintext: Set<UInt16> = [0x0101, 0x0210]
+    /// The combat-AI segments (ai-scripts.md §3): `PerformAI` loads them with plain `GetSegment` and
+    /// `scriptdis.py` keeps them raw, so `scriptSegment` returns them as stored too (C9) — every script-band id
+    /// is read through one call and nothing is scrambled silently.
+    public static let storedPlaintextBand: ClosedRange<UInt16> = 0x0410...0x0436
     static let rootOffset = 0x80
     static let pageSize = 0x800
 
@@ -121,13 +125,12 @@ public struct SegmentFile: SegmentStore {
     }
 
     /// The segment as the interpreter sees it (`GetEncryptedSegment @ 1007d148`, data-format §1.3):
-    /// decrypted with `SegmentCipher`, except the two stored-plaintext ids returned as stored.
-    /// The combat-AI band 0x0410–0x0436 is NOT a script read: `PerformAI` loads it with plain
-    /// `GetSegment(0x360+n)` and `scriptdis.py` keeps it raw (ai-scripts.md §3) — read those ids with
-    /// `segment(_:)`; `scriptSegment` would scramble them. Routing is the AI/script decoders' (C8/C9).
+    /// decrypted with `SegmentCipher`, except the two stored-plaintext ids and the combat-AI band
+    /// 0x0410–0x0436 (`storedPlaintextBand`: not a script read — `PerformAI` loads it with plain
+    /// `GetSegment(0x360+n)`, ai-scripts.md §3), all returned as stored.
     public func scriptSegment(_ id: UInt16) -> Data? {
         guard let raw = segment(id) else { return nil }
-        if Self.storedPlaintext.contains(id) { return raw }
+        if Self.storedPlaintext.contains(id) || Self.storedPlaintextBand.contains(id) { return raw }
         var bytes = [UInt8](raw)
         SegmentCipher.apply(&bytes, id: id)
         return Data(bytes)
