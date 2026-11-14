@@ -17,6 +17,7 @@ let package = Package(
         .library(name: "DeimosHost", targets: ["DeimosHost"]),
         .library(name: "DeimosAudio", targets: ["DeimosAudio"]),
         .executable(name: "deimos-census", targets: ["deimos-census"]),
+        .executable(name: "deimos-replay", targets: ["deimos-replay"]),
     ],
     dependencies: [
         .package(path: Context.environment["HECTORKIT_PATH"] ?? "../../../HectorKit"),
@@ -51,7 +52,12 @@ let package = Package(
             .product(name: "HectorAudio", package: "HectorKit"),
             .product(name: "HectorGraphics", package: "HectorKit"),
         ]),
+        // The replay tool (Phase 2 H3): demo films through the headless runner, the G4 line and the triage numbers,
+        // the per-tick trace CSV, frames as PPM. Foundation + the four Deimos libraries only (plan invariant 1).
+        .executableTarget(name: "deimos-replay", dependencies: ["DeimosHost", "DeimosRender", "DeimosAudio", "DeimosCore"]),
         .testTarget(name: "DeimosCensusTests", dependencies: ["deimos-census", "DeimosCore"]),
+        // The replay gate G4 (H3): a separate bundle, excluded from G2 by `--skip DeimosReplayTests`.
+        .testTarget(name: "DeimosReplayTests", dependencies: ["deimos-replay", "DeimosHost", "DeimosCore"]),
         .testTarget(name: "DeimosCoreTests", dependencies: [
             "DeimosCore",
             .product(name: "HectorResources", package: "HectorKit"),
