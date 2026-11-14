@@ -94,6 +94,30 @@ final class EntityUpdateTests: XCTestCase {
         let only = a.definitions.units.flatMap(\.states).filter(\.stateSoundAllowOnlyOneInstance)
         XCTAssertEqual(only.count, 6)
         XCTAssertTrue(only.allSatisfy { $0.stateEntrySound.id == .none })
+        // st0 (`10033e08`) feeds the owner copy, follow-owner, player and entity collisions. Census of why no shipped
+        // case can tell st0 from a re-read at those sites: the owner copy runs before the motion controller; every
+        // range trigger (`FUN_100146f0`, last name match wins) keeps the six gates those sites read; no state has an
+        // on-hit change (delay ≠ 0, name set); a unit's shield-depletion state never changes Collides.
+        func gates(_ s: UnitState) -> [Bool] {
+            [s.stateCollides, s.stateCollidesWithPlayers, s.passHitsToOwner, s.stateLockToOwnerLoc,
+             s.stateLinkToOwnerLoc, s.stateOrbitOwner]
+        }
+        var triggers = 0
+        for u in a.definitions.units {
+            let live = u.states.prefix(Int(u.numStates))
+            for st in u.states where st.stateOnRange > 0 {
+                guard let to = live.last(where: { $0.stateName == st.stateOnRangeChangeTo }) else { continue }
+                triggers += 1
+                XCTAssertEqual(gates(to), gates(st), "\(u.id) \(st.stateName)")
+            }
+            if let dep = live.first(where: \.stateUseThisStateOnShieldDepletion) {
+                XCTAssertTrue(u.states.allSatisfy { $0.stateCollides == dep.stateCollides }, "\(u.id)")
+            }
+        }
+        XCTAssertEqual(triggers, 21)
+        XCTAssertFalse(a.definitions.units.flatMap(\.states).contains {
+            $0.stateOnHitChangeStateDelay != 0 && !$0.stateOnHitChangeTo.isEmpty
+        })
 
         var s = try state()
         let b = try put(&s, "bocr", x: 200, y: 300)
@@ -330,6 +354,7 @@ final class EntityUpdateTests: XCTestCase {
         XCTAssertFalse(locks(Float(r.right), midY))                           // right exclusive
         XCTAssertTrue(locks(Float(r.right) - 0.5, midY))
         XCTAssertTrue(locks(midX, Float(r.top)))                              // top inclusive
+        XCTAssertFalse(locks(midX, Float(r.top) - 0.5))                       // above the top
         XCTAssertFalse(locks(midX, Float(r.bottom)))                          // bottom exclusive
         XCTAssertFalse(locks(midX, midY, active: false))                      // not in the cache (state ≠ 4)
         // Already locked at cache time: no call — the frame keeps its value.
@@ -340,7 +365,11 @@ final class EntityUpdateTests: XCTestCase {
         pre.players[0].handler.crosshair.y = midY
         pre.updateEntities()
         XCTAssertEqual(pre.players[0].handler.crosshair.frame, 77)
-        // A harmless unit (bocr) under the crosshair never locks.
+        // A harmless unit (bocr) under the crosshair never locks. No shipped harmless unit can be hit by a player
+        // projectile or has a targetable state, so the harmless clause cannot be isolated from those two.
+        XCTAssertFalse(units.contains {
+            $0.harmlessToPlayers && ($0.canBeHitByPlayerProjectile || $0.states.contains(where: \.stateIsTargetable))
+        })
         var h = try state()
         try h.setupPlayer(0)
         h.players[0].lifeState = 4
@@ -367,6 +396,13 @@ final class EntityUpdateTests: XCTestCase {
         let st = try XCTUnwrap(s.currentState(n))
         XCTAssertTrue(st.stateMotionBlurRequired)
         XCTAssertEqual([st.stateMotionBlurMinTimeBetweenBlurs, st.stateMotionBlurMaxTimeBetweenBlurs], [0, 0])
+        // Census: all 27 shipped blur states have Min = Max = 0, so `R(Min, Max)` never draws and the draw's place
+        // before the interval test (`10034348` then `1003435c`) cannot be observed with shipped data.
+        let blurStates = s.assets.definitions.units.flatMap(\.states).filter(\.stateMotionBlurRequired)
+        XCTAssertEqual(blurStates.count, 27)
+        XCTAssertTrue(blurStates.allSatisfy {
+            $0.stateMotionBlurMinTimeBetweenBlurs == 0 && $0.stateMotionBlurMaxTimeBetweenBlurs == 0
+        })
         var now: Int32 = 100
         while now < 130 {                                                     // bound 30 ticks (the state's timer)
             s.flags.gameTime = now
