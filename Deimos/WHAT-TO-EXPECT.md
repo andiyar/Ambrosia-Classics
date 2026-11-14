@@ -179,7 +179,7 @@ and what would be wrong.
     copy), stopped tanks become obstacles, bullet trails on some units.
 12. **Not yet certain (MED):** the 24→16 sprite colour cut (gate 1, unchanged), particle colour shades, the "Press
     Caps Lock" notice placement, tally waits, the FPS counter showing 31, the crosshair "locked" frame timing.
-13. **Demo replay (fallback oracle):** `open -a "Deimos Rising" --args -film de01` plays the shipped demo (no music —
+13. **Demo replay (fallback oracle):** `open ~/Desktop/"Deimos Rising.app" --args -film de01` (quit the game first) plays the shipped demo (no music —
     ◇ the menu music is Phase 4). Machine result: PASS — the demo ends on 25,050, exactly the score the original
     recorded (all four shipped demos match; see "The machine replay" above).
 Invulnerability carry-over between levels is not reachable until level 2 (Phase 3).
