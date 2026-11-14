@@ -433,6 +433,8 @@ final class LevelEndTests: XCTestCase {
         XCTAssertTrue(s.flags.levelComplete)
         XCTAssertTrue(s.flags.levelEnding)
         XCTAssertTrue(s.cues.sounds.isEmpty && s.cues.music.isEmpty)
+        XCTAssertTrue(s.tickOps.isEmpty, "no fade in a film")
+        XCTAssertEqual(s.flags.levelsStarted, 0, "no level start in a film")
         XCTAssertEqual(s.messages.messages.count, 1)
         XCTAssertTrue(filmConsole.isOpen)
         // Not complete: nothing.
@@ -446,25 +448,35 @@ final class LevelEndTests: XCTestCase {
         v.flags.levelComplete = true
         v.levelCompleteStep(controller: &c, console: &console, ticks: 0)
         XCTAssertFalse(v.flags.running)
-        // Not a film (◇ S9.1): music stop, `tran` (priority 75, volume 100, multiple), +9/+0x39 cleared, then the
-        // session ends instead of FUN_100064d0.
-        // FUN_100302e0 (`10007244..1000724c`) clears the posted message and closes the open console.
+        // Not a film (plan LT): music stop, `tran` (priority 75, volume 100, multiple), the fade to black, +9/+0x39
+        // cleared, FUN_100302e0, then FUN_100064d0 starts sector 2 in the same game — the bare game state crosses it.
+        // FUN_100302e0 (`10007244..1000724c`) clears the posted message, closes the open console and the layers.
         var w = try world()
+        w.flags.levelsStarted = 1                                         // as FUN_100064d0 left sector 1
         w.flags.levelComplete = true
         w.flags.levelEnding = true
+        w.flags.gameTime = 900
         w.messages.post(text: "a message", kind: .normal)
         console.open(frame: 0, game: &w)
         XCTAssertEqual(w.messages.messages.count, 1)
         XCTAssertTrue(console.isOpen && console.visible)
         w.cues.sounds = []                                                // drop the console's open click
         w.levelCompleteStep(controller: &c, console: &console, ticks: 0)
-        XCTAssertFalse(w.flags.running)
+        XCTAssertTrue(w.flags.running, "the session continues into the next sector")
         XCTAssertFalse(w.flags.levelComplete)
         XCTAssertFalse(w.flags.levelEnding)
         XCTAssertTrue(w.messages.messages.isEmpty)
         XCTAssertFalse(console.isOpen)
         XCTAssertFalse(console.visible)
-        XCTAssertEqual(w.cues.music, [.stop])
+        XCTAssertEqual(w.cues.music, [.stop, .play(FourCC("ammu")!, loop: true), .stop, .level(w.prefs.intPrefs[1])])
         XCTAssertEqual(w.cues.sounds, [SoundPlay.perm(a.sounds[3], priority: 75, volume: 100, allowMultiple: true)])
+        XCTAssertEqual(w.fadeToBlackCues, CueMark(sounds: 1, music: 1))
+        XCTAssertEqual(w.tickOps, [.fade(.toBlack, .gameLayout), .clearLayers])   // 10007234, 100302f4
+        XCTAssertEqual(w.flags.levelsStarted, 2)
+        XCTAssertEqual(w.flags.sector, 2)
+        XCTAssertEqual(w.flags.level, FourCC("le06"))
+        XCTAssertEqual(w.levelInfo.id, FourCC("le06"))
+        XCTAssertEqual(w.flags.gameTime, 0, "the level start's 10006500; the loop adds 1 after FUN_10007170")
+        XCTAssertFalse(w.flags.appeared)
     }
 }

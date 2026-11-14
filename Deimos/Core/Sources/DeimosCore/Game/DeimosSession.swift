@@ -44,13 +44,17 @@ public enum SessionError: Error, Equatable, Sendable {
 ///   recorder `FUN_10009710` (not modelled). Then G+0x08 = 1, +0x0a = +0x09 = +0x39 = 0, +0x18 = level
 ///   (`1000580c..1000582c`), +0x14 = sector `FUN_10011e30` (`10005844`), level info `FUN_10011fd0`, `FUN_10026410`
 ///   for P1 then P2 (`10005860..10005888`, `GameState.setupPlayer`), `FUN_1004a990(1)` (input, no op), `FUN_100064d0`.
-/// - **Level start** `FUN_100064d0(film, info)` (`100064d0..10006984`), in this order: game time = 0 (`10006500`),
-///   +0x29 = 0, +0x2c = game time, appeared = 0 (`10006504..10006510`); cheat counters `FUN_10007130`
+/// - **Level start** `FUN_100064d0(film, info)` (`100064d0..10006984`) — split in two (plan LT, ruling 5): its STATE
+///   part is `GameState.levelStart(film:)`, which `levelCompleteStep` also calls for the next sector; its DRAWING
+///   part (the `.loadTerrain`, the fill, the score bar's level-start ops, the first terrain blit) is
+///   `levelStartOps`, emitted by the session in the pass that started the level. In this order: game time = 0
+///   (`10006500`), +0x29 = 0, +0x2c = game time, appeared = 0 (`10006504..10006510`); cheat counters `FUN_10007130`
 ///   (`10006514`); ground counts `FUN_10007150` (`10006518`); accuracy counters `FUN_10007280` (`1000651c`,
 ///   `TallyState.reset`); +0x0c = +0x0b, +0x0b = 0 (`10006524..10006544`); [`FUN_1003e510` unit resources]; levels
-///   started == 0 → the level of +0x18 (`10006564..10006588`; the next-level branch `10006594..1000661c` is Phase 3);
-///   [the unregistered limit `1000663c..10006678` — this is the registered game]; levels started += 1
-///   (`1000667c..10006684`); [level `none` → Phase 3]; +0x14 = sector (`100066e8`); [`FUN_1002b3a0` weapon resource
+///   started == 0 → the level of +0x18 (`10006564..10006588`), else sector(+0x18) + 1, `none` above the order's 12
+///   (`10006594..10006628`), the level info reloaded (`100065dc`); [the unregistered limit `1000663c..10006678` —
+///   this is the registered game]; levels started += 1 (`1000667c..10006684`); level `none` → music resume, running
+///   = 0, return (`10006688..100066c8`); +0x14 = sector (`100066e8`); [`FUN_1002b3a0` weapon resource
 ///   preload; the terrain buffer `FUN_10009d70` (`1000674c`), superseded by the map load's resize]; not a film and
 ///   the music not paused (`FUN_10047f80`) → `FUN_10048120(0)` stop + `FUN_10047f90('ammu', 1, 0)`
 ///   (`1000676c..10006788` — ◇ stand-in 4, emitted as `.play(ammu, loop: true)`: `FUN_10047f90` itself stops any
@@ -78,8 +82,9 @@ public struct DeimosSession: Sendable {
     public private(set) var controller: FrameController
     /// G_Console.cc's console (the session's: `GameState` holds no session-only state).
     public private(set) var console: Console
-    /// The level info `FUN_10011fd0` filled (`auStack_7e0`): the music (+0x27c) the appear plays.
-    public let levelInfo: LevelDefinition
+    /// The level info `FUN_10011fd0` filled (`auStack_7e0`): the music (+0x27c) the appear plays. The level start
+    /// replaces it (`100065dc`); stored in the game state (`GameState.levelInfo`), forwarded here (standing rule 7).
+    public var levelInfo: LevelDefinition { game.levelInfo }
     /// The level start's ops, handed out by the first `pass`.
     private var pendingOps: [RenderOp] = []
     /// The shell requests handed out by the first `pass`: `.hideCursor` — ◇ the front end's `HideCursor` just
@@ -152,13 +157,13 @@ public struct DeimosSession: Sendable {
             sector = start.sector
             players = start.players
         }
-        guard tag != .none, let info = assets.definitions.levels.first(where: { $0.id == tag }) else {
+        guard tag != .none, assets.definitions.levels.contains(where: { $0.id == tag }) else {
             throw SessionError.noLevel(sector: start.film == nil ? start.sector : 0)
         }
-        levelInfo = info
 
         // srand: the film's seed (FUN_100069b0 → FUN_10055400) or TickCount (100057d4).
         var g = GameState(assets: assets, prefs: prefs, seed: start.film?.seed ?? seed)
+        try g.loadLevels()                                           // plan LT: every level start in a pass is safe
         g.flags.filmPlaying = start.film != nil                      // 10005670..1000568c (G+0x20)
         g.film = start.film.map(FilmCursor.init(film:))              // FUN_100069b0: cursors 0 (FUN_10009970)
         g.flags.numPlayers = UInt8(truncatingIfNeeded: players)      // FUN_10009680 / 10005770 (G+0x21)
@@ -181,81 +186,22 @@ public struct DeimosSession: Sendable {
         game = g
         controller = c
         console = con
-        pendingOps = try levelStart(info)                            // 100058a0 FUN_100064d0
+        game.levelStart(film: start.film != nil)                     // 100058a0 FUN_100064d0: the state part
+        pendingOps = levelStartOps()                                 // … and its drawing part
     }
 
-    /// `FUN_100064d0(film, info)` — the level start, in the order of the type's comment; returns its ops.
-    private mutating func levelStart(_ info: LevelDefinition) throws -> [RenderOp] {
-        var ops: [RenderOp] = []
-        let film = game.flags.filmPlaying
-        game.flags.gameTime = 0                                      // 10006500
-        game.flags.levelEndHandled = false                           // 10006504
-        game.flags.levelEndTime = game.flags.gameTime                // 1000650c
-        game.flags.appeared = false                                  // 10006510
-        game.flags.cheatLife = 0; game.flags.cheatFunds = 0          // 10006514 FUN_10007130
-        game.flags.cheatScore = 0; game.flags.cheatShields = 0; game.flags.cheatMult = 0
-        game.flags.groundCreated = 0                                 // 10006518 FUN_10007150
-        game.flags.groundDestroyed = 0
-        game.tally.reset()                                           // 1000651c FUN_10007280
-        game.flags.rewardArmed = false                               // 10006524..10006528
-        if game.flags.perfectThisLevel {                             // 1000652c..10006538
-            game.flags.perfectThisLevel = false                      // 1000653c
-            game.flags.rewardArmed = true                            // 10006544
-        }
-        game.flags.levelsStarted &+= 1                               // 1000667c..10006684
-        // 100066e8: +0x14 = sector — the set-up's value (levels started was 0, the level of +0x18).
-        if !film {                                                   // 10006750..10006768 (FUN_10047f80: not paused)
-            game.cues.music.append(.play(FourCC("ammu")!, loop: true))   // 1000676c..10006788 ◇ stand-in 4
-        }
-        for i in 0..<2 {                                             // 10006798..100067b8 FUN_100269a0
-            game.playerLevelStart(i)
-        }
-        if !film {
-            game.cues.music.append(.stop)                            // 100067c4..100067c8 FUN_10048120(0)
-        }
-        game.cues.music.append(.level(game.prefs.intPrefs[1]))       // seam: the engine's level (int pref 1)
-        game.messages.reset()                                        // 100067d0 FUN_1002db50
-        game.debris.levelReset()                                     // 100067d8 FUN_1002a660
-        game.particles.levelReset()                                  // 100067e0 FUN_100432d0
-        ops.append(.loadTerrain(image: info.backgroundImage))        // 100067ec FUN_1000fa90 → FUN_1000fbc0
-        game.mask = try Self.loadMask(info, assets: assets)          // FUN_1000fbc0: _DAT_100e0138 / _DAT_100e0134
-        game.scroll.levelStart(rect: info.background)                // FUN_1000fa90
-        game.levelStartEntities(level: info)                         // 100067f8 FUN_10032e60 (+ FUN_10035900)
-        game.blurs.levelReset()                                      // 1000680c FUN_100467c0
-        game.notice.reset()                                          // 1000681c FUN_10018130
-        game.spawnLoadPassLevelObjects()                             // 1000682c FUN_1000fa10
-        let notice = assets.objects[Int(game.flags.sector) + 9]      // 10006830..10006848 FUN_100201f0(+0x14 + 9)
-        if notice != .none {
-            let half: Float = 0.5                                    // *(0x100d6354 + 8)
-            let x: Float = assets.floats[54] * half                  // 1000688c..100068c4
-            let y: Float = assets.floats[55] * half                  // 100068c8..100068ec
-            game.spawn(SpawnRequest(unit: notice, x: x, y: y))       // 100068f4 FUN_10033220(req, 0, 0)
-        }
-        ops.append(.fill(.back, colour: 0))                          // 1000690c FUN_10009f00
-        game.scoreBar.levelStart(players: game.players, sector: game.flags.sector)   // 10006914..10006934 (blits off)
-        ops += scoreBarDraw.levelStartOps(state: game.scoreBar)
-        if bytePref(5) {                                             // 1000693c..10006968
-            game.flags.restoreInterlace = true
-            setBytePref(5, false)
-        } else {
-            game.flags.restoreInterlace = false                      // 1000696c..10006970
-        }
-        ops.append(game.scroll.terrainBlit(interlaced: bytePref(5)))   // 10006974 FUN_10010120
+    /// `FUN_100064d0`'s DRAWING part (plan LT, ruling 5), read from the state its state part
+    /// (`GameState.levelStart`) left: the scroll's level start loads the map (`100067ec FUN_1000fa90` →
+    /// `FUN_1000fbc0`); back ← black (`1000690c FUN_10009f00`); the score bar's level start with its screen blits off
+    /// (`10006914..10006934`: `FUN_10031ad0(0)`, `FUN_10031400`, `FUN_10031ad0(1)`); the first terrain blit with byte
+    /// pref 5 as the pref-5 dance left it (`10006974 FUN_10010120`). No state op between them makes a render op (the
+    /// level start's spawns stamp nothing), so emitting them together keeps the original's op order.
+    private func levelStartOps() -> [RenderOp] {
+        var ops: [RenderOp] = [.loadTerrain(image: game.levelInfo.backgroundImage)]   // 100067ec
+        ops.append(.fill(.back, colour: 0))                          // 1000690c
+        ops += scoreBarDraw.levelStartOps(state: game.scoreBar)      // 10006914..10006934
+        ops.append(game.scroll.terrainBlit(interlaced: bytePref(5))) // 10006974
         return ops
-    }
-
-    /// `FUN_1000fbc0`'s media mask: `info.mediaMask` (`+0x280`) as an im16 TGA, row-major top-down
-    /// (`cells.count == width × height`, the index rule of `MediaMask.isWater`); `_DAT_100e0134` = map width / mask
-    /// width (`divw`), where the map width is the background rect's right edge (the dimension check at `1000fbc0`
-    /// requires the map image to match it).
-    static func loadMask(_ info: LevelDefinition, assets: DeimosAssets) throws -> MediaMask {
-        let type = FourCC("im16")!
-        guard let r = assets.index.record(type: type, id: info.mediaMask) else {
-            throw DeimosAssetsError.missingTag(type: "im16", id: info.mediaMask.description)
-        }
-        let tga = try TGAImage(data: assets.index.data(for: r))
-        let w = Int32(tga.width), h = Int32(tga.height)
-        return MediaMask(width: w, height: h, cells: tga.pixels, scale: w > 0 ? info.background.right / w : 0)
     }
 
     /// One iteration of the `FUN_100051a0` loop (`100058b0..10005ab8`), in this order:
@@ -330,13 +276,16 @@ public struct DeimosSession: Sendable {
         if begin.quit { game.flags.running = false }                 // 1000591c FUN_100064c0
 
         // 2. The tick.
+        var levelStarted = false
         if begin.tick {                                              // 10005920..10005928
-            tick(keys: keys, withheld: begin.inputWithheld, ticks: ticks, ops: &ops)
+            levelStarted = tick(keys: keys, withheld: begin.inputWithheld, ticks: ticks, ops: &ops)
         }
 
-        // 3. The tick's ops, then the draw world.
+        // 3. The tick's ops (its terrain stamps, then a transition's fade to black and layer clear), the drawing part
+        // of a level start the tick ran (plan LT), then the draw world.
         ops += game.tickOps
         game.tickOps = []
+        if levelStarted { ops += levelStartOps() }                  // 10007254..1000725c → FUN_100064d0
         drawWorld(ops: &ops)
 
         // 4. The film overlay.
@@ -367,11 +316,14 @@ public struct DeimosSession: Sendable {
         }
         let cues = game.cues
         game.cues = CueBuffer()
+        let fadeMark = game.fadeToBlackCues
+        game.fadeToBlackCues = nil
         if let pause, game.flags.running {
             game.cues.music = pause.musicAfterWait                   // 10022fb4 FUN_10048220(0), after the wait
         }
         return PassOutput(ops: ops, sounds: cues.sounds, music: cues.music, requests: requests, ticked: begin.tick,
-                          sessionEnded: !game.flags.running, haltEffectsAt: cues.haltEffectsAt)
+                          sessionEnded: !game.flags.running, haltEffectsAt: cues.haltEffectsAt,
+                          fadeToBlackAt: fadeMark)
     }
 
     /// The Phase-1 entry point, kept for the driver (standing rule 7): `pass(keys:ticks:)` with a TickCount of 0
@@ -379,7 +331,10 @@ public struct DeimosSession: Sendable {
     public mutating func pass(keys: HeldKeys) -> PassOutput { pass(keys: keys, ticks: 0) }
 
     /// 2. The tick: the appear check, the world update `FUN_10006b50`, level complete `FUN_10007170`, game time + 1.
-    private mutating func tick(keys: HeldKeys, withheld: Bool, ticks: UInt32, ops: inout [RenderOp]) {
+    /// Returns whether `FUN_10007170` started a level (the next sector — not level `none`), whose drawing part the
+    /// pass then emits. The level start sets game time 0 and the `+= 1` here follows it, so the new level's first
+    /// tick runs at game time 1 (ruling 4, `100059e0..100059f0`).
+    private mutating func tick(keys: HeldKeys, withheld: Bool, ticks: UInt32, ops: inout [RenderOp]) -> Bool {
         if !game.flags.appeared && game.flags.gameTime == appearTime {   // 10005930..1000595c
             if !game.flags.filmPlaying {                             // 10005960..10005964
                 game.cues.music.append(.play(levelInfo.music, loop: true))   // 10005968..10005974 FUN_10047f90
@@ -392,8 +347,18 @@ public struct DeimosSession: Sendable {
             game.flags.appeared = true                               // 100059b4..100059b8
         }
         game.updateWorld(inputs: keyTable.inputs(keys), inputWithheld: withheld)   // 100059cc FUN_10006b50
+        let started = game.flags.levelsStarted
         game.levelCompleteStep(controller: &controller, console: &console, ticks: ticks)   // 100059dc FUN_10007170
         game.flags.gameTime &+= 1                                    // 100059e0..100059f0
+        return game.flags.levelsStarted != started && game.flags.level != .none
+    }
+
+    /// The host's word that a transition's fade to black has presented its last step (plan LT): `FUN_100302e0`'s FPS
+    /// init `FUN_100305e0` (`10030314`) runs after the fade (`10007234`) and reads `TickCount` then, while this pass
+    /// ran when it began — so the FPS window restarts at `ticks`, the tick the fade ended. The rest of that init
+    /// (frames = the max rate, shown, deficient windows 0) is as the pass left it; nothing between depends on it.
+    public mutating func transitionFadeEnded(ticks: UInt32) {
+        controller.fpsWindowStart = ticks
     }
 
     /// 3. The draw world `FUN_10007070`.
@@ -446,4 +411,100 @@ public struct DeimosSession: Sendable {
 
     /// `FUN_10004ab0(n, v)`.
     mutating func setBytePref(_ n: Int, _ v: Bool) { game.prefs.bytePrefs[n] = v ? 1 : 0 }
+}
+
+extension GameState {
+    /// `FUN_100064d0(film, info)` — the level start's STATE part (plan LT, ruling 5; the order of `DeimosSession`'s
+    /// comment). The session's set-up calls it for the first level and `levelCompleteStep` for the next one, inside
+    /// the same game; its drawing part is the session's (`DeimosSession.levelStartOps`, read from the state left
+    /// here). `film` = the caller's film flag (G+0x20 at the set-up; `FUN_10007170` passes its own, 0 on that path).
+    /// Levels started == 0 → the level of +0x18 (`10006560..10006588`); else sector(+0x18) + 1 (`10006594..100065a8`),
+    /// level `none` above the order's count (`100065ac..100065bc`, `10006620..10006628`), else that sector's tag and
+    /// level info (`100065c4..100065dc`). Levels started += 1 BEFORE the `none` test (`1000667c..10006684`); `none` →
+    /// music resume, running = 0, return before any player or world reset (`10006688..100066c8`) — false; else true
+    /// once the level is started.
+    @discardableResult
+    public mutating func levelStart(film: Bool) -> Bool {
+        flags.gameTime = 0                                           // 10006500
+        flags.levelEndHandled = false                                // 10006504
+        flags.levelEndTime = flags.gameTime                          // 10006508..1000650c
+        flags.appeared = false                                       // 10006510
+        flags.cheatLife = 0; flags.cheatFunds = 0                    // 10006514 FUN_10007130
+        flags.cheatScore = 0; flags.cheatShields = 0; flags.cheatMult = 0
+        flags.groundCreated = 0                                      // 10006518 FUN_10007150
+        flags.groundDestroyed = 0
+        tally.reset()                                                // 1000651c FUN_10007280
+        flags.rewardArmed = false                                    // 10006524..10006528
+        if flags.perfectThisLevel {                                  // 1000652c..10006538
+            flags.perfectThisLevel = false                           // 1000653c
+            flags.rewardArmed = true                                 // 10006544
+        }
+        // [10006548 FUN_1003e510 unit resources; 10006554 the object list's constructor]
+        if levels.isEmpty {                                          // a bare game state: the session loaded them
+            do { try loadLevels() } catch {
+                preconditionFailure("GameState.levelStart: the levels do not load (\(error))")
+            }
+        }
+        let order = assets.levelOrder
+        var sector = order.sector(of: flags.level) ?? 0              // FUN_10011e30 (0 when absent)
+        if flags.levelsStarted == 0 {                                // 10006560..10006568
+            levelInfo = levels.definitions[sector - 1]               // 10006580..10006588 FUN_10011fd0
+        } else {
+            sector += 1                                              // 10006598..100065a8
+            if sector > order.levels.count {                         // 100065ac..100065bc FUN_10011de0
+                flags.level = .none                                  // 10006620..10006628
+            } else {
+                flags.level = order.level(sector: sector)            // 100065c0..100065cc FUN_10011f00
+                levelInfo = levels.definitions[sector - 1]           // 100065d0..100065dc FUN_10011fd0
+            }
+        }
+        // [100065e4..1000661c, 1000663c..10006678, 100066cc..100066e0: the unregistered limits — registered game]
+        flags.levelsStarted &+= 1                                    // 1000667c..10006684
+        if flags.level == .none {                                    // 10006688..10006694
+            cues.music.append(.resume)                               // 10006698..1000669c FUN_10048220(0)
+            flags.running = false                                    // 100066c0..100066c4 (+0x0e: registered)
+            return false                                             // 100066c8 → 10006988
+        }
+        flags.sector = Int32(sector)                                 // 100066e8
+        // [100066f0 FUN_1002b3a0 resource preload; 100066f8..1000674c the terrain buffer, superseded by the map load]
+        if !film {                                                   // 10006754..10006768 (FUN_10047f80)
+            cues.music.append(.play(FourCC("ammu")!, loop: true))    // 1000676c..10006788 ◇ stand-in 4
+        }
+        for i in 0..<2 {                                             // 10006798..100067b8 FUN_100269a0
+            playerLevelStart(i)
+        }
+        if !film {
+            cues.music.append(.stop)                                 // 100067bc..100067c8 FUN_10048120(0)
+        }
+        cues.music.append(.level(prefs.intPrefs[1]))                 // seam: the engine's level (int pref 1)
+        messages.reset()                                             // 100067d0 FUN_1002db50
+        debris.levelReset()                                          // 100067d8 FUN_1002a660
+        particles.levelReset()                                       // 100067e0 FUN_100432d0
+        mask = levels.masks[sector - 1]                              // 100067ec FUN_1000fa90 → FUN_1000fbc0
+        scroll.levelStart(rect: levelInfo.background)                // FUN_1000fa90
+        levelStartEntities(level: levelInfo)                         // 100067f8 FUN_10032e60 (+ FUN_10035900)
+        // [10006804 FUN_10012170 frees the object list]
+        blurs.levelReset()                                           // 1000680c FUN_100467c0
+        // [10006814 FUN_1004a950 input reset: no op]
+        notice.reset()                                               // 1000681c FUN_10018130
+        // [10006824 FUN_100189f0 clear layers: nothing is queued since begin frame's / FUN_100302e0's clear — no op]
+        spawnLoadPassLevelObjects()                                  // 1000682c FUN_1000fa10
+        let noticeUnit = assets.objects[Int(flags.sector) + 9]       // 10006834..10006848 FUN_100201f0(+0x14 + 9)
+        if noticeUnit != .none {
+            let half: Float = 0.5                                    // *(0x100d6354 + 8)
+            let x: Float = assets.floats[54] * half                  // 1000688c..100068d0
+            let y: Float = assets.floats[55] * half                  // 100068c8..100068f0
+            spawn(SpawnRequest(unit: noticeUnit, x: x, y: y))        // 100068f4 FUN_10033220(req, 0, 0)
+        }
+        // [1000690c back ← black: the drawing part]
+        scoreBar.levelStart(players: players, sector: flags.sector)  // 10006914..10006934 (blits off)
+        if prefs.bytePrefs[5] != 0 {                                 // 1000693c..1000694c FUN_10004ef0(5)
+            flags.restoreInterlace = true                            // 10006950..10006954
+            prefs.bytePrefs[5] = 0                                   // 10006958..10006960 FUN_10004ab0(5, 0)
+        } else {
+            flags.restoreInterlace = false                           // 1000696c..10006970
+        }
+        // [10006974 the first terrain blit: the drawing part; 10006980 FUN_1000c2a0 window]
+        return true
+    }
 }

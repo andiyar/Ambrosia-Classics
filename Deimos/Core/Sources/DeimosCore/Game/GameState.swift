@@ -1,4 +1,5 @@
 import Foundation
+import HectorResources
 
 /// The whole mutable simulation, one value (plan S2, invariant 13; DECISIONS D31.3). ★ LOCKED.
 ///
@@ -52,6 +53,16 @@ public struct GameState: Sendable {
     /// −0x6110: "Reached Entity Limit" was already reported this level (`FUN_10033220` `10033334..10033344`;
     /// cleared by `FUN_10032e60` `10032e88`).
     public var entityLimitWarned = false
+    /// The twelve levels' definitions and media masks (plan LT): loaded and validated by `loadLevels` at the
+    /// session's set-up, so the level start inside a pass cannot fail; a bare game state loads them on its first
+    /// level start.
+    public var levels = LevelSet()
+    /// The level info `FUN_10011fd0` fills (`FUN_100051a0`'s `auStack_7e0`, `FUN_100064d0`'s `param_2`): the level
+    /// start replaces it with the started level's (`10006588` / `100065dc`); the appear plays its music (+0x27c).
+    public var levelInfo = LevelDefinition()
+    /// Where this pass's transition fade to black fell in `cues` (`levelCompleteStep`); the session moves it into
+    /// `PassOutput.fadeToBlackAt` with the cues (plan LT).
+    public var fadeToBlackCues: CueMark? = nil
 
     /// Two fresh players (`FUN_10026260`), a fresh world (`EntityWorld.init`, PERM created), empty buffers, the
     /// RNG seeded with `seed`. No behaviour beyond construction and reset: the session's set-up and level
@@ -72,5 +83,51 @@ public struct GameState: Sendable {
     public mutating func levelResetEntities() {
         entityLimitWarned = false
         world.levelReset()
+    }
+
+    /// Loads and validates the twelve levels (`LevelSet(assets:)`) — the session's set-up calls it, throwing there.
+    public mutating func loadLevels() throws {
+        levels = try LevelSet(assets: assets)
+    }
+}
+
+/// The levels of `LevelOrder` (`FUN_10011de0` = 12), sector 1 first: each one's `leve` definition (what
+/// `FUN_10011fd0` fills the level info with) and its media mask (`FUN_1000fbc0`'s `_DAT_100e0138` / `_DAT_100e0134`)
+/// — decoded once, so the level start that `FUN_10007170` runs inside a pass (`1000725c`) cannot fail (plan LT).
+public struct LevelSet: Sendable {
+    /// Index `sector − 1`.
+    public private(set) var definitions: [LevelDefinition] = []
+    /// Index `sector − 1`.
+    public private(set) var masks: [MediaMask] = []
+
+    /// Empty: not loaded yet.
+    public init() {}
+
+    /// Every sector of the order: its level tag must name a `leve` definition (`SessionError.noLevel(sector:)` — the
+    /// original's `10011da4` fatal error) and the definition's media mask must decode.
+    public init(assets: DeimosAssets) throws {
+        for (i, tag) in assets.levelOrder.levels.enumerated() {
+            guard tag != .none, let info = assets.definitions.levels.first(where: { $0.id == tag }) else {
+                throw SessionError.noLevel(sector: i + 1)
+            }
+            definitions.append(info)
+            masks.append(try Self.loadMask(info, assets: assets))
+        }
+    }
+
+    public var isEmpty: Bool { definitions.isEmpty }
+
+    /// `FUN_1000fbc0`'s media mask: `info.mediaMask` (`+0x280`) as an im16 TGA, row-major top-down
+    /// (`cells.count == width × height`, the index rule of `MediaMask.isWater`); `_DAT_100e0134` = map width / mask
+    /// width (`divw`), where the map width is the background rect's right edge (the dimension check at `1000fbc0`
+    /// requires the map image to match it).
+    static func loadMask(_ info: LevelDefinition, assets: DeimosAssets) throws -> MediaMask {
+        let type = FourCC("im16")!
+        guard let r = assets.index.record(type: type, id: info.mediaMask) else {
+            throw DeimosAssetsError.missingTag(type: "im16", id: info.mediaMask.description)
+        }
+        let tga = try TGAImage(data: assets.index.data(for: r))
+        let w = Int32(tga.width), h = Int32(tga.height)
+        return MediaMask(width: w, height: h, cells: tga.pixels, scale: w > 0 ? info.background.right / w : 0)
     }
 }
