@@ -5,7 +5,9 @@ import XCTest
 /// §2.3): the cannons 0x442…0x44a with record p1 101…106 — the Setup's p1 ≥ 1 arm (M l. 62120–62170), the Handle's
 /// rotation (M l. 62983–63021) and the shot steering of `.HitBackgroundSprite` (M l. 63689–63709). Synthetic cannons
 /// on level 1's world (no cannon there has p1 ≠ 0), each made per record through `SetupFaces.setup` with its write-back
-/// put into the live record table, as `.SetupLevelSprites` leaves it. A missing data file is a FAILURE, never a skip.
+/// put into the live record table by this file's `cannon` helper, as `.SetupLevelSprites` leaves it (the real
+/// write-back, `SetupFaces.spawnLevelSprites`, is driven in `testCannon105WritesRecordP2`). A missing data file is a
+/// FAILURE, never a skip.
 final class RotatingCannonTests: XCTestCase {
 
     private typealias Rect = IdleSprites.Rect
@@ -135,11 +137,16 @@ final class RotatingCannonTests: XCTestCase {
             XCTAssertEqual(e.record.p2, 4, "L15 record \(i)")
             XCTAssertEqual([e.slot.counterA6, Int16(e.slot.classWord158), Int16(e.slot.classWord15c)], [4, 4, 0])
         }
-        // Through `.SetupLevelSprites`' write-back (`SetupFaces.spawnLevelSprites` `out.records`): the live table holds 4.
-        let wl = SpriteWorld(level: w.level)
-        let id = try cannon(wl, rec(p1: 105, p2: 0))
-        XCTAssertEqual(wl.records[7].p2, 4)
-        XCTAssertEqual(wl.active.sprite(id: id)?.counterA6, 4)
+        // Through `.SetupLevelSprites`' own write-back (`SetupFaces.spawnLevelSprites` `out.records[p.index] =
+        // e.record`), not this file's `cannon` helper: the live table the level runs on holds 4 for a 105 and a 106
+        // with p2 0, and keeps a 106's 9 and a 101's 0.
+        let live = [rec(p1: 105, p2: 0, index: 0), rec(p1: 106, p2: 0, index: 1), rec(p1: 106, p2: 9, index: 2),
+                    rec(p1: 101, p2: 0, index: 3)]
+        let sp = try SetupFaces.spawnLevelSprites(context: SetupFaces.Context(level: w.level, playerX: 0,
+                                                                              records: live)) { _ in .noFace }
+        XCTAssertEqual(sp.records.map(\.p2), [4, 4, 9, 0])
+        XCTAssertEqual(sp.records.map(\.p1), [105, 106, 106, 101])
+        XCTAssertEqual(sp.created, [0, 1, 2, 3])
     }
 
     // MARK: - the Handle (M l. 62983–63021)
@@ -219,6 +226,19 @@ final class RotatingCannonTests: XCTestCase {
         XCTAssertEqual(eased.y256, TileSolver.fctiwz(0.8 * Double(recoiled.y256) + 0.2 * Double(600 << 8)))
         XCTAssertEqual([eased.x, eased.y], [SpriteWorld.pixel(eased.x256), SpriteWorld.pixel(eased.y256)])
         XCTAssertEqual(eased.counterA6, 0, "the step ran in the same frame (aim 24 → the pause → its click frame)")
+
+        // A negative pause (record p2 read as an i16) never reaches 0 by the count-down: `+0xa6 == 0` is the turn test
+        // (M l. 62985) and `== 0` after the − 1 the click's (M l. 62995–62996) — no turn, no click.
+        let w6 = try world()
+        let k6 = try cannon(w6, rec(p1: 101, p2: -3))
+        w6.player.cues = []
+        var neg: [[Int16]] = []
+        for _ in 1...4 {
+            let s = try handle(w6, k6)
+            neg.append([s.phase, s.counterA6])
+        }
+        XCTAssertEqual(neg, [[0, -4], [0, -5], [0, -6], [0, -7]])
+        XCTAssertTrue(w6.player.cues.isEmpty)
     }
 
     func testRotatingCannonClickNeedsSilentVoice() throws {
@@ -295,6 +315,11 @@ final class RotatingCannonTests: XCTestCase {
             s = try XCTUnwrap(w.active.sprite(id: k))
             XCTAssertEqual([Int(s.counterA6), Int(s.classWord160)], [Int(pause), 4])
             XCTAssertEqual(w.player.cues.map(\.snd), [Self.clank], "no click: the pause is never counted down")
+            // A recoiled 105 / 106 (a captive fired) eases home as the others do (M l. 63001–63020, after the arm):
+            // 24.8 x = (int)(0.8·(410 << 8) + 0.2·(400 << 8)) = 408 << 8.
+            w.active.update(id: k) { $0.x256 = 410 << 8; $0.x = 410 }
+            let e = try handle(w, k)
+            XCTAssertEqual([e.x256, Int32(e.x)], [408 << 8, 408], "p1 \(p1)")
         }
     }
 
@@ -371,6 +396,12 @@ final class RotatingCannonTests: XCTestCase {
         XCTAssertEqual([Int(s.phase), Int(s.counterA6), Int(s.classWord15c), Int(s.classWord160)], [1, 0, 1, 3])
         XCTAssertEqual(w.player.cues.map(\.snd), [Self.clank])
         XCTAssertEqual(s.classWord154, 0)
+        // A negative pause is a pause (`+0xa6 ≠ 0`, M l. 63694): a 106 that kept its record p2 −2 is steered.
+        let wn = try world()
+        let kn = try cannon(wn, rec(p1: 106, p2: -2))
+        BackgroundSprite.hit(wn, id: kn, other: shot(wn, 100, vx: 0x300))
+        let sn = try XCTUnwrap(wn.active.sprite(id: kn))
+        XCTAssertEqual([Int(sn.classWord15c), Int(sn.classWord160), Int(sn.counterA6)], [1, 4, 0])
 
         // Anything else that qualifies is cannoned, `+0x154 = 6` (M l. 63711–63713): a walker into a 105; a player shot
         // into a 101…104 cannon (now reachable with a turning cannon) and into a p1 0 one; an idled shot (`+0x4c` 0 is
@@ -409,8 +440,8 @@ final class RotatingCannonTests: XCTestCase {
     func testCannonP1OutsideRangeTakesPath() throws {
         let w = try world()
         let c = SetupFaces.Context(level: w.level, playerX: 0)
-        // No shipped cannon has p1 1…100 or > 106 (ENG §2.3): `SetupFaces` refuses them with the path cannons p1 < 0 —
-        // their Handle is `.HandleProgrammedPath`'s (6B, ENG §3.1). Only 0 and 101…106 set up.
+        // Only 0 and 101…106 set up. `SetupFaces` refuses the path cannons p1 < 0 (6B, ENG §3.1) and p1 1…100 / > 106:
+        // no shipped cannon has those (ENG §2.3) — kept refused and pinned here as read (ENG §5), no owner.
         for p1: Int16 in [-2, -1, 1, 50, 100, 107, 200, .max] {
             XCTAssertThrowsError(try SetupFaces.setup(rec(p1: p1), context: c), "p1 \(p1)") {
                 XCTAssertEqual($0 as? SetupFaces.Error, .notTranscribed(type: 1090))
@@ -446,6 +477,19 @@ final class RotatingCannonTests: XCTestCase {
             XCTAssertEqual(ys, (1...5).map { (600 << 8) - 0x40 * Int32($0) }, "p1 \(p1)")
             XCTAssertTrue(wp.player.cues.isEmpty)
         }
+        // `.HandleProgrammedPath` runs before the add (M l. 62975): mode 2, direction 1, below `+0x104` → vx +=
+        // `+0xfc >> 4` (ProgrammedPath M l. 39384–39468), then 24.8 += that vx in the same frame.
+        let wm = try world()
+        var sm = SpriteSlot(type: 1090, x: 400, y: 600, recordIndex: 7)
+        BackgroundSprite.setupCommon(&sm)
+        BackgroundSprite.setupCannon(&sm, record: rec(p1: 107), level: wm.level)
+        sm.pathMode = 2
+        sm.pathDirection = 1
+        sm.pathSpeed = 0x100
+        sm.pathHigh = .max
+        wm.records[7] = rec(p1: 107)
+        let qm = try handle(wm, wm.active.insert(sm))
+        XCTAssertEqual([qm.vx, qm.x256], [0x10, (400 << 8) + 0x10])
         // The same velocity on a rotating cannon (101) and a still one (p1 0) never moves it: their arms add no v.
         for p1: Int16 in [0, 101] {
             let wr = try world()
@@ -454,6 +498,11 @@ final class RotatingCannonTests: XCTestCase {
             for _ in 1...5 { try handle(wr, k) }
             let q = try XCTUnwrap(wr.active.sprite(id: k))
             XCTAssertEqual([q.x256, q.y256], [400 << 8, 600 << 8], "p1 \(p1)")
+            if p1 == 0 {
+                // A p1 0 cannon never takes the rotation: its `+0xa6` keeps the common part's 3, no aim change, no click.
+                XCTAssertEqual([Int(q.phase), Int(q.counterA6)], [0, 3])
+                XCTAssertTrue(wr.player.cues.isEmpty)
+            }
         }
     }
 }

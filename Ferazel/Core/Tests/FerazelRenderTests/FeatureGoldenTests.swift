@@ -187,10 +187,12 @@ final class FeatureGoldenTests: XCTestCase {
 
     /// Level 10's fixture (`level10Cannons`, 27 left out), seed 1, `FerazelPrefs()`, the player started at `start`, no
     /// input: record `record`'s cannon after each of the first `frames` `.GameLoop` iterations (the first is the first
-    /// presented frame), the player's position and the camera after each, the screen FNV after each, and the ticks run
-    /// through each (its `now` + 1; two ticks an iteration after the first).
+    /// presented frame), the player's position and the camera after each, the screen FNV after each, the ticks run
+    /// through each (its `now` + 1; two ticks an iteration after the first), and whether that iteration's cues
+    /// (`FerazelSession.frameCues`) hold the pause's click 485 (from any cannon).
     static func cannonTrace(record: Int16, start: (x: Int, y: Int), frames: Int) throws
-        -> (trace: [CannonFrame], player: [SpriteSlot.Point], scroll: [SpriteSlot.Point], fnv: [UInt64], ticks: [UInt32]) {
+        -> (trace: [CannonFrame], player: [SpriteSlot.Point], scroll: [SpriteSlot.Point], fnv: [UInt64], ticks: [UInt32],
+            clicks: [Bool]) {
         let (run, services) = try LevelFixtureServices.open(level: 10, leaveOut: level10Cannons, start: start)
         let first = try services.firstPresentedFrame(run)
         XCTAssertEqual(run.iterations, 1)
@@ -204,8 +206,10 @@ final class FeatureGoldenTests: XCTestCase {
                     SpriteSlot.Point(x: p.x, y: p.y),
                     SpriteSlot.Point(x: session.world.player.scrollH, y: session.world.player.scrollV))
         }
+        func clicked() -> Bool { session.frameCues.contains { $0.snd == 485 } }
         let s0 = try sample()
         var trace = [s0.0], player = [s0.1], scroll = [s0.2], fnv = [first.fnv], ticks = [first.ticks]
+        var clicks = [clicked()]
         var now = first.ticks
         while trace.count < frames {
             let before = run.iterations
@@ -219,8 +223,9 @@ final class FeatureGoldenTests: XCTestCase {
             scroll.append(s.2)
             fnv.append(LevelFixtureServices.fnv1a(try XCTUnwrap(services.renderer).screen.pixels))
             ticks.append(now)
+            clicks.append(clicked())
         }
-        return (trace, player, scroll, fnv, ticks)
+        return (trace, player, scroll, fnv, ticks, clicks)
     }
 
     /// FNV-1a 64 over a cannon trace's fields (big-endian), in order.
@@ -241,12 +246,13 @@ final class FeatureGoldenTests: XCTestCase {
         // The fixture's 27 records, by type, re-derived from the level file; the four rotating cannons are not among them.
         let real = try LevelFile.load(from: try LevelFixture.base.get(), level: 10)
         let out = try LevelFixture.leftOut(real, Self.level10Cannons)
-        XCTAssertEqual(Self.level10Cannons.count, 10)
         XCTAssertEqual(out.count, 27, "the 27 refused records")
         var perType: [Int16: Int] = [:]
         for i in out { perType[real.placements[i].type, default: 0] += 1 }
         XCTAssertEqual(perType, [3080: 2, 3081: 4, 3082: 4, 3083: 3, 2816: 5, 2817: 1, 2837: 3, 2846: 2, 2847: 2,
                                  2861: 1])
+        // Every listed type leaves at least one record out (no dead entry in the literal list).
+        XCTAssertEqual(perType.count, Self.level10Cannons.count)
         let cannons = real.activePlacements.filter { BackgroundSprite.cannons.contains($0.type) && $0.p1 != 0 }
         XCTAssertEqual(cannons.map { [$0.index, Int($0.type), Int($0.p1), Int($0.p2), Int($0.p3), Int($0.p4)] },
                        [[89, 1090, 101, 15, 2, 0], [108, 1097, 101, 10, 1, 0], [200, 1090, 103, 8, 1, 0],
@@ -267,6 +273,12 @@ final class FeatureGoldenTests: XCTestCase {
             return Int16(turned % 32)
         })
         XCTAssertEqual(a.trace.prefix(16).map(\.counter), [Int32](repeating: 16, count: 15) + [15])
+        // The click 485 in the running level: every iteration whose count-down takes the pause 1 → 0 holds one (no voice
+        // is playing it in the fixture: `FrontInput()`'s playing set is empty; another cannon's click in the same
+        // iteration also counts) — iterations 15, 46, 77, 108.
+        let ends89 = a.trace.indices.dropFirst().filter { a.trace[$0].pause == 0 && a.trace[$0 - 1].pause == 1 }
+        XCTAssertEqual(ends89.map { $0 + 1 }, [15, 46, 77, 108])
+        XCTAssertEqual(ends89.filter { a.clicks[$0] }, ends89, "record 89's pause ends click")
         XCTAssertEqual(Set(a.trace.map { [$0.x, $0.y] }), [[4516, 869]], "never recoiled: nothing fired")
         // The face as the aim gives it (built at W2b): a multiple of 4 → cell aim / 4 (≥ 5 mirrored, 8 − k), unrotated;
         // else cell 0 rotated 2·(((0x20 − aim)·0xb4 / 16) / 2).
@@ -294,6 +306,9 @@ final class FeatureGoldenTests: XCTestCase {
             return f < 9 ? Int16(8 - f) : (k < 3 ? 0 : (k == 3 ? 8 : Int16(11 - k)))
         })
         XCTAssertEqual(Set(b.trace.map { [$0.x, $0.y] }), [[8551, 241]])
+        let ends200 = b.trace.indices.dropFirst().filter { b.trace[$0].pause == 0 && b.trace[$0 - 1].pause == 1 }
+        XCTAssertEqual(ends200.count, 11)
+        XCTAssertEqual(ends200.filter { b.clicks[$0] }, ends200, "record 200's pause ends click")
 
         // The two traces (measured at 6A-RC, seed 1): FNV-1a 64 of their fields.
         XCTAssertEqual(String(Self.hash(a.trace), radix: 16), "a94f59ac15d64d04", "record 89's trace")

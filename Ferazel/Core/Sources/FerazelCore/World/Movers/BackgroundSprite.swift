@@ -2,7 +2,8 @@ import Foundation
 
 /// The Background class (`PTR_PTR_100a0480` = `.HandleBackgroundSprite`; triggers-background §2.2, §2.5, §2.11), part 1
 /// (W2a): the radial bars and balls 1480–1489 (0x5c8…0x5d1) with their mace chains, and the Handle's per-frame re-face
-/// from the class caches (plants 0xa8c…, tunnels 3000…). Part 2 (W2b, below): cannons 0x442… (p1 0) and their
+/// from the class caches (plants 0xa8c…, tunnels 3000…). Part 2 (W2b, below): cannons 0x442… (p1 0; 6A-RC: the
+/// rotating p1 101…106 and their shot steering) and their
 /// captives (`.TurnIntoCannoned`, `.HandleCannonedSprite`), springs 0x47e…0x481 (`.SuperSpring`), the wall tunnels'
 /// occluder window, passages 0xb54 / 0xb55 (the Handle's face; the jump is `HitPlayerSprite`'s), and
 /// `.HitBackgroundSprite`. Part 3 (LV3, below): the retracting spikes 0x730…0x733. ES: the dart traps 0x76c…0x76f,
@@ -241,8 +242,9 @@ extension BackgroundSprite {
 
     // MARK: Setup
 
-    /// The cannon arm of `.SetupBackgroundSprite` (l. 62057–62184) for p1 0 and p1 ≥ 1 (`SetupFaces` refuses p1 < 0
-    /// and p1 1…100 / > 106 — their Handle is the programmed path's): aim `+0x46 = (type − 0x442)·4`; layer 1000; home
+    /// The cannon arm of `.SetupBackgroundSprite` (l. 62057–62184) for p1 0 and p1 ≥ 1 (`SetupFaces` refuses p1 < 0,
+    /// the path cannons — 6B's; and p1 1…100 / > 106, placed on no level — kept refused and pinned as read, no owner;
+    /// the Handle gives both the programmed path's branch): aim `+0x46 = (type − 0x442)·4`; layer 1000; home
     /// `+0x14c` = x, `+0x150` = y; `+0x154` 0; then
     /// - p1 ≤ 0: `+0x14/+0x1c` from `+0xc/+0xa`, (p1 < 0: `+0x188 = 1` and `.SetupProgrammedPath`, M l. 62071 —
     ///   // later: 6B, not built), `+8 = +0xc`, `+6 = +0xa`, the aim again; launch speed `+0x164` = 9000 for p1 0
@@ -362,7 +364,8 @@ extension BackgroundSprite {
     ///   R(10000); then the ease home as for p1 0, every frame after the step;
     /// - any other p1 (1…100, > 106, < 0; M l. 62954–62955, 62984): `.HandleProgrammedPath` (`ProgrammedPath`), then
     ///   24.8 += v and the pixel copies (M l. 62975–62980) — no ease. `SetupFaces` sets none of them up: the path
-    ///   cannons' Setup (`.SetupProgrammedPath`) is 6B's;
+    ///   cannons' Setup (`.SetupProgrammedPath`, p1 < 0) is 6B's; p1 1…100 / > 106 are placed on no level (kept
+    ///   refused, pinned as read, no owner);
     /// - the aim `+0x46` wrapped into 0…31; ≥ 0x12 → mirrored and folded to 0x21 − aim (0 → not mirrored) — the fold
     ///   only sets the mirror flag: the aim is reloaded raw (`lha r3,0x46(r17)` @ 10073fc8) for the rest;
     /// - aim mod 4 == 0: k = aim / 4, k ≥ 5 → mirrored, face 8 − k, else not; rotation `+0x1aa` 0, face set 0x442[k],
@@ -671,6 +674,8 @@ extension BackgroundSprite {
         w.player.cue(PlayerCue(call: .threeDRand, snd: cannonClank, priority: 1, volume: 0xab, position: k.centre,
                                rate: w.rng.soundRate()))
         guard k.counterA6 != 0 else { return }
+        // The dump re-reads the shot's vx after the kill (`lwz 0x24(r31)`); the kill only marks the shot dead and never
+        // writes vx, so this equals `vx0` — the fallback is kept only for a shot record gone from the list (none is).
         let vx = w.active.record(id: oID)?.vx ?? vx0
         let p106 = record(w, k)?.p1 == 106
         let aim = k.phase

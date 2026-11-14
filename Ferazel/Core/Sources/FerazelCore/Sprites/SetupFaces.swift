@@ -375,8 +375,10 @@ public enum SetupFaces {
             BackgroundSprite.setupCommon(&s)                   // l. 61966–61977: layer 1, callbacks 0, `+0xa6` 3, HP 6
             switch t {
             case 0x442...1098:                                 // cannons (l. 62058–62184; W2b `setupCannon`)
-                // p1 0 and 101…106 (6A-RC: rotating / shot-steered; 105 / 106 write record p2). p1 < 0 (programmed path,
-                // `.SetupProgrammedPath`) and 1…100 / > 106 (that path's Handle, no path set up) are 6B's. // later: 6B.
+                // p1 0 and 101…106 (6A-RC: rotating / shot-steered; 105 / 106 write record p2). Refused: p1 < 0, the
+                // path cannons (`.SetupProgrammedPath`; first placed on level 40) — // later: 6B (ENG §3.1); and p1
+                // 1…100 / > 106 (the p1 ≥ 1 arm, then the path's Handle with no path set up) — placed on no level, kept
+                // refused and pinned as read (ENG §5), no owner.
                 guard p.p1 == 0 || BackgroundSprite.rotatingP1.contains(p.p1) else { throw Error.notTranscribed(type: p.type) }
                 record = BackgroundSprite.setupCannon(&s, record: p, level: c.level)
                 face(0x442, 0, .handle)                        // the Handle aims the cannon (set 0x442, 5 faces)
