@@ -100,7 +100,7 @@ extension GameState {
             log?(.player(p))
         }
         // 5. Score bar.
-        scoreBar.update(players: players)                                    // 10006c2c..10006c34 FUN_100317e0
+        scoreBar.update(players: players, sector: flags.sector)              // 10006c2c..10006c34 FUN_100317e0
         log?(.scoreBar)
         // 6. Game over.
         log?(.gameOver)

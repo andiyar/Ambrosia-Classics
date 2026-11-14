@@ -17,7 +17,7 @@ final class WeaponTests: XCTestCase {
         try s.setupPlayer(1)
         s.playerLevelStart(0)
         s.playerLevelStart(1)
-        s.scoreBar.levelStart(players: s.players)
+        s.scoreBar.levelStart(players: s.players, sector: s.flags.sector)
         return s
     }
 
@@ -36,7 +36,7 @@ final class WeaponTests: XCTestCase {
         if !s.flags.p1Active && s.players[0].lifeState == 4 { s.flags.p1Active = true }
         s.updatePlayer(0, input: input)
         s.updatePlayer(1, input: [])
-        s.scoreBar.update(players: s.players)
+        s.scoreBar.update(players: s.players, sector: s.flags.sector)
         s.flags.gameTime += 1
         let units = s.assets.definitions.units
         let made = s.world.entities.indices
@@ -309,7 +309,7 @@ final class WeaponTests: XCTestCase {
         var d = try world(sector: 1)
         toActive(&d)
         d.flags.sector = 2
-        XCTAssertEqual(d.players[0].sector, 1)
+        XCTAssertEqual(d.players[0].lives, 3)                                // set up at sector 1 (3 lives)
         tick(&d, .select)
         XCTAssertEqual(d.players[0].handler.air.id, FourCC("aibg"))          // at 1 it would stay aiic
         d.players[0].handler.air = d.assets.definitions.weapons[1]

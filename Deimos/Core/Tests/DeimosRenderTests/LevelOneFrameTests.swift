@@ -3,8 +3,9 @@ import XCTest
 @testable import DeimosRender
 
 /// A headless session: `DeimosSession` passes executed by a `DeimosRenderer` — fades stepped through all their
-/// levels, `limit` ignored (no clock). When `DEIMOS_FRAME_DUMP` names a folder, the screen after the passes a test
-/// marks (plus every 50th) is written to `<folder>/<label>/pass-NNNN.ppm` (binary P6, 8-bit `(c<<3)|(c>>2)`).
+/// levels, `limit` and `pauseWait` ignored (no clock, no keyboard). When `DEIMOS_FRAME_DUMP` names a folder, the
+/// screen after the passes a test marks (plus every 50th) is written to `<folder>/<label>/pass-NNNN.ppm` (binary P6,
+/// 8-bit `(c<<3)|(c>>2)`).
 struct HeadlessRun {
     var session: DeimosSession
     let renderer: DeimosRenderer
@@ -20,6 +21,11 @@ struct HeadlessRun {
         renderer = DeimosRenderer(assets: assets)
         self.label = label
         dumpPasses = dump
+    }
+
+    /// A film session (`SessionStart.film`; the film names its level, players and seed).
+    init(label: String, film: Film, dump: Set<Int> = [], prefs: DeimosPrefs = .fresh) throws {
+        try self.init(label: label, dump: dump, start: SessionStart(sector: 1, players: 1, film: film), prefs: prefs)
     }
 
     /// Run one pass. `fadeScreen` sees the screen after every fade step.
@@ -50,7 +56,7 @@ struct HeadlessRun {
                 fadeScreen?(renderer.screen)
             }
             renderer.fadeEnd()
-        case .limit:
+        case .limit, .pauseWait:
             break
         default:
             renderer.apply(op)
@@ -109,11 +115,24 @@ final class LevelOneFrameTests: XCTestCase {
         out.ops.compactMap { if case let .draw(c) = $0 { return c } else { return nil } }
     }
 
-    /// A generous back-buffer rect around a game-area sprite command (its frame size, unscaled, + 2 px).
+    /// A generous back-buffer rect around a sprite command (its frame size, unscaled, + 2 px), or its `COST` rect.
     private func coverRect(_ c: DrawCommand, _ assets: DeimosAssets) throws -> MacRect {
+        if let r = c.costRect { return MacRect(top: r.top - 2, left: r.left - 2, bottom: r.bottom + 2, right: r.right + 2) }
         let f = try assets.spriteGroup(c.face).frames[c.frame]
         let hw = Int32(f.width) / 2 + 2, hh = Int32(f.height) / 2 + 2
         return MacRect(top: c.y - hh, left: c.x - hw, bottom: c.y + hh, right: c.x + hw)
+    }
+
+    /// Every rect the pass drew over (C18a: the oracles mask every drawn command): each draw command's cover rect
+    /// (`except` filters some out) and each particle stamp's 8 × 8 square (+ 1 px).
+    private func covers(_ out: PassOutput, _ assets: DeimosAssets,
+                        except: (DrawCommand) -> Bool = { _ in false }) throws -> [MacRect] {
+        var rects = try draws(out).filter { !except($0) }.map { try coverRect($0, assets) }
+        for op in out.ops {
+            guard case let .particles(stamps) = op else { continue }
+            rects += stamps.map { MacRect(top: $0.y - 1, left: $0.x - 1, bottom: $0.y + 9, right: $0.x + 9) }
+        }
+        return rects
     }
 
     private func inside(_ r: MacRect, _ x: Int, _ y: Int) -> Bool {
@@ -144,7 +163,7 @@ final class LevelOneFrameTests: XCTestCase {
 
         var run = try HeadlessRun(label: "terrain", dump: [200])
         let out = try XCTUnwrap(run.run(through: 200))
-        let covers = try draws(out).filter { $0.clip == Self.gameClip }.map { try coverRect($0, assets) }
+        let covers = try covers(out, assets)
         XCTAssertGreaterThanOrEqual(covers.count, 3, "crosshair, shadow, ship")
         let screen = run.renderer.screen
         var checked = 0
@@ -217,7 +236,7 @@ final class LevelOneFrameTests: XCTestCase {
         let all = draws(out).filter { $0.clip == Self.gameClip }
         let ship = try XCTUnwrap(all.first { $0.face == pl1o.id && $0.flags & 2 == 0 })
         let shadow = try XCTUnwrap(all.first { $0.face == pl1o.id && $0.flags & 2 != 0 })
-        let others = try all.filter { $0.face != pl1o.id }.map { try coverRect($0, assets) }
+        let others = try covers(out, assets) { $0.face == pl1o.id }
         XCTAssertEqual(ship.frame, 0)
         XCTAssertEqual(ship.x, 208); XCTAssertEqual(ship.y, 330)
         XCTAssertEqual(ship.scale, 1); XCTAssertEqual(ship.flags, 0)
@@ -285,13 +304,16 @@ final class LevelOneFrameTests: XCTestCase {
     }
 
     /// Self-derived goldens (FNV-1a 64, `fnv1a64`), seed 0x469c2, no keys: the screen after passes 2, 56, 72, 105,
-    /// 600, 3118, 3200 and the back buffer after pass 0. Derived on the first green run at HectorKit 522feb8,
-    /// Classics bc8c170 + this task's R3 tree (the commit that adds this test); a second review leg re-derives them.
+    /// 600, 3118, 3200 and the back buffer after pass 0. Re-derived for the Phase-2 session (C18a) at HectorKit
+    /// ef2c341, Classics bcddbe6 + this task's C18a tree (the commit that re-derives them); a second review leg
+    /// re-derives them. Back 0 and screens 2 and 105 are unchanged from R3 (nothing but the ship is on screen then);
+    /// 56 and 72 now show P1's entry spawn `plen`, 600 the level's units (the oracles above mask every drawn rect);
+    /// the session ends at pass 1195 (game over, ◇ stand-in 2), so 3118 and 3200 are its last frame ("GAME OVER").
     func testFrameGoldens() throws {
         let screenGoldens: [Int: UInt64] = [
-            2: 0xa50b_449b_e758_b51e, 56: 0x9eb1_3d84_ae09_d2de, 72: 0x13a4_433f_7799_2d00,
-            105: 0x2295_e00a_698a_ad11, 600: 0xea78_2812_091d_0229,
-            3118: 0x2397_7d31_af56_be4a, 3200: 0x2397_7d31_af56_be4a,   // the window stops at top 1 from pass 3118
+            2: 0xa50b_449b_e758_b51e, 56: 0x260c_2289_b23f_a581, 72: 0x0d50_8957_88f4_79e3,
+            105: 0x2295_e00a_698a_ad11, 600: 0x6e1b_2ee3_24e6_7f5a,
+            3118: 0xe91f_3acb_0ca6_2aaf, 3200: 0xe91f_3acb_0ca6_2aaf,   // the session ended at pass 1195
         ]
         let backGolden0: UInt64 = 0x9527_86d1_5e67_2e50
         var run = try HeadlessRun(label: "goldens", dump: Set(screenGoldens.keys).union([0]))
@@ -313,7 +335,7 @@ final class LevelOneFrameTests: XCTestCase {
     /// from pass 204; the terrain source column is offset + 32 (oracle at pass 240); screen golden self-derived as
     /// `testFrameGoldens`.
     func testPanAndBankGolden() throws {
-        let golden240: UInt64 = 0x0c99_1372_56a0_bc44   // self-derived: HectorKit 522feb8, Classics bc8c170 + R3
+        let golden240: UInt64 = 0x16c3_a0bc_ce69_4007   // self-derived: HectorKit ef2c341, Classics bcddbe6 + C18a
         let assets = try ShippedAssets.get()
         let jum2 = try Level1Images.jum2.get()
         var run = try HeadlessRun(label: "pan", dump: Set(200...240))
@@ -326,7 +348,7 @@ final class LevelOneFrameTests: XCTestCase {
             let frame = run.session.players[0].object.frame
             if t >= 204 { XCTAssertEqual(frame, 3, "frame at pass \(t)") } else { XCTAssertNotEqual(frame, 3, "pass \(t)") }
         }
-        let covers = try draws(XCTUnwrap(out)).filter { $0.clip == Self.gameClip }.map { try coverRect($0, assets) }
+        let covers = try covers(XCTUnwrap(out), assets)
         let screen = run.renderer.screen
         let top = 3119 - 240, column = Int(run.session.scroll.offset) + 32
         XCTAssertEqual(column, 0)
