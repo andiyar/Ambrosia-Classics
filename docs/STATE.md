@@ -125,9 +125,11 @@ Settled history lives in docs/STATE-history.md.
 - **Waiting on Ben:** (1) the staged app has never been launched by a session — the first run is his, or a muted
   boot check on his say-so (how: the 2026-11-14 wave 3 handoff); (2) his "level 1 plays" verdict against the gate
   card. Neither blocks planning the campaign.
-- **The plan:** `docs/superpowers/plans/2026-11-05-deimos-remainder.md` — Phase 2's cards are all closed. Next =
-  the Phase 3 (campaign) plan, written as its own plan from that file's "Phase 3" cards; the session brief is in
-  `docs/handoff-2026-11-14-deimos-wave-3.md`. Ben, 2026-11-14: sessions chain until a hard stop that needs him.
+- **The plan:** Phase 3 (the campaign) is planned: `docs/superpowers/plans/2026-11-14-deimos-phase3.md` (D50; two
+  grounding appendices beside it; reviewed by two legs). Seven tasks — the level transition first (the one real gap:
+  today a finished level ends the session), then tests for carry-over, two players and the finale, a twelve-sector
+  sweep, `-players 2` / `-sector N`, staging. Ladder 344 → 352 → 360 → 367 → 372. Ben, 2026-11-14: sessions chain
+  until a hard stop that needs him.
 - **Data:** `Resources/Deimos/` in git; `deimos-census` 872 entries, 0 failures.
 - **Open:** RE bank `docs/deimos/INDEX.md` #13, #59 residue, #62–#64 and 134 cross-file label mismatches; Ben's
   ear/eye items (on the gate card). Not modelled until Phase 4: the mouse button ending a film; the quit flag

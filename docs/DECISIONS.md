@@ -2340,3 +2340,24 @@ file, reviewed by two Opus legs and cross-checked by Fable. The plan's own "Plan
 10. **Unplaced cannon kinds stay refused with no owner** (6A-RC): p1 1…100 and above 106 are placed on no level; their
     Setup arm is built and unit-tested as the dump has it, but level setup keeps refusing them, pinned. Only p1 < 0
     (the path cannons) is 6B's. The ledger's check now anchors on the code's own range.
+
+## D50 — Deimos Rising: the Phase 3 (campaign) plan and the seat's rulings (2026-11-15)
+
+**Decided (the seat, Fable 5.2, 2026-11-15; plan `docs/superpowers/plans/2026-11-14-deimos-phase3.md` with two
+grounding appendices; reviewed by two Opus legs — coverage/executability and data reality — and corrected).** Phase 3
+is seven tasks: the level transition (the one real gap), then tests for carry-over, two players and the finale, a
+god-mode sweep of all twelve sectors, two launch arguments, and staging. `Deimos/Core` ladder 344 → 352 → 360 → 367 →
+372; a new bundle `DeimosCampaignTests` (3); `DeimosReplayTests` stays 4. Rulings the plan proceeds on, each on the
+gate-3 card for Ben to overturn: (1) `-players 2` and `-sector N` launch arguments stand in for the menu's 2 PLAYER
+button and the level select until Phase 4; (2) player 2's keys are the binary's prefs defaults (keypad 8/4/6/5, End,
+Forward Delete, Page Down) — where OS X 1.0.6 consumed them is unread (INDEX #14); (3) after the finale the session
+ends and a new game starts (the original went to the scores and the menu; no credits follow the finale); (4) every
+level after the first runs one game-time step later than level 1 (`100059e0..100059f0`) — replicated, not fixed;
+(5) the level start's state moves into `GameState`, its drawing stays in the session; (6) the stale
+multiplier-indicator serial and the revive-at-transition quirk are replicated. Read from the listing during
+grounding: the bank's carry/reset table omits five rows and has one wrong (multiplier carried; shield refilled;
+invulnerability carried from the level end; power-ups idled; a forced air weapon on entering sectors 2, 3 and 5;
+level `none` resumes rather than stops the music); a state entered by its timer sounds on the next tick (the finale's
+flash sounds are at T0+6k+1); INDEX #64 is closed by the data. No film crosses a level boundary, plays sectors 5–12,
+fires the Photon Beam, has two players or reaches the finale: those are proved by tests, the sweep and Ben.
+
