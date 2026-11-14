@@ -212,7 +212,7 @@ public struct DeimosDriver {
                         }
                         prefs = session.prefs                                  // ◇ stand-in 6
                         newSession(seed: now, sector: 1)
-                        escLatched = true
+                        escLatched = true   // a press in the ended pass's tail too: Esc is read only at begin (10005904)
                     } else if !passLimited {
                         passBegun = false
                         return out

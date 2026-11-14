@@ -26,9 +26,9 @@ final class DriverTests: XCTestCase {
     private static let poll = 0.004
     private static let escKey: UInt16 = 0x35
 
-    private func makeDriver(audio: (any DeimosAudioSink)? = nil) throws -> DeimosDriver {
+    private func makeDriver(audio: (any DeimosAudioSink)? = nil, sector: Int = 1) throws -> DeimosDriver {
         try DeimosDriver(assets: try ShippedAssets.get(), prefs: .fresh, rate: .classic,
-                         start: SessionStart(sector: 1, players: 1, film: nil), audio: audio)
+                         start: SessionStart(sector: sector, players: 1, film: nil), audio: audio)
     }
 
     func testTicksAtRate() {
@@ -134,7 +134,9 @@ final class DriverTests: XCTestCase {
 
     func testEscStartsNewSession() throws {
         let assets = try ShippedAssets.get()
-        var driver = try makeDriver()
+        // Started at sector 2, so the restart's "sector 1" (◇ stand-in 3) is not the start's sector.
+        var driver = try makeDriver(sector: 2)
+        XCTAssertEqual(driver.session.sector, 2)
         var clock = FakeClock(rate: .classic)
         while driver.presentCount < 20 {
             _ = driver.idle(seconds: clock.seconds, keys: HeldKeys())
@@ -367,6 +369,18 @@ final class DriverTests: XCTestCase {
         XCTAssertEqual(after[0], RecordingSink.Apply(sounds: [], music: [.resume], halt: nil), "10022fb4, after the wait")
         XCTAssertEqual(after[1], RecordingSink.Apply(sounds: [], music: [.stop], halt: 0), "10005ad8 halt, 10005ae4 stop")
         XCTAssertEqual(after[2].music, [.play(FourCC("ammu")!, loop: true), .stop, .level(100)], "the new session")
+
+        // Outside a pause: resume only acts when suspended (10023e10..10023e34); suspend once per suspension
+        // (10023db4..10023dbc); a resume with no pause holding the music resumes it (10023e88..10023e8c).
+        applies = sink.applies.count
+        driver.resume()
+        XCTAssertEqual(sink.applies.count, applies, "not suspended: resume sends nothing")
+        driver.suspend()
+        driver.suspend()
+        driver.resume()
+        driver.resume()
+        XCTAssertEqual(Array(sink.applies.dropFirst(applies)), [RecordingSink.Apply(sounds: [], music: [.pause], halt: nil),
+                                                                RecordingSink.Apply(sounds: [], music: [.resume], halt: nil)])
     }
 
     /// Each pass's `sounds` / `music` / `haltEffectsAt` reach the sink once, in pass order, in the `idle` in which

@@ -1,6 +1,6 @@
 import XCTest
 @testable import DeimosHost
-import DeimosCore
+@testable import DeimosCore
 
 /// H2 — the machine-side replay tools: `HeadlessRunner` (logic only unless asked to render), `FilmReplay` (seed,
 /// sector and players from the film) and `ReplayTrace` (a `TickTrace` row per ticked pass, CSV with a fixed header).
@@ -57,7 +57,9 @@ final class ReplayHarnessTests: XCTestCase {
 
     /// A synthetic 10-frame film: P1 reads bytes 0…9 and then the read one past the recording (cursor 10 → 11);
     /// `FUN_10009750` (cursor > frames) ends the session on that pass (`10005a38..10005a48`) — 11 input ticks,
-    /// `.filmEnd`. Bound: 500 passes.
+    /// `.filmEnd`. Bound: 500 passes. The other ends are told apart from it: a 3,000-frame film outlasts its
+    /// input-less pilot and ends on game over (bound 3,000 passes); the level-complete rules, which a zero-input film
+    /// cannot reach, are checked on the classifier with their flags set on copies of a session.
     func testFilmReplayEndsOnePastLastByte() throws {
         let assets = try ShippedAssets.get()
         let result = try FilmReplay.run(film: Self.film(frames: 10), assets: assets, trace: true, maxPasses: 500)
@@ -70,6 +72,30 @@ final class ReplayHarnessTests: XCTestCase {
         let inputTicks = zip(rows, [Int32(0)] + rows.map(\.cursor)).filter { $0.0.cursor != $0.1 }.count
         XCTAssertEqual(inputTicks, 11)
         XCTAssertEqual(rows.last?.cursor, 11)
+
+        // Game over inside a film (10006d68..10006d98 runs in the tick, before the film branch 10005a24).
+        var long = try HeadlessRunner(assets: assets, film: Self.film(frames: 3000))
+        let over = long.run(maxPasses: 3000)
+        XCTAssertEqual(over.endReason, .gameOver)
+        XCTAssertLessThan(over.passes, 3000)
+        XCTAssertLessThan(over.cursor, 3000, "the film had not run out")
+        XCTAssertTrue(long.session.game.flags.noPlayerAlive)
+        XCTAssertFalse(long.session.players.contains(where: \.inGame))
+
+        // FUN_10007170 with G+0x09 set: a film keeps it (100071f0) → level complete; nobody in game (10007264) →
+        // game over; not a film, G+0x09 and G+0x39 fall (1000723c..10007248) → level complete.
+        var s = try HeadlessRunner(assets: assets, film: Self.film(frames: 10)).session
+        s.game.flags.levelComplete = true
+        s.game.players[0].inGame = true
+        XCTAssertEqual(HeadlessRunner.reason(s, levelEndingBefore: true), .levelComplete)
+        for i in s.game.players.indices { s.game.players[i].inGame = false }
+        XCTAssertEqual(HeadlessRunner.reason(s, levelEndingBefore: true), .gameOver)
+        var n = try HeadlessRunner(assets: assets, start: SessionStart(sector: 1, players: 1, film: nil), seed: 0x469c2)
+            .session
+        n.game.players[0].inGame = true
+        XCTAssertFalse(n.game.flags.levelComplete)
+        XCTAssertFalse(n.game.flags.levelEnding)
+        XCTAssertEqual(HeadlessRunner.reason(n, levelEndingBefore: true), .levelComplete)
     }
 
     /// The CSV: a fixed header naming the `TickTrace.Row` fields in order, one line per row, `\n`-terminated;

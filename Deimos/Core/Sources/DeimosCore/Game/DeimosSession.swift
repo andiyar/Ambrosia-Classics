@@ -307,11 +307,11 @@ public struct DeimosSession: Sendable {
     /// end — halt, `gaso 8`, music pause, the wait, the resume (`10022fb4`) — and only then leaves the loop for the
     /// halt and the stop (`10005ad8`, `10005ae4`). There is no next pass, so the resume goes into this pass's music
     /// ahead of the stop (`[… .pause, .resume, .stop]`), and the halt index stays the pause's, so `gaso 8` is not cut
-    /// in the same apply. ◇ Inexact until H2 (the real wait): `PassOutput` holds one halt, so the session end's halt
-    /// after the wait is not expressed (`gaso 8` plays out instead of being cut when Caps Lock comes up), and the
-    /// resume and the stop reach the audio with the pass's other cues, before the host's wait rather than after it
-    /// (the music is silent either way: paused in the original, stopped here). A film never pauses (`10030408..
-    /// 1003041c`), and still skips the halt and the stop (`10005ad0`).
+    /// in the same apply. `PassOutput` holds that one halt; the host expresses the rest (H2, `DeimosDriver`): it
+    /// sends the cues through the `.pause` when the pass begins, the resume when its wait sees Caps Lock up, and the
+    /// session end's halt (index 0, cutting `gaso 8`) and stop as a second apply once the pass's ops are done. Read
+    /// without a host, the pass's `music` alone still carries them in one list. A film never pauses
+    /// (`10030408..1003041c`), and still skips the halt and the stop (`10005ad0`).
     ///
     /// The first pass also returns the level start's ops (before its own) and `.hideCursor`. Once the session has
     /// ended, `pass` returns an empty output with `sessionEnded` set. `ticks` = `TickCount()` (the FPS monitor's clock).

@@ -64,6 +64,8 @@ public struct HeadlessRunner {
     }
 
     /// A film session: seed, level (so the sector) and players from the film (`FUN_100069b0`); fresh prefs.
+    /// `DeimosSession` reads all three from the film itself, so the start's sector / players and `seed` passed here
+    /// are not read (they are filled in only to name the film's values).
     public init(assets: DeimosAssets, film: Film, render: Bool = false) throws {
         try self.init(assets: assets, start: SessionStart(sector: 1, players: film.playerCount, film: film),
                       seed: film.seed, render: render)
@@ -92,19 +94,23 @@ public struct HeadlessRunner {
                      endScore: session.players[0].score, passes: passes, trace: trace)
     }
 
-    /// Which rule cleared the running flag on the pass that ended a keyless session, in the pass's own order: the
-    /// tick's game over (`FUN_10006b50` `10006d68..10006d98`: no player in game and the tick's game time > start +
-    /// int(flli 13)) or level complete with nobody in game (`10007264`); the tick's level complete (`FUN_10007170`: a
-    /// film keeps G+0x09 set, `100071f0`; otherwise G+0x39 falls, `10007248`); then the film branch (`10005a38`) —
-    /// the only other end a session without keys has.
+    /// Which rule cleared the running flag on the pass that ended a keyless session, in the pass's own order:
+    /// 1. the tick's game over (`FUN_10006b50` `10006d68..10006d98`: no player in game and the tick's game time —
+    ///    `gameTime − 1`, the tick adds 1 after it at `100059e0` — > start + int(flli 13));
+    /// 2. the tick's `FUN_10007170` with G+0x09 set: nobody in game (`100071a0..100071e4`, `10007264`) → game over;
+    ///    a film keeps G+0x09 (`100071f0`) → level complete; not a film, G+0x09 and G+0x39 fall (`1000723c..10007248`,
+    ///    ◇ S9.1) → level complete;
+    /// 3. the film branch after the tick (`10005a24..10005a48`): a film whose P1 cursor passed the recording.
+    /// The only other clear is the begin frame's quit (`1000591c`: Esc, or +0x02, which 1.0.6 never sets), and the
+    /// runner's keys are empty — so an end none of these explains is unreachable, and traps.
     static func reason(_ s: DeimosSession, levelEndingBefore: Bool) -> ReplayResult.EndReason {
         let f = s.game.flags
         let delay = Int32(s.assets.floats[13].rounded(.towardZero))
-        if f.noPlayerAlive && (f.levelComplete || (f.gameOverNoticed && s.gameTime &- 1 > f.gameOverStart &+ delay)) {
-            return .gameOver
-        }
-        if f.levelComplete || (levelEndingBefore && !f.levelEnding) { return .levelComplete }
-        return .filmEnd
+        if f.noPlayerAlive && f.gameOverNoticed && s.gameTime &- 1 > f.gameOverStart &+ delay { return .gameOver }
+        if f.levelComplete { return s.players.contains(where: \.inGame) ? .levelComplete : .gameOver }
+        if levelEndingBefore && !f.levelEnding { return .levelComplete }
+        if f.filmPlaying && (s.game.film?.finished ?? true) { return .filmEnd }
+        preconditionFailure("HeadlessRunner: a keyless session ended by no known rule")
     }
 
     /// One pass's ops on the renderer: fades through all their levels, host waits skipped.
