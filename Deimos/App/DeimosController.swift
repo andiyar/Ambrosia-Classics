@@ -292,8 +292,11 @@ import Synchronization
     /// catch-up, so on resume (`FUN_1000b8b0`: +0x65 = 0, show, bring to front) its next pass simply runs late, as
     /// the original's did. The original painted the window black on resume and let the next present restore the
     /// image; here the held screen is shown at once (the menu would otherwise stay black until a button redraws).
-    /// Audio (A3): the driver's suspend / resume handlers send the music pause / resume (`10023dc8`, `10023e88`; a
-    /// pause in progress keeps the music paused across them), and the game's stream voice is paused meanwhile.
+    /// Audio (A3): as in 1.0.6, only the MUSIC pauses. The driver's suspend handler sends the music pause
+    /// (`10023dc8`, `FUN_10048220(1)`) and its resume handler (`10023e10`) the music resume (`10023e88`) unless the
+    /// pause flag r2−0x617b holds it (`10023e7c..10023e84`: the game was already in the Caps Lock pause). The original
+    /// touched no sound channel on suspend, so effects already sounding ring out: the game's stream voice keeps
+    /// running in the background (it is detached only on quit).
     private func updateSuspension() {
         guard driver != nil, shell != nil else { return }
         let suspend = !NSApp.isActive || shell.windowedWindow.isMiniaturized
@@ -302,14 +305,12 @@ import Synchronization
         if suspend {
             timer?.invalidate()
             driver.suspend()
-            if let mixer, let streamID { mixer.setStreamPaused(streamID, true) }
             if cursorHidden {
                 NSCursor.unhide()
                 cursorHidden = false
             }
         } else {
             driver.resume()
-            if let mixer, let streamID { mixer.setStreamPaused(streamID, false) }
             present()
             timer?.start()
             idleFired()
