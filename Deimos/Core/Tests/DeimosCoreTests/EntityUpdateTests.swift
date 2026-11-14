@@ -582,7 +582,10 @@ final class EntityUpdateTests: XCTestCase {
         XCTAssertFalse(text.isEmpty)
         let full = EntityDraw.playerCommands(&p, hOffset: 0, floats: a.floats, coinTally: coin, text: layout)
         XCTAssertEqual(full, base + text)
-        XCTAssertEqual(EntityDraw.playerOps(&p, hOffset: 0, floats: a.floats), base.map { .draw($0) })
+        // The session's draw world (`FUN_10007070`, `100070a8..100070c0`) wraps the same call in `.draw` ops: with a
+        // fresh tally (state 0) no text.
+        XCTAssertEqual(EntityDraw.playerCommands(&p, hOffset: 0, floats: a.floats, coinTally: TallyState.CoinTally(),
+                                                 text: layout).map { RenderOp.draw($0) }, base.map { .draw($0) })
         // nil when the state is 0 or the alpha is 32 (or more, unsigned — a negative alpha too).
         var c = coin
         c.alpha = 32
