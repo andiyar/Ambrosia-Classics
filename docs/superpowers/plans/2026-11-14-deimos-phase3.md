@@ -54,7 +54,8 @@ sweep (a smoke check, not fidelity), and by Ben playing.
 
 1. **`-players 2` and `-sector N`** — two ◇ launch arguments beside `-film`, standing in for the original's menu
    until Phase 4: the 2 PLAYER button (or the `2` key), and the level select (which lets you start at any sector up
-   to the best one reached; a start above sector 1 has one life, as the original). Restarts keep both. Without
+   to the best one reached; a start above sector 1 has one life, as the original). A restart (game over, Esc, the
+   campaign's end) keeps the player count and starts again at the launch's sector — with no `-sector`, sector 1. Without
    `-sector`, every look at a late sector would mean playing all the earlier ones first — the console has no level skip.
 2. **Player 2's keys are the prefs defaults** read from the binary (keypad 8 / 4 / 6 / 5 = up / left / right / down,
    End = fire, Forward Delete = bomb, Page Down = select; appendix B §1a). Where OS X 1.0.6 actually consumed them is
@@ -168,6 +169,9 @@ If Ben's Phase 2 verdict arrives with notes, a fix wave for them runs first, as 
 - **Contract:** one test per group of rows of appendix A §2's table, each poking player 1 (and 2) before the
   transition and asserting after it. The table in appendix A, not the bank's §8, is the reference (the bank omits
   five rows and has one wrong; ST corrects the bank).
+- **Every CR test goes through `levelCompleteStep` on a real transition, never a direct call to the level start**
+  (two LT review mutants — the sector set after the players' level start, the reward flag never set — were only
+  visible that way).
 - **Tests (8):** `testLivesScoreThresholdCarry` · `testMoneyAndCounterReset` ·
   `testMultiplierCarriesAndIndicatorOnRespawn` · `testShieldRefilledPowerUpsIdle` ·
   `testAirWeaponForcedAtSectorsTwoThreeFive` · `testInvulnerabilityCarriesIntoNextLevel` · `testDeadPlayerStaysOut` ·
@@ -224,10 +228,14 @@ If Ben's Phase 2 verdict arrives with notes, a fix wave for them runs first, as 
 
 ### AP — the app: start with two players, start at a sector (no tests) — after CS
 
-- **Files:** `Deimos/App/{DeimosMain,DeimosController}.swift` (the app's film lookup re-pointed to `FilmLookup`).
+- **Files:** `Deimos/App/{DeimosMain,DeimosController}.swift` (the app's film lookup re-pointed to `FilmLookup`);
+  `Sources/DeimosHost/DeimosDriver.swift` and `Tests/DeimosHostTests/DriverTests.swift` (the restart: today it always
+  starts at sector 1, ~line 231; it must start at the launch's sector — the existing restart tests are re-specified,
+  same names and count, with a sector-1 launch still restarting at 1 and a sector-7 launch at 7).
 - **Contract:** ◇ `-players 2` and ◇ `-sector N` (1–12) (ruling 1) parsed beside `-film`, feeding the session start;
   a bad value fails the way a bad film tag does; with `-film` both are ignored (the film carries its own). Restarts
-  keep both (the driver already keeps the start). No app change is needed for transitions themselves.
+  keep the player count (the driver already does) and the launch's sector (the driver change above). No app change is
+  needed for transitions themselves.
 - **Gate:** G2 unchanged (**372 / 0**); G5 (Debug and Release). No launch. **Commit:** `Deimos app: -players 2 and
   -sector N until the menu exists`. Two review legs, by reading and building.
 
@@ -262,20 +270,22 @@ through quickly. Each line: what you'll see or hear, and what would be wrong.
    about two seconds (carried from the level end, as the original's code reads). On level 1 you do not. If your
    memory says otherwise, say so.
 6. **A player who is out stays out** in a two-player game; the other plays on.
-7. **Two players:** `open ~/Desktop/"Deimos Rising.app" --args -players 2` (quit first). To start at a later sector
+7. **Caps Lock exactly as a new level starts** shows the new level at once, not faded in, until you release it — the
+   original does the same.
+8. **Two players:** `open ~/Desktop/"Deimos Rising.app" --args -players 2` (quit first). To start at a later sector
    add `-sector 7` (any of 1–12; one life, as the original's level select gives you). Player 2 uses the keypad
    8 / 4 / 6 / 5 to move, End to fire, Forward Delete to bomb, Page Down to select — the original's defaults; a laptop
    keyboard has none of these (the controls window is Phase 4). Both ships start side by side; steering the same way
    slides the view twice as fast, opposite ways cancel. Player 2's panel sits below player 1's. Question for you:
    are those the keys you remember? Does player 2 still respond while player 1 holds Command?
-8. **Sectors 5–12:** new enemies and set pieces, the Photon Beam, and in sectors 7 and 12 a hospital that costs
+9. **Sectors 5–12:** new enemies and set pieces, the Photon Beam, and in sectors 7 and 12 a hospital that costs
    10,000 × your multiplier if you destroy it. No demo film covers these sectors: your eyes are the check.
-9. **The finale (sector 12, reached from a sector-1 start):** the "all levels" notice flashes fifteen times with a
+10. **The finale (sector 12, reached from a sector-1 start):** the "all levels" notice flashes fifteen times with a
    sound each; about ten seconds of explosions; four irises open twice with storms of coins and bonuses until about
    half a minute in; the tallies begin about forty seconds after the notice. If every level was at 100 % ground
    accuracy, a mission bonus follows: ten payments of 100,000. Then the transition sound, black, and a new game
    starts (a stand-in: the original went to the high scores and the menu, which are Phase 4).
-10. **Not yet certain:** the feel of the eight uncovered sectors; the mix during the finale's explosions; player 2's
+11. **Not yet certain:** the feel of the eight uncovered sectors; the mix during the finale's explosions; player 2's
     real keys on Mac OS X; anything from the Phase 2 card you have not yet ruled on.
 
 ---
