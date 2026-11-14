@@ -1,10 +1,14 @@
 import Foundation
 
-/// The Manditraki Warrior (types 0x71c…0x725, level 5's boss; bosses §2) — LV5's stand-in: the whole Setup
-/// (`.SetupWarriorSprite @ 100878ac`, M l. 72989–73079) and a ◇ Handle. Field map: `+0x170` the boss flag (record p4) =
-/// `classWord170`; `+0x15c` / `+0x160` the patrol bounds = `classWord15c` / `classWord160`; `+0x168` the home x =
-/// `bonusP4`; `+0x164` = `launchSpeed`; `+0xf0` the wounded-glow timer = `voicePitch`; `+0x17e` facing right =
-/// `mirrored`.
+/// The Manditraki Warrior (types 0x71c…0x725, level 5's boss; bosses §2, phase6-boss-contracts §2): the Setup
+/// (`.SetupWarriorSprite @ 100878ac`, M l. 72989–73079; LV5) and the Handle (6A-W1: `.HandleWarriorSprite`,
+/// `.WarriorLayEgg`, `.RandomWarriorAttack`, the tile callback `.HitWarriorTileSprite`). Field map: `+0x170` the boss
+/// flag (record p4) = `classWord170`; `+0x15c` / `+0x160` the patrol bounds = `classWord15c` / `classWord160`; `+0x168`
+/// the home x = `bonusP4`; `+0x164` = `launchSpeed`; `+0xf0` the wounded-glow timer = `voicePitch`; `+0x17e` facing
+/// right = `mirrored`; `+0xb0` the state `subtype`; `+0x46` the face counter `phase`; `+0xa6` the timer `counterA6`;
+/// `+0x14c` run / swings left `classTimer`; `+0x154` the egg mark `classWord154`; `+0x16c` the crate timer
+/// `classWord16c`; `+0x1d4` / `+0x1d8` / `+0x1dc` the crate slots `siblings.first` / `.second` / `.third`; `+0xb8` the
+/// glow tint `mode`.
 public enum Warrior {
     /// `.InitWarriorSprite @ 100877d0` (M l. 72975–72988): three cache sets, 0xb4×0xa0 cells, one row each, flag 0 —
     /// `PTR_DAT_100a0d50` 0x71c walk (8), `_DAT_100a0d4c` 0x71d attack (8), `_DAT_100a0d48` 0x71e death (6). The Setup
@@ -83,34 +87,275 @@ public enum Warrior {
         return (record, clears)
     }
 
-    // MARK: - Handle ◇
+    // MARK: - Handle
 
-    /// ◇ `.HandleWarriorSprite @ 10087c04` (M l. 73115–73420), the stand-in (Ruling 3): `+0xe9` or `+0x1b2` → return;
-    /// `.StandardSpriteHandles`; the hot rect SetRect(0x2a, 0x3c, 0x89, 0x88) widened 10 px on the facing side (left
-    /// −10 facing left, right +10 facing right; M l. 73143–73150); then the decision state 6's head: the 0x71c set's
-    /// face 0 and `+0xa6` > 0 → − 1 (M l. 73334–73337) — where the original, with the arena unlocked, returns (M l.
-    /// 73338–73340). The stand-in stops there whatever the lock.
-    /// It skips work the original does before that return, lock or not, while `+0x170` (the boss flag) is set (M l.
-    /// 73151–73212): the three falling rocks type 1075 (0x433, `.MTNewSprite` at the home x − 0xba / + 0x46 / + 0x146,
-    /// 400 / 500 / 400 px above it, layer 9; slots `+0x1d4` / `+0x1d8` / `+0x1dc`), each refilled once one is gone and
-    /// the 15-frame timer `+0x16c` runs out, and the wounded-glow timer `+0xf0` (the tint `+0xb8` at HP ≤ 1000, the
-    /// period 15 at HP ≤ 500, else 30).
-    /// The Hit `+0x5c` is stored but its body is a stand-in until Phase 6 — the original's `.HitWarriorSprite` (M l.
-    /// 73422ff) absorbs the player's shots with a sound (`.KillPlayerShot` + snd) while HP > 0 and bounces crates and
-    /// statues off it (`.PlatformBounce`; a falling one hurts it 200 and is killed).
-    /// // later: Phase 6 — the rocks and the glow above, the state machine (decide, walk, run, attack with its shot
-    /// 0x71f, dying), the death at HP < 1, gravity, the liquids and `.StandardSpriteCleanup`; the Hit and Kill
-    /// (`.KillWarrior`: thunder, shake 0x1e, flash 3, `*_DAT_1009fed0 = 1`) bodies. Smiting seeds it (listed in
-    /// `Smite.enemyHandlers`), but nothing lowers its HP in this build (its Hit is the empty stand-in): it stands.
-    public static func handle(world w: SpriteWorld, id: Int) {
+    /// The snd slots (`SoundSlots`): `*_DAT_100a0268` 704 (the swing), `*_DAT_100a026c` 703 'crawler death'.
+    static let swingSound: Int16 = 704, deathSound: Int16 = 703
+
+    /// The crate type 1075 (a Box rock, `BoxSprite.isBoulder`) and its face, the boot single 0x42e (`.SetupBoxSprite`
+    /// M l. 59054–59055: `*_DAT_100a0aa4` for 0x42e, 0x433 and 0x434).
+    static let crate: Int16 = 0x433, crateFace: Int16 = 0x42e
+
+    /// f64 `0x100a1c40` 0.5 (state 6), `0x100a1c38` 0.4 (state 2), `0x100a1c30` 0.9 (state 4) — bosses §2 (`lfd
+    /// -0x5c00` 10088044, `-0x5c08` 100881f0, `-0x5c10` 1008837c).
+    static let half = Double(bitPattern: 0x3fe0_0000_0000_0000)
+    static let swingDrag = Double(bitPattern: 0x3fd9_9999_9999_999a)
+    static let friction90 = Double(bitPattern: 0x3fec_cccc_cccc_cccd)
+
+    @inline(__always) static func h16(_ v: Int) -> Int { Int(Int16(truncatingIfNeeded: v)) }
+    @inline(__always) static func face(_ pict: Int16, _ i: Int) -> FaceRef { FaceRef(pict: pict, index: i, set: .encoded) }
+
+    /// The tile callback `+0x1f8` (nil = 0): `.HitWarriorTileSprite @ 10088834` (M l. 73498–73530) — the Crawler's body
+    /// (`CrawlerRoach.hitTile`): FG (layer 1) or a kind < 100 → `.WallBounce(s, kind, &pos, vCentre, 0, +0x34, 0, 0)`;
+    /// < 200 → `.WallBounceBG(kind − 100, …)`; water with `+0x140 == 0` → `.HandleUnderWater`.
+    static func pass(_ s: SpriteSlot) -> TileHit? {
+        guard s.hasTileHit else { return nil }
+        return { solver, id, cell, kind, layer in CrawlerRoach.hitTile(solver, id: id, pos: cell, kind: kind, layer: layer) }
+    }
+
+    /// `.HandleWarriorSprite @ 10087c04` (M l. 73115–73419). `+0xe9` or `+0x1b2` → return; `.StandardSpriteHandles`;
+    /// the hot rect SetRect(0x2a, 0x3c, 0x89, 0x88), left − 10 facing left, right + 10 facing right (M l. 73144–73150);
+    /// with `+0x170` (the boss flag) the crates and the glow (`bossBlock`, M l. 73151–73213, whatever the lock); the
+    /// state (`+0xb0`): 2 `attack`, 4 `dying`, 7 `walk`, 6 the decide state — face 0x71c[0], `+0xa6 > 0` → − 1, then
+    /// **the arena unlocked (`*PTR_DAT_1009fed4 == 0`) → return** (no death test, no gravity, no liquids, no Cleanup),
+    /// `+0xa6 < 1` → `decide`, then vx × 0.5 (M l. 73333–73390); states 0, 1, 3, 5 and > 7 nothing. Then HP < 1 with
+    /// state ≠ 4 → state 4, `+0x46 = +0xa6 = 0`, snd 703 (3D, 1, 0x100; M l. 73393–73398);
+    /// `.ApplyGravityAndSeparateFromTiles` with `pass`; the liquids (`EnemyCommon.liquids`, the Dillo's rows, M l.
+    /// 73400–73416); `.StandardSpriteCleanup`.
+    /// The Hit `+0x5c` and the Kill `+0x50` (`.HitWarriorSprite` M l. 73422–73462, `.KillWarrior`'s tail M l.
+    /// 73486–73493) are 6A-W2's: the Hit's body is still empty, so nothing but the liquids lowers his HP.
+    /// // later: 6A-W2 — `.HitWarriorSprite` (shots absorbed with snd 303, crates crush him 200) and `.KillWarrior`'s tail.
+    public static func handle(world w: SpriteWorld, id: Int, solver: TileSolver,
+                              faceWidth: (FaceRef) -> Int = { PlayerShot.cellRect($0).right }) {
         guard let s0 = w.active.record(id: id), !s0.dead, !s0.emerging else { return }
         w.standardSpriteHandles(id)
         w.active.update(id: id) { s in
             var r = IdleSprites.Rect(top: 0x3c, left: 0x2a, bottom: 0x88, right: 0x89)
             if s.mirrored { r.right += 10 } else { r.left -= 10 }
             s.hotRect = r
-            s.face = FaceRef(pict: walkSet, index: 0, set: .encoded)
-            if 0 < s.counterA6 { s.counterA6 -= 1 }
         }
+        if let b = w.active.record(id: id), b.classWord170 != 0 { bossBlock(w, id: id) }
+        guard var s = w.active.record(id: id) else { return }
+        switch s.subtype {
+        case 2: attack(w, id: id, &s)
+        case 4: dying(&s)
+        case 7: walk(w, &s)
+        case 6:
+            s.face = face(walkSet, 0)
+            if 0 < s.counterA6 { s.counterA6 &-= 1 }
+            guard w.arena.locked else {                                 // M l. 73338–73340
+                w.active.update(id: id) { $0 = s }
+                return
+            }
+            if s.counterA6 < 1 { decide(w, &s) }
+            s.vx = TileSolver.fctiwz(Double(s.vx) * half)
+        default:
+            break
+        }
+        if s.hp < 1 && s.subtype != 4 {                                 // M l. 73393–73398
+            s.subtype = 4
+            s.phase = 0
+            s.counterA6 = 0
+            w.player.cue(PlayerCue(call: .threeD, snd: deathSound, priority: 1, volume: 0x100, position: s.centre))
+        }
+        w.active.update(id: id) { $0 = s }
+        solver.applyGravityAndSeparate(id, pass: pass(s))
+        EnemyCommon.liquids(w, id: id, class: .dillo)
+        w.standardSpriteCleanup(id, faceWidth: faceWidth)
+    }
+
+    /// The boss-mode block (`+0x170 ≠ 0`, M l. 73151–73213). The crate slots `+0x1d4` / `+0x1d8` / `+0x1dc`
+    /// (`siblings.first` / `.second` / `.third`, record ids): a slot whose sprite has `+0xe9` set is emptied (a record
+    /// Core no longer holds reads as 0s, as `.StandardSpriteHandles` reads its solid — unreachable while his Handle runs
+    /// every frame, bosses §2.8). Any slot empty → `+0x16c` − 1, and below 1 every empty slot in order gets
+    /// `MTNewSprite(0x433, +0x168 + d, +0xa − h, 9, −1, .SetupBoxSprite)` (`newCrate`) with (d, h) = (−0xba, 400),
+    /// (0x46, 500), (0x146, 400) — the y from his current `+0xa`; all three present → `+0x16c = 15`. A spawn with no
+    /// free record (known deviation 6) leaves the slot 0: it re-tries every frame while `+0x16c` counts on below 1.
+    /// Then the wounded glow: `+0xf0` − 1; 1…3 → `+0xb8 = 0x10008`, 4…6 → `0x10009` (each only with HP < 1001); ≤ 0 →
+    /// `+0xf0` = 15 (HP < 501) or 30 and `+0xb8 = 0`.
+    static func bossBlock(_ w: SpriteWorld, id: Int) {
+        guard var s = w.active.record(id: id) else { return }
+        func dead(_ c: Int?) -> Bool { c.map { (w.active.record(id: $0)?.killCount ?? 0) != 0 } ?? false }
+        if dead(s.siblings.first) { s.siblings.first = nil }
+        if dead(s.siblings.second) { s.siblings.second = nil }
+        if dead(s.siblings.third) { s.siblings.third = nil }
+        if s.siblings.first == nil || s.siblings.second == nil || s.siblings.third == nil {
+            s.classWord16c &-= 1
+            if s.classWord16c < 1 {
+                // No `SpriteSlot` copy across a spawn (`SpriteWorld` rule 2): write back, spawn, store the slot, re-read.
+                w.active.update(id: id) { $0 = s }
+                let home = Int(s.bonusP4), y = h16(s.y)
+                if s.siblings.first == nil {
+                    let c = newCrate(w, x: home - 0xba, y: y - 400)
+                    w.active.update(id: id) { $0.siblings.first = c }
+                }
+                if s.siblings.second == nil {
+                    let c = newCrate(w, x: home + 0x46, y: y - 500)
+                    w.active.update(id: id) { $0.siblings.second = c }
+                }
+                if s.siblings.third == nil {
+                    let c = newCrate(w, x: home + 0x146, y: y - 400)
+                    w.active.update(id: id) { $0.siblings.third = c }
+                }
+                guard let t = w.active.record(id: id) else { return }
+                s = t
+            }
+        } else {
+            s.classWord16c = 0xf
+        }
+        s.voicePitch &-= 1
+        let v = s.voicePitch
+        if 0 < v && v < 4 {
+            if s.hp < 0x3e9 { s.mode = 0x10008 }
+        } else if 3 < v && v < 7 {
+            if s.hp < 0x3e9 { s.mode = 0x10009 }
+        } else if v < 1 {
+            s.voicePitch = s.hp < 0x1f5 ? 0xf : 0x1e
+            s.mode = 0
+        }
+        w.active.update(id: id) { $0 = s }
+    }
+
+    /// `MTNewSprite(0x433, x, y, 9, −1, .SetupBoxSprite)`: the Box Setup's rock arm stores layer 2 (M l. 58939) over the
+    /// argument 9, the face the boot single 0x42e; it draws nothing. Nil when no record is free (Ruling 16).
+    static func newCrate(_ w: SpriteWorld, x: Int, y: Int) -> Int? {
+        let none = Placement(index: -1, flag: 0, byte1: 0, type: crate, p1: 0, p2: 0, p3: 0, p4: 0, y: 0, x: 0)
+        return w.newSprite(type: crate, x: h16(x), y: h16(y), layer: 9, handler: .box) { c in
+            c.x = c.oldPosition.x
+            c.y = c.oldPosition.y
+            BoxSprite.setup(&c, record: none, level: w.level)
+            c.face = face(crateFace, 0)
+        }
+    }
+
+    /// The decide (M l. 73341–73387): r = R(100); |playerCY − cy| < 0x50 → T = 0x41 and face the player (facing right =
+    /// playerCX > cx, the signed-compare idiom), else T = 0x13; the game-over flag `*_DAT_1009ffa8` → T = −1. r > T →
+    /// state 7, `+0x46 = 1`, face 0x71c[0], `+0xa6 = R(3) + 2`; R(100) > 100 − T → run (`+0x14c = 1`), else walk
+    /// (`+0x14c = 0`) and R(100) > 0x50 → `layEgg`; then x > `+0x160` → facing left, else x < `+0x15c` → right. Else
+    /// `randomAttack`.
+    static func decide(_ w: SpriteWorld, _ s: inout SpriteSlot) {
+        let r = Int(w.rng.next(100))
+        var d = Int(w.player.centreY) - h16(s.centre.y)
+        if d < 1 { d = -d }
+        var t: Int
+        if d < 0x50 {
+            t = 0x41
+            s.mirrored = Int16(truncatingIfNeeded: s.centre.x) < w.player.centreX
+        } else {
+            t = 0x13
+        }
+        if w.playerDead { t = -1 }
+        guard t < r else {
+            randomAttack(w, &s)
+            return
+        }
+        s.subtype = 7
+        s.phase = 1
+        s.face = face(walkSet, 0)
+        s.counterA6 = w.rng.next(3) + 2
+        if 100 - t < Int(w.rng.next(100)) {
+            s.classTimer = 1
+        } else {
+            s.classTimer = 0
+            if 0x50 < w.rng.next(100) { layEgg(w, &s) }
+        }
+        let x = Int32(h16(s.x))
+        if s.classWord160 < x {
+            s.mirrored = false
+        } else if x < s.classWord15c {
+            s.mirrored = true
+        }
+    }
+
+    /// `.WarriorLayEgg(s) @ 10087afc` (M l. 73080–73092): `+0x154 = 2` (no reader), `+0xa6 = 5`, `+0x14c = R(2) + 1` —
+    /// the walk becomes a run.
+    static func layEgg(_ w: SpriteWorld, _ s: inout SpriteSlot) {
+        s.classWord154 = 2
+        s.counterA6 = 5
+        s.classTimer = Int32(w.rng.next(2)) + 1
+    }
+
+    /// `.RandomWarriorAttack(s) @ 10087b6c` (M l. 73095–73112): R(100) drawn and discarded (raw `10087b7c..10087b84`,
+    /// bosses D1); state 2, `+0x46 = 0` (both stored twice); `+0x154 = 0`; `+0xa6 = 0x10`; `+0x14c = R(2) + 1` swings.
+    static func randomAttack(_ w: SpriteWorld, _ s: inout SpriteSlot) {
+        _ = w.rng.next(100)
+        s.subtype = 2
+        s.phase = 0
+        s.classWord154 = 0
+        s.counterA6 = 0x10
+        s.classTimer = Int32(w.rng.next(2)) + 1
+    }
+
+    /// State 7 (M l. 73283–73332): walk (`+0x14c == 0`) face 0x71c[`+0x46 >> 1`], past 14 the cycle's end, vx ±0x600;
+    /// run face 0x71c[`+0x46`], past 6, vx ±0xc00. The cycle's end: `+0x46 = 0`, `+0xa6` − 1, x outside [`+0x15c`,
+    /// `+0x160`] → 0; at 0 → state 6, `+0xa6 = R(9) + 4`. Then `+0x46` + 1; vx by the facing.
+    static func walk(_ w: SpriteWorld, _ s: inout SpriteSlot) {
+        let run = s.classTimer != 0
+        s.face = face(walkSet, run ? Int(s.phase) : Int(s.phase >> 1))
+        if (run ? 6 : 0xe) < s.phase {
+            s.phase = 0
+            s.counterA6 &-= 1
+            let x = Int32(h16(s.x))
+            if s.classWord160 < x || x < s.classWord15c { s.counterA6 = 0 }
+            if s.counterA6 == 0 {
+                s.subtype = 6
+                s.counterA6 = w.rng.next(9) + 4
+            }
+        }
+        s.phase &+= 1
+        let v: Int32 = run ? 0xc00 : 0x600
+        s.vx = s.mirrored ? v : -v
+    }
+
+    /// State 2 (M l. 73221–73265): vx × 0.4; `+0x46 < 2` → face 0x71c[0] and face the player; else `+0x46 == 7` →
+    /// R(6000), snd 704 pitched (1, 0x100, centre, 50000 + R); face = word `+0x46 >> 1` of the 0x71d set (no `+4`: attack
+    /// face (n >> 1) − 1); `+0x46 == 9` → `MTNewSprite(0x71f, cx ± 0x30 − 0x18, cy − 0x25, 0, −1, .SetupEnemyShotSprite)`
+    /// (its Setup draws R(5) and keeps layer 0) and its vx 0xb00, negated facing left — no null test (M l. 73249–73252):
+    /// with no free record the store is dropped; `+0x46 > 16` → `+0x46 = 0`, `+0x14c` − 1, below 1 → state 6, `+0xa6 =
+    /// R(9) + 4`. Then `+0x46` + 1.
+    static func attack(_ w: SpriteWorld, id: Int, _ s: inout SpriteSlot) {
+        s.vx = TileSolver.fctiwz(Double(s.vx) * swingDrag)
+        if s.phase < 2 {
+            s.face = face(walkSet, 0)
+            s.mirrored = Int16(truncatingIfNeeded: s.centre.x) < w.player.centreX
+        } else {
+            if s.phase == 7 {
+                let r = Int32(w.rng.next(6000))
+                w.player.cue(PlayerCue(call: .threeDPitched, snd: swingSound, priority: 1, volume: 0x100,
+                                       position: s.centre, rate: r + 50000))
+            }
+            s.face = face(attackSet, Int(s.phase >> 1) - 1)
+            if s.phase == 9 {
+                let dx = s.mirrored ? 0x30 : -0x30
+                let x = h16(h16(s.centre.x) + dx - 0x18), y = h16(h16(s.centre.y) - 0x25)
+                w.active.update(id: id) { $0 = s }
+                let shot = EnemyShot.spawn(w, type: EnemyShot.warriorShot, x: x, y: y, layer: 0)
+                s = w.active.record(id: id) ?? s
+                if let shot {
+                    let right = s.mirrored
+                    w.active.update(id: shot) { $0.vx = right ? 0xb00 : -0xb00 }
+                }
+            }
+            if 0x10 < s.phase {
+                s.phase = 0
+                s.classTimer &-= 1
+                if s.classTimer < 1 {
+                    s.subtype = 6
+                    s.counterA6 = w.rng.next(9) + 4
+                }
+            }
+        }
+        s.phase &+= 1
+    }
+
+    /// State 4 (M l. 73267–73280): vx × 0.9; face 0x71e[`+0x46 >> 2`]; `+0x46` + 1, capped at 0x17; `+0xa6` + 1; at
+    /// 0x2d `+0x1a2 = 1` (the burn; the Kill `+0x50` at its end, `EnemyCommon.killProc`).
+    static func dying(_ s: inout SpriteSlot) {
+        s.vx = TileSolver.fctiwz(Double(s.vx) * friction90)
+        s.face = face(deathSet, Int(s.phase >> 2))
+        s.phase &+= 1
+        if 0x17 < s.phase { s.phase = 0x17 }
+        s.counterA6 &+= 1
+        if s.counterA6 == 0x2d { EnemyCommon.startBurn(&s) }
     }
 }

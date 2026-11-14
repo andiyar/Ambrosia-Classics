@@ -74,7 +74,7 @@ public enum EnemyCommon {
         case .frog, .salamander: break                  // the session dispatches `FrogSalamander` (FR)
         case .blob, .deadBlob, .crab, .crabSegment: break   // the session dispatches `BlobCrab` (BL)
         case .geyserSegment: break                      // the session dispatches `Geyser.handleSegment` (GY)
-        case .warrior: break                            // the session dispatches `Warrior.handle` (LV5 ◇)
+        case .warrior: break                            // the session dispatches `Warrior.handle` (6A-W1)
         default: break
         }
     }
@@ -86,8 +86,8 @@ public enum EnemyCommon {
     /// M l. 56153–56246, `.SetupRoachSprite` 64899–64957, `.SetupBatSprite` 68108ff, `.SetupBlobSprite` 67671–67735;
     /// `.InitSprite` zeroes `+0x50`, M l. 35571), so a burn on them ends in the default arm; the Blob dies through
     /// `.KillBlob` from its dead puddle (`BlobCrab`).
-    /// The Warrior arm would count and remove the Warrior with the gate still shut if a burn ever reached it (the real
-    /// Kill is Phase 6's). Classes' own parts are theirs. By id (`SpriteWorld` rule 2: a Kill tail writes and spawns) —
+    /// The Warrior arm counts and removes the Warrior when his burn ends (6A-W1: his dying state starts it); the
+    /// boss-kill tail (thunder, shake, flash, "no boss alive") is 6A-W2's. Classes' own parts are theirs. By id (`SpriteWorld` rule 2: a Kill tail writes and spawns) —
     /// a caller holding a copy of the slot writes it back first and re-reads after (`Burn.handle`).
     public static func killProc(_ w: SpriteWorld, id: Int) {
         guard var s = w.active.record(id: id) else { return }
@@ -220,7 +220,7 @@ public enum EnemyCommon {
     public enum LiquidClass: Sendable { case walker, crawler, roach, dillo, blob }
 
     /// The liquids test (Walker M l. 58426–58450, Crawler 56497–56512, Roach 65103–65110, Dillo 72828–72842; BL: the
-    /// Blob M l. 67950–67966, the Dillo's rows):
+    /// Blob M l. 67950–67966, the Dillo's rows; 6A-W1: the Warrior M l. 73400–73416, the Dillo's rows):
     /// in liquid (`+0x11c ≠ 0`) and fully under plain water (`+0x11c == 1`, kind `+0x128 == 0`) or in any other liquid
     /// (kind > 0). Kind 3 (brine) heals 4 a frame below 500 HP (not the Roach); a hurt (with `+0x116 == 0`) sets
     /// `+0x116`, HP and `+0xaa` and plays 701 vol 0x55 (`.STPlay3DSound`, no draw): Walker kind 0 → 0xc / −0x96 / 0xc;

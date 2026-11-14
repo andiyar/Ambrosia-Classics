@@ -56,6 +56,11 @@ public final class SpriteWorld {
     public var statusBar = StatusBarCalls()
     /// Records taken whose Setup is still running (`newSprite`).
     private var reserved = 0
+    /// 6A-W1: the spawns `newSprite` refused because all 700 records were in use (known deviation 6, D47 — the
+    /// original gets 0 back and its caller writes through it; the port drops those writes and still makes the draws).
+    /// A diagnostic only — no behaviour reads it; every level task asserts it 0 at the end of
+    /// `testLevel<N>SetsUpEveryRecord`, since a dropped spawn is otherwise silent.
+    public internal(set) var refusedSpawns = 0
     /// `*_DAT_1009ffa8`: the player is dying / dead — `.HandleSprites` then skips the player pass.
     /// Set only after the game loop exits, when G+4 < 1 (decompile l. 5303) — not by the death trigger (row 41).
     /// Built (W4: `FerazelSession.loopEnd`; L1: `LevelRun`'s death exit).
@@ -172,10 +177,15 @@ public final class SpriteWorld {
     /// The 700 cap counts the sprites on the list; the original counts in-use records (`+0` ≠ 0), which also
     /// include records unlinked by `.MTRemoveSprite` and not yet killed, and idled records until `.UpdateSprites`
     /// kills them [LOW: Phase 2 never comes near 700].
+    ///
+    /// 6A-W1 (known deviation 6, D47): each spawn refused here adds one to `refusedSpawns`.
     @discardableResult
     public func newSprite(type: Int16, x: Int, y: Int, layer: Int16, handler: SpriteHandler, record: Int16 = -1,
                           setup: (inout SpriteSlot) -> Void = { _ in }) -> Int? {
-        guard active.sprites.count + reserved < Self.recordCount else { return nil }
+        guard active.sprites.count + reserved < Self.recordCount else {
+            refusedSpawns += 1
+            return nil
+        }
         reserved += 1
         let s = Self.newRecord(type: type, x: x, y: y, layer: layer, handler: handler, record: record, setup: setup)
         reserved -= 1

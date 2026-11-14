@@ -620,9 +620,9 @@ public final class FerazelSession {
             // `.HandleGeyserSegSprite @ 10060cd8` (GY, `Geyser.handleSegment`): empty — the column moves the segments.
             Geyser.handleSegment(world: world, id: id)
         case .warrior:
-            // ◇ `.HandleWarriorSprite @ 10087c04` (LV5, `Warrior.handle`): `.StandardSpriteHandles`, the hot rect, the
-            // decision state's face and timer. // later: Phase 6 — the boss.
-            Warrior.handle(world: world, id: id)
+            // `.HandleWarriorSprite @ 10087c04` (6A-W1, `Warrior.handle`): the crates, the glow, the state machine, the
+            // fall through `solver` with the Crawler-body tile callback, the liquids, `.StandardSpriteCleanup`.
+            Warrior.handle(world: world, id: id, solver: solver) { Self.frameRect($0, resources: res).right }
         case .button:
             // `.HandleButtonSprite @ 10070e60` (BT, `ButtonSprite.handle`).
             ButtonSprite.handle(world: world, id: id) { Self.frameRect($0, resources: res).right }

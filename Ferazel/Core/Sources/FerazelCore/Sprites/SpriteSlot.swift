@@ -271,7 +271,11 @@ public struct SpriteSlot: Equatable, Sendable {
     /// `+0x168` (i32): a Bonus's record p4 (`.SetupBonusSprite`, valid record only) — read by `.TurnIntoCannoned`
     /// (1 → never cannoned; pickups-boxes-2 §2).
     public var bonusP4: Int32 = 0
-    /// `+0x160` (i32): a class word — a player shot's follower step x (`.SetupPlayerShotSprite`, CS).
+    /// `+0x160` (i32): a class word — a player shot's follower step x (`.SetupPlayerShotSprite`, CS); the falling rocks
+    /// 0x433 / 0x434's hover counter (6A-W1): below 0 the rock hovers, its hit and tile callbacks off, counting up by 1
+    /// a Handle to 0 and then falling (`.HandleBoxSprite` `LAB_1006dafc`, M l. 60222–60244); `.HitPlayerSprite`'s rock
+    /// arm reads its sign (M l. 49170–49188). The Warrior's crates start at 0 (never hover); the Wizard sets −0x34.
+    /// Also the Dillo's and the Warrior's right patrol bound (their Setups).
     public var classWord160: Int32 = 0
     /// `+0xf4` (i32): a class word — a thrown seed 0x5a's Ziridium flag (`.HandlePlayerShotSprite`'s 0x5a arm reads
     /// it, M l. 50689; its writer is the seed thrower's, IU).
@@ -678,7 +682,7 @@ public enum SpriteHandler: Equatable, Hashable, Sendable {
     /// `.walker` 0x100a0498 (WK1), `.crawler` 04b8 / `.roach` 04a0 (CR), `.dillo` 04b4 (DL), `.bat` 04c4,
     /// `.swarmMember` 0470 and the insect body (BA), `.gremlin` 04a4 / `.floater` 04ac (GF), `.frog` 04a8 /
     /// `.salamander` 049c (FR), `.blob` 04c0, the dead Blob, `.crab` 046c and its segments (BL), `.enemyShot` 0488 (ES),
-    /// `.geyserSegment` (`.HandleGeyserSegSprite`, GY), `.warrior` 0494 (◇ LV5, Ruling 3). `.inert` stays for the four
+    /// `.geyserSegment` (`.HandleGeyserSegSprite`, GY), `.warrior` 0494 (LV5; its Handle 6A-W1). `.inert` stays for the four
     /// bosses not placed on levels 1–5 (Demon 04b0, Chief 04bc, Wizard 0490, Xichra 048c).
     case walker, crawler, roach, dillo, bat, swarmMember, insectBody, gremlin, floater, frog, salamander, blob,
          deadBlob, crab, crabSegment, enemyShot, geyserSegment, warrior
@@ -703,7 +707,7 @@ public enum SpriteHandler: Equatable, Hashable, Sendable {
         case .gremlin: return .gremlin      // GF: the Gremlin 1770…1779 (every part, the back layer and rider too)
         case .floater: return .floater      // GF: the Floater (the Wraith) 1780…1799
         case .dillo: return .dillo          // DL: the Dillo 1870…1879
-        case .warrior: return .warrior      // LV5: the Warrior 1820…1829 (◇ Handle, `Warrior.handle`)
+        case .warrior: return .warrior      // LV5: the Warrior 1820…1829 (`Warrior.handle`, 6A-W1)
         default: return .inert
         }
     }

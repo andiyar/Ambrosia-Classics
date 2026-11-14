@@ -570,6 +570,11 @@ final class FaceTests: XCTestCase {
         // 0x6e2 and their shards 0x6e6 on level 4, every other shot type a later class's; the caches 0x46a / 0x77b
         // (M l. 51434–51437) load only when a boss Setup marks them — none on levels 1–5 — but the data holds them.
         for sh in EnemyShot.sheets { want("enemy shot", sh.pict, cells: sh.count) }
+        // 6A-W1: the Warrior's run-time children on level 5 — his crates 0x433 face the boot single 0x42e
+        // (`.SetupBoxSprite` M l. 59054–59055), his blade-shot 0x71f its boot set (16 cells, `BootFaces.swift:79`).
+        let five = try renderer(5)
+        want("crate 0x433 (0x42e), level 5", 0x42e, in: five)
+        want("Warrior shot 0x71f, level 5", EnemyShot.warriorShot, cells: 0x10, in: five)
         for sh in EnemyShot.cachedSheets {
             XCTAssertNotNil(r.resource(type: "PICT", id: sh.pict, chain: .frontEnd), "cache PICT \(sh.pict)")
             XCTAssertNil(one.sprites.faces.face(FaceRef(pict: sh.pict, index: 0, set: .encoded)),

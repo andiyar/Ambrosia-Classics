@@ -293,10 +293,19 @@ final class DrawModeAuditTests: XCTestCase {
         // walk's turn at the bounds (M l. 72595–72601) and the roll's facing by the player's side (M l. 72522–72524); the
         // roll's spin angle `+0x1aa` ± 15 a frame, wrapped into 0…359, and its clear in the uncurl (M l. 72635, 72723–72739);
         // the spines' `+0xb8` 0 / 0x1000b (`.ShootSpines` M l. 72400–72409) and the 1871 egg's 0x1000b (M l. 72696).
-        // LV5: the Warrior stand-in — its hurt-flash table `+0x1b4 = 1` and its facing draw (`.SetupWarriorSprite` M l.
-        // 73043, 73066; the ◇ Handle writes neither).
-        W("World/Enemies/Warrior.swift:56", .flashTable, .flags([true]), "warrior"),
-        W("World/Enemies/Warrior.swift:77", .mirrored, .flags([false, true]), "warrior"),
+        // LV5: the Warrior — its hurt-flash table `+0x1b4 = 1` and its facing draw (`.SetupWarriorSprite` M l. 73043,
+        // 73066). 6A-W1: the Handle's wounded glow `+0xb8` 0x10008 / 0x10009 / 0 (M l. 73193, 73200, 73211), the decide's
+        // and the swing's "face the player" (M l. 73350–73352, 73227–73229) and the decide's bound facing (M l.
+        // 73378, 73381).
+        W("World/Enemies/Warrior.swift:60", .flashTable, .flags([true]), "warrior"),
+        W("World/Enemies/Warrior.swift:81", .mirrored, .flags([false, true]), "warrior"),
+        W("World/Enemies/Warrior.swift:209", .mode, .words([0x10008]), "warrior"),
+        W("World/Enemies/Warrior.swift:211", .mode, .words([0x10009]), "warrior"),
+        W("World/Enemies/Warrior.swift:214", .mode, .words([0]), "warrior"),
+        W("World/Enemies/Warrior.swift:243", .mirrored, .flags([false, true]), "warrior"),
+        W("World/Enemies/Warrior.swift:264", .mirrored, .flags([false]), "warrior"),
+        W("World/Enemies/Warrior.swift:266", .mirrored, .flags([true]), "warrior"),
+        W("World/Enemies/Warrior.swift:320", .mirrored, .flags([false, true]), "warrior"),
         W("World/Enemies/Dillo.swift:70", .mode, .words([0x1000b]), "dillo"),
         W("World/Enemies/Dillo.swift:92", .mirrored, .flags([false, true]), "dillo"),
         W("World/Enemies/Dillo.swift:162", .mirrored, .flags([false]), "dillo"),
@@ -429,9 +438,9 @@ final class DrawModeAuditTests: XCTestCase {
           pins: ["if p.p2 != 0 { s.mode = UInt32(truncatingIfNeeded: Int(p.p2) + 0x10000) }"]),
         W("Sprites/SetupFaces.swift:463", .mode, .words([0x90000]), "box.teleporter"),
         W("Sprites/SetupFaces.swift:485", .mode, .words([0x90000]), "box.chest"),
-        W("Sprites/SpriteSlot.swift:602", .mode, .words([0]), "platform.raft", "box.boulder", "background.maceBall",
+        W("Sprites/SpriteSlot.swift:606", .mode, .words([0]), "platform.raft", "box.boulder", "background.maceBall",
           "chain.maceChain"),
-        W("Sprites/SpriteSlot.swift:604", .mode, .levelLight, "platform.raft", "box.boulder", "background.maceBall",
+        W("Sprites/SpriteSlot.swift:608", .mode, .levelLight, "platform.raft", "box.boulder", "background.maceBall",
           "chain.maceChain", pins: ["mode = UInt32(truncatingIfNeeded: L * 0x100 + 0xc0000 + F)"]),
         // (angle >> 8) + 0x5a with the angle wrapped into 0…0x167ff (`RadialMotion.updatePosition`), − 360 once.
         W("World/Movers/BackgroundSprite.swift:194", .rotation, .range(0...359), "background.maceBall", at: ["192", "193"],

@@ -41,6 +41,8 @@ public enum SpriteClassTable {
         if below(0x424, 3) || s == 0x429 || r(0x4e2, 0x4ff) { return (.box, .idle) }
         if r(0x528, 0x531) { return (.button, .idle) }
         if r(2000, 0x801) { return (.bonus, .idle) }
+        // 0x434 has no arm (M l. 1740–1741 test 0x42e…0x430, 0x433, 0xbfe only): the hovering rock is made only at run
+        // time, by `.MTNewSprite` with the Box Setup (the Wizard, Xichra's rain), as the Warrior makes his 0x433 crates.
         if below(0x42e, 3) || s == 0x433 || s == 0xbfe { return (.box, .idle) }
         if r(0x442, 1099) { return (.background, p1Negative ? .now : .idle) }
         if r(0x6a4, 0x72f) {
