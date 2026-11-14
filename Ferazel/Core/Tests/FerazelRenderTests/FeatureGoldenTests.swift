@@ -46,10 +46,11 @@ final class FeatureGoldenTests: XCTestCase {
     // MARK: - 6A-WD: wind cells
 
     /// 6A-WD's player start on level 10's fixture (`LevelRun`'s `start:` override): the player's hot-rect centre
-    /// (x + 50, y + 59) = (7120, 1072), in tile column 222 — the first column with an o1 = 9 wind cell (the updraft,
-    /// o2 20 in this column) — and row 33, the column's top wind cell. The column's wind cells are rows 33, 35, 37, 38,
-    /// 40 and 41, so the falling player leaves and re-enters the wind; it lands in the same column (row 49).
-    static let windStart = (x: 7070, y: 1013)
+    /// (x + 50, y + 59) = (7152, 1168), in tile column 223 — the first column with strength-50 wind cells (o1 9, the
+    /// updraft) — and row 36. There the updraft's push 14·50 = 700 beats gravity 440, so the wind holds the player
+    /// bobbing in rows 33–36 of the column (row 33 is strength 20, rows 34–36 strength 50). The literal first o1 = 9
+    /// column (222) holds only strength-20 cells (push 280 < gravity): a player there falls through (6A-WD review).
+    static let windStart = (x: 7102, y: 1109)
 
     /// One game frame of the player (after that `.GameLoop` iteration): `+0x14` x256, `+0x2c` vy, the ramp `+0x96`,
     /// `+0x98`, the in-wind flag `+0x92` and the centre's cell.
@@ -99,34 +100,51 @@ final class FeatureGoldenTests: XCTestCase {
         return LevelFixtureServices.fnv1a(bytes)
     }
 
-    /// 6A-WD: 60 frames of the player in the first o1 = 9 column of level 10 (ENG §2.2 "First level / golden"): the
-    /// updraft pushes vy (h = 0 on o1 9, so x256 never moves and `+0x98` stays 0), the ramp counts up to 33 in wind and
-    /// down out of it, and the flag is re-earned each frame. Kept for good (6A-L10L11 keeps it on the fixture).
+    /// 6A-WD: 60 frames of the player held by the updraft in level 10's column 223 (ENG §2.2 "First level / golden"),
+    /// frame by frame. What this trace cannot show: o1 9 is mode 27, whose push is vertical only (h = 0), so the
+    /// sideways push, the ramp's effect on x and the leaving arm's x never move anything here (`+0x98` stays 0), the
+    /// player never leaves the wind, and o1 9 never takes the crossed gates — those are WindTests' synthetic cells.
+    /// Kept for good (6A-L10L11 keeps it on the fixture).
     func testLevel10WindTrace() throws {
         let t = try Self.windTrace()
         XCTAssertEqual(t.trace.count, 60)
-        // Held in the column: the centre stays in tile column 222 for all 60 frames.
-        XCTAssertEqual(Set(t.trace.map(\.col)), [222])
-        // o1 9 is mode 27 (h = 0): the push is vertical only, so `+0x98` stays 0 and the leaving arm adds nothing.
+        // In wind every frame but the first: before the player's first Handle its centre is (0, 0) (no
+        // `.StandardSpriteCleanup` yet). With h = 0 and vx = 0 the x-gate (h ≥ vx) is always open, so `+0x92` is
+        // earned even on the frames the y-gate shuts the push.
+        XCTAssertEqual(t.trace.map(\.inWind), [false] + [Bool](repeating: true, count: 59))
+        // The ramp `+0x96`: up 1 a frame in wind to 33, then held.
+        XCTAssertEqual(t.trace.map(\.ramp), [0] + (1...33).map { Int16($0) } + [Int16](repeating: 33, count: 26))
+        // Mode 27's h = 0: `+0x98` stores 0 and x256 never moves; the centre never leaves column 223.
         XCTAssertEqual(Set(t.trace.map(\.last)), [0])
-        // The ramp `+0x96` (measured): up 1 a frame in wind, down 1 a frame out of it, to 0 after the column. Frame 1
-        // is not in wind: before the player's first Handle its centre is (0, 0) (no `.StandardSpriteCleanup` yet).
-        XCTAssertEqual(t.trace.map(\.ramp), [0, 1, 2, 3, 4, 5, 4, 3, 2, 1, 2, 3, 2, 1, 2, 3, 4, 5, 4, 3, 4, 5, 4, 3, 2, 1]
-                       + [Int16](repeating: 0, count: 34))
-        XCTAssertEqual(t.trace.map(\.inWind).enumerated().filter(\.element).map(\.offset),
-                       [1, 2, 3, 4, 5, 10, 11, 14, 15, 16, 17, 20, 21])
-        // While falling (frames 1–25) vy gains gravity 440 a frame, less the updraft's 14·20 = 280 (scale 0x100, no
-        // shift, no ramp on the vertical) in wind.
-        for i in 1...25 {
-            XCTAssertEqual(t.trace[i].vy - t.trace[i - 1].vy, t.trace[i].inWind ? 160 : 440, "frame \(i + 1)")
+        XCTAssertEqual(Set(t.trace.map(\.x256)), [7102 << 8])
+        XCTAssertEqual(Set(t.trace.map(\.col)), [223])
+        XCTAssertEqual(t.trace.map(\.row), [Int](repeating: 36, count: 10) + [Int](repeating: 35, count: 13)
+                       + [Int](repeating: 34, count: 12) + [Int](repeating: 33, count: 7)
+                       + [Int](repeating: 34, count: 6) + [Int](repeating: 33, count: 5)
+                       + [Int](repeating: 34, count: 4) + [Int](repeating: 33, count: 3))
+        XCTAssertEqual(t.trace.map(\.vy), [440, 180, -80, -340, -600, -860, -420, -680, -940, -500,
+                                           -760, -320, -580, -840, -400, -660, -920, -480, -740, -1000,
+                                           -560, -820, -380, -640, -900, -460, -720, -980, -540, -800,
+                                           -360, -620, -880, -440, -700, -960, -520, -80, 80, 240,
+                                           400, 560, 720, 460, 200, -60, -320, -580, -840, -400,
+                                           40, 200, 360, 520, 260, 1, -259, -519, -79, 81])
+        // Each frame's vy step: the wind first (`.StandardSpriteHandles`, on the cell under the previous frame's
+        // centre: row 33 is o2 20, rows 34–36 o2 50; the y-gate passes while vy ≥ −15·o2 and pushes −14·o2, scale
+        // 0x100 so no shift, never ramped), then gravity 440 in the player's Handle — whose step ends `vy == 0 → 1`
+        // (`Player.swift:286`, `.HandlePlayerSprite` M l. 44958–44968). That lands once: index 55
+        // (260 − 700 + 440 = 0).
+        var zeroes: [Int] = []
+        for i in 1..<60 {
+            let prev = t.trace[i - 1]
+            let o2: Int32 = prev.row == 33 ? 20 : 50
+            let push: Int32 = prev.vy >= -15 * o2 ? 14 * o2 : 0
+            var vy = prev.vy - push + 440
+            if vy == 0 { zeroes.append(i); vy = 1 }
+            XCTAssertEqual(t.trace[i].vy, vy, "frame \(i)")
         }
-        XCTAssertEqual(Array(t.trace.prefix(6).map(\.vy)), [440, 600, 760, 920, 1080, 1240])
-        XCTAssertEqual(Array(t.trace.prefix(6).map(\.row)), [33, 33, 33, 33, 33, 34])
-        XCTAssertEqual(t.trace[0].x256, 7070 << 8)
-        XCTAssertEqual(t.trace[59].x256, 1_807_125)
-        XCTAssertEqual(t.trace[59].row, 49)
-        // The whole trace (measured at 6A-WD, seed 1): FNV-1a 64 of its fields.
-        XCTAssertEqual(String(Self.hash(t.trace), radix: 16), "bd379d4131e9b1fb", "the level-10 wind trace")
+        XCTAssertEqual(zeroes, [55], "the gravity step's 0 becomes 1")
+        // The whole trace (measured at the 6A-WD review fix round, seed 1): FNV-1a 64 of its fields.
+        XCTAssertEqual(String(Self.hash(t.trace), radix: 16), "20b0a649c605b4d0", "the level-10 wind trace")
         XCTAssertEqual(t.ticks, 1730)
     }
 
@@ -134,11 +152,11 @@ final class FeatureGoldenTests: XCTestCase {
     /// nothing of its own; the trace and level 10's first-frame golden cover it).
     func testLevel10WindFeatureGolden() throws {
         let t = try Self.windTrace()
-        XCTAssertEqual(String(Self.hash(t.trace), radix: 16), "bd379d4131e9b1fb", "the same trace")
-        // Measured at 6A-WD (FNV-1a 64 of the 640×480 screen indices after the 60th iteration's draws, the test colour
-        // model), on the 1,730th tick (now 1729). With the wind branch stubbed the trace and this frame differ (checked
-        // once at 6A-WD, never committed).
+        XCTAssertEqual(String(Self.hash(t.trace), radix: 16), "20b0a649c605b4d0", "the same trace")
+        // Measured at the 6A-WD review fix round (FNV-1a 64 of the 640×480 screen indices after the 60th iteration's
+        // draws, the test colour model), on the 1,730th tick (now 1729). With the wind branch stubbed the trace and this
+        // frame differ (checked once at the fix round, never committed).
         XCTAssertEqual(t.ticks, 1730)
-        XCTAssertEqual(String(t.fnv, radix: 16), "89b3fd52662b07dc", "the level-10 wind feature golden")
+        XCTAssertEqual(String(t.fnv, radix: 16), "c9ad94cdb8b2d287", "the level-10 wind feature golden")
     }
 }

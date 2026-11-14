@@ -308,8 +308,8 @@ public struct WaterEffects: Equatable, Sendable {
         if chance >= 0x41 { chance = 0x41 }
         guard Int(rng.next(100)) < chance else { return }
         // s = 0: `FastRand(0)` reseeds from the clock and returns the caller's r30 — here the cell pointer (raw
-        // `10011144`); the port returns 0. Unreachable on every shipped level (wind only on levels 10, 20 and 52, none
-        // with strength 0).
+        // `10011144`); the port returns 0. Unreachable on every shipped level (dust cells, o1 0…35, only on levels 10,
+        // 20 and 52 — 52's are dust only, o1 27; the pushing wind, o1 0…15, is on 10 and 20 — none with strength 0).
         let r = Int(rng.next(Int16(truncatingIfNeeded: s)))
         let a = o1 + 0x12
         let impulse = lookupModedImpulse(mode: Int16(truncatingIfNeeded: a - (a / 0x24) * 0x24),

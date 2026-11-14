@@ -82,6 +82,9 @@ final class WindTests: XCTestCase {
         // h < 0 and v ≥ 0 — the gate routine's row, as the binary has it).
         XCTAssertEqual(g(50, -30, -30, 50), [true, true])
         XCTAssertEqual(g(50, -30, -31, 51), [false, false])
+        // v = 0 with h < 0 takes this row, not the crossed one: the binary's sign test is `v < 0` (signed;
+        // `10036a68 cmpwi r8,0x0; bge 0x10036aa4` — v ≥ 0 branches to this row).
+        XCTAssertEqual(g(0, -30, -30, 1), [true, false])
         // h < 0, v < 0: crossed — x-gate vy ≥ v, y-gate vx ≥ h.
         XCTAssertEqual(g(-147, -26, -27, -147), [true, false])
         XCTAssertEqual(g(-147, -26, -26, -148), [false, true])
@@ -226,9 +229,9 @@ final class WindTests: XCTestCase {
         XCTAssertEqual(push(col: 10, scale: 0xfe), [(280 * 254) >> 8, 0, 277])
         XCTAssertEqual(push(col: 10, scale: 0x80), [140, 0, 140])
         XCTAssertEqual(push(col: 10, scale: 1), [1, 0, 1])
-        // Arithmetic shifts on negatives: −140·0x81 = −18060 >> 8 = −71 (a division would give −70); −242·0x81 >> 8.
-        XCTAssertEqual(push(col: 20, scale: 0x81), [-71, (-242 * 129) >> 8, -71])
-        XCTAssertEqual((-242 * 129) >> 8, -122)
+        // Arithmetic shifts on negatives: −140·0x81 = −18060 >> 8 = −71 (a division would give −70); −242·0x81 =
+        // −31218 >> 8 = −122 (a division would give −121).
+        XCTAssertEqual(push(col: 20, scale: 0x81), [-71, -122, -71])
         XCTAssertEqual(push(col: 20, scale: 0x100), [-140, -242, -140])
         // Scale ≤ 0: immune — the branch is skipped (`lha 0x90; cmpwi 0; ble`, raw `100369b0..100369b8`).
         for scale: Int16 in [0, -1] {
@@ -294,9 +297,21 @@ final class WindTests: XCTestCase {
         w.active.update(id: a) { $0.vy = 0x100 }
         _ = PlayerStates.airborne(w, id: a)
         XCTAssertEqual(w.player.airCounter, 21)
+        // The cell is the centre's (`+0x10`, `+0xe`; raw `100369bc lha r3,0x10(r27)`, `100369c0 lha r0,0xe(r27)`), not
+        // the pixel copies' (`+0xc`, `+0xa`): y on the wind cell's row, centre one row below — no wind; and the
+        // reverse — wind.
+        let below = sprite(w, col: 10, row: 10)
+        w.active.update(id: below) { $0.centre = SpriteSlot.Point(x: 10 * 32 + 16, y: 11 * 32 + 16) }
+        XCTAssertFalse(step(w, below).s.inWind)
+        let above = sprite(w, col: 10, row: 9)
+        w.active.update(id: above) { $0.centre = SpriteSlot.Point(x: 10 * 32 + 16, y: 10 * 32 + 16) }
+        XCTAssertTrue(step(w, above).s.inWind)
 
-        // The branch's place (ENG §2.2): after the water current (both pushes land in one step) and before the ride
-        // carry (the carry's pixel copy `+0xc` already holds the wind's push).
+        // The branch's place (ENG §2.2): before the ride carry — the carry's pixel copy `+0xc` already holds the wind's
+        // push. "After the water current" is not pinned here and cannot be: the current only adds to x256 and writes
+        // its own fields, the wind reads the centre, vx and vy, so the two steps commute (the 6A-WD review moved the
+        // wind before the current and no test could tell). The rider below makes the current push 0; it shows only
+        // that both run in the one step.
         let wc = try world([Cell(col: 10, row: 10, o1: 0, o2: 20)])
         let solid = wc.newSprite(type: 1400, x: 320, y: 352, layer: -1, handler: .platform) { $0.x = 320; $0.y = 352 }!
         _ = wc.active.wrapDrawSprites()

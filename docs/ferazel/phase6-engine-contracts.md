@@ -271,7 +271,7 @@ Box (59073, 59523, 59558). Readers of the in-wind flag `+0x92`: `.PlayerScroll` 
 counter (46106, 46109) and stillness (46499) — all **built** (`PlayerScroll.swift:54`, `PlayerStates.swift:745`,
 `Player.swift:850`).
 
-**Today.** `Physics/StandardSprite.swift:60` — the branch is an empty stub (`// later: wind`); the fields
+**Today.** Built at 6A-WD: `Physics/StandardSprite.swift:67` (the branch, once an empty stub `// later: wind`); the fields
 `windScale`, `inWind` (`+0x92`) and the ramp (`+0x96`, `+0x98`) exist (`SpriteSlot.swift:443`).
 
 **Contract** (after the water current, before the ride carry; only while `+0x90 > 0`). First, at the top of
