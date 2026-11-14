@@ -984,6 +984,8 @@ def header_res(lv):
 
 
 BUILT_HEADER_RES = set((w, tuple(ids)) for lv in BUILT for w, ids in header_res(lv))
+# Header-named resources a task gave a loader of their own (exercised by its tests), not a generic one.
+OWN_LOADER_HEADER_RES = {'horizon strip PICT': '`PxSprites.facePicture` / `FrameRenderer.stripFace` (6A-S8)'}
 
 # ---------------------------------------------------------------- output
 
@@ -1076,8 +1078,13 @@ def md_level_sections(owners):
         for r in res:
             rs[(loader_of(r).split(' (')[0], port_today(r).split(':')[0])].append(f'{r["type"]} {r["id"]}')
         out.append('3. **Future-phase resources:** ' + ('; '.join(f'{k[0]} [port: {k[1]}]: {", ".join(v)}' for k, v in sorted(rs.items())) or 'none') + '.')
-        hdr = [f'{w} {",".join(map(str, ids))}' for w, ids in header_res(lv) if (w, tuple(ids)) not in BUILT_HEADER_RES]
+        new_hdr = [(w, ids) for w, ids in header_res(lv) if (w, tuple(ids)) not in BUILT_HEADER_RES]
+        hdr = [f'{w} {",".join(map(str, ids))}' for w, ids in new_hdr if w not in OWN_LOADER_HEADER_RES]
         out.append(f'   Header-named, new vs 1–5 (generic loaders, never exercised): {"; ".join(hdr) or "none"}.')
+        own = [f'{w} {",".join(map(str, ids))} — {OWN_LOADER_HEADER_RES[w]}' for w, ids in new_hdr
+               if w in OWN_LOADER_HEADER_RES]
+        if own:
+            out.append(f'   Header-named, new vs 1–5, with their own loader: {"; ".join(own)}.')
         cv = level_convs(lv)
         if cv:
             parts = []

@@ -435,7 +435,7 @@ final class DrawModeAuditTests: XCTestCase {
         W("Shots/PlayerShotHits.swift:221", .flash, .range(10...10), "box"),
         // 6A-S8: the horizon strip's `.SetupPxSprite` `+0xb8 = 0x80000` (M l. 30815): mode 8, drawn by
         // `SpriteBlitter.behindTilesWalk` (no built level has a strip: header 0x2716 = 0 on levels 1–5).
-        W("Sprites/PxSprites.swift:260", .mode, .words([0x80000]), "pxSprite", at: ["27"],
+        W("Sprites/PxSprites.swift:242", .mode, .words([0x80000]), "pxSprite", at: ["28"],
           pins: ["s.mode = PxSprites.drawMode", "drawMode: UInt32 = 0x80000"]),
         W("Sprites/SetupFaces.swift:405", .mirrored, .flags([true]), "background.plant"),
         W("Sprites/SetupFaces.swift:406", .mode, .placedTint(0xa8c...0xaef), "background.plant",

@@ -86,8 +86,9 @@ public struct SpriteBlitter: Sendable {
         /// 6A-CF: the cache records of a PICT registered more than once (0x46a's three, two cuts), keyed by record —
         /// a face ref of such a PICT names its record and cell (`CachedFaces.recordCell(of:)`).
         public private(set) var recordSheets: [CachedFaces.RecordKey: FaceSheet] = [:]
-        /// 6A-S8: the Backgrounds-file singles (`FaceSetKind.backgroundsSingle`, the horizon strip's face), keyed by PICT
-        /// apart from `sheets` — the Sprites file holds PICTs of the same ids.
+        /// 6A-S8: the strip singles (`FaceSetKind.backgroundsSingle`, the horizon strip's face, found from the
+        /// Backgrounds file down the chain), keyed by PICT apart from `sheets` — the Sprites file holds PICTs of the
+        /// same ids.
         public private(set) var backgroundSingles: [Int16: FaceSheet] = [:]
 
         public init(sheets: [Int16: FaceSheet]) { self.sheets = sheets }

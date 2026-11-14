@@ -14,14 +14,19 @@ final class ParallaxTests: XCTestCase {
         let level1: LevelFile
         let level10: LevelFile
         let headers: [Int16: LevelHeader]
+        /// The level files of `headers` (6A-S8: the strip routine needs each level's sprite world).
+        let files: [Int16: LevelFile]
+        let resources: FerazelResources
 
         init() throws {
             let resources = try FerazelData.open(try FerazelData.dataDirectory())
+            self.resources = resources
             level1 = try LevelFile.load(from: resources, level: 1)
             level10 = try LevelFile.load(from: resources, level: 10)
-            var headers: [Int16: LevelHeader] = [:]
-            for id: Int16 in [1, 10, 30, 40, 45, 62, 67] { headers[id] = try LevelFile.load(from: resources, level: id).header }
-            self.headers = headers
+            var files: [Int16: LevelFile] = [:]
+            for id: Int16 in [1, 10, 30, 40, 45, 62, 67] { files[id] = try LevelFile.load(from: resources, level: id) }
+            self.files = files
+            headers = files.mapValues(\.header)
         }
     }
 
@@ -312,23 +317,37 @@ final class ParallaxTests: XCTestCase {
     /// mode 0x80000, y0 = 0x271a, fx = 0x2718, fy = 0xb26c.
     func testStripSpriteCopies() throws {
         let f = try fixture()
-        XCTAssertNil(PxSprites(header: try XCTUnwrap(f.headers[1])))
+        // The routine itself (6A-S8, `PxSprites.create`) on each level's header and a fresh world.
+        func strip(_ level: Int16) throws -> (made: PxSprites.Created, world: SpriteWorld) {
+            let file = try XCTUnwrap(f.files[level])
+            let world = SpriteWorld(level: file)
+            return (PxSprites.create(header: file.header, resources: f.resources, clut: 200, world: world), world)
+        }
+        let none = try strip(1)
+        XCTAssertNil(none.made.outcome)
+        XCTAssertTrue(none.world.active.sprites.isEmpty)
         let expected: [(Int16, Int16, Int, Int, Int)] = [   // level, pict, N, y0, fy
             (10, 265, 8, 222, 56), (30, 275, 11, 227, 136), (40, 315, 11, 48, 22), (45, 315, 2, 48, 10),
             (62, 345, 8, 116, 43), (67, 385, 1, 16, 256),
         ]
         for (level, pict, n, y0, fy) in expected {
-            let strip = try XCTUnwrap(PxSprites(header: try XCTUnwrap(f.headers[level])), "L\(level)")
-            XCTAssertEqual(strip.pict, pict, "L\(level)")
-            XCTAssertEqual(strip.n, n, "L\(level) N")
-            XCTAssertEqual(strip.sprites.count, n + 1, "L\(level) copies k = 0...N")
-            XCTAssertEqual(strip.sprites.map(\.x0), (0...n).map { 0x300 * $0 }, "L\(level)")
-            XCTAssertTrue(strip.sprites.allSatisfy { $0.y0 == y0 && $0.fx == 128 && $0.fy == fy }, "L\(level)")
+            let (made, world) = try strip(level)
+            XCTAssertEqual(made.table.faces[0], FaceRef(pict: pict, index: 0, set: .backgroundsSingle), "L\(level)")
+            XCTAssertEqual(made.ids.count, n + 1, "L\(level) copies k = 0...N")
+            let records = try made.ids.map { try XCTUnwrap(world.active.record(id: $0)) }
+            XCTAssertEqual(records.map(\.classTimer), (0...n).map { Int32(0x300 * $0) }, "L\(level)")
+            XCTAssertTrue(records.allSatisfy { $0.classWord150 == Int32(y0) && $0.classWord154 == 128
+                                                   && $0.classWord158 == Int32(fy) }, "L\(level)")
+            XCTAssertTrue(records.allSatisfy { $0.layer == Int32(PxSprites.layer) && $0.mode == PxSprites.drawMode },
+                          "L\(level)")
         }
         XCTAssertEqual(PxSprites.layer, -500)
         XCTAssertEqual(PxSprites.drawMode, 0x80000)
         // .HandlePxSprite: x = x0 − (h·fx >> 8) + h, y = y0 − (v·fy >> 8) + v + 232.
-        let copy = try XCTUnwrap(PxSprites(header: try XCTUnwrap(f.headers[10]))?.sprites[2])
+        let l10 = try strip(10)
+        let r2 = try XCTUnwrap(l10.world.active.record(id: l10.made.ids[2]))
+        let copy = PxSprites.Sprite(x0: Int(r2.classTimer), y0: Int(r2.classWord150), fx: Int(r2.classWord154),
+                                    fy: Int(r2.classWord158))
         let p = copy.position(h: 1000, v: 1400)
         XCTAssertEqual(p.x, 0x600 - ((1000 * 128) >> 8) + 1000)
         XCTAssertEqual(p.y, 222 - ((1400 * 56) >> 8) + 1400 + 232)

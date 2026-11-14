@@ -196,7 +196,7 @@ public final class FrameRenderer {
         var faces = try SpriteBlitter.Faces(Self.spriteSheets(level: L, entries: entries, resources: resources),
                                             records: CachedFaces.recordSheets(markedBy: entries.map(\.type)),
                                             resources: resources, search: search, dither: dither)
-        // 6A-S8: the horizon strip's face (header `0x2716` ≠ 0: levels 10, 30, 40, 45, 62, 67), from the Backgrounds file.
+        // 6A-S8: the horizon strip's face (header `0x2716` ≠ 0: levels 10, 30, 40, 45, 62, 67), Backgrounds file first.
         if let strip = try Self.stripFace(level: L, resources: resources, search: search, dither: dither) {
             faces.addBackgroundsSingle(L.header.stripPict, strip)
         }
@@ -246,15 +246,17 @@ public final class FrameRenderer {
         return boot + caches
     }
 
-    /// 6A-S8: the horizon strip's face — `.MTAddPxSprite`'s `.Load1EncFaceFromPICT(hdr 0x2716, 0, 0, 0)` (M l. 30888)
-    /// from the Backgrounds file `.SetupLevel` opened on top (M l. 2256 / 2276), converted under the colour table
-    /// `*_DAT_1009ff94` holds then (`PxSprites.faceClut`: clut 200 — `PxSprites.setupLevelClut`, on both paths — or the
-    /// level+base CLUT when header `0x26cc` ≠ 0, M l. 30885–30886). Nil when the header has no strip or the Backgrounds
-    /// file lacks the PICT (Core then makes no strip sprite: `PxSprites.Table.add`).
+    /// 6A-S8: the horizon strip's face — `.MTAddPxSprite`'s `.Load1EncFaceFromPICT(hdr 0x2716, 0, 0, 0)` (M l. 30888),
+    /// `GetPicture` down the chain from the Backgrounds file `.SetupLevel` opened on top (M l. 2256 / 2276;
+    /// `PxSprites.facePicture`, the lookup Core's add uses), converted under the colour table `*_DAT_1009ff94` holds
+    /// then (`PxSprites.faceClut`: clut 200 — `PxSprites.setupLevelClut`, on both paths — or the level+base CLUT when
+    /// header `0x26cc` ≠ 0, M l. 30885–30886; the renderer is prepared before the session, so it applies the same
+    /// formula to the same constant rather than reading Core's outcome). Nil when the header has no strip or no file of
+    /// the chain holds the PICT (Core then makes no strip sprite: `PxSprites.Table.add`).
     static func stripFace(level L: LevelFile, resources: FerazelResources, search: ColorSearch,
                           dither: DitherModel) throws -> FaceSheet? {
         let h = L.header
-        guard h.stripPict != 0, let res = resources.backgrounds.resource(type: "PICT", id: h.stripPict) else { return nil }
+        guard h.stripPict != 0, let res = PxSprites.facePicture(h.stripPict, resources: resources) else { return nil }
         let clut = try ColorLUT.load(id: PxSprites.faceClut(header: h, pointer: PxSprites.setupLevelClut),
                                      from: resources, chain: .level)
         let picture = try ConvertedPicture(source: try PictureSource(resource: res), clut: clut, search: search,

@@ -73,7 +73,6 @@ final class HorizonStripSetupTests: XCTestCase {
         XCTAssertTrue(s.world.active.sprites.dropFirst(9).allSatisfy { $0.id > 9 })
         XCTAssertEqual(strip.outcome, .added(faceClut: 200), "converted under clut 200 (M l. 2273, 404–405)")
         XCTAssertEqual(strip.faceClut, 200)
-        XCTAssertEqual(strip.clutAfter, 200, "`*_DAT_1009ff94` restored (M l. 30919)")
         // The table: ids at entries 0, 2, … 16 (count + k with the count advanced, M l. 30904), one face.
         XCTAssertEqual(strip.table.sprites, (0..<32).map { $0 % 2 == 0 && $0 <= 16 ? $0 / 2 + 1 : nil })
         XCTAssertEqual(strip.table.spriteCount, 9)
@@ -116,7 +115,7 @@ final class HorizonStripSetupTests: XCTestCase {
         // No write-back to any placement (`+0x48` = −1 live, 0x1ff from the Setup alone: both outside 0 … 0x1fe): a
         // world holding only the strip writes no record in `.UpdateSprites`, and keeps the strip.
         let bare = SpriteWorld(level: real)
-        let made = PxSprites.create(header: h, backgrounds: base.backgrounds, clut: 200, world: bare)
+        let made = PxSprites.create(header: h, resources: base, clut: 200, world: bare)
         XCTAssertEqual(made.ids, Array(1...9))
         for id in made.ids { bare.active.update(id: id) { $0.x = 4000; $0.y = 300 } }
         var lights = LightTable()
@@ -139,6 +138,8 @@ final class HorizonStripSetupTests: XCTestCase {
                                                           StageScreens.updateStageLoad(0x32, of: 100).draws[0]],
                        "the fast path's bars: 25 %, then 50 %")
         let s2 = try XCTUnwrap(again.session)
+        // Live against a path that passes another table; the port does not model the pointer the fast path carries —
+        // it passes clut 200, which the writer list (`LevelRun.setupLevel`, 25 functions) shows the carry holds here.
         XCTAssertEqual(s2.horizonStrip, strip)
         XCTAssertEqual(s2.horizonStrip.faceClut, 200)
         XCTAssertEqual(s2.world.active.sprites.prefix(9).map(\.id), Array(1...9))

@@ -52,10 +52,9 @@ final class HorizonStripTests: XCTestCase {
             XCTAssertEqual([h.stripPict, h.stripFactor, h.stripBaseY, h.pxBackYFactor], [pict, fx, y, yb], "L\(level)")
             XCTAssertEqual(h.omniPxMode, 0, "L\(level): `.SetupOmniPx` returns before its CLUT store (M l. 13172)")
             let w = SpriteWorld(level: file)
-            let made = PxSprites.create(header: h, backgrounds: r.backgrounds, clut: PxSprites.setupLevelClut, world: w)
+            let made = PxSprites.create(header: h, resources: r, clut: PxSprites.setupLevelClut, world: w)
             XCTAssertEqual(made.ids, Array(1...count), "L\(level)")
             XCTAssertEqual(made.outcome, .added(faceClut: clut), "L\(level)")
-            XCTAssertEqual(made.clutAfter, 200, "L\(level): the pointer restored (M l. 30919)")
             XCTAssertEqual(made.table.spriteCount, Int16(count))
             XCTAssertEqual(made.table.faceCount, 1)
             XCTAssertEqual(made.table.faces[0], face(pict))
@@ -70,8 +69,6 @@ final class HorizonStripTests: XCTestCase {
                 XCTAssertEqual(s.layer, -500)
                 XCTAssertEqual(s.mode, 0x80000)
             }
-            // The count is the formula's N + 1, as the R4 model has it.
-            XCTAssertEqual(try XCTUnwrap(PxSprites(header: h)).sprites.count, count)
             // All six PICTs are in the Backgrounds file.
             XCTAssertNotNil(r.backgrounds.resource(type: "PICT", id: pict), "L\(level)")
         }
@@ -86,7 +83,7 @@ final class HorizonStripTests: XCTestCase {
             let file = try LevelFile.load(from: r, level: Int16(level))
             XCTAssertEqual(file.header.stripPict, 0, "L\(level)")
             let w = SpriteWorld(level: file)
-            let made = PxSprites.create(header: file.header, backgrounds: r.backgrounds, clut: 200, world: w)
+            let made = PxSprites.create(header: file.header, resources: r, clut: 200, world: w)
             XCTAssertNil(made.outcome)
             XCTAssertEqual(made.table, PxSprites.Table())
             XCTAssertTrue(w.active.sprites.isEmpty)
@@ -101,7 +98,7 @@ final class HorizonStripTests: XCTestCase {
             var clut: Int16 = 200
             let w = SpriteWorld(level: file)
             XCTAssertEqual(t.add(pict: file.header.stripPict, fx: 128, y: 1, header: file.header,
-                                 backgrounds: r.backgrounds, clut: &clut, world: w), .skipped)
+                                 resources: r, clut: &clut, world: w), .skipped)
             XCTAssertEqual(clut, 200)
             XCTAssertTrue(w.active.sprites.isEmpty)
             XCTAssertEqual(t.spriteCount, 0)
@@ -110,7 +107,7 @@ final class HorizonStripTests: XCTestCase {
         var t30 = PxSprites.Table()
         t30.faceCount = 30
         var c30: Int16 = 200
-        XCTAssertEqual(t30.add(pict: 265, fx: 128, y: 222, header: l10.header, backgrounds: r.backgrounds, clut: &c30,
+        XCTAssertEqual(t30.add(pict: 265, fx: 128, y: 222, header: l10.header, resources: r, clut: &c30,
                                world: SpriteWorld(level: l10)), .added(faceClut: 200))
         XCTAssertEqual(t30.faceCount, 31)
         XCTAssertEqual(t30.faces[30], face(265))
@@ -120,22 +117,38 @@ final class HorizonStripTests: XCTestCase {
         t25.spriteCount = 25
         var c25: Int16 = 200
         let w25 = SpriteWorld(level: l10)
-        XCTAssertEqual(t25.add(pict: 265, fx: 128, y: 222, header: l10.header, backgrounds: r.backgrounds, clut: &c25,
+        XCTAssertEqual(t25.add(pict: 265, fx: 128, y: 222, header: l10.header, resources: r, clut: &c25,
                                world: w25), .added(faceClut: 200))
         XCTAssertEqual(t25.spriteCount, 29)
         XCTAssertEqual(t25.sprites.indices.filter { t25.sprites[$0] != nil }, [25, 27, 29, 31])
         XCTAssertEqual(w25.active.sprites.map(\.classTimer), [0, 768, 1536, 2304])
+        // From an even count (24) the cap's 31 shows: k = 0…3 (cap 7, 6, 5, 4 → k = 4 fails 3 < 4) at entries 24 … 30,
+        // the count 28 (a cap of 32 would make a fifth copy, count 29).
+        var t24 = PxSprites.Table()
+        t24.spriteCount = 24
+        var c24: Int16 = 200
+        XCTAssertEqual(t24.add(pict: 265, fx: 128, y: 222, header: l10.header, resources: r, clut: &c24,
+                               world: SpriteWorld(level: l10)), .added(faceClut: 200))
+        XCTAssertEqual(t24.spriteCount, 28)
+        XCTAssertEqual(t24.sprites.indices.filter { t24.sprites[$0] != nil }, [24, 26, 28, 30])
+        // `+0x150` and `+0x154` are the routine's arguments (`.SetupLevel` passes hdr 0x271a / 0x2718), not header reads:
+        // fx 64, y 7 → N = ⌊((64·360·32) >> 8) / 768⌋ + 1 = 4, five copies, each (7, 64).
+        var targ = PxSprites.Table()
+        var carg: Int16 = 200
+        let warg = SpriteWorld(level: l10)
+        _ = targ.add(pict: 265, fx: 64, y: 7, header: l10.header, resources: r, clut: &carg, world: warg)
+        XCTAssertEqual(warg.active.sprites.map { [$0.classWord150, $0.classWord154] }, Array(repeating: [7, 64], count: 5))
         // A failed spawn (`.MTNewSprite` finds no record) still advances the count (M l. 30917): 697 records in use →
         // three copies made, six refused, the count 9, entries 0, 2, 4 set and 6 … 16 left 0.
         let full = SpriteWorld(level: l10)
         for _ in 0..<697 { full.newSprite(type: 1, x: 0, y: 0, layer: 0, handler: .inert) }
-        let partial = PxSprites.create(header: l10.header, backgrounds: r.backgrounds, clut: 200, world: full)
+        let partial = PxSprites.create(header: l10.header, resources: r, clut: 200, world: full)
         XCTAssertEqual(partial.table.spriteCount, 9)
         XCTAssertEqual(partial.table.sprites.indices.filter { partial.table.sprites[$0] != nil }, [0, 2, 4])
         XCTAssertEqual(full.refusedSpawns, 6)
         XCTAssertEqual(partial.outcome, .added(faceClut: 200))
         // `.MTKillPxSprites` first: a table that held sprites kills them and starts again from 0.
-        let again = PxSprites.create(header: l10.header, backgrounds: r.backgrounds, clut: 200, world: full,
+        let again = PxSprites.create(header: l10.header, resources: r, clut: 200, world: full,
                                      table: partial.table)
         XCTAssertEqual(again.table.spriteCount, 9)
         XCTAssertEqual(again.table.faceCount, 1)
@@ -153,7 +166,9 @@ final class HorizonStripTests: XCTestCase {
                                      fy: Int(r.classWord158)).position(h: h, v: v)
             return (p.x, p.y)
         }
-        func positions() -> [[Int]] { ids.map { id in [s.world.active.record(id: id)!.x, s.world.active.record(id: id)!.y] } }
+        func positions() -> [[Int]] {
+            ids.map { id in s.world.active.record(id: id).map { [$0.x, $0.y] } ?? [Int.min, Int.min] }
+        }
         func garble() { for id in ids { s.world.active.update(id: id) { $0.x = -1234; $0.y = -4321 } } }
         // At creation `.MTNewSprite`'s pixel copies (x into +0xc then y over it, +0xa untouched): (0, 0).
         XCTAssertEqual(positions(), Array(repeating: [0, 0], count: 9))
@@ -220,10 +235,9 @@ final class HorizonStripTests: XCTestCase {
             XCTAssertNotNil(r.backgrounds.resource(type: "PICT", id: p))
         }
         XCTAssertEqual([strip.width, strip.height], [768, 30])
-        // `.encoded` 265 is not the strip's face (the store keys the Backgrounds single apart).
-        if let encoded = renderer.sprites.faces.face(FaceRef(pict: 265, index: 0, set: .encoded)) {
-            XCTAssertNotEqual(encoded, strip)
-        }
+        // `.encoded` 265 is not the strip's face: no sheet of level 10 loads PICT 265 (the store keys the strip single
+        // apart, so it is never served for an `.encoded` ref).
+        XCTAssertNil(renderer.sprites.faces.face(FaceRef(pict: 265, index: 0, set: .encoded)))
         // The face bounds Core is handed read the same face.
         let b = renderer.faceBounds(FaceRef(pict: 265, index: 0, set: .backgroundsSingle))
         XCTAssertEqual([b.top, b.left, b.bottom, b.right],
@@ -237,34 +251,45 @@ final class HorizonStripTests: XCTestCase {
         XCTAssertEqual(h.pxUsesLevelBaseClut, 1)
         XCTAssertEqual(ColorLUT.screenClutId(h), 240)
         // From the header alone: the face converts under the level+base CLUT (header `0x26cc` ≠ 0, M l. 30885–30886).
-        let made = PxSprites.create(header: h, backgrounds: r.backgrounds, clut: PxSprites.setupLevelClut,
+        let made = PxSprites.create(header: h, resources: r, clut: PxSprites.setupLevelClut,
                                     world: SpriteWorld(level: l62))
         XCTAssertEqual(made.outcome, .added(faceClut: 240))
-        XCTAssertEqual(made.clutAfter, 200)
         XCTAssertEqual(made.ids.count, 9)
+        // `*_DAT_1009ff94` swapped for the load and restored after it (M l. 30886, 30919).
+        var t62 = PxSprites.Table()
+        var c62: Int16 = 200
+        XCTAssertEqual(t62.add(pict: 345, fx: 128, y: 116, header: h, resources: r, clut: &c62,
+                               world: SpriteWorld(level: l62)), .added(faceClut: 240))
+        XCTAssertEqual(c62, 200, "restored")
         XCTAssertEqual(PxSprites.faceClut(header: h, pointer: 200), 240)
         let face = try XCTUnwrap(FrameRenderer.stripFace(level: l62, resources: r, search: Self.search,
                                                          dither: .errorDiffusion)).faces[0]
         XCTAssertEqual(face, try backgroundsFace(345, clut: 240))
         XCTAssertNotEqual(face.data, try backgroundsFace(345, clut: 200).data)
 
-        // A face that does not load (the PICT absent from the Backgrounds file): `.ReportError(…, 0)` and nothing else
-        // (M l. 30888–30891) — no sprite, no face entry, and the pointer left swapped to the level+base CLUT (the
-        // restore of M l. 30919 is in the success branch). The renderer loads no face for it either.
+        // A face that does not load (the PICT absent from every file of the chain `GetPicture` searches):
+        // `.ReportError(…, 0)` and nothing else (M l. 30888–30891) — no sprite, no face entry, and the pointer left
+        // swapped to the level+base CLUT (the restore of M l. 30919 is in the success branch). The renderer loads no
+        // face for it either.
         let missing: Int16 = 0x7ff0
-        XCTAssertNil(r.backgrounds.resource(type: "PICT", id: missing))
+        XCTAssertNil(PxSprites.facePicture(missing, resources: r))
+        XCTAssertNil(r.resource(type: "PICT", id: missing, chain: .level))
         let mlvl = try XCTUnwrap(r.world.resource(type: "Mlvl", id: 62))
         var d = mlvl.data
         d[d.startIndex + 0x2716] = UInt8(missing >> 8)
         d[d.startIndex + 0x2717] = UInt8(missing & 0xff)
         let patched = try LevelFile(id: 62, data: d)
         let w = SpriteWorld(level: patched)
-        let failed = PxSprites.create(header: patched.header, backgrounds: r.backgrounds, clut: 200, world: w)
+        let failed = PxSprites.create(header: patched.header, resources: r, clut: 200, world: w)
         XCTAssertEqual(failed.outcome, .faceLoadFailed)
         XCTAssertNil(failed.faceClut)
-        XCTAssertEqual(failed.clutAfter, 240, "left swapped, as written")
         XCTAssertEqual(failed.table, PxSprites.Table())
         XCTAssertTrue(w.active.sprites.isEmpty)
+        var tf = PxSprites.Table()
+        var cf: Int16 = 200
+        XCTAssertEqual(tf.add(pict: missing, fx: 128, y: 116, header: patched.header, resources: r, clut: &cf,
+                              world: SpriteWorld(level: patched)), .faceLoadFailed)
+        XCTAssertEqual(cf, 240, "left swapped, as written")
         XCTAssertNil(try FrameRenderer.stripFace(level: patched, resources: r, search: Self.search, dither: .errorDiffusion))
         // On a `0x26cc` = 0 level the failed load leaves the pointer as it was.
         let mlvl10 = try XCTUnwrap(r.world.resource(type: "Mlvl", id: 10))
@@ -272,9 +297,27 @@ final class HorizonStripTests: XCTestCase {
         d10[d10.startIndex + 0x2716] = UInt8(missing >> 8)
         d10[d10.startIndex + 0x2717] = UInt8(missing & 0xff)
         let p10 = try LevelFile(id: 10, data: d10)
-        let f10 = PxSprites.create(header: p10.header, backgrounds: r.backgrounds, clut: 200, world: SpriteWorld(level: p10))
-        XCTAssertEqual(f10.outcome, .faceLoadFailed)
-        XCTAssertEqual(f10.clutAfter, 200)
+        var t10 = PxSprites.Table()
+        var c10: Int16 = 200
+        XCTAssertEqual(t10.add(pict: missing, fx: 128, y: 222, header: p10.header, resources: r, clut: &c10,
+                               world: SpriteWorld(level: p10)), .faceLoadFailed)
+        XCTAssertEqual(c10, 200)
+
+        // `GetPicture` searches down the chain (M l. 28038): a PICT the Backgrounds file lacks is found in the next
+        // file — PICT 5000 is the Sprites file's only. Core makes the strip and the renderer loads the Sprites picture
+        // (under clut 200, header `0x26cc` = 0 on level 10).
+        let other: Int16 = 5000
+        XCTAssertNil(r.backgrounds.resource(type: "PICT", id: other))
+        XCTAssertNotNil(r.sprites.resource(type: "PICT", id: other))
+        d10[d10.startIndex + 0x2716] = UInt8(other >> 8)
+        d10[d10.startIndex + 0x2717] = UInt8(other & 0xff)
+        let s10 = try LevelFile(id: 10, data: d10)
+        let found = PxSprites.create(header: s10.header, resources: r, clut: 200, world: SpriteWorld(level: s10))
+        XCTAssertEqual(found.outcome, .added(faceClut: 200))
+        XCTAssertEqual(found.ids, Array(1...9))
+        let sFace = try XCTUnwrap(FrameRenderer.stripFace(level: s10, resources: r, search: Self.search,
+                                                          dither: .errorDiffusion)).faces[0]
+        XCTAssertEqual(sFace, try backgroundsFace(other, clut: 200, file: r.sprites))
     }
 
     // MARK: - Draw mode 8 (synthetic faces)
@@ -412,6 +455,22 @@ final class HorizonStripTests: XCTestCase {
         XCTAssertEqual(row(q.frame, 415, 634, 6), [0, 0, 0, 0, 0, 0], "a run wholly past the right limit")
         XCTAssertEqual(q.frame.filter { $0 != 0 }.count, 8, "row 3 is below the port (416 rows)")
         XCTAssertEqual(q.frame.count, W * FramePorts.height)
+
+        // One run crossing BOTH edges (dst h −3, a 6-column window: left clip 3, right limit 6): columns 3…5 drawn, the
+        // overhang skipped, the source padded by the full run (10 → 2), so the next row reads aligned.
+        let k = face([[.copy((1...10).map { UInt8($0) })], [.copy([0x21, 0x22, 0x23, 0x24])]], width: 10)
+        var e = ports(frame: [], mask: [], fill: 0)
+        SpriteBlitter.behindTilesWalk(k, src: (0, 0), dst: (50, -3), w: 6, h: 2, clip: true, frame: &e.frame, mask: e.mask)
+        XCTAssertEqual(row(e.frame, 50, 0, 4), [4, 5, 6, 0])
+        XCTAssertEqual(row(e.frame, 51, 0, 4), [0x24, 0, 0, 0])
+        // The port's last row (415) is drawn; the row below it is not reached.
+        let last = face(Array(repeating: [Tok.copy([0x61, 0x62])], count: 3), width: 2)
+        var lp = ports(frame: [], mask: [], fill: 0)
+        SpriteBlitter.behindTilesWalk(last, src: (0, 0), dst: (414, 10), w: 2, h: 3, clip: true, frame: &lp.frame,
+                                      mask: lp.mask)
+        XCTAssertEqual(row(lp.frame, 414, 10, 2), [0x61, 0x62])
+        XCTAssertEqual(row(lp.frame, 415, 10, 2), [0x61, 0x62])
+        XCTAssertEqual(lp.frame.filter { $0 != 0 }.count, 4)
     }
 
     func testModeEightMaskPassZeroes() throws {

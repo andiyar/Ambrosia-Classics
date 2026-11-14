@@ -21,9 +21,10 @@ public enum FaceSetKind: Hashable, Sendable {
     case flipped
     case fgWater
     case plain
-    /// 6A-S8 (added, Invariant 9): one face `.Load1EncFaceFromPICT` loads from the **Backgrounds** file — the horizon
-    /// strip's (`.MTAddPxSprite`, M l. 30888, with the Backgrounds file opened on top by `.SetupLevel`, M l. 2256 /
-    /// 2276). The Sprites file holds PICTs of the same ids (265 among them), so the strip's face is named by this case,
-    /// never by `.encoded`. Index 0 always.
+    /// 6A-S8 (added, Invariant 9): one face `.Load1EncFaceFromPICT` loads with the **Backgrounds** file on top of the
+    /// chain — the horizon strip's (`.MTAddPxSprite`, M l. 30888, with the Backgrounds file opened on top by
+    /// `.SetupLevel`, M l. 2256 / 2276; a PICT it lacks is found further down, `PxSprites.facePicture`). The Sprites
+    /// file holds PICTs of the same ids (265 among them), so the strip's face is named by this case, never by
+    /// `.encoded`. Index 0 always.
     case backgroundsSingle
 }

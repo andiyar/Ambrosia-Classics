@@ -314,11 +314,12 @@ final class GameFlowGameTests: XCTestCase {
         XCTAssertTrue(isRunning(stripRig.flow, level: 1, iterations: 1))
         XCTAssertEqual(stripRig.levels.prepared, [1])
         XCTAssertFalse(stripRig.flow.quitRequested)
-        // PICT 5000 is not in the Backgrounds file: `.MTAddPxSprite`'s face load fails — `.ReportError`, no strip
-        // sprite (the Resource Manager's fall-through to the files below Backgrounds, which would find the Sprites
-        // file's PICT 5000, is not modelled: `PxSprites.Table.add`).
-        XCTAssertEqual(stripRig.flow.levelRun?.session?.horizonStrip.outcome, .faceLoadFailed)
-        XCTAssertEqual(stripRig.flow.levelRun?.session?.horizonStrip.ids, [])
+        // PICT 5000 is not in the Backgrounds file, but `.Load1EncFaceFromPICT`'s `GetPicture` (M l. 28038) searches on
+        // down the chain and finds the Sprites file's (`PxSprites.facePicture`): the strip is made, the level's first
+        // allocations — level 1's x factor (header 0x2718) is 0, so N = 1 and the loop makes two copies (measured).
+        XCTAssertNil(r.backgrounds.resource(type: "PICT", id: 5000))
+        XCTAssertEqual(stripRig.flow.levelRun?.session?.horizonStrip.outcome, .added(faceClut: 200))
+        XCTAssertEqual(stripRig.flow.levelRun?.session?.horizonStrip.ids, [1, 2])
         for (offset, bytes) in [(0x26c7, [UInt8(1)])] {
             let rig = Rig(patchedLevel1(offset, bytes))
             rig.toMenu()

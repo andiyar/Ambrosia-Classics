@@ -95,9 +95,9 @@ public final class FerazelSession {
     /// from the previous level (`LevelCarry.omniPxCounter`). The on-flag is G+0x174 (`world.globals.omniPxActive`).
     public internal(set) var omniPx = OmniPx()
     /// 6A-S8: the horizon strip `.SetupLevel` made (`PxSprites.create`, after `.KillAllSprites` and before
-    /// `.SetupLevelSprites`): its globals (`_DAT_100a01d4` / `_DAT_100a01d0` and the counts), the add's outcome and the
-    /// CLUT pointer after it. Empty on a level whose header `0x2716` is 0.
-    public internal(set) var horizonStrip = PxSprites.Created(clut: PxSprites.setupLevelClut)
+    /// `.SetupLevelSprites`): its globals (`_DAT_100a01d4` / `_DAT_100a01d0` and the counts) and the add's outcome.
+    /// Empty on a level whose header `0x2716` is 0.
+    public internal(set) var horizonStrip = PxSprites.Created()
     /// OX: the renderer's `.TurnOnOmniPx` (`DrawOp.omniPx(.turnOn)`) when `.SetupOmniPx(0)` turned OmniPx on (modes 2,
     /// 4, 5) — empty on a mode-0 level. `.SetupLevel` M l. 2540: `LevelRun.setupLevel` emits it after its last load
     /// bar; an unhosted session puts it first in its level-start block (before `.SetScreenClut`, M l. 2571).
@@ -211,10 +211,10 @@ public final class FerazelSession {
         // in this fresh world; W4's level flow keeps the order when a world is reused.
         world.player.crunchSprites = [Int?](repeating: nil, count: 0x28)
         // 6A-S8: `.SetupLevel`'s `.KillAllSprites` (M l. 2246 — this fresh world), then on either path `.MTKillPxSprites`
-        // and, header `0x2716` ≠ 0, `.MTAddPxSprite` with the Backgrounds file open (M l. 2252–2268 / 2350–2356): the
-        // strip sprites are the level's first allocations, before the crunch re-apply and `.SetupLevelSprites`.
-        horizonStrip = PxSprites.create(header: L.header, backgrounds: resources.backgrounds, clut: stripClut,
-                                        world: world)
+        // and, header `0x2716` ≠ 0, `.MTAddPxSprite` with the Backgrounds file opened on top (M l. 2252–2268 /
+        // 2350–2356; its face found down the chain, `PxSprites.facePicture`): the strip sprites are the level's first
+        // allocations, before the crunch re-apply and `.SetupLevelSprites`.
+        horizonStrip = PxSprites.create(header: L.header, resources: resources, clut: stripClut, world: world)
         // E1b review fix: the water-effects cache, origin and flag `*_DAT_100a00f4` run on (`LevelCarry`); the player
         // Setup keeps the flag (`Player.spawn`).
         world.player.tileCacheValid = carry.tileCacheValid
@@ -1420,16 +1420,13 @@ public final class FerazelSession {
     }
 
     /// A face's frame at the origin: the sheet cell for a level-1 face set, else the PICT's picFrame (`.frontEnd`
-    /// chain, as R4's tests read it); `.noFace` when the PICT is absent.
-    /// 6A-S8: a `.backgroundsSingle` face (the horizon strip's) reads the Backgrounds file's PICT.
+    /// chain, as R4's tests read it); `.noFace` when the PICT is absent. (Never asked for the horizon strip's face: a
+    /// strip sprite has no hit, never goes idle and its Handle reads no face width.)
     static func frameRect(_ f: FaceRef, resources: FerazelResources) -> IdleSprites.Rect {
-        let strip = f.set == .backgroundsSingle
-        if !strip, let s = SetupFaces.sheet(pict: f.pict), !s.single {
+        if let s = SetupFaces.sheet(pict: f.pict), !s.single {
             return IdleSprites.Rect(top: 0, left: 0, bottom: s.cellHeight, right: s.cellWidth)
         }
-        let found = strip ? resources.backgrounds.resource(type: "PICT", id: f.pict)
-            : resources.resource(type: "PICT", id: f.pict, chain: .frontEnd)
-        guard let res = found, res.data.count >= 10 else {
+        guard let res = resources.resource(type: "PICT", id: f.pict, chain: .frontEnd), res.data.count >= 10 else {
             return .noFace
         }
         let b = [UInt8](res.data)

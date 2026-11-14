@@ -1,12 +1,13 @@
 import Foundation
 import HectorResources
 
-/// The parallax horizon strip (triggers-background-2 §4): one Backgrounds PICT (768 wide) repeated as sprites that
-/// move at fx/256 and fy/256 of the camera. Not a pixel effect — drawn by `.WrapDrawSprites` like any sprite (the
-/// drawing is R4's; this type holds what `.MTAddPxSprite` creates and what `.HandlePxSprite` computes).
+/// The parallax horizon strip (triggers-background-2 §4): one PICT (768 wide) repeated as sprites that move at fx/256
+/// and fy/256 of the camera. Not a pixel effect — drawn by `.WrapDrawSprites` like any sprite, in draw mode 8 (6A-S8:
+/// `SpriteBlitter`'s behind-tiles walk); this namespace holds what `.MTAddPxSprite` creates and what `.HandlePxSprite`
+/// computes.
 ///
 /// `.SetupLevel` (decompile l. 2252–2268 / 2346–2354) calls `.MTKillPxSprites` and then, when header `0x2716 ≠ 0`,
-/// `.MTAddPxSprite(0x2716 PICT, 0x2718 x factor, 0x271a y)` with Backgrounds open.
+/// `.MTAddPxSprite(0x2716 PICT, 0x2718 x factor, 0x271a y)` with the Backgrounds file opened on top of the chain.
 ///
 /// `.MTAddPxSprite @ 1003359c` (raw): `N = ⌊((fx·(W << 5)) >> 8) / 768⌋ + 1` (`100335ec..1003360c`, W = header `0xb280`,
 /// `mulhw 0x2aaaaaab` + `srawi 7` = truncating /768); one face (`.Load1EncFaceFromPICT`, `1003363c`; under the
@@ -15,12 +16,12 @@ import HectorResources
 /// at most 16 because the count grows with k), each `.MTNewSprite(0, 0, 0, layer −500, −1, .SetupPxSprite)`
 /// (`10033670..10033688`) with `+0x14c = 0x300·k`, `+0x150 = y`, `+0x154 = fx`, `+0x158 = header 0xb26c` (the
 /// PxBack y factor). As written the slot index is `count + k` read after `count` already grew by k (`1003368c..
-/// 1003369c`), so the copies sit in slots 0, 2, 4, … of the 32-entry table — invisible to drawing.
+/// 1003369c`), so the copies sit in entries 0, 2, 4, … of the 32-entry table (`.MTHandlePxSprites` walks all 32).
 ///
 /// `.SetupPxSprite @ 10033418`: empty rect, `+0x48 = 0x1ff`, `+0xea = 1`, type `+4 = 1`, `+0x88 = 0` (no light
 /// overlay), `+0x5c = 0`, `+0x1f8 = 0`, handler `.HandlePxSprite`, draw mode `+0xb8 = 0x80000` (behind tiles,
 /// draw-effects §2.5: word add through the mask port).
-public struct PxSprites: Equatable, Sendable {
+public enum PxSprites {
     /// `.MTNewSprite` layer argument (`10033680 li r6,-0x1f4`).
     public static let layer = -500
     /// `+0xb8` (`.SetupPxSprite`).
@@ -32,13 +33,13 @@ public struct PxSprites: Equatable, Sendable {
     /// The sprite table holds 31 strip sprites at most (`10033728 subfic r0,r0,0x1f`).
     public static let maxSprites = 0x1f
 
-    /// One strip sprite's fields.
+    /// One strip sprite's fields, as `.HandlePxSprite` reads them.
     public struct Sprite: Equatable, Sendable {
         /// `+0x14c` = 768·k.
         public let x0: Int
-        /// `+0x150` = header `0x271a`.
+        /// `+0x150` = the add's y (`.SetupLevel` passes header `0x271a`).
         public let y0: Int
-        /// `+0x154` = header `0x2718`.
+        /// `+0x154` = the add's x factor (`.SetupLevel` passes header `0x2718`).
         public let fx: Int
         /// `+0x158` = header `0xb26c`.
         public let fy: Int
@@ -56,38 +57,6 @@ public struct PxSprites: Equatable, Sendable {
             return (x, y)
         }
     }
-
-    /// Header `0x2716` (Backgrounds PICT).
-    public let pict: Int16
-    /// Header `0x26cc ≠ 0`: the face converts under the level+base CLUT `0x285e`. Otherwise under whatever
-    /// `*1009ff94` holds at `.SetupLevel` time (not traced here; R4 reads it when it draws the strip).
-    public let usesLevelBaseClut: Bool
-    /// The formula value `N = ⌊((fx·W·32) >> 8) / 768⌋ + 1`.
-    public let n: Int
-    /// The copies in creation order (k = 0...min(N, 15)).
-    public let sprites: [Sprite]
-
-    /// `.MTAddPxSprite` for a freshly killed strip table (`.MTKillPxSprites` first, count 0); nil when the level has
-    /// no strip (header `0x2716 == 0`, every level but 10, 30, 40, 45, 62, 67).
-    public init?(header: LevelHeader) {
-        guard header.stripPict != 0 else { return nil }
-        let fx = Int(header.stripFactor)
-        let product = Int(Int32(truncatingIfNeeded: fx * (Int(header.gridWidth) << 5)))
-        let n = Int(Int32(truncatingIfNeeded: (product >> 8) / 0x300)) + 1
-        var sprites: [Sprite] = []
-        var count = 0
-        var k = 0
-        while k <= min(n, Self.maxSprites - count) {
-            sprites.append(Sprite(x0: Self.copySpacing * k, y0: Int(header.stripBaseY), fx: fx,
-                                  fy: Int(header.pxBackYFactor)))
-            count += 1
-            k += 1
-        }
-        pict = header.stripPict
-        usesLevelBaseClut = header.pxUsesLevelBaseClut != 0
-        self.n = n
-        self.sprites = sprites
-    }
 }
 
 // MARK: - 6A-S8: the strip's real records (ENG §2.1)
@@ -98,7 +67,9 @@ extension PxSprites {
     /// `.main` M l. 8262–8265). Between M l. 2273 and the add (M l. 2353) only `_CheckFlags`, `_MTKillPxSprites` and the
     /// open-failure report run. The restart fast path (M l. 2252–2268) does not reset the pointer: it holds what the
     /// last writer left, and every alias store reached between a strip level's start and its restart restores clut 200
-    /// (`LevelRun.setupLevel` lists them) — so both paths pass this value.
+    /// (`LevelRun.setupLevel` lists them) — so both paths pass this value. The port does not model the pointer the
+    /// fast path carries: it passes this constant, which the writer list (25 functions, `LevelRun.setupLevel`) shows is
+    /// what the carry holds on a strip level.
     public static let setupLevelClut: Int16 = 200
 
     /// The colour table a strip face converts under when `*_DAT_1009ff94` holds `pointer` at the add: the level+base
@@ -107,8 +78,20 @@ extension PxSprites {
         header.pxUsesLevelBaseClut != 0 ? ColorLUT.screenClutId(header) : pointer
     }
 
-    /// The strip face `+0xc0` (`.Load1EncFaceFromPICT(pict, 0, 0, 0)` from the Backgrounds file opened on top).
+    /// The strip face `+0xc0` (`.Load1EncFaceFromPICT(pict, 0, 0, 0)`, `facePicture`).
     public static func face(pict: Int16) -> FaceRef { FaceRef(pict: pict, index: 0, set: .backgroundsSingle) }
+
+    /// The PICT the strip face loads from: `.Load1EncFaceFromPICT` (flag `PTR_DAT_1009fcd4` = 1 from `.main`, M l.
+    /// 8339) fetches it with `GetPicture` (M l. 28038), a search down the resource chain from the current file. At the
+    /// add (both paths) `.SetupLevel`'s `OpenResFile` (M l. 2256 / 2276) has just put the Backgrounds file on top and
+    /// made it current; below it lie the files `.OpenResourceFiles` opened (Titles, Sounds, then Sprites, M l.
+    /// 7818–7839) and the application — the front-end chain. The World Data file is not open there: every world read
+    /// opens and closes it (`.SetResWorldFile` / `.RestoreResWorldFile`, M l. 41566–41629; `.OpenDefaultWorldLevel`).
+    /// So: Backgrounds, then Sprites → Sounds → Titles → app. Nil when no file of the chain holds it (the load fails).
+    public static func facePicture(_ pict: Int16, resources: FerazelResources) -> Resource? {
+        resources.backgrounds.resource(type: "PICT", id: pict)
+            ?? resources.resource(type: "PICT", id: pict, chain: .frontEnd)
+    }
 
     /// The strip globals: the 32-entry sprite table `_DAT_100a01d4`, the 32-entry face table `_DAT_100a01d0`, the
     /// sprite count `*_DAT_100a01bc` and the face count `*_DAT_100a01b8`.
@@ -158,26 +141,26 @@ extension PxSprites {
 
         /// `.MTAddPxSprite @ 1003359c (pict, fx, y)` (M l. 30853–30927), transcribed. `clut` is `*_DAT_1009ff94` (by
         /// id). N = ⌊((fx·W·32) >> 8) / 768⌋ + 1 (C division, W = header `0xb280`); skipped whole at face count ≥ 31;
-        /// the face from the Backgrounds file (its absence is the load failure — the Backgrounds file holds all six
-        /// shipped strip PICTs; the Resource Manager's fall-through to the files below it is not modelled [LOW]);
+        /// the face found down the resource chain (`facePicture`: the Backgrounds file, which holds all six shipped
+        /// strip PICTs, then the front-end chain; absent from all of them is the load failure);
         /// then k = 0, 1, … while k ≤ min(N, 31 − count), the cap re-read each pass: `.MTNewSprite(0, 0, 0, −500, −1,
         /// .SetupPxSprite)` at entry count + k, `+0xc0` face, `+0x14c` 768·k, `+0x150` y, `+0x154` fx, `+0x158`
         /// header `0xb26c`; count + 1 each pass; then the pointer restored and the face appended.
-        public mutating func add(pict: Int16, fx: Int16, y: Int16, header: LevelHeader, backgrounds: ResourceCollection,
+        public mutating func add(pict: Int16, fx: Int16, y: Int16, header: LevelHeader, resources: FerazelResources,
                                  clut: inout Int16, world: SpriteWorld) -> Outcome {
             let saved = clut                                                       // `uVar11 = *_DAT_1009ff94`
             let product = Int32(truncatingIfNeeded: Int(fx) &* Int(header.gridWidth) &* 0x20)
             let quotient = (product >> 8) / 0x300                                  // truncating, as the C division
             guard faceCount < 0x1f else { return .skipped }                        // M l. 30884
-            if header.pxUsesLevelBaseClut != 0 { clut = ColorLUT.screenClutId(header) }   // M l. 30885–30886
-            guard backgrounds.resource(type: "PICT", id: pict) != nil else { return .faceLoadFailed }
+            clut = PxSprites.faceClut(header: header, pointer: clut)              // M l. 30885–30886
+            guard PxSprites.facePicture(pict, resources: resources) != nil else { return .faceLoadFailed }
             let loadedUnder = clut
             let face = PxSprites.face(pict: pict)
             let n = Int(Int16(truncatingIfNeeded: quotient &+ 1))                  // `(short)(N + 1)`
             var k = 0
             var x0: Int32 = 0
             while true {
-                let cap = min(n, 0x1f - Int(spriteCount))                          // M l. 30897–30900
+                let cap = min(n, PxSprites.maxSprites - Int(spriteCount))          // M l. 30897–30900
                 if cap < k { break }
                 let id = world.newSprite(type: 0, x: 0, y: 0, layer: Int16(PxSprites.layer), handler: .pxSprite,
                                          record: -1) { PxSprites.setup(&$0) }
@@ -211,10 +194,8 @@ extension PxSprites {
         /// The add's outcome; nil when header `0x2716` = 0 (no add — levels 1–5 and every level but 10, 30, 40, 45, 62
         /// and 67).
         public var outcome: Table.Outcome?
-        /// `*_DAT_1009ff94` after the step: the value passed in, except after a failed load under the `0x26cc` swap.
-        public var clutAfter: Int16
 
-        public init(clut: Int16) { clutAfter = clut }
+        public init() {}
 
         /// The strip sprites, creation order.
         public var ids: [Int] { table.ids }
@@ -227,20 +208,21 @@ extension PxSprites {
 
     /// `.SetupLevel`'s strip step, on the long path (M l. 2350–2356) and the restart fast path (M l. 2252–2268) alike:
     /// `.MTKillPxSprites`, then — header `0x2716` ≠ 0 — `.MTAddPxSprite(hdr 0x2716, hdr 0x2718, hdr 0x271a)` with the
-    /// Backgrounds file open. Called after `.KillAllSprites` (M l. 2246) and before `.SetupLevelSprites` (M l. 2526), so
-    /// the strip sprites are the level's first allocations. `clut` is what `*_DAT_1009ff94` holds then
-    /// (`setupLevelClut` on both paths). Header `0x271a` is read as the level has it (222 on level 10):
+    /// Backgrounds file opened on top (`facePicture`). Called after `.KillAllSprites` (M l. 2246) and before
+    /// `.SetupLevelSprites` (M l. 2526), so the strip sprites are the level's first allocations. `clut` is what
+    /// `*_DAT_1009ff94` holds then
+    /// (`setupLevelClut` on both paths); what the add leaves there is not kept — nothing in the port reads the pointer
+    /// afterwards (`Table.add`'s `clut` shows it). Header `0x271a` is read as the level has it (222 on level 10):
     /// `.BuildSineTable`'s clamp to 100 runs once, before any level loads (ENG §2.1).
-    public static func create(header: LevelHeader, backgrounds: ResourceCollection, clut: Int16, world: SpriteWorld,
+    public static func create(header: LevelHeader, resources: FerazelResources, clut: Int16, world: SpriteWorld,
                               table: Table = Table()) -> Created {
-        var made = Created(clut: clut)
+        var made = Created()
         made.table = table
         made.table.kill(world: world)
         guard header.stripPict != 0 else { return made }
         var c = clut
         made.outcome = made.table.add(pict: header.stripPict, fx: header.stripFactor, y: header.stripBaseY,
-                                      header: header, backgrounds: backgrounds, clut: &c, world: world)
-        made.clutAfter = c
+                                      header: header, resources: resources, clut: &c, world: world)
         return made
     }
 
@@ -274,7 +256,9 @@ extension PxSprites {
 
     /// `.MTHandlePxSprites @ 10033798` (M l. 30928–30948), called at the end of `.FindUpperLeftCorner` (M l. 6235) with
     /// the new scroll point: each of the 32 entries that is non-zero and whose record's `+0x4c` is non-zero gets its
-    /// Handle called — `.HandlePxSprite`, the only Handle a strip record holds.
+    /// Handle called — `.HandlePxSprite`, the only Handle a strip record holds (`.SetupPxSprite` stores it; nothing
+    /// re-stores a strip record's `+0x4c` but the clear). The original calls through `+0x4c`; the port calls
+    /// `handle` directly, so it checks the record still names that Handle — the same on every record the table holds.
     public static func handleAll(world: SpriteWorld, table: Table, h: Int, v: Int) {
         for case let id? in table.sprites {
             guard let s = world.active.record(id: id), !s.handleCleared, s.handler == .pxSprite else { continue }
