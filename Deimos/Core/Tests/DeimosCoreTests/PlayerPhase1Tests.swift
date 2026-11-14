@@ -28,7 +28,7 @@ final class PlayerPhase1Tests: XCTestCase {
 
         p.object.visibility = 55; p.lastBankingTick = 9; p.object.frame = 3; p.appearing = true
         var rng = MSLRandom(seed: 0x469c2)
-        p.levelStart(now: 0, rng: &rng)
+        p.levelStart(now: 0, rng: &rng, sector: 1)
         XCTAssertEqual(p.object.face, FourCC("pl1o"))
         XCTAssertEqual(p.object.frame, 0)
         XCTAssertEqual(p.lastBankingTick, 0)
@@ -76,7 +76,7 @@ final class PlayerPhase1Tests: XCTestCase {
         XCTAssertEqual(p2.lifeState, 1)
         let before = p2
         var rng = MSLRandom(seed: 0x469c2)
-        p2.levelStart(now: 0, rng: &rng)
+        p2.levelStart(now: 0, rng: &rng, sector: 1)
         XCTAssertEqual(rng, MSLRandom(seed: 0x469c2))
         XCTAssertEqual(p2.object, before.object)
         XCTAssertEqual(p2.lifeState, 1)

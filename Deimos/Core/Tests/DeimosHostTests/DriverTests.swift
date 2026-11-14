@@ -111,6 +111,19 @@ final class DriverTests: XCTestCase {
             if clock.seconds > 120 { return XCTFail("no present after the stall") }
         }
         XCTAssertEqual(clock.ticks, stallStamp + 2)
+
+        // Caps Lock: the pass that samples it carries `.pauseWait` (the renderer traps on it); the driver steps it as a
+        // no-op until H2 builds the real wait, so the hold runs on and the session keeps going.
+        let caps = HeldKeys(capsLock: true)
+        var probe = driver.session
+        XCTAssertTrue(probe.pass(keys: caps).ops.contains { if case .pauseWait = $0 { return true } else { return false } })
+        let passesBeforeCaps = driver.passCount
+        while driver.passCount < passesBeforeCaps + 3 {
+            clock.seconds += Self.poll
+            _ = driver.idle(seconds: clock.seconds, keys: caps)
+            if clock.seconds > 180 { return XCTFail("no passes with Caps Lock held") }
+        }
+        XCTAssertTrue(driver.session.running)
     }
 
     func testEscStartsNewSession() throws {

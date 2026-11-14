@@ -175,6 +175,9 @@ public struct DeimosDriver {
             case .screenBlit:
                 renderer.apply(op)
                 out.screenChanged = true
+            case .pauseWait:
+                // H2 builds the real pause wait (FUN_10030bc0 wrapper); until then a no-op so Caps Lock cannot trap
+                break
             default:
                 renderer.apply(op)
             }

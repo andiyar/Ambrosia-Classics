@@ -17,7 +17,7 @@ final class WeaponTests: XCTestCase {
         try s.setupPlayer(1)
         s.playerLevelStart(0)
         s.playerLevelStart(1)
-        s.scoreBar.levelStart(players: s.players)
+        s.scoreBar.levelStart(players: s.players, sector: s.flags.sector)
         return s
     }
 
@@ -36,7 +36,7 @@ final class WeaponTests: XCTestCase {
         if !s.flags.p1Active && s.players[0].lifeState == 4 { s.flags.p1Active = true }
         s.updatePlayer(0, input: input)
         s.updatePlayer(1, input: [])
-        s.scoreBar.update(players: s.players)
+        s.scoreBar.update(players: s.players, sector: s.flags.sector)
         s.flags.gameTime += 1
         let units = s.assets.definitions.units
         let made = s.world.entities.indices
@@ -309,10 +309,17 @@ final class WeaponTests: XCTestCase {
         var d = try world(sector: 1)
         toActive(&d)
         d.flags.sector = 2
-        XCTAssertEqual(d.players[0].sector, 1)
+        // The player keeps no sector of its own: set up at 1 (start weapon aiic), what it previews is the sector
+        // passed — at 1 aiic is the only weapon (no preview), at 2 the cycle previews aibg.
+        XCTAssertEqual(d.players[0].handler.air.id, FourCC("aiic"))
+        XCTAssertEqual(d.players[0].scoreBarIcons(sector: 1)[1], .none)
+        XCTAssertNotEqual(d.players[0].scoreBarIcons(sector: d.flags.sector)[1], .none)
         tick(&d, .select)
         XCTAssertEqual(d.players[0].handler.air.id, FourCC("aibg"))          // at 1 it would stay aiic
         d.players[0].handler.air = d.assets.definitions.weapons[1]
+        var atOne = d.players[0]
+        atOne.resetHandler(levelStart: true, sector: 1)
+        XCTAssertEqual(atOne.handler.air.id, FourCC("aiic"))                 // FUN_1003cd30(1): the sector passed
         d.players[0].resetHandler(levelStart: true, sector: d.flags.sector)
         XCTAssertEqual(d.players[0].handler.air.id, FourCC("aibg"))          // FUN_1003cd30(2)
         XCTAssertEqual(d.players[0].scoreBarIcons(sector: d.flags.sector).map(\.frame), [1, 0, 0])

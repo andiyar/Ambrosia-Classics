@@ -2,8 +2,9 @@ import XCTest
 import HectorResources
 @testable import DeimosCore
 
-/// `DeimosSession` (plan C6): the session set-up + level start (`FUN_100051a0` set-up, `FUN_100064d0`) and one
-/// pass of the loop in the original's order (engine-loop §3, timing-frame §2.1–§2.4).
+/// `DeimosSession` (plan C6, re-pointed by C18a to the Phase-2 session): the session set-up + level start
+/// (`FUN_100051a0` set-up, `FUN_100064d0`) and one pass of the loop in the original's order (engine-loop §3,
+/// timing-frame §2.1–§2.4). The new Phase-2 behaviour (film, pause, audio) is `FilmPlaybackTests`.
 final class DeimosSessionTests: XCTestCase {
     private func assets() throws -> DeimosAssets { try TestAssets.loaded.get() }
 
@@ -49,7 +50,9 @@ final class DeimosSessionTests: XCTestCase {
 
     /// Init ops (returned by pass 0, before its own `clearLayers`): `FUN_1000fbc0` jum2, `FUN_10009f00` back ← 0
     /// (`1000690c`), the score bar's level start with screen blits off (`10006914..10006934`), the first terrain
-    /// blit at the window top 3120 (`10006974`); no present.
+    /// blit at the window top 3120 (`10006974`); no present. The load pass and `no01` draw nothing at the start; the
+    /// start's music (`[play(ammu), stop]`, then the engine level) leads pass 0's music, and pass 0's own end frame
+    /// carries the particles op (`10030cd0`).
     func testInitOps() throws {
         let a = try assets()
         var s = try session()
@@ -68,6 +71,9 @@ final class DeimosSessionTests: XCTestCase {
         XCTAssertEqual(initOps.filter { if case .loadImage = $0 { return true } else { return false } }.count, 2)
         XCTAssertFalse(initOps.contains { if case .present = $0 { return true } else { return false } })
         XCTAssertFalse(initOps.contains { if case .screenBlit = $0 { return true } else { return false } })
+        XCTAssertFalse(initOps.contains { if case .particles = $0 { return true } else { return false } })
+        XCTAssertEqual(Array(out.music.prefix(3)), [.play(FourCC("ammu")!, loop: true), .stop, .level(100)])
+        XCTAssertEqual(out.ops[first...].filter { if case .particles = $0 { return true } else { return false } }.count, 1)
         // The second pass carries no init ops.
         let second = s.pass(keys: HeldKeys())
         XCTAssertEqual(second.ops.first, .clearLayers)
@@ -107,18 +113,23 @@ final class DeimosSessionTests: XCTestCase {
         }
     }
 
-    /// Pass 200: begin (`clearLayers`) → [tick: no ops] → draw world (P1's crosshair, shadow, sprite; then the
-    /// score bar's weapon slots, dirty every tick because handler +0x08 is never cleared after level start —
-    /// loose-ends-combat §6.4 — each restore, slot 0's icon, screen blit; the meters have settled) → end frame:
-    /// layers 0–1, terrain blit, layers 2–5, layers 6–15, limit, present.
+    /// Pass 200: begin (`clearLayers`) → [tick: no ops] → draw world: the entity groups (`FUN_100345f0`: the one
+    /// live `bu01` Buzzsaw — its shadow pass `bsba` (flags 2), then its sprite pass `bsba` glow + tint and `bsbu`),
+    /// no blurs, P1's crosshair, shadow, sprite; then the score bar's weapon slots, dirty every tick because handler
+    /// +0x08 is never cleared after level start — loose-ends-combat §6.4 — each restore, slot 0's icon, screen blit;
+    /// the meters have settled) → end frame: layers 0–1, terrain blit, layers 2–5, particles, layers 6–15, limit,
+    /// present. No sound or music that pass.
     func testSteadyPassOrder() throws {
         var s = try session()
         for _ in 0..<200 { _ = s.pass(keys: HeldKeys()) }
         let out = s.pass(keys: HeldKeys())
         XCTAssertEqual(out.ops.map(Self.kind),
-                       ["clearLayers", "draw", "draw", "draw",
+                       ["clearLayers", "draw", "draw", "draw", "draw", "draw", "draw", "draw",
                         "copy", "draw", "screenBlit", "copy", "screenBlit", "copy", "screenBlit",
-                        "flush0-1", "terrainBlit", "flush2-5", "flush6-15", "limit", "present"])
+                        "flush0-1", "terrainBlit", "flush2-5", "particles", "flush6-15", "limit", "present"])
+        let faces = out.ops.compactMap { if case let .draw(c) = $0 { return c.face.description } else { return nil } }
+        XCTAssertEqual(faces, ["bsba", "bsba", "bsba", "bsbu", "pbta", "pl1o", "pl1o", "wesy"])
+        XCTAssertEqual(s.game.world.groups.map(\.unit.description), ["PERM", "bu01"])
         XCTAssertEqual(out.ops.last, .present(.gameScreen))
         XCTAssertTrue(out.ticked)
         XCTAssertEqual(out.sounds, [])
@@ -126,17 +137,27 @@ final class DeimosSessionTests: XCTestCase {
         XCTAssertEqual(out.requests, [])
     }
 
-    /// The scroll steps once per tick after the draw-side state of the tick: pass t blits from top 3119 − t
-    /// for t ≤ 3118 (scroll tick 3119 ends the level at top 1), then 1 forever.
+    /// The scroll steps once per tick after the draw-side state of the tick: pass t blits from top 3119 − t. With no
+    /// keys P1 loses its three lives (state 3 at passes 443, 760, 1022), leaves the game at 1084 (= G+0x34, the first
+    /// no-player tick, `10006d5c..10006d60`), and the running flag clears at game time 1084 + 111 (`10006d68..
+    /// 10006d98`): pass 1195 is the last (◇ stand-in 2). The scroll never pauses before then (level 1's first
+    /// pausing controller, `01m1`, is created at 1660). Bound: 3125 passes.
     func testTerrainTopPerPass() throws {
         var s = try session()
+        var end: Int?
         for t in 0..<3125 {
             let out = s.pass(keys: HeldKeys())
             let blit = out.ops.last(where: Self.isTerrainBlit)
-            let top: Int32 = t <= 3118 ? 3119 - Int32(t) : 1
-            XCTAssertEqual(blit, Self.terrainBlit(top: top), "pass \(t)")
-            if blit != Self.terrainBlit(top: top) { break }
+            XCTAssertEqual(blit, Self.terrainBlit(top: 3119 - Int32(t)), "pass \(t)")
+            if blit != Self.terrainBlit(top: 3119 - Int32(t)) { break }
+            XCTAssertEqual(s.scroll.speed, 1, "pass \(t)")
+            if out.sessionEnded { end = t; break }
         }
+        guard let last = end else { return XCTFail("bound 3125 passes reached") }
+        XCTAssertEqual(last, 1195)
+        XCTAssertEqual(s.game.flags.gameOverStart, 1084)
+        XCTAssertTrue(s.game.flags.noPlayerAlive)
+        XCTAssertEqual(s.pass(keys: HeldKeys()).ops, [])
     }
 
     /// Esc (0x35, pref 8 off) ends the session: that pass still ticks, draws and presents and carries
@@ -169,8 +190,10 @@ final class DeimosSessionTests: XCTestCase {
         XCTAssertEqual(end.requests, [])
     }
 
-    /// Same seed + key script → identical outputs; another seed → the same outputs (the one Phase-1 draw, the
-    /// P1 integrity tick, has no visible effect).
+    /// Same seed + key script → identical outputs; another seed changes the outputs by the first spawn after the
+    /// start: pass 56, the respawn tick, whose entry spawns `plen` (`10029e38..10029ed8`, P1 and P2) record their
+    /// state sounds with drawn pitches. Before it the seed shows nowhere (the start's one draw, the P1 integrity
+    /// tick, has no visible effect).
     func testDeterministicReplay() throws {
         func script(_ t: Int) -> HeldKeys {
             switch t % 90 {
@@ -187,7 +210,12 @@ final class DeimosSessionTests: XCTestCase {
         let a = try run(seed: 1234), b = try run(seed: 1234), c = try run(seed: 98765)
         XCTAssertEqual(a.count, 400)
         XCTAssertTrue(a == b, "same seed and keys must replay identically")
-        XCTAssertTrue(a == c, "the seed has no visible effect in Phase 1")
+        XCTAssertTrue(a != c, "another seed changes the outputs")
+        XCTAssertEqual(a.indices.first { a[$0] != c[$0] }, 56)
+        let plen = FourCC("plen")!
+        XCTAssertEqual(a[56].sounds.filter { $0.id == plen }.count, 2)
+        XCTAssertNotEqual(a[56].sounds.filter { $0.id == plen }.map(\.pitch),
+                          c[56].sounds.filter { $0.id == plen }.map(\.pitch))
         // The script moved the view: some terrain blit left differs from 32.
         XCTAssertTrue(a.contains { $0.ops.contains { op in
             if case .copy(from: .terrain, to: .back, let src?, _, _) = op { return src.left != 32 }
