@@ -26,10 +26,10 @@ public struct ScriptInstruction: Equatable, Sendable {
     public let mnemonic: String
     /// Set by the segment walk (C9); the decoder reports `.reached`.
     public var flag: Flag
-    /// Branch targets, absolute offsets in the segment (script-vm.md §8 "all branch operands are absolute"): 0x88,
-    /// 0x89's table in order, 0x8C, 0x8D, 0x90 — the jumps that make a listing `>` label. 0x9E's subroutine target
-    /// is a call, not a jump, and is not listed here. Not range-checked: a target past the end is the walk's
-    /// anomaly, not a decode error.
+    /// Jump targets only, absolute offsets in the segment (script-vm.md §8 "all branch operands are absolute"):
+    /// 0x88, 0x89's table in order, 0x8C, 0x8D, 0x90 — the jumps that give the listing its `>` marks. The 0x9E
+    /// local-subroutine target is not exposed here; C9 adds it as its own field. Not range-checked: a target past
+    /// the end is the walk's anomaly, not a decode error.
     public let jumpTargets: [Int]
     public let kind: Kind
 

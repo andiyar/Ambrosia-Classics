@@ -73,6 +73,8 @@ final class InstructionDecoderTests: XCTestCase {
         assertStatement([0x93, 0x00, 0x40], "release", 3)
         assertStatement([0x9B, 0x06, 0x41, 0x01, 0x40], "sysnew", 5)
         assertStatement([0x9C, 0x0F, 0x00, 0x41, 0x02, 0x40, 0x30, 0x40], "call", 8)   // seg + constant int
+        assertStatement([0x9C, 0x0F, 0x00, 0x43, 0x00, 0x00, 0x00, 0x02, 0x40, 0x30, 0x40], "call", 11)  // tag-0 0x43
+        assertStatement([0x9C, 0x0F, 0x00, 0x43, 0x10, 0x00, 0x00, 0x02, 0x40, 0x30, 0x40], "callx", 11) // tag-1 0x43
         assertStatement([0x9C, 0x0F, 0x00, 0x01, 0x40, 0x30, 0x40], "callx", 7)        // seg + computed int
         assertStatement([0x9C, 0xFF, 0xFF, 0x08, 0x40, 0x30, 0x40], "callx", 7)        // FFFF: target + args
         assertStatement([0x9D, 0x0C, 0x30, 0x40], "send", 4)
@@ -219,20 +221,48 @@ final class InstructionDecoderTests: XCTestCase {
         assertThrows([0x00], at: 1, .truncated(offset: 1))
         assertThrows([0x00], at: -1, .truncated(offset: -1))
 
-        // 0x1802 hostile sweep: at every offset the decoder returns or throws; every prefix that cuts a decoded
-        // statement throws (the head's statements @002A–@028E at every cut, every other offset at its longest cut).
+        // 0x1802 hostile sweep: at every offset the decoder returns or throws a ScriptDecodeError. For every offset
+        // where a statement decodes, EVERY prefix length from offset + length down to offset is tried (one copy per
+        // offset, shortened with popLast): the uncut prefix decodes to the same length (a text throws there too —
+        // its terminator byte is cut), every shorter one throws a ScriptDecodeError. Prefixes shorter than `offset`
+        // all take the same out-of-range path as the cut at `offset` itself (truncated(offset)). An offset inside a
+        // text (offset − 1 decodes as a text with the same end) walks the same scan as that text's start, which
+        // gets every cut; it is cut at its end, one byte short and at `offset` only (keeps the sweep cubic-free).
         let seg = try segment0x1802()
-        let head: Set<Int> = [0x002A, 0x002D, 0x0044, 0x004E, 0x0055, 0x005C, 0x0060, 0x0063, 0x028E]
+        var decoded = 0, cutsTried = 0
+        var failures: [String] = []
         for offset in 0..<seg.count {
-            guard let i = try? InstructionDecoder.statement(in: seg, at: offset) else { continue }
-            let cuts = head.contains(offset) ? Array(0..<(offset + i.length)) : [offset + i.length - 1]
-            for cut in cuts {
-                XCTAssertThrowsError(try InstructionDecoder.statement(in: Array(seg[0..<cut]), at: offset),
-                                     "@\(String(offset, radix: 16)) cut \(cut)") { e in
-                    XCTAssertTrue(e is ScriptDecodeError, "\(e)")
-                }
-            }
             _ = try? InstructionDecoder.expressionEnd(in: seg, at: offset)
+            guard let i = try? InstructionDecoder.statement(in: seg, at: offset) else { continue }
+            decoded += 1
+            var prefix = Array(seg[0..<(offset + i.length)])
+            let before = offset > 0 ? try? InstructionDecoder.statement(in: seg, at: offset - 1) : nil
+            let insideText = i.mnemonic == "text" && before?.mnemonic == "text"
+                && before.map { $0.offset + $0.length } == offset + i.length
+            while prefix.count >= offset {
+                if insideText && prefix.count < offset + i.length - 1 && prefix.count > offset {
+                    prefix.removeLast(prefix.count - offset)
+                    continue
+                }
+                cutsTried += 1
+                let whole = prefix.count == offset + i.length && i.mnemonic != "text"
+                do {
+                    let j = try InstructionDecoder.statement(in: prefix, at: offset)
+                    if !whole || j.length != i.length { failures.append("@\(offset) cut \(prefix.count) decoded") }
+                } catch let e as ScriptDecodeError {
+                    if whole { failures.append("@\(offset) cut \(prefix.count) threw \(e)") }
+                    if prefix.count == offset && e != .truncated(offset: offset) {
+                        failures.append("@\(offset) cut \(prefix.count): \(e)")
+                    }
+                } catch {
+                    failures.append("@\(offset) cut \(prefix.count): \(error)")
+                }
+                if prefix.isEmpty { break }
+                prefix.removeLast()
+            }
         }
+        XCTAssertEqual(failures, [], "\(failures.prefix(10))")
+        XCTAssertGreaterThan(decoded, 0)
+        XCTAssertGreaterThan(cutsTried, decoded)
     }
 }

@@ -1,8 +1,11 @@
 import Foundation
 
 /// Malformed script bytecode. Every read is bounds-checked; nothing traps (plan Invariant 4).
-/// `offset` is where the refused opcode sits (for a nested expression, the innermost opcode whose operands could
-/// not be read; for a statement-level operand, the statement).
+/// What `offset` reports: `invalidOpcode` / `nullBuiltin` — the refused byte; `textRunsPastEnd` — the text
+/// statement, 0x8F, 0x90 or 0x44 that started the string; `truncated` — for a cut operand, the opcode that owns
+/// it (the statement for statement-level operands, the expression opcode for 0x41–0x49, 0x60–0x64, 0x45 and the
+/// call forms' fixed bytes); for a missing next opcode — an expression's 0x40 or the statement byte itself — the
+/// position where that byte should be, i.e. the end of the bytes (or the out-of-range `offset` asked for).
 public enum ScriptDecodeError: Error, Equatable, Sendable {
     /// An opcode the tables mark invalid: statements 0x80, 0x94–0x9A; expressions 0x65–0x9A (script-vm.md §4,
     /// §8; the original raises its invalid-opcode error, `FUN_100bdef4`).
