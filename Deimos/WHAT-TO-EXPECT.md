@@ -17,8 +17,16 @@ The question for you is one line: **does it play like Deimos?**
 - **It is not** the rest of the game yet. When level 1 ends — by finishing it, by game over, or by Esc — the game
   simply starts level 1 again. No level 2 onward and no two-player game (Phase 3); no menus, high scores or saved
   settings (Phase 4); no Windows build (Phase 5).
-- **Leave it alone and it dies.** With no keys pressed the ship sits in the line of fire: all three lives are gone in
-  about 17 seconds and the game starts again. That is the original's behaviour, not a bug.
+- **Leave it alone and it dies.** With no keys pressed the ship sits in the line of fire. The game runs 30 frames a
+  second, and with no input:
+
+  | What happens | About |
+  |---|---|
+  | the last life is lost | 34 seconds in |
+  | the ship is out of the game | 36 seconds in |
+  | the game starts again | 40 seconds in |
+
+  That is the original's behaviour, not a bug.
 
 ### Stand-ins (marked ◇)
 A stand-in is something this build does in place of a part of the game that isn't built yet. Each one is marked ◇
@@ -41,16 +49,23 @@ here and on the card, and each goes away in the phase named.
 
 ## Opening it
 - Double-click `Deimos Rising.app` on your Desktop.
-- If macOS says it can't check the app: right-click it, choose Open, then Open again.
-- If the window opens but stays black, click it once — the game pauses whenever it isn't the front app.
-- **To watch a demo film** (◇ 5), type this in Terminal:
+- It was built on this Mac, so it normally opens with a plain double-click. If macOS ever refuses to open it, open
+  System Settings → Privacy & Security, scroll down, and click Open Anyway.
+- If the window opens but stays black, click it once — the game stops whenever it isn't the front app.
+- **In the background.** When the game isn't the front app, or its window is minimised, it stops: its music pauses,
+  and any effect already sounding plays to its end. Come back and both carry on. The original did the same.
+- **To watch a demo film** (◇ 5): first quit the game with ⌘Q if it is running — if it is already open, the command
+  below does nothing. Then type this in Terminal:
 
   ```sh
-  open -a "Deimos Rising" --args -film de01
+  open ~/Desktop/"Deimos Rising.app" --args -film de01
   ```
 
-  `de01` is level 1 and is the one this gate is about. `de02`, `de03` and `de04` play later levels (level files 06,
-  02 and 08); they run, but only level 1 is being judged now.
+  Naming the copy on your Desktop makes sure this build is the one that opens, not another copy of the game on your
+  Mac. If the film name is mistyped, the game quits straight away with no message.
+
+  `de01` is level 1 and is the one this gate is about. `de02`, `de03` and `de04` play three later sectors — sector 2
+  Cydonia Plateau, sector 3 Darius and sector 4 Neo Kowloon; they run, but only level 1 is being judged now.
   - A demo ends when it runs out, on Esc, on level complete or on game over. **Other keys do not end it** — as in the
     original.
   - When a demo ends, or you press Esc during it, **the same demo starts again** (◇ — the original went back to its
@@ -61,8 +76,8 @@ here and on the card, and each goes away in the phase named.
 | Key | What it does |
 |---|---|
 | ↑ ← → ↓ | fly the ship (it speeds up and drifts to a stop) and bank |
-| ⌘ | fire the air weapon (Ion Cannon): tap, or hold to charge |
-| ⌥ | fire the ground weapon (Plasma Bomb) |
+| left ⌘ | fire the air weapon (Ion Cannon): tap, or hold to charge |
+| left ⌥ | fire the ground weapon (Plasma Bomb) |
 | Space | select the next air weapon (nothing to select in sector 1) |
 | Caps Lock | pause while it is down |
 | F6 | interlacing on and off, with a message |
@@ -72,28 +87,35 @@ here and on the card, and each goes away in the phase named.
 | ⌃⌘F | full screen on and off |
 | ⌘Q | quit |
 
-Typed letters reach the console as the original's classic Mac character codes, so console commands are read exactly
+Only the **left** ⌘ and ⌥ keys fire. The right-hand ⌘ and ⌥ are different keys to the game and do nothing.
+
+**Careful:** holding ⌘ to fire and then pressing Space opens Spotlight, which sends the game to the background (it
+stops until you click back on it). Space has nothing to select in sector 1 anyway, so there is no need to press it.
+
+Letters you type reach the console exactly as the original Mac handed them over, so console commands are read just
 as the original read them.
 
 ## Things that differ from the original on purpose
 1. **Whole frames, no tearing.** The original could tear. It runs in a window (or full screen) instead of switching
    your screen to 640×480.
-2. **No InputSprocket.** Keys come straight from the original's own key table: Player 1 is ↑ ← → ↓, then ⌘ ⌥ Space.
+2. **No InputSprocket.** Keys come straight from the original's own key table: Player 1 is ↑ ← → ↓, then left ⌘,
+   left ⌥ and Space.
 3. **It's the registered game.** The original's copy-protection checks are not built.
 4. **No system volume changes.** The game never touches your Mac's volume; it plays at full level.
 5. **Files go in their own places.** The settings file (Phase 4) will live in the game's own folder under
    Application Support, and the "Last Film" recording in your own user folder for the game, not inside the app.
    A missing game file shows an alert only in a developer build.
-6. **Sound freezes in the background.** When the game isn't the front app, or the window is minimised, all sound —
-   effects and music — stops until you come back. The original stopped only the music there and let effects play on.
-   **Say if you want effects to play on.**
-7. **A few rare cases where the original read leftover memory.** In a handful of corner cases (an enemy told to flee
-   when no player is alive, a refused spawn, and a couple of others like them) the original read whatever
-   happened to be in memory. The replica uses a fixed value (zero or −1) there. You should never see the difference.
-8. **Timing of a frame or so.** A sound may start up to one frame early (cues are sent at the start of a frame, not
+6. **A few rare cases where the original read leftover memory.** In a handful of corner cases (an enemy told to flee
+   when no player is alive, a new enemy the game could not create, and a couple of others like them) the original
+   read whatever happened to be in memory. The replica uses a fixed value (zero or −1) there. You should never see
+   the difference.
+7. **Timing of a frame or so.** A sound may start up to one frame early (cues are sent at the start of a frame, not
    mid-way), and after a Caps Lock pause the music picks up one frame after the game does.
-9. **Speed** stays as you chose at gate 1: 30 frames a second, Mac OS X's tick. The picture scales by whole numbers
+8. **Speed** stays as you chose at gate 1: 30 frames a second, Mac OS X's tick. The picture scales by whole numbers
    with black around it.
+9. **"Is that sound still playing?" is always "no".** The original has a rule that would let a game decision depend
+   on whether a particular sound is still playing. The replica always treats that sound as not playing. No enemy or
+   object in the shipped game uses that rule, so nothing you can see or hear changes.
 
 ## The machine replay — what was proven before you open it
 A demo film is a recording of the original's key presses plus the score it reached. This build's game rules were fed
@@ -101,16 +123,16 @@ each shipped film, and the score they reached was compared with the score the or
 touches the score were even slightly off — an enemy appearing a row late, a hit missed, the random numbers drawn in
 a different order — the scores would drift apart.
 
-All four films end on exactly the original's score:
+All four films end on exactly the original's score, and the automatic tests check all four every time they run:
 
 | Demo | Recorded score | This build |
 |---|---|---|
 | de01 (level 1, Mariner Valley) | 25,050 | 25,050 |
-| de02 | 116,180 | 116,180 |
-| de03 | 57,520 | 57,520 |
-| de04 | 24,670 | 24,670 |
+| de02 (sector 2, Cydonia Plateau) | 116,180 | 116,180 |
+| de03 (sector 3, Darius) | 57,520 | 57,520 |
+| de04 (sector 4, Neo Kowloon) | 24,670 | 24,670 |
 
-The replay tool's own line for de01:
+For the record, the replay tool's own line for de01:
 
 ```
 de01 le07 seed 0x469c2: score 25050 at read 4809 (end: filmEnd) PASS
@@ -175,5 +197,4 @@ The code didn't fully settle these. If something looks or sounds off, it is prob
 
 ## What to tell us
 Plain yes or no to "does it play like Deimos?" — then anything that looked or sounded wrong, by card number if you
-can. Two short answers are asked for by name: "flip pitch" (card line 8) if impacts should be deep and slow, and
-whether effects should keep playing when the game is in the background (difference 6).
+can. One short answer is asked for by name: "flip pitch" (card line 8) if impacts should be deep and slow.
