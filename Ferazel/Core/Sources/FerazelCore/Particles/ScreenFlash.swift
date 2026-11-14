@@ -8,7 +8,8 @@ import Foundation
 ///
 /// Writers store 3 into the count: `.GenerateRain`'s thunder (M l. 8458), the Smiting cast in `.HandleKeys` (M l.
 /// 47593; IU), `.KillPlayerShot`'s seed explosion (M l. 51149; `PlayerShotHits.kill`) and the bosses' deaths (M l.
-/// 73488, 74997, 75372, 75525, 76159, 77475; // later: Phase 6). No routine resets either
+/// 73488, 74997, 75372, 75525, 76159, 77475; the Warrior's 73488 built in 6A-W2, `Warrior.kill`; the others // later:
+/// Phase 6). No routine resets either
 /// global (they are data-section only), so they run on across levels, deaths, the map and new games: the session's
 /// `SpriteWorld` holds them and `LevelCarry.flash` hands them on (EF review fix).
 public struct ScreenFlash: Equatable, Sendable {

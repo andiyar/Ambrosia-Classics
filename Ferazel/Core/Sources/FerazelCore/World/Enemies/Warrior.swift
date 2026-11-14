@@ -369,8 +369,8 @@ public enum Warrior {
     /// is `+0x4c ==` (`BackgroundSprite.runs`):
     /// - a player shot (`PTR_PTR_100a04e8`) with `+0xa6 == 0` while HP `+0xa4` > 0 → `.KillPlayerShot(o, 0, 1)` (no hit
     ///   sound, the impact effect), then `.STPlay3DSound(303, 1, 0x100, o +0xe)` — the shot's centre as the kill's
-    ///   Cleanup left it. Immune. The `.KillPlayerShot` r29 is the caller's (`.HitWarriorSprite` saves r30 / r31 only,
-    ///   raw `1008854c..10088568`): nil — no light changed [LOW], as `.HitDilloSprite`. A shot with `+0xa6 ≠ 0`, or a
+    ///   Cleanup left it. Immune. With effect 1 `.KillPlayerShot`'s stale-slot path (the caller's r29 + 0x9a, taken only
+    ///   when the effect is off, `PlayerShotHits.kill`) is never reached: `staleSlot` nil. A shot with `+0xa6 ≠ 0`, or a
     ///   Warrior at HP ≤ 0, passes through. The Statue spell (type 1) is an ordinary shot (no `.TurnIntoStatue`);
     /// - else a Statue (`PTR_PTR_100a01f8`) or a Box (`PTR_PTR_100a0484`): `.PlatformBounce(s, o, s's hot-rect centre
     ///   offset (v = top + (bottom − top) >> 1), 0, s +0x34, 0)` == 2 and (o `+0x2c` > 0 or s `+0xce` ≠ 0), both read

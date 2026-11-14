@@ -894,6 +894,34 @@ final class WarriorTests: XCTestCase {
         XCTAssertEqual([try slot(s.world, id).hp], [2000])
         XCTAssertEqual(s.world.player.cues, [])
         XCTAssertEqual(s.world.rng.seed, seed1)
+        // The session's own collide pass (`FerazelSession.step` → `.MTCollideSprites` → its `.warrior` row) hands the
+        // session's face bounds to the Hit and through it to `.KillPlayerShot`'s clip test: with the shell's bounds the
+        // kill spawns its impact at (x − 8, y − 0xc); with bounds ending at the clip's left edge (0), no impact.
+        for custom in [false, true] {
+            let tag = custom ? "bounds left of the clip" : "the session's bounds"
+            let left: (FaceRef) -> IdleSprites.Rect = { _ in IdleSprites.Rect(top: 0, left: -0x10, bottom: 1, right: 0) }
+            let fs = try FerazelSession(resources: try resources(), prefs: FerazelPrefs(), level: 5, seed: 1,
+                                        faceBounds: custom ? left : nil, start: (800, 250))
+            let fid = try warriorID(fs)
+            _ = fs.step(keys: KeyState())
+            let hr = try slot(fs.world, fid).hotRectWorld
+            let c = SpriteSlot.Point(x: (hr.left + hr.right) >> 1, y: (hr.top + hr.bottom) >> 1)
+            let sid = try XCTUnwrap(fs.world.newSprite(type: 0, x: c.x - 10, y: c.y - 10, layer: 0xb,
+                                                       handler: .playerShot) { t in
+                t.x = c.x - 10
+                t.y = c.y - 10
+                t.hotRect = IdleSprites.Rect(top: 0, left: 0, bottom: 20, right: 20)
+                t.centre = c
+                t.hp = 150
+            })
+            let fx0 = Set(fs.world.active.sprites.filter { $0.handler == .effect }.map(\.id))
+            _ = fs.step(keys: KeyState())
+            let shot = try slot(fs.world, sid)
+            XCTAssertTrue(shot.dead, "\(tag): absorbed in the collide pass")
+            XCTAssertEqual(fs.world.player.cues.map(\.snd), [303], tag)
+            let impact = fs.world.active.sprites.filter { $0.handler == .effect && !fx0.contains($0.id) && $0.type == 0 }
+            XCTAssertEqual(impact.map { [$0.x, $0.y] }, custom ? [] : [[shot.x - 8, shot.y - 0xc]], tag)
+        }
     }
 
     // MARK: - 11
@@ -1008,6 +1036,75 @@ final class WarriorTests: XCTestCase {
             XCTAssertEqual(try slot(s.world, id).hp, 2000, "dx \(dx) \(handler)")
             XCTAssertFalse(try slot(s.world, crate).dead)
             XCTAssertEqual(s.world.rng.seed, seed0)
+        }
+        // `.PlatformBounce` 1 (he lands on a crate below him, falling): no crush — 2 only — and the landing is the
+        // bounce's own (bounce flag 0: `+0xce = 3`, `+0xdc = solid`) — so the `+0xce` term must not be read on a 1.
+        do {
+            let s = try session()
+            let id = try warriorID(s)
+            s.world.active.update(id: id) { $0.vx = 0; $0.vy = 0x300; $0.groundKind = 0 }
+            let m0 = try slot(s.world, id)
+            let crate = try XCTUnwrap(Warrior.newCrate(s.world, x: m0.x + 0x22, y: m0.y + 0x3a - 2))
+            s.world.active.update(id: crate) { $0.vy = 0; $0.vx = 0 }
+            let seed0 = s.world.rng.seed
+            s.world.player.cues = []
+            FerazelSession.hitCallback(s.world, id, crate)
+            let m = try slot(s.world, id)
+            XCTAssertEqual([Int(m.hp), Int(m.groundKind), m.ridden ?? -1], [2000, 3, crate], "landed on the crate: no crush")
+            XCTAssertFalse(try slot(s.world, crate).dead)
+            XCTAssertEqual(s.world.player.cues, [])
+            XCTAssertEqual(s.world.rng.seed, seed0)
+        }
+        // The bounce's centre is his hot-rect centre offset (0x32, 0x28): it picks the side at the edges — a crate 20 px
+        // into him from above is still "from below" (crushed); one at dx −11 / dy +24 or dy +29 is a side contact.
+        for (dx, dy, crush) in [(0, 20, true), (-11, 24, false), (0, 29, false)] {
+            let s = try session()
+            let id = try warriorID(s)
+            s.world.active.update(id: id) { $0.vx = 0; $0.vy = 0; $0.groundKind = 0 }
+            let m0 = try slot(s.world, id)
+            let crate = try XCTUnwrap(Warrior.newCrate(s.world, x: m0.x + 0x22 + dx, y: m0.y - 2 + dy))
+            s.world.active.update(id: crate) { $0.vy = 0x300 }
+            FerazelSession.hitCallback(s.world, id, crate)
+            XCTAssertEqual(try slot(s.world, id).hp, crush ? 1800 : 2000, "centre: dx \(dx) dy \(dy)")
+            XCTAssertEqual(try slot(s.world, crate).dead, crush, "centre: dx \(dx) dy \(dy)")
+        }
+        // A real Statue (BOS §1.1): a Walker 0x6a4 petrified by `.TurnIntoStatue`, falling onto his head — 200 as a crate,
+        // but `.KillBox` makes no draw of its own (snd 424 and the particles are the switch blocks' and the rocks 0x433 /
+        // 0x434 only, M l. 61483–61520): the Hit's R(10000) 701, R(10000), R(2) alone.
+        do {
+            let s = try session()
+            let w = s.world
+            let id = try warriorID(s)
+            w.active.update(id: id) { $0.vx = 0; $0.vy = 0; $0.groundKind = 0 }
+            let m0 = try slot(w, id)
+            var lights = LightTable()
+            let st = try XCTUnwrap(BoxSprite.generate(w, type: 0x6a4, x: m0.x, y: m0.y - 0x60, layer: 0xb,
+                                                      lights: &lights, effects: 1))
+            StatueSprite.turnIntoStatue(w, id: st)
+            let r = try slot(w, st).hotRect
+            w.active.update(id: st) { t in                                    // centred on him, 3 px into his top
+                t.x = m0.x + 0x32 - ((r.left + r.right) >> 1)
+                t.y = m0.y + 0x17 + 3 - r.bottom
+                t.vy = 0x300
+                t.vx = 0
+            }
+            XCTAssertEqual([try slot(w, st).handler], [.statue])
+            var e = w.rng
+            let pool0 = w.particles.counters.count
+            w.player.cues = []
+            FerazelSession.hitCallback(w, id, st)
+            let m = try slot(w, id)
+            XCTAssertEqual(m.hp, 1800, "a Statue: 200")
+            XCTAssertTrue(try slot(w, st).dead, "a Statue: `.KillBox(solid)`")
+            XCTAssertEqual(w.particles.counters.count, pool0, "a Statue: no particles")
+            let r701 = Int32(e.next(10000)) + 42000
+            let rMon = Int32(e.next(10000)) + 42000
+            let mon: Int16 = e.next(2) == 0 ? 477 : 478
+            XCTAssertEqual(w.rng.seed, e.seed, "a Statue: the Hit's three draws alone")
+            XCTAssertEqual(w.player.cues, [
+                PlayerCue(call: .threeDPitched, snd: 701, priority: 1, volume: 0x100, position: m.centre, rate: r701),
+                PlayerCue(call: .threeDPitched, snd: mon, priority: 1, volume: 0x100, position: m.centre, rate: rMon),
+            ], "a Statue: no snd 424")
         }
     }
 
@@ -1143,6 +1240,12 @@ final class WarriorTests: XCTestCase {
         XCTAssertEqual(p.world.player.cues, [])
         XCTAssertNil(p.world.shakeStore)
         XCTAssertEqual([Int(p.world.flash.count), Int(p.world.arena.noBossAlive)], [0, 0])
+        // Any non-zero boss flag runs the tail (`+0x170 ≠ 0`, not `== 1`).
+        let q = try session()
+        let qid = try standing(q)
+        q.world.active.update(id: qid) { $0.classWord170 = 2 }
+        EnemyCommon.killProc(q.world, id: qid)
+        XCTAssertEqual(q.world.arena.noBossAlive, 1, "p4 2: the tail")
 
         // Through the level runner: the real Kill opens the gate — 2940 (record 4, p1 −1) rises from the next gate
         // Handle — and the loop rule (M l. 5266–5274) fades to track 30; with the music preference off (prefs+0xc = 0)
@@ -1173,14 +1276,19 @@ final class WarriorTests: XCTestCase {
             XCTAssertEqual(gate.y, 265, "shut")
             let wid = try XCTUnwrap(rs.world.active.sprites.first { $0.handler == .warrior }?.id)
             XCTAssertFalse(plays.contains(30), "music \(music): no track 30 while he stands")
+            XCTAssertTrue(run.music.asyncDone, "music \(music): the loop rule starts no fade while he stands")
             EnemyCommon.killProc(rs.world, id: wid)
             XCTAssertEqual(rs.world.arena.noBossAlive, 1)
-            try tick(240)
+            try tick(1)
+            XCTAssertEqual(try XCTUnwrap(rs.world.active.sprites.first { $0.recordIndex == 4 }).y, 263,
+                           "music \(music): the next gate Handle lifts it 2 px")
+            try tick(239)
             let g = try XCTUnwrap(rs.world.active.sprites.first { $0.recordIndex == 4 })
             XCTAssertLessThan(g.y, 265, "music \(music): the gate rose")
             if music == 1 {
                 XCTAssertTrue(plays.contains(30), "the loop rule's track 30")
                 XCTAssertEqual(run.music.currentTrack, 30)
+                XCTAssertEqual([run.music.asyncDirection, run.music.asyncFrames], [1, 0x3c], "track 30 fades in over 60")
             } else {
                 XCTAssertFalse(plays.contains(30), "music off: never track 30")
                 XCTAssertNotEqual(run.music.currentTrack, 30)

@@ -111,6 +111,47 @@ final class BossKillLevelRunTests: XCTestCase {
         XCTAssertEqual([b.killCount != 0, b.killedForGood], [true, true])
         XCTAssertEqual(w.enemies.live, live0 - 1, "counted once")
         XCTAssertEqual(w.arena.noBossAlive, 1, "the boss-kill tail ran")
+
+        // One R(100) a burn row at effects 1 (M l. 38765–38838; BOS §2.10). In the run every other sprite's draws fall
+        // between the burn's, so the burn is replayed on the run's own world with the store's 0x71e[5]: rows T + 1 … B
+        // through `Burn.handle`, each row's draws counted on a copy of the stream — `.BurnFaceRow` at spacing 2 (R4, R12,
+        // R100, R150, R50, R25 a spawn; R5 == 1 → R200, R100, R250, R25), then the row's one R(100), > 50 → the row again
+        // at spacing 1. (Row T + 1 is entered from `+0x1a2` = T: no row-1 sound.)
+        XCTAssertEqual(w.voices.prefs.effects, 1)
+        let deathFace = FaceRef(pict: Warrior.deathSet, index: 5, set: .encoded)
+        let face = try XCTUnwrap(w.particleFaces.sprite(deathFace))
+        func pixels(_ row: Int16) -> Int {                      // the literal pixels of token row `row`
+            var rowCount = 0, p = 0, n = 0
+            while let t = face.word(p) {
+                p += 4
+                let op = t >> 24, k = Int(t & 0xff_ffff)
+                if op == 1 { rowCount += 1 }
+                else if op == 2 {
+                    if rowCount == Int(row) { n += k }
+                    p += k + (k & 3 == 0 ? 0 : 4 - (k & 3))
+                } else if op != 3 { break }
+            }
+            return n
+        }
+        var s = b
+        s.face = deathFace
+        s.burnRow = o.top
+        s.burnSpeed = 0
+        for row in (o.top + 1)...o.bottom {
+            var e = w.rng
+            func spawn(_ count: Int) {
+                for _ in 0..<count {
+                    for n: Int16 in [4, 0xc, 100, 0x96, 0x32, 0x19] { _ = e.next(n) }
+                    if e.next(5) == 1 { for n: Int16 in [200, 100, 0xfa, 0x19] { _ = e.next(n) } }
+                }
+            }
+            let n = pixels(row)
+            spawn((n + 1) / 2)
+            if 0x32 < e.next(100) { spawn(n) }
+            Burn.handle(w, &s)
+            XCTAssertEqual(s.burnRow, row)
+            XCTAssertEqual(w.rng.seed, e.seed, "row \(row) (\(n) px): the row's spawns, then one R(100)")
+        }
     }
 
     func testWarriorScriptedKill() throws {
@@ -125,17 +166,22 @@ final class BossKillLevelRunTests: XCTestCase {
         let services = Services()
         let run = try open(services)
         let k = FerazelPrefs().keys
-        var script = FightScript(left: Int(k[0]), right: Int(k[1]), jump: Int(k[5]))
+        var script = WarriorFightScript(left: Int(k[0]), right: Int(k[1]), jump: Int(k[5]))
         var t: UInt32 = 0
         var keys: [Int] = [], decidedFor = -1
         var d = Death()
         var hps: [Int16] = [2000], crushFrames: [Int] = []
+        var phases: [String] = []                                       // (frame, phase) at each change, for a failure
         let cap = 20_000
-        while d.kill == nil && run.iterations < cap && !run.died && run.end == nil {
+        func alive() -> Bool { (run.session?.globals.health ?? 1) >= 1 }
+        // Stops at the Kill, or as soon as Ferazel's health is gone (not 50 death-effect steps later), or at the cap.
+        while d.kill == nil && run.iterations < cap && alive() && !run.died && run.end == nil {
             // The keys are decided once per `.GameLoop` iteration (the loop runs every other tick) and held until it runs.
             if decidedFor != run.iterations, let s = run.session {
                 decidedFor = run.iterations
+                let before = script.phase
                 keys = script.keys(s.world)
+                if phases.isEmpty || script.phase != before { phases.append("\(run.iterations) \(script.phase)") }
             }
             let before = run.iterations
             _ = try run.tick(now: t, input: FrontInput(keys: KeyState(pressed: keys)))
@@ -146,11 +192,13 @@ final class BossKillLevelRunTests: XCTestCase {
             try d.watch(run, services)
         }
         let o = try opaque(services)
-        XCTAssertFalse(run.died, "Ferazel lives")
-        let hp0 = try XCTUnwrap(d.entry, "HP 0 within \(cap) frames"), kill = try XCTUnwrap(d.kill)
+        let trail = "script phases (frame phase): " + phases.joined(separator: ", ")
+        XCTAssertTrue(alive() && !run.died, "Ferazel lives (frame \(run.iterations)); \(trail)")
+        let hp0 = try XCTUnwrap(d.entry, "HP 0 within \(cap) frames; \(trail)"), kill = try XCTUnwrap(d.kill)
         XCTAssertEqual(hps, stride(from: 2000, through: 0, by: -200).map { Int16($0) }, "ten crushes of 200")
-        XCTAssertEqual(crushFrames, [350, 842, 1962, 2391, 2546, 2759, 3834, 4164, 4584, 4965], "the crush frames")
-        XCTAssertEqual(hp0, crushFrames.last! + 1, "the death entry one frame after the tenth crush")
+        XCTAssertEqual(crushFrames, [350, 842, 1962, 2391, 2546, 2759, 3834, 4164, 4584, 4965],
+                       "the crush frames; \(trail)")
+        XCTAssertEqual(hp0, try XCTUnwrap(crushFrames.last) + 1, "the death entry one frame after the tenth crush")
         XCTAssertEqual(kill - hp0, 45 + Int(o.bottom - o.top), "Kill − HP0 = 45 + (B − T)")
         XCTAssertEqual(hp0, Self.pinnedHP0, "the HP-0 frame, measured once (D46.4)")
         XCTAssertEqual(kill, Self.pinnedKill, "the Kill frame, measured once (D46.4)")
@@ -162,8 +210,8 @@ final class BossKillLevelRunTests: XCTestCase {
     static let pinnedHP0 = 4966, pinnedKill = 5051
 }
 
-/// The scripted fight's keys, decided each frame from what a player sees (positions only).
-struct FightScript {
+/// The Warrior's scripted fight: the keys, decided each frame from what a player sees (positions only).
+struct WarriorFightScript {
     let left: Int, right: Int, jump: Int
     var phase = Phase.approach
     var airborne = 0
@@ -186,35 +234,36 @@ struct FightScript {
             return []
         case .waitPlatform:
             // Phase 2: wait on the step until the blinking platform at x 1274 has just come back (solid, fading in).
+            // (Its face counter `phase` 11…0x12 is the fade-in a player watches: the platform drawn again, solid.)
             guard let pl = w.active.sprites.first(where: { $0.type == 1403 && $0.x == 1274 }),
                   pl.phase < 0x13, 10 < pl.phase else { return [] }
             phase = .toPlatform
             airborne = 0
-            return keys(w)
+            fallthrough                                                 // jump this same frame (one `wdx` a frame)
         case .toPlatform:
             // Phase 3: a held jump (14 frames) steered over the platform's middle (x 1274 + 0x28); landed → next.
             var k: [Int] = airborne < 14 ? [jump] : []
             let mid = 1274 + 0x28
             if pc > mid + 4 { k.append(left) } else if pc < mid - 4 { k.append(right) }
             airborne += 1
-            if 4 < airborne && p.groundKind != 0 { phase = .toLedge; airborne = 0; return [] }
+            if 4 < airborne && p.groundKind != 0 { phase = .toLedge; airborne = 0; return [] }   // standing on it
             return k
         case .toLedge:
             // Phase 4: a held jump to the right-hand ledge (x 1184…1247), steered to x 1194…1200 — right of its crate.
             var k: [Int] = airborne < 14 ? [jump] : []
             if 1200 < p.x { k.append(left) } else if p.x < 1194 { k.append(right) }
             airborne += 1
-            if 4 < airborne && p.groundKind != 0 { phase = .retreat; target = pc < 1217 ? 1132 : 1198 }
+            if 4 < airborne && p.groundKind != 0 { phase = .retreat; target = pc < 1217 ? 1132 : 1198 }  // on it
             return k
         default:
             break
         }
         // On the ledge. The crate of this ledge (the respawn falls at x 1201, its hot rect 1205…1229).
         let crate = w.active.sprites.first { $0.type == 0x433 && !$0.dead && (1100...1300).contains($0.x) && 100 < $0.y && $0.y < 160 }
-        let resting = crate.map { $0.vy == 0 && $0.vx == 0 && 146 <= $0.y } ?? false
+        let resting = crate.map { $0.vy == 0 && $0.vx == 0 && 146 <= $0.y } ?? false   // still, down on the ledge
         if phase == .fired {
             // Phase 7: push until the crate moves, then step aside.
-            if let c = crate, c.vx == 0, c.vy == 0 { return pc > c.x + 16 ? [left] : [right] }
+            if let c = crate, c.vx == 0, c.vy == 0 { return pc > c.x + 16 ? [left] : [right] }   // it has not moved
             phase = .retreat
             target = pc < 1217 ? 1132 : 1198
         }
@@ -241,7 +290,7 @@ struct FightScript {
             phase = .fired
             return fromRight ? [left] : [right]
         }
-        guard let b = him, b.subtype != 4 else { return [] }
+        guard let b = him, b.subtype != 4 else { return [] }               // state 4: he is dying (the death face)
         let column = fromRight ? 1166 : 1261
         let x16 = b.x + wdx * 16
         if x16 + 0x2a + 4 < column - 12 && column + 12 < x16 + 0x89 - 4 {

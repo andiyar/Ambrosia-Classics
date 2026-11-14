@@ -4,7 +4,7 @@ import Foundation
 /// `.PlayerConstraints`, `.FindUpperLeftCorner`, the gate 2940's p1 −1 arm and `.GameLoop`'s boss-music rule share.
 /// - `noBossAlive` — `*_DAT_1009fed0` (u8): `.SetupLevelSprites` sets it 1 before spawning (M l. 2019); a boss Setup
 ///   with its boss flag (record p4) set writes 0 (the Warrior, M l. 73035–73042); the boss Kill writes 1 again
-///   (`.KillWarrior` M l. 73490–73492 // later: Phase 6).
+///   (`.KillWarrior` M l. 73490–73492, built in 6A-W2 as `Warrior.kill`; the other bosses' Kills // later: Phase 6).
 /// - `locked` — `*PTR_DAT_1009fed4` (u8), the arena lock: cleared by `.SetupLevelSprites` (M l. 2016), set by
 ///   `.PlayerConstraints` (M l. 44036–44056).
 /// - `panCounter` — `*_DAT_1009ff9c` (i16), the camera pan: `.PlayerConstraints` stores −40 on the lock (M l. 44048);
