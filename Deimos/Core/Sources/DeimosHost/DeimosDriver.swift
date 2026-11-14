@@ -1,6 +1,7 @@
 import Foundation
 import DeimosCore
 import DeimosRender
+import DeimosAudio
 
 /// What one `DeimosDriver.idle` call produced (plan S5).
 public struct DriverOutput: Equatable, Sendable {
@@ -39,16 +40,46 @@ public struct DriverOutput: Equatable, Sendable {
 ///   `1000bb50..1000bb64`), `t0 = TickCount` (`1000bb68..1000bb78`); then `fadeEnd`.
 /// - **No catch-up** (timing-frame §4): the waits are the only pacing and both are "≥ a target", so a stall lets
 ///   exactly one late pass through; the next target is measured from its stamp.
-/// - **Esc** — the pass that sees it still runs to its end and carries `sessionEnded`; then ◇ a new session at
-///   sector 1 with seed = the current `TickCount` (the original's `srand(TickCount())`, `100057c8`) — the Phase-1
-///   stand-in for the return to the main menu. The renderer's buffers persist across it. ◇ The Esc that ended
-///   the session is latched: the new session's passes see Esc as up until one samples it released (the original's
-///   end-of-session `FlushEvents` and the main menu, which has no Esc action — front-end.md §2 — mean a new game
-///   needs a fresh press). A restart that cannot build sector 1 falls back to `start` (validated by `init`).
+/// - **Session end** — ◇ stand-ins 1–3: Esc, level complete and game over all end the session (the pass that ends
+///   it still runs to its end and carries `sessionEnded`); then a new session at sector 1 with seed = the current
+///   `TickCount` (the original's `srand(TickCount())`, `100057c8`) — the stand-in for the return to the main menu
+///   (Phase 3 / 4). ◇ Stand-in 6: the new session starts from the ENDED session's prefs (F6, the FPS monitor,
+///   `supermunki`, the volume — in memory only), which `prefs` then holds. The renderer's buffers persist across
+///   it. ◇ The Esc that ended the session is latched: the new session's passes see Esc as up until ANY `idle` call
+///   sees it released (the original's end-of-session `FlushEvents` and the main menu, which has no Esc action —
+///   front-end.md §2 — mean a new game needs a fresh press). A restart that cannot build sector 1 falls back to
+///   `start` (validated by `init`).
 /// - **Cursor** — the session's first pass carries `.hideCursor` (see `DeimosSession.pass`); `requests` passes it on.
+/// - **Keys** (H2) — a pass's `typed` characters are every key-down handed to `idle` since the previous pass began
+///   (the OS event queue `GetOSEvent` drains), in order; a restart flushes them (`FUN_10030210` FlushEvents), and so
+///   does the pause screen as its wait begins (`10022f1c`). The pass gets `ticks` = the `TickCount` of the `idle`
+///   in which it begins (the FPS monitor's clock), and so does a new session's controller (`FUN_100305e0`).
+/// - **Audio** (H2) — each pass's `sounds` / `music` / `haltEffectsAt` go to `audio` (`DeimosAudioSink.apply`) when
+///   the pass begins (the original issues them inside the tick — at most one frame early, inaudible); a pass with
+///   no cues sends nothing.
+/// - **`.pauseWait(present)`** (H2; `FUN_10022ef0`, `10022f18..10023010`) — the pass that paused sent halt, `gaso 8`
+///   and the music pause when it began; the wait yields until an `idle` sees `capsLock == false` (`10022f68..
+///   10022fa4`), testing it only while the app is not suspended (`10022f84..10022fa0`: r29 = !`FUN_10023030`, the
+///   suspended byte r2−0x6179); then the present (`10022fd4..10023004`, within the one-present-per-call bound). The
+///   music resume after the wait (`10022fb4`) is the first music cue of the NEXT pass (`PauseScreen
+///   .musicAfterWait`, C18a), which begins only after the wait — so it reaches the sink only after Caps Lock goes up,
+///   and while Caps Lock stays down no pass begins, so the pause cannot re-fire. **Pause and session end in one
+///   pass** (`PassOutput` holds one halt): the session puts `[… .pause, .resume, .stop]` with the pause's halt; the
+///   driver sends the cues through `.pause` when the pass begins, the resume when the wait ends (`10022fb4`), and
+///   the session end's halt + stop (`10005ad8`, `10005ae4`) — a second apply, halt index 0 — when the pass's ops are
+///   done, before the restart.
+/// - **Suspend / resume** (H2; the app's suspend and resume handlers, `10023db4..10023dcc` and `10023e34..10023e8c`)
+///   — `suspend()` pauses the music (`FUN_10048220(1)`) once; `resume()` resumes it (`FUN_10048220(0)`) unless the
+///   pause flag r2−0x617b is set (`10023e7c`): set while a pause holds the music — here from the paused pass's
+///   begin (where its music pause was sent) to the wait's present (`10022f18` / `10023010`). Across a suspend /
+///   resume during the wait the music therefore stays paused.
 public struct DeimosDriver {
     public let assets: DeimosAssets
-    public let prefs: DeimosPrefs
+    /// The prefs the current session started from: `init`'s, then — after a ◇ restart — the ended session's
+    /// (stand-in 6).
+    public private(set) var prefs: DeimosPrefs
+    /// The game's audio (nil = silent: no engine, like `FUN_10047160`'s "Sound not available" path).
+    public let audio: (any DeimosAudioSink)?
     public let rate: TickRate
     public let start: SessionStart
     let renderer: DeimosRenderer
@@ -90,10 +121,25 @@ public struct DeimosDriver {
         var t0: UInt32
     }
     private var fade: Fade?
+    /// Key-downs handed to `idle` since the last pass began (the OS event queue).
+    private var typedQueue: [UInt8] = []
+    /// The app is suspended (r2−0x6179, set by the suspend handler `10023dc4`, cleared by the resume `10023e34`).
+    public private(set) var suspended = false
+    /// The pause flag r2−0x617b: a pause holds the music (from the paused pass's begin to the wait's present).
+    private var pauseHoldsMusic = false
+    /// The current pass's `.pauseWait` has been reached (its FlushEvents ran) / has seen Caps Lock up.
+    private var waitEntered = false
+    private var waitReleased = false
+    /// A pass that paused and ended the session: the music after the wait (the resume, `10022fb4`) and the session
+    /// end's music (the stop, `10005ae4`, sent with a halt, `10005ad8`) once the pass's ops are done.
+    private var musicAfterWait: [MusicCue] = []
+    private var sessionEndMusic: [MusicCue]?
 
     /// Builds the first session (seed 0 until the first `idle` reseeds it with the clock — the session's set-up
     /// validates `start` here).
-    public init(assets: DeimosAssets, prefs: DeimosPrefs, rate: TickRate = .classic, start: SessionStart) throws {
+    public init(assets: DeimosAssets, prefs: DeimosPrefs, rate: TickRate = .classic, start: SessionStart,
+                audio: (any DeimosAudioSink)? = nil) throws {
+        self.audio = audio
         self.assets = assets
         self.prefs = prefs
         self.rate = rate
@@ -101,6 +147,24 @@ public struct DeimosDriver {
         renderer = DeimosRenderer(assets: assets)
         session = try DeimosSession(assets: assets, prefs: prefs, start: start, seed: 0)
         fpsDelay = UInt32(assets.floats[33].rounded(.towardZero))
+    }
+
+    /// The app's suspend handler (`10023db4..10023dcc`): once per suspension, suspended = 1 and the music pause
+    /// (`FUN_10048220(1)`). [Its window and cursor calls are the app's.]
+    public mutating func suspend() {
+        guard !suspended else { return }                                             // 10023db4..10023dbc
+        suspended = true                                                             // 10023dc0..10023dc4
+        audio?.apply(sounds: [], music: [.pause], haltEffectsAt: nil)                // 10023dc8..10023dcc
+    }
+
+    /// The app's resume handler (`10023e10`): suspended = 0 (`10023e34`); the music resume (`FUN_10048220(0)`) unless
+    /// a pause holds the music (r2−0x617b, `10023e7c..10023e8c`).
+    public mutating func resume() {
+        guard suspended else { return }
+        suspended = false                                                            // 10023e34
+        if !pauseHoldsMusic {                                                        // 10023e7c..10023e84
+            audio?.apply(sounds: [], music: [.resume], haltEffectsAt: nil)           // 10023e88..10023e8c
+        }
     }
 
     /// The 640×480 window content.
@@ -116,6 +180,8 @@ public struct DeimosDriver {
         releasedThisCall = false
         presentedThisCall = false
         restartedThisCall = false
+        typedQueue += keys.typed
+        if escLatched && !keys.held.contains(DeimosDriver.escKey) { escLatched = false }   // ◇ any idle releases it
         if !seeded {
             seeded = true
             newSession(seed: now, sector: start.sector)
@@ -141,6 +207,10 @@ public struct DeimosDriver {
                         guard !restartedThisCall else { return out }
                         restartedThisCall = true
                         restarts += 1
+                        if let music = sessionEndMusic {                       // 10005ad8 halt, 10005ae4 stop
+                            audio?.apply(sounds: [], music: music, haltEffectsAt: 0)
+                        }
+                        prefs = session.prefs                                  // ◇ stand-in 6
                         newSession(seed: now, sector: 1)
                         escLatched = true
                     } else if !passLimited {
@@ -149,7 +219,7 @@ public struct DeimosDriver {
                     }
                     passBegun = false
                 }
-                beginPass(keys: keys, &out)
+                beginPass(keys: keys, ticks: now, &out)
                 continue
             }
 
@@ -175,9 +245,27 @@ public struct DeimosDriver {
             case .screenBlit:
                 renderer.apply(op)
                 out.screenChanged = true
-            case .pauseWait:
-                // H2 builds the real pause wait (FUN_10030bc0 wrapper); until then a no-op so Caps Lock cannot trap
-                break
+            case let .pauseWait(present):
+                if !waitEntered {
+                    waitEntered = true
+                    typedQueue = []                                           // 10022f1c FlushEvents
+                }
+                if !waitReleased {
+                    guard !suspended, !keys.capsLock else { return out }      // 10022f68..10022fa4
+                    waitReleased = true
+                    if !musicAfterWait.isEmpty {                              // 10022fb4 (pause + session end)
+                        audio?.apply(sounds: [], music: musicAfterWait, haltEffectsAt: nil)
+                        musicAfterWait = []
+                    }
+                }
+                guard !presentedThisCall else { return out }
+                presentedThisCall = true
+                renderer.apply(.present(present))                             // 10022fd4..10023004
+                presentCount += 1
+                out.screenChanged = true
+                waitEntered = false
+                waitReleased = false
+                pauseHoldsMusic = false                                       // 10023010
             default:
                 renderer.apply(op)
             }
@@ -185,9 +273,10 @@ public struct DeimosDriver {
         }
     }
 
-    /// Begin a pass: sample `keys` (a latched Esc reads as up), take its ops. A session that has already ended (an
-    /// empty `sessionEnded` output) is a finished pass with no ops: the loop restarts it, within the per-call bound.
-    private mutating func beginPass(keys: HeldKeys, _ out: inout DriverOutput) {
+    /// Begin a pass: sample `keys` (a latched Esc reads as up) with the queued typed characters, run it at
+    /// `ticks`, route its cues, take its ops. A session that has already ended (an empty `sessionEnded` output) is a
+    /// finished pass with no ops: the loop restarts it, within the per-call bound.
+    private mutating func beginPass(keys: HeldKeys, ticks: UInt32, _ out: inout DriverOutput) {
         var sampled = keys
         if escLatched {
             if sampled.held.contains(DeimosDriver.escKey) {
@@ -196,8 +285,11 @@ public struct DeimosDriver {
                 escLatched = false
             }
         }
-        let pass = session.pass(keys: sampled)
+        sampled.typed = typedQueue
+        typedQueue = []
+        let pass = session.pass(keys: sampled, ticks: ticks)
         passBegun = true
+        sessionEndMusic = nil
         if pass.sessionEnded && pass.ops.isEmpty {
             ops = []
             next = 0
@@ -211,6 +303,29 @@ public struct DeimosDriver {
         next = 0
         endAfterPass = pass.sessionEnded
         passLimited = ops.contains(.limit)
+        route(pass)
+    }
+
+    /// The pass's cues to `audio` as it begins. A pass that paused (its last op `.pauseWait`) sets the pause flag; if
+    /// it also ended the session, its music is split at its last `.pause` (see the type's comment): through the
+    /// pause now, the resume after the wait, the stop (with a halt) at the end of the pass.
+    private mutating func route(_ pass: PassOutput) {
+        var music = pass.music
+        let paused = pass.ops.contains { if case .pauseWait = $0 { return true } else { return false } }
+        if paused {
+            pauseHoldsMusic = true                                           // 10022f18 (the pause's music pause is sent now)
+            if pass.sessionEnded, let k = music.lastIndex(of: .pause) {
+                var after = Array(music[(k + 1)...])
+                music.removeSubrange((k + 1)...)
+                if after.last == .stop {                                     // not a film (10005ad0): halt + stop
+                    after.removeLast()
+                    sessionEndMusic = [.stop]
+                }
+                musicAfterWait = after
+            }
+        }
+        guard !(pass.sounds.isEmpty && music.isEmpty && pass.haltEffectsAt == nil) else { return }
+        audio?.apply(sounds: pass.sounds, music: music, haltEffectsAt: pass.haltEffectsAt)
     }
 
     /// One fade step at the current level, then advance the level index.
@@ -228,9 +343,9 @@ public struct DeimosDriver {
     /// built (data without that level), the session falls back to `start`, which `init` validated.
     private mutating func newSession(seed: UInt32, sector: Int) {
         let s = SessionStart(sector: sector, players: start.players, film: start.film)
-        if let made = try? DeimosSession(assets: assets, prefs: prefs, start: s, seed: seed) {
+        if let made = try? DeimosSession(assets: assets, prefs: prefs, start: s, seed: seed, ticks: seed) {
             session = made
-        } else if let made = try? DeimosSession(assets: assets, prefs: prefs, start: start, seed: seed) {
+        } else if let made = try? DeimosSession(assets: assets, prefs: prefs, start: start, seed: seed, ticks: seed) {
             session = made
         }
         lastPresent = 0
@@ -241,6 +356,12 @@ public struct DeimosDriver {
         passLimited = false
         fade = nil
         releasedThisCall = false
+        typedQueue = []                                                       // FUN_10030210 FlushEvents
+        pauseHoldsMusic = false
+        waitEntered = false
+        waitReleased = false
+        musicAfterWait = []
+        sessionEndMusic = nil
     }
 
     /// Mac virtual key code of Esc (`FUN_100307c0`).

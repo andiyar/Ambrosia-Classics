@@ -31,7 +31,7 @@ let package = Package(
         .target(name: "DeimosRender", dependencies: ["DeimosCore"]),
         // The host driver (Phase 1 H1): the Mac-tick clock, the FPS limiter and fade waits as yields, Esc restart.
         // Foundation + DeimosCore + DeimosRender only (plan invariant 1) — no threads, no sleeping.
-        .target(name: "DeimosHost", dependencies: ["DeimosCore", "DeimosRender"]),
+        .target(name: "DeimosHost", dependencies: ["DeimosCore", "DeimosRender", "DeimosAudio"]),
         // The game's own audio (Phase 2 A1–A2): the 16-voice / 8-audible effects mixer over the continuous-IMA
         // sounds, and the music streamer, behind one pull source. Foundation + DeimosCore + HectorAudio only
         // (plan invariant 1; A2 adds Synchronization for the engine's Mutex — pulled on the audio thread).
@@ -58,7 +58,7 @@ let package = Package(
             .product(name: "HectorGraphics", package: "HectorKit"),
         ]),
         .testTarget(name: "DeimosRenderTests", dependencies: ["DeimosRender", "DeimosCore"]),
-        .testTarget(name: "DeimosHostTests", dependencies: ["DeimosHost", "DeimosRender", "DeimosCore"]),
+        .testTarget(name: "DeimosHostTests", dependencies: ["DeimosHost", "DeimosRender", "DeimosCore", "DeimosAudio"]),
         .testTarget(name: "DeimosAudioTests", dependencies: ["DeimosAudio", "DeimosCore"]),
     ]
 )
