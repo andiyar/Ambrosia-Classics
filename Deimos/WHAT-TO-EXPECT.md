@@ -1,6 +1,6 @@
 # Deimos Rising — what to expect (Phase 2 gate build)
 
-<!-- ORCHESTRATOR: build stamp -->
+*Built 2026-11-14 from local main (Phase 2, wave 3). The build session has not launched this app: the first run is yours, or a muted boot check on your say-so.*
 
 This is the second build of the Deimos Rising 1.0.6 replica. Gate 1 settled the look; this one is about play:
 **level 1, Mariner Valley, plays from start to finish.** Enemies come down the map, you fly and shoot, you can die,
@@ -79,7 +79,7 @@ here and on the card, and each goes away in the phase named.
 | left ⌘ | fire the air weapon (Ion Cannon): tap, or hold to charge |
 | left ⌥ | fire the ground weapon (Plasma Bomb) |
 | Space | select the next air weapon (nothing to select in sector 1) |
-| Caps Lock | pause while it is down |
+| Caps Lock | pause while Caps Lock is on (its light lit); if it is already on when you open the game, the game pauses at once |
 | F6 | interlacing on and off, with a message |
 | `~` | open the console |
 | `-` / `=` | the original's volume keys — on Mac OS X they do nothing you can hear (card line 9) |
@@ -98,13 +98,13 @@ as the original read them.
 ## Things that differ from the original on purpose
 1. **Whole frames, no tearing.** The original could tear. It runs in a window (or full screen) instead of switching
    your screen to 640×480.
-2. **No InputSprocket.** Keys come straight from the original's own key table: Player 1 is ↑ ← → ↓, then left ⌘,
+2. **No InputSprocket** (the old Mac OS game-controller layer the original could use). Keys come straight from the original's own key table: Player 1 is ↑ ← → ↓, then left ⌘,
    left ⌥ and Space.
 3. **It's the registered game.** The original's copy-protection checks are not built.
 4. **No system volume changes.** The game never touches your Mac's volume; it plays at full level.
 5. **Files go in their own places.** The settings file (Phase 4) will live in the game's own folder under
    Application Support, and the "Last Film" recording in your own user folder for the game, not inside the app.
-   A missing game file shows an alert only in a developer build.
+   A missing game file shows an alert only in a debug build made from Xcode; this staged build just quits.
 6. **A few rare cases where the original read leftover memory.** In a handful of corner cases (an enemy told to flee
    when no player is alive, a new enemy the game could not create, and a couple of others like them) the original
    read whatever happened to be in memory. The replica uses a fixed value (zero or −1) there. You should never see
@@ -123,7 +123,7 @@ each shipped film, and the score they reached was compared with the score the or
 touches the score were even slightly off — an enemy appearing a row late, a hit missed, the random numbers drawn in
 a different order — the scores would drift apart.
 
-All four films end on exactly the original's score, and the automatic tests check all four every time they run:
+All four films end on exactly the original's score, and the replay tests check all four whenever the replay check is run:
 
 | Demo | Recorded score | This build |
 |---|---|---|
