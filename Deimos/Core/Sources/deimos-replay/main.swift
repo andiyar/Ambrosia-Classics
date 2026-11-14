@@ -7,18 +7,19 @@ import DeimosHost
 ///
 /// Replays each shipped demo film through `HeadlessRunner` (seed, sector and players from the film; logic only unless
 /// `--frames`) and prints, per film, the triage numbers of plan G4 step 3 and then the G4 line
-/// `<tag> <level> seed 0x<seed>: score <n> at read <frames> (end: <reason>) PASS|FAIL|INFO`. "Read N" is the N-th film
+/// `<tag> <level> seed 0x<seed>: score <n> at read <frames> (end: <reason>) PASS|FAIL`. "Read N" is the N-th film
 /// read, the one that consumes byte N − 1 (cursor N − 1 → N): "score at read 4809" is
-/// `FilmCursor.score(player: 0, atRead: 4808)`, the instant the recorder stored the film's score (G4.1). de01 is the
-/// gate (PASS when the replica's score there equals the film's stored score); other films print INFO. Data: the
-/// committed `Resources/Deimos/Data`, or `DEIMOS_DATA`. Exit 0 iff de01 ran and passed (another film's error is
-/// reported on stderr and does not change it); 1 otherwise; 2 on bad usage.
+/// `FilmCursor.score(player: 0, atRead: 4808)`, the instant the recorder stored the film's score (G4.1). Every film
+/// is asserted (H3 fix round ruling): PASS when the replica's score there equals the film's stored score and the
+/// session really ended (an end at the pass bound is FAIL). Data: the committed `Resources/Deimos/Data`, or
+/// `DEIMOS_DATA`. Exit 0 iff every film named ran and passed and every requested trace was written; 1 otherwise
+/// (a film that cannot be found or replayed counts as failed); 2 on bad usage.
 ///
-/// `--trace file.csv` writes the per-tick `ReplayTrace` CSV (with several films, `file-<tag>.csv`). `--frames dir`
+/// `--trace file.csv` writes the per-tick `ReplayTrace` CSV (with several films, `file-<tag>.csv`) after the film's
+/// lines are printed, so a failed write (reported on stderr) never hides the G4 line. `--frames dir`
 /// renders and writes every N-th pass's window (`--every N`, default 60) as binary PPM `dir/<tag>-<pass>.ppm`
 /// (Foundation only — no image frameworks below the app, plan G7).
 enum DeimosReplay {
-    static let gateTag = "de01"
     static let allFilms = ["de01", "de02", "de03", "de04"]
     /// The pass bound for every replay (the longest shipped film is well under it).
     static let maxPasses = 20_000
@@ -183,21 +184,23 @@ enum DeimosReplay {
         return out
     }
 
-    /// The G4 line.
+    /// The G4 line, for every film.
     static func summaryLine(tag: String, film: Film, scoreAtLastRead: Int32?, end: ReplayResult.EndReason) -> String {
-        let head = "\(tag) \(film.level) seed 0x\(String(film.seed, radix: 16)): score "
+        "\(tag) \(film.level) seed 0x\(String(film.seed, radix: 16)): score "
             + (scoreAtLastRead.map(String.init) ?? "none") + " at read \(film.players[0].frames) (end: \(end))"
-        guard tag == gateTag else { return head + " INFO (recorded \(film.players[0].score))" }
-        return head + (passes(tag: tag, film: film, scoreAtLastRead: scoreAtLastRead) ? " PASS" : " FAIL")
+            + (passes(film: film, scoreAtLastRead: scoreAtLastRead, end: end) ? " PASS" : " FAIL")
     }
 
-    /// The gate: de01's replica score at the read of its last recorded byte equals the score the recorder stored.
-    static func passes(tag: String, film: Film, scoreAtLastRead: Int32?) -> Bool {
-        tag == gateTag && scoreAtLastRead == film.players[0].score
+    /// A film passes iff the replica's score at the read of its last recorded byte equals the score the recorder
+    /// stored AND the session really ended (not the pass bound).
+    static func passes(film: Film, scoreAtLastRead: Int32?, end: ReplayResult.EndReason) -> Bool {
+        end != .bound && scoreAtLastRead == film.players[0].score
     }
 
-    /// 0 iff de01 ran (non-nil) and passed.
-    static func exitCode(gatePassed: Bool?) -> Int32 { gatePassed == true ? 0 : 1 }
+    /// 0 iff at least one film ran, every film run passed and every requested file was written; 1 otherwise.
+    static func exitCode(filmsPassed: [Bool], writeFailed: Bool) -> Int32 {
+        !filmsPassed.isEmpty && filmsPassed.allSatisfy { $0 } && !writeFailed ? 0 : 1
+    }
 
     /// FNV-1a 64 of the trace's CSV text — a stable fingerprint across runs and processes.
     static func traceHash(_ trace: ReplayTrace) -> UInt64 {
@@ -254,29 +257,37 @@ enum DeimosReplay {
             fail("cannot load the game data: \(error)")
             return 1
         }
-        var gatePassed: Bool?
+        var filmsPassed: [Bool] = []
+        var writeFailed = false
         for tag in options.films {
+            let report: Report
             do {
                 guard let id = FourCC(tag), let record = assets.index.record(type: FourCC("film")!, id: id) else {
                     fail("no film '\(tag)' in \(dataDirectory.path)")
+                    filmsPassed.append(false)
                     continue
                 }
                 let film = try Film(data: assets.index.data(for: record))
                 let frames = options.frames.map { (dir: URL(fileURLWithPath: $0, isDirectory: true), every: options.every) }
-                let report = try replay(tag: tag, film: film, assets: assets, frames: frames)
-                var note: String?
-                if let path = options.trace {
-                    let url = tracePath(path, tag: tag, several: options.films.count > 1)
-                    try (report.result.trace ?? ReplayTrace()).write(to: url)
-                    note = url.path
-                }
-                for line in lines(report, traceNote: note) { print(line) }
-                if tag == gateTag { gatePassed = passes(tag: tag, film: film, scoreAtLastRead: report.scoreAtLastRead) }
+                report = try replay(tag: tag, film: film, assets: assets, frames: frames)
             } catch {
                 fail("\(tag): \(error)")
+                filmsPassed.append(false)
+                continue
+            }
+            // The result is settled and printed before any file is written: a failed write cannot hide it.
+            filmsPassed.append(passes(film: report.film, scoreAtLastRead: report.scoreAtLastRead,
+                                      end: report.result.endReason))
+            let traceURL = options.trace.map { tracePath($0, tag: tag, several: options.films.count > 1) }
+            for line in lines(report, traceNote: traceURL?.path) { print(line) }
+            if let traceURL {
+                do { try (report.result.trace ?? ReplayTrace()).write(to: traceURL) } catch {
+                    fail("\(tag): cannot write the trace \(traceURL.path): \(error)")
+                    writeFailed = true
+                }
             }
         }
-        return exitCode(gatePassed: gatePassed)
+        return exitCode(filmsPassed: filmsPassed, writeFailed: writeFailed)
     }
 }
 
