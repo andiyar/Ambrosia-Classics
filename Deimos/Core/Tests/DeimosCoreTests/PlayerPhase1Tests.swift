@@ -2,9 +2,9 @@ import XCTest
 import HectorResources
 @testable import DeimosCore
 
-/// The player's Phase-1 subset (plan C4): setup `FUN_10026410`, level start `FUN_100269a0`, and the ◇
-/// `updatePhase1` stub in `FUN_10028170`'s order (player-physics.md §2, §4, §7; gameplay-leftovers.md §2.1;
-/// loose-ends-combat.md §6.2).
+/// The player's Phase-1 subset (plan C4): setup `FUN_10026410`, level start `FUN_100269a0`, and the first ticks of
+/// `FUN_10028170` through the real update `GameState.updatePlayer` (C14; the ◇ Phase-1 stub was deleted by C18b)
+/// (player-physics.md §2, §4, §7; gameplay-leftovers.md §2.1; loose-ends-combat.md §6.2).
 final class PlayerPhase1Tests: XCTestCase {
     static let loaded = TestAssets.loaded
     private func assets() throws -> DeimosAssets { try Self.loaded.get() }
@@ -96,17 +96,31 @@ final class PlayerPhase1Tests: XCTestCase {
             XCTAssertEqual(w.players[0].stateEntered, 0)
             XCTAssertEqual(w.players[0].input, [], "no input in state 2")
         }
-        w.tick(.left)                                   // t 56: now > 0 + 55
+        w.tick()                                        // t 56: now > 0 + 55, no input this tick
         let p = w.players[0]
         XCTAssertEqual(p.lifeState, 4)
         XCTAssertEqual(p.stateEntered, 56)
-        XCTAssertEqual(p.input, .left)
-        XCTAssertEqual(p.object.x, 208)
+        XCTAssertEqual(p.input, [])
+        XCTAssertEqual(p.object.x, 208)                 // the left held in state 2 left no trace
         XCTAssertEqual(p.object.y, 330)
         XCTAssertEqual(p.object.halfWidth, 26)          // pl1o frame 0 is 53×43
         XCTAssertEqual(p.object.halfHeight, 21)
         XCTAssertEqual(p.object.scaledWidth, 53)
         XCTAssertEqual(p.object.scaledHeight, 43)
+
+        // Left held on the activation tick too: the same tick reads it and moves the ship. In `FUN_10028170` the
+        // life-state step `bl FUN_1002a150` (10029048; its respawn `FUN_10029cc0` sets state 4 at 10029e04) falls
+        // straight through to `bl FUN_1002a3a0` (1002905c), which re-reads +0xc6 (`1002a3c4 lbz r0,0xc6(r3);
+        // cmplwi 4`) and takes the input; the update re-reads +0xc6 again at 100290c4 and runs the velocity step
+        // (100291dc..1002935c) and the integrate (100294e0..10029500): vx = −1.6, x = 208 + (−1.6) = 206.4.
+        var v = try World(assets: try assets())
+        for _: Int32 in 0...56 { v.tick(.left) }
+        let q = v.players[0]
+        XCTAssertEqual(q.lifeState, 4)
+        XCTAssertEqual(q.stateEntered, 56)
+        XCTAssertEqual(q.input, .left)
+        XCTAssertEqual(q.object.x.bitPattern, 0x434e_6666)   // 206.4 (Float)
+        XCTAssertEqual(q.object.y, 330)
     }
 
     func testAppearFade() throws {
@@ -139,9 +153,9 @@ final class PlayerPhase1Tests: XCTestCase {
 
     func testBankingTables() throws {
         // The three 7-entry jump tables (r2+0x3074 / +0x3058 / +0x303c, player-physics §2.4).
-        XCTAssertEqual(Player.bankingNone, [0, 0, 1, 2, 0, 4, 5])
-        XCTAssertEqual(Player.bankingLeft, [1, 2, 3, 3, 3, 4, 5])
-        XCTAssertEqual(Player.bankingRight, [4, 0, 1, 2, 5, 6, 6])
+        XCTAssertEqual(GameState.bankNone, [0, 0, 1, 2, 0, 4, 5])
+        XCTAssertEqual(GameState.bankLeft, [1, 2, 3, 3, 3, 4, 5])
+        XCTAssertEqual(GameState.bankRight, [4, 0, 1, 2, 5, 6, 6])
 
         var w = try World(assets: try assets())
         w.run(to: 56, .left)

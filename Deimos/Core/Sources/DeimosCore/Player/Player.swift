@@ -157,8 +157,7 @@ public struct GameObject: Equatable, Sendable {
 /// The player object (G_Player.cc, 0x36c bytes; player-physics.md §1). Field comments cite the original
 /// offsets. Obfuscated stores (lives +0x1524dcef, money +0xb2cce, score +0x5532a3e — integer, lossless)
 /// are kept plain; the shield's float obfuscation is lossy and is reproduced (`shield`).
-/// ★ LOCKED name (plan S2). The update is `GameState.updatePlayer(_:input:)` (PlayerUpdate.swift, C14); the ◇ Phase-1
-/// stub `updatePhase1` (PlayerPhase1.swift) stays until C18b deletes it.
+/// ★ LOCKED name (plan S2). The update is `GameState.updatePlayer(_:input:)` (PlayerUpdate.swift, C14).
 public struct Player: Sendable {
     let assets: DeimosAssets
 

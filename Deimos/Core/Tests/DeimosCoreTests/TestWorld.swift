@@ -8,34 +8,54 @@ enum TestAssets {
 }
 
 /// A level-1 world as `FUN_100051a0` + `FUN_100064d0` build it: setup P1/P2, level start P1 then P2
-/// at game time 0, the score bar's level start, the scroll's level start. Shared by the player, score-bar,
-/// entity-draw, text and session suites.
+/// at game time 0 (`le07`, sector 1), the score bar's level start, the scroll's level start. Shared by the player,
+/// score-bar, entity-draw, text and session suites. A `GameState` underneath; the fields the suites read are
+/// forwarding accessors.
 struct TestWorld {
-    var players: [Player]
-    var bar: ScoreBarState
-    var scroll = ScrollState()
-    var rng: MSLRandom
-    var now: Int32 = 0
-
-    init(assets: DeimosAssets, players count: Int = 1, seed: UInt32 = 0x469c2) throws {
-        var p0 = Player(assets: assets), p1 = Player(assets: assets)
-        try p0.setup(index: 0, players: count, sector: 1)
-        try p1.setup(index: 1, players: count, sector: 1)
-        rng = MSLRandom(seed: seed)
-        p0.levelStart(now: 0, rng: &rng, sector: 1)
-        p1.levelStart(now: 0, rng: &rng, sector: 1)
-        players = [p0, p1]
-        bar = ScoreBarState(assets: assets)
-        bar.levelStart(players: players, sector: 1)
-        scroll.levelStart(rect: MacRect(top: 0, left: 0, bottom: 3600, right: 480))
+    var state: GameState
+    var players: [Player] {
+        get { state.players }
+        set { state.players = newValue }
+    }
+    var bar: ScoreBarState {
+        get { state.scoreBar }
+        set { state.scoreBar = newValue }
+    }
+    var scroll: ScrollState {
+        get { state.scroll }
+        set { state.scroll = newValue }
+    }
+    var rng: MSLRandom {
+        get { state.rng }
+        set { state.rng = newValue }
+    }
+    var now: Int32 {
+        get { state.flags.gameTime }
+        set { state.flags.gameTime = newValue }
     }
 
-    /// One logic tick's player + score-bar part (`FUN_10006b50` order: P1, P2, score bar), then time + 1.
+    init(assets: DeimosAssets, players count: Int = 1, seed: UInt32 = 0x469c2) throws {
+        var s = GameState(assets: assets, prefs: DeimosPrefs.fresh, seed: seed)
+        s.flags.numPlayers = UInt8(count)
+        s.flags.sector = 1
+        s.flags.level = FourCC("le07")!
+        try s.setupPlayer(0)
+        try s.setupPlayer(1)
+        s.playerLevelStart(0)
+        s.playerLevelStart(1)
+        s.scoreBar.levelStart(players: s.players, sector: 1)
+        s.scroll.levelStart(rect: MacRect(top: 0, left: 0, bottom: 3600, right: 480))
+        state = s
+    }
+
+    /// One logic tick's player + score-bar part (`FUN_10006b50` order: the P1-active gate `10006b9c..10006bc4`,
+    /// P1 and P2 through `GameState.updatePlayer`, score bar), then time + 1.
     mutating func tick(_ p1: PlayerInput = [], _ p2: PlayerInput = []) {
-        players[0].updatePhase1(now: now, input: p1, scroll: &scroll, scoreBar: &bar)
-        players[1].updatePhase1(now: now, input: p2, scroll: &scroll, scoreBar: &bar)
-        bar.update(players: players, sector: 1)
-        now += 1
+        if !state.flags.p1Active && state.players[0].lifeState == 4 { state.flags.p1Active = true }
+        state.updatePlayer(0, input: p1)
+        state.updatePlayer(1, input: p2)
+        state.scoreBar.update(players: state.players, sector: 1)
+        state.flags.gameTime += 1
     }
 
     /// Runs ticks until `now == t` (exclusive), i.e. the next tick runs at `t`.
