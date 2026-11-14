@@ -682,3 +682,10 @@ named below; second files carry a plain cross-reference. Dump lines cite the com
 | 51 | — | `moco` on state 3 exit too; mission sound priority 100 | scoring-bonuses.md §6.4 |
 | 52 | — | coin tally `moco` on states 2/3 exits; state 6 pays when out of game | scoring-bonuses.md §6.5 |
 | 53 | — | +0x90 stamp time: init 0, one writer; DrawToTerrain stamps every tick | sprite-geometry-draw.md §3.2 |
+
+**2026-11-14 — Phase 2 late corrections** (plan card A4; found by the wave 2b and wave 3 build and review legs).
+| # | sev | finding | landed in |
+|---|---|---|---|
+| 54 | Imp | a film is not ended by keys: `FUN_10048e60` = the mouse button only (`10048e6c`); NOT-RESOLVED item 6 closed | loose-ends-session.md ("Replay ends", NR 6) |
+| 55 | — | "one tick past the recording" confirmed by machine: the four shipped films replay to their stored scores, cursor = frames + 1; MED → HIGH | loose-ends-session.md ("Replay ends") |
+| 56 | — | the tick that enters state 4 reads input and moves the ship in the same tick | player-physics.md §4 (state 2 row) |
