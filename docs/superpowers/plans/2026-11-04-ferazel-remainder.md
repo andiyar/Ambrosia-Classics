@@ -1265,6 +1265,28 @@ ids; its `--check` reads this table):
   `testWarriorDeathAndGlow` · `testWarriorTileCallbackIsCrawlerBody`. Asserts: BOS §2.11 items 1–21.
 - **Gate:** Gate-B (G2 642; ◈ level 5's moved values old → new; the bot's quick mode on level 5).
   **Commit:** `FerazelCore: the Warrior's Handle — crates, decide, walk / run, swing and shot, dying; 9 tests`.
+- **As executed — 6A-W1 (run 52):** task 8f1d61f (9 tests, `WarriorTests`), review fix round 0e378b9 (asserts and
+  wording; Sources comments only). Two Opus legs: MERGEABLE AFTER FIXES (0 / 1 / 7 minor — the Handle matches the dump
+  line for line), MERGEABLE AFTER FIXES (0 / 5 / 10 minor; 156 mutations: 123 killed, 9 equivalent, 22 survivors — all
+  22 killed after the fix round — and the 2 liquids survivors the card accepts until 6A-W2). No disagreement between
+  dump, BOS and card.
+  ◈ **Moved (level 5 only, the three crates):** `BootFacesTests` f30 55 / `0x69068d5e8151b0cc` → 58 /
+  `0x1142f7a252aecfcd`; f120 55 / `0xb9f08ee19927f3e7` → 58 / `0x9806297cea4531f2`. Init 46 / `0xb039da66a884cb8a`
+  held; no `LevelFiveTests` value and no golden of levels 1–4 moved. Switch-off (the Handle body stubbed back to the
+  stand-in) returned every old value — done by the implementer and by leg 1 independently.
+  Gate-B: the bot's quick mode on level 5 — `== core: random play — levels 1, seeds 4, steps 7200, deaths 1, exits 17,
+  conversations 0, saves 0, failures 0 in 166 s`; G5, GW1 0 / 2, GW3 0 / 1, GW4 green; GW2 not run (nothing Windows or
+  Shared touched).
+  Notes: (a) on level 5 a crate that lands rests on a background ledge and never breaks by landing (the dump agrees), so
+  `testWarriorCrateRespawnAfter14Or15` uses a **test-only foreground ledge patched into the in-memory map** for the
+  k + 14 case and calls the crate-break routine after a frame for k + 15 — a test stand-in, though the card says no
+  fixture. (b) The constants 0.9 / 0.4 / 0.5 were confirmed by leg 1 in the binary's unpacked data section
+  (0x100a1c30 / 1c38 / 1c40). (c) 6A-FR's two `later:` items closed as comments: the dump's sprite generation has no
+  0x434 arm (M l. 1740–1741), so `SpriteClassTable` rightly has no row and says so; `classWord160` names the rocks'
+  hover counter — `SpriteSlot.swift`, `SpriteClassTable.swift` and (wording) `BuiltLevels.swift` joined the Files by
+  the seat's ruling. (d) `testLevel5SetsUpEveryRecord` now asserts `refusedSpawns == 0` after 30 frames. (e) Rope
+  segments check the 700-record cap outside `newSprite`, so `refusedSpawns` does not count them (older code; open
+  carry). (f) Declined: leg 1's F5 (an unreachable boundary).
 
 #### 6A-W2 — ⚑ MAJOR ◈ — the Warrior's Hit and Kill, the three pieces, the fight (→ 650)
 - **Files:** `Sources/FerazelCore/World/Enemies/Warrior.swift` (Hit, Kill), `Sources/FerazelCore/Session/FerazelSession.swift`
