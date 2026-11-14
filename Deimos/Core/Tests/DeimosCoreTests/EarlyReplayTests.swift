@@ -64,10 +64,16 @@ final class EarlyReplayTests: XCTestCase {
                     default: break
                     }
                 }
-                // The probe is this pass's tick: the same draws, serials and film read as the session's.
+                // The probe is this pass's tick: the same draws, film read and resulting simulation as the
+                // session's, so the logged request is the session's own (a session-only change fails here).
                 XCTAssertEqual(probe.rng, g.rng, "probe RNG at game time \(t)")
-                XCTAssertEqual(probe.world.nextSerial, g.world.nextSerial, "probe serials at game time \(t)")
                 XCTAssertEqual(probe.film?.cursors, g.film?.cursors, "probe film cursor at game time \(t)")
+                XCTAssertEqual(probe.world, g.world, "probe world at game time \(t)")
+                XCTAssertEqual(probe.scroll, g.scroll, "probe scroll at game time \(t)")
+                var probeFlags = probe.flags                          // the pass's own time + 1 and frame + 1
+                probeFlags.gameTime += 1
+                probeFlags.framesPresented += 1
+                XCTAssertEqual(probeFlags, g.flags, "probe flags at game time \(t)")
                 let member = born.first { units[g.world.entities[$0].unit].id == bsgr }
                 let group = member.flatMap { m in g.world.groups.first { $0.members.contains(m) } }
                 bsgrRequest = (t, at?.x, at?.y)
@@ -85,7 +91,7 @@ final class EarlyReplayTests: XCTestCase {
         // The report (information for H3 / F1; not asserted).
         var report = "EARLY de01 REPORT — passes \(passes), game time \(s.gameTime), cursor \(s.game.film?.cursors[0] ?? -1)"
         report += ", ended \(ended), P1 score \(s.players[0].score), lives \(s.players[0].lives)\n"
-        report += "P1 deaths (game time, lives after): "
+        report += "P1 deaths (game time hit, lives at the hit): "
         report += deaths.isEmpty ? "none" : deaths.map { "\($0.t) (\($0.lives))" }.joined(separator: ", ")
         report += "\nRNG draws per 100 ticks: "
         report += zip(drawsAt100.dropFirst(), drawsAt100).enumerated()

@@ -48,10 +48,10 @@ struct TestWorld {
         state = s
     }
 
-    /// One logic tick's player + score-bar part (`FUN_10006b50` order: the P1-active gate `10006b9c..10006bc4`,
-    /// P1 and P2 through `GameState.updatePlayer`, score bar), then time + 1.
+    /// One logic tick's player + score-bar part (`FUN_10006b50` order: P1 and P2 through `GameState.updatePlayer`,
+    /// score bar), then time + 1. The P1-active gate (`10006b9c..10006bc4`) is not run: no TestWorld suite reaches
+    /// the dying-state end it guards (whole-tick order is `updateWorld`'s, tested there).
     mutating func tick(_ p1: PlayerInput = [], _ p2: PlayerInput = []) {
-        if !state.flags.p1Active && state.players[0].lifeState == 4 { state.flags.p1Active = true }
         state.updatePlayer(0, input: p1)
         state.updatePlayer(1, input: p2)
         state.scoreBar.update(players: state.players, sector: 1)
