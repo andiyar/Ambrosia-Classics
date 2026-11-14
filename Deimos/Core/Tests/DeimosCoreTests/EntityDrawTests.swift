@@ -75,13 +75,11 @@ final class EntityDrawTests: XCTestCase {
         // State 2 (t ≤ 55): nothing.
         var early = try world(after: 55)
         XCTAssertEqual(early.players[0].lifeState, 2)
-        XCTAssertEqual(EntityDraw.playerOps(&early.players[0], hOffset: 0, floats: floats), [])
+        XCTAssertEqual(EntityDraw.playerCommands(&early.players[0], hOffset: 0, floats: floats), [])
 
         var w = try world(after: 105)
         let p = w.players[0]
-        let ops = EntityDraw.playerOps(&w.players[0], hOffset: 0, floats: floats)
-        let cmds: [DrawCommand] = ops.compactMap { if case .draw(let c) = $0 { return c } else { return nil } }
-        XCTAssertEqual(cmds.count, ops.count)
+        let cmds = EntityDraw.playerCommands(&w.players[0], hOffset: 0, floats: floats)
         XCTAssertEqual(cmds.count, 3)
         // 1. The crosshair: the ground weapon's face, layer plui 13, no shadow, centred at (208, 209), queued.
         XCTAssertEqual(cmds[0].face, p.handler.ground.crosshairFace)
@@ -102,8 +100,8 @@ final class EntityDrawTests: XCTestCase {
         XCTAssertTrue(w.players[0].object.drawShadow)
         // The crosshair still fading in (t 60: visibility 6·5 = 30): flags 1, alpha 22.
         var mid = try world(after: 60)
-        let midCmds = EntityDraw.playerOps(&mid.players[0], hOffset: 0, floats: floats)
-        guard case .draw(let ch) = midCmds.first else { return XCTFail("no crosshair") }
+        let midCmds = EntityDraw.playerCommands(&mid.players[0], hOffset: 0, floats: floats)
+        guard let ch = midCmds.first else { return XCTFail("no crosshair") }
         XCTAssertEqual(mid.players[0].handler.crosshair.visibility, 30)
         XCTAssertEqual(ch.flags, 1)
         XCTAssertEqual(ch.alpha, 22)
@@ -112,8 +110,9 @@ final class EntityDrawTests: XCTestCase {
     func testHOffsetPans() throws {
         let floats = try assets().floats
         var w = try world(after: 105)
-        let ops = EntityDraw.playerOps(&w.players[0], hOffset: -5, floats: floats)
-        let cmds: [DrawCommand] = ops.compactMap { if case .draw(let c) = $0 { return c } else { return nil } }
+        let cmds = EntityDraw.playerCommands(&w.players[0], hOffset: -5, floats: floats)
+        XCTAssertEqual(cmds.count, 3)
+        guard cmds.count == 3 else { return }
         XCTAssertEqual(cmds[2].x, 213)
         XCTAssertEqual(cmds[1].x, 189)
         XCTAssertEqual(cmds[0].x, 213)       // the crosshair pans too (+0x18 = 1 from FUN_10012650)
