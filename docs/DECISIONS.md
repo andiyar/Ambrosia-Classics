@@ -2119,6 +2119,18 @@ draw to terrain every tick, so C12 builds the +0x36 draw path and the +0x90 stam
 max speed below 1.
 **Approved by:** Ben (1–5 "yes", 6 Fable seat + Opus agents, 2026-11-05); seat rulings shown to him in the same message.
 
+**As built — wave 2a (2026-11-14).** Fix round a49c920 / 72787a8 / 50a4249 / 9fd798c, merged to local main as 91982ac
+(`Deimos/Core` 313 → **318/0/0**); bank corrections bc46291 + 77543c9 (53 notes). Rulings by the seat: (1) the session
+worktree stood in for the removed `inspiring-cannon` worktree, and its branch (which contains all of `deimos-phase2`)
+was the one merged; (2) at the merge `docs/STATE.md` took main's version whole and D31 went between D30 and D32;
+(3) the merge was committed before the merge-head gates ran, because other sessions commit on main and an open merge
+is a hazard — the gates then passed; (4) two review legs per fix family (house rule) where the brief said one; the 53
+notes got two reviewers on disjoint halves; (5) review-found comment fixes outside the cards' file lists
+(`SpawnRequest.swift` "five" → seven templates, `Console.swift` stale wording) were taken in the review-round commit;
+(6) bank row 44 was wrong as the plan worded it — a player-less fleeing unit keeps its flee point; the note records
+what the listing shows. **Ben, 2026-11-14:** "when you run out of context, trigger the next session and keep on …
+until you reach a hard stop that needs input" — Deimos sessions chain wave after wave.
+
 ## D45 — Ferazel's Wand re-planning pass: Ben's answers and the seat's rulings (2026-11-07)
 
 **Decided (Ben, in chat, 2026-11-07, answering the re-planning pass's five questions — spec
