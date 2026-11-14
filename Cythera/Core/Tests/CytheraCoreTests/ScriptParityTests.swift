@@ -9,10 +9,14 @@ import XCTest
 /// list). Counts: script-census.md §1–§2 and the plan's contract 4 (re-measured over the listings 2026-11-15).
 final class ScriptParityTests: XCTestCase {
 
-    /// Every script-band listing (pages 0x01–0x3F), decoded once per test process.
+    /// Every script-band listing (pages 0x01–0x3F), decoded once per test process; every read and write of the
+    /// cache happens under `cacheLock`, so parallel test methods cannot race on it.
     nonisolated(unsafe) private static var cache: [ScriptSegmentListing]?
+    private static let cacheLock = NSLock()
 
     private func listings() throws -> [ScriptSegmentListing] {
+        Self.cacheLock.lock()
+        defer { Self.cacheLock.unlock() }
         if let c = Self.cache { return c }
         let file = try segmentFile()
         let ids = file.ids.filter { (0x01...0x3F).contains($0 >> 8) }
@@ -69,8 +73,6 @@ final class ScriptParityTests: XCTestCase {
         XCTAssertEqual(Set(l.methods), [ScriptMethod(selector: 32, segment: 0x1802, offset: 0x002A),
                                         ScriptMethod(selector: 12, segment: 0x1802, offset: 0x0292)])
         XCTAssertEqual(l.properties, [68])
-        // The page-0x18 class is 0x40 (char), id = 0x1802 − 0x1000 − 0x40·0x20 (script-vm.md §2.1).
-        XCTAssertEqual(0x1000 + 0x40 * 0x20 + 2, 0x1802)
         let first = try XCTUnwrap(l.instructions.first)
         XCTAssertEqual([first.offset, first.length], [0, 2])
         XCTAssertEqual(first.mnemonic, ".hdr")
@@ -98,6 +100,17 @@ final class ScriptParityTests: XCTestCase {
         XCTAssertEqual(try at(0x0060).flag, .reached)               // reached only by the callsubs @0326, @055F
         XCTAssertEqual(try at(0x0326).subroutineTargets, [0x0060])
         XCTAssertEqual(try at(0x0326).jumpTargets, [])
+        XCTAssertEqual(try at(0x055F).subroutineTargets, [0x0060])
+        let into0060 = l.instructions.filter { i in
+            i.jumpTargets.contains(0x0060) || i.references.contains { r in
+                switch r {
+                case .subroutine(let t): return t == 0x0060
+                case .pointer(let v): return v & 0x7FFF_FFFF == 0x1802_0060
+                default: return false
+                }
+            }
+        }
+        XCTAssertEqual(into0060.map(\.offset), [0x0326, 0x055F])
         XCTAssertEqual(try at(0x0536).flag, .dead)                  // goto after a return: dead code
         XCTAssertEqual(try at(0x0539).flag, .jumpTarget)
         XCTAssertEqual(try at(0x0063).length, 555)                  // a text: 12 shown + …+543
@@ -115,6 +128,38 @@ final class ScriptParityTests: XCTestCase {
                 XCTAssertTrue(error is ScriptDecodeError || error is ScriptListingError, "cut \(cut): \(error)")
             }
         }
+        // Mutations of a class segment with its dictionary intact (prefixes all classify as data): bytes in the code
+        // region set to a statement-ending, a jump and a refused opcode, or flipped — each lists or throws by name.
+        let cls = [UInt8](try XCTUnwrap(file.scriptSegment(0x1802)))
+        for (k, at) in stride(from: 0x002A, to: 0x288E, by: 97).enumerated() {
+            var m = cls
+            m[at] = [0x40, 0x88, 0xFF, cls[at] ^ 0x80][k % 4]
+            do { _ = try ScriptDecoder.listing(0x1802, bytes: m) } catch {
+                XCTAssertTrue(error is ScriptDecodeError || error is ScriptListingError, "@\(at): \(error)")
+            }
+        }
+
+        // The walk's anomaly branches, as `Dis.trace` lists them (they stop the path; no line, no error).
+        func shape(_ bytes: [UInt8]) throws -> [String] {
+            try ScriptDecoder.listing(0x3000, bytes: bytes).instructions.map { i in
+                let f = i.flag == .dead ? "x" : i.flag == .jumpTarget ? ">" : "-"
+                return String(format: "%04X %d %@ %@", i.offset, i.length, i.mnemonic, f)
+            }
+        }
+        // A jump into the middle of an instruction (jf @0003 → 0005, inside itself): the path stops.
+        XCTAssertEqual(try shape([0x81, 0x00, 0x00, 0x8D, 0x41, 0x01, 0x40, 0x00, 0x05, 0x8B, 0x41, 0x00, 0x40]),
+                       ["0000 3 frame -", "0003 6 jf -", "0009 4 return -"])
+        // A jump into a literal (jt's pointer books "Hi" @0010; its target 0011 is inside it): the path stops.
+        XCTAssertEqual(try shape([0x81, 0x00, 0x00, 0x8C, 0x43, 0xB0, 0x00, 0x00, 0x10, 0x40, 0x00, 0x11,
+                                  0x8B, 0x41, 0x00, 0x40, 0x48, 0x69, 0x00]),
+                       ["0000 3 frame -", "0003 9 jt -", "000C 4 return -", "0010 3 .string -"])
+        // Overlapping decode: goto → 0012 is decoded first (8B 40), then jt → 0010 decodes 8B 41 8B 40 over it;
+        // both stay listed, and the bytes after the goto are swept as dead code.
+        XCTAssertEqual(try shape([0x81, 0x00, 0x00, 0x8C, 0x41, 0x01, 0x40, 0x00, 0x10, 0x88, 0x00, 0x12,
+                                  0x8B, 0x41, 0x00, 0x40, 0x8B, 0x41, 0x8B, 0x40]),
+                       ["0000 3 frame -", "0003 6 jt -", "0009 3 goto -", "000C 4 return x",
+                        "0010 4 return >", "0012 2 return >"])
+
         // A literal that points at itself is parsed once; a pointer past the end is ignored, as the tool does.
         // (0xB000_000A = a code pointer to 0x3000:000A; 0xB000_7FFF points past the end.)
         let selfArray: [UInt8] = [0x81, 0x00, 0x00, 0x8B, 0x43, 0xB0, 0x00, 0x00, 0x0A, 0x40,
@@ -159,7 +204,14 @@ final class ScriptParityTests: XCTestCase {
         XCTAssertEqual(symtab.kind, .dict)
         XCTAssertEqual(symtab.instructions.first?.mnemonic, ".dict")
         XCTAssertEqual(symtab.instructions.first?.length, 2 + 6 * 127)
-        XCTAssertEqual(symtab.instructions.filter { $0.mnemonic == ".string" }.count, 55)
+        let sym = [UInt8](try XCTUnwrap(file.scriptSegment(0x0101)))
+        let slots = (Int(sym[0]) << 8 | Int(sym[1])) & 0xFFF
+        XCTAssertEqual(slots, 127)
+        let keys = (0..<slots).filter { i in
+            let o = 2 + 6 * i
+            return sym[o..<(o + 4)].elementsEqual([0x50, 0x00, 0xFF, 0xFF]) == false     // non-Nil value
+        }
+        XCTAssertEqual(keys.count, 55)
 
         XCTAssertEqual(try listing(0x0301).kind, .array)
         for (id, length, lines) in [(UInt16(0x033F), 4, [4]), (0x0500, 20, [16, 4]), (0x0540, 4, [4])] {

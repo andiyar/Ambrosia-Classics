@@ -34,8 +34,9 @@ public struct ScriptInstruction: Equatable, Sendable {
     /// range-checked: a target past the end is the walk's anomaly, not a decode error.
     public let jumpTargets: [Int]
     public let kind: Kind
-    /// The operands the segment walk follows besides the jumps (C9), in byte order — the order
-    /// `scriptdis.py` meets them (`Dis.expr`, `Dis.callform`, `Dis.stmt`).
+    /// The operands the segment walk follows besides the jumps (C9), in the order `scriptdis.py`'s `Dis` meets
+    /// them (`Dis.expr`, `Dis.callform`, `Dis.stmt`): mostly byte order, but a 0x9E target comes after its
+    /// argument expression and a 0x83 word after its value expression.
     public let references: [ScriptReference]
 
     /// The 0x9E local-subroutine targets (absolute offsets in the segment), statement or expression form.

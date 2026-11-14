@@ -118,8 +118,9 @@ public enum InstructionDecoder {
         return r.pc
     }
 
-    /// Skips `count` consecutive expressions, appending the references it passes in byte order (C9: 0x43 code
-    /// pointers, 0x45 blocks, 0x47 words, 0x9E targets after their arguments). Nested call forms open their own
+    /// Skips `count` consecutive expressions, appending the references it passes in the order `Dis` meets them
+    /// (C9: 0x43 code pointers, 0x45 blocks and 0x47 words where they stand; a 0x9E target after its argument
+    /// expression). Nested call forms open their own
     /// expressions, each ended by its own 0x40 before the enclosing one continues, so a pending count replaces
     /// recursion (no stack depth from input); a 0x9E's target is emitted when the count falls back to its level.
     private static func skipExpressions(_ r: inout Reader, _ count: Int, _ refs: inout [ScriptReference]) throws {
