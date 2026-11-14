@@ -304,29 +304,52 @@ final class LevelOneFrameTests: XCTestCase {
     }
 
     /// Self-derived goldens (FNV-1a 64, `fnv1a64`), seed 0x469c2, no keys: the screen after passes 2, 56, 72, 105,
-    /// 600, 3118, 3200 and the back buffer after pass 0. Re-derived for the Phase-2 session (C18a) at HectorKit
+    /// 600 and 1195 and the back buffer after pass 0. Re-derived for the Phase-2 session (C18a) at HectorKit
     /// ef2c341, Classics bcddbe6 + this task's C18a tree (the commit that re-derives them); a second review leg
-    /// re-derives them. Back 0 and screens 2 and 105 are unchanged from R3 (nothing but the ship is on screen then);
-    /// 56 and 72 now show P1's entry spawn `plen`, 600 the level's units (the oracles above mask every drawn rect);
-    /// the session ends at pass 1195 (game over, ◇ stand-in 2), so 3118 and 3200 are its last frame ("GAME OVER").
+    /// re-derives them. Back 0 and screens 2 and 105 are unchanged from R3; the ship is not drawn at pass 2. The
+    /// `no01` notice (sprite `lena`) is drawn from pass 5 and, with P1's entry spawn `plen`, is the change at 56 and
+    /// 72; 600 shows the level's units (the oracles above mask every drawn rect).
+    ///
+    /// The end of the session: an input-less player loses its lives at passes 443, 760 and 1022, the game over starts
+    /// at 1084 and the session ends at pass 1195 (◇ stand-in 2), so the frame after pass 1195 ("GAME OVER") is the
+    /// last one. The R3 marks 3118 and 3200 are kept as checks that stepping on changes nothing (every pass after the
+    /// end is an empty `sessionEnded` output; the screen is identical). The scroll stopping at the top is covered by
+    /// `EntityUpdateTests.testMidControllerPausesScroll` / `testBridgeControllerPausesAtTop346`, not here.
     func testFrameGoldens() throws {
         let screenGoldens: [Int: UInt64] = [
             2: 0xa50b_449b_e758_b51e, 56: 0x260c_2289_b23f_a581, 72: 0x0d50_8957_88f4_79e3,
             105: 0x2295_e00a_698a_ad11, 600: 0x6e1b_2ee3_24e6_7f5a,
-            3118: 0xe91f_3acb_0ca6_2aaf, 3200: 0xe91f_3acb_0ca6_2aaf,   // the session ended at pass 1195
+            1195: 0xe91f_3acb_0ca6_2aaf,   // the last pass: the session ends here (game over)
         ]
+        let lastPass = 1195
         let backGolden0: UInt64 = 0x9527_86d1_5e67_2e50
-        var run = try HeadlessRun(label: "goldens", dump: Set(screenGoldens.keys).union([0]))
+        var run = try HeadlessRun(label: "goldens", dump: Set(screenGoldens.keys).union([0, 3118, 3200]))
         run.run(through: 0)
         var got: [String] = []
         let back0 = fnv1a64(run.renderer.buffer(.back))
         got.append("back 0: 0x\(String(back0, radix: 16))")
         XCTAssertEqual(back0, backGolden0, "back after pass 0")
         for n in screenGoldens.keys.sorted() {
-            run.run(through: n)
+            if n == lastPass {
+                let before = run.run(through: n - 1)
+                XCTAssertEqual(before?.sessionEnded, false, "pass \(n - 1): the session still runs")
+                XCTAssertTrue(run.pass().sessionEnded, "pass \(n): the session ends")
+            } else {
+                run.run(through: n)
+            }
             let h = fnv1a64(run.renderer.screen)
             got.append("screen \(n): 0x\(String(h, radix: 16))")
             XCTAssertEqual(h, screenGoldens[n], "screen after pass \(n)")
+        }
+        // Stepping on to the R3 marks 3118 and 3200 (bounded: one pass each) changes nothing.
+        let frozen = run.renderer.screen
+        for n in [3118, 3200] {
+            while run.next <= n {
+                let k = run.next
+                let out = run.pass()
+                guard out == PassOutput(sessionEnded: true) else { return XCTFail("pass \(k) after the end: \(out.ops.count) ops") }
+            }
+            XCTAssertEqual(run.renderer.screen, frozen, "screen after pass \(n) = the frame after pass \(lastPass)")
         }
         print("R3 goldens:", got.joined(separator: ", "))
     }

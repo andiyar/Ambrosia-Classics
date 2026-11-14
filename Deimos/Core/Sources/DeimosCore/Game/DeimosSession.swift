@@ -159,11 +159,11 @@ public struct DeimosSession: Sendable {
 
         // srand: the film's seed (FUN_100069b0 → FUN_10055400) or TickCount (100057d4).
         var g = GameState(assets: assets, prefs: prefs, seed: start.film?.seed ?? seed)
-        g.flags.filmPlaying = start.film != nil                      // 1000533c..10005344 (G+0x20)
+        g.flags.filmPlaying = start.film != nil                      // 10005670..1000568c (G+0x20)
         g.film = start.film.map(FilmCursor.init(film:))              // FUN_100069b0: cursors 0 (FUN_10009970)
         g.flags.numPlayers = UInt8(truncatingIfNeeded: players)      // FUN_10009680 / 10005770 (G+0x21)
 
-        // Frame controller: FUN_10030190 + FUN_10030210(ctrl, film, 1, 1) (10005348..10005350).
+        // Frame controller: FUN_10030190 + FUN_10030210(ctrl, film, 1, 1) (10005690..100056ac).
         var c = FrameController(fpsMaxRate: EntityDraw.fctiwz(f[32]))
         var con = try Console(assets: assets)
         FrameKeys.startSession(controller: &c, console: &con, game: &g, filmPlayback: start.film != nil,

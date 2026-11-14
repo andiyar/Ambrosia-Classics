@@ -154,6 +154,31 @@ final class FilmPlaybackTests: XCTestCase {
         XCTAssertNil(end.haltEffectsAt)
         XCTAssertFalse(end.music.contains(.stop))
         XCTAssertEqual(s.pass(keys: HeldKeys(), ticks: 0), PassOutput(sessionEnded: true))
+
+        // Held keys other than Esc neither end a film nor reach it: `FUN_10048e60` is the mouse button only
+        // (`10048e6c`); the film ends on film finished (`10005a38`), the mouse button (not modelled), Esc through the
+        // begin frame (`10005904` → `FUN_100307c0` key 0x35), level complete or game over. The same film with P1's
+        // keys, P2's and plain letters held in turn runs pass for pass as the key-less film above, ending on the same
+        // pass. Bound: frames + 200 passes.
+        let keySets: [Set<UInt16>] = [[0x7E], [0x7B, 0x37], [0x7C, 0x3A, 0x31], [0x7D], [0x00, 0x0C, 0x5B, 0x77]]
+        var keyed = try DeimosSession(assets: assets(), prefs: .fresh,
+                                      start: SessionStart(sector: 5, players: 2, film: film), seed: 1)
+        var plain = try DeimosSession(assets: assets(), prefs: .fresh,
+                                      start: SessionStart(sector: 5, players: 2, film: film), seed: 1)
+        var keyedPasses = 0
+        while keyedPasses < frames + 200 {
+            let held = HeldKeys(held: keySets[keyedPasses % keySets.count])
+            let out = keyed.pass(keys: held, ticks: 0)
+            let ref = plain.pass(keys: HeldKeys(), ticks: 0)
+            keyedPasses += 1
+            guard out == ref else { return XCTFail("keyed film pass \(keyedPasses) differs from the key-less film") }
+            XCTAssertEqual(keyed.game.film!.cursors[0], plain.game.film!.cursors[0], "pass \(keyedPasses): film input")
+            if out.sessionEnded { break }
+            XCTAssertTrue(keyed.running, "pass \(keyedPasses): held keys do not end the film")
+        }
+        XCTAssertEqual(keyedPasses, passes, "the keyed film ends on the key-less film's pass")
+        XCTAssertTrue(keyed.game.film!.finished)
+        XCTAssertEqual(keyed.game.film!.cursors[0], Int32(frames + 1))
     }
 
     /// The film overlay (`10005a50..10005a9c`): format 0x26 = 38, GameString 9 ("REPLAY"), +0x10c = 15, +0x10d = 1,
