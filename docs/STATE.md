@@ -16,43 +16,45 @@ Settled history lives in docs/STATE-history.md.
   crates onto him (ten crushes); his death opens the gate and ends the boss music. Levels 1–4 are unchanged.
   **Wave 6A.2 has begun (also run 52, under Ben's raised cap): 6A-FX** (a test-only fixture that opens a later level
   with its unbuilt objects left out), **6A-S8** (the horizon strip — the distant skyline band of levels 10, 30, 40,
-  45, 62, 67) and **6A-WD** (wind cells on levels 10 and 20). None is visible to a player yet: no level past 5 opens
+  45, 62, 67), **6A-WD** (wind cells on levels 10 and 20) and **6A-RC** (the rotating cannons of levels 10, 15 and
+  20, turned by themselves or steered by Ferazel's shots). None is visible to a player yet: no level past 5 opens
   until 6A-L10L11.
-- **Owed, first act of the next run that starts by day (09:00–20:59), muted:** Proof B (expect **669 / 0 / 3 / 0 of
-  672** at today's head; the wave 6A.1 line was 647 of 650) and the Mac SDL smoke. Run 52 reached the wave end at 20:52. The wave's Fable cross-check is done (pass, no
+- **Owed, first act of the next run that starts by day (09:00–20:59), muted:** Proof B (expect **679 / 0 / 3 / 0 of
+  682** at today's head; the wave 6A.1 line was 647 of 650) and the Mac SDL smoke. Run 52 reached the wave end at 20:52. The wave's Fable cross-check is done (pass, no
   fixes).
 - **Staged builds on the Desktop are old** (game code as e9183ce, run 50): they still show the stand-in Warrior. The
   next stage is the 6A phase end unless Ben asks for one.
-- **Next:** run 53 = the two owed launch checks (by day), then 6A-RC (rotating cannons), 6A-TR (trees), 6A-RP ⚑ (the
-  river ripple): Core 672 → 682 → 693 → 703. It does not wait for Ben's verdict.
+- **Next:** run 53 = the two owed launch checks (by day), then 6A-TR (trees), 6A-RP ⚑ (the river ripple), 6A-BX1a (Box
+  scenery): Core 682 → 693 → 703 → 709. It does not wait for Ben's verdict.
 - **The plan:** `docs/superpowers/plans/2026-11-04-ferazel-remainder.md` (self-contained); the design:
   `docs/superpowers/specs/2026-11-04-ferazel-remainder-design.md`.
 - **Ben's gates:** Phase 1 passed; Phases 2 and 3 passed with notes; Phase 4 passed (Fireball note) and the Windows
   twin passed on Andrew's word (2026-11-07); **Phase 5 waiting (Q18)**. Then three gated Phase 6 parts (6A to the Goblin
   Chief, 6B to the Wizard and the fire, 6C the whole game), then one release `ferazel-1.0`.
-- **Current numbers** (Core suite, WinKit suite, GW4 and the census: the seat's own runs at run 52's code head 4134bbc,
-  2026-11-15; G5 / GW1 / GW3: the implementer's at e7457f7; the full sweep and bot, Proof B and the launch gates: runs
+- **Current numbers** (Core suite, WinKit suite, GW4 and the census: the seat's own runs at 4134bbc, 2026-11-15, and the Core suite again at
+  run 52's code head 3df76d5; G5 / GW1 / GW3: the implementer's at 0a2734b; the full sweep and bot, Proof B and the launch gates: runs
   48 and 50, older code):
 
 | gate | value |
 |---|---|
-| Ferazel/Core suite (G2) | **672** = 522 rules + 150 render; 670 passed, 0 failed, 2 opt-in skips by name: `FerazelRenderTests.VisitSweepTests testVisitEveryObject`, `FerazelRenderTests.RandomPlayTests testRandomPlay` |
+| Ferazel/Core suite (G2) | **682** = 530 rules + 152 render; 680 passed, 0 failed, 2 opt-in skips by name: `FerazelRenderTests.VisitSweepTests testVisitEveryObject`, `FerazelRenderTests.RandomPlayTests testRandomPlay` |
 | FerazelWinKit (GW2) | **82**; 80 passed, 0 failed, 2 opt-in skips (`WinVisitSweepTests testVisitEveryObjectThroughWinGame`, `WinRandomPlayTests testRandomPlayThroughWinGame`) |
 | census (G3) | items 1,108 decoded, failures 0 (run 52) |
 | level 5 quick checks (run 52, core) | bot: levels 1, seeds 4, steps 7200, deaths 1, exits 17, failures 0; visit sweep: 128 visits, rows 0, exit 0 |
 | visit sweep (GE, levels 1–5, both shells) | core 3,488 visits, windows 3,488 visits, rows 0 on both — run 48, older code |
 | random-play bot (GE, levels 1–5, both shells) | core and windows each: steps 108,000, failures 0 — run 48, older code |
-| Proof B in CrossOver, muted (GWB) | **owed** (expect 669 / 0 / 3 / 0 of 672); last measured 617 / 0 / 3 / 0 (of 620), run 50 |
+| Proof B in CrossOver, muted (GWB) | **owed** (expect 679 / 0 / 3 / 0 of 682); last measured 617 / 0 / 3 / 0 (of 620), run 50 |
 | Mac SDL smoke (GW4R) | **owed**; GW6 and G9M last passed in run 50 |
 | GW1 / GW3 / GW4 / G5 | 0 then 2 / 0 then 1 / Build complete! / BUILD SUCCEEDED |
 | HectorKit (G1) | main **ef2c341**, clean; zero-skip executed **370**; Ferazel follows HectorKit main |
-| ladder from here | 672 → RC 682 → TR 693 → RP 703 (run 53) … 814 at the 6A end; WinKit 82 → 90 |
+| ladder from here | 682 → TR 693 → RP 703 → BX1a 709 (run 53) … 814 at the 6A end; WinKit 82 → 90 |
 
 - **Goldens (◈):** level 5's pins moved in 6A-W1 for the three crates — init 46 / `0xb039da66a884cb8a` (held), f30 58 /
   `0x1142f7a252aecfcd`, f120 58 / `0x9806297cea4531f2`; nothing else moved. The Warrior's scripted fight is pinned:
   HP 0 at game frame 4966, Kill at 5051. New fixture goldens (run 52): level 21's fixture first frame
   `fb80e30a68e4efb7`; level 10's strip, two frames, `e471fa3eeca627d3` (tick 1612) and `e8fc9d1805afb1d5` (tick 1658);
-  level 10's wind `c9ad94cdb8b2d287` (trace `20b0a649c605b4d0`). All other values as the plan's "Goldens" paragraph.
+  level 10's wind `c9ad94cdb8b2d287` (trace `20b0a649c605b4d0`); level 10's cannons `1f159e3178d4733` (traces
+  `a94f59ac15d64d04`, `2970c03ffb33c302`). All other values as the plan's "Goldens" paragraph.
 - **Waiting on Ben (QUESTIONS.md "Open"; nothing blocks; none answered at run 52's start):** **Q18 (the Phase 5
   gate)**, Q19 (three small choices in the 6A plan), Q17, Q16 (defaults stand), Q15's follow-ups, Q13.
 - **Worktrees:** `gallant-brahmagupta-56ed81` is run 52's (merged). `eager-fermat-db9ed9` (run 51), `hungry-bun-395f55`

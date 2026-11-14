@@ -2323,7 +2323,7 @@ file, reviewed by two Opus legs and cross-checked by Fable. The plan's own "Plan
    added) and the wording this run's tasks made stale (`BuiltLevels.swift`, `BossArena.swift`, `Camera.swift`,
    `ScreenFlash.swift`, `LevelFlow.swift`).
 4. **The context cap for run 52 was raised to 500k by Ben** (in chat, 2026-11-14), for this session only.
-5. **Run 52 continued past its chip under the raised cap** and built run 53's three tasks too: 6A-FX, 6A-S8, 6A-WD.
+5. **Run 52 continued past its chip under the raised cap** and built four more tasks: 6A-FX, 6A-S8, 6A-WD, 6A-RC.
 6. **The level fixture gained signatures beyond the plan's two** (6A-FX fix round): an `open(resources:…)` overload
    and, Render side, `LevelFixtureServices.open(…) -> (run, services)` — one patched data set for the run and its
    renderer — plus `firstPresentedFrame`, the one helper every later golden uses. The plan's two signatures are
@@ -2337,4 +2337,6 @@ file, reviewed by two Opus legs and cross-checked by Fable. The plan's own "Plan
    retargeted to assert a failed load the original would not have. With the real data nothing changes.
 9. **The wind trace starts where the wind can hold the player** (6A-WD): the card's "first column" has wind weaker
    than gravity. Start (7102, 1109); the values re-measured in the fix round are the task's own new values, not moves.
-
+10. **Unplaced cannon kinds stay refused with no owner** (6A-RC): p1 1…100 and above 106 are placed on no level; their
+    Setup arm is built and unit-tested as the dump has it, but level setup keeps refusing them, pinned. Only p1 < 0
+    (the path cannons) is 6B's. The ledger's check now anchors on the code's own range.

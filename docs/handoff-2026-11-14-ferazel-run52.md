@@ -21,7 +21,7 @@ moved (W1: 55 → 58 sprites at frames 30 and 120, the crates).
 diff read in full): pass, no fixes. **Owed (night rule; the wave end came at 20:52): Proof B (expect 647 / 0 / 3 / 0
 of 650) and the Mac SDL smoke** — the first act of the next run that starts by day.
 
-**Continued under Ben's raised cap (500k), overnight.** Three more tasks merged, the first of wave 6A.2, none
+**Continued under Ben's raised cap (500k), overnight.** Four more tasks merged, the first of wave 6A.2, none
 visible to a player yet (no level past 5 opens until levels 10 and 11 do):
 
 | task | what it is | commits |
@@ -29,14 +29,15 @@ visible to a player yet (no level past 5 opens until levels 10 and 11 do):
 | 6A-FX | a test-only fixture that opens a later level with its unbuilt objects left out; proved on level 21 | 520590c, fix 213aa19 |
 | 6A-S8 ⚑ | the horizon strip: the distant skyline band behind six later levels, drawn behind the scenery | 06f7250, fix cdaf65d |
 | 6A-WD ◈ | wind cells on levels 10 and 20; the earlier strip picture did not move | e7457f7, fix 4134bbc |
+| 6A-RC | the rotating cannons of levels 10, 15 and 20: they turn by themselves or are steered by Ferazel's shots | 0a2734b, fix 3df76d5 |
 
-Core suite 652, 663, 672 at the three merges (the seat's runs), 0 failed. The fixture's interface that eleven later
+Core suite 652, 663, 672, 682 at the four merges (the seat's runs), 0 failed. The fixture's interface that eleven later
 tasks code against is written out in the plan's "As executed — 6A-FX". Proof B is still owed and now expects
-669 / 0 / 3 / 0 of 672.
+679 / 0 / 3 / 0 of 682.
 
 **Rulings.** `docs/DECISIONS.md` D49. **Open items.** `docs/STATE.md`, "From run 52".
 
 **No WIP.** The worktree `gallant-brahmagupta-56ed81` is merged and clean. Nothing was launched. Q18 and Q19 were
 unanswered at the start of the run. Local main also carries the Deimos session's commits; this run pushed main.
 
-**Next.** Run 53: the owed launch checks by day, then 6A-RC, 6A-TR, 6A-RP ⚑ — `docs/NEXT.md`.
+**Next.** Run 53: the owed launch checks by day, then 6A-TR, 6A-RP ⚑, 6A-BX1a — `docs/NEXT.md`.

@@ -1588,6 +1588,27 @@ ids; its `--check` reads this table):
   `FeatureGoldenTests` on the fixture: `testLevel10CannonTrace` (Render; kept — 6A-L10L11 keeps it when it deletes the
   golden beside it) · `testLevel10RotatingCannonFeatureGolden` (**deleted at 6A-L10L11**). Asserts: ENG §2.3's seven.
 - **Gate:** Gate-F (G2 682). **Commit:** `FerazelCore: rotating cannons (p1 101…106) and shot steering; 10 tests`.
+- **As executed — 6A-RC (run 52, continued):** task 0a2734b (10 tests: 8 `RotatingCannonTests`, 2
+  `FeatureGoldenTests`), review fix round 3df76d5 (tests, labels, the ledger check; Sources comments only). Two Opus
+  legs: MERGEABLE AFTER FIXES (0 / 2 / 5 minor — Setup, Handle and steering match the dump and the raw disassembly,
+  the shot-kill arguments and the click's voice check included), MERGEABLE AFTER FIXES (0 / 3 / 7 minor; 103
+  mutations: 93 killed, 4 equivalent, 6 survivors — all killed after the fix round). No disagreement between dump,
+  ENG and card on the code. No existing pinned value moved; every cannon on levels 1–5 (three, on level 1) has p1 0.
+  **New values (measured; level-10 fixture, the literal 27-record list):** two traces, the fixture opened twice
+  because the cannons are ~4,000 px apart — record 89 (kind 101) from (4350, 627) `a94f59ac15d64d04`; record 200
+  (kind 103) from (8400, 133) `2970c03ffb33c302`; the **feature golden** `1f159e3178d4733` — record 200 wholly on
+  screen at tick 1630, **loop iteration 10** (the draw, M l. 5248, runs before the handlers, M l. 5276, so the turned
+  cannon first shows a frame later; iteration 9 is unchanged by the rotation). With the rotation stubbed:
+  `fe12089ab1be3c25`, `a7ebba282965cd79`, `5189680b496e8bbd`. The traces also assert the 485 click at every pause end.
+  Notes: (a) **steering of a 105 / 106 is covered only by the synthetic tests** — no placed cannon on any level has
+  p1 104 or 106, and no traced frame steers one. (b) The Setup arm takes p1 1…100 and > 106 as written (the
+  programmed-path branch is built and unit-tested, `testCannonP1OutsideRangeTakesPath`), but **no level places one;
+  they stay refused at level setup, pinned, with no owner**; p1 < 0 (the path cannons) stays refused and is 6B's.
+  (c) The record write-back is tested through the real level-setup path (`spawnLevelSprites`). (d) A p1-0 cannon sent
+  into the rotation is caught by `BackgroundMoverTests` and the strip golden, not by any level-1 golden. (e) Files
+  beyond the card, accepted: `BackgroundMoverTests.swift` (101 / 105 / 106 no longer refused; −1, −2, 1, 107 still
+  are), four new cannon writer rows in `DrawModeAuditTests`, the ledger script (its check now anchors on the Swift
+  range `rotatingP1 … 101...106` — narrowing the range fails `--check`) and the ledger document.
 
 #### 6A-TR — minor — trees and their branches (→ 693)
 - **Files:** `Sources/FerazelCore/Sprites/SetupFaces.swift` (`:430`, the Background `default` for 0xc08…0xc0f),
