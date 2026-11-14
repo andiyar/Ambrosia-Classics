@@ -28,6 +28,12 @@ public enum ScriptDecoder {
 
     /// The listing of script-band segment `id` (pages 0x01–0x3F), read with `scriptSegment` (decrypted except
     /// 0x0101, 0x0210 and the combat-AI band, which are stored plain).
+    ///
+    /// A census and parity tool, never a gate for running a segment: a decode error anywhere refuses the whole
+    /// segment — including one met by the speculative dead-code sweep over bytes nothing reaches. Throws
+    /// `ScriptListingError` (band, absence, literal nesting or truncation), `ScriptDecodeError` (a statement or
+    /// expression the decoder refuses) and `CombatAIError` (a combat-AI shape the census has not shown). Shapes
+    /// the tool lists with an "ANOMALY" note are listed the same way and recorded in `anomalies`.
     public static func listing(_ id: UInt16, in file: SegmentFile) throws -> ScriptSegmentListing {
         guard (0x01...0x3F).contains(id >> 8) else { throw ScriptListingError.notScriptBand(id) }
         guard let data = file.scriptSegment(id) else { throw ScriptListingError.missingSegment(id) }
@@ -144,6 +150,8 @@ private struct Walk {
     var dead: Set<Int> = []
     /// Bytes neither decoded nor referenced: [start, end).
     var rawGaps: [(start: Int, end: Int)] = []
+    /// What the tool notes as "ANOMALY", in the order met.
+    var anomalies: [ScriptAnomaly] = []
 
     init(id: UInt16, kind: ScriptSegmentKind, bytes: [UInt8]) {
         self.id = id
@@ -167,9 +175,9 @@ private struct Walk {
     }
 
     /// A same-segment code pointer: code when the target byte is 0x80–0x8F, else a literal block; past the
-    /// end it is the tool's anomaly (ignored).
+    /// end it is the tool's anomaly (recorded, not followed).
     mutating func target(_ off: Int, depth: Int) throws {
-        guard off < n else { return }
+        guard off < n else { anomalies.append(ScriptAnomaly(.pointerPastEnd, at: off)); return }
         if (0x80...0x8F).contains(b[off]) { entries.append(off) } else { _ = try block(off, length: nil, depth: depth) }
     }
 
@@ -189,14 +197,14 @@ private struct Walk {
             guard off + 2 <= n else { throw ScriptListingError.truncatedLiteral(offset: off) }
             var count = ScriptDecoder.u16(b, off) & 0xFFF
             var end = off + 2 + 4 * count
-            if end > n { end = n; count = (end - off - 2) / 4 }
+            if end > n { end = n; count = (end - off - 2) / 4; anomalies.append(ScriptAnomaly(.arrayPastEnd, at: off)) }
             addBlock(off, end, "array")
             for i in 0..<count { try vaddr(ScriptDecoder.u32(b, off + 2 + 4 * i), depth: depth + 1) }
         case 0xA0...0xAF:
             guard off + 2 <= n else { throw ScriptListingError.truncatedLiteral(offset: off) }
             var count = ScriptDecoder.u16(b, off) & 0xFFF
             var end = off + 2 + 6 * count
-            if end > n { end = n; count = (end - off - 2) / 6 }
+            if end > n { end = n; count = (end - off - 2) / 6; anomalies.append(ScriptAnomaly(.dictPastEnd, at: off)) }
             addBlock(off, end, "dict")
             var slots: [(key: Int, value: UInt32, at: Int)] = []
             for i in 0..<count {
@@ -210,12 +218,14 @@ private struct Walk {
         default:
             let l = length ?? 0
             addBlock(off, off + (l == 0 ? 1 : l), "odd")                          // `length or 1`
+            anomalies.append(ScriptAnomaly(.oddLiteral, at: off))
         }
         return blocks[off]?.end ?? off
     }
 
     mutating func word(_ off: Int) {
-        guard off + 4 <= n, blocks[off] == nil else { return }
+        guard off + 4 <= n else { anomalies.append(ScriptAnomaly(.wordPastEnd, at: off)); return }
+        guard blocks[off] == nil else { return }
         addBlock(off, off + 4, "word")
     }
 
@@ -226,8 +236,12 @@ private struct Walk {
             var pc = start
             while pc < n {
                 if insns[pc] != nil { break }
-                if owner[pc] >= 0, insns[owner[pc]]?.mnemonic != "text" { break }   // mid-instruction (anomaly)
-                if blockOwner[pc] >= 0, blocks[blockOwner[pc]]?.kind != "word" { break } // into a literal (anomaly)
+                if owner[pc] >= 0, insns[owner[pc]]?.mnemonic != "text" {
+                    anomalies.append(ScriptAnomaly(.midInstruction, at: pc)); break
+                }
+                if blockOwner[pc] >= 0, blocks[blockOwner[pc]]?.kind != "word" {
+                    anomalies.append(ScriptAnomaly(.intoLiteral, at: pc)); break
+                }
                 let ins = try InstructionDecoder.statement(in: b, at: pc)
                 let end = pc + ins.length
                 for r in ins.references {
@@ -235,12 +249,17 @@ private struct Walk {
                     case .subroutine(let t): entries.append(t)
                     case .pointer(let v): try vaddr(v, depth: 0)
                     case .inlineBlock(let range):
-                        _ = try block(range.lowerBound, length: range.count, depth: 0)
+                        // An empty 0x45 block parses nothing (the tool would book the following byte as a
+                        // literal; no shipped block is empty).
+                        if !range.isEmpty, try block(range.lowerBound, length: range.count, depth: 0) > range.upperBound {
+                            anomalies.append(ScriptAnomaly(.inlineBlockOverrun, at: range.lowerBound))
+                        }
                         for i in range where i < n && blockOwner[i] < 0 { blockOwner[i] = range.lowerBound }
                     case .word(let o): word(o)
                     }
                 }
-                for t in ins.jumpTargets where t < n {
+                for t in ins.jumpTargets {
+                    guard t < n else { anomalies.append(ScriptAnomaly(.jumpPastEnd, at: t)); continue }
                     entries.append(t)
                     jumpLabels.insert(t)
                 }
@@ -248,8 +267,11 @@ private struct Walk {
                 if isDead { dead.insert(pc) }
                 for i in pc..<min(end, n) {
                     let o = owner[i]
-                    if o >= 0 && o != pc && ins.mnemonic == "text" && insns[o]?.mnemonic == "text" { continue }
-                    owner[i] = pc                       // a shared text tail keeps its earliest owner
+                    if o >= 0 && o != pc {
+                        if ins.mnemonic == "text" && insns[o]?.mnemonic == "text" { continue }  // a shared text tail
+                        anomalies.append(ScriptAnomaly(.overlappingDecode, at: i))              // keeps its owner
+                    }
+                    owner[i] = pc
                 }
                 if [0x88, 0x8B, 0x92].contains(b[pc]) { break }  // goto, return, raise end the path
                 pc = end
@@ -365,6 +387,6 @@ private struct Walk {
         }
         return ScriptSegmentListing(id: id, kind: kind, length: n, instructions: lines,
                                     dictionaryOffset: dictionaryOffset, methods: methods,
-                                    properties: properties.sorted(), deadCodeRuns: runs)
+                                    properties: properties.sorted(), deadCodeRuns: runs, anomalies: anomalies)
     }
 }

@@ -81,8 +81,11 @@ final class ScriptParityTests: XCTestCase {
         XCTAssertEqual(dict.mnemonic, ".dict")
         XCTAssertEqual(dict.length, 10_426 - 0x288E)
         // A same-segment dictionary pointer into another segment's code is a shared method, not a property.
-        let shared = try listings().flatMap { l in l.methods.filter { $0.segment != l.id } }
-        XCTAssertFalse(shared.isEmpty)
+        let all = try listings()
+        let shared = all.flatMap { l in l.methods.filter { $0.segment != l.id } }
+        XCTAssertEqual(shared.count, 7)
+        XCTAssertEqual(all.flatMap { l in l.methods.filter { $0.segment == l.id } }.count, 1_023)
+        XCTAssertEqual(all.reduce(0) { $0 + $1.properties.count }, 643)
     }
 
     // MARK: - Reachability
@@ -92,6 +95,18 @@ final class ScriptParityTests: XCTestCase {
         var flags: [ScriptInstruction.Flag: Int] = [:]
         for l in all { for i in l.instructions { flags[i.flag, default: 0] += 1 } }
         XCTAssertEqual(flags, [.reached: 16_899, .jumpTarget: 4_665, .dead: 602])
+        // Corpus totals (re-measured with scriptdis.py's Dis, 2026-11-15): every listing header says "anomalies: 0".
+        XCTAssertEqual(all.filter { !$0.anomalies.isEmpty }.map(\.id), [])
+        let code = all.filter { $0.kind == .class || $0.kind == .routine }
+        XCTAssertEqual(code.count, 918)
+        XCTAssertEqual(code.reduce(0) { $0 + $1.deadCodeRuns }, 599)
+        let statements = all.flatMap(\.instructions).filter { $0.kind == .statement }
+        XCTAssertEqual(statements.reduce(0) { $0 + $1.jumpTargets.count }, 6_845)
+        XCTAssertEqual(statements.reduce(0) { $0 + $1.subroutineTargets.count }, 40)
+        XCTAssertEqual(statements.flatMap(\.references).filter {
+            if case .inlineBlock = $0 { return true } else { return false }
+        }.count, 176)
+        XCTAssertEqual(all.flatMap(\.instructions).filter { $0.mnemonic == ".word" }.count, 4)
 
         let l = try listing(0x1802)
         XCTAssertEqual(l.deadCodeRuns, 3)
@@ -147,18 +162,29 @@ final class ScriptParityTests: XCTestCase {
             }
         }
         // A jump into the middle of an instruction (jf @0003 → 0005, inside itself): the path stops.
-        XCTAssertEqual(try shape([0x81, 0x00, 0x00, 0x8D, 0x41, 0x01, 0x40, 0x00, 0x05, 0x8B, 0x41, 0x00, 0x40]),
-                       ["0000 3 frame -", "0003 6 jf -", "0009 4 return -"])
+        func anomalies(_ bytes: [UInt8]) throws -> [ScriptAnomaly] {
+            try ScriptDecoder.listing(0x3000, bytes: bytes).anomalies
+        }
+        let mid: [UInt8] = [0x81, 0x00, 0x00, 0x8D, 0x41, 0x01, 0x40, 0x00, 0x05, 0x8B, 0x41, 0x00, 0x40]
+        XCTAssertEqual(try shape(mid), ["0000 3 frame -", "0003 6 jf -", "0009 4 return -"])
+        XCTAssertEqual(try anomalies(mid), [ScriptAnomaly(.midInstruction, at: 0x05)])
         // A jump into a literal (jt's pointer books "Hi" @0010; its target 0011 is inside it): the path stops.
-        XCTAssertEqual(try shape([0x81, 0x00, 0x00, 0x8C, 0x43, 0xB0, 0x00, 0x00, 0x10, 0x40, 0x00, 0x11,
-                                  0x8B, 0x41, 0x00, 0x40, 0x48, 0x69, 0x00]),
-                       ["0000 3 frame -", "0003 9 jt -", "000C 4 return -", "0010 3 .string -"])
+        let lit: [UInt8] = [0x81, 0x00, 0x00, 0x8C, 0x43, 0xB0, 0x00, 0x00, 0x10, 0x40, 0x00, 0x11,
+                            0x8B, 0x41, 0x00, 0x40, 0x48, 0x69, 0x00]
+        XCTAssertEqual(try shape(lit), ["0000 3 frame -", "0003 9 jt -", "000C 4 return -", "0010 3 .string -"])
+        XCTAssertEqual(try anomalies(lit), [ScriptAnomaly(.intoLiteral, at: 0x11)])
         // Overlapping decode: goto → 0012 is decoded first (8B 40), then jt → 0010 decodes 8B 41 8B 40 over it;
         // both stay listed, and the bytes after the goto are swept as dead code.
-        XCTAssertEqual(try shape([0x81, 0x00, 0x00, 0x8C, 0x41, 0x01, 0x40, 0x00, 0x10, 0x88, 0x00, 0x12,
-                                  0x8B, 0x41, 0x00, 0x40, 0x8B, 0x41, 0x8B, 0x40]),
-                       ["0000 3 frame -", "0003 6 jt -", "0009 3 goto -", "000C 4 return x",
-                        "0010 4 return >", "0012 2 return >"])
+        let overlap: [UInt8] = [0x81, 0x00, 0x00, 0x8C, 0x41, 0x01, 0x40, 0x00, 0x10, 0x88, 0x00, 0x12,
+                                0x8B, 0x41, 0x00, 0x40, 0x8B, 0x41, 0x8B, 0x40]
+        XCTAssertEqual(try shape(overlap), ["0000 3 frame -", "0003 6 jt -", "0009 3 goto -", "000C 4 return x",
+                                            "0010 4 return >", "0012 2 return >"])
+        XCTAssertEqual(try anomalies(overlap), [ScriptAnomaly(.overlappingDecode, at: 0x12),
+                                                ScriptAnomaly(.overlappingDecode, at: 0x13)])
+        // An empty 0x45 block parses nothing: the return after `print blk` is code, not a literal (no shipped case).
+        let empty: [UInt8] = [0x81, 0x00, 0x00, 0x8A, 0x45, 0x00, 0x00, 0x40, 0x8B, 0x41, 0x00, 0x40]
+        XCTAssertEqual(try shape(empty), ["0000 3 frame -", "0003 5 print -", "0008 4 return -"])
+        XCTAssertEqual(try anomalies(empty), [])
 
         // A literal that points at itself is parsed once; a pointer past the end is ignored, as the tool does.
         // (0xB000_000A = a code pointer to 0x3000:000A; 0xB000_7FFF points past the end.)
@@ -167,6 +193,7 @@ final class ScriptParityTests: XCTestCase {
         let s = try ScriptDecoder.listing(0x3000, bytes: selfArray)
         XCTAssertEqual(s.instructions.map(\.mnemonic), ["frame", "return", ".array"])
         XCTAssertEqual(s.instructions.map(\.length), [3, 7, 10])
+        XCTAssertEqual(s.anomalies, [ScriptAnomaly(.pointerPastEnd, at: 0x7FFF)])
         // A chain of nested literals deeper than the walk allows is refused by name, never a stack overflow.
         var chain: [UInt8] = [0x81, 0x00, 0x00, 0x8B, 0x43, 0xB0, 0x00, 0x00, 0x0A, 0x40]
         for k in 0..<400 {
@@ -236,6 +263,10 @@ final class ScriptParityTests: XCTestCase {
             XCTAssertEqual(l.instructions.map(\.offset), [0] + (0..<seg.entries.count).map { 0x20 + 8 * $0 })
             XCTAssertTrue(l.instructions.allSatisfy { $0.length == 0 && $0.flag == .reached })
         }
+        XCTAssertEqual(ai.compactMap { $0.combatAI?.name }, [
+            "Attack Nearest", "Attack Weakest", "Attack Strongest", "Defend", "Beserk", "Missile Script", "Healer",
+            "Attack Nearest", "Attack Strongest", "Attack Weakest", "Beserk", "Defend", "Missile Script", "Healer",
+        ])                                                          // "Beserk" as stored
         let first = try XCTUnwrap(ai.first?.combatAI)
         XCTAssertEqual(first.name, "Attack Nearest")
         XCTAssertEqual(first.entries.first, [0x65, 0x82, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00])

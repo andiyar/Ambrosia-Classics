@@ -27,16 +27,20 @@ public struct ScriptInstruction: Equatable, Sendable {
     /// The listing's token: `text`, `frame`, `set`, …, `builtin` (the builtin's name is operand text, not this).
     public let mnemonic: String
     /// Set by the segment walk (C9); the decoder reports `.reached`.
-    public var flag: Flag
+    public internal(set) var flag: Flag
     /// Jump targets only, absolute offsets in the segment (script-vm.md §8 "all branch operands are absolute"):
     /// 0x88, 0x89's table in order, 0x8C, 0x8D, 0x90 — the jumps that give the listing its `>` marks. The 0x9E
     /// local-subroutine target is NOT here (it gives no `>`): see `references` / `subroutineTargets`. Not
-    /// range-checked: a target past the end is the walk's anomaly, not a decode error.
+    /// range-checked: a target past the end is the walk's anomaly, not a decode error. Read unsigned; the engine
+    /// adds them as signed shorts (decompile l.42529–42533 the 0x89 table, l.42570–42571 a jump), and no shipped
+    /// value reaches 0x8000.
     public let jumpTargets: [Int]
     public let kind: Kind
     /// The operands the segment walk follows besides the jumps (C9), in the order `scriptdis.py`'s `Dis` meets
     /// them (`Dis.expr`, `Dis.callform`, `Dis.stmt`): mostly byte order, but a 0x9E target comes after its
-    /// argument expression and a 0x83 word after its value expression.
+    /// argument expression and a 0x83 word after its value expression. The 16-bit operands are read unsigned; the
+    /// engine adds some as signed shorts (decompile l.41305 the 0x45 length, l.42670 the 0x83 word), and no
+    /// shipped 16-bit operand reaches 0x8000.
     public let references: [ScriptReference]
 
     /// The 0x9E local-subroutine targets (absolute offsets in the segment), statement or expression form.
