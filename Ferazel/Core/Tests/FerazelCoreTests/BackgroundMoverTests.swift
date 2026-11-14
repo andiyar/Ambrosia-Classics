@@ -531,12 +531,13 @@ final class BackgroundMoverTests: XCTestCase {
         // On a water BG cell (`.IsWaterTile` 200…209): `+0x16c` 1 — L1 cell (188, 17) is kind 201.
         XCTAssertEqual(w.level.bgKind(tile: w.level.bgTile(col: 188, row: 17)), 201)
         XCTAssertEqual(try SetupFaces.setup(placement(1, 1090, x: 188 * 32, y: 17 * 32), context: c).slot.classWord16c, 1)
-        // Aim `(type − 0x442)·4` for every cannon type; p1 ≠ 0 (path, rotating) is not built.
+        // Aim `(type − 0x442)·4` for every cannon type; the path cannons (p1 < 0, 1…100, > 106) are not built (6B); the
+        // rotating ones (101…106) are 6A-RC's (`RotatingCannonTests`).
         for t: Int16 in 1090...1098 {
             let a = try SetupFaces.setup(placement(1, t, x: 400, y: 400), context: c)
             XCTAssertEqual(Int(a.slot.phase), (Int(t) - 1090) * 4)
         }
-        for p1: Int16 in [-1, -2, 1, 101, 105, 106, 107] {
+        for p1: Int16 in [-1, -2, 1, 107] {
             XCTAssertThrowsError(try SetupFaces.setup(placement(1, 1090, p1: p1, x: 400, y: 400), context: c)) {
                 XCTAssertEqual($0 as? SetupFaces.Error, .notTranscribed(type: 1090))
             }
@@ -1158,7 +1159,8 @@ final class BackgroundMoverTests: XCTestCase {
                   placement(7, 2901, p1: 8, x: 400, y: 600), placement(7, 1095, x: 400, y: 600)] {
             XCTAssertEqual(try SetupFaces.setup(p, context: c).record, p, "type \(p.type)")
         }
-        XCTAssertThrowsError(try SetupFaces.setup(placement(7, 1090, p1: 105, x: 400, y: 600), context: c))
+        // A 105 cannon writes its record p2 (4) — 6A-RC, `RotatingCannonTests.testCannon105WritesRecordP2`.
+        XCTAssertEqual(try SetupFaces.setup(placement(7, 1090, p1: 105, x: 400, y: 600), context: c).record.p2, 4)
     }
 
     func testSuperSpring() throws {

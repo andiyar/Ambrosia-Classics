@@ -449,32 +449,32 @@ final class DrawModeAuditTests: XCTestCase {
         // (angle >> 8) + 0x5a with the angle wrapped into 0…0x167ff (`RadialMotion.updatePosition`), − 360 once.
         W("World/Movers/BackgroundSprite.swift:194", .rotation, .range(0...359), "background.maceBall", at: ["192", "193"],
           pins: ["UInt32(bitPattern: c.radial?.angle ?? 0) >> 8) &+ 0x5a", "if 0x167 < r { r &-= 0x168 }"]),
-        W("World/Movers/BackgroundSprite.swift:273", .clipBottom, .range(32000...32000), "background.spring"),
-        W("World/Movers/BackgroundSprite.swift:280", .mode, .words([0x10018]), "background.spring"),  // hdr 0x26cd ≠ 0
-        W("World/Movers/BackgroundSprite.swift:340", .mirrored, .flags([false]), "background.cannon"),
-        W("World/Movers/BackgroundSprite.swift:342", .mirrored, .flags([true]), "background.cannon"),
-        W("World/Movers/BackgroundSprite.swift:345", .mirrored, .flags([false]), "background.cannon"),
-        W("World/Movers/BackgroundSprite.swift:350", .mirrored, .flags([false]), "background.cannon"),
-        W("World/Movers/BackgroundSprite.swift:352", .mirrored, .flags([true]), "background.cannon"),
-        W("World/Movers/BackgroundSprite.swift:355", .rotation, .range(0...0), "background.cannon"),
-        W("World/Movers/BackgroundSprite.swift:357", .mode, .words([0]), "background.cannon"),
-        W("World/Movers/BackgroundSprite.swift:362", .mirrored, .flags([false]), "background.cannon"),
+        W("World/Movers/BackgroundSprite.swift:322", .clipBottom, .range(32000...32000), "background.spring"),
+        W("World/Movers/BackgroundSprite.swift:329", .mode, .words([0x10018]), "background.spring"),  // hdr 0x26cd ≠ 0
+        W("World/Movers/BackgroundSprite.swift:408", .mirrored, .flags([false]), "background.cannon"),
+        W("World/Movers/BackgroundSprite.swift:410", .mirrored, .flags([true]), "background.cannon"),
+        W("World/Movers/BackgroundSprite.swift:413", .mirrored, .flags([false]), "background.cannon"),
+        W("World/Movers/BackgroundSprite.swift:418", .mirrored, .flags([false]), "background.cannon"),
+        W("World/Movers/BackgroundSprite.swift:420", .mirrored, .flags([true]), "background.cannon"),
+        W("World/Movers/BackgroundSprite.swift:423", .rotation, .range(0...0), "background.cannon"),
+        W("World/Movers/BackgroundSprite.swift:425", .mode, .words([0]), "background.cannon"),
+        W("World/Movers/BackgroundSprite.swift:430", .mirrored, .flags([false]), "background.cannon"),
         // r = ((0x20 − aim)·0xb4 / 16) / 2 for aim 1…31 not ≡ 0 mod 4 → 5…174, doubled: 10…348.
-        W("World/Movers/BackgroundSprite.swift:364", .rotation, .range(10...348), "background.cannon",
-          at: ["359", "360", "363"], pins: ["0x20 - aim)) * 0xb4", "(u / 16) / 2", "if 0xb3 < r { r -= 0xb4 }",
+        W("World/Movers/BackgroundSprite.swift:432", .rotation, .range(10...348), "background.cannon",
+          at: ["427", "428", "431"], pins: ["0x20 - aim)) * 0xb4", "(u / 16) / 2", "if 0xb3 < r { r -= 0xb4 }",
                                             "c.rotation = r << 1"]),
-        W("World/Movers/BackgroundSprite.swift:379", .mirrored, .flags([true]), "background.spring"),
+        W("World/Movers/BackgroundSprite.swift:473", .mirrored, .flags([true]), "background.spring"),
         // ES: the dart traps' Handle arm (1901 mirrored; built as read — their Setup arm is refused, none on 1–5).
-        W("World/Movers/BackgroundSprite.swift:426", .mirrored, .flags([true]), "background.dartTrap"),
-        W("World/Movers/BackgroundSprite.swift:816", .mirrored, .flags([false, true]), "background.smoke"),
-        W("World/Movers/BackgroundSprite.swift:874", .mirrored, .flags([true]), "background.spike"),
-        W("World/Movers/BackgroundSprite.swift:882", .mode, .words([0x10018]), "background.spike"),   // hdr 0x26cd ≠ 0
-        W("World/Movers/BackgroundSprite.swift:884", .mode, .words([0x90000]), "background.spike"),
+        W("World/Movers/BackgroundSprite.swift:520", .mirrored, .flags([true]), "background.dartTrap"),
+        W("World/Movers/BackgroundSprite.swift:953", .mirrored, .flags([false, true]), "background.smoke"),
+        W("World/Movers/BackgroundSprite.swift:1011", .mirrored, .flags([true]), "background.spike"),
+        W("World/Movers/BackgroundSprite.swift:1019", .mode, .words([0x10018]), "background.spike"),   // hdr 0x26cd ≠ 0
+        W("World/Movers/BackgroundSprite.swift:1021", .mode, .words([0x90000]), "background.spike"),
         // The retracting spikes (0x732 / 0x733): f = the phase 0…0xb.
-        W("World/Movers/BackgroundSprite.swift:924", .clipBottom, .range(0...0x14), "background.spike",
-          at: ["915", "918"], pins: ["} else if s.phase < 0xb {", "max(0, 0x14 - f * 2)"]),
-        W("World/Movers/BackgroundSprite.swift:928", .clipTop, .range(0...0x16), "background.spike",
-          at: ["915", "918", "927"], pins: ["} else if s.phase < 0xb {", "s.y = h(base - f * 2)", "h(base - s.y)"]),
+        W("World/Movers/BackgroundSprite.swift:1061", .clipBottom, .range(0...0x14), "background.spike",
+          at: ["1052", "1055"], pins: ["} else if s.phase < 0xb {", "max(0, 0x14 - f * 2)"]),
+        W("World/Movers/BackgroundSprite.swift:1065", .clipTop, .range(0...0x16), "background.spike",
+          at: ["1052", "1055", "1064"], pins: ["} else if s.phase < 0xb {", "s.y = h(base - f * 2)", "h(base - s.y)"]),
         W("World/Movers/BonusSprite.swift:130", .mode, .words([0]), "bonus"),
         W("World/Movers/BonusSprite.swift:388", .mode, .words([0x10008]), "bonus"),
         W("World/Movers/BonusSprite.swift:389", .mode, .words([0x10009]), "bonus"),
@@ -1603,7 +1603,8 @@ final class DrawModeAuditTests: XCTestCase {
             // BA: the 1850 family's background flag (`.SetupBatSprite` 0 / 1 by the record p1 sign, M l. 68263–68275) —
             // on Bat sprites only, never negative. DL: the Dillo's right patrol bound (`.SetupDilloSprite` M l. 72363–72368) — on
             // Dillo sprites only. LV5: the Warrior's right patrol bound (`.SetupWarriorSprite` M l. 73061) — on Warrior
-            // sprites only.
+            // sprites only. 6A-RC: a rotating cannon's turn counter (`.SetupBackgroundSprite` M l. 62161, the Handle M l.
+            // 62988–62990, the steering hit M l. 63699 / 63706) — on Background cannons 0x442…0x44a only, never on a Box.
             XCTAssertEqual(writes.filter { !$0.hasPrefix("World/Enemies/AxGoblin.swift ") }.sorted(),
                            ["Shots/PlayerShot.swift s.stepX = sx",
                             "World/Enemies/Bat.swift s.classWord160 = 0",
@@ -1611,6 +1612,10 @@ final class DrawModeAuditTests: XCTestCase {
                             "World/Enemies/Dillo.swift s.classWord160 = x + w",
                             "World/Enemies/EnemyShot.swift u.classWord160 = 1",
                             "World/Enemies/Warrior.swift s.classWord160 = x + 0x15e",
+                            "World/Movers/BackgroundSprite.swift c.classWord160 &-= 1",
+                            "World/Movers/BackgroundSprite.swift c.classWord160 = c.classWord158",
+                            "World/Movers/BackgroundSprite.swift c.classWord160 = c.classWord158",
+                            "World/Movers/BackgroundSprite.swift s.classWord160 = s.classWord158",
                             "World/Movers/BoxSprite.swift s.classWord160 &+= 1"], "\(c): +0x160 writers")
             let axCallers = core.filter { Self.has($0.code, "AxGoblin.") }.map { "\($0.file) \(Self.trim($0.code))" }
             XCTAssertEqual(axCallers, ["World/Enemies/Walker.swift case axGoblin: AxGoblin.arm(w, id: id)"],

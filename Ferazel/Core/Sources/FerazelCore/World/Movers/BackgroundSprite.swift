@@ -241,14 +241,19 @@ extension BackgroundSprite {
 
     // MARK: Setup
 
-    /// The cannon arm of `.SetupBackgroundSprite` (l. 62057–62184) for p1 0 (`SetupFaces` refuses the others): aim
-    /// `+0x46 = (type − 0x442)·4`; layer 1000; home `+0x14c` = x, `+0x150` = y; `+0x154` 0; p1 ≤ 0: `+0x14/+0x1c` from
-    /// `+0xc/+0xa`, (p1 < 0: `+0x188 = 1` and `.SetupProgrammedPath`, M l. 62071 — // later: not built),
-    /// `+8 = +0xc`, `+6 = +0xa`, the aim again; launch speed `+0x164` = 9000 for p1 0 (`li r0,0x2328 @ 10071c3c`,
-    /// M l. 62114), else 0x1fa4; hot rect
-    /// `SetRect(0x35, 0x38, 0x61, 0x5b)`; the hit callback `.HitBackgroundSprite` (`+0x5c`); `+0x16c` = the BG cell
-    /// (x >> 5, y >> 5) is water (`.IsWaterTile` 200…209). The face is the Handle's.
-    public static func setupCannon(_ s: inout SpriteSlot, record p: Placement, level L: LevelFile) {
+    /// The cannon arm of `.SetupBackgroundSprite` (l. 62057–62184) for p1 0 and p1 ≥ 1 (`SetupFaces` refuses p1 < 0
+    /// and p1 1…100 / > 106 — their Handle is the programmed path's): aim `+0x46 = (type − 0x442)·4`; layer 1000; home
+    /// `+0x14c` = x, `+0x150` = y; `+0x154` 0; then
+    /// - p1 ≤ 0: `+0x14/+0x1c` from `+0xc/+0xa`, (p1 < 0: `+0x188 = 1` and `.SetupProgrammedPath`, M l. 62071 —
+    ///   // later: 6B, not built), `+8 = +0xc`, `+6 = +0xa`, the aim again; launch speed `+0x164` = 9000 for p1 0
+    ///   (`li r0,0x2328 @ 10071c3c`, M l. 62114), else 0x1fa4;
+    /// - p1 ≥ 1 (6A-RC, M l. 62120–62170; `setupRotating`): writes none of those — the 24.8 position and `+8/+6` stay as
+    ///   `.MTNewSprite` stored them, the same values, so the three stores below are shared;
+    /// then hot rect `SetRect(0x35, 0x38, 0x61, 0x5b)`; the hit callback `.HitBackgroundSprite` (`+0x5c`); `+0x16c` =
+    /// the BG cell (x >> 5, y >> 5) is water (`.IsWaterTile` 200…209). The face is the Handle's. Returns the record as
+    /// the Setup leaves it (p1 105 / 106 may write p2).
+    @discardableResult
+    public static func setupCannon(_ s: inout SpriteSlot, record p: Placement, level L: LevelFile) -> Placement {
         s.phase = Int16(truncatingIfNeeded: (Int(s.type) - 0x442) * 4)
         s.layer = 1000
         s.classTimer = Int32(Int16(truncatingIfNeeded: s.x))
@@ -257,12 +262,56 @@ extension BackgroundSprite {
         s.x256 = Int32(Int16(truncatingIfNeeded: s.x)) << 8
         s.y256 = Int32(Int16(truncatingIfNeeded: s.y)) << 8
         s.oldPosition = SpriteSlot.Point(x: SpriteWorld.pixel(s.x256), y: SpriteWorld.pixel(s.y256))
-        s.launchSpeed = p.p1 == 0 ? 9000 : 0x1fa4
+        var record = p
+        if p.p1 < 1 {
+            s.launchSpeed = p.p1 == 0 ? 9000 : 0x1fa4
+        } else {
+            record = setupRotating(&s, record: p)
+        }
         s.hotRect = IdleSprites.Rect(top: 0x38, left: 0x35, bottom: 0x5b, right: 0x61)
         s.hasHit = true
         let k = L.bgKind(tile: L.bgTile(col: Int(Int16(truncatingIfNeeded: s.x)) >> 5,
                                         row: Int(Int16(truncatingIfNeeded: s.y)) >> 5))
         s.classWord16c = UnderWater.isWaterTile(k) ? 1 : 0
+        return record
+    }
+
+    /// The cannons' p1 that turn (6A-RC): 101 +1, 102 −1, 103 +2, 104 −2 a frame; 105 / 106 only when a player shot
+    /// steers them (`hit`). Any other p1 ≠ 0 takes the programmed-path Handle (M l. 62954, 62984).
+    public static let rotatingP1: ClosedRange<Int16> = 101...106
+
+    /// The Setup's p1 ≥ 1 arm (M l. 62120–62170), on the live record `p`: `+0x158` = 4; p1 105, or p1 106 with record
+    /// p2 0 → **record p2 = 4** (written into the level record, returned); `+0xa6` = record p2 (the first pause); record
+    /// p3 0 → `+0x158` 4, 1 → 8, 2 → 16 (any other keeps 4); the step `+0x15c`: 101 → +1, 102 → −1, 103 → +2, 104 → −2,
+    /// else 0; a step ≠ 0 → `+0x158 /= |step|`; `+0x160 = +0x158`; `+0x164` = record p4 (i16), 0 → 9000, 1 → 0x1c20.
+    /// p1 1…100 and > 106 take this arm too (step 0) and set up no path (`SetupFaces` refuses them).
+    static func setupRotating(_ s: inout SpriteSlot, record p: Placement) -> Placement {
+        s.classWord158 = 4
+        var rec = p
+        if p.p1 == 105 || (p.p1 == 106 && p.p2 == 0) {
+            rec = Placement(index: p.index, flag: p.flag, byte1: p.byte1, type: p.type, p1: p.p1, p2: 4, p3: p.p3,
+                            p4: p.p4, y: p.y, x: p.x)
+        }
+        s.counterA6 = rec.p2
+        switch rec.p3 {
+        case 0: s.classWord158 = 4
+        case 1: s.classWord158 = 8
+        case 2: s.classWord158 = 0x10
+        default: break
+        }
+        switch rec.p1 {
+        case 101: s.classWord15c = 1
+        case 102: s.classWord15c = -1
+        case 103: s.classWord15c = 2
+        case 104: s.classWord15c = -2
+        default: s.classWord15c = 0
+        }
+        if s.classWord15c != 0 { s.classWord158 /= abs(s.classWord15c) }
+        s.classWord160 = s.classWord158
+        s.launchSpeed = Int32(rec.p4)
+        if s.launchSpeed == 0 { s.launchSpeed = 9000 }
+        if s.launchSpeed == 1 { s.launchSpeed = 0x1c20 }
+        return rec
     }
 
     /// The spring arms (l. 62046–62054, 62186–62219): the hit callback, `+0x1ba = 32000` (the `.InitSprite` value), hot rect 0x47e
@@ -301,12 +350,19 @@ extension BackgroundSprite {
 
     // MARK: Handle arms
 
-    /// The cannon arm of `.HandleBackgroundSprite` (l. 62944–63069), p1 0 (the only cannons Core sets up):
+    /// The cannon arm of `.HandleBackgroundSprite` (l. 62944–63069), p1 the live record's:
     /// - `+0x16c` ≠ 0 → `+0x120 = +0x11c = 1` (submerged);
     /// - p1 0: while the pixel position differs from home (`+0xc ≠ +0x14c` or `+0xa ≠ +0x150`): `+0x14 = (int)(0.8·x256
     ///   + 0.2·(home x << 8))` (doubles `100a1b18` 0.8, `100a1b10` 0.2; fctiwz), the same for y, the pixel copies — the
-    ///   recoil eases home; // later: p1 1…100 and > 106 (`.HandleProgrammedPath`), 101…106 (rotation, the 485 cue gated
-    ///   on the sound playing) — refused at Setup;
+    ///   recoil eases home (`easeHome`);
+    /// - p1 101…106 (6A-RC, M l. 62985–63020): `+0xa6` 0 (turning) → aim `+0x46 += +0x15c`, `+0x160 − 1`, below 1 →
+    ///   `+0x160 = +0x158` and `+0xa6` = the live record's p2 (the pause); else, **not** for 105 / 106 (they never count
+    ///   down: only a shot ends their pause), `+0xa6 − 1`, and on reaching 0 with no voice playing 485
+    ///   (`FUN_100916dc(*_DAT_100a0308) == 0`, `SoundVoices`) `.STPlay3DSoundRand(485, 1, 0x41, +0xe)` with its
+    ///   R(10000); then the ease home as for p1 0, every frame after the step;
+    /// - any other p1 (1…100, > 106, < 0; M l. 62954–62955, 62984): `.HandleProgrammedPath` (`ProgrammedPath`), then
+    ///   24.8 += v and the pixel copies (M l. 62975–62980) — no ease. `SetupFaces` sets none of them up: the path
+    ///   cannons' Setup (`.SetupProgrammedPath`) is 6B's;
     /// - the aim `+0x46` wrapped into 0…31; ≥ 0x12 → mirrored and folded to 0x21 − aim (0 → not mirrored) — the fold
     ///   only sets the mirror flag: the aim is reloaded raw (`lha r3,0x46(r17)` @ 10073fc8) for the rest;
     /// - aim mod 4 == 0: k = aim / 4, k ≥ 5 → mirrored, face 8 − k, else not; rotation `+0x1aa` 0, face set 0x442[k],
@@ -322,7 +378,7 @@ extension BackgroundSprite {
                 c.waterRow = 1
             }
         }
-        if p1 == 0 {
+        func easeHome() {
             w.active.update(id: id) { c in
                 guard c.x != Int(c.classTimer) || c.y != Int(c.classWord150) else { return }
                 c.x256 = TileSolver.fctiwz(0.8 * Double(c.x256) + 0.2 * Double(c.classTimer << 8))
@@ -331,7 +387,19 @@ extension BackgroundSprite {
                 c.y = SpriteWorld.pixel(c.y256)
             }
         }
-        // later: p1 ≠ 0 — `.HandleProgrammedPath` (1…100, > 106) and the rotating arm (101…106), refused at Setup.
+        if p1 == 0 {
+            easeHome()
+        } else if rotatingP1.contains(p1) {
+            rotate(w, id: id, p1: p1)
+            easeHome()
+        } else if var c = w.active.record(id: id) {
+            ProgrammedPath.handle(w, id: id, slot: &c)
+            c.x256 &+= c.vx
+            c.y256 &+= c.vy
+            c.x = SpriteWorld.pixel(c.x256)
+            c.y = SpriteWorld.pixel(c.y256)
+            w.active.update(id: id) { [c] in $0 = c }
+        }
         w.active.update(id: id) { c in
             while c.phase < 0 { c.phase &+= 0x20 }
             while 0x1f < c.phase { c.phase &-= 0x20 }
@@ -364,6 +432,32 @@ extension BackgroundSprite {
                 c.rotation = r << 1
             }
             c.lightOverlay = false
+        }
+    }
+
+    /// `*_DAT_100a0308` = 485, the click at a rotating cannon's pause end (`SoundSlots`).
+    static let cannonClick: Int16 = 485
+
+    /// The rotation of a p1 101…106 cannon (M l. 62985–62999): the turn while `+0xa6` is 0, else the pause's count-down
+    /// (101…104 only) and its click. The pause is re-read from the live record (M l. 62991–62992).
+    static func rotate(_ w: SpriteWorld, id: Int, p1: Int16) {
+        guard let s0 = w.active.record(id: id) else { return }
+        if s0.counterA6 == 0 {
+            let p2 = record(w, s0)?.p2 ?? 0
+            w.active.update(id: id) { c in
+                c.phase &+= Int16(truncatingIfNeeded: c.classWord15c)
+                c.classWord160 &-= 1
+                if c.classWord160 < 1 {
+                    c.classWord160 = c.classWord158
+                    c.counterA6 = p2
+                }
+            }
+        } else if p1 != 105 && p1 != 106 {
+            w.active.update(id: id) { $0.counterA6 &-= 1 }
+            if let s = w.active.record(id: id), s.counterA6 == 0, !w.isSoundPlaying(cannonClick) {
+                w.player.cue(PlayerCue(call: .threeDRand, snd: cannonClick, priority: 1, volume: 0x41, position: s.centre,
+                                       rate: w.rng.soundRate()))
+            }
         }
     }
 
@@ -495,8 +589,9 @@ extension BackgroundSprite {
     ///   (`+0x168` still ≥ 1 after its − 1), and never for ids ≥ 100 (100 included): those are launched.
     /// - **cannon** 0x442…0x44b (l. 63679–63714): other's Handle is none of Background, Statue (`01f8`), Cannoned
     ///   (`045c`), Button (`0ac4`), EnemyShot (`0488`), Effect (`0460`); its type none of 0x41f, 0x434, 0x771, 0x772,
-    ///   0xb7c, 0x5c3, 0x5c4; `+0x130 ≥ 0` → (a player shot at a 105 / 106 cannon is steered — // later: Phase 6;
-    ///   those cannons are refused at Setup) `.TurnIntoCannoned(other, bg)`, then bg `+0x154 = 6` (write-only).
+    ///   0xb7c, 0x5c3, 0x5c4; `+0x130 ≥ 0` → a player shot into a cannon whose record p1 is 105 / 106 is steered
+    ///   (`steer`, 6A-RC); anything else — a player shot into any other cannon included — `.TurnIntoCannoned(other,
+    ///   bg)`, then bg `+0x154 = 6` (write-only).
     ///   An enemy shot is never captured (its Handle is excluded, l. 63684; ES); a Button runs `.button` (BT), a
     ///   Statue `.statue` (SW).
     ///
@@ -547,8 +642,50 @@ extension BackgroundSprite {
                 }
             }
             guard ![0x41f, 0x434, 0x771, 0x772, 0xb7c, 0x5c3, 0x5c4].contains(o.type), o.reentry >= 0 else { return }
+            if runs(o, .playerShot), let p1 = record(w, bg)?.p1, p1 == 105 || p1 == 106 {
+                steer(w, cannon: id, shot: oID, lights: &lights, effects: effects, faceWidth: faceWidth,
+                      faceBounds: faceBounds)
+                return
+            }
             turnIntoCannoned(w, captive: oID, cannon: id, lights: &lights)
             w.active.update(id: id) { $0.classWord154 = 6 }
+        }
+    }
+
+    /// `*_DAT_100a041c` = 303, the steering hit's clank (`SoundSlots`).
+    static let cannonClank: Int16 = 303
+
+    /// The steering arm of `.HitBackgroundSprite` (M l. 63689–63709; 6A-RC): a player shot (`+0x4c` the shot's Handle)
+    /// into a cannon whose live record's p1 is 105 or 106 — `.KillPlayerShot(shot, 0, 1)` (no sound, the effect; the
+    /// caller's r29 is the Background Handle's descriptor, as in the spring arm: no stale light), then
+    /// `.STPlay3DSoundRand(303, 1, 0xab, cannon +0xe)` with its R(10000); then, only while paused (`+0xa6 ≠ 0`), by the
+    /// shot's vx as the kill left it: vx < 0 → aim > 24 or aim < 12 or p1 106 → step −1; vx ≥ 0 → aim > 23 or aim < 8 or
+    /// p1 106 → step +1; a step sets `+0x160 = +0x158` and `+0xa6 = 0` (the Handle turns it `+0x158` frames, then pauses
+    /// at the record's p2). Never cannoned.
+    static func steer(_ w: SpriteWorld, cannon id: Int, shot oID: Int, lights: inout LightTable, effects: Int16,
+                      faceWidth: (FaceRef) -> Int, faceBounds: (FaceRef) -> IdleSprites.Rect) {
+        let vx0 = w.active.record(id: oID)?.vx ?? 0
+        PlayerShotHits.kill(w, shot: oID, sound: false, effect: true, effects: effects, lights: &lights,
+                            faceWidth: faceWidth, faceBounds: faceBounds)
+        guard let k = w.active.record(id: id) else { return }
+        w.player.cue(PlayerCue(call: .threeDRand, snd: cannonClank, priority: 1, volume: 0xab, position: k.centre,
+                               rate: w.rng.soundRate()))
+        guard k.counterA6 != 0 else { return }
+        let vx = w.active.record(id: oID)?.vx ?? vx0
+        let p106 = record(w, k)?.p1 == 106
+        let aim = k.phase
+        let step: Int32
+        if vx < 0 {
+            guard 24 < aim || aim < 12 || p106 else { return }
+            step = -1
+        } else {
+            guard 23 < aim || aim < 8 || p106 else { return }
+            step = 1
+        }
+        w.active.update(id: id) { c in
+            c.classWord15c = step
+            c.classWord160 = c.classWord158
+            c.counterA6 = 0
         }
     }
 

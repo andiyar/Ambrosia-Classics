@@ -274,10 +274,17 @@ def _port_arm(t, cls, ps, n1):
     p2s = sorted(set(p[1] for p in ps))
     if cls == 'Background':
         if 0x442 <= t <= 1098:
+            # 6A-RC: p1 0 (W2b) and 101…106 (the rotating arm) set up; p1 < 0, 1…100 and > 106 (the path cannons,
+            # `.SetupProgrammedPath` / `.HandleProgrammedPath`) are refused — 6B.
+            path = [p for p in p1s if p != 0 and not 101 <= p <= 106]
+            if path:
+                return (REFUSED, anchor(SF, r'case 0x442\.\.\.1098:', r'guard p\.p1 == 0 \|\| BackgroundSprite\.rotatingP1'),
+                        f'path cannon p1 {",".join(map(str, path))} (p1 < 0, 1…100, > 106); the path arm: '
+                        f'{anchor(BG, r"any other p1 \(1…100, > 106, < 0")}')
             if any(p != 0 for p in p1s):
-                return (REFUSED, anchor(SF, r'case 0x442\.\.\.1098:', r'guard p\.p1 == 0 else'),
-                        f'cannon p1 ≠ 0 ({n1} record{"s" if n1 != 1 else ""}: p1 {",".join(map(str, [p for p in p1s if p]))}); the '
-                        f'rotating / path arms: {anchor(BG, r"later: p1 ≠ 0")}')
+                return (BUILT_S, anchor(SF, r'case 0x442\.\.\.1098:'),
+                        f'cannon p1 0 (W2b) / rotating p1 {",".join(map(str, [p for p in p1s if p]))} (6A-RC, '
+                        f'{anchor(BG, r"static func rotate\(")})')
             return (BUILT_S, anchor(SF, r'case 0x442\.\.\.1098:'), 'cannon p1 0 (W2b)')
         if 0x47e <= t <= 0x481:
             return (BUILT_S, anchor(SF, r'case 0x47e\.\.\.0x481:'),
