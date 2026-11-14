@@ -66,6 +66,10 @@ public struct GameObject: Equatable, Sendable {
     public var scale: Float = 1
     public var scaleTarget: Float = 1
     public var scaleStep: Float = 0
+    /// +0x90: game time of the last terrain-path sprite stamp — 0 from `FUN_10012650` (`1001273c stw r12,0x90`),
+    /// written by `FUN_10012fa0` when it stamps into the terrain buffer (`100132a4`); a stamp is refused (the
+    /// sprite drawn as a normal command) unless game time > +0x90 (`10013264..10013278`; `GameState.terrainStamp`).
+    public var lastStampTime: Int32 = 0
 
     public init() {}
 

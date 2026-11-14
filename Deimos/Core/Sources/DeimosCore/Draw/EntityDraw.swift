@@ -20,13 +20,14 @@ import HectorResources
 ///   clip {0, 0, 480, 416}, and **no shadow** once the handler has ticked [HIGH]. C4's reset-default start agrees.
 /// - `FUN_1003bd00` (`1003bd0c..1003bd1c`): `FUN_10012f20(handler + 0x8c)` only when handler +0x120.
 /// - `FUN_100298c0` (`100298d4..1002992c`): state 4 only — crosshair; +0x38 = 1, +0x37 = 0, entry; +0x37 = 1,
-///   +0x38 = 0, entry; +0x38 = 1. The coin tally (`10029930…`) is not reached in Phase 1 (+0xd8 = 0).
+///   +0x38 = 0, entry; +0x38 = 1; then the coin-tally text (`10029930..100299a0`, C12 — `playerCommands`).
 /// - Constant pools: `r2−0x7248` → `0x100d67c4` doubles {0.0, 2^52+2^31, 100.0, 32.0, 1.0, 2^52};
 ///   `r2−0x7240` → `0x100d67a8` floats {0.0, 100.0, 1.0, −32.0, 0.03125, 32.0, 0.5};
 ///   `r2−0x7284` → `0x100d6444` floats {255.0, 65535.0, 100.0, 32.0, 0.0} (`FUN_10010c20`).
 ///
-/// Not modelled (no Phase-1 caller): the terrain-stamp path (+0x36: x + 32, y + windowTop, layer 1 / shadow
-/// layer 0, flags |8, clip = terrain buffer, `+0x90` = game time) — `GameObject` carries no +0x90; Phase 2.
+/// The terrain-stamp path of `FUN_10012f20` (+0x36: x + 32, y + windowTop, layer 1 / shadow layer 0, flags |8, clip =
+/// terrain buffer, `+0x90` = game time) needs the scroll window and the game time: it is `GameState.terrainStamp`
+/// (Combat/Removal.swift), reached from the group draw `GameState.groupCommands` below and from the sweep.
 public enum EntityDraw {
     /// `FUN_1000a530(D+0x68)`: the 640×480 back buffer's bounds {0, 0, 480, 640} (display-window-present §1).
     public static let backBufferBounds = MacRect(top: 0, left: 0, bottom: 480, right: 640)
@@ -204,20 +205,98 @@ public enum EntityDraw {
         return out
     }
 
-    /// `FUN_100298c0 @ 100298c0(player)` — the player's draw (micro-wave §3.9, HIGH): only in life state 4 —
-    /// the crosshair (`FUN_1003bd00`: entry on handler +0x8c when +0x120), a shadow-only entry (+0x38 = 1,
-    /// +0x37 = 0), a sprite-only entry (+0x37 = 1, +0x38 = 0), then +0x38 = 1.
-    public static func playerOps(_ p: inout Player, hOffset: Int32, floats: [Float]) -> [RenderOp] {
+    /// `FUN_100298c0 @ 100298c0(player)` — the player's draw (micro-wave §3.9, HIGH; listing `100298c0..100299b8`):
+    /// only in life state 4 (`100298d4..100298dc`) — the crosshair (`FUN_1003bd00`: entry on handler +0x8c when
+    /// +0x120), a shadow-only entry (+0x38 = 1, +0x37 = 0), a sprite-only entry (+0x37 = 1, +0x38 = 0), then +0x38 =
+    /// 1; then the coin-tally text (`10029930..100299a0`, `coinTallyTextRequest`) drawn as `FUN_1000d380(rec, 0)`
+    /// draws (`layout.draw`). `coinTally` is player +0xd8…+0x1f8 (`GameState.tally.coin[p]`); the text needs `text`
+    /// (nil, or a tally in state 0, draws none).
+    public static func playerCommands(_ p: inout Player, hOffset: Int32, floats: [Float],
+                                      coinTally: TallyState.CoinTally = TallyState.CoinTally(),
+                                      text: TextLayout? = nil) -> [DrawCommand] {
         guard p.lifeState == 4 else { return [] }                    // 100298d4..100298dc
         var out: [DrawCommand] = []
-        if p.handler.crosshairShown {                                // 1003bd0c
+        if p.handler.crosshairShown {                                // 100298e4 FUN_1003bd00 (1003bd0c)
             out += entry(&p.handler.crosshair, hOffset: hOffset, floats: floats)
         }
         p.object.drawShadow = true; p.object.drawSprite = false      // 100298ec..100298fc
-        out += entry(&p.object, hOffset: hOffset, floats: floats)
-        p.object.drawSprite = true; p.object.drawShadow = false      // 10029908..10029918
-        out += entry(&p.object, hOffset: hOffset, floats: floats)
+        out += entry(&p.object, hOffset: hOffset, floats: floats)    // 10029900
+        p.object.drawSprite = true; p.object.drawShadow = false      // 10029908..1002991c
+        out += entry(&p.object, hOffset: hOffset, floats: floats)    // 10029920
         p.object.drawShadow = true                                   // 10029928..1002992c
-        return out.map { .draw($0) }
+        if let text, let req = coinTallyTextRequest(coinTally, formats: p.assets.formats) {   // 10029930..10029998
+            out += text.draw(req)                                    // 100299a0 FUN_1000d380(rec, 0)
+        }
+        return out
+    }
+
+    /// `10029930..10029998` — the coin-tally text record, or nil when nothing is drawn: tally state (+0xd8) ≠ 0 and
+    /// alpha (+0xe0) < 32 (`cmplwi; bge` — unsigned) → format **30** (`FUN_1000d130(0x1e)`, `plmc`), the text (`strcpy`
+    /// of +0xec), BlendAmount (+0x114) = alpha, +0x10d = 1 (template clip), +0x110 = 0 (queued), +0x10c = 15 (layer),
+    /// Loc_Y (+0x104) += +0x1f8 (`10029994..1002999c`, `add`). Not the accuracy tally's text (format 0x35,
+    /// `GameState.tallyTextRequest`).
+    public static func coinTallyTextRequest(_ c: TallyState.CoinTally, formats: [TextFormat]) -> TextRequest? {
+        guard c.state != 0, UInt32(bitPattern: c.alpha) < 0x20 else { return nil }   // 10029930..10029944
+        var t = TextRequest(format: formats[0x1e], text: c.text)     // 10029948..10029960
+        t.format.blendAmount = c.alpha                               // 10029968 / 1002997c
+        t.keepTemplateClip = true                                    // 1002996c / 10029988
+        t.drawNow = false                                            // 10029970 / 1002998c
+        t.layer = 15                                                 // 10029978 / 10029990
+        t.format.locY = t.format.locY &+ c.textYOffset               // 10029974 / 10029994..1002999c
+        return t
+    }
+
+    /// `FUN_100298c0` as render ops — ◇ the Phase-1 session's wrapper (no coin-tally text); C18b deletes it.
+    public static func playerOps(_ p: inout Player, hOffset: Int32, floats: [Float]) -> [RenderOp] {
+        playerCommands(&p, hOffset: hOffset, floats: floats).map { .draw($0) }
+    }
+}
+
+/// The group draw (C12): `FUN_100345f0` and `FUN_10012f20` per entity, with the terrain branch (+0x36 →
+/// `terrainStamp`, which reads the scroll window and writes the stamp time +0x90).
+extension GameState {
+    /// `FUN_100345f0 @ 100345f0` — the entity draw of the draw world (listing `100345f0..10034b88`). Groups in list
+    /// order, the group count taken once; per group the member count taken once and two passes:
+    /// 1. shadows (`10034a98..10034ae4`): face (+0x1c) ≠ `none`, the unit `castsShadows` (+0x11e), spawned in (+0xb0
+    ///    ≤ 0, `cmpwi; bgt`) → +0x38 = 1, +0x37 = 0, `FUN_10012f20`, +0x37 = 1;
+    /// 2. sprites (`10034b18..10034b5c`): face ≠ `none`, +0xb0 ≤ 0 → +0x38 = 0, +0x37 = 1, `FUN_10012f20`, +0x38 = 1.
+    /// The per-member debug overlays before the shadow test (`FUN_1000d380` text at the entity: the tracked unit's
+    /// state name, the unit name / ID / family, "Ground Accuracy") read only the module's debug globals −0x6120
+    /// (`'none'`) and −0x6111…−0x6114 (0), constants in a shipped game (EntityWorld's comment): never drawn.
+    /// `hOffset` = `FUN_100100a0` (`ScrollState.offset`).
+    public mutating func groupCommands(hOffset: Int32) -> [DrawCommand] {
+        var out: [DrawCommand] = []
+        let groupCount = world.groups.count                          // 10034610..10034624 (taken once)
+        let units = assets.definitions.units
+        var g = 0
+        while g < groupCount {                                       // 10034640..10034b74
+            let members = world.groups[g].members                    // 10034654..10034668: count taken once (r31)
+            for i in members {                                       // 10034684..10034af0
+                let e = world.entities[i]
+                guard e.object.face != .none, units[e.unit].castsShadows, e.spawnCountdown <= 0 else { continue }
+                world.entities[i].object.drawShadow = true           // 10034ac4..10034ac8
+                world.entities[i].object.drawSprite = false          // 10034acc..10034ad4
+                out += drawEntity(i, hOffset: hOffset)               // 10034ad8 FUN_10012f20
+                world.entities[i].object.drawSprite = true           // 10034ae0..10034ae4
+            }
+            for i in members {                                       // 10034b18..10034b68
+                let e = world.entities[i]
+                guard e.object.face != .none, e.spawnCountdown <= 0 else { continue }   // 10034b2c..10034b44
+                world.entities[i].object.drawShadow = false          // 10034b48
+                world.entities[i].object.drawSprite = true           // 10034b50
+                out += drawEntity(i, hOffset: hOffset)               // 10034b54 FUN_10012f20
+                world.entities[i].object.drawShadow = true           // 10034b5c
+            }
+            g += 1
+        }
+        return out
+    }
+
+    /// `FUN_10012f20` on entity `i`: with +0x36 (draw into the terrain buffer) the terrain path `terrainStamp`
+    /// (`10012fc4..10012fd4`, `10013484`); otherwise `EntityDraw.entry`.
+    mutating func drawEntity(_ i: Int, hOffset: Int32) -> [DrawCommand] {
+        if world.entities[i].object.drawToTerrain { return terrainStamp(i) }
+        let floats = assets.floats
+        return EntityDraw.entry(&world.entities[i].object, hOffset: hOffset, floats: floats)
     }
 }

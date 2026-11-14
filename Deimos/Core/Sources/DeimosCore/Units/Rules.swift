@@ -89,11 +89,11 @@ extension GameState {
             return !anyAirAccuracyEntity() && !anyGroundAccuracyEntityOnScreen()
         case .noPlayers: return !anyPlayerActive                                            // 100157b4..100157c8
         case .withinRange:                                                                  // 100157cc..100157ec
-            guard range != 0 else { return false }
-            return ruleWithinRangeOfPlayer(i, range: range)
+            guard range != 0 else { return false }                                          // 100157d0
+            return playerWithinRange(i, range: range)                                       // FUN_10017ef0 (Motion.swift)
         case .notWithinRange:                                                               // 100157f0..1001581c
-            guard range != 0 else { return false }
-            return !ruleWithinRangeOfPlayer(i, range: range)
+            guard range != 0 else { return false }                                          // 100157f4
+            return !playerWithinRange(i, range: range)
         case .animationStopped: return world.entities[i].animationStopped                  // 10015820 (+0xc2)
         case .visibilityAtRequired: return o.visibility == o.visibilityTarget              // 10015828..10015838
         case .tintAtRequired: return o.glow == o.glowTarget                                // 10015840..10015850
@@ -178,30 +178,5 @@ extension GameState {
         if x > Float(EntityDraw.fctiwz(assets.floats[54])) { return false }    // 10016c38..10016c3c
         guard y >= 0 else { return false }
         return y <= Float(EntityDraw.fctiwz(assets.floats[55]))
-    }
-
-    /// `FUN_10017ef0(e, range, &tgt, &no) @ 10017ef0` for range ≠ 0 — "Within Range of a Player":
-    /// `FUN_10005d40` found an active player (`10017f1c`) and its distance < float(range) (**strict**,
-    /// `10017f50 fcmpo; bge`). The motion controller's range trigger (C9) calls the same function; this copy is
-    /// the rules' (parallel wave — one may replace the other at C12).
-    private func ruleWithinRangeOfPlayer(_ i: Int, range: Int32) -> Bool {
-        guard let d = ruleNearestActivePlayerDistance(i) else { return false }
-        return d < Float(range)
-    }
-
-    /// `FUN_10005d40(e, &tgt, &dist, &no) @ 10005d40` — the distance to the nearest player in life state 4
-    /// (`FUN_10026c60(p, 4)`, P1 then P2): dy = py − ey, dx = px − ex (`fsubs`), d = `root(fctiwz(fmadds(dx, dx,
-    /// fl32(dy·dy))))` (`10005dd8..10005e04`); the first found is kept, a later one only when strictly nearer
-    /// (`10005e40 fcmpo; bge`). Nil when none is active (`10005e78`).
-    private func ruleNearestActivePlayerDistance(_ i: Int) -> Float? {
-        let ex = world.entities[i].object.x, ey = world.entities[i].object.y
-        var best: Float? = nil
-        for p in players.indices where players[p].lifeState == 4 {
-            let dy: Float = players[p].object.y - ey
-            let dx: Float = players[p].object.x - ex
-            let d = Trig.root(EntityDraw.fctiwz((dy * dy).addingProduct(dx, dx)))
-            if let b = best { if d < b { best = d } } else { best = d }
-        }
-        return best
     }
 }
