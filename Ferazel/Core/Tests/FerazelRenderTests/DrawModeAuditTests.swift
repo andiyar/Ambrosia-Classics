@@ -1347,7 +1347,11 @@ final class DrawModeAuditTests: XCTestCase {
           "the light pass's carried refusals: darkness D is a light byte 0…15 on every built level; the light index "
           + "stays in the table (light-face pixels 0 or 0xf5…0xff, colours ≤ 99); the ripple phase (below)"),
         R("Frame/SpriteBlitter.swift", "Refusal.transform", 3, .byConstruction, [.facesNarrow],
-          "every loaded face is ≤ 0x100 wide, so the 256-entry erase tables and `rotWalk`'s column tables hold it"),
+          "the three throws sit on the rotated / scaled walks only (`rotWalk`, entered when rotation ≠ 0 or scale ≠ "
+          + "0x100); every loaded face but the trees' is ≤ 0x100 wide, so the 256-entry erase tables and `rotWalk`'s "
+          + "column tables hold it; the trees' cache singles 0xc08…0xc0f (6A-TR: 0xc0a is 264 px wide) are never "
+          + "rotated or scaled (no rotation or scale writer names them), so a tree, flipped or not, draws and erases on "
+          + "the plain path"),
         R("Frame/SpriteBlitter.swift", "Refusal.ripplePhase", 1, .timeBound, [.ripplePhaseHours],
           "the phase starts at 0x200 per level and grows by 0x100 a frame: negative only after 2^23 frames"),
         R("Frame/SpriteBlitter.swift", "Refusal.rotation", 2, .noWriter, [.rotationRanges],
@@ -1703,9 +1707,17 @@ final class DrawModeAuditTests: XCTestCase {
                 for f in a.seen.faces { XCTAssertNotNil(faces.face(f), "\(c): level \(a.level.number) run face \(f)") }
             }
         case .facesNarrow:
+            // 6A-TR: the trees' cache singles (PICTs 0xc08…0xc0f; 0xc0a is 264 px wide, 0xc0f 414) are the one exception
+            // to ≤ 0x100 — never rotated or scaled (no rotation or scale writer row names a tree), so `SpriteBlitter`
+            // draws and erases them, flipped or not, on the untransformed path; they stay under translucency's 301.
+            // No level 1–5 loads a tree face: there every loaded face is still held to ≤ 0x100.
+            XCTAssertFalse(Self.writers.contains { w in
+                (w.input == .rotation || w.input == .scale) && w.who.contains { $0 == "any" || Self.has($0, "tree") }
+            }, "\(c): a rotation or scale writer reaches a tree")
             for a in audits {
                 for (pict, s) in a.level.renderer.sprites.faces.sheets {
-                    for f in s.faces { XCTAssertLessThanOrEqual(f.width, 0x100, "\(c): PICT \(pict)") }
+                    let limit = BackgroundSprite.trees.contains(pict) ? 301 : 0x100
+                    for f in s.faces { XCTAssertLessThanOrEqual(f.width, limit, "\(c): PICT \(pict)") }
                 }
             }
         case .noCopyAfterCopy:

@@ -592,7 +592,7 @@ public enum BoxSprite {
         case doors:
             doorArm(w, id: id, lights: &lights, effects: effects)
         case branch, solidBranch:
-            // The branches (M l. 60941–60947 for 0xc08, 61067–61075 for 0xc09 — `0xc08 < type < 0xc0a`; 6A-TR), every
+            // The branches (M l. 60941–60947, `type == 0xc08`; 61067–61075, `0xc08 < type < 0xc0a`, 0xc09; 6A-TR), every
             // frame: `+0x5c = 0`, `+0xc0 = 0`, `+0x1f8 = 0`, gravity 0; one-way `+0x185` = 1 for 0xc08, 0 for 0xc09.
             w.active.update(id: id) { s in
                 s.hasHit = false

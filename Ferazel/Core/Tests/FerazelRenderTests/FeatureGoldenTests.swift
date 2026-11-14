@@ -389,7 +389,8 @@ final class FeatureGoldenTests: XCTestCase {
         // The planting frame's branches are solid Boxes in `.SetupBoxSprite`'s head state (ENG §2.4 item 5): the two
         // Xichrons (1055) placed on tree 35 are moved up onto the first and second branch in iteration 1's pass, and the
         // one on the first branch (from y 1360 to 1340) is collected by the player above it — score 10, one Xichron
-        // (with the planting stubbed neither moves and nothing is collected).
+        // (with the planting stubbed neither moves and nothing is collected in iteration 1; the falling player still takes
+        // one later, by iteration 6).
         XCTAssertEqual([Int(w.globals.score), Int(w.globals.xichrons)], [10, 1])
         var now = first.ticks, fnv = [first.fnv], ticks = [first.ticks], riding: [Int?] = [], ys: [Int] = []
         func sample() throws {
@@ -413,8 +414,8 @@ final class FeatureGoldenTests: XCTestCase {
         // 5's frame — the golden.
         XCTAssertEqual(ys, [1271, 1275, 1280, 1285, 1285, 1285])
         XCTAssertEqual(riding.prefix(3).map { $0 == nil }, [true, true, true])
-        XCTAssertEqual(riding[3], ids[0], "standing on the mirrored first branch")
-        XCTAssertEqual(riding[4], ids[0])
+        XCTAssertEqual(riding[3], ids.first, "standing on the mirrored first branch")
+        XCTAssertEqual(riding[4], ids.first)
         // Measured at 6A-TR (FNV-1a 64 of the 640×480 screen indices after the iteration's draws, the test colour model).
         // With the branch planting stubbed (one local patch, never committed) the player falls past and this frame is
         // 707aa87324dfbee3 (he is at y 1295, still falling).

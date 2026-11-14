@@ -439,8 +439,8 @@ platforms (`PlatformSprite.swift:402`).
    dropped too.
 4. The branch (Box 0xc08, M l. 60941–60947, every frame): `+0x5c = 0`, `+0xc0 = 0` (no face), `+0x1f8 = 0`,
    gravity `+0x110 = 0`, one-way `+0x185 = 1`. The 0xc09 child (0xc0f's, M l. 61067–61075, `0xc08 < type < 0xc0a`):
-   the same four stores and **`+0x185 = 0`** — not one-way: 0xc0f's long branch (386 × 43 px) is a solid platform,
-   which SetupTree's own `+0x185 = 0` store on the child (M l. 62885) agrees with. (0xc0f is placed nowhere.)
+   the same four stores and **`+0x185 = 0`** — not one-way: 0xc0f's long branch (375 × 43 px; 386 = 0x182 is its right edge — corrected 6A-TR, dump
+   M l. 62871) is a solid platform, which SetupTree's own `+0x185 = 0` store on the child (M l. 62885) agrees with. (0xc0f is placed nowhere.)
 5. Spawned in the sprite pass → Invariant 3's insert order; never counted (record −1), never written back. Inserted at
    layer 2, ahead of the tree in the list, so **its first Handle runs on the next frame**; for the rest of the planting
    frame it is a solid Box with `.SetupBoxSprite`'s head state: `+0x4c` the Box Handle, `+0x5c` the Box hit, `+0x1f8`

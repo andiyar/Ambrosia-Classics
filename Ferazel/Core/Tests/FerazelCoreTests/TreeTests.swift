@@ -93,6 +93,7 @@ final class TreeTests: XCTestCase {
                 // (the entry names that face, `.handle`), converted under the level+base CLUT (flag 1).
                 XCTAssertEqual(e.spawn, .idle, what)
                 XCTAssertEqual(e.source, .handle, what)
+                XCTAssertEqual(e.faceIndex, 0, what)
                 XCTAssertEqual(e.sheet, SetupFaces.Sheet.single(p.type, clut: ColorLUT.screenClutId(L.header)), what)
                 XCTAssertEqual(e.record, p, "\(what): nothing written back")
                 XCTAssertTrue(e.children.isEmpty, "\(what): the Setup plants nothing")
@@ -127,6 +128,7 @@ final class TreeTests: XCTestCase {
                 let s = try XCTUnwrap(w.active.sprite(id: id))
                 let kids = made(w, since: before)
                 XCTAssertEqual(kids.count, counts[t], "tree \(t)")
+                guard kids.count == (Self.table[t] ?? []).count else { continue }   // a failure, never a crash
                 XCTAssertTrue(s.setupDone, "`+0x17c = 1` (M l. 62694)")
                 // The face from the cache (M l. 62695–62696, 63541–63542) and the mirror from the record (M l. 63544).
                 XCTAssertEqual(s.face, FaceRef(pict: t, index: 0, set: .encoded))
@@ -177,6 +179,7 @@ final class TreeTests: XCTestCase {
         BackgroundSprite.handle(world: w, id: id, faceWidth: try widths())
         let kids = made(w, since: before)
         XCTAssertEqual(kids.count, 5)
+        guard kids.count == 5 else { return }
         let s = try XCTUnwrap(w.active.sprite(id: id))
         // `+0x1d4` = the fifth spawn (M l. 62765–62770): the first spawn's pointer is lost, the sprite itself lives on.
         XCTAssertEqual(slots(s), [kids[4].id, kids[1].id, kids[2].id, kids[3].id])
@@ -198,7 +201,7 @@ final class TreeTests: XCTestCase {
         XCTAssertEqual(PlatformSprite.flipH(Rect(top: 0, left: 40, bottom: 0, right: 40), 100),
                        Rect(top: 0, left: 60, bottom: 0, right: 60))
         XCTAssertEqual(PlatformSprite.flipH(Rect(top: 0, left: 30, bottom: 0, right: 10), 100),
-                       Rect(top: 0, left: 70, bottom: 0, right: 90), "right < left before the flip: swapped back")
+                       Rect(top: 0, left: 70, bottom: 0, right: 90), "right < left before the flip: ordered after it, no swap")
         XCTAssertEqual(PlatformSprite.flipH(Rect(top: 0, left: 0xb, bottom: 0, right: 0x182), 200),
                        Rect(top: 0, left: 200 - 0x182, bottom: 0, right: 200 - 0xb))
         // Each tree with p1 ≠ 0: every branch rect flipped by the tree face's width before the offset; the hot rect (at
@@ -212,6 +215,7 @@ final class TreeTests: XCTestCase {
             let kids = made(w, since: before)
             let rows = Self.table[t] ?? []
             XCTAssertEqual(kids.count, rows.count)
+            guard kids.count == rows.count else { continue }
             for (i, b) in rows.enumerated() {
                 let what = "mirrored tree \(t) branch \(i)"
                 XCTAssertEqual([kids[i].x, kids[i].y], [2000 + fw - b.r, 600 + b.t], what)
@@ -233,6 +237,31 @@ final class TreeTests: XCTestCase {
             let first = try XCTUnwrap(made(wl, since: before).first)
             let b = Self.table[t]![0]
             XCTAssertEqual([first.x, first.y], [Int(p.x) + w0[t]! - b.r, Int(p.y) + b.t], "L\(level) record \(index)")
+        }
+        do {
+            // The Handle's re-read (M l. 63543–63544) is `(char)` of the record's p1, as at Setup: 0x100 is not mirrored,
+            // 0x101 and −255 are. A tree with no branches (0xc0c), so the mirror is all that changes.
+            let w = try world()
+            let p = rec(0xc0c, index: 50)
+            let id = try tree(w, p)
+            let width = try widths()
+            for (p1, m): (Int16, Bool) in [(0x100, false), (0x101, true), (-255, true), (-256, false), (1, true), (0, false)] {
+                w.records[p.index] = rec(0xc0c, p1: p1, index: p.index)
+                BackgroundSprite.handle(world: w, id: id, faceWidth: width)
+                XCTAssertEqual(try XCTUnwrap(w.active.sprite(id: id)).mirrored, m, "p1 \(p1)")
+            }
+        }
+        do {
+            // `.SetupTree` runs before the Handle re-reads `+0x17e` (M l. 63538–63546): a record whose p1 changed since the
+            // Setup plants with the Setup's mirror (here unflipped), and only then is the tree mirrored from the record.
+            let w = try world()
+            let p = rec(0xc08, index: 51, x: 3000, y: 900)
+            let id = try tree(w, p)
+            w.records[p.index] = rec(0xc08, p1: 1, index: p.index, x: 3000, y: 900)
+            let before = Set(w.active.sprites.map(\.id))
+            BackgroundSprite.handle(world: w, id: id, faceWidth: try widths())
+            XCTAssertEqual(made(w, since: before).first?.x, 3000 + 0x62, "planted unflipped (the Setup's mirror)")
+            XCTAssertTrue(try XCTUnwrap(w.active.sprite(id: id)).mirrored, "then mirrored from the record")
         }
     }
 
@@ -269,6 +298,7 @@ final class TreeTests: XCTestCase {
         BackgroundSprite.handle(world: w, id: id, faceWidth: try widths())
         let kids = made(w, since: before)
         XCTAssertEqual(kids.map(\.type), [BoxSprite.solidBranch])
+        guard kids.count == 1 else { return }
         XCTAssertFalse(kids[0].oneWay)
         XCTAssertEqual(kids[0].hotRect, Rect(top: 0, left: 0, bottom: 43, right: 375))
         XCTAssertEqual(try XCTUnwrap(w.active.sprite(id: id)).siblings.first, kids[0].id)
@@ -367,6 +397,7 @@ final class TreeTests: XCTestCase {
             let kids = made(w, since: before)
             XCTAssertEqual(kids.count, free, "\(free) free")
             XCTAssertEqual(w.refusedSpawns, 3 - free)
+            guard kids.count == free else { continue }                     // a failure, never a crash
             let s = try XCTUnwrap(w.active.sprite(id: id))
             XCTAssertEqual(slots(s), (0..<4).map { $0 < free ? kids[$0].id : nil }, "\(free) free")
             XCTAssertTrue(s.setupDone)
@@ -380,6 +411,21 @@ final class TreeTests: XCTestCase {
             XCTAssertTrue(w.active.sprites.filter { $0.type == 0x426 }.allSatisfy {
                 $0.hotRect == Rect(top: 0, left: 0, bottom: 0, right: 0)
             })
+        }
+        do {
+            // 0xc0b with four free records: the first four branches are made, the fifth spawn returns 0 and `.SetupTree`
+            // stores that 0 into `+0x1d4` over the first branch's pointer (M l. 62765–62770; Ruling 16) — the slot is
+            // written even when the spawn fails.
+            let w = try world()
+            let id = try tree(w, rec(0xc0b, index: 52, x: 500, y: 700))
+            for i in 0..<(SpriteWorld.recordCount - 1 - 4) { _ = w.active.insert(SpriteSlot(type: 0x426, x: 10 * i, y: 0)) }
+            let before = Set(w.active.sprites.map(\.id))
+            BackgroundSprite.handle(world: w, id: id, faceWidth: try widths())
+            let kids = made(w, since: before)
+            XCTAssertEqual(kids.count, 4)
+            XCTAssertEqual(w.refusedSpawns, 1)
+            guard kids.count == 4 else { return }
+            XCTAssertEqual(slots(try XCTUnwrap(w.active.sprite(id: id))), [nil, kids[1].id, kids[2].id, kids[3].id])
         }
     }
 

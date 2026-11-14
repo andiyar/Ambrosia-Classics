@@ -322,6 +322,13 @@ def _port_arm(t, cls, ps, n1):
                 note += f'; p2 {",".join(map(str, p2s))} ≠ 0: {anchor("FerazelCore/Player/HitPlayerSprite.swift", r"later: Phase 6 — p2 ≠ 0")}'
                 return (PARTIAL, anchor(SF, r'case 0xb54, 0xb55:'), note)
             return (BUILT_S, anchor(SF, r'case 0xb54, 0xb55:'), note)
+        if 0xc08 <= t <= 0xc0f:
+            # 6A-TR: the trees — the Setup arm (`setupTree`), the Handle arm (`tree`) and `.SetupTree`
+            # (`plantBranches`, the branch Boxes 0xc08 / 0xc09). Anchored on the Swift case as written: a narrowed
+            # (or removed) case fails --check.
+            return (BUILT_S, anchor(SF, r'case 0xc08\.\.\.0xc0f:'),
+                    f'tree (6A-TR); Handle {anchor(BG, r"static func tree\(")}, branches '
+                    f'{anchor(BG, r"static func plantBranches\(")}')
         if t == 0xcb1:
             return (BUILT_S, anchor(SF, r'case 0xcb1:'), 'level exit')
         return (REFUSED, anchor(SF, r'case 0xcb1:', r'throw Error\.notTranscribed'),
@@ -428,8 +435,8 @@ BOSS = {'Chief': '6A-CH', 'Wizard': '6B-WZ', 'Demon': '6C-DM', 'Xichra': '6C-XI'
 
 def bg_split(t):
     """LL's proposed split of 6A-BG1 (the unbuilt Background types first placed on 10–22)."""
-    if 0xc08 <= t <= 0xc0f or 0xb4a <= t <= 0xb4d:
-        return '6A-BG1a'                      # trees + clouds: single-face scenery with their own Handle arms
+    if 0xb4a <= t <= 0xb4d:
+        return '6A-BG1a'                      # clouds: single-face scenery with their own Handle arm (the trees: 6A-TR)
     if t == 0xbf4 or 0x5c8 <= t <= 0x5d1 or 0x442 <= t <= 1098:
         return '6A-BG1b'                      # moving hazards: rotating blade (.SectLineSegs), path maces, cannons p1≠0
     return '6A-BG1c'                          # cached faces: plants (+ fire 0x4b8 if placed ≤ 22)
