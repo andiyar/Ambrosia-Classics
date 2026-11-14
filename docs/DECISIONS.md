@@ -2131,6 +2131,30 @@ notes got two reviewers on disjoint halves; (5) review-found comment fixes outsi
 what the listing shows. **Ben, 2026-11-14:** "when you run out of context, trigger the next session and keep on …
 until you reach a hard stop that needs input" — Deimos sessions chain wave after wave.
 
+**As built — wave 2b (2026-11-14).** C12 8f3852b + review rounds eb9370d / 7755fb9, merged to local main as bcddbe6
+(`Deimos/Core` 318 → **327/0/0**); C18a e64a1a2 + review rounds acffd81 / 560f68c, merged as 28194b9 (→ **335/0/0**).
+Rulings by the seat, each from the listing and confirmed by a review leg: (1) **a demo film is not ended by keys** —
+`FUN_10048e60` is the mouse button only (`10048e6c`); a film ends when it runs out (`10005a38`), on Esc through the
+begin frame (`10005904`), on level complete or game over; the plan's "any key" wording (card 2.5, stand-ins 5 and 8)
+was wrong and is corrected in the plan; the mouse button stays unmodelled until Phase 4. (2) `FrameKeys.startSession`
+runs in the session set-up (`100056ac`), and the scroll level start (`100067ec`) precedes the entity reset inside
+`FUN_10032e60` (`100067f8`) — the card had both the other way. (3) The condition table has 17 rules numbered 0–16;
+the card's "rule #17" has no call site. (4) The pre-controller state and the blur draw-before-interval order cannot
+be told apart from their mutants on shipped data (all 21 range-trigger pairs keep the gating flags; every blur state
+has Min = Max = 0; no harmless unit is hittable or targetable): census asserts guard those facts, and the blur order
+is pinned with a synthetic state. (5) The tank the bridge controller spawns at tick 2583 is at (480, 140) heading 285
+at spawn and has taken one motion step by the end of that tick (an entity appended during a pass is visited by the
+same pass); the test pins the end-of-tick bits. (6) An input-less player on level 1 loses its lives at passes 443 /
+760 / 1022, leaves the game at 1084 (state-1 entry 1063 + game-over time 20, `1002a24c..1002a268`) and the session
+ends at 1195; the Phase-1 frame checks at 3118 and 3200 now pin that final frame. (7) The driver steps the new
+`.pauseWait` op as a no-op until H2 builds the real wait (it would otherwise trap on Caps Lock); while Caps Lock is
+held the pause re-fires every pass — H2 closes it. (8) A pass that both pauses and ends the session now carries
+pause → resume → stop with the pause's halt index kept; `PassOutput` holds one halt, so the end-of-session halt
+after the wait (`10005ad8`) is missing on that one pass — H2. (9) Added outside the cards' file lists as call sites:
+`UpdateWorld.swift`, `PlayerPhase1.swift`, `PlayerPhase1Tests.swift`, `DeimosDriver.swift`, `DriverTests.swift`.
+(10) `updateWorld` takes `inputWithheld` (console open); `playerCommands` takes `coinTally:` and `text:` (omitting
+`text:` drops the coin-tally text); `Player.levelStart(sector:)` lost its default when `Player.sector` was retired.
+
 ## D45 — Ferazel's Wand re-planning pass: Ben's answers and the seat's rulings (2026-11-07)
 
 **Decided (Ben, in chat, 2026-11-07, answering the re-planning pass's five questions — spec
