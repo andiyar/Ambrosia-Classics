@@ -415,7 +415,7 @@ final class DrawModeAuditTests: XCTestCase {
         W("Player/ShadowDouble.swift:156", .mirrored, .copy, "player.shadowDouble"),
         W("Player/ShadowDouble.swift:157", .mode, .words([0x1000b]), "player.shadowDouble",
           at: ["Player/ShadowDouble.swift:13"]),
-        W("Session/FerazelSession.swift:211", .mirrored, .copy, "player.shadowRing"),
+        W("Session/FerazelSession.swift:223", .mirrored, .copy, "player.shadowRing"),
         W("Shots/CastSpell.swift:164", .mirrored, .flags([false]), "shot"),
         // 10·dir, dir 0…0x23, only for a shot with gravity (`0 < +0x110`: ids 0, 1, 3, 4, 7 and the seed 0x5a); the
         // followers take their main's angle (the orb 0x50 has gravity 0, PlayerShot.setup, so its followers get 0).
@@ -433,6 +433,10 @@ final class DrawModeAuditTests: XCTestCase {
         W("Shots/PlayerShot.swift:474", .mode, .words([0x10004]), "shot.gravity"),        // the seed (gravity 0xfa)
         W("Shots/PlayerShotHits.swift:109", .mode, .words([0x10004]), "shot.gravity"),    // the seed
         W("Shots/PlayerShotHits.swift:221", .flash, .range(10...10), "box"),
+        // 6A-S8: the horizon strip's `.SetupPxSprite` `+0xb8 = 0x80000` (M l. 30815): mode 8, drawn by
+        // `SpriteBlitter.behindTilesWalk` (no built level has a strip: header 0x2716 = 0 on levels 1–5).
+        W("Sprites/PxSprites.swift:260", .mode, .words([0x80000]), "pxSprite", at: ["27"],
+          pins: ["s.mode = PxSprites.drawMode", "drawMode: UInt32 = 0x80000"]),
         W("Sprites/SetupFaces.swift:405", .mirrored, .flags([true]), "background.plant"),
         W("Sprites/SetupFaces.swift:406", .mode, .placedTint(0xa8c...0xaef), "background.plant",
           pins: ["if p.p2 != 0 { s.mode = UInt32(truncatingIfNeeded: Int(p.p2) + 0x10000) }"]),
@@ -1323,7 +1327,7 @@ final class DrawModeAuditTests: XCTestCase {
           "every `.wrapDrawSprites` Core builds goes through `FerazelSession.diffuseSeeds`, which seeds each mode-5 draw"),
         R("Frame/SpriteBlitter.swift", "Refusal.mode", 11, .noWriter,
           [.writtenWordsDraw, .untransformableNotTransformed, .gaugeNotMirrored, .lightBytesInRange],
-          "every written word draws (test 1): no writer of modes 2, 7, 8, 0xd, 0xe, ≥ 0xf; a 0xb arg's table read in "
+          "every written word draws (test 1): no writer of modes 2, 7, 0xd, 0xe, ≥ 0xf (6A-S8: mode 8 drawn); a 0xb arg's table read in "
           + "range; tint subs ≤ 24 (placements' p2 included); modes 5 / 0xa / 0xb never on a rotated or scaled "
           + "sprite, 0xa never mirrored; light index ≥ 0x6f000 needs F ≥ 126 (DK: F max 110); A14 (light byte −1 → "
           + "0xbff00 + F) needs a BG cell with light byte −1, none in a built level"),
@@ -1472,8 +1476,6 @@ final class DrawModeAuditTests: XCTestCase {
         // before the session) — `GameFlow` reports a level-run error as the level-load error, never a quit.
         R("Front/LevelRun.swift", "LevelOpenRefusal.omniPxMode", 1, .headerZero, [.headerOmniPxStrip],
           "header 0x26c7 = 0 on every built level (rain / interlace modes 1, 3, 6, 7, ≥ 8 refused until 6A-RN)"),
-        R("Front/LevelRun.swift", "LevelOpenRefusal.horizonStrip", 1, .headerZero, [.headerOmniPxStrip],
-          "header 0x2716 = 0 on every built level (the horizon strip, levels 10, 30, 40, 45, 62, 67, until 6A-S8)"),
         R("Front/DialogResources.swift", "WorldDataError.missing", 1, .byConstruction,
           [.callersTry(["DialogTemplate.load(", "DialogItemList.load(", "ControlTemplate.load(", "MenuTemplate.load(",
                         "MenuBarTemplate.load("])],
@@ -1950,7 +1952,8 @@ final class DrawModeAuditTests: XCTestCase {
             XCTAssertNoThrow(try r.apply(FrameOps(draws: ops)), "\(c)")
             XCTAssertEqual(r.executed, [.omniPxOn(2)] + Array(repeating: .omniPx(4), count: 9), "\(c)")
         case .headerOmniPxStrip:
-            // Every built level opens: OmniPx 0 / 2 / 4 / 5 (built: 0; level 5's 2 arrives with LV5) and no horizon strip.
+            // Every built level opens: OmniPx 0 / 2 / 4 / 5 (built: 0; level 5's 2 arrives with LV5); no built level has a
+            // horizon strip (header 0x2716 = 0 on levels 1–5 — 6A-S8's switch-off: no strip sprite, no mode 8).
             for a in audits {
                 let h = a.level.file.header
                 XCTAssertTrue([0, 2, 4, 5].contains(h.omniPxMode),
@@ -1975,10 +1978,9 @@ final class DrawModeAuditTests: XCTestCase {
                     }
                 }
             }
+            // 6A-S8: a horizon strip header (0x2716 ≠ 0) opens — the strip is drawn (mode 8, `PxSprites`).
             let strip = try header { $0[$0.startIndex + 0x2716] = 0x13; $0[$0.startIndex + 0x2717] = 0x88 }
-            XCTAssertThrowsError(try LevelRun.refuseUndrawnHeader(strip), "\(c): strip") {
-                XCTAssertEqual($0 as? LevelOpenRefusal, .horizonStrip(0x1388))
-            }
+            XCTAssertNoThrow(try LevelRun.refuseUndrawnHeader(strip), "\(c): strip")
             // In code: `setupLevel` refuses before `services.prepare` (no renderer, no session); `GameFlow`'s level arm
             // catches a tick's error as `levelFailed` (the level-load report —
             // `GameFlowGameTests.testNewGameStartsLevel1` drives a patched header to it).

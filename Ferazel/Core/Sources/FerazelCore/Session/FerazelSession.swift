@@ -94,6 +94,10 @@ public final class FerazelSession {
     /// OX: OmniPx's state (`OmniPx`: the mode, faces, layer arrays, factor backup) and its counter `c`, which runs on
     /// from the previous level (`LevelCarry.omniPxCounter`). The on-flag is G+0x174 (`world.globals.omniPxActive`).
     public internal(set) var omniPx = OmniPx()
+    /// 6A-S8: the horizon strip `.SetupLevel` made (`PxSprites.create`, after `.KillAllSprites` and before
+    /// `.SetupLevelSprites`): its globals (`_DAT_100a01d4` / `_DAT_100a01d0` and the counts), the add's outcome and the
+    /// CLUT pointer after it. Empty on a level whose header `0x2716` is 0.
+    public internal(set) var horizonStrip = PxSprites.Created(clut: PxSprites.setupLevelClut)
     /// OX: the renderer's `.TurnOnOmniPx` (`DrawOp.omniPx(.turnOn)`) when `.SetupOmniPx(0)` turned OmniPx on (modes 2,
     /// 4, 5) — empty on a mode-0 level. `.SetupLevel` M l. 2540: `LevelRun.setupLevel` emits it after its last load
     /// bar; an unhosted session puts it first in its level-start block (before `.SetScreenClut`, M l. 2571).
@@ -155,11 +159,14 @@ public final class FerazelSession {
     /// - Parameter hostedByLevelRun: L1 — `LevelRun` drives the session: `step` omits the iteration-0 block, the loop
     ///   end appends no request, and `.SetupLevel`'s in-session parts run here (the crunch-log re-apply on a revisit,
     ///   `unlocked[L] = 1` before the player spawn). False (every caller before L1) = Phase 2's behaviour exactly.
+    /// - Parameter stripClut: 6A-S8 — what `*_DAT_1009ff94` holds when `.SetupLevel` reaches the horizon strip's add
+    ///   (`LevelRun.setupLevel` passes it per path; `PxSprites.setupLevelClut` on both).
     public init(resources: FerazelResources, prefs: FerazelPrefs, level: Int, seed: Int32 = 1,
                 carry: LevelCarry = LevelCarry(), faceBounds: ((FaceRef) -> IdleSprites.Rect)? = nil,
                 particleFaces: ParticleFaces = ParticleFaces(), diffuseRandoms: DiffuseRandoms? = nil,
                 diffuseRandomsAt: DiffuseRandomsAt? = nil, start: (x: Int, y: Int)? = nil,
-                refreshFacing: Bool = true, records: [Placement]? = nil, hostedByLevelRun: Bool = false) throws {
+                refreshFacing: Bool = true, records: [Placement]? = nil, hostedByLevelRun: Bool = false,
+                stripClut: Int16 = PxSprites.setupLevelClut) throws {
         self.resources = resources
         self.prefs = prefs
         self.hostedByLevelRun = hostedByLevelRun
@@ -203,6 +210,11 @@ public final class FerazelSession {
         // `.ClearCrunchSprites` (`.GameLoop` l. 5160, before `.SetupLevel`): the 40-slot overlay table — already empty
         // in this fresh world; W4's level flow keeps the order when a world is reused.
         world.player.crunchSprites = [Int?](repeating: nil, count: 0x28)
+        // 6A-S8: `.SetupLevel`'s `.KillAllSprites` (M l. 2246 — this fresh world), then on either path `.MTKillPxSprites`
+        // and, header `0x2716` ≠ 0, `.MTAddPxSprite` with the Backgrounds file open (M l. 2252–2268 / 2350–2356): the
+        // strip sprites are the level's first allocations, before the crunch re-apply and `.SetupLevelSprites`.
+        horizonStrip = PxSprites.create(header: L.header, backgrounds: resources.backgrounds, clut: stripClut,
+                                        world: world)
         // E1b review fix: the water-effects cache, origin and flag `*_DAT_100a00f4` run on (`LevelCarry`); the player
         // Setup keeps the flag (`Player.spawn`).
         world.player.tileCacheValid = carry.tileCacheValid
@@ -230,7 +242,7 @@ public final class FerazelSession {
         // (M l. 2521–2526, raw `10004da4..10004dc0`); the live count stays the world's (`EnemyCounting`).
         world.enemies = EnemyCounting(window: true)
         let spawned = try SetupFaces.spawnLevelSprites(context: context, rng: &world.rng,
-                                                       counting: &world.enemies) { e in
+                                                       counting: &world.enemies, active: world.active) { e in
             // `.ActiveToIdleSprite`: the bounds of the face `+0xc0` holds at `.AddIdleSprite` time — none for a
             // Handle-faced type, the placeholder for a class-cache face (`SetupFaces` header).
             switch e.source {
@@ -550,6 +562,10 @@ public final class FerazelSession {
             // liquid rule's effect 5 takes prefs+6.
             PlayerShot.handle(world: world, id: id, solver: solver, lights: &self.lightTable, effects: effects,
                               faceWidth: { Self.frameRect($0, resources: res).right }, faceBounds: bounds)
+        case .pxSprite:
+            // `.HandlePxSprite @ 10033378` (6A-S8, `PxSprites.handle`) at the scroll point as it stands in the pass;
+            // `.MTHandlePxSprites` runs it again after the next `.FindUpperLeftCorner` (`findUpperLeftCorner`).
+            PxSprites.handle(world: world, id: id, h: camera.scrollH, v: camera.scrollV)
         case .inert:
             break                                       // the four bosses not placed on levels 1–5 // later: Phase 6
         case .enemyShot:
@@ -1398,15 +1414,22 @@ public final class FerazelSession {
             arena: &world.arena)
         world.player.scrollH = camera.scrollH
         world.player.scrollV = camera.scrollV
+        // 6A-S8: `.MTHandlePxSprites` at the routine's end (M l. 6235), with the new scroll point — the strip's second
+        // `.HandlePxSprite` of the frame, the one the draw sees.
+        PxSprites.handleAll(world: world, table: horizonStrip.table, h: camera.scrollH, v: camera.scrollV)
     }
 
     /// A face's frame at the origin: the sheet cell for a level-1 face set, else the PICT's picFrame (`.frontEnd`
     /// chain, as R4's tests read it); `.noFace` when the PICT is absent.
+    /// 6A-S8: a `.backgroundsSingle` face (the horizon strip's) reads the Backgrounds file's PICT.
     static func frameRect(_ f: FaceRef, resources: FerazelResources) -> IdleSprites.Rect {
-        if let s = SetupFaces.sheet(pict: f.pict), !s.single {
+        let strip = f.set == .backgroundsSingle
+        if !strip, let s = SetupFaces.sheet(pict: f.pict), !s.single {
             return IdleSprites.Rect(top: 0, left: 0, bottom: s.cellHeight, right: s.cellWidth)
         }
-        guard let res = resources.resource(type: "PICT", id: f.pict, chain: .frontEnd), res.data.count >= 10 else {
+        let found = strip ? resources.backgrounds.resource(type: "PICT", id: f.pict)
+            : resources.resource(type: "PICT", id: f.pict, chain: .frontEnd)
+        guard let res = found, res.data.count >= 10 else {
             return .noFace
         }
         let b = [UInt8](res.data)

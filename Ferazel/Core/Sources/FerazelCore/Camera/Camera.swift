@@ -14,7 +14,9 @@ import Foundation
 /// `+0xb282`). LV5: the boss-arena bounds (hdr 0x2724 / 0x272e, `BossArena.cameraBounds`, M l. 5937–6028) clamp the
 /// scroll point's h before the map clamp (M l. 6168–6173). Auto-scroll (0x272a) is not built: a level with auto-scroll
 /// is refused. EF: the shake `_DAT_1009ffa0` (`shake`), applied to the scroll point's v before the even-v rule.
-/// `.MTHandlePxSprites`, called at the end, is the caller's (level 1 has no strip).
+/// `.MTHandlePxSprites`, called at the end (M l. 6235), is the caller's: the session's `findUpperLeftCorner` runs it
+/// right after this routine, with the scroll point it left (6A-S8, `PxSprites.handleAll`; the strip sprites live in the
+/// world, which this value type does not hold).
 ///
 /// Start (`.GameLoop` l. 5168–5195): the eased pair and the scroll point are set to the sprite origin − 0xd0
 /// (x − 208, y − 208), so the view pans in from there.

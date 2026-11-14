@@ -40,7 +40,10 @@ import FerazelCore
 /// (`SpriteDraw.randomSeed`, `diffuseRandoms`), and the springboard gauge's squash, mode 0xa (`.BlitEncFaceSpecialClipX`'s
 /// mode-10 arms and the squashed `.BlitEncBoolFaceClip` mask, §2.6; `squashWalk`).
 ///
-/// Still refused by name (`Refusal`): behind-tiles (8), translucent ripple (0xd), silhouette (0xe), tile blends
+/// 6A-S8 adds behind-tiles, mode 8 (`.BlitEncFaceBehindTilesNoClip` / `…Clip`, draw-effects §2.5; `behindTilesWalk`):
+/// the horizon strip's word add through the mask port.
+///
+/// Still refused by name (`Refusal`): translucent ripple (0xd), silhouette (0xe), tile blends
 /// (≥ 0x14), the undefined Special tables (2, 7, 0xf..0x13, and a flipped 0xa: the flip twins have no mode-10 arm), the
 /// same modes and 5, 0xa, 0xb under scale / rotation (no table: the register keeps garbage), a mode-0xb arg whose
 /// table read leaves its table, and a mode-5 draw with no seed. Each refusal (as every `throw` in FerazelRender) has its
@@ -83,8 +86,14 @@ public struct SpriteBlitter: Sendable {
         /// 6A-CF: the cache records of a PICT registered more than once (0x46a's three, two cuts), keyed by record —
         /// a face ref of such a PICT names its record and cell (`CachedFaces.recordCell(of:)`).
         public private(set) var recordSheets: [CachedFaces.RecordKey: FaceSheet] = [:]
+        /// 6A-S8: the Backgrounds-file singles (`FaceSetKind.backgroundsSingle`, the horizon strip's face), keyed by PICT
+        /// apart from `sheets` — the Sprites file holds PICTs of the same ids.
+        public private(set) var backgroundSingles: [Int16: FaceSheet] = [:]
 
         public init(sheets: [Int16: FaceSheet]) { self.sheets = sheets }
+
+        /// 6A-S8: `sheet` (one face, `FrameRenderer.stripFace`) as the Backgrounds single `pict`.
+        public mutating func addBackgroundsSingle(_ pict: Int16, _ sheet: FaceSheet) { backgroundSingles[pict] = sheet }
 
         /// Each sheet loaded as its `.Init<Class>Sprite` / cache call does: `GetPicture` on the front-end chain
         /// (Sprites → Sounds → Titles → app), converted under the sheet's CLUT; each of `records` (the record-keyed
@@ -130,6 +139,10 @@ public struct SpriteBlitter: Sendable {
         }
 
         public func face(_ ref: FaceRef) -> EncodedFace? {
+            if ref.set == .backgroundsSingle {
+                guard let s = backgroundSingles[ref.pict], s.faces.indices.contains(ref.index) else { return nil }
+                return s.faces[ref.index]
+            }
             if let s = sheets[ref.pict] {
                 return s.faces.indices.contains(ref.index) ? s.faces[ref.index] : nil
             }
@@ -286,7 +299,8 @@ public struct SpriteBlitter: Sendable {
     /// - mode ∈ {5, 6, 8, 0xb, 0xd, 0xe}, mode > 0x13, or a transform: untransformed mode 6 → `.BlitEncFaceWaterRipple`
     ///   (flipped `.BlitEncFaceFlipWaterRipple`), untransformed 0xb → `.BlitEncFaceTrans(Flip)Clip` (`transClip`, at
     ///   the sprite's `origin` (+0xc, +0xa) and the `scroll`), untransformed 5 → `.BlitEncFaceDiffuse` (flipped
-    ///   `.BlitEncFaceFlipDiffuse`; `diffuseWalk` with `random`, the replayed game stream — nil is refused), the others
+    ///   `.BlitEncFaceFlipDiffuse`; `diffuseWalk` with `random`, the replayed game stream — nil is refused),
+    ///   untransformed 8 → `.BlitEncFaceBehindTiles(No)Clip` whatever the flip (`behindTilesWalk`, 6A-S8), the others
     ///   refused; a transform with rotation 0, not flipped → `.BlitEncFaceScale`; any other transform → `.BlitEncFaceRot`;
     /// - mode 0xa, not flipped: `.BlitEncFaceSpecialClipX`'s squash (`squashWalk`, q = sub); flipped →
     ///   `.BlitEncFaceFlipClipSpecial` with no mode-10 table (refused);
@@ -309,6 +323,13 @@ public struct SpriteBlitter: Sendable {
             if !transformed && mode == 0xb {
                 try transClip(face, src: src, dst: dst, w: w, h: h, word: word, flip: flip, origin: origin,
                               scroll: scroll, ports: &ports)
+            } else if !transformed && mode == 8 {
+                // 6A-S8: `.BlitEncFaceBehindTiles(No)Clip` — no flip twin: mode 8 ignores the mirror flag (raw
+                // `1002cf5c..1002cfa4`); the mask pass below does read it.
+                let clip = try Self.clipFlag(face, src: src, dst: dst, w: w, h: h, mode: mode, rotation: rot,
+                                             scale: scale)
+                Self.behindTilesWalk(face, src: src, dst: dst, w: w, h: h, clip: clip, frame: &ports.frame,
+                                     mask: ports.mask)
             } else if !transformed && mode == 5 {
                 guard let random else { throw Refusal.diffuseSeed }
                 Self.diffuseWalk(face, src: src, dst: dst, w: w, h: h, flip: flip, n: Int16(truncatingIfNeeded: sub),
@@ -354,6 +375,143 @@ public struct SpriteBlitter: Sendable {
                 }
             } else {
                 Self.blit(face, into: &ports.mask, src: src, dst: dst, w: w, h: h, flip: flip, reject: true) { _, _ in 0 }
+            }
+        }
+    }
+
+    /// Mode 8, "behind tiles" (draw-effects §2.5; ENG §2.1 step 4): `.BlitEncFaceBehindTilesNoClip @ 10026d38`
+    /// (`clip` false, decompile l. 22450–22548) and `.BlitEncFaceBehindTilesClip @ 100269c4` (`clip` true, l. 22251–
+    /// 22449, the walk read in the raw `100269c4..10026d04` — the decompile's `in_r11` / `in_r12` are the dest and mask
+    /// pointers the row token sets). Points are (v, h). Per literal run, per 4-byte group: **if the mask word ≠ 0, the
+    /// frame word += source word & mask word** — a 32-bit big-endian add, the carries crossing bytes, the carry out of
+    /// the top byte lost; a 2-byte tail the same on 16 bits; a last byte copied when its mask byte ≠ 0. Tokens: 0 end, 1
+    /// next row, 2 literal, 3 skip, > 3 `DebugStr` and return (M l. 22357, 22544). The walk never writes the mask (the
+    /// mask pass follows in `blitEncFaceX`).
+    ///
+    /// The clipped walk: the port clip as `.BlitEncFaceClipX` (left / top edges move the source window, right / bottom
+    /// shorten it, port 640 × 416), the dest and mask row pointers start at the unclipped origin (dv − sv, dh − sh,
+    /// `10026a7c`, `10026a88`); **token 1** (`10026ca0`): a row before the top clip skips the source by the token's
+    /// payload, the row pointers still advance; the walk stops once the row count passes sv + h (`10026cb0`); **token
+    /// 2** (`10026b10`): the column counter against the left clip sh and the right limit sh + w, unsigned — a run wholly
+    /// left of the clip is skipped (dest, mask, source + n, the source pad (4 − n & 3) & 3); a run crossing it advances
+    /// all three by sh − column and **groups from the clip column**; a run starting at or past the right limit is
+    /// skipped; one ending past it draws up to it and skips the overhang after the 2- and 1-byte tails
+    /// (`10026c64..10026c74`); the source pad always uses the full run length (`10026c64 rlwinm. r5,r7`); **token 3**
+    /// (`10026c90`): skip, no clip test. The unclipped walk groups from each run's start.
+    static func behindTilesWalk(_ face: EncodedFace, src: (Int, Int), dst: (Int, Int), w: Int, h: Int, clip: Bool,
+                                frame: inout [UInt8], mask: [UInt8]) {
+        let W = FramePorts.width, H = FramePorts.height
+        let data = face.data
+        func word(_ p: Int) -> (op: UInt8, n: Int)? {
+            guard p + 4 <= data.count else { return nil }
+            return (data[p], Int(data[p + 1]) << 16 | Int(data[p + 2]) << 8 | Int(data[p + 3]))
+        }
+        func pad(_ n: Int) -> Int { (4 - n & 3) & 3 }
+        func be(_ b: [UInt8], _ o: Int, _ k: Int) -> UInt32 { (0..<k).reduce(0) { $0 << 8 | UInt32(b[o + $1]) } }
+        /// `count` source bytes at `p` added into the frame at `o` under the mask at `o`: 4-byte groups, a 2-byte tail,
+        /// a last byte (`10026bc0..10026c60`; NoClip l. 22482–22511).
+        func run(_ p: Int, _ o: Int, _ count: Int) {
+            var p = p, o = o, n = count
+            while n > 3 {
+                let m = be(mask, o, 4)
+                if m != 0 {
+                    let v = be(frame, o, 4) &+ (be(data, p, 4) & m)
+                    for k in 0..<4 { frame[o + k] = UInt8(truncatingIfNeeded: v >> (24 - 8 * UInt32(k))) }
+                }
+                p += 4; o += 4; n -= 4
+            }
+            if n > 1 {
+                let m = UInt16(be(mask, o, 2))
+                if m != 0 {
+                    let v = UInt16(be(frame, o, 2)) &+ (UInt16(be(data, p, 2)) & m)
+                    frame[o] = UInt8(v >> 8)
+                    frame[o + 1] = UInt8(v & 0xff)
+                }
+                p += 2; o += 2; n -= 2
+            }
+            if n != 0, mask[o] != 0 { frame[o] = data[p] }
+        }
+        var p = 0
+        guard clip else {
+            // NoClip: the row pointers at (dv, dh) (`param_2[v + 0x18] + h`, the mask port's v·rowBytes + h).
+            let (dv, dh) = dst
+            var next = dv * W + dh, o = 0
+            while let t = word(p) {
+                p += 4
+                switch t.op {
+                case 0: return
+                case 1:
+                    o = next
+                    next += W
+                case 2:
+                    run(p, o, t.n)
+                    o += t.n
+                    p += t.n + pad(t.n)
+                case 3:
+                    o += t.n
+                default:
+                    return                                             // `DebugStr` (M l. 22544), then return
+                }
+            }
+            return
+        }
+        // The clip (`100269c4..10026a60`), on the shorts the routine reads.
+        var (sv, sh) = src, (dv, dh) = dst, w = w, h = h
+        if dh < 0 { sh -= dh; w += dh; dh = 0 }
+        if dv < 0 { h += dv; sv -= dv; dv = 0 }
+        if W <= dh + Int(Int16(truncatingIfNeeded: w)) { w = W - dh }
+        if H <= dv + Int(Int16(truncatingIfNeeded: h)) { h = H - dv }
+        if Int16(truncatingIfNeeded: sh) > 0 { dh -= sh }
+        if Int16(truncatingIfNeeded: sv) > 0 { dv -= sv }
+        let left = sh & 0xffff, right = (sh + w) & 0xffff, top = sv & 0xffff, end = (sv + h) & 0xffff
+        var rows = 0, next = dv * W + dh, o = 0, col = 0
+        while let t = word(p) {
+            p += 4
+            switch t.op {
+            case 0:
+                return
+            case 1:
+                if rows < top { p += t.n }                             // a row past the top clip: its data skipped
+                rows += 1
+                o = next
+                next += W
+                col = 0
+                if end < rows { return }
+            case 3:
+                o += t.n
+                col += t.n
+            case 2:
+                var n = t.n, at = p, from = o
+                if col < left {
+                    let k = left - col
+                    guard k <= n else {                                // wholly left of the clip
+                        o += n
+                        col += n
+                        p += n + pad(t.n)
+                        continue
+                    }
+                    n -= k; at += k; from += k; col += k               // crossing: grouped from the clip column
+                }
+                if right < col + n {
+                    guard col <= right else {                          // wholly past the right limit
+                        o = from + n
+                        col += n
+                        p = at + n + pad(t.n)
+                        continue
+                    }
+                    let drawn = right - col
+                    run(at, from, drawn)
+                    o = from + n                                       // the overhang skipped after the tails
+                    col += n
+                    p = at + n + pad(t.n)
+                    continue
+                }
+                run(at, from, n)
+                o = from + n
+                col += n
+                p = at + n + pad(t.n)
+            default:
+                return                                                 // `DebugStr` (M l. 22357), then return
             }
         }
     }

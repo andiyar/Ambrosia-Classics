@@ -23,7 +23,8 @@ public enum LevelEnd: Equatable, Sendable {
 public enum LevelOpenRefusal: Error, Equatable, Sendable {
     /// Header `0x26c7` (OmniPx) outside 0, 2, 4, 5: 1 rain (6A-RN), 6 interlace (6C-L55…L70); 3, 7, ≥ 8 unplaced, refused.
     case omniPxMode(UInt8)
-    /// Header `0x2716` ≠ 0: the parallax horizon strip's PICT (levels 10, 30, 40, 45, 62, 67; 6A-S8 draws it).
+    /// Header `0x2716` ≠ 0: the parallax horizon strip's PICT (levels 10, 30, 40, 45, 62, 67). No longer thrown: 6A-S8
+    /// draws the strip (the case is kept, Invariant 9).
     case horizonStrip(Int16)
 }
 
@@ -578,10 +579,10 @@ public final class LevelRun {
         }
     }
 
-    /// PT: the level-open refusals (`LevelOpenRefusal`) for header `h`.
+    /// PT: the level-open refusals (`LevelOpenRefusal`) for header `h` — the OmniPx mode only since 6A-S8 (the
+    /// horizon strip is drawn: `PxSprites`, mode 8).
     static func refuseUndrawnHeader(_ h: LevelHeader) throws {
         guard [0, 2, 4, 5].contains(h.omniPxMode) else { throw LevelOpenRefusal.omniPxMode(h.omniPxMode) }
-        guard h.stripPict == 0 else { throw LevelOpenRefusal.horizonStrip(h.stripPict) }
     }
 
     /// `.SetupLevel`'s body up to `.LoadCachedSpriteFaces` (M l. 2252–2568): the bars, the G writes, the session
@@ -614,13 +615,34 @@ public final class LevelRun {
         carry.globals = g
         carry.crunchLog = g.crunchLog
         let faces = try services.prepare(level: L)
+        // 6A-S8: the horizon strip (`PxSprites.create`, in the session init at `.SetupLevel`'s place: after
+        // `.KillAllSprites`, before `.SetupLevelSprites`) on both paths, with what `*_DAT_1009ff94` holds there. The
+        // long path stores `*_DAT_100a0020` = clut 200 (M l. 2273; M l. 404–405). The fast path (M l. 2252–2268) stores
+        // nothing: the pointer is what the last writer left. Every alias store to `_DAT_1009ff94` (the dump's 25
+        // functions that name it, grepped; the face loaders and `.BuildMaskRegion` only read it) either restores it or
+        // is not reached between a strip level's start and its restart:
+        // - `.LoadLevelTilesets` saves and restores it around its loaders (M l. 1576–1577, 1630); `.LoadBGTileset`,
+        //   `.LoadPxBackTileset` and `.LoadPxMidTileset` swap and restore inside (M l. 950–955, 1092–1105, 1127–1144),
+        //   and `.LoadFGPatternTileset`'s unrestored store (M l. 1049) sits inside that window;
+        // - `.MTAddPxSprite` restores its swap (M l. 30919; only a failed load leaves it — no shipped strip fails);
+        //   `.LoadCachedSpriteFaces` restores each swap (M l. 73806–73820, 73843–73854); `.Load1LightFaceFromPICT`
+        //   (the lights, at run time) swaps and restores (M l. 28670–28674);
+        // - `.SetupOmniPx`'s unrestored store (M l. 13184) is behind header `0x26c7` ≠ 0 (M l. 13172) — 0 on all six
+        //   strip levels;
+        // - `.InitTiles` (M l. 889, 928), `.InitMapFaces` (M l. 66626–66639), `.InitBackgroundSprite` (M l.
+        //   61874–61877), `.InitRopeSprite` (M l. 71009–71013) and `.main` (M l. 8265) run at launch only;
+        //   `.InitGameGlobals`' unrestored stores of `*_DAT_100a001c` (M l. 827, 840) run only while the 0xb7 / 0xb9
+        //   sets are unloaded — the first game after launch — and that game's first `.GameLoop` then runs
+        //   `.PreparePaintFrame` (once a launch, M l. 5154–5156), which ends on clut 200 (M l. 8416–8424).
+        // So the fast path converts under clut 200 too (`HorizonStripSetupTests` pins the restart).
+        let stripClut = PxSprites.setupLevelClut                       // the long path's store and the fast path's carry
         let s = try FerazelSession(resources: resources, prefs: prefs, level: L, seed: seed, carry: carry,
                                    faceBounds: faces.faceBounds, particleFaces: faces.particleFaces,
                                    diffuseRandoms: faces.diffuseRandoms, diffuseRandomsAt: faces.diffuseRandomsAt,
                                    start: start,
                                    refreshFacing: refreshFacing,
                                    records: revisit ? save.restoreSnapshot(level: Int16(L)) : nil,
-                                   hostedByLevelRun: true)
+                                   hostedByLevelRun: true, stripClut: stripClut)
         session = s
         if systemQuitRequested { s.requestSystemQuit(); systemQuitRequested = false }
         try services.attach(lights: s.lights, tintTableDraws: s.tintTableDraws)

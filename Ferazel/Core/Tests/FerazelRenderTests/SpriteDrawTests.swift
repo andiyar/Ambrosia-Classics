@@ -339,8 +339,8 @@ final class SpriteDrawTests: XCTestCase {
         assertDrawn(try draw(0xc0205), x0: 200, y0: 100, rows: 0..<6, cols: 0..<8, flip: false, fill: 0x55,
                     value: { f.tables.light[2 * 0x6e00 + 5 * 0x100 + Int($0)] })
         // The undefined Special tables (2, 7, 0xf..0x13) and the other unbuilt modes are refused (6 is drawn since E2;
-        // 5 and 0xa since the draw-modes fix, `DiffuseSquashTests`).
-        for word: UInt32 in [0x20000, 0x70000, 0x80000, 0xd0000, 0xe0005, 0x140000] {
+        // 5 and 0xa since the draw-modes fix, `DiffuseSquashTests`; 8 since 6A-S8, `HorizonStripTests`).
+        for word: UInt32 in [0x20000, 0x70000, 0xd0000, 0xe0005, 0x140000] {
             var ports = FramePorts()
             XCTAssertThrowsError(try b.wrapDrawSprites([SpriteDraw(face: Self.ref, x: 0, y: 0, mode: word, clip: open)],
                                                        h: 0, v: 0, ports: &ports), "mode \(String(word, radix: 16))") {

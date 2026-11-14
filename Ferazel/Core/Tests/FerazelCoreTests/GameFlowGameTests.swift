@@ -290,10 +290,10 @@ final class GameFlowGameTests: XCTestCase {
         XCTAssertNil(rig7.flow.levelRun)
         XCTAssertTrue(rig7.levels.prepared.isEmpty)
 
-        // PT (audit ruling 9): level 1 with an undrawn backdrop in its header — OmniPx rain (0x26c7 = 1) or a horizon
-        // strip (0x2716 ≠ 0) — is refused at level open, before its renderer (`prepare`): the level-load report, not
-        // a quit.
-        for (offset, bytes) in [(0x26c7, [UInt8(1)]), (0x2716, [UInt8(0x13), 0x88])] {
+        // PT (audit ruling 9): level 1 with an undrawn backdrop in its header — OmniPx rain (0x26c7 = 1) — is refused
+        // at level open, before its renderer (`prepare`): the level-load report, not a quit. 6A-S8: a horizon strip
+        // (0x2716 ≠ 0) is drawn now — the same patch opens the level (below).
+        func patchedLevel1(_ offset: Int, _ bytes: [UInt8]) -> FerazelResources {
             var patched = ResourceCollection()
             for type in r.world.types() {
                 for res in r.world.resources(of: type) {
@@ -303,8 +303,24 @@ final class GameFlowGameTests: XCTestCase {
                     patched.add(Resource(type: type, id: res.id, name: res.name, data: d))
                 }
             }
-            let rig = Rig(FerazelResources(app: r.app, world: patched, backgrounds: r.backgrounds, sprites: r.sprites,
-                                           sounds: r.sounds, titles: r.titles, musicDirectory: r.musicDirectory))
+            return FerazelResources(app: r.app, world: patched, backgrounds: r.backgrounds, sprites: r.sprites,
+                                    sounds: r.sounds, titles: r.titles, musicDirectory: r.musicDirectory)
+        }
+        let stripRig = Rig(patchedLevel1(0x2716, [0x13, 0x88]))
+        stripRig.toMenu()
+        stripRig.press(0x2d)
+        let opened = stripRig.drive { _ in self.asked(stripRig.last) || self.isRunning(stripRig.flow, level: 1, iterations: 1) }
+        XCTAssertEqual(dialogs(opened), [], "header 0x2716: the level opens")
+        XCTAssertTrue(isRunning(stripRig.flow, level: 1, iterations: 1))
+        XCTAssertEqual(stripRig.levels.prepared, [1])
+        XCTAssertFalse(stripRig.flow.quitRequested)
+        // PICT 5000 is not in the Backgrounds file: `.MTAddPxSprite`'s face load fails — `.ReportError`, no strip
+        // sprite (the Resource Manager's fall-through to the files below Backgrounds, which would find the Sprites
+        // file's PICT 5000, is not modelled: `PxSprites.Table.add`).
+        XCTAssertEqual(stripRig.flow.levelRun?.session?.horizonStrip.outcome, .faceLoadFailed)
+        XCTAssertEqual(stripRig.flow.levelRun?.session?.horizonStrip.ids, [])
+        for (offset, bytes) in [(0x26c7, [UInt8(1)])] {
+            let rig = Rig(patchedLevel1(offset, bytes))
             rig.toMenu()
             rig.press(0x2d)
             let refused = rig.drive { _ in self.asked(rig.last) }

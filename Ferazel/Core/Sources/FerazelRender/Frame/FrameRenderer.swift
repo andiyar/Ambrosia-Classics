@@ -193,9 +193,13 @@ public final class FrameRenderer {
         let context = SetupFaces.Context(level: L, playerX: SetupFaces.Context.levelStartPlayerX(L.header),
                                          effects: prefs.effects)
         let entries = try L.activePlacements.map { try SetupFaces.setup($0, context: context) }
-        let faces = try SpriteBlitter.Faces(Self.spriteSheets(level: L, entries: entries, resources: resources),
+        var faces = try SpriteBlitter.Faces(Self.spriteSheets(level: L, entries: entries, resources: resources),
                                             records: CachedFaces.recordSheets(markedBy: entries.map(\.type)),
                                             resources: resources, search: search, dither: dither)
+        // 6A-S8: the horizon strip's face (header `0x2716` ≠ 0: levels 10, 30, 40, 45, 62, 67), from the Backgrounds file.
+        if let strip = try Self.stripFace(level: L, resources: resources, search: search, dither: dither) {
+            faces.addBackgroundsSingle(L.header.stripPict, strip)
+        }
         let lights = LightRenderer(level: L, tables: tables)
         self.lights = lights
         grid = TileGridRenderer(level: L, sets: sets, fixed: fixed, tables: tables, clearFace: clear, drawnH: 0,
@@ -240,6 +244,22 @@ public final class FrameRenderer {
             caches.append(s)
         }
         return boot + caches
+    }
+
+    /// 6A-S8: the horizon strip's face — `.MTAddPxSprite`'s `.Load1EncFaceFromPICT(hdr 0x2716, 0, 0, 0)` (M l. 30888)
+    /// from the Backgrounds file `.SetupLevel` opened on top (M l. 2256 / 2276), converted under the colour table
+    /// `*_DAT_1009ff94` holds then (`PxSprites.faceClut`: clut 200 — `PxSprites.setupLevelClut`, on both paths — or the
+    /// level+base CLUT when header `0x26cc` ≠ 0, M l. 30885–30886). Nil when the header has no strip or the Backgrounds
+    /// file lacks the PICT (Core then makes no strip sprite: `PxSprites.Table.add`).
+    static func stripFace(level L: LevelFile, resources: FerazelResources, search: ColorSearch,
+                          dither: DitherModel) throws -> FaceSheet? {
+        let h = L.header
+        guard h.stripPict != 0, let res = resources.backgrounds.resource(type: "PICT", id: h.stripPict) else { return nil }
+        let clut = try ColorLUT.load(id: PxSprites.faceClut(header: h, pointer: PxSprites.setupLevelClut),
+                                     from: resources, chain: .level)
+        let picture = try ConvertedPicture(source: try PictureSource(resource: res), clut: clut, search: search,
+                                           dither: dither)
+        return try FaceSheet(picture: picture, loader: .single(pict: h.stripPict))
     }
 
     /// `.AddLight @ 1001bc08` for each light, in order (the session's `lights`, `.SetupLevelSprites` order) —

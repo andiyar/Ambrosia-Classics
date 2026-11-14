@@ -677,6 +677,9 @@ public enum SpriteHandler: Equatable, Hashable, Sendable {
     /// `.TurnIntoStatue @ 10043138` (M l. 38244–38272) with the Box class's hit `.HitBoxSprite` (`PTR_PTR_100a01f4`) and
     /// tile callback `.HitBoxTileSprite` (`PTR_PTR_100a01f0`) — `StatueSprite`. The enemies' eleven sites call it too.
     case statue
+    /// 6A-S8 (added, Invariant 9): `.HandlePxSprite @ 10033378` (`uRam100a01c0`, M l. 30771–30797), installed by
+    /// `.SetupPxSprite` on the horizon strip's sprites (`PxSprites`).
+    case pxSprite
     /// EC (added at once, plan S2, Invariant 9): the enemy Handles — each a named no-op (`EnemyCommon.handle`, drawn like
     /// `.inert`, no hit) until its class's task fills it and maps its `forClass` row. TOC slots (`pef.py tocfunc`):
     /// `.walker` 0x100a0498 (WK1), `.crawler` 04b8 / `.roach` 04a0 (CR), `.dillo` 04b4 (DL), `.bat` 04c4,

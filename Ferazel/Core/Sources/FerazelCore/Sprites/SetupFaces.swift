@@ -814,11 +814,14 @@ public enum SetupFaces {
 
     /// The spawn with the session stream: each Setup draws in spawn order (plan "F1 ⚑ FastRand sites"). EC: under
     /// `counting` (the caller opens and closes the window around it, as `.SetupLevel` does); `tallies.enemies` is the
-    /// live count it ends with (i16, as `.SetupLevel` stores it, M l. 2533).
+    /// live count it ends with (i16, as `.SetupLevel` stores it, M l. 2533). 6A-S8: `active` is the list the spawns
+    /// go into — empty after `.KillAllSprites`, except on a level whose horizon strip `.SetupLevel` made first
+    /// (`PxSprites.create`, before `.SetupLevelSprites`).
     public static func spawnLevelSprites(context c: Context, rng: inout FastRand, counting: inout EnemyCounting,
+                                         active: ActiveList = ActiveList(),
                                          idleFaceRect: (Entry) -> IdleSprites.Rect) throws -> Spawned {
         guard c.level.header.autoScrollEnable == 0 else { throw Error.autoScrollSprites }
-        var out = Spawned(active: ActiveList(), idle: IdleSprites(), created: [], lights: [],
+        var out = Spawned(active: active, idle: IdleSprites(), created: [], lights: [],
                           records: c.records ?? c.level.placements)
         out.arena.setupLevelSprites()
         for p in c.records.map(spawnOrder) ?? c.level.spawnOrder {
