@@ -232,7 +232,9 @@ the switch-off check; it lists every golden's old → new in its commit body and
 in two copies today — `tools/windows/smoke-ferazel-win.sh:63–67` and `WinReferenceFramesTests.swift:39–47` (written
 with underscores, so a grep for the hash misses the test copy; also the two hash lines in `tools/windows/README.md` — grep for each hash) — a ◈ task that
 moves one edits all of them until A5 makes the script read the test file. FE0 and the map first frame hold for the
-whole remainder.
+whole remainder. **Wave 6A.1 (run 52):** level 5's `BootFacesTests` pins are init 46 / `0xb039da66a884cb8a`, f30 58 /
+`0x1142f7a252aecfcd`, f120 58 / `0x9806297cea4531f2` (6A-W1 moved f30 and f120 for the three crates); the Warrior's
+scripted fight pins HP 0 at game frame 4966 and the Kill at 5051 (`BossKillLevelRunTests`).
 
 **What the machine does NOT prove:** the feel of every enemy's AI at 30 steps a second; the colours of the tint tables
 (through the replica's colour search, LOW); the underwater tint's strength on screen (gamma, MED); the OmniPx

@@ -4,6 +4,22 @@
 > only). Nothing current reads this file; the live state is `docs/STATE.md`. Each later close that settles something
 > adds a dated section at the top, newest first. The two snapshots below are verbatim (headings demoted only).
 
+## Settled at run 52's close (2026-11-14)
+
+- **Run 51's Ferazel block** (main 0769aef): 6A-BL, 6A-CF, 6A-FR merged, Core 633. Run 52 replaced it: 6A-W1 and
+  6A-W2 merged (the Warrior is a real boss), Core 633 → 642 → 650, wave 6A.1 built and cross-checked.
+- **How run 52 went:** each task had one implementer, two Opus review legs and a fix round. W1: both legs MERGEABLE
+  AFTER FIXES, no blockers; 156 mutations, 22 survivors, all killed by the fix round (tests only). W2: the
+  implementer stopped because the contract's fight script could not win; the seat ruled (D49.1) and the build found
+  the real win (pushing crates off the ledge); legs MERGEABLE / MERGEABLE AFTER FIXES, no blockers; 84 mutations, 10
+  survivors, all killed. Only level 5's two frame pins moved (W1, the crates). The seat's Fable cross-check of the
+  whole wave (6a196f2..e67ffb8, the Sources and tools diff read in full, plus 833506a and 8c93e9e): pass, no fixes.
+- **Carries closed by run 52:** the Warrior's pre-lock rocks and shot-absorbing Hit; the kill arm that would not open
+  the gate; the boss-music test with music off; type 0x434's missing class row (the dump has none — a comment says
+  so); the `classWord160` comment; the two unreviewed run-51 commits (read in the cross-check; the ledger check
+  passes and its generated blocks were regenerated again after W1 / W2 moved code lines).
+- **Ben raised this session's context cap to 500k** (in chat); the run closed at about 290k.
+
 ## Settled at run 51's close (2026-11-13)
 
 - **Run 50's Ferazel block** (main 6a196f2): the 6A plan written and reviewed, the launch checks done, nothing owed.
