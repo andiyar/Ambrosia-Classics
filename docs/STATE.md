@@ -140,13 +140,12 @@ Settled history lives in docs/STATE-history.md.
   Not independently confirmed: sound actually reaching the speakers (an offline probe of the same audio graph
   passed); frame checks under translucent or scaled draws.
 
-## Cythera — 2026-11-08 (re-planned; waits for Ben's go)
+## Cythera — 2026-11-15 (wave 1 session A1 closed: C8 merged; C9 next)
 
-- **Where it stands:** Phase 0 half built (K1 on HectorKit, C0–C5); `Cythera/Core` **44/0/0** (34 core + 10 render) on
-  HectorKit ef2c341; `Resources/Cythera/` 20 files; the decompile committed at `ghidra/cythera/`; no Cythera branch.
+- **Where it stands:** C8 (the script instruction decoder) merged 2026-11-15 — `Cythera/Core` **50/0/0** on HectorKit ef2c341 (370); next = C9 alone, brief in `docs/handoff-2026-11-15-cythera-wave1-A1.md`.
 - **The plan:** `docs/superpowers/plans/2026-11-05-cythera-remainder.md` (self-contained since 2026-11-08). Next = wave 1
-  session A (C8 → C9, suite → 57), then B (C6 ∥ C7 ∥ C10) and C (C13 → C11 → C12). The brief is in
-  `docs/handoff-2026-11-05-cythera-plan.md`, "The brief for the next session". **Waits for Ben's go.**
+  session A2 (C9, suite 50 → 57, then one Fable cross-check over C8 + C9 — Ben 2026-11-15), then B (C6 ∥ C7 ∥ C10) and C (C13 → C11 → C12). The brief is in
+  the newest `docs/handoff-*-cythera-*.md`, "The brief for the next session".
 - **Open:** HectorKit's gate script has a stale default Aki path (one-line kit fix; until then set
   `HECTORKIT_DATA_AKI11`); the PICT opcode-walk kit carry (an error naming the first bits opcode); small RE items (THood
   order within a pass, QTMA music events, over-encumbrance, the 0x03/0x05 words, 0x0210).

@@ -252,6 +252,37 @@ name; a `text` running past the segment end → `textRunsPastEnd`; never a trap)
 `grep -n '^// ==== .*DoInterpAt' …`) and confirms the prediction "0x1802 @02D4 decodes as `text` of 33 bytes with the pc
 left on 0x88".
 
+**As executed — session A1 (2026-11-15, Opus 5.5 seat; C8 alone, C9 split to session A2).** Commits 89ac2af (decoder,
+6 tests) and 9bb4b78 (review fix round: docs, every-prefix sweep, two 0x9C literal cases; no behaviour change); pushed
+to origin as a fast-forward; merged into local main as f932830. Seat's numbers at the merge head:
+
+| gate | value |
+|---|---|
+| G2 suite | 44 before · **50** after, 0 failed or skipped |
+| G6 scope | exactly the card's 5 files |
+| G7 layering · G9 clean tree | both empty · empty |
+| G1 HectorKit | ef2c341, `PASS: zero skips, zero failures, executed 370 == floor 370` |
+| grounding | 958 listings; `segment` at :118, `scriptSegment` at :128 |
+
+Both legs passed it. Leg 1 decoded all 18,864 instruction lines of the 944 non-AI committed listings with the Swift
+decoder: length and mnemonic equal on every line, 0 throws. Leg 2 re-derived 0x9C, 0x8F, 0x82 and the text rule from
+`DoInterpAt` and confirmed the @02D4 prediction (33 bytes, next byte 0x88) with its own Python decode.
+Deviations from this card, all accepted:
+- **0x9C reads seg16 + two expressions on BOTH branches** (decompile lines 42960–43016; script-vm.md §8): for 0xFFFF a
+  target expression then the argument; otherwise an integer expression added to seg, then the argument. The card's
+  contract 1 wording ("seg ≠ 0xFFFF: one int expr") is wrong; the code follows the binary.
+- A text running to the segment end throws `textRunsPastEnd` (scriptdis.py accepts it silently; no shipped site has one).
+- The tool's `nop` (0x00) and `nop91` (0x91) tokens are kept; they never occur in a shipped listing, so the 34 stand.
+- 0xFF is refused with a fourth error case, `ScriptDecodeError.nullBuiltin` (script-vm.md §4's table still lists 0xFF
+  as a builtin; §8 and the tool refuse it).
+- `jumpTargets` holds jump targets only (0x88/89/8C/8D/90 — the listing's `>` marks). **The 0x9E local-subroutine target
+  is not exposed: C9 adds it as its own field** (0x1802 @0060 is reached only by the callsubs at @0326 and @055F; corpus
+  15 local subroutines, 40 callsub sites, none inside an expression). 0x43 code pointers likewise.
+- `kind: .expressionOnly` exists but nothing produces it yet; `ScriptOpcodeRow` / `ScriptOperandForm` are public beyond
+  the locked surface.
+- The every-prefix sweep cuts every prefix for every statement offset except offsets inside a text that ends at the same
+  byte as its enclosing text (three cuts there; the full sweep took 6.6 s, now 0.15 s).
+
 #### Task C9 — ⚑ script segment model + canonical parity for 958 segments (→ 57) — needs C8
 
 **Scene.** The listing tool `scriptdis.py` classifies every script-band segment, walks reachability and prints one
