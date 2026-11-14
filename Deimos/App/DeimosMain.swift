@@ -18,7 +18,8 @@ import AppKit
 /// pairs, a Finder `-psn_…`) is left alone.
 struct LaunchOptions {
     /// ◇ `-film deNN` (plan stand-in 5): the shipped demo film to play instead of a new game; nil = no `-film`.
-    /// `-film` given without a tag is "" — refused at launch like an unknown tag.
+    /// `-film` given without a tag (the last argument, or followed by another `-` flag) is "" — refused at launch like
+    /// an unknown tag; the following flag is then read as itself.
     var film: String?
     #if DEBUG
     /// DEBUG only (A3's machine check): `-debugCapsLock <seconds>` simulates Caps Lock down through `HeldKeys` from
@@ -32,8 +33,13 @@ struct LaunchOptions {
         while i < arguments.count {
             let a = arguments[i]
             if a == "-film" {
-                film = i + 1 < arguments.count ? arguments[i + 1] : ""
-                i += 2
+                if i + 1 < arguments.count, !arguments[i + 1].hasPrefix("-") {
+                    film = arguments[i + 1]
+                    i += 2
+                } else {
+                    film = ""                               // missing tag: the bad-tag path
+                    i += 1
+                }
                 continue
             }
             #if DEBUG

@@ -176,13 +176,13 @@ import Synchronization
         return try Film(data: assets.index.data(for: record))
     }
 
-    /// Sound init (`FUN_10047160`): opens the Mac's output and the game's mixer and attaches the mixer as the
-    /// output's stream voice. Any failure is logged and the game runs silent (the original's "Sound not available"
-    /// path is non-fatal) — the driver then has no sink.
+    /// Sound init (`FUN_10047160`): decodes the game's sounds into its mixer first, then opens the Mac's output and
+    /// attaches the mixer as the output's stream voice. Any failure is logged and the game runs silent (the original's
+    /// "Sound not available" path is non-fatal) — the driver then has no sink.
     private func startAudio(assets: DeimosAssets) -> (any DeimosAudioSink)? {
         do {
-            let output = try ShellMixer(voices: 0)          // the stream voice is the only voice
             let engine = try DeimosAudioEngine(assets: assets)
+            let output = try ShellMixer(voices: 0)          // the stream voice is the only voice
             #if DEBUG
             let counter = DebugAudioCounter(engine: engine)
             audioCounter = counter
@@ -335,6 +335,9 @@ import Synchronization
 
     func applicationWillTerminate(_ notification: Notification) {
         timer?.invalidate()
+        // The audio stops with the game (as Ferazel's quit stops its audio): the stream voice is detached.
+        if let mixer, let streamID { mixer.detachStream(streamID) }
+        streamID = nil
         if cursorHidden {
             NSCursor.unhide()
             cursorHidden = false
@@ -350,10 +353,13 @@ import Synchronization
         pendingTyped += Self.macCharCodes(event.characters ?? "")
     }
 
-    /// NSEvent characters → classic Mac keyDown charCodes (the codes `Console` switches on, `1002d2e0..1002d350`):
+    /// NSEvent characters → classic Mac keyDown charCodes (the codes `Console` switches on, `1002d2e0..1002d350`;
+    /// its default case stores any byte, so every key the classic Mac gave a charCode is passed on):
     /// the arrow function keys 0xF700–0xF703 → 0x1E ↑ / 0x1F ↓ / 0x1C ← / 0x1D →; the delete key (NSEvent 0x7F) →
-    /// 0x08; return 0x0D stays 0x0D; other ASCII (0x01–0x7E: letters as typed, Esc 0x1B, keypad Enter 0x03, Tab)
-    /// is the Mac's own code. Anything else (other function keys, non-ASCII) has no charCode here and is dropped.
+    /// 0x08; forward delete → 0x7F; Home 0x01, End 0x04, Page Up 0x0B, Page Down 0x0C, Help 0x05; every function key
+    /// F1–F35 → 0x10; keypad Clear → 0x1B; Shift-Tab (NSEvent 0x19) → Tab 0x09; return 0x0D stays 0x0D; other ASCII
+    /// (0x01–0x7E: letters as typed, Esc 0x1B, keypad Enter 0x03, Tab) is the Mac's own code; a character above 0x7F is
+    /// its Mac Roman byte. Anything else (a character with no Mac Roman byte, other AppKit function keys) is dropped.
     static func macCharCodes(_ characters: String) -> [UInt8] {
         var codes: [UInt8] = []
         for scalar in characters.unicodeScalars {
@@ -362,10 +368,23 @@ import Synchronization
             case 0xF701: codes.append(0x1F)                     // NSDownArrowFunctionKey
             case 0xF702: codes.append(0x1C)                     // NSLeftArrowFunctionKey
             case 0xF703: codes.append(0x1D)                     // NSRightArrowFunctionKey
+            case 0xF704...0xF726: codes.append(0x10)            // NSF1FunctionKey…NSF35FunctionKey (kFunctionKeyCharCode)
+            case 0xF728: codes.append(0x7F)                     // NSDeleteFunctionKey (forward delete)
+            case 0xF729: codes.append(0x01)                     // NSHomeFunctionKey
+            case 0xF72B: codes.append(0x04)                     // NSEndFunctionKey
+            case 0xF72C: codes.append(0x0B)                     // NSPageUpFunctionKey
+            case 0xF72D: codes.append(0x0C)                     // NSPageDownFunctionKey
+            case 0xF739: codes.append(0x1B)                     // NSClearLineFunctionKey (keypad Clear)
+            case 0xF746: codes.append(0x05)                     // NSHelpFunctionKey
+            case 0x19: codes.append(0x09)                       // NSBackTabCharacter (Shift-Tab) → Tab
             case 0x7F: codes.append(Console.backspace)          // NSDeleteCharacter (the delete key) → 0x08
             case 0x0D: codes.append(Console.returnKey)
             case 0x01...0x7E: codes.append(UInt8(scalar.value))
-            default: break
+            default:
+                // Above 0x7F: the Mac Roman byte (U+F8FF, the Apple logo, is 0xF0); no byte → dropped.
+                if let byte = String(Character(scalar)).data(using: .macOSRoman), byte.count == 1 {
+                    codes.append(byte[byte.startIndex])
+                }
             }
         }
         return codes
