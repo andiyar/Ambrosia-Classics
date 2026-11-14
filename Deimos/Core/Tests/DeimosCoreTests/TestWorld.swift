@@ -22,11 +22,11 @@ struct TestWorld {
         try p0.setup(index: 0, players: count, sector: 1)
         try p1.setup(index: 1, players: count, sector: 1)
         rng = MSLRandom(seed: seed)
-        p0.levelStart(now: 0, rng: &rng)
-        p1.levelStart(now: 0, rng: &rng)
+        p0.levelStart(now: 0, rng: &rng, sector: 1)
+        p1.levelStart(now: 0, rng: &rng, sector: 1)
         players = [p0, p1]
         bar = ScoreBarState(assets: assets)
-        bar.levelStart(players: players)
+        bar.levelStart(players: players, sector: 1)
         scroll.levelStart(rect: MacRect(top: 0, left: 0, bottom: 3600, right: 480))
     }
 
@@ -34,7 +34,7 @@ struct TestWorld {
     mutating func tick(_ p1: PlayerInput = [], _ p2: PlayerInput = []) {
         players[0].updatePhase1(now: now, input: p1, scroll: &scroll, scoreBar: &bar)
         players[1].updatePhase1(now: now, input: p2, scroll: &scroll, scoreBar: &bar)
-        bar.update(players: players)
+        bar.update(players: players, sector: 1)
         now += 1
     }
 

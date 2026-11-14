@@ -66,6 +66,10 @@ public struct GameObject: Equatable, Sendable {
     public var scale: Float = 1
     public var scaleTarget: Float = 1
     public var scaleStep: Float = 0
+    /// +0x90: game time of the last terrain-path sprite stamp — 0 from `FUN_10012650` (`1001273c stw r12,0x90`),
+    /// written by `FUN_10012fa0` when it stamps into the terrain buffer (`100132a4`); a stamp is refused (the
+    /// sprite drawn as a normal command) unless game time > +0x90 (`10013264..10013278`; `GameState.terrainStamp`).
+    public var lastStampTime: Int32 = 0
 
     public init() {}
 
@@ -225,12 +229,6 @@ public struct Player: Sendable {
     public var integrityPasses: Int32 = 0
     /// +0x240: the weapon handler.
     public var handler = WeaponHandler()
-    /// The sector given to `setup` — a per-player copy of game +0x14 (`FUN_10005cd0`) kept only for callers that
-    /// pass no sector: the ◇ Phase-1 session (`DeimosSession`, deleted by C18b), `levelStart` / `scoreBarIcons()`
-    /// without a `sector:` argument and `ScoreBarState` without one. The original reads G+0x14 everywhere: every
-    /// `GameState` path passes `flags.sector` (C15 review); not a model of any original field. Retired by C18a;
-    /// `scoreBarIcons(sector:)` is the API.
-    public var sector: Int32 = 1
 
     /// pf[2] (`0x100d6fc8` + 8): the shield obfuscation bias.
     static let shieldBias: Float = 1_324_366.0
@@ -261,7 +259,6 @@ public struct Player: Sendable {
     public mutating func setup(index: Int, players: Int, sector: Int, now: Int32 = 0) throws {
         playerCount = UInt8(truncatingIfNeeded: players)             // 10026434
         self.index = Int8(truncatingIfNeeded: index)                 // 10026438
-        self.sector = Int32(sector)
         guard assets.objects.indices.contains(index) else { throw PlayerError.invalidIndex(index) }
         let id = assets.objects[index]                               // 1002645c / 1002646c: PermObjectID 0 / 1
         guard let plde = assets.definitions.players.first(where: { $0.id == id }) else {
@@ -300,12 +297,11 @@ public struct Player: Sendable {
     /// `FUN_10027400(p, 1)`; overload cleared; appear fade = flli 163/164/165 (`10026a6c..10026a98`); then
     /// exactly one `FUN_10046580(400, 2000)` (`10026a9c`), whose result only P1 keeps: `+0x234` = now + R,
     /// `+0x238` = 0 (`10026ab4 extsb.; bne`; the registration reads `FUN_1007ec40…` are not modelled).
-    /// `sector` = game +0x14 for the reset's `FUN_1003cd30`; nil → the copy given to `setup` (Phase-1 callers).
-    public mutating func levelStart(now: Int32, rng: inout MSLRandom, levelRef: FourCC = .none,
-                                    sector: Int32? = nil) {
+    /// `sector` = game +0x14 for the reset's `FUN_1003cd30` (`FUN_10005cd0`; one sector source, C18a).
+    public mutating func levelStart(now: Int32, rng: inout MSLRandom, levelRef: FourCC = .none, sector: Int32) {
         guard inGame else { return }                                 // 100269c4..100269cc
         hitThisLevel = false                                         // 100269d4
-        resetHandler(levelStart: true, sector: sector ?? self.sector)   // 100269e0 FUN_1003af90(h, 1)
+        resetHandler(levelStart: true, sector: sector)               // 100269e0 FUN_1003af90(h, 1)
         appearing = false                                            // 100269ec
         self.levelRef = levelRef                                     // 100269f4
         resetShipSprite()                                            // 100269f8 FUN_10029f10

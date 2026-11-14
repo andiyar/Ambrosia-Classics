@@ -90,9 +90,10 @@ public struct ScoreBarState: Equatable, Sendable {
     /// element draw are `ScoreBarDraw.levelStartOps`, C5): both players' icons `FUN_1003bb40`
     /// (`1003151c`, `1003152c`), the plde sprite IDs (`1003154c…10031594`), then per player: all six dirty,
     /// displayed shield / power 0.0, last score / lives = current, `+0x12e` = `+0x12f` = in game (`+0xc4`).
-    public mutating func levelStart(players: [Player]) {
+    /// `sector` = G+0x14, read by `FUN_1003bb40` (`FUN_10005cd0`) — the one sector source (C18a).
+    public mutating func levelStart(players: [Player], sector: Int32) {
         for (i, p) in players.prefix(2).enumerated() {
-            records[i].icons = p.scoreBarIcons()
+            records[i].icons = p.scoreBarIcons(sector: sector)
         }
         for (i, p) in players.prefix(2).enumerated() {
             let d = p.definition
@@ -112,8 +113,8 @@ public struct ScoreBarState: Equatable, Sendable {
     }
 
     /// `FUN_100317e0 @ 100317e0(p1, p2)` — the per-tick update (see the type's comment). Caller: the
-    /// logic tick `FUN_10006b50`, after both players.
-    public mutating func update(players: [Player]) {
+    /// logic tick `FUN_10006b50`, after both players. `sector` = G+0x14 (for `FUN_1003bb40`, as `levelStart`).
+    public mutating func update(players: [Player], sector: Int32) {
         for (i, p) in players.prefix(2).enumerated() {
             var r = records[i]
             r.dirty = []                                             // 10031818..10031830
@@ -132,7 +133,7 @@ public struct ScoreBarState: Equatable, Sendable {
             if r.lastLives != p.lives { r.lastLives = p.lives; r.dirty.insert(.livesCount) }
             if p.handler.iconsDirty {                                // 100318cc FUN_1003bb30
                 r.dirty.insert(.weapons)
-                r.icons = p.scoreBarIcons()                          // 100318f0 FUN_1003bb40
+                r.icons = p.scoreBarIcons(sector: sector)            // 100318f0 FUN_1003bb40
             }
             let active = p.lifeState == 4
             Self.follow(&r.shownShield, p.shield, down: shieldDecrease, up: shieldIncrease,

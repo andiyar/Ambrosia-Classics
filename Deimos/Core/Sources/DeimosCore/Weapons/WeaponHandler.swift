@@ -281,7 +281,4 @@ extension Player {
         let slot2 = n2.map(icon) ?? slot0
         return [slot0, slot1, (slot2 == slot0 || slot2 == slot1) ? .none : slot2]
     }
-
-    /// `scoreBarIcons(sector:)` at the sector given to `setup` — for the callers that pass none (◇ Phase-1 session).
-    public func scoreBarIcons() -> [ScoreBarState.Icon] { scoreBarIcons(sector: sector) }
 }

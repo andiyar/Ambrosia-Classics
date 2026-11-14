@@ -56,7 +56,8 @@ extension GameState {
                     world.entities[e].object.drawToTerrain = true
                     world.entities[e].object.drawNow = false
                     world.entities[e].object.drawShadow = u.castsShadows
-                    tickOps += terrainStamp(e).map { .draw($0) }
+                    let stamp = terrainStamp(e)
+                    tickOps += stamp.map { .draw($0) }
                 }
                 if world.entities[e].destroyed, let st = currentState(e),    // 10036714..10036734
                    st.destroyOwnerOnDestruction, ownerLinkValid(e),          // 10036738..10036744
@@ -236,11 +237,15 @@ extension GameState {
     /// `FUN_10013460`); every command gets flags |8 and the clip = the terrain buffer's bounds (`FUN_1000a530`
     /// on display+0x6c = the map image = `#background_RECT`'s size); the sprite passes go to layer 1, the shadow to
     /// layer 0; +0x35 = 0 → queued.
-    /// The sprite's layer-1 / |8 / clip branch is taken only when game time > the object's +0x90 (last stamp time),
-    /// which the replica does not store (no field; parallel wave): from the sweep it always holds, because +0x90 is
-    /// written only by a stamp at an earlier tick of the slot's occupants (a slot freed by the sweep is first
-    /// reallocated at the same tick but swept no earlier than the next).
-    func terrainStamp(_ e: Int) -> [DrawCommand] {
+    /// **The stamp time (C12).** With +0x36 the sprite command skips the layer switch (`100130c0 bne 0x10013264`), so
+    /// it keeps the template's layer 7; then `FUN_10005ce0()` (game time) > +0x90 (`10013264..10013278`, `cmpw; ble`:
+    /// signed, strict) → layer 1, flags |8, clip = the terrain bounds, and **+0x90 = game time** (`10013280..100132a4`);
+    /// otherwise the sprite stays a normal command (layer 7, no |8, the object's clip) at the same x + 32, y + top. The
+    /// tint and hit-glow passes OR in 8 whenever +0x36 is set (`10013388..10013398`, `100133e8..100133f8`) and keep
+    /// the main command's layer and clip. The shadow has no time test. +0x90 starts at 0 (`FUN_10012650`
+    /// `1001273c`), so a stamp at game time 0 is refused; the draw pass (after the game time + 1) and a sweep at the
+    /// same game time stamp once between them.
+    mutating func terrainStamp(_ e: Int) -> [DrawCommand] {
         var o = world.entities[e].object
         guard o.visibility > 0 else { return [] }                            // 10012f3c..10012f48
         let top = scroll.window.top                                          // FUN_1000fec0
@@ -265,14 +270,18 @@ extension GameState {
             out.append(c)
         }
         if o.drawSprite {                                                    // 10012f74..10012f84
+            let now = flags.gameTime                                         // 10013264 FUN_10005ce0
+            let stamp = now > o.lastStampTime                                // 1001326c..10013278 (cmpw; ble)
             for var c in EntityDraw.spriteCommands(&o, hOffset: 0) {
                 c.x = c.x &+ 32                                              // 10013070
                 c.y = c.y &+ top                                             // 10013088
-                c.layer = 1                                                  // 10013290
-                c.flags |= 8                                                 // 1001328c / 10013394 / 100133f4
-                c.clip = bounds                                              // 1001329c FUN_1000a530
+                c.layer = stamp ? 1 : 7                                      // 10013290 / the template's 7 (no layer switch)
+                let tintPass = c.flags & 4 != 0                              // the tint / hit-glow passes (flags 4)
+                if stamp || tintPass { c.flags |= 8 }                        // 1001328c / 10013394 / 100133f4
+                if stamp { c.clip = bounds }                                 // 1001329c FUN_1000a530
                 out.append(c)
             }
+            if stamp { world.entities[e].object.lastStampTime = now }        // 100132a4
         }
         return out
     }
