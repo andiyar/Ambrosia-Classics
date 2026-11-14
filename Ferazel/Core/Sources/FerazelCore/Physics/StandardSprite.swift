@@ -14,9 +14,16 @@ extension SpriteWorld {
     ///   and `+0x8a`: `+0x94` < 33 → `+0x94 += 1`, push = hdr`+0x2714`·`+0x94` / 33 (C division, i16), else the full
     ///   hdr`+0x2714`; no push while riding (`+0xdc`); `+0x14 += push`. Otherwise `+0x94` counts down to 0. Then
     ///   `+0x120 = +0x11c` and `+0x11c = 0`.
-    /// - While `+0x90 > 0`: wind from the FG overlay cell under the centre (`.GetFGOverlay1Tile` 0…15,
-    ///   `.LookupModedImpulse`). // later: wind — no overlay wind cell on levels 1–2 (first on level 10, 103 cells;
-    ///   probe 2026-10-10) and no Phase-2 task builds `.LookupModedImpulse`; the branch is skipped here.
+    /// - While `+0x90 > 0`: **wind** (6A-WD; M l. 32489–32574, raw `100369b0..10036c5c`; ENG §2.2) from the FG
+    ///   overlay cell under the centre (`+0x10 >> 5`, `+0xe >> 5`; every sprite with a wind scale, not only the
+    ///   player). o1 = `.GetFGOverlay1Tile` outside 0…15 → **leaving**: `+0x96 > 0` → `+0x96 − 1`, then
+    ///   `+0x14 += (+0x98 · +0x96) / 33` (C division). Else o2 = `.GetFGOverlay2Tile` ≤ 0 → nothing (no ramp-down).
+    ///   Else m = (o1 + 18) mod 36; the **test** impulse `.LookupModedImpulse(m, 15·o2)` opens the gates
+    ///   (`windGates`, crossed on h < 0, v < 0 as the binary has them); neither → nothing. Else the **push**
+    ///   `.LookupModedImpulse(m, 14·o2)`, both halves `(· +0x90) >> 8` when `+0x90 < 0xff`; `+0x96 < 33` → `+0x96 + 1`
+    ///   and the x push = h′·`+0x96` / 33 (C division, i16), else h′; `+0x98 = h′` (un-ramped), `+0x92 = 1`; the
+    ///   x-gate → `+0x14 += push`, the y-gate → `+0x2c += v′` (no ramp on the vertical). No random draw. Levels 1–5
+    ///   have no overlay cell with o1 in 0…15, so there the branch only runs the leaving arm with `+0x96` = 0.
     /// - **Carry** while riding (`+0xdc`): `+0xce = 3`; `+0x14 += (solid.x − solid.drawnX)·256`;
     ///   `+0x1c = (solid.y − solid.drawnY)·256 + +0x1c + 0x100`; `+0xc`/`+0xa` refreshed; the siblings `+0x1d4`,
     ///   `+0x1d8` get the same x delta (x only). drawnX/drawnY = the solid's `+0xc6`/`+0xc4` (`SpriteSlot.drawnX`/
@@ -57,9 +64,44 @@ extension SpriteWorld {
             s.lastWater = s.waterRow
             s.waterRow = 0
         }
-        if s.windScale > 0 {
-            // later: wind (`.GetFGOverlay1Tile`/`2Tile` at the centre cell, `.LookupModedImpulse`, the `+0x96` ramp
-            // to 33, `+0x98`, `+0x92 = 1`; decompile l. 32490–32570). Unreached on levels 1–2.
+        if s.windScale > 0 {                                          // `lha 0x90; cmpwi 0; ble` (raw `100369b0`)
+            let col = Int(Int16(truncatingIfNeeded: s.centre.x) >> 5)
+            let row = Int(Int16(truncatingIfNeeded: s.centre.y) >> 5)
+            let o1 = level.overlay1(col: col, row: row)
+            if o1 < 0 || 0xf < o1 {
+                // Leaving (raw `10036c1c..10036c5c`): the ramp runs down on `+0x98`.
+                if s.windRamp > 0 {
+                    s.windRamp -= 1
+                    s.x256 &+= (Int32(s.windLast) &* Int32(s.windRamp)) / 0x21
+                }
+            } else {
+                let o2 = Int16(truncatingIfNeeded: level.overlay2(col: col, row: row))
+                if o2 > 0 {
+                    let m = Int16(truncatingIfNeeded: (o1 + 0x12) % 0x24)
+                    let test = WaterEffects.lookupModedImpulse(mode: m, amount: o2 &* 0xf)
+                    let gate = Self.windGates(v: test.v, h: test.h, vx: s.vx, vy: s.vy)
+                    if gate.x || gate.y {
+                        let push = WaterEffects.lookupModedImpulse(mode: m, amount: o2 &* 0xe)
+                        var h = Int32(push.h), v = Int32(push.v)
+                        let scale = Int32(s.windScale)
+                        if scale < 0xff {                              // `cmpwi 0xff; bge` (raw `10036b80..10036b88`)
+                            h = (h &* scale) >> 8
+                            v = (v &* scale) >> 8
+                        }
+                        let dx: Int16
+                        if s.windRamp < 0x21 {
+                            s.windRamp += 1
+                            dx = Int16(truncatingIfNeeded: (h &* Int32(s.windRamp)) / 0x21)
+                        } else {
+                            dx = Int16(truncatingIfNeeded: h)
+                        }
+                        s.windLast = Int16(truncatingIfNeeded: h)       // `+0x98` un-ramped (raw `10036be0`)
+                        s.inWind = true
+                        if gate.x { s.x256 &+= Int32(dx) }
+                        if gate.y { s.vy &+= v }
+                    }
+                }
+            }
         }
         if let solidID = s.ridden {
             let solid = active.record(id: solidID)
@@ -84,6 +126,22 @@ extension SpriteWorld {
         s.underwaterDone = false
         s.material = 0
         active.update(id: id) { $0 = s }
+    }
+
+    /// The wind gates (raw `10036a58..10036b44`, the signed-compare idiom `srawi`/`srwi`, `subfc`, `adde`): from the
+    /// **test** impulse (v, h) and the sprite's vx `+0x24` / vy `+0x2c`, the flags that allow the x push (`r29`) and
+    /// the vy push (`r28`). h ≥ 0: x-gate h ≥ vx; h < 0, v ≥ 0: x-gate vx ≥ h; v ≥ 0: y-gate v ≥ vy; h ≥ 0, v < 0:
+    /// y-gate vy ≥ v. **h < 0, v < 0 is crossed, as written**: `10036a98 rlwinm r29,r6` puts the vy test (vy ≥ v)
+    /// into the x-gate and `10036a9c rlwinm r28,r0` the vx test (vx ≥ h) into the y-gate (ENG §2.2 step 4; reached by
+    /// o1 10…15). The h < 0, v ≥ 0 row is unreachable from a cell (o1 0…15 give modes 18…33).
+    static func windGates(v: Int16, h: Int16, vx: Int32, vy: Int32) -> (x: Bool, y: Bool) {
+        let v = Int32(v), h = Int32(h)
+        if h < 0 {
+            if v < 0 { return (vy >= v, vx >= h) }                      // crossed (raw `10036a70..10036aa0`)
+            return (vx >= h, v >= vy)
+        }
+        if v < 0 { return (h >= vx, vy >= v) }
+        return (h >= vx, v >= vy)
     }
 
     /// `.StandardSpriteCleanup @ 10036e0c` (decompile l. 32627–32700), at the end of most Handles:
