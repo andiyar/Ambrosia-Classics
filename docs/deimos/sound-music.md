@@ -55,7 +55,7 @@ IMA nibble stream: it walks the 34-byte packets as 16-bit words, **drops word 0 
 (the per-packet predictor/step-index header) and swaps the two nibbles of every byte
 (`(w & 0x0f0f)<<4 | (w>>4) & 0x0f0f`); header = `{'asnd', sampleCount, rate, 'mIMA'}`.
 8/16-bit PCM is re-encoded to IMA (`FUN_100d3170`); every shipped effect is already ima4.
-[HIGH for the drop/swap (`FUN_100d1d90` listing, raised Phase 2, 2026-11; earlier MED on dump:106741–106752; ⚑ label audit (review wave 2): was HIGH on the dump only); MED for the
+[HIGH for the drop/swap (`FUN_100d1d90` decompile, dump lines 106745–106762, raised Phase 2, 2026-11; earlier MED on dump:106741–106752; ⚑ label audit (review wave 2): was HIGH on the dump only); MED for the
 consequences below]
 - The decoder never re-syncs to the dropped packet headers; it carries predictor/index across
   packets. Differences from a reference ima4 decode are rounding-level. [MED]
@@ -66,11 +66,11 @@ consequences below]
 
 ⚑ corrected (Phase 2, 2026-11) #10 — the IMA difference is `(16m + 8)·step >> 6` = ⌊(2m + 1)·step / 8⌋, m = the nibble's low 3 bits (`100d3374 rlwinm r8,r14,0x4,…`, `100d3384 ori r8,r8,0x8`, `100d33a0 mullw r9,r8,r15`, `100d33a8 srawi r8,r9,0x6`), not the reference decoder's shift-sum: nibble 7 at step 7 gives 13, not 11.
 
-⚑ corrected (Phase 2, 2026-11) #11 — "differences from a reference ima4 decode are rounding-level" holds per sample only: with no re-sync to the dropped packet headers the differences accumulate over the whole sound. The drop/swap rows are raised MED → HIGH (`FUN_100d1d90` listing).
+⚑ corrected (Phase 2, 2026-11) #11 — "differences from a reference ima4 decode are rounding-level" holds per sample only: with no re-sync to the dropped packet headers the differences accumulate over the whole sound. The drop/swap rows are raised MED → HIGH (`FUN_100d1d90` decompile, dump lines 106745–106762).
 
 ⚑ corrected (Phase 2, 2026-11) #12 — the 2·P tail is not a held, slowly decaying DC level: each zero nibble adds ⌊step/8⌋ (#10 with m = 0) while the step index falls, so the level creeps upward until step < 8 and then holds.
 
-⚑ corrected (Phase 2, 2026-11) #15 — sample loading: the bytes converted are SSND chunk size − 8 − offset (`100d2674`), not a count from COMM's packets; the dropped word is word k with k % 17 == 0; the nibble swap masks are 0xF0F0 / 0x0F0F (the formula above); and the ima4 path also requires COMM sampleSize 16 (`100d1db4`).
+⚑ corrected (Phase 2, 2026-11) #15 — sample loading: the bytes converted are SSND chunk size − 8 − offset (`100d2674`, decompile-derived — not in the committed listing; `FUN_100d2400` decompile, dump line 107077), not a count from COMM's packets; the dropped word is word k with k % 17 == 0; the nibble swap masks are 0xF0F0 / 0x0F0F (the formula above); and the ima4 path also requires COMM sampleSize 16 (`100d1db4`, decompile-derived — not in the committed listing; `FUN_100d1d90` decompile, dump line 106744).
 
 ### 2.3 Play parameters (closes INDEX #11)
 Signature, from the listings:
@@ -201,7 +201,7 @@ listing `100d1c30–100d1cc4`]
 
 ⚑ corrected (Phase 2, 2026-11) #13 — the position accumulator and `prev` are reset to 0 at every 1024-frame block (`100d32e4 li r12,0x0`, `100d32ec li r0,0x0` at the top of `FUN_100d32d0`), so the fractional position is lost at each block boundary; an early exit when the buffer is full leaves the stored last output stale.
 
-⚑ corrected (Phase 2, 2026-11) #14 — `FixMul`/`FixDiv` (`FUN_1006e250`/`FUN_1006e2b0`) truncate, and overflow gives 0xFFFFFFFF; the voice-id counter starts at 1 (`100d1514 li r4,0x1`, `100d1520 stw r4,0x0(r3)`); the mixer's divisions are unsigned (`divwu`).
+⚑ corrected (Phase 2, 2026-11) #14 — `FixMul`/`FixDiv` (`FUN_1006e250`/`FUN_1006e2b0`) truncate, unsigned (FixMul `1006e268 mulhwu` with `cmplwi` zero tests, dump line 63917; FixDiv divides the zero-extended x·2¹⁶ with the unsigned 64-bit helper `FUN_1004d6b0`, dump lines 63940–63941), and overflow gives 0xFFFFFFFF; the voice-id counter starts at 1 (`100d1514 li r4,0x1`, `100d1520 stw r4,0x0(r3)`); the mixer's divisions are unsigned (`divwu`).
 
 ## 4. Master volume, sound off, device volume
 

@@ -229,6 +229,8 @@ Listing `10015280..1001554c`:
 Constants: `"Delete"`/`"Destroy"` at `r2+0x3c4+0x4e/+0x55` = `0x100e6742/0x100e6749`; 0.0 at
 `*(double*)(0x100d6ca4+8)` (slot r2−0x7208).
 
+⚑ corrected (Phase 2, 2026-11) #44 — no active player: a player-less flee (`1001535c` `nora`, `10015380` `sora`) branches to the function exit (`10015364`/`10015388 b 0x1001553c`) before the target store at `100153c8`/`100153d0`, so it keeps the flee point `FUN_10017510` just set; Delete/Destruct-on-no-players exit the same way. With none of those flags the controller falls through and stores `FUN_10005d40`'s out-point into +0x11c/+0x120 (`100153c8`/`100153d0`). That out-point is **not** the nearest-player default (0, 0): `FUN_10005d40` writes the default (0, 0) from `0x100d62fc` (slot r2−0x73b4; `10005d98`, `10005d9c`) and then overwrites it unconditionally from its own never-written distance slots (`10005e68..10005e84`, r23 = −1 → r1+0x3c/+0x40 of its frame) — uninitialised stack, as NOT RESOLVED 3 says; never read while +0x118 = −1 (gameplay-leftovers.md §7.3). The replica stores (0, 0).
+
 ### 5.1 Nearest player `FUN_10005d40(e, &tgt, &dist, &no) @ 10005d40` [HIGH]
 For players 0,1 (`r27` walks the player table, slot r2−0x7360) that are in state 4 (`FUN_10026c60
 (p,4)` = `p+0xc6 == 4`, "active"): `d = FUN_10042f20(trunc((px−x)² + (py−y)²))`; keep the first,
@@ -322,8 +324,6 @@ Shipped census: `grep -h '#stateFlee_ID' $W/data/Game/unde/*.txt | sort | uniq -
 nora 5, sora 4, soce 3, cega 3, rave 1, noce 1. A fleeing entity seeks the point with
 `FleeSpeed`/`FleeDelta` (§5.2) until culled 128 px outside the field (§7) or until a state
 change clears the flag (§4). [HIGH]
-
-⚑ corrected (Phase 2, 2026-11) #44 — with no player, the flee target is stored as (0, 0).
 
 ## 7. Culling and on-screen tests [HIGH]
 `FUN_10012ca0(e, m=128, mode=1)` returns 1 (keep) iff, after integrating:

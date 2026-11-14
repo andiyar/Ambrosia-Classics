@@ -258,7 +258,7 @@ Consequences [HIGH]:
   `FUN_100051a0`). ⚑ corrected waves-and-enemies.md §7 ("100 % = MissionBonus 100000 + miac"):
   a single 100 % level gives tier 1 (5000 × sector) + sound `acbo` + the reward flag (§7).
 
-⚑ corrected (Phase 2, 2026-11) #49 — tally details: every wait `timer + N < now` lasts N + 1 ticks; state 0 returns done; state 6 pays on its first tick (the timer still holds the level-end time) and, with nothing left to pay, goes to state 7 with no wait; states 8 and 10 stay done; state 9 sets alpha 0, and entering state 10 sets alpha 32 and the text "".
+⚑ corrected (Phase 2, 2026-11) #49 — tally details: every wait `timer + N < now` lasts N + 1 ticks; state 0 returns done; state 6 pays on its first tick (the timer still holds the level-end time) and, with nothing left to pay, goes to state 7 with no wait; states 8 and 10 stay done; alpha (+0x50) is zeroed on **entering** state 9 — from state 8 (dump line 4843) and from state 10 (dump line 4885) — not by state 9 itself; entering state 10 sets alpha 32 and the text "".
 
 ⚑ corrected (Phase 2, 2026-11) #50 — states 1–5, 7 and 9 raised MED → HIGH (dump lines 4679–4898, `FUN_100075e0`); the section tag now reads HIGH for every state.
 

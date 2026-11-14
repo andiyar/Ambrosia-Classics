@@ -657,7 +657,7 @@ named below; second files carry a plain cross-reference. Dump lines cite the com
 | 26 | — | 50/10 blur: 6 passes, 5 visible | particles-debris-blur.md §4.4 |
 | 27 | — | motion-blur limit message is type 1 | particles-debris-blur.md §4.2 |
 | 28 | — | `FUN_10046d30` clears all 1000 slots (25 × 40) | particles-debris-blur.md §4.2 |
-| 29 | — | particle stamp offsets relative to slot + 4 | particles-debris-blur.md §2.9 |
+| 29 | — | particle stamp reads core/fringe at P+0x02/P+0x04 (r6 = group + 4 + 0x1c·k = P), as §2.4 | particles-debris-blur.md §2.9 |
 | 30 | — | trig/atan/sqrt table build exact (atan[100] = 44) | units-movement.md §2.3 |
 | 31 | — | round-trip quirk: 34 headings, not 30 | loose-ends-combat.md §1.3 |
 | 32 | — | entity pool reset: free hint 0; PERM position; headingTo same point = 270 | micro-wave-2026-10-06.md §3.7 |
@@ -667,12 +667,12 @@ named below; second files carry a plain cross-reference. Dump lines cite the com
 | 36 | — | unit-vector helper x term trunc(dx)·dx | units-movement.md §2.3 (helpers) |
 | 37 | — | state-0 entry at spawn skips `FUN_10033600`; called once after entry | spawn-and-waves.md §3.2 |
 | 38 | — | `FUN_10033600` on state change also needs +0xa0 ≠ −1 | spawn-and-waves.md §4 |
-| 39 | — | type-exists check counts deleted-but-unreaped members | spawn-and-waves.md §3.1 |
+| 39 | — | type-exists check returns on the first match and does not test +0xcb: deleted-but-unreaped members match | spawn-and-waves.md §3.1 |
 | 40 | — | rotated spawn offset uses facing + HeadingDegrees with SetHeading | spawn-and-waves.md §2.5 |
 | 41 | — | right-edge bounce uses full width +0x24 | units-movement.md §5.7 |
 | 42 | — | lock/link/orbit gated on the pre-controller state | units-movement.md §1 |
 | 43 | — | random-frame draw runs even when stopped | units-movement.md §8.1 |
-| 44 | — | no player → flee target (0, 0) | units-movement.md §6 |
+| 44 | — | no player: a flee keeps its flee point (exits before the store); otherwise +0x11c/+0x120 get `FUN_10005d40`'s out-point — its (0, 0) default is overwritten by uninitialised stack (never read); replica (0, 0) | units-movement.md §5 |
 | 45 | — | on-hit state change: old state pointer kept; collision counts read once | damage-health-death.md §3 |
 | 46 | — | overload glow at +0x58 (+0x214 always 0.0); refused indicator spawn +0xb8 | weapons-projectiles.md §2.6 |
 | 47 | — | release stream idle at r+39 | weapons-projectiles.md worked example 4a |

@@ -244,7 +244,7 @@ Same-row objects spawn in file order in the same call. [HIGH]
   add velocity. Air entities do not. [HIGH]
 - Cull: the entity update deletes an entity whose `FUN_10012ca0(e, 128, 1)` is false — x outside
   [−128, 416+128] or y outside [−128, 480+128], give or take the half-extents (the exact mode-1
-  expression is not settled). The spawn row y = −64 is inside that margin either way. [HIGH for
+  expression is not settled (settled by the Phase 2 note below)). The spawn row y = −64 is inside that margin either way. [HIGH for
   the call and margin `cVar10 = FUN_10012ca0(iVar15,0x80,1)` → `+0xcb = 1`; HIGH for the bounds since the Phase 2 note below (2026-11)]
 - Whether entity (x, y) is the sprite centre or corner is not settled here (the half-extents
   +0x2c/+0x30 = w/2, h/2 are computed by `FUN_10012940`, suggesting centre). [MED]

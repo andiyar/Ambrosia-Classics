@@ -220,7 +220,7 @@ Quirks: the outer weights are capped at 31, so the A/B/C pixels keep 1/32 of the
 even at f = 32. The centre is solid at f = 0, fades over f = 1..6, then **snaps back** to solid at
 f = 7 and ends at 7/32 colour (`10043d30 cmplwi r4,6; ble; subi r31,r4,7`).
 
-⚑ corrected (Phase 2, 2026-11) #29 — the stamp offsets +2 (core) / +4 (fringe) are relative to r6 = particle slot + 4 (`10043c80 addi r6,r30,0x4`), not to the slot base.
+⚑ corrected (Phase 2, 2026-11) #29 — the stamp reads the particle fields of §2.4: r6 = group + 4 + 0x1c·k (`10043c80 addi r6,r30,0x4`, `10043c84 add r6,r29,r6`; r30 steps by 0x1c at `100444ec`) is the particle base P, and the stamp takes the core colour from r6+2 (`10043d4c lhz r12,0x2(r6)`) and the fringe colour from r6+4 (`10043d54 lhz r20,0x4(r6)`) — P+0x02 and P+0x04, exactly as the §2.4 table says. The earlier reading "+2/+4 relative to slot + 4" names the same bytes (its "slot" being the group-relative offset 0x1c·k).
 
 ## 3. Debris = ground-obstacle rectangles (G_Debris.cc) [HIGH — listings]
 

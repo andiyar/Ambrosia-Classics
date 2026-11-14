@@ -261,7 +261,7 @@ r3/r4 confirmed: `10036a04 lwz r3,0x194(r3); lwz r4,0x198(r27) … bl 0x10046580
 equal; then per member `R(0,100)` unless `appearsPercent` ∈ {0,100}. [HIGH — ⚑ corrected: the
 bank said MED "arguments dropped"]
 
-⚑ corrected (Phase 2, 2026-11) #39 — the type-already-exists check (`doNotSpawnIfTypeAlreadyExists`, `FUN_10036af0`) also counts members that are deleted but not yet reaped.
+⚑ corrected (Phase 2, 2026-11) #39 — the type-already-exists check (`doNotSpawnIfTypeAlreadyExists`, `FUN_10036af0`) does not count: it walks every group's members and returns the **first** member whose unit type matches (`10036b9c cmpw r0,r24; bne`, then `10036ba4 or r28,r4,r4; b 0x10036bc8`). It does not test the deleted flag +0xcb, so a member that is deleted but not yet reaped still matches.
 
 ### 3.2 Per-member creation `FUN_10035cd0` — exact order (replay)
 1. Allocate from the pool, append to the group list, `FUN_100144a0` (spawn records).

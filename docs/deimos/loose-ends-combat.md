@@ -100,7 +100,7 @@ that re-enters a state (U §4 recomputes h' from v) can turn by 1°. A replica m
 float tables, double atan and truncation. MED, not HIGH: the exact set depends on the Mac
 MathLib `atan` agreeing to the last ulp.
 
-⚑ corrected (Phase 2, 2026-11) #31 — the round-trip quirk headings number 34, not 30.
+⚑ corrected (Phase 2, 2026-11) #31 — the round-trip quirk headings number 34, not 30. Re-derived in review: at speeds 1.0 and 4.0 the count is 34; at 0.75 the re-derivation gave 39 (bank: 35) and at 7.0 it gave 47 (bank: 41). Medium confidence (the counts depend on the host libm `atan`); the 0.75 and 7.0 counts are not yet settled.
 
 ### 1.4 Consequences for open items
 - **B NR5, Pulse Tank [HIGH for the vector, MED for the timing].** `tapu` is spawned by the

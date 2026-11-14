@@ -267,7 +267,7 @@ Timeline with shipped values, S = overload tick (`FUN_10026ee0` runs before the 
 each) and death at **S+54** (≈1.8 s at 30 fps). [HIGH for the rules and offsets (decompile + plde
 parser); MED for the tick timeline (assumes tint 0 at start; call order from the decompile)]
 
-⚑ corrected (Phase 2, 2026-11) #46 — the overload flash ramps the glow at +0x58 (`10026fe0..10027008`, `10027080..100270ac`; copied to +0x5c at `100270c4`), not at +0x214: +0x214 is only ever written with 0.0 (`10026f38`, `10026f90`). A refused indicator spawn stores uninitialised stack at +0xb8; the replica stores −1 instead (disclosed).
+⚑ corrected (Phase 2, 2026-11) #46 — the overload flash ramps the glow at +0x58 (`10026fe0..10027008`, `10027080..100270ac`; copied to +0x5c at `100270c4`), not at +0x214. The overload function writes +0x214 only with 0.0 (`10026f38`, `10026f90`); the listing has six writers of +0x214 in all (`10026eb8`, `10026f38`, `10026f90`, `1002917c`, `100291b8`, `10029ddc`), and each stores the float at `0x100d6fc8` (slot r2−0x702c), which is 0.0. Separately — in the multiplier-indicator function `FUN_10029fe0`, not the overload — a refused indicator spawn stores the stack word r1+0x3c at the player's +0xb8 (`1002a134 lwz r0,0x3c(r1)`, `1002a138 stw r0,0xb8(r30)`); `FUN_10033220` writes through its out-pointer (r25) only on its two spawn paths (`100335a4`, `100335c4`), so on its early exits to `100335ec` that word is never written: uninitialised stack. The replica stores −1 instead (disclosed).
 
 ### 2.7 Bombs (`FUN_1003beb0 @ 1003beb0`)
 On a fresh fireGround press with `now > +0x78 + delayBetweenLaunches`:
