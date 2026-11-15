@@ -26,10 +26,13 @@ public struct TickTrace: Equatable, Sendable {
         public var paused: Bool
         /// G+0x39.
         public var levelEnding: Bool
+        /// G+0x14, the sector, at the end of the tick (plan CS: added last, so a level transition shows in the
+        /// trace; 0 when a caller of the original initialiser does not give it).
+        public var sector: Int32
 
         public init(gameTime: Int32, cursor: Int32, p1State: UInt8, p1Score: Int32, p1Lives: Int32,
                     p1Shield: Float, p1Money: Int32, p1Multiplier: UInt8, draws: UInt64, entities: Int,
-                    groups: Int, scrollTop: Int32, paused: Bool, levelEnding: Bool) {
+                    groups: Int, scrollTop: Int32, paused: Bool, levelEnding: Bool, sector: Int32 = 0) {
             self.gameTime = gameTime
             self.cursor = cursor
             self.p1State = p1State
@@ -44,6 +47,7 @@ public struct TickTrace: Equatable, Sendable {
             self.scrollTop = scrollTop
             self.paused = paused
             self.levelEnding = levelEnding
+            self.sector = sector
         }
     }
 

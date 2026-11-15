@@ -14,19 +14,20 @@ public struct ReplayTrace: Equatable, Sendable {
 
     /// The CSV header: `TickTrace.Row`'s fields, in order.
     public static let csvHeader = "gameTime,cursor,p1State,p1Score,p1Lives,p1Shield,p1Money,p1Multiplier,draws,"
-        + "entities,groups,scrollTop,paused,levelEnding"
+        + "entities,groups,scrollTop,paused,levelEnding,sector"
 
     /// The row for the session's state now: game time (G+0x1c), P1's film cursor (−1 without a film), P1's life
     /// state / decoded score / lives / decoded shield / money / multiplier, `rand()` calls since `srand`, pool
     /// entities in use, active groups (PERM included), the scroll window's top row, the scroll paused (speed 0),
-    /// G+0x39.
+    /// G+0x39, the sector G+0x14 (plan CS).
     public static func row(_ s: DeimosSession) -> TickTrace.Row {
         let p = s.players[0]
         return TickTrace.Row(gameTime: s.gameTime, cursor: s.game.film?.cursors[0] ?? -1, p1State: p.lifeState,
                              p1Score: p.score, p1Lives: p.lives, p1Shield: p.shield, p1Money: p.money,
                              p1Multiplier: p.multiplier, draws: s.rng.draws, entities: s.game.world.liveCount,
                              groups: s.game.world.groups.count, scrollTop: s.scroll.window.top,
-                             paused: s.scroll.speed == 0, levelEnding: s.game.flags.levelEnding)
+                             paused: s.scroll.speed == 0, levelEnding: s.game.flags.levelEnding,
+                             sector: s.game.flags.sector)
     }
 
     /// Append the session's row (call after a ticked pass).
@@ -39,7 +40,7 @@ public struct ReplayTrace: Equatable, Sendable {
     public static func csvLine(_ r: TickTrace.Row) -> String {
         [String(r.gameTime), String(r.cursor), String(r.p1State), String(r.p1Score), String(r.p1Lives),
          "\(r.p1Shield)", String(r.p1Money), String(r.p1Multiplier), String(r.draws), String(r.entities),
-         String(r.groups), String(r.scrollTop), r.paused ? "1" : "0", r.levelEnding ? "1" : "0"]
+         String(r.groups), String(r.scrollTop), r.paused ? "1" : "0", r.levelEnding ? "1" : "0", String(r.sector)]
             .joined(separator: ",")
     }
 

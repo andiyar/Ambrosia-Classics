@@ -262,12 +262,12 @@ enum DeimosReplay {
         for tag in options.films {
             let report: Report
             do {
-                guard let id = FourCC(tag), let record = assets.index.record(type: FourCC("film")!, id: id) else {
+                let film: Film
+                do { film = try FilmLookup.film(tag, in: assets) } catch is FilmLookup.NoSuchFilm {
                     fail("no film '\(tag)' in \(dataDirectory.path)")
                     filmsPassed.append(false)
                     continue
                 }
-                let film = try Film(data: assets.index.data(for: record))
                 let frames = options.frames.map { (dir: URL(fileURLWithPath: $0, isDirectory: true), every: options.every) }
                 report = try replay(tag: tag, film: film, assets: assets, frames: frames)
             } catch {
