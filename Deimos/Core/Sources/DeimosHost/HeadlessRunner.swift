@@ -7,11 +7,14 @@ public struct ReplayResult: Equatable, Sendable {
     public enum EndReason: Equatable, Sendable {
         /// `FUN_10009750`: P1's film cursor passed the recording (`10005a38..10005a48`).
         case filmEnd
-        /// `FUN_10007170`: the level was completed (◇ stand-in 1 ends the session there).
+        /// `FUN_10007170` in a film: the level was completed (`100071e8..100071f8` — a film holds one level).
         case levelComplete
         /// No player in game: running cleared at `gameOverStart + 111` (`10006d68..10006d98`), or the level end's
         /// completion with nobody in game (`10007264`).
         case gameOver
+        /// `FUN_10007170` → `FUN_100064d0` after the last sector: the next level is `none` and the session ends
+        /// (`10006620..100066c8`; plan LT). A transition to the next sector is not an end.
+        case campaignEnd
         /// `maxPasses` passes ran and the session was still running.
         case bound
     }
@@ -98,8 +101,9 @@ public struct HeadlessRunner {
     /// 1. the tick's game over (`FUN_10006b50` `10006d68..10006d98`: no player in game and the tick's game time —
     ///    `gameTime − 1`, the tick adds 1 after it at `100059e0` — > start + int(flli 13));
     /// 2. the tick's `FUN_10007170` with G+0x09 set: nobody in game (`100071a0..100071e4`, `10007264`) → game over;
-    ///    a film keeps G+0x09 (`100071f0`) → level complete; not a film, G+0x09 and G+0x39 fall (`1000723c..10007248`,
-    ///    ◇ S9.1) → level complete;
+    ///    a film keeps G+0x09 (`100071f0`) → level complete; not a film, G+0x09 and G+0x39 fall (`1000723c..10007248`)
+    ///    and the level start finds level `none` (`10006620..100066c8`) → the campaign end — a transition to the next
+    ///    sector keeps the session running, so it never reaches here (plan LT);
     /// 3. the film branch after the tick (`10005a24..10005a48`): a film whose P1 cursor passed the recording.
     /// The only other clear is the begin frame's quit (`1000591c`: Esc, or +0x02, which 1.0.6 never sets), and the
     /// runner's keys are empty — so an end none of these explains is unreachable, and traps.
@@ -108,7 +112,7 @@ public struct HeadlessRunner {
         let delay = Int32(s.assets.floats[13].rounded(.towardZero))
         if f.noPlayerAlive && f.gameOverNoticed && s.gameTime &- 1 > f.gameOverStart &+ delay { return .gameOver }
         if f.levelComplete { return s.players.contains(where: \.inGame) ? .levelComplete : .gameOver }
-        if levelEndingBefore && !f.levelEnding { return .levelComplete }
+        if levelEndingBefore && !f.levelEnding && f.level == .none { return .campaignEnd }
         if f.filmPlaying && (s.game.film?.finished ?? true) { return .filmEnd }
         preconditionFailure("HeadlessRunner: a keyless session ended by no known rule")
     }

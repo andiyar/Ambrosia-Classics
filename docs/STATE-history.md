@@ -12,7 +12,7 @@
 - **How run 53 went:** started 08:19 (before the launch hours), so the headless suite (682 / 0 / the two skips) and
   the trees implementer went first; the launch checks ran at 09:14 in the gap before the first review. Legs:
   MERGEABLE AFTER FIXES ×2, no blockers; 176 mutations, 4 survivors, all killed by the fix round. Ben closed the run
-  after this one task (D50.6); 6A-RP and 6A-BX1a were not started.
+  after this one task (D51.6); 6A-RP and 6A-BX1a were not started.
 
 ## Settled at run 52's close (2026-11-14)
 

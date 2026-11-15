@@ -10,7 +10,7 @@ Settled history lives in docs/STATE-history.md.
 ## Ferazel's Wand — 2026-11-15 (attended run 53 closed: trees built, both owed launch checks passed; run 54 next)
 
 - **Where it stands:** Phase 5 "Enemies" is closed on the machine side — **Ben's gate pending (Q18)**. Phase 6A
-  "through the Goblin Chief" is being built (the plan: "Wave 5 — Phase 6A" in the one plan file; rulings D46–D50).
+  "through the Goblin Chief" is being built (the plan: "Wave 5 — Phase 6A" in the one plan file; rulings D46–D49, D51).
   **Wave 6A.1 is built** (6A-BL, 6A-CF, 6A-FR, 6A-W1, 6A-W2): on level 5 the Warrior is a real boss, beaten by pushing
   crates onto him. **Wave 6A.2 so far: 6A-FX** (the test-only level fixture), **6A-S8** (the horizon strip),
   **6A-WD** (wind), **6A-RC** (rotating cannons) and, in run 53, **6A-TR** (trees on levels 10, 11 and 15 grow their
@@ -114,7 +114,7 @@ Settled history lives in docs/STATE-history.md.
   - Older small carries from Phases 2–4: listed in the history file's Snapshot B; each closes when a task next touches
     its file.
 
-## Deimos Rising — 2026-11-14 (wave 3 done: Phase 2 is built and staged; Ben's "level 1 plays" gate is queued)
+## Deimos Rising — 2026-11-15 (Phase 2 staged, Ben's gate queued; Phase 3 planned and its level transition built)
 
 - **Where it stands:** Phase 1 "level 1 look" gate passed 2026-10-07. Phase 2 "level 1 plays" is **built, merged to
   local main (not pushed; wave 3 merges 3570cc3 and 05083af) and staged** at `~/Desktop/Deimos Rising.app` with
@@ -122,14 +122,19 @@ Settled history lives in docs/STATE-history.md.
   scoring, the level end, sound and music through the kit's stream voice, typed keys and the console, Caps Lock
   pause, and `-film deNN` to watch a shipped demo. **Machine gate green:** all four shipped demo films replay to the
   score the original recorded (de01 25,050; de02 116,180; de03 57,520; de04 24,670).
-  `Deimos/Core` **344/0/0** (without `DeimosReplayTests`) and `DeimosReplayTests` **4/0** on HectorKit ef2c341
-  (370 executed: 366 passed + 4 Aki 1.1 skips); Deimos, Aki and BubbleTroubleX build.
+  **Phase 3 has begun:** the level transition is built and merged (local main, not pushed) — a finished level
+  now fades to black and starts the next sector in the same game; after sector 12 the session ends. The staged
+  app predates it. `Deimos/Core` **352/0/0** (without `DeimosReplayTests`) and `DeimosReplayTests` **4/0** on
+  HectorKit ef2c341 (370 executed: 366 passed + 4 Aki 1.1 skips); Deimos, Aki and BubbleTroubleX build.
 - **Waiting on Ben:** (1) the staged app has never been launched by a session — the first run is his, or a muted
   boot check on his say-so (how: the 2026-11-14 wave 3 handoff); (2) his "level 1 plays" verdict against the gate
   card. Neither blocks planning the campaign.
-- **The plan:** `docs/superpowers/plans/2026-11-05-deimos-remainder.md` — Phase 2's cards are all closed. Next =
-  the Phase 3 (campaign) plan, written as its own plan from that file's "Phase 3" cards; the session brief is in
-  `docs/handoff-2026-11-14-deimos-wave-3.md`. Ben, 2026-11-14: sessions chain until a hard stop that needs him.
+- **The plan:** Phase 3 (the campaign) is planned: `docs/superpowers/plans/2026-11-14-deimos-phase3.md` (D50; two
+  grounding appendices beside it; reviewed by two legs). Seven tasks — the level transition first (the one real gap:
+  today a finished level ends the session), then tests for carry-over, two players and the finale, a twelve-sector
+  sweep, `-players 2` / `-sector N`, staging. Ladder 344 → **352 (done)** → 360 → 367 → 372. Next = carry-over
+  tests, then two players, then the finale; the session brief is in `docs/handoff-2026-11-15-deimos-phase3-lt.md`.
+  Ben, 2026-11-14: sessions chain until a hard stop that needs him.
 - **Data:** `Resources/Deimos/` in git; `deimos-census` 872 entries, 0 failures.
 - **Open:** RE bank `docs/deimos/INDEX.md` #13, #59 residue, #62–#64 and 134 cross-file label mismatches; Ben's
   ear/eye items (on the gate card). Not modelled until Phase 4: the mouse button ending a film; the quit flag
@@ -140,13 +145,12 @@ Settled history lives in docs/STATE-history.md.
   Not independently confirmed: sound actually reaching the speakers (an offline probe of the same audio graph
   passed); frame checks under translucent or scaled draws.
 
-## Cythera — 2026-11-08 (re-planned; waits for Ben's go)
+## Cythera — 2026-11-15 (wave 1 session A closed: C8 + C9 merged; session B next)
 
-- **Where it stands:** Phase 0 half built (K1 on HectorKit, C0–C5); `Cythera/Core` **44/0/0** (34 core + 10 render) on
-  HectorKit ef2c341; `Resources/Cythera/` 20 files; the decompile committed at `ghidra/cythera/`; no Cythera branch.
+- **Where it stands:** C8 + C9 (script decoder; segment model, reachability, canonical parity for all 958 segments) merged 2026-11-15, Fable cross-check passed with fixes (done) — `Cythera/Core` **57/0/0** on HectorKit ef2c341 (370); next = session B (C6, C7, C10; 57 → 80), brief in `docs/handoff-2026-11-15-cythera-wave1-A2.md`.
 - **The plan:** `docs/superpowers/plans/2026-11-05-cythera-remainder.md` (self-contained since 2026-11-08). Next = wave 1
-  session A (C8 → C9, suite → 57), then B (C6 ∥ C7 ∥ C10) and C (C13 → C11 → C12). The brief is in
-  `docs/handoff-2026-11-05-cythera-plan.md`, "The brief for the next session". **Waits for Ben's go.**
+  session B (C6 ∥ C7 ∥ C10, suite 57 → 80), then C (C13 → C11 → C12). The brief is in
+  the newest `docs/handoff-*-cythera-*.md`, "The brief for the next session".
 - **Open:** HectorKit's gate script has a stale default Aki path (one-line kit fix; until then set
   `HECTORKIT_DATA_AKI11`); the PICT opcode-walk kit carry (an error naming the first bits opcode); small RE items (THood
   order within a pass, QTMA music events, over-encumbrance, the 0x03/0x05 words, 0x0210).

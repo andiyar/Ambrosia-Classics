@@ -117,11 +117,12 @@ extension GameState {
 
     /// `FUN_10007170 @ 10007170(controller, film, info)` — level complete, after `updateWorld` in the same tick. G+0x09
     /// clear → nothing. No player in game (`FUN_10026c10`, first found) → running = 0. A film (`film` = the session's
-    /// film flag, G+0x20) → running = 0 (a film holds one level). Else: music stop (`FUN_10048120(0)`), `tran`
-    /// (PermSoundID 3; priority 75, volume 100, multiple 1), [the fade to black `FUN_1000b9a0(display, 1)` — ◇ Phase 3],
-    /// G+0x09 = G+0x39 = 0, the level-transition reset `FUN_100302e0` (`FrameKeys.levelTransitionReset`), then
-    /// `FUN_100064d0(0, info)` → the next sector — **◇ S9.1:** the session ends instead (running = 0; Phase 3 starts
-    /// the next sector).
+    /// film flag, G+0x20) → running = 0 (a film holds one level). Else (plan LT): music stop (`FUN_10048120(0)`),
+    /// `tran` (PermSoundID 3; priority 75, volume 100, multiple 1), the fade to black `FUN_1000b9a0(display, 1)` —
+    /// `.fade(.toBlack, .gameLayout)` into `tickOps`, after the tick's terrain stamps, its place in the cues marked in
+    /// `fadeToBlackCues` — G+0x09 = G+0x39 = 0, the level-transition reset `FUN_100302e0`
+    /// (`FrameKeys.levelTransitionReset`, incl. its layer clear), then the level start `FUN_100064d0(0, info)` for the
+    /// next sector in this game (`levelStart(film:)`; after sector 12 it finds level `none` and the session ends).
     public mutating func levelCompleteStep(controller c: inout FrameController, console: inout Console, ticks: UInt32) {
         guard flags.levelComplete else { return }                            // 10007194..1000719c
         guard players.contains(where: \.inGame) else {                       // 100071a0..100071e4
@@ -135,11 +136,11 @@ extension GameState {
         cues.music.append(.stop)                                             // 10007200..10007204 (the bne at 100071fc is never taken)
         cues.sounds.append(SoundPlay.perm(assets.sounds[3], priority: 0x4b, volume: 100,
                                           allowMultiple: true))              // 1000720c..10007224
-        // ◇ Phase 3: FUN_1000b9a0(display, 1), the 33-step fade to black (1000722c..10007234).
+        tickOps.append(.fade(.toBlack, .gameLayout))                         // 1000722c..10007234 FUN_1000b9a0(display, 1)
+        fadeToBlackCues = CueMark(sounds: cues.sounds.count, music: cues.music.count)
         flags.levelComplete = false                                          // 1000723c..10007240
         flags.levelEnding = false                                            // 10007248
         FrameKeys.levelTransitionReset(controller: &c, console: &console, game: &self, ticks: ticks)   // 10007244..1000724c
-        // ◇ S9.1: FUN_100064d0(0, info) (10007254..1000725c) → the session ends; the driver starts a new game.
-        flags.running = false
+        levelStart(film: false)                                              // 10007254..1000725c FUN_100064d0(r25 = 0, info)
     }
 }

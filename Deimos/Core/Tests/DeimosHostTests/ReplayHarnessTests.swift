@@ -59,7 +59,8 @@ final class ReplayHarnessTests: XCTestCase {
     /// `FUN_10009750` (cursor > frames) ends the session on that pass (`10005a38..10005a48`) — 11 input ticks,
     /// `.filmEnd`. Bound: 500 passes. The other ends are told apart from it: a 3,000-frame film outlasts its
     /// input-less pilot and ends on game over (bound 3,000 passes); the level-complete rules, which a zero-input film
-    /// cannot reach, are checked on the classifier with their flags set on copies of a session.
+    /// cannot reach, are checked on the classifier with their flags set on copies of a session, and the campaign end
+    /// on a sector-12 session run to its end.
     func testFilmReplayEndsOnePastLastByte() throws {
         let assets = try ShippedAssets.get()
         let result = try FilmReplay.run(film: Self.film(frames: 10), assets: assets, trace: true, maxPasses: 500)
@@ -83,19 +84,29 @@ final class ReplayHarnessTests: XCTestCase {
         XCTAssertFalse(long.session.players.contains(where: \.inGame))
 
         // FUN_10007170 with G+0x09 set: a film keeps it (100071f0) → level complete; nobody in game (10007264) →
-        // game over; not a film, G+0x09 and G+0x39 fall (1000723c..10007248) → level complete.
+        // game over; not a film, the transition (plan LT) starts the next sector and ends nothing — except after
+        // sector 12, where the level start finds level `none` (10006620..100066c8) → the campaign end. Run for real
+        // here: a sector-12 session poked one row from the map's end (progress 3599), bound 3,000 passes.
         var s = try HeadlessRunner(assets: assets, film: Self.film(frames: 10)).session
         s.game.flags.levelComplete = true
         s.game.players[0].inGame = true
         XCTAssertEqual(HeadlessRunner.reason(s, levelEndingBefore: true), .levelComplete)
         for i in s.game.players.indices { s.game.players[i].inGame = false }
         XCTAssertEqual(HeadlessRunner.reason(s, levelEndingBefore: true), .gameOver)
-        var n = try HeadlessRunner(assets: assets, start: SessionStart(sector: 1, players: 1, film: nil), seed: 0x469c2)
+        var n = try HeadlessRunner(assets: assets, start: SessionStart(sector: 12, players: 1, film: nil), seed: 0x469c2)
             .session
-        n.game.players[0].inGame = true
-        XCTAssertFalse(n.game.flags.levelComplete)
-        XCTAssertFalse(n.game.flags.levelEnding)
-        XCTAssertEqual(HeadlessRunner.reason(n, levelEndingBefore: true), .levelComplete)
+        n.game.scroll.progress = 3599
+        var levelEndingBefore = false
+        var nPasses = 0
+        while n.running {
+            levelEndingBefore = n.game.flags.levelEnding
+            _ = n.pass(keys: HeldKeys(), ticks: 0)
+            nPasses += 1
+            if nPasses > 3000 { return XCTFail("bound: the sector-12 session still runs after 3,000 passes") }
+        }
+        XCTAssertTrue(levelEndingBefore)
+        XCTAssertEqual(n.level, .none)
+        XCTAssertEqual(HeadlessRunner.reason(n, levelEndingBefore: levelEndingBefore), .campaignEnd)
     }
 
     /// The CSV: a fixed header naming the `TickTrace.Row` fields in order, one line per row, `\n`-terminated;

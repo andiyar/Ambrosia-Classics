@@ -2341,7 +2341,44 @@ file, reviewed by two Opus legs and cross-checked by Fable. The plan's own "Plan
     Setup arm is built and unit-tested as the dump has it, but level setup keeps refusing them, pinned. Only p1 < 0
     (the path cannons) is 6B's. The ledger's check now anchors on the code's own range.
 
-## D50 — Ferazel's Wand: run 53's rulings (6A-TR — trees; 2026-11-15)
+## D50 — Deimos Rising: the Phase 3 (campaign) plan and the seat's rulings (2026-11-15)
+
+**Decided (the seat, Fable 5.2, 2026-11-15; plan `docs/superpowers/plans/2026-11-14-deimos-phase3.md` with two
+grounding appendices; reviewed by two Opus legs — coverage/executability and data reality — and corrected).** Phase 3
+is seven tasks: the level transition (the one real gap), then tests for carry-over, two players and the finale, a
+god-mode sweep of all twelve sectors, two launch arguments, and staging. `Deimos/Core` ladder 344 → 352 → 360 → 367 →
+372; a new bundle `DeimosCampaignTests` (3); `DeimosReplayTests` stays 4. Rulings the plan proceeds on, each on the
+gate-3 card for Ben to overturn: (1) `-players 2` and `-sector N` launch arguments stand in for the menu's 2 PLAYER
+button and the level select until Phase 4; (2) player 2's keys are the binary's prefs defaults (keypad 8/4/6/5, End,
+Forward Delete, Page Down) — where OS X 1.0.6 consumed them is unread (INDEX #14); (3) after the finale the session
+ends and a new game starts (the original went to the scores and the menu; no credits follow the finale); (4) every
+level after the first runs one game-time step later than level 1 (`100059e0..100059f0`) — replicated, not fixed;
+(5) the level start's state moves into `GameState`, its drawing stays in the session; (6) the stale
+multiplier-indicator serial and the revive-at-transition quirk are replicated. Read from the listing during
+grounding: the bank's carry/reset table omits five rows and has one wrong (multiplier carried; shield refilled;
+invulnerability carried from the level end; power-ups idled; a forced air weapon on entering sectors 2, 3 and 5;
+level `none` resumes rather than stops the music); a state entered by its timer sounds on the next tick (the finale's
+flash sounds are at T0+6k+1); INDEX #64 is closed by the data. No film crosses a level boundary, plays sectors 5–12,
+fires the Photon Beam, has two players or reaches the finale: those are proved by tests, the sweep and Ben.
+
+**As built — Phase 3 (D50), task LT (2026-11-15).** 6d4bee9 + fix round 45a70ff, merged to local main
+(`Deimos/Core` 344 → **352/0/0**; `DeimosReplayTests` 4/0 unchanged; the first level byte-identical over a 300-pass
+dump of ops, cues, flags, RNG, players and scroll at sectors 1, 5 and 12). (1) `GameState.levelStart(film:)` is the
+level start's state part, called by the session's set-up and by `levelCompleteStep`; `DeimosSession.levelStartOps()`
+is the drawing part, emitted after the tick's ops when a tick started a level other than `none`. (2) `GameState`
+gained `levels` (a shared `LevelSet`: twelve definitions and masks, loaded and validated once and handed to
+restarted sessions through `DeimosSession.init(… levels:)`), `levelInfo` (the session's public `levelInfo` forwards)
+and `fadeToBlackCues`. (3) The transition pass's ops: the tick's stamps → fade to black → clear layers → level-start
+ops → draw world → no present; game time is 1 at its end. (4) The driver sends a pass's cues in two halves around a
+fade to black — the transition sound plays through the fade, the new level's cues and an end-of-session halt wait
+for its last step — drops characters typed during it, and restamps the FPS window at its end. (5) Caps Lock on the
+transition pass follows 1.0.6: the pause's present shows the new level unfaded (`10022fd4`). (6) `HeadlessRunner`
+has a campaign-end reason. (7) Two review mutants survived the first round and are now pinned by
+`testTransitionPassStartsNextSector`: the sector must be set before the players' level start (the forced Bacta Gun on
+entering sector 2), and the reward flag is armed from the perfect-last-level flag. (8) The plan's AP card now also
+owns the driver's restart sector (a restart starts at the launch's sector).
+
+## D51 — Ferazel's Wand: run 53's rulings (6A-TR — trees; 2026-11-15)
 
 1. **The tree golden starts above a tree, not at the first frame with a tree on screen.** The engine contract asks
    for "the first frame with a tree on screen"; that frame would show a tree doing nothing. The golden starts the

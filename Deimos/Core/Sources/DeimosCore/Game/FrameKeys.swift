@@ -83,11 +83,14 @@ public enum FrameKeys {
     }
 
     /// `FUN_100302e0` — the level-transition reset (`100302f4..10030328`; caller `FUN_10007170`): clear layers
-    /// (the renderer's), messages reset, console reset `FUN_1002d040(+8)`, FPS init `FUN_100305e0`, divider reset
-    /// `FUN_10030790`, FlushEvents. Unlike `startSession` the controller is not zeroed (+8, +0x1c and the latches
-    /// survive). C17 / C18a call it where `FUN_10007170` does.
+    /// (`.clearLayers` into `game.tickOps`, after the fade to black — plan LT), messages reset, console reset
+    /// `FUN_1002d040(+8)`, FPS init `FUN_100305e0`, divider reset `FUN_10030790`, FlushEvents. Unlike `startSession`
+    /// the controller is not zeroed (+8, +0x1c and the latches survive). C17 / C18a call it where `FUN_10007170` does.
+    /// The FPS init and FlushEvents run after the fade in the original; the host restarts the FPS window at the tick
+    /// the fade ended (`DeimosSession.transitionFadeEnded`) and drops the keys typed during it (`DeimosDriver`).
     public static func levelTransitionReset(controller c: inout FrameController, console: inout Console,
                                             game: inout GameState, ticks: UInt32) {
+        game.tickOps.append(.clearLayers)                             // 100302f4 FUN_100189f0
         game.messages.reset()                                         // 100302fc
         console.reset(frame: UInt32(bitPattern: c.framesPresented))  // 10030304..10030308
         c.fpsMonitorInit(ticks: ticks)                                // 10030314

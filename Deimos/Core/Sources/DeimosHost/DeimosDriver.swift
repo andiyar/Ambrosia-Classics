@@ -40,10 +40,11 @@ public struct DriverOutput: Equatable, Sendable {
 ///   `1000bb50..1000bb64`), `t0 = TickCount` (`1000bb68..1000bb78`); then `fadeEnd`.
 /// - **No catch-up** (timing-frame §4): the waits are the only pacing and both are "≥ a target", so a stall lets
 ///   exactly one late pass through; the next target is measured from its stamp.
-/// - **Session end** — ◇ stand-ins 1–3: Esc, level complete and game over all end the session (the pass that ends
-///   it still runs to its end and carries `sessionEnded`); then a new session at sector 1 with seed = the current
+/// - **Session end** — ◇ stand-ins 2–3: Esc, game over, a film's level complete and (plan LT) the campaign end after
+///   the last sector end the session (the pass that ends it still runs to its end and carries `sessionEnded`; a
+///   level transition to the next sector does not); then a new session at sector 1 with seed = the current
 ///   `TickCount` (the original's `srand(TickCount())`, `100057c8`) — the stand-in for the return to the main menu
-///   (Phase 3 / 4). ◇ Stand-in 6: the new session starts from the ENDED session's prefs (F6, the FPS monitor,
+///   (Phase 4). ◇ Stand-in 6: the new session starts from the ENDED session's prefs (F6, the FPS monitor,
 ///   `supermunki`, the volume — in memory only), which `prefs` then holds. The renderer's buffers persist across
 ///   it. ◇ The Esc that ended the session is latched: the new session's passes see Esc as up until ANY `idle` call
 ///   sees it released (the original's end-of-session `FlushEvents` and the main menu, which has no Esc action —
@@ -56,7 +57,12 @@ public struct DriverOutput: Equatable, Sendable {
 ///   in which it begins (the FPS monitor's clock), and so does a new session's controller (`FUN_100305e0`).
 /// - **Audio** (H2) — each pass's `sounds` / `music` / `haltEffectsAt` go to `audio` (`DeimosAudioSink.apply`) when
 ///   the pass begins (the original issues them inside the tick — at most one frame early, inaudible); a pass with
-///   no cues sends nothing.
+///   no cues sends nothing. **A level transition** (plan LT; `PassOutput.fadeToBlackAt`): the cues before the mark
+///   (the music stop and `tran`, `10007200..10007224`) go when the pass begins; the rest — the next level's cues, or
+///   at the campaign end the resume and the session end's halt and stop — only once the fade to black has presented
+///   its last step (`1000722c..10007234` returns before `FUN_100064d0`), so `tran` plays through the fade. At that
+///   point the keys typed during the fade are dropped (`FUN_100302e0`'s FlushEvents, `10030328`) and the session's
+///   FPS window restarts at that tick (`10030314`, `DeimosSession.transitionFadeEnded`).
 /// - **`.pauseWait(present)`** (H2; `FUN_10022ef0`, `10022f18..10023010`) — the pass that paused sent halt, `gaso 8`
 ///   and the music pause when it began; the wait yields until an `idle` sees `capsLock == false` (`10022f68..
 ///   10022fa4`), testing it only while the app is not suspended (`10022f84..10022fa0`: r29 = !`FUN_10023030`, the
@@ -83,7 +89,9 @@ public struct DeimosDriver {
     public let rate: TickRate
     public let start: SessionStart
     let renderer: DeimosRenderer
-    private(set) var session: DeimosSession
+    /// The current session — internal, so settable from tests (`@testable import`) to poke its game state (plan LT;
+    /// `internal(set)` on an internal property is redundant and warns).
+    var session: DeimosSession
 
     /// The frame controller's limiter stamp (+0x1c): `TickCount` at the last limiter release.
     private(set) var lastPresent: UInt32 = 0
@@ -122,7 +130,7 @@ public struct DeimosDriver {
     }
     private var fade: Fade?
     /// Key-downs handed to `idle` since the last pass began (the OS event queue).
-    private var typedQueue: [UInt8] = []
+    private(set) var typedQueue: [UInt8] = []
     /// The app is suspended (r2−0x6179, set by the suspend handler `10023dc4`, cleared by the resume `10023e34`).
     public private(set) var suspended = false
     /// The pause flag r2−0x617b: a pause holds the music (from the paused pass's begin to the wait's present).
@@ -134,6 +142,9 @@ public struct DeimosDriver {
     /// end's music (the stop, `10005ae4`, sent with a halt, `10005ad8`) once the pass's ops are done.
     private var musicAfterWait: [MusicCue] = []
     private var sessionEndMusic: [MusicCue]?
+    /// The current pass's cues after its transition fade to black (`PassOutput.fadeToBlackAt`), sent when the fade
+    /// ends; `pauses` = they carry the pass's music pause (the pause flag is set as they are sent).
+    private var cuesAfterFade: (sounds: [SoundCue], music: [MusicCue], halt: Int?, pauses: Bool)?
 
     /// Builds the first session (seed 0 until the first `idle` reseeds it with the clock — the session's set-up
     /// validates `start` here).
@@ -198,10 +209,17 @@ public struct DeimosDriver {
                 }
                 renderer.fadeEnd()
                 fade = nil
+                if f.kind == .toBlack, cuesAfterFade != nil {
+                    typedQueue = []                                                   // 10030328 FlushEvents
+                    session.transitionFadeEnded(ticks: now)                           // 10030314 FUN_100305e0
+                    sendCuesAfterFade()
+                }
             }
 
             if next == ops.count {
                 // The pass's ops are done.
+                assert(cuesAfterFade == nil,
+                       "a pass with fadeToBlackAt carries its .fade(.toBlack) op, whose end sent these cues")
                 if passBegun {
                     if endAfterPass {
                         guard !restartedThisCall else { return out }
@@ -306,14 +324,29 @@ public struct DeimosDriver {
         route(pass)
     }
 
-    /// The pass's cues to `audio` as it begins. A pass that paused (its last op `.pauseWait`) sets the pause flag; if
-    /// it also ended the session, its music is split at its last `.pause` (see the type's comment): through the
-    /// pause now, the resume after the wait, the stop (with a halt) at the end of the pass.
+    /// The pass's cues to `audio` as it begins. A transition pass (`fadeToBlackAt`) sends only the cues before its
+    /// fade now and keeps the rest for the fade's end (`cuesAfterFade`); the pause handling below applies to that
+    /// rest. A pass that paused (its last op `.pauseWait`) sets the pause flag; if it also ended the session, its
+    /// music is split at its last `.pause` (see the type's comment): through the pause now, the resume after the wait,
+    /// the stop (with a halt) at the end of the pass.
     private mutating func route(_ pass: PassOutput) {
+        var sounds = pass.sounds
         var music = pass.music
+        var halt = pass.haltEffectsAt
+        if let mark = pass.fadeToBlackAt {                                   // 1000722c..10007234
+            let ks = min(max(mark.sounds, 0), sounds.count), km = min(max(mark.music, 0), music.count)
+            assert(halt.map { $0 >= ks } ?? true,
+                   "halts come only from the pause and the session end, both after the tick's fade mark")
+            send(sounds: Array(sounds[..<ks]), music: Array(music[..<km]), halt: nil)
+            sounds = Array(sounds[ks...])
+            music = Array(music[km...])
+            halt = halt.map { $0 - ks }
+        }
         let paused = pass.ops.contains { if case .pauseWait = $0 { return true } else { return false } }
         if paused {
-            pauseHoldsMusic = true                                           // 10022f18 (the pause's music pause is sent now)
+            if pass.fadeToBlackAt == nil {
+                pauseHoldsMusic = true                                       // 10022f18 (the pause's music pause is sent now)
+            }
             if pass.sessionEnded, let k = music.lastIndex(of: .pause) {
                 var after = Array(music[(k + 1)...])
                 music.removeSubrange((k + 1)...)
@@ -324,8 +357,25 @@ public struct DeimosDriver {
                 musicAfterWait = after
             }
         }
-        guard !(pass.sounds.isEmpty && music.isEmpty && pass.haltEffectsAt == nil) else { return }
-        audio?.apply(sounds: pass.sounds, music: music, haltEffectsAt: pass.haltEffectsAt)
+        if pass.fadeToBlackAt != nil {
+            cuesAfterFade = (sounds, music, halt, paused)
+        } else {
+            send(sounds: sounds, music: music, halt: halt)
+        }
+    }
+
+    /// One apply, unless there is nothing to send.
+    private func send(sounds: [SoundCue], music: [MusicCue], halt: Int?) {
+        guard !(sounds.isEmpty && music.isEmpty && halt == nil) else { return }
+        audio?.apply(sounds: sounds, music: music, haltEffectsAt: halt)
+    }
+
+    /// The transition pass's cues after its fade (see `route`).
+    private mutating func sendCuesAfterFade() {
+        guard let c = cuesAfterFade else { return }
+        cuesAfterFade = nil
+        if c.pauses { pauseHoldsMusic = true }                               // 10022f18, after the fade
+        send(sounds: c.sounds, music: c.music, halt: c.halt)
     }
 
     /// One fade step at the current level, then advance the level index.
@@ -340,12 +390,16 @@ public struct DeimosDriver {
     }
 
     /// A fresh session (`srand(seed)`) with a fresh frame controller (limiter stamp 0). When `sector` cannot be
-    /// built (data without that level), the session falls back to `start`, which `init` validated.
+    /// built (data without that level), the session falls back to `start`, which `init` validated. The new session
+    /// reuses the current one's loaded level set (immutable, shared), so a restart inside `idle` decodes no masks.
     private mutating func newSession(seed: UInt32, sector: Int) {
         let s = SessionStart(sector: sector, players: start.players, film: start.film)
-        if let made = try? DeimosSession(assets: assets, prefs: prefs, start: s, seed: seed, ticks: seed) {
+        let levels = session.game.levels
+        if let made = try? DeimosSession(assets: assets, prefs: prefs, start: s, seed: seed, ticks: seed,
+                                         levels: levels) {
             session = made
-        } else if let made = try? DeimosSession(assets: assets, prefs: prefs, start: start, seed: seed, ticks: seed) {
+        } else if let made = try? DeimosSession(assets: assets, prefs: prefs, start: start, seed: seed, ticks: seed,
+                                                levels: levels) {
             session = made
         }
         lastPresent = 0
@@ -362,6 +416,7 @@ public struct DeimosDriver {
         waitReleased = false
         musicAfterWait = []
         sessionEndMusic = nil
+        cuesAfterFade = nil
     }
 
     /// Mac virtual key code of Esc (`FUN_100307c0`).

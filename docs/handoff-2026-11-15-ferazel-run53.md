@@ -17,7 +17,7 @@ blockers. The port matches the original line by line (setup, the per-frame handl
 second leg planted 176 bugs: 158 caught, 14 harmless by construction, 4 slipped through — all four caught after the
 fix round. No existing picture or pinned value moved; no object on levels 1–5 is a tree.
 
-**Rulings (D50).** The tree picture starts Ferazel above a tree so he lands on a branch (the level's own start shows
+**Rulings (D51).** The tree picture starts Ferazel above a tree so he lands on a branch (the level's own start shows
 no tree doing anything). A review's extra checks go inside the task's named tests, so the test count stays the
 plan's. The original's own numbers beat the research note on one branch size. One audit check's stated reason ("no
 picture is wider than 256") was corrected now, because a tree picture is 264 wide and it would have failed when
@@ -29,7 +29,7 @@ the two opt-in skips by name. WinKit and the census were not re-run (nothing the
 **Timing lesson.** The run started at 08:19, before launch hours. The headless suite and the implementer went first;
 the launch checks ran at 09:14 in the quiet gap between the implementer's report and the first review, with the
 reviewer told to read until they finished. Proof B therefore ran on the branch with the trees in (693 tests), not on
-run 52's head (D50.5).
+run 52's head (D51.5).
 
 **Context.** Reading the chip, STATE and the three cards brought the seat to 140k before the first dispatch; the one
 task and the close took it to about 200k. Two tasks a run is the realistic size under the 300k cap.

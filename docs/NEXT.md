@@ -18,7 +18,7 @@ seat reads the cards and the gate block (plan lines ~97–200) only; implementer
 3. `docs/QUESTIONS.md` "Open" — act first on any new text under an `Answer:` (Q18 is Ben's Phase 5 gate: notes become
    tasks at the head of the 6A order; a fail stops the build and becomes a fix wave. Q19: his choices on the 6A plan)
    and record it in `docs/DECISIONS.md`.
-4. `docs/DECISIONS.md` D50 (D46–D49 only where a card cites them) and `docs/handoff-2026-11-15-ferazel-run53.md`.
+4. `docs/DECISIONS.md` D51 (D46–D49 only where a card cites them) and `docs/handoff-2026-11-15-ferazel-run53.md`.
 
 ## Reconcile first
 - `git -C "$REPO" worktree list`, `git -C "$REPO" log --oneline -8 main`: main at or past run 53's close. Other
@@ -49,9 +49,9 @@ seat reads the cards and the gate block (plan lines ~97–200) only; implementer
 - No golden of levels 1–5 and no earlier fixture golden may move in this run (level 21's fixture; level 10's strip —
   two frames — wind, cannons and the tree). A moved existing value is a STOP. A task's own new values re-measured in
   its fix round are not moves.
-- A golden's start point must actually show the feature and its frame must exercise it (D50.1: the tree golden starts
+- A golden's start point must actually show the feature and its frame must exercise it (D51.1: the tree golden starts
   the player above a tree). Tell the implementer to say so and choose a start that does, and leg 1 to rule on it.
-- **A review leg's new asserts go inside the card's named tests** (D50.2): the ladder is the card's number. Say so in
+- **A review leg's new asserts go inside the card's named tests** (D51.2): the ladder is the card's number. Say so in
   the leg 2 brief and in the fix round.
 - 6A-BX1a uses `PlatformSprite.flipH` as it is — it was already callable from every mover (6A-TR's As executed (c)).
 - After any commit that moves Core source lines, run `python3 -I -B tools/ferazel/later-levels-ledger.py --check`; if

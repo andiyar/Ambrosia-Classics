@@ -1639,14 +1639,14 @@ ids; its `--check` reads this table):
   one Sources comment — no behaviour change). Two Opus legs: MERGEABLE AFTER FIXES (0 / 2 / 8 minor — Setup, Handle
   and all 17 branch rects match the dump line by line), MERGEABLE AFTER FIXES (0 / 1 / 9 minor; 176 mutations: 158
   killed, 14 equivalent, 4 survivors — all killed after the fix round, their asserts folded into the named tests so
-  the ladder holds at 693, D50.2). No existing pinned value moved; no level 1–5 record is a tree (levels 10 / 11 / 15
+  the ladder holds at 693, D51.2). No existing pinned value moved; no level 1–5 record is a tree (levels 10 / 11 / 15
   place 13 / 8 / 10; shipped p1 is 0 or 1; 3087 is placed nowhere). **Proof B by day at 44cb75a: 690 / 0 / 3 / 0 of
   693.** **New value (measured; level-10 fixture, the 14 Box-scenery records left out, seed 1):** the feature golden
   `d7ba88433f138e72` — the player started at (4945, 1270) above record 35 (a mirrored 0xc08 at (4929, 1358), face
   width 226), tick 1620, **loop iteration 5**: the tree plants in iteration 1, the player lands on the flipped first
   branch in iteration 4, and the draw runs before the handlers, so iteration 5 first shows him standing there. With
   planting stubbed, or the mirror off: `707aa87324dfbee3`. The positioned start departs from ENG's "first frame with a
-  tree on screen" and is ratified (D50.1). Notes: (a) **dump beats ENG:** 0xc0f's branch is 375 × 43 (386 is its
+  tree on screen" and is ratified (D51.1). Notes: (a) **dump beats ENG:** 0xc0f's branch is 375 × 43 (386 is its
   right edge, M l. 62871) — ENG §2.4 corrected. (b) In their first frame the branches are still solid boxes (the Box
   Setup's state) and the collision pass runs after the handlers, so two Xichrons sitting inside tree 35's branch rects
   are lifted — the original's behaviour; the test asserts it (the pickup, score 10, comes from the chosen start).
