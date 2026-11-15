@@ -2438,7 +2438,7 @@ to the launch's sector with the launch's player count and film — so **ruling 1
 new game starts at the launch's sector, which is sector 1 unless `-sector` was given. The driver's old "retry at
 sector 1" fallback is gone; if a restart's session could not be built the ended session stays and the driver tries
 again on each idle call (cannot happen with validated data). `+7` and `07` are accepted as sector values. (8) Review
-totals: 19 deliberate source bugs tried across the four legs and the fix rounds' re-runs; 4 slipped past the first
+totals: 18 deliberate source bugs tried by the four review legs; 4 slipped past the first
 drafts (player 2 reading player 1's keys, player 2's fire ignored, the player count lost on restart, the film
 dropped on restart) and all four are caught after the fix rounds. (9) The whole campaign bundle takes about 13
 minutes (per-sector 454 s, campaign 259 s, two-player 26 s): longer than one 10-minute tool call, so run it one test
