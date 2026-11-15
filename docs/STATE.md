@@ -114,7 +114,7 @@ Settled history lives in docs/STATE-history.md.
   - Older small carries from Phases 2–4: listed in the history file's Snapshot B; each closes when a task next touches
     its file.
 
-## Deimos Rising — 2026-11-15 (Phase 2 staged, Ben's gate queued; Phase 3 planned and its level transition built)
+## Deimos Rising — 2026-11-15 (Phase 2 staged, Ben's gate queued; Phase 3: transition built, carry-over / two players / finale proved by tests)
 
 - **Where it stands:** Phase 1 "level 1 look" gate passed 2026-10-07. Phase 2 "level 1 plays" is **built, merged to
   local main (not pushed; wave 3 merges 3570cc3 and 05083af) and staged** at `~/Desktop/Deimos Rising.app` with
@@ -122,19 +122,22 @@ Settled history lives in docs/STATE-history.md.
   scoring, the level end, sound and music through the kit's stream voice, typed keys and the console, Caps Lock
   pause, and `-film deNN` to watch a shipped demo. **Machine gate green:** all four shipped demo films replay to the
   score the original recorded (de01 25,050; de02 116,180; de03 57,520; de04 24,670).
-  **Phase 3 has begun:** the level transition is built and merged (local main, not pushed) — a finished level
-  now fades to black and starts the next sector in the same game; after sector 12 the session ends. The staged
-  app predates it. `Deimos/Core` **352/0/0** (without `DeimosReplayTests`) and `DeimosReplayTests` **4/0** on
-  HectorKit ef2c341 (370 executed: 366 passed + 4 Aki 1.1 skips); Deimos, Aki and BubbleTroubleX build.
+  **Phase 3, waves 3.1 and 3.2 done (local main, not pushed):** a finished level fades to black and starts the
+  next sector in the same game; after sector 12 the session ends. Twenty new tests then proved, against the
+  original's listing, what a player keeps and loses between levels, the two-player rules, and the finale on sector
+  12's data — no game code needed changing. The staged app predates all of it. `Deimos/Core` **372/0/0** (without
+  `DeimosReplayTests`) and `DeimosReplayTests` **4/0** on HectorKit ef2c341 (370 executed: 366 passed + 4 Aki 1.1
+  skips); the three app builds were last run after the level transition (wave 3.2 added test files only).
 - **Waiting on Ben:** (1) the staged app has never been launched by a session — the first run is his, or a muted
   boot check on his say-so (how: the 2026-11-14 wave 3 handoff); (2) his "level 1 plays" verdict against the gate
   card. Neither blocks planning the campaign.
 - **The plan:** Phase 3 (the campaign) is planned: `docs/superpowers/plans/2026-11-14-deimos-phase3.md` (D50; two
   grounding appendices beside it; reviewed by two legs). Seven tasks — the level transition first (the one real gap:
   today a finished level ends the session), then tests for carry-over, two players and the finale, a twelve-sector
-  sweep, `-players 2` / `-sector N`, staging. Ladder 344 → **352 (done)** → 360 → 367 → 372. Next = carry-over
-  tests, then two players, then the finale; the session brief is in `docs/handoff-2026-11-15-deimos-phase3-lt.md`.
-  Ben, 2026-11-14: sessions chain until a hard stop that needs him.
+  sweep, `-players 2` / `-sector N`, staging. Ladder 344 → 352 → 360 → 367 → **372 (done)**. Next = wave 3.3: the
+  twelve-sector machine sweep (its own test bundle, 3 tests), then the two launch arguments in the app; then
+  staging and Ben's gate 3. The session brief is in `docs/handoff-2026-11-15-deimos-phase3-wave32.md`.
+  Ben, 2026-11-14: sessions chain until a hard stop that needs him (a Coordinator session starts each one).
 - **Data:** `Resources/Deimos/` in git; `deimos-census` 872 entries, 0 failures.
 - **Open:** RE bank `docs/deimos/INDEX.md` #13, #59 residue, #62–#64 and 134 cross-file label mismatches; Ben's
   ear/eye items (on the gate card). Not modelled until Phase 4: the mouse button ending a film; the quit flag
