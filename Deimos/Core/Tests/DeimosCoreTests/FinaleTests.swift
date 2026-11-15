@@ -18,8 +18,11 @@ import HectorResources
 /// One run serves the three session tests: sector 12 (`le09`), levels started poked to 12 (as a game begun at
 /// sector 1 reaches sector 12), P1 invulnerable and sticky (god mode, `FUN_10027de0(p, 1, 1)`), and the scroll moved
 /// to 250 rows from the map's end (window top 250, progress 3351 — top + progress = 3601 as the scroll keeps them),
-/// so the scroll's spawn row passes le09's four mission irises (map rows 179, 120, 103, 85) but not the two `fl02`
-/// at rows 204 / 208. Bound: 3,000 passes.
+/// so the scroll's spawn row passes le09's four mission irises (map rows 179, 120, 103, 85). The poke SKIPS sector
+/// 12's end fight: `12e1` (map row 377, "pauses scrolling until Beamer destroyed") and the Beamer `be02` (335), the
+/// ground units at rows 335–501 and the `fl02` at rows 204 / 208 / 436 never spawn. So a real run reaches the finale
+/// with different survivors and a different random stream; this run proves the finale's chain from the level end on,
+/// and the campaign sweep (task CS) covers the real approach. Bound: 3,000 passes.
 final class FinaleTests: XCTestCase {
     private func assets() throws -> DeimosAssets { try TestAssets.loaded.get() }
 
@@ -32,15 +35,33 @@ final class FinaleTests: XCTestCase {
         var x: Float
         var y: Float
         var countdown: Int32
+        var scale: Float
     }
 
-    /// One ticked pass: its game time, its effect cues' ids, the tracked units' live entities after it, the tally
-    /// state and the G+0x0d / G+0x29 flags after it.
+    /// An entity first seen live after a pass: its unit, serial, its owner's unit and its position.
+    private struct Born {
+        var id: FourCC
+        var serial: Int32
+        var owner: FourCC?
+        var x: Float
+        var y: Float
+    }
+
+    /// One ticked pass: its game time, its effect cues' ids, the tracked units' live entities after it, the
+    /// entities born on it, the RNG before and after it, the tally states, P1's score and money, and the G+0x0d /
+    /// G+0x29 flags after it.
     private struct Pass {
         var t: Int32
         var sounds: [FourCC]
         var live: [FourCC: [Seen]]
+        var born: [Born]
+        var rngBefore: MSLRandom
+        var rngAfter: MSLRandom
         var tally: UInt8
+        var coin: UInt8
+        var percent: Int32
+        var score: Int32
+        var money: Int32
         var allLevels: Bool
         var levelEndHandled: Bool
         var levelsStarted: Int32
@@ -53,6 +74,9 @@ final class FinaleTests: XCTestCase {
         var last: PassOutput
         var beforeLast: DeimosSession
         var end: DeimosSession
+        /// The session after the pass at T0 + 1200 (the last tick of the tally's wait) — the start of the
+        /// mission-bonus variants.
+        var beforeTally: DeimosSession
     }
 
     private struct RunError: Error, CustomStringConvertible { let description: String }
@@ -69,13 +93,54 @@ final class FinaleTests: XCTestCase {
             let id = units[e.unit].id
             guard tracked.contains(id) else { continue }
             r[id, default: []].append(Seen(serial: e.serial, state: e.state, stateStart: e.stateStart,
-                                           x: e.object.x, y: e.object.y, countdown: e.spawnCountdown))
+                                           x: e.object.x, y: e.object.y, countdown: e.spawnCountdown,
+                                           scale: e.object.scale))
         }
         for k in r.keys { r[k]!.sort { $0.serial < $1.serial } }
         return r
     }
 
+    /// One pass with no keys, recorded; `seen` holds the serials already reported as born.
+    private static func step(_ s: inout DeimosSession, seen: inout Set<Int32>) throws -> (Pass, PassOutput) {
+        let t = s.gameTime, rngBefore = s.game.rng
+        let out = s.pass(keys: HeldKeys(), ticks: 0)
+        guard out.ticked else { throw RunError(description: "the pass at game time \(t) did not tick") }
+        let g = s.game, units = g.assets.definitions.units
+        var born: [Born] = []
+        for i in g.world.entities.indices where g.world.inUse[i] && !g.world.entities[i].deleted {
+            let e = g.world.entities[i]
+            guard seen.insert(e.serial).inserted else { continue }
+            let owner = e.owner.flatMap { o -> FourCC? in
+                let u = g.world.entities[o].unit
+                return u >= 0 ? units[u].id : nil
+            }
+            born.append(Born(id: units[e.unit].id, serial: e.serial, owner: owner, x: e.object.x, y: e.object.y))
+        }
+        born.sort { $0.serial < $1.serial }
+        let f = g.flags
+        let p = Pass(t: t, sounds: out.sounds.map(\.id), live: live(g), born: born, rngBefore: rngBefore,
+                     rngAfter: g.rng, tally: g.tally.state, coin: g.tally.coin[0].state, percent: g.tally.percent,
+                     score: g.players[0].score, money: g.players[0].money, allLevels: f.allLevels,
+                     levelEndHandled: f.levelEndHandled, levelsStarted: f.levelsStarted,
+                     levelComplete: f.levelComplete, running: f.running)
+        return (p, out)
+    }
+
     private static let finale: Result<FinaleRun, Error> = Result { try runFinale() }
+
+    /// The tally and session end from the shared run's T0 + 1200 snapshot, perfect levels poked; bound 1,000 passes.
+    private static func runTally(from s0: DeimosSession, perfectLevels: Int32) throws -> [Pass] {
+        var s = s0
+        s.game.flags.perfectLevels = perfectLevels
+        var seen = Set(s.game.world.entities.map(\.serial))
+        var passes: [Pass] = []
+        for _ in 0..<1000 {
+            let (p, out) = try step(&s, seen: &seen)
+            passes.append(p)
+            if out.sessionEnded { return passes }
+        }
+        throw RunError(description: "bound: the variant (perfect levels \(perfectLevels)) still runs after 1,000 passes")
+    }
 
     private static func runFinale() throws -> FinaleRun {
         let a = try TestAssets.loaded.get()
@@ -89,17 +154,18 @@ final class FinaleTests: XCTestCase {
         s.game.scroll.window.top = 250
         s.game.scroll.window.bottom = 730
         s.game.scroll.progress = 3351
-        var passes: [Pass] = []
+        var passes: [Pass] = [], seen = Set<Int32>()
+        var t0: Int32?, beforeTally: DeimosSession?
         for _ in 0..<3000 {
             let before = s
-            let t = s.gameTime
-            let out = s.pass(keys: HeldKeys(), ticks: 0)
-            guard out.ticked else { throw RunError(description: "the pass at game time \(t) did not tick") }
-            let f = s.game.flags
-            passes.append(Pass(t: t, sounds: out.sounds.map(\.id), live: live(s.game), tally: s.game.tally.state,
-                               allLevels: f.allLevels, levelEndHandled: f.levelEndHandled,
-                               levelsStarted: f.levelsStarted, levelComplete: f.levelComplete, running: f.running))
-            if out.sessionEnded { return FinaleRun(passes: passes, last: out, beforeLast: before, end: s) }
+            let (p, out) = try step(&s, seen: &seen)
+            passes.append(p)
+            if t0 == nil, p.levelEndHandled { t0 = p.t }
+            if let t0, p.t == t0 + 1200 { beforeTally = s }
+            if out.sessionEnded {
+                guard let beforeTally else { throw RunError(description: "the session ended before T0 + 1200") }
+                return FinaleRun(passes: passes, last: out, beforeLast: before, end: s, beforeTally: beforeTally)
+            }
         }
         throw RunError(description: "bound: the session still runs after 3,000 passes")
     }
@@ -175,7 +241,6 @@ final class FinaleTests: XCTestCase {
             }
         }
         XCTAssertEqual(acbo, [0] + (Int32(1)...14).map { 6 * $0 + 1 }, "fifteen acbo: T0, T0+7 … T0+85")
-        XCTAssertEqual(acbo.count, 15)
         XCTAssertEqual(leen, [103])
 
         // 12gc: spawned on noal's state 6 entry at T0 + 90 at noal's position (offset 0, 0); 0 Wait t5 → 2 Explosions
@@ -195,8 +260,7 @@ final class FinaleTests: XCTestCase {
         XCTAssertEqual(gcEntries, [[90, 0], [95, 2], [395, 1], [675, 1]])
 
         // The explosions: one `aieg` group of 50 requested on 12gc's state 2 entry (T0 + 95; INDEX #64: the set has
-        // no delay, so it is issued at entry), every member present from that pass; the members' spawn countdowns
-        // step by R(5, 6) each (group delay 5..6, cumulative, member order), and nothing else makes an aieg.
+        // no delay, so it is issued at entry), every member present from that pass, and nothing else makes an aieg.
         var aiegSerials: [Int32: Int32] = [:]
         for k in passes.indices {
             for e in passes[k].live[Self.aieg] ?? [] where aiegSerials[e.serial] == nil { aiegSerials[e.serial] = rel(k) }
@@ -205,13 +269,34 @@ final class FinaleTests: XCTestCase {
         XCTAssertEqual(Set(aiegSerials.values), [95], "every aieg member first seen on the pass at T0 + 95")
         let made = passes[k0 + 95].live[Self.aieg] ?? []
         XCTAssertEqual(made.count, 50)
-        // Member order = serial order. Every member's countdown has had the same number of decrements on its creation
-        // pass, so consecutive differences are the draws themselves; 49 of them, all 5 or 6, and both values occur.
-        let steps = zip(made.dropFirst(), made).map { $0.countdown - $1.countdown }
-        XCTAssertEqual(steps.count, 49)
-        XCTAssertTrue(steps.allSatisfy { $0 == 5 || $0 == 6 }, "group delay R(5, 6) per member: \(steps)")
-        XCTAssertTrue(steps.contains(5) && steps.contains(6), "both ends of R(5, 6) drawn: \(steps)")
-        XCTAssertTrue(made.allSatisfy { $0.countdown > 0 }, "no member out yet on its creation pass")
+        // The pass at T0 + 95 replayed draw for draw from the RNG at its start. Its only draws are the group's, four
+        // per member in creation (= serial) order (`Air Explosion Group[aieg].unde.txt`): `10037988` R(0, 359) the
+        // placement heading and `100379b8` F(0, |xOffsetMax| = 200) the radius (both offset ranges open, lines 88–91;
+        // randomiseInitialLoc, line 18), `10014b14` R(−15, 15) the scale tolerance (30 / 2, line 61; in the state
+        // entry called at `10035f74`), `10035fc8` R(5, 6) the group delay (lines 6–7). Every other range is closed, so
+        // `10046580` / `100465e0` skip the draw: no heading draw at `10035ee4` (tolerance 0, line 93), none for the
+        // speed (0..0), the state timer (5..5), the frame (0..0) or the two spawn records (rate 0..0, volley 1..1,
+        // delay 0..0). Each member sits at fmadds(S[h], r, 208), fmadds(C[h], r, 150) (`100379cc` / `100379d8`; the
+        // group at 12gc), scale (80 + tol) / 100 (line 60, `FUN_1001a260`), countdown = the running sum of the delays
+        // through it (`10035fe0`) less its creation pass's one decrement — member 0 included.
+        let p95 = passes[k0 + 95]
+        var replay = p95.rngBefore
+        var delaySum: Int32 = 0
+        for (n, m) in made.enumerated() {
+            let h = replay.range(Int32(0), 359)                                  // 10037988
+            let radius = replay.range(Float(0), 200)                             // 100379b8
+            let tol = replay.range(Int32(-15), 15)                               // 10014b14
+            delaySum += replay.range(Int32(5), 6)                                // 10035fc8
+            let (sx, cy) = Trig.unitVector(heading: h)
+            let x = Float(208).addingProduct(sx, radius), y = Float(150).addingProduct(cy, radius)
+            XCTAssertEqual(m.x.bitPattern, x.bitPattern, "member \(n) x")
+            XCTAssertEqual(m.y.bitPattern, y.bitPattern, "member \(n) y")
+            XCTAssertEqual(m.scale.bitPattern, (Float(80 + tol) / Float(100)).bitPattern, "member \(n) scale")
+            XCTAssertEqual(m.countdown, delaySum - 1, "member \(n) countdown")
+        }
+        XCTAssertEqual(p95.rngAfter.draws - p95.rngBefore.draws, 200, "the pass at T0 + 95 draws 50 × 4")
+        XCTAssertEqual(replay.draws, p95.rngAfter.draws)
+        XCTAssertEqual(replay.state, p95.rngAfter.state, "the RNG after the pass = the replay's after 200 draws")
 
         // The flags: `miof` at 12gc + each set's offset on entry + max(delay − 1, 0): 395, 464, 534, 604, then again
         // at 675, 744, 814, 884; each lives one pass (Wait Briefly t1 → Delete).
@@ -249,6 +334,62 @@ final class FinaleTests: XCTestCase {
             let after = try XCTUnwrap(passes[k0 + Int(f) + 1].live[id]?.first, "\(id) after its flag")
             XCTAssertNotEqual(after.state, 0, "\(id) leaves state 0 on the pass after its flag (T0 + \(f + 1))")
         }
+        // (The rule's range itself — 60 — is not pinned by this run: every flag lands well inside 50 of its iris, so a
+        // smaller range would pass too.)
+
+        // What each iris releases (`Mission Iris - …[migc|mimu|mipo|miac].unde.txt`, no RNG: every timer and set range
+        // is closed): the pass after its flag, state 1 "RULE Response - Wait To Open" (timer 10) → 2 "Open" (8) → 3
+        // "Continue Open, Spawn …", whose one set (offset 0, 0; rate 0/0, volley 1/1, delay 0/0, no repeat) releases on
+        // entry at the iris — flag + 1 + 10 + 8 = flag + 19; then 4 "Close" (40) → 0 (30) at flag + 89, waiting again
+        // before the flag's second round (flag + 280), which releases a second time. migc → `migs`, mimu → `pimu`,
+        // mipo → `mips`, miac → `mias`.
+        let releaseOf: [FourCC: FourCC] = [FourCC("migc")!: FourCC("migs")!, FourCC("mimu")!: FourCC("pimu")!,
+                                           FourCC("mipo")!: FourCC("mips")!, FourCC("miac")!: FourCC("mias")!]
+        var released: [FourCC: [Int32]] = [:]
+        var stormOf: [FourCC: [String]] = [:]
+        for k in passes.indices {
+            for b in passes[k].born {
+                guard let o = b.owner else { continue }
+                if let want = releaseOf[o] {
+                    XCTAssertGreaterThanOrEqual(k, k0, "\(o) released \(b.id) before the level end")
+                    XCTAssertEqual(b.id, want, "\(o) releases \(want)")
+                    let iris = try XCTUnwrap(passes[k].live[o]?.first, "\(o) live when it releases")
+                    if b.id == FourCC("pimu") {
+                        // Placed at the iris (offsets 0), then it moves on its creation pass ("Grow and Dance
+                        // Around", max speed 4): within 4 of the iris on each axis.
+                        XCTAssertLessThanOrEqual(max(abs(b.x - iris.x), abs(b.y - iris.y)), 4, "pimu by mimu")
+                    } else {
+                        XCTAssertEqual([b.x, b.y], [iris.x, iris.y], "\(b.id) released at \(o)")
+                    }
+                    released[o, default: []].append(rel(k))
+                }
+                if releaseOf.values.contains(o) { stormOf[o, default: []].append("\(b.id)@\(rel(k))") }
+            }
+        }
+        for (iris, f) in flagOf {
+            XCTAssertEqual(released[iris], [f + 19, f + 280 + 19], "\(iris) releases at its flag + 19, both rounds")
+        }
+        // And what the released storms let go, by their data (all closed ranges but one): `migs` — `casg` on entry,
+        // then state 1 at + 6 releases `cals` on each entry, re-entered every 6 (timer 1, then Wait 5) until its 8th
+        // entry hits the counter (Delete): seven `cals` at + 6 … + 42. `mips` — `pi5k` and `pi2k` on entry, state 1
+        // at + 9, seven `p500` at + 9 … + 45. `mias` — state 1 at + 6, counter 12: eleven `casg` at + 6 … + 66; its
+        // entry set `calg` has rate R(2, 3) and delay R(2, 3) (drawn at `10017d64` / `10017dbc`), so its tick is
+        // only bounded here: one `calg`, after the entry and before the first `casg`. `pimu` releases nothing.
+        func storm(_ r: Int32, _ entry: [String], _ unit: String, first: Int32, count: Int32) -> [String] {
+            entry.map { "\($0)@\(r)" } + (0..<count).map { "\(unit)@\(r + first + 6 * $0)" }
+        }
+        let rounds = { (iris: String) -> [Int32] in released[FourCC(iris)!] ?? [] }
+        XCTAssertEqual(stormOf[FourCC("migs")!]?.sorted(),
+                       rounds("migc").flatMap { storm($0, ["casg"], "cals", first: 6, count: 7) }.sorted())
+        XCTAssertEqual(stormOf[FourCC("mips")!]?.sorted(),
+                       rounds("mipo").flatMap { storm($0, ["pi5k", "pi2k"], "p500", first: 9, count: 7) }.sorted())
+        let mias = stormOf[FourCC("mias")!] ?? []
+        XCTAssertEqual(mias.filter { !$0.hasPrefix("calg") }.sorted(),
+                       rounds("miac").flatMap { storm($0, [], "casg", first: 6, count: 11) }.sorted())
+        let calg = mias.filter { $0.hasPrefix("calg") }.compactMap { Int32($0.dropFirst(5)) }
+        XCTAssertEqual(calg.count, 2, "one calg per mias")
+        for (c, r) in zip(calg.sorted(), rounds("miac")) { XCTAssertTrue((r + 1)...(r + 5) ~= c, "calg at \(c - r) after mias") }
+        XCTAssertNil(stormOf[FourCC("pimu")!])
 
         // The accuracy tally: state 1 from the tier at T0, the finale's wait flli 196 = 1200 (strict) → 2 at T0 + 1201.
         XCTAssertEqual(passes[k0].tally, 1)
@@ -260,8 +401,79 @@ final class FinaleTests: XCTestCase {
     func testFinaleEndsSessionAfterTally() throws {
         let a = try assets()
         let r = try finaleRun()
-        let (t0, _) = try levelEndTick(r)
+        let (t0, k0) = try levelEndTick(r)
         let last = r.last, s = r.end, before = r.beforeLast
+        let passes = r.passes
+        func rel(_ p: Pass) -> Int32 { p.t - t0 }
+
+        // The preconditions of the tally timing below: accuracy 0 % (no ground target destroyed) and no money, so
+        // neither tally has a bonus to count down; 0 perfect levels.
+        XCTAssertEqual(passes[k0].percent, 0)
+        XCTAssertTrue(passes[k0...].allSatisfy { $0.money == 0 && $0.percent == 0 })
+        XCTAssertEqual(r.beforeTally.game.flags.perfectLevels, 0)
+        XCTAssertEqual(r.beforeTally.game.tally.bonusRemaining, 0)
+        // The waits (flli): 196 = 1200 (the finale's), 197 = 20, 201 = 20, 202 = 20; coins 172 = 10, 173 = 20,
+        // 174 = 30, 175 = 20; the mission bonus 206 = 4, 207 = 3, 205 = 100,000, 208 = 10 payments. Sounds gaso 20
+        // moco, 21 nobo, 23 miac (the mission bonus).
+        XCTAssertEqual([196, 197, 201, 202, 172, 173, 174, 175, 206, 207, 205, 208].map { a.floats[$0] },
+                       [1200, 20, 20, 20, 10, 20, 30, 20, 4, 3, 100_000, 10])
+        let moco = a.sounds[20], nobo = a.sounds[21], mission = a.sounds[23]
+        XCTAssertEqual([moco, nobo, mission], [FourCC("moco")!, FourCC("nobo")!, FourCC("miac")!])
+        // A wait of N passes when now > timer + N (strict), N + 1 ticks after the timer. Accuracy (timer T0 from the
+        // tier): 1 → 2 at 1200 + 1 = 1201 (moco), → 3 at 1222 (moco), → 4 at 1243 (moco), → 5 at 1264 (nobo: bonus 0),
+        // → 6 at 1285, → 7 at 1286 (bonus ≤ 0: no wait), → 8 at 1307, done at 1328 (perfect levels ≠ 12: state stays 8,
+        // no mission bonus). The coin tally is set up on that pass (state 1, timer 1328): → 2 at 1339 (moco), → 3 at
+        // 1360 (moco), → 4 at 1381 (moco), → 5 at 1402 (nobo: bonus 0), → 6 at 1423, → 7 at 1424, → 8 at 1455 (wait
+        // 30), done at 1476 — level complete, and FUN_10007170 plays tran and ends the session on that same pass.
+        func changes(_ ps: ArraySlice<Pass>, _ v: (Pass) -> UInt8) -> [[Int32]] {
+            var out: [[Int32]] = [], prev: UInt8? = nil
+            for p in ps where v(p) != prev { out.append([rel(p), Int32(v(p))]); prev = v(p) }
+            return out
+        }
+        let tallyPasses = passes[(k0 + 1200)..<(passes.count - 1)]
+        XCTAssertEqual(changes(tallyPasses, \.tally),
+                       [[1200, 1], [1201, 2], [1222, 3], [1243, 4], [1264, 5], [1285, 6], [1286, 7], [1307, 8]])
+        XCTAssertEqual(changes(tallyPasses, \.coin),
+                       [[1200, 0], [1328, 1], [1339, 2], [1360, 3], [1381, 4], [1402, 5], [1423, 6], [1424, 7],
+                        [1455, 8]])
+        XCTAssertEqual(rel(passes[passes.count - 1]), 1476, "the session ends on the pass at T0 + 1476")
+        let heard = passes[(k0 + 1200)...].filter { !$0.sounds.isEmpty }.map { "\(rel($0)) \($0.sounds)" }
+        XCTAssertEqual(heard, ["1201 \([moco])", "1222 \([moco])", "1243 \([moco])", "1264 \([nobo])",
+                               "1339 \([moco])", "1360 \([moco])", "1381 \([moco])", "1402 \([nobo])",
+                               "1476 \([a.sounds[3]])"])
+        // With 0 perfect levels the mission bonus (state 9) never starts, its sound never plays, and the score stays.
+        XCTAssertFalse(passes.contains { $0.tally >= 9 || $0.sounds.contains(mission) })
+        let score = passes[k0 + 1200].score
+        XCTAssertTrue(passes[(k0 + 1200)...].allSatisfy { $0.score == score })
+        XCTAssertEqual(s.players[0].score, score)
+
+        // The variants, from the T0 + 1200 snapshot: perfect levels 12 (= the level order's count, 10007b68..10007b78)
+        // pays — state 9 at 1328 with miac, → 10 at 1333 (wait 4), a payment of 100,000 (raw, no multiplier) at 1337,
+        // then → 9 → 10 → pay every 9 passes, ten payments (1337 … 1418); done at 1419, the coin tally from there
+        // (1419 + 148 = 1567). Perfect levels 11 does not: the base run's passes exactly.
+        XCTAssertEqual(a.levelOrder.levels.count, 12)
+        let v12 = try Self.runTally(from: r.beforeTally, perfectLevels: 12)
+        XCTAssertEqual(v12.first.map(rel), 1201)
+        XCTAssertEqual(v12.last.map(rel), 1567, "the session ends 91 passes later")
+        XCTAssertEqual(v12.filter { $0.sounds.contains(mission) }.map(rel), [1328])
+        XCTAssertEqual(Array(changes(v12[...].dropLast(), \.tally).filter { $0[1] >= 8 }.prefix(4)),
+                       [[1307, 8], [1328, 9], [1333, 10], [1337, 9]])
+        var paid: [Int32] = [], prevScore = score
+        for p in v12 where p.score != prevScore {
+            XCTAssertEqual(p.score - prevScore, 100_000, "one payment at \(rel(p))")
+            paid.append(rel(p))
+            prevScore = p.score
+        }
+        XCTAssertEqual(paid, (Int32(0)..<10).map { 1337 + 9 * $0 })
+        XCTAssertEqual(changes(v12[...].dropLast(), \.coin).filter { $0[1] == 1 }, [[1419, 1]])
+        let v11 = try Self.runTally(from: r.beforeTally, perfectLevels: 11)
+        let base = passes[(k0 + 1201)...]
+        XCTAssertEqual(v11.map(rel), base.map(rel))
+        XCTAssertEqual(v11.map(\.sounds), base.map(\.sounds))
+        XCTAssertEqual(v11.map(\.tally), base.map(\.tally))
+        XCTAssertEqual(v11.map(\.coin), base.map(\.coin))
+        XCTAssertEqual(v11.map(\.score), base.map(\.score))
+
         XCTAssertEqual(a.sounds[3], FourCC("tran"))
         let tran = SoundPlay.perm(a.sounds[3], priority: 75, volume: 100, allowMultiple: true)
         // The pass before: the twelfth level still running, the tallies not yet done, 12 levels started.
@@ -357,9 +569,9 @@ final class FinaleTests: XCTestCase {
         let a = try assets()
         let hosp = try XCTUnwrap(a.definitions.units.first { $0.id == FourCC("hosp") })
         XCTAssertEqual(hosp.score, -10_000, "Hospital[hosp].unde.txt line 72")
-        func world() throws -> GameState {
+        func world(players: UInt8 = 1) throws -> GameState {
             var s = GameState(assets: a, prefs: DeimosPrefs.fresh, seed: 0x469c2)
-            s.flags.numPlayers = 1
+            s.flags.numPlayers = players
             s.flags.sector = 12
             s.flags.level = FourCC("le09")!
             s.scroll.levelStart(rect: MacRect(top: 0, left: 0, bottom: 3600, right: 480))
@@ -372,15 +584,36 @@ final class FinaleTests: XCTestCase {
             s.respawnPlayer(0, now: 100)
             return s
         }
-        /// Kills a fresh Hospital with one hit credited to P1 (`FUN_10014f10` step 9 → `FUN_10006190(0, score_INT)`).
-        func killHospital(_ s: inout GameState) throws {
+        /// Kills a fresh Hospital with one hit credited to `killer` (`FUN_10014f10` step 9 →
+        /// `FUN_10006190(killer, score_INT)`).
+        func killHospital(_ s: inout GameState, killer: Int8 = 0) throws {
             let r = try XCTUnwrap(s.spawn(SpawnRequest(unit: FourCC("hosp")!, x: 200, y: 200)), "hosp")
             let i = r.entity
             s.world.entities[i].spawnCountdown = 0
             XCTAssertGreaterThan(s.world.entities[i].shields, 0)
-            s.damageEntity(i, damage: 100, killer: 0, now: s.flags.gameTime)
+            s.damageEntity(i, damage: 100, killer: killer, now: s.flags.gameTime)
             XCTAssertTrue(s.world.entities[i].deleted, "the hospital died")
         }
+
+        // Multiplier 1 from score 0: exactly −10,000 — score + pts × multiplier (`10029a50..10029a58`), no clamp at
+        // zero, and pts ≤ 0 skips the life branch (`10029a5c..10029a60`).
+        var one = try world()
+        one.players[0].score = 0
+        one.players[0].multiplier = 1
+        try killHospital(&one)
+        XCTAssertEqual(one.players[0].score, -10_000)
+
+        // A kill by player 2: `FUN_10006190` takes killer index 1 to G[1] (`10006198..100061b8`) — P2 pays with its
+        // own multiplier, P1 is untouched.
+        var two = try world(players: 2)
+        XCTAssertTrue(two.players[1].inGame)
+        two.players[0].score = 50_000
+        two.players[0].multiplier = 3
+        two.players[1].score = 40_000
+        two.players[1].multiplier = 2
+        try killHospital(&two, killer: 1)
+        XCTAssertEqual(two.players[1].score, 20_000, "40,000 − 10,000 × 2")
+        XCTAssertEqual(two.players[0].score, 50_000)
 
         // −10,000 × the multiplier (3), and no life: the score passes a poked threshold, but pts ≤ 0 skips the life
         // branch entirely (10029a5c..10029a60), so lives, threshold and step stay.
