@@ -132,11 +132,13 @@ final class DriverTests: XCTestCase {
         XCTAssertTrue(driver.session.running)
     }
 
+    /// ◇ Stand-in 3 + plan ruling 1 (`-sector N`): Esc restarts at the LAUNCH's sector — a sector-7 launch restarts
+    /// at 7, a direct start, so one life (`FUN_10026cc0`: lives = 1 above sector 1).
     func testEscStartsNewSession() throws {
         let assets = try ShippedAssets.get()
-        // Started at sector 2, so the restart's "sector 1" (◇ stand-in 3) is not the start's sector.
-        var driver = try makeDriver(sector: 2)
-        XCTAssertEqual(driver.session.sector, 2)
+        // Started at sector 7, not 1, so a restart that ignored the launch's sector would show it.
+        var driver = try makeDriver(sector: 7)
+        XCTAssertEqual(driver.session.sector, 7)
         var clock = FakeClock(rate: .classic)
         while driver.presentCount < 20 {
             _ = driver.idle(seconds: clock.seconds, keys: HeldKeys())
@@ -168,11 +170,13 @@ final class DriverTests: XCTestCase {
         XCTAssertEqual(driver.presentCount - presents, 1, "the Esc pass presented")
         XCTAssertEqual(driver.restarts, 1)
 
-        // A new session at sector 1, seeded with the ticks of the restart (srand(TickCount()), 100057c8).
+        // A new session at the launch's sector 7, seeded with the ticks of the restart (srand(TickCount()), 100057c8).
         let reference = try DeimosSession(assets: assets, prefs: .fresh,
-                                          start: SessionStart(sector: 1, players: 1, film: nil),
+                                          start: SessionStart(sector: 7, players: 1, film: nil),
                                           seed: try XCTUnwrap(restartTicks))
-        XCTAssertEqual(driver.session.sector, 1)
+        XCTAssertEqual(driver.session.sector, 7, "the restart starts at the launch's sector (ruling 1)")
+        XCTAssertEqual(driver.session.game.flags.level, reference.game.flags.level)
+        XCTAssertEqual(driver.session.players[0].lives, 1, "a start above sector 1 has one life (FUN_10026cc0)")
         XCTAssertTrue(driver.session.game.levels.isSameLoad(as: loaded),
                       "the restart reuses the ended session's level set — no second decode of the twelve masks")
         XCTAssertEqual(driver.session.rng, reference.rng)
@@ -200,7 +204,9 @@ final class DriverTests: XCTestCase {
     /// session's first pass quit on the still-held Esc, its limiter released against stamp 0, and the loop never
     /// yielded). Now each `idle` returns after bounded work, and one hold restarts once: the new session ignores Esc
     /// until a pass samples it released (the front end's end-session FlushEvents; front-end.md §2 — a new game
-    /// needs a fresh press).
+    /// needs a fresh press). Plan ruling 1: the session first crosses a level transition (sector 1 → 2, the level put
+    /// one tick from its end as in the LT tests); the restart still starts at the LAUNCH's sector 1, not at the sector
+    /// the session had reached.
     func testEscHeldRestartsOnceAndIdleReturns() throws {
         var driver = try makeDriver()
         var clock = FakeClock(rate: .classic)
@@ -209,6 +215,21 @@ final class DriverTests: XCTestCase {
             clock.seconds += Self.poll
             if clock.seconds > 60 { return XCTFail("no presents") }
         }
+        driver.session.game.flags.levelComplete = true
+        driver.session.game.flags.levelEnding = true
+        while driver.session.sector != 2 || driver.isFading {
+            _ = driver.idle(seconds: clock.seconds, keys: HeldKeys())
+            clock.seconds += Self.poll
+            if clock.seconds > 120 { return XCTFail("no transition to sector 2") }
+        }
+        let presentsInSector2 = driver.presentCount
+        while driver.presentCount < presentsInSector2 + 20 {
+            _ = driver.idle(seconds: clock.seconds, keys: HeldKeys())
+            clock.seconds += Self.poll
+            if clock.seconds > 180 { return XCTFail("no presents in sector 2") }
+        }
+        XCTAssertEqual(driver.session.sector, 2, "the session crossed into sector 2")
+        XCTAssertEqual(driver.restarts, 0, "a transition is not a restart")
         let esc = HeldKeys(held: [Self.escKey])
         let holdEnd = clock.seconds + 2.0
         var calls = 0
@@ -225,6 +246,7 @@ final class DriverTests: XCTestCase {
             if calls > 2_000 || driver.restarts > 1 { break }
         }
         XCTAssertEqual(driver.restarts, 1, "one hold, one restart")
+        XCTAssertEqual(driver.session.sector, 1, "the launch's sector, not the sector 2 the session had reached")
         XCTAssertEqual(hidesAfterRestart, 1, "the new session hides the cursor")
         XCTAssertTrue(driver.session.running, "the held Esc is latched: the new session keeps running")
 
@@ -242,6 +264,7 @@ final class DriverTests: XCTestCase {
             if calls > 2_000 { return XCTFail("a fresh Esc press did not end the session") }
         }
         XCTAssertEqual(driver.restarts, 2)
+        XCTAssertEqual(driver.session.sector, 1)
     }
 
     /// The limiter's add + `cmplw` wrap (`10030d08..10030d24`, replicated): with the stamp at 0xFFFFFFFE or
@@ -495,9 +518,10 @@ final class DriverTests: XCTestCase {
     /// ◇ Stand-in 6: a restart keeps the ended session's prefs — F6 (byte pref 5) and `-` (int pref 0, 50 → 40)
     /// then Esc → the carried prefs; the new level start sees pref 5 set (suspended until its appear, `1000693c`).
     /// ◇ Stand-in 2: game over (no input: the pilot dies; running clears at gameOverStart + 111) restarts the same
-    /// way at sector 1, carrying the prefs again. Bound: fake clock 300 s.
+    /// way, carrying the prefs again. Plan ruling 1: launched at sector 7 (`-sector 7`), both restarts start at 7.
+    /// Bound: fake clock 300 s.
     func testPrefsSurviveRestart() throws {
-        var driver = try makeDriver()
+        var driver = try makeDriver(sector: 7)
         var clock = FakeClock(rate: .classic)
         func idle(_ keys: HeldKeys) -> Bool {
             _ = driver.idle(seconds: clock.seconds, keys: keys)
@@ -517,7 +541,7 @@ final class DriverTests: XCTestCase {
         while driver.restarts == 0 { guard idle(HeldKeys(held: [Self.escKey])) else { return XCTFail("no restart") } }
         XCTAssertEqual(driver.prefs.bytePrefs[5], 1, "carried: F6")
         XCTAssertEqual(driver.prefs.intPrefs[0], 40, "carried: the volume")
-        XCTAssertEqual(driver.session.sector, 1)
+        XCTAssertEqual(driver.session.sector, 7, "Esc restarts at the launch's sector")
         XCTAssertTrue(driver.session.restoreInterlace, "the new level start saw pref 5 set")
 
         var gameOver = false
@@ -527,7 +551,7 @@ final class DriverTests: XCTestCase {
         }
         XCTAssertTrue(gameOver, "the second session ended on game over")
         XCTAssertEqual(driver.restarts, 2)
-        XCTAssertEqual(driver.session.sector, 1)
+        XCTAssertEqual(driver.session.sector, 7, "game over restarts at the launch's sector")
         XCTAssertEqual(driver.prefs.bytePrefs[5], 1, "carried again (restored at the appear)")
         XCTAssertEqual(driver.prefs.intPrefs[0], 40)
     }
@@ -600,6 +624,7 @@ final class DriverTests: XCTestCase {
                 XCTAssertEqual(after.first, RecordingSink.Apply(sounds: [], music: [.resume, .stop], halt: 0),
                                "1000669c resume, then the session end's halt (10005ad8) and stop (10005ae4)")
                 XCTAssertEqual(driver.restarts, 1, "the campaign end restarts (◇) after the pass")
+                XCTAssertEqual(driver.session.sector, 12, "a sector-12 launch restarts at 12 (ruling 1)")
                 XCTAssertEqual(after.dropFirst().first?.music, [.play(FourCC("ammu")!, loop: true), .stop, .level(100)],
                                "then the new session's level start")
             }

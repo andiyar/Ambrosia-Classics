@@ -18,7 +18,8 @@ import Synchronization
 /// Phase 2 (plan A3): the game's audio (`DeimosAudioEngine`, effects + music behind one pull source) rides the kit's
 /// output as one stream voice (`ShellMixer.attachStream`) and is the driver's `audio` sink; key-down characters reach
 /// the driver as Mac charCodes in `HeldKeys.typed` (the console); Caps Lock is `HeldKeys.capsLock` (the pause key);
-/// ◇ `-film deNN` plays a shipped demo film (stand-in 5).
+/// ◇ `-film deNN` plays a shipped demo film (stand-in 5). Phase 3 (plan AP, ruling 1): ◇ `-players 2` and ◇ `-sector N`
+/// stand in for the main menu until Phase 4.
 @MainActor final class DeimosController: NSObject, NSApplicationDelegate, ShellInputHandler {
     static let width = 640
     static let height = 480
@@ -76,23 +77,33 @@ import Synchronization
             var film: Film?
             if let tag = options.film {
                 do {
-                    film = try Self.film(tag, in: assets)
+                    film = try FilmLookup.film(tag, in: assets)
                 } catch {
-                    // Like a missing data folder: DEBUG says so, then log and quit.
-                    #if DEBUG
-                    let alert = NSAlert()
-                    alert.messageText = "Deimos Rising has no demo film “\(tag)” it can play."
-                    alert.informativeText = "-film takes a shipped film tag: de01, de02, de03 or de04.\n\n\(error)"
-                    alert.runModal()
-                    #endif
-                    fail("cannot play -film \(tag): \(error)")
+                    refuseLaunch("Deimos Rising has no demo film “\(tag)” it can play.",
+                                 detail: "-film takes a shipped film tag: de01, de02, de03 or de04.\n\n\(error)",
+                                 log: "cannot play -film \(tag): \(error)")
+                    return
+                }
+            }
+            // ◇ `-players 2` / ◇ `-sector N` (plan AP, ruling 1): the main menu's stand-ins, ignored with `-film` (the
+            // film carries its own player count and level). A bad value is refused like a bad film tag.
+            var players = film?.playerCount ?? 1
+            var sector = 1
+            if film == nil {
+                do {
+                    players = try options.playerCount()
+                    sector = try options.startSector()
+                } catch {
+                    refuseLaunch("Deimos Rising cannot start the game it was asked for.",
+                                 detail: "-players takes 1 or 2; -sector takes 1 to 12.\n\n\(error)",
+                                 log: "bad launch argument: \(error)")
                     return
                 }
             }
             let audio = startAudio(assets: assets)
             // Mac OS X's 60 Hz TickCount: Ben played Deimos on OS X (gate 1, DECISIONS D30; Q1).
             driver = try DeimosDriver(assets: assets, prefs: .fresh, rate: .osx,
-                                      start: SessionStart(sector: 1, players: film?.playerCount ?? 1, film: film),
+                                      start: SessionStart(sector: sector, players: players, film: film),
                                       audio: audio)
         } catch {
             // The folder is there but its contents do not load (design §7.7): DEBUG says so, Release logs and quits.
@@ -163,17 +174,16 @@ import Synchronization
         NSApp.terminate(nil)
     }
 
-    /// No `film` record with this tag in the data (`-film` with an unknown or missing tag).
-    private struct NoSuchFilm: Error, CustomStringConvertible {
-        let tag: String
-        var description: String { "no film record \"\(tag)\" in the data" }
-    }
-
-    /// The shipped `film` record `tag` (de01–de04), decoded.
-    private static func film(_ tag: String, in assets: DeimosAssets) throws -> Film {
-        guard let type = FourCC("film"), let id = FourCC(tag),
-              let record = assets.index.record(type: type, id: id) else { throw NoSuchFilm(tag: tag) }
-        return try Film(data: assets.index.data(for: record))
+    /// A launch argument the app cannot honour (a bad `-film` tag, a bad `-players` / `-sector` value): like a missing
+    /// data folder, DEBUG says so, then log and quit.
+    private func refuseLaunch(_ message: String, detail: String, log: String) {
+        #if DEBUG
+        let alert = NSAlert()
+        alert.messageText = message
+        alert.informativeText = detail
+        alert.runModal()
+        #endif
+        fail(log)
     }
 
     /// Sound init (`FUN_10047160`): decodes the game's sounds into its mixer first, then opens the Mac's output and
