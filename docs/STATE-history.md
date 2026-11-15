@@ -4,6 +4,16 @@
 > only). Nothing current reads this file; the live state is `docs/STATE.md`. Each later close that settles something
 > adds a dated section at the top, newest first. The two snapshots below are verbatim (headings demoted only).
 
+## Settled at run 53's close (2026-11-15)
+
+- **Run 52's Ferazel block** (main bf8b9e0): wave 6A.1 built, 6A-FX / S8 / WD / RC merged, Core 682, two launch
+  checks owed. Run 53 replaced it: the checks passed by day (Proof B 690 / 0 / 3 / 0 of 693; Mac SDL smoke identical),
+  6A-TR merged, Core 682 → 693.
+- **How run 53 went:** started 08:19 (before the launch hours), so the headless suite (682 / 0 / the two skips) and
+  the trees implementer went first; the launch checks ran at 09:14 in the gap before the first review. Legs:
+  MERGEABLE AFTER FIXES ×2, no blockers; 176 mutations, 4 survivors, all killed by the fix round. Ben closed the run
+  after this one task (D50.6); 6A-RP and 6A-BX1a were not started.
+
 ## Settled at run 52's close (2026-11-14)
 
 - **Run 51's Ferazel block** (main 0769aef): 6A-BL, 6A-CF, 6A-FR merged, Core 633. Run 52 replaced it: 6A-W1 and

@@ -2340,3 +2340,27 @@ file, reviewed by two Opus legs and cross-checked by Fable. The plan's own "Plan
 10. **Unplaced cannon kinds stay refused with no owner** (6A-RC): p1 1…100 and above 106 are placed on no level; their
     Setup arm is built and unit-tested as the dump has it, but level setup keeps refusing them, pinned. Only p1 < 0
     (the path cannons) is 6B's. The ledger's check now anchors on the code's own range.
+
+## D50 — Ferazel's Wand: run 53's rulings (6A-TR — trees; 2026-11-15)
+
+1. **The tree golden starts above a tree, not at the first frame with a tree on screen.** The engine contract asks
+   for "the first frame with a tree on screen"; that frame would show a tree doing nothing. The golden starts the
+   player at (4945, 1270) above record 35 and takes loop iteration 5, where he stands on the mirrored first branch:
+   stubbing the planting or the mirror moves it. Same rule as run 52's lesson (a golden's frame must exercise the
+   feature). Review leg 1 asked the seat to ratify; ratified.
+2. **Asserts a review adds go inside the card's named tests; the ladder does not move.** Leg 2 wrote three new test
+   functions for its four survivors. The fix round folded them into `testTreeNoFreeRecordDropsStores` and
+   `testTreeBranchesMirror` as further sections and proved, by stubbing, that each still kills its mutant. Core stays
+   at 693 as the card says.
+3. **Dump beats the engine contract on 0xc0f's branch size:** 375 × 43, not 386 × 43 (386 is the rect's right edge,
+   M l. 62871). The contract line is corrected in place.
+4. **The draw audit's "no face is wider than 256" reason is restated, in this task, before it can fail.** Tree
+   picture 0xc0a is 264 px wide and would have failed the check when level 10 joins the audit. The check now holds
+   every non-tree face to 256, tree faces to 301, and asserts that no rotation or scale writer names a tree (a
+   flipped tree takes the blitter's plain path — read in the blitter first).
+5. **Proof B may run on the branch head with the task in flight** when that is the first quiet daytime gap: the
+   owed wave-6A.1 check ran at 44cb75a (trees in, before their reviews) — 690 / 0 / 3 / 0 of 693 — instead of at run
+   52's head (679 of 682). N is the Core total at the commit it runs on; the fix round after it changed tests,
+   docs and one comment only.
+6. **Ben, in chat, 2026-11-15 mid-run: "finish this task and close."** Run 53 closed after 6A-TR; 6A-RP and 6A-BX1a
+   moved to run 54's chip unbuilt.

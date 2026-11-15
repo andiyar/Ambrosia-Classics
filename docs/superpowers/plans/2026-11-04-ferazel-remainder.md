@@ -1634,6 +1634,31 @@ ids; its `--check` reads this table):
   `testLevel10TreeFeatureGolden` (kept); plus ENG §5's pin `testUnplacedBackgroundArms` (Background 0x73f / 0x740 and
   their `.HitPlayerSprite` arm, M l. 49753–49760, placed on no level). Asserts: ENG §2.4's ten.
 - **Gate:** Gate-F (G2 693). **Commit:** `FerazelCore: trees plant their branches (one FlipHRect); 11 tests`.
+- **As executed — 6A-TR (run 53):** task 771b62c (11 tests: 10 `TreeTests`, 1 `FeatureGoldenTests`), ledger anchors
+  44cb75a, review fix round ad309c9 (tests, the ledger script's tree arm, the audit's face-width reason, one ENG line;
+  one Sources comment — no behaviour change). Two Opus legs: MERGEABLE AFTER FIXES (0 / 2 / 8 minor — Setup, Handle
+  and all 17 branch rects match the dump line by line), MERGEABLE AFTER FIXES (0 / 1 / 9 minor; 176 mutations: 158
+  killed, 14 equivalent, 4 survivors — all killed after the fix round, their asserts folded into the named tests so
+  the ladder holds at 693, D50.2). No existing pinned value moved; no level 1–5 record is a tree (levels 10 / 11 / 15
+  place 13 / 8 / 10; shipped p1 is 0 or 1; 3087 is placed nowhere). **Proof B by day at 44cb75a: 690 / 0 / 3 / 0 of
+  693.** **New value (measured; level-10 fixture, the 14 Box-scenery records left out, seed 1):** the feature golden
+  `d7ba88433f138e72` — the player started at (4945, 1270) above record 35 (a mirrored 0xc08 at (4929, 1358), face
+  width 226), tick 1620, **loop iteration 5**: the tree plants in iteration 1, the player lands on the flipped first
+  branch in iteration 4, and the draw runs before the handlers, so iteration 5 first shows him standing there. With
+  planting stubbed, or the mirror off: `707aa87324dfbee3`. The positioned start departs from ENG's "first frame with a
+  tree on screen" and is ratified (D50.1). Notes: (a) **dump beats ENG:** 0xc0f's branch is 375 × 43 (386 is its
+  right edge, M l. 62871) — ENG §2.4 corrected. (b) In their first frame the branches are still solid boxes (the Box
+  Setup's state) and the collision pass runs after the handlers, so two Xichrons sitting inside tree 35's branch rects
+  are lifted — the original's behaviour; the test asserts it (the pickup, score 10, comes from the chosen start).
+  (c) `PlatformSprite.flipH` was already callable from every mover — one comment changed, no second copy. (d) The
+  audit has no input kind for face or layer: only the mirror got writer rows (they cannot fail until a tree level
+  runs in the audit); the face is under the faces-loaded check. (e) **The audit's face-width reason was rewritten:**
+  tree picture 0xc0a is 264 px wide; the check now holds every non-tree face to ≤ 0x100, tree faces to 301, and
+  asserts no rotation / scale writer names a tree (a flipped tree takes the blitter's plain path). (f) The ledger
+  script gained a built-tree arm (anchored on `case 0xc08...0xc0f:`); refused per level now 14 (level 10), 27 (11),
+  25 (15) — matching the fixture counts of this card and 6A-RP. (g) A branch at layer 0xb instead of 2 does not move
+  the golden — only `testBranchLayerIsTwo` holds it. Left for a later task: no test takes a tree off screen and back
+  (idle, re-spawn, re-plant) — the level-10 task's sweep is the first to do so.
 
 #### 6A-RP — ⚑ MAJOR — the river ripple (and the submerged-tint proof) (→ 703)
 - **Files:** `Sources/FerazelRender/Frame/ParallaxBlitter.swift` (`:130` `Refusal.ripple` removed; `rippleTable` `:107`,
