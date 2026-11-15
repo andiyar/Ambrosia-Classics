@@ -4,6 +4,14 @@
 > only). Nothing current reads this file; the live state is `docs/STATE.md`. Each later close that settles something
 > adds a dated section at the top, newest first. The two snapshots below are verbatim (headings demoted only).
 
+## Settled at Deimos Phase 3 wave 3.3's close (2026-11-15)
+
+- **The wave 3.2 Deimos block** (main 7df2d3a): the level transition built; carry-over, two players and the finale
+  proved by twenty tests; `Deimos/Core` 372/0/0, replay 4/0; next was the twelve-sector sweep and the two launch
+  arguments. Wave 3.3 replaced it: both are merged (CS 5684399, AP ce77f57), the new sweep bundle is 3/0, the core
+  count is unchanged, and the "film lookup written four times" follow-up is closed (one `FilmLookup`). The story is
+  in `docs/handoff-2026-11-15-deimos-phase3-wave33.md` and the DECISIONS as-built entry for CS and AP.
+
 ## Settled at run 53's close (2026-11-15)
 
 - **Run 52's Ferazel block** (main bf8b9e0): wave 6A.1 built, 6A-FX / S8 / WD / RC merged, Core 682, two launch

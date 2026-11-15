@@ -2404,6 +2404,46 @@ remainder plan says. (8) Review totals: 71 deliberate source bugs tried by the s
 first drafts, and after the three fix rounds all but two are caught (the iris range in (6); and "level complete
 checks only player 2", which the carry-over and level-end tests catch instead of the two-player file).
 
+**As built — Phase 3 (D50), tasks CS, AP (wave 3.3, 2026-11-15).** Merged to local main: CS 31f009f + fix round
+552dcb0 (merge 5684399), AP 68bb1e7 + fix round 209cedd (merge ce77f57). `Deimos/Core` **372/0/0** unchanged;
+`DeimosReplayTests` 4/0 and four PASS lines unchanged; the new bundle `DeimosCampaignTests` **3/0**; Deimos (Debug and
+Release), Aki and BubbleTroubleX build. No game rule changed. (1) **The sweep's per-sector bound is 20,000 passes,
+not the plan's 16,000** (the seat's ruling): sector 11 (le10) is the longest level, ending at pass 17,216 (passive
+pilot) / 17,149 (scripted) and crossing into sector 12 at 17,613 / 17,573, with nothing stuck. Its five scroll pauses
+are the level's own controllers (`11s1` row 2746, `11m1` 2407, `11m2` 1884, `11m3` 1276, `11e1` 205), each as long as
+the sum of that controller's state timers in the data (2,480 / 3,225 / 3,225 / 2,855 / 2,360); the hold is read at
+`10033d70` and applied at `1000703c`. Two review legs confirmed the lengths are the original's. (2) **Every sector
+reaches its end from a direct start, with both pilots, and crosses to the next** (level-end pass, passive: 4,719 /
+8,346 / 10,663 / 7,956 / 8,912 / 7,929 / 8,847 / 9,727 / 12,210 / 12,529 / 17,216 / 13,571); every spawned unit is
+inside its level's closure. The campaign run from sector 1 takes 128,469 passes; the "all levels" notice (T0) is at
+game time 13,628 of sector 12; every finale tick pinned in wave 3.2 holds in the real approach. (3) **Holding fire
+too long destroys the ship even while invulnerable — the original does this**: past the 180-tick overload time the
+weapon overloads (`1003c230..1003c248`) and the last warning kills the ship (`10026ee0..1002705c` into
+`FUN_10027e50`), with no invulnerability check anywhere on that path. So the sweep's scripted pilot releases fire for
+30 of every 150 passes; the plan card's "both fire buttons held" was wrong. (4) **Sector 12's end fight ends on a
+timer, not on the Beamer's death** (correcting the wave 3.2 entry's item 3 and its handoff): the end controller
+`12e1` leaves its hold when it enters "Spawn Flippers" for the fourth time (`StateEntry.swift:158`, listing
+`10014dc8`); `be02`'s death is only an early exit. In the sweep the Beamer is alive from game time 10,376 through the
+level end and into the finale (the level end deletes nothing, `10006da4`; medium confidence on the original's side),
+and the test pins it alive at the notice. The early exit by killing the Beamer is exercised by no test. (5) The
+census closure is the level's placed units plus every unit a definition names, skipping keys ending `Face_ID` /
+`Sound_ID` and `drawLayer_ID` (sprite and sound tags reuse unit names); the permanent object `noal` names `12gc`, so
+the finale's units are in every sector's closure; rule-condition units are included (a loose over-approximation). (6)
+The trace row and its CSV gained a sector column (additive); `FilmLookup` is the one film lookup for the tool, the
+replay tests, the host tests and the app (four more private lookups remain inside the core test bundle, outside the
+card). (7) **AP:** `-players 2` and `-sector N` (1–12) are parsed beside `-film`, ignored with a film, and refused
+through the same alert-then-quit path as a bad film tag, before any window or sound exists. The one-life rule for a
+late start is the core's (`Player.swift:270`, `FUN_10026cc0`). A restart (Esc, game over, the campaign's end) returns
+to the launch's sector with the launch's player count and film — so **ruling 1 governs ruling 3**: after the finale a
+new game starts at the launch's sector, which is sector 1 unless `-sector` was given. The driver's old "retry at
+sector 1" fallback is gone; if a restart's session could not be built the ended session stays and the driver tries
+again on each idle call (cannot happen with validated data). `+7` and `07` are accepted as sector values. (8) Review
+totals: 19 deliberate source bugs tried across the four legs and the fix rounds' re-runs; 4 slipped past the first
+drafts (player 2 reading player 1's keys, player 2's fire ignored, the player count lost on restart, the film
+dropped on restart) and all four are caught after the fix rounds. (9) The whole campaign bundle takes about 13
+minutes (per-sector 454 s, campaign 259 s, two-player 26 s): longer than one 10-minute tool call, so run it one test
+at a time with `--filter DeimosCampaignTests.CampaignSweepTests/<name>`.
+
 ## D51 — Ferazel's Wand: run 53's rulings (6A-TR — trees; 2026-11-15)
 
 1. **The tree golden starts above a tree, not at the first frame with a tree on screen.** The engine contract asks
