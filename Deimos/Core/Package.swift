@@ -58,6 +58,10 @@ let package = Package(
         .testTarget(name: "DeimosCensusTests", dependencies: ["deimos-census", "DeimosCore"]),
         // The replay gate G4 (H3): a separate bundle, excluded from G2 by `--skip DeimosReplayTests`.
         .testTarget(name: "DeimosReplayTests", dependencies: ["deimos-replay", "DeimosHost", "DeimosCore"]),
+        // The campaign sweep G8 (Phase 3 CS): every sector to its end and the campaign 1 → 12 under god mode and a
+        // scripted pilot — a smoke check, not fidelity. A separate bundle, excluded from G2 by
+        // `--skip DeimosCampaignTests` (run time).
+        .testTarget(name: "DeimosCampaignTests", dependencies: ["DeimosHost", "DeimosCore"]),
         .testTarget(name: "DeimosCoreTests", dependencies: [
             "DeimosCore",
             .product(name: "HectorResources", package: "HectorKit"),

@@ -28,8 +28,15 @@ final class ReplayHarnessTests: XCTestCase {
     /// bounded logic-only run (100 passes) ends on the bound with P1 reading the film and a trace row per pass.
     func testHeadlessRunnerFromFilm() throws {
         let assets = try ShippedAssets.get()
-        let index = assets.index
-        let film = try Film(data: index.data(for: XCTUnwrap(index.record(type: FourCC("film")!, id: FourCC("de01")!))))
+        let film = try FilmLookup.film("de01", in: assets)
+        // The one film lookup (plan CS): an unknown tag and a tag that is not four characters fail naming the tag.
+        XCTAssertThrowsError(try FilmLookup.film("de05", in: assets)) {
+            XCTAssertEqual($0 as? FilmLookup.NoSuchFilm, FilmLookup.NoSuchFilm(tag: "de05"))
+            XCTAssertEqual("\($0)", "no film record \"de05\" in the data")
+        }
+        XCTAssertThrowsError(try FilmLookup.film("de1", in: assets)) {
+            XCTAssertEqual($0 as? FilmLookup.NoSuchFilm, FilmLookup.NoSuchFilm(tag: "de1"))
+        }
         var runner = try HeadlessRunner(assets: assets, film: film)
         XCTAssertNil(runner.screen, "logic only unless asked to render")
         XCTAssertEqual(runner.session.sector, 1)
@@ -110,14 +117,16 @@ final class ReplayHarnessTests: XCTestCase {
     }
 
     /// The CSV: a fixed header naming the `TickTrace.Row` fields in order, one line per row, `\n`-terminated;
-    /// Booleans as 0/1, the shield as Swift's shortest round-trip `Float` text.
+    /// Booleans as 0/1, the shield as Swift's shortest round-trip `Float` text. The last column is the sector
+    /// (G+0x14, plan CS — added after the others so the earlier columns keep their places); the run starts at sector 7
+    /// so the column cannot pass by matching a default of 1.
     func testReplayTraceCSVHeader() throws {
         XCTAssertEqual(ReplayTrace.csvHeader,
                        "gameTime,cursor,p1State,p1Score,p1Lives,p1Shield,p1Money,p1Multiplier,draws,entities,groups,"
-                       + "scrollTop,paused,levelEnding")
+                       + "scrollTop,paused,levelEnding,sector")
         XCTAssertEqual(ReplayTrace().csv(), ReplayTrace.csvHeader + "\n")
 
-        var runner = try HeadlessRunner(assets: ShippedAssets.get(), start: SessionStart(sector: 1, players: 1, film: nil),
+        var runner = try HeadlessRunner(assets: ShippedAssets.get(), start: SessionStart(sector: 7, players: 1, film: nil),
                                         seed: 0x469c2)
         runner.trace = ReplayTrace()
         _ = runner.run(maxPasses: 3)
@@ -128,13 +137,14 @@ final class ReplayHarnessTests: XCTestCase {
         XCTAssertEqual(lines[4], "")
         let s = runner.session
         let fields = lines[3].split(separator: ",").map(String.init)
-        XCTAssertEqual(fields.count, 14)
+        XCTAssertEqual(fields.count, 15)
         XCTAssertEqual(fields, [
             "3", "-1", String(s.players[0].lifeState), String(s.players[0].score), String(s.players[0].lives),
             "\(s.players[0].shield)", String(s.players[0].money), String(s.players[0].multiplier), String(s.rng.draws),
             String(s.game.world.liveCount), String(s.game.world.groups.count), String(s.scroll.window.top),
-            s.scroll.speed == 0 ? "1" : "0", s.game.flags.levelEnding ? "1" : "0",
+            s.scroll.speed == 0 ? "1" : "0", s.game.flags.levelEnding ? "1" : "0", "7",
         ])
         XCTAssertEqual(trace.rows[2], ReplayTrace.row(s))
+        XCTAssertEqual(trace.rows.map(\.sector), [7, 7, 7])
     }
 }
