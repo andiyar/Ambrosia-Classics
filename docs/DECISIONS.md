@@ -2378,6 +2378,32 @@ has a campaign-end reason. (7) Two review mutants survived the first round and a
 entering sector 2), and the reward flag is armed from the perfect-last-level flag. (8) The plan's AP card now also
 owns the driver's restart sector (a restart starts at the launch's sector).
 
+**As built — Phase 3 (D50), tasks CR, TP, FN (wave 3.2, 2026-11-15).** Tests only — no game source changed; every
+row agreed with the listing. Merged to local main: CR e882886 + 8d49888, TP e707328 + 89d9f5b, FN c85d384 + 05d0524
+(`Deimos/Core` 352 → 360 → 367 → **372/0/0**; `DeimosReplayTests` 4/0 unchanged). (1) **Correction 1 of the plan
+holds** (the implementer and both review legs each re-read `10033b64..10033d6c` and `FUN_100146f0`; about 90 %): a
+state entered by its timer sounds on the next tick, so `acbo` plays at T0 and T0+7 … T0+85, `leen` at T0+103; the
+appendix's ticks fail the test. (2) Finale facts now pinned that the appendix did not carry: the explosion pass at
+T0+95 makes exactly 200 draws, four per member in the order heading `10037988`, radius `100379b8`, scale tolerance
+`10014b14`, group delay `10035fc8`; each iris releases at its flag + 19 in both rounds (414/694, 483/763, 553/833,
+623/903); with no money and 0 % accuracy the session ends at T0+1476, with twelve perfect levels at T0+1567 (ten
+payments of 100,000 from T0+1337, every 9). (3) The finale tests place the scroll 250 rows from the end, which skips
+sector 12's end fight (`12e1` at row 377 holds the scroll until the Beamer `be02` at 335 dies; `fl02` at 204 / 208 /
+436): a real run reaches the finale with different survivors and a different random stream — CS's campaign run is
+the check of the real approach. (4) CR: the coin tally crosses in its real final state 8 (a poked state 3 stops the
+level completing); fire is held through the crossing in the weapon test (a release would apply the pending weapon,
+`1003b44c` / `1003c4b4`); the pending ground weapon is unreachable in shipped play (its only source is the
+unregistered debug command at `10008490`); the score bar's per-player copy is `1003160c..10031628` for player 1 and
+`10031660..1003167c` for player 2. (5) TP: the right-hand view clamp leaves 31 itself unclamped
+(`100100b0..10010118`); the raw mission-bonus payment never moves the extra-life threshold
+(`10029a10..10029af8`); respawn placement reads only the player's own fields. (6) Not pinnable with these runs, left
+with a comment: the iris rule's range of 60; player 2's icon x (equal to player 1's in the data); `calg`'s release
+tick (two random draws; bounded +1 … +5). (7) The listing lives at
+`~/Developer/Ghidra/deimos/proj/disasm-review3-all.txt`, not under `ghidra/deimos-proj/` in the repo as the
+remainder plan says. (8) Review totals: 71 deliberate source bugs tried by the six review legs, 22 slipped past the
+first drafts, and after the three fix rounds all but two are caught (the iris range in (6); and "level complete
+checks only player 2", which the carry-over and level-end tests catch instead of the two-player file).
+
 ## D51 — Ferazel's Wand: run 53's rulings (6A-TR — trees; 2026-11-15)
 
 1. **The tree golden starts above a tree, not at the first frame with a tree on screen.** The engine contract asks
