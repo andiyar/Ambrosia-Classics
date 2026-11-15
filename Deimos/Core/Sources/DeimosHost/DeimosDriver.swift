@@ -196,7 +196,7 @@ public struct DeimosDriver {
         if escLatched && !keys.held.contains(DeimosDriver.escKey) { escLatched = false }   // ◇ any idle releases it
         if !seeded {
             seeded = true
-            newSession(seed: now, sector: start.sector)
+            newSession(seed: now)
         }
         while true {
             // A fade between steps: wait for t0 + 1, then the next step (or the end).
@@ -230,7 +230,7 @@ public struct DeimosDriver {
                             audio?.apply(sounds: [], music: music, haltEffectsAt: 0)
                         }
                         prefs = session.prefs                                  // ◇ stand-in 6
-                        newSession(seed: now, sector: start.sector)    // ◇ the launch's sector (plan AP)
+                        newSession(seed: now)                          // ◇ the launch's sector (plan AP)
                         escLatched = true   // a press in the ended pass's tail too: Esc is read only at begin (10005904)
                     } else if !passLimited {
                         passBegun = false
@@ -390,17 +390,15 @@ public struct DeimosDriver {
         kind == .fromBlack ? DisplayBuffers.fromBlackLevels : DisplayBuffers.toBlackLevels
     }
 
-    /// A fresh session (`srand(seed)`) with a fresh frame controller (limiter stamp 0). When `sector` cannot be
-    /// built (data without that level), the session falls back to `start`, which `init` validated. The new session
-    /// reuses the current one's loaded level set (immutable, shared), so a restart inside `idle` decodes no masks.
-    private mutating func newSession(seed: UInt32, sector: Int) {
-        let s = SessionStart(sector: sector, players: start.players, film: start.film)
-        let levels = session.game.levels
-        if let made = try? DeimosSession(assets: assets, prefs: prefs, start: s, seed: seed, ticks: seed,
-                                         levels: levels) {
-            session = made
-        } else if let made = try? DeimosSession(assets: assets, prefs: prefs, start: start, seed: seed, ticks: seed,
-                                                levels: levels) {
+    /// A fresh session (`srand(seed)`) from the launch's `start` — its sector, player count and film, which `init`
+    /// validated — with a fresh frame controller (limiter stamp 0). The new session reuses the current one's loaded
+    /// level set (immutable, shared), so a restart inside `idle` decodes no masks.
+    /// If the session cannot be built all the same, the current one is kept: at the first `idle`, `init`'s seed-0
+    /// session; after a session end, the ENDED session — its next pass is empty and ends it again, so the driver
+    /// tries the restart once more on each later `idle` call. Nothing else recovers.
+    private mutating func newSession(seed: UInt32) {
+        if let made = try? DeimosSession(assets: assets, prefs: prefs, start: start, seed: seed, ticks: seed,
+                                         levels: session.game.levels) {
             session = made
         }
         lastPresent = 0

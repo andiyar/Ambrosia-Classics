@@ -133,7 +133,8 @@ final class DriverTests: XCTestCase {
     }
 
     /// ◇ Stand-in 3 + plan ruling 1 (`-sector N`): Esc restarts at the LAUNCH's sector — a sector-7 launch restarts
-    /// at 7, a direct start, so one life (`FUN_10026cc0`: lives = 1 above sector 1).
+    /// at 7, a direct start, so one life (`FUN_10026cc0`: lives = 1 above sector 1). The restart also keeps the
+    /// launch's player count (a two-player launch) and film (a `de01` launch). Bounds: fake clock 60 s / 120 s.
     func testEscStartsNewSession() throws {
         let assets = try ShippedAssets.get()
         // Started at sector 7, not 1, so a restart that ignored the launch's sector would show it.
@@ -198,6 +199,40 @@ final class DriverTests: XCTestCase {
         }
         XCTAssertEqual(changes, 9)
         XCTAssertTrue(driver.session.appeared)
+
+        // The restart keeps the launch's player count and film too: a two-player launch (`-players 2`) restarts with
+        // both players in game, and a film launch (`-film de01`) restarts playing the same film from its start.
+        func escRestart(_ d: inout DeimosDriver, _ label: String) -> Bool {
+            var c = FakeClock(rate: .classic)
+            while d.presentCount < 20 {
+                _ = d.idle(seconds: c.seconds, keys: HeldKeys())
+                c.seconds += Self.poll
+                if c.seconds > 60 { XCTFail("\(label): no presents"); return false }
+            }
+            while d.restarts == 0 {
+                _ = d.idle(seconds: c.seconds, keys: HeldKeys(held: [Self.escKey]))
+                c.seconds += Self.poll
+                if c.seconds > 120 { XCTFail("\(label): no restart"); return false }
+            }
+            return true
+        }
+        var two = try DeimosDriver(assets: assets, prefs: .fresh, rate: .classic,
+                                   start: SessionStart(sector: 1, players: 2, film: nil))
+        XCTAssertEqual(two.session.players.filter(\.inGame).count, 2, "launched with two players")
+        guard escRestart(&two, "two players") else { return }
+        XCTAssertEqual(two.restarts, 1)
+        XCTAssertEqual(two.session.players.filter(\.inGame).count, 2, "the restart is still a two-player game")
+
+        let film = try FilmLookup.film("de01", in: assets)
+        var filmDriver = try DeimosDriver(assets: assets, prefs: .fresh, rate: .classic,
+                                          start: SessionStart(sector: 1, players: 1, film: film))
+        guard escRestart(&filmDriver, "film") else { return }
+        XCTAssertEqual(filmDriver.restarts, 1)
+        XCTAssertTrue(filmDriver.session.start.film == film, "the restart plays the launch's film")
+        XCTAssertTrue(filmDriver.session.game.flags.filmPlaying, "the restarted session is a film (G+0x20)")
+        let filmReference = try DeimosSession(assets: assets, prefs: .fresh,
+                                              start: SessionStart(sector: 1, players: 1, film: film), seed: 0)
+        XCTAssertEqual(filmDriver.session.rng, filmReference.rng, "from the film's own seed, not the restart's ticks")
     }
 
     /// Hang regression (review of e259561): Esc held for 2 s used to restart forever inside one `idle` (each new

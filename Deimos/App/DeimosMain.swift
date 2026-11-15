@@ -21,14 +21,19 @@ struct LaunchOptions {
     /// `-film` given without a tag (the last argument, or followed by another `-` flag) is "" — refused at launch like
     /// an unknown tag; the following flag is then read as itself.
     var film: String?
-    /// ◇ `-players N` (plan AP, ruling 1): stands in for the main menu's 2 PLAYER button (Phase 4); only `1` or `2` is
-    /// accepted. Kept as typed and refused at launch like a bad film tag (anything else, or no value → ""); nil = no
-    /// `-players` (one player). Ignored with `-film` (the film carries its own player count).
+    /// ◇ `-players N` (plan AP, ruling 1): stands in for the main menu's 2 PLAYER button (Phase 4); only a number in
+    /// `playerRange` is accepted. Kept as typed (a negative number such as `-1` included) and checked at launch: any
+    /// other value is refused like a bad film tag, and so is a missing value (the last argument, or followed by
+    /// another `-` flag), which is kept as "". nil = no `-players` (one player). Ignored with `-film` (the film carries
+    /// its own player count).
     var players: String?
-    /// ◇ `-sector N` (plan AP, ruling 1): stands in for the main menu's level select (Phase 4) — start at sector N,
-    /// 1…12 (a start above sector 1 has one life: the core's player set-up, `FUN_10026cc0`). Kept as typed and refused
-    /// at launch like a bad film tag; nil = no `-sector` (sector 1). Restarts return to it. Ignored with `-film`.
+    /// ◇ `-sector N` (plan AP, ruling 1): stands in for the main menu's level select (Phase 4) — start at sector N, a
+    /// number in `sectorRange` (a start above sector 1 has one life: the core's player set-up, `FUN_10026cc0`). Kept
+    /// and checked as `players` is; nil = no `-sector` (sector 1). Restarts return to it. Ignored with `-film`.
     var sector: String?
+    /// The values `-players` and `-sector` accept — the one place the app states them.
+    static let playerRange = 1...2
+    static let sectorRange = 1...12
     #if DEBUG
     /// DEBUG only (A3's machine check): `-debugCapsLock <seconds>` simulates Caps Lock down through `HeldKeys` from
     /// that many seconds after launch for `debugCapsLockHold` seconds, so the pause wait can be shown reached.
@@ -39,11 +44,15 @@ struct LaunchOptions {
     init(arguments: [String]) {
         var i = 1
         /// The value after flag `i`, or "" (the refused value) when it is missing — the following flag is then read
-        /// as itself; `i` steps past what was read.
-        func value() -> String {
-            if i + 1 < arguments.count, !arguments[i + 1].hasPrefix("-") {
-                defer { i += 2 }
-                return arguments[i + 1]
+        /// as itself; `i` steps past what was read. A next argument starting with `-` is another flag, except, for a
+        /// `numeric` flag, a negative whole number (`-3`): that is taken as typed, so its refusal can show it.
+        func value(numeric: Bool = false) -> String {
+            if i + 1 < arguments.count {
+                let next = arguments[i + 1]
+                if !next.hasPrefix("-") || (numeric && Self.isNegativeNumber(next)) {
+                    i += 2
+                    return next
+                }
             }
             i += 1
             return ""                                       // missing value: the bad-value path
@@ -55,11 +64,11 @@ struct LaunchOptions {
                 continue
             }
             if a == "-players" {
-                players = value()
+                players = value(numeric: true)
                 continue
             }
             if a == "-sector" {
-                sector = value()
+                sector = value(numeric: true)
                 continue
             }
             #if DEBUG
@@ -73,23 +82,33 @@ struct LaunchOptions {
         }
     }
 
-    /// ◇ `-players`: 1 or 2; nil when absent (one player); throws `BadValue` for anything else.
+    /// ◇ `-players`: a number in `playerRange`; 1 when absent; throws `BadValue` for anything else.
     func playerCount() throws -> Int {
-        try Self.number(players, flag: "-players", in: 1...2) ?? 1
+        try Self.number(players, flag: "-players", in: Self.playerRange) ?? 1
     }
 
-    /// ◇ `-sector`: 1…12; nil when absent (sector 1); throws `BadValue` for anything else.
+    /// ◇ `-sector`: a number in `sectorRange`; 1 when absent; throws `BadValue` for anything else.
     func startSector() throws -> Int {
-        try Self.number(sector, flag: "-sector", in: 1...12) ?? 1
+        try Self.number(sector, flag: "-sector", in: Self.sectorRange) ?? 1
     }
 
-    /// A `-players` / `-sector` value that is not a whole number in range (or is missing).
+    /// `-` followed by one or more ASCII digits and nothing else.
+    private static func isNegativeNumber(_ s: String) -> Bool {
+        let digits = s.utf8.dropFirst()
+        return s.hasPrefix("-") && !digits.isEmpty && digits.allSatisfy { (0x30...0x39).contains($0) }
+    }
+
+    /// A `-players` / `-sector` value that is not a whole number in range (or is missing); its description is the
+    /// refusal's text, stating the range once.
     struct BadValue: Error, CustomStringConvertible {
         let flag: String
         let value: String
         let range: ClosedRange<Int>
         var description: String {
-            "\(flag) takes a number from \(range.lowerBound) to \(range.upperBound), not “\(value)”"
+            let accepted = range.count == 2 ? "\(range.lowerBound) or \(range.upperBound)"
+                                            : "a number from \(range.lowerBound) to \(range.upperBound)"
+            if value.isEmpty { return "\(flag) needs a value after it: \(accepted)." }
+            return "\(flag) takes \(accepted), not “\(value)”."
         }
     }
 

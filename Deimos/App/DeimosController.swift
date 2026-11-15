@@ -95,7 +95,7 @@ import Synchronization
                     sector = try options.startSector()
                 } catch {
                     refuseLaunch("Deimos Rising cannot start the game it was asked for.",
-                                 detail: "-players takes 1 or 2; -sector takes 1 to 12.\n\n\(error)",
+                                 detail: "\(error)",            // names the flag and the values it takes, once
                                  log: "bad launch argument: \(error)")
                     return
                 }
