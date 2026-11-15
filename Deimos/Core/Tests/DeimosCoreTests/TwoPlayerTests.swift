@@ -99,11 +99,16 @@ final class TwoPlayerTests: XCTestCase {
             XCTAssertEqual(left.scroll.lastShift, k <= 16 ? -1 : 0, "both left, tick \(k)")
         }
 
-        // Both right: +2 a tick to 31 — at tick 16 P1's call reaches 31 and P2's clamps (the range is [−32, 31]).
+        // Both right after one P1-only tick (offset 1): +2 a tick from an odd start, so at tick 15 P2's call lands
+        // EXACTLY on 31 — the right clamp is `cmpwi 0x1f; ble` (100100fc..10010100), 31 itself unclamped, step 1 —
+        // and at tick 16 both calls clamp (32 → 31), step 0.
         var right = base
+        tick(&right, keys: HeldKeys(held: [Self.p1Right]))
+        XCTAssertEqual(right.scroll.offset, 1)
+        XCTAssertEqual(right.scroll.lastShift, 1)
         for k in Int32(1)...16 {
             tick(&right, keys: HeldKeys(held: [Self.p1Right, Self.p2Right]))
-            XCTAssertEqual(right.scroll.offset, min(31, 2 * k), "both right, tick \(k)")
+            XCTAssertEqual(right.scroll.offset, min(31, 1 + 2 * k), "both right, tick \(k)")
             XCTAssertEqual(right.scroll.lastShift, k <= 15 ? 1 : 0, "both right, tick \(k)")
         }
 
@@ -133,14 +138,18 @@ final class TwoPlayerTests: XCTestCase {
     /// `FUN_10029cc0` places by +0xcd (`10029d00..10029da0`): 1 → the solo start, else the multi start — +0xcd is
     /// the session's player count and never changes, so a duo survivor respawns at ITS multi start even with the
     /// partner out: P1 at (104, 330), P2 at (312, 330), never the solo (208, 330). The death costs a life (the gate,
-    /// P1 having reached state 4, is set) and the respawn comes on the first tick past enter + dyingTime.
+    /// P1 having reached state 4, is set) and the respawn comes on the first tick past enter + dyingTime. The
+    /// placement (`10029ce0..10029da0`) reads only the player's own fields (+0xc4, +0xcd, its plde), so the same
+    /// respawn happens with the partner in the game: the partner's state does not matter.
     func testDuoRespawnAtMultiStart() throws {
         var base = try session()
         run(&base, to: 60)
         XCTAssertTrue(base.game.flags.p1Active)
-        for (dies, out) in [(0, 1), (1, 0)] {
+        for (dies, partnerOut) in [(0, true), (1, true), (0, false), (1, false)] {
+            let out = 1 - dies
             var s = base
-            Self.eliminate(&s, out)
+            if partnerOut { Self.eliminate(&s, out) }
+            XCTAssertEqual(s.players[out].inGame, !partnerOut)
             let d = s.players[dies].definition
             XCTAssertEqual([d.entrySoloStartX, d.entrySoloStartY], [208, 330])
             XCTAssertEqual([d.entryMultiStartX, d.entryMultiStartY], dies == 0 ? [104, 330] : [312, 330])
@@ -157,15 +166,21 @@ final class TwoPlayerTests: XCTestCase {
             XCTAssertEqual(s.players[dies].lifeState, 3, "now > enter + dyingTime is strict (1002a2b8..1002a2c4)")
             tick(&s)
             let p = s.players[dies]
-            XCTAssertEqual(p.lifeState, 4, "player \(dies + 1) respawned")
-            XCTAssertEqual(p.stateEntered, killed + d.dyingTime + 1)
-            XCTAssertEqual(p.lives, 2)
-            XCTAssertTrue(p.inGame)
-            XCTAssertEqual(p.object.x.bitPattern, Float(d.entryMultiStartX).bitPattern, "player \(dies + 1)")
-            XCTAssertEqual(p.object.y.bitPattern, Float(330).bitPattern)
-            XCTAssertNotEqual(p.object.x.bitPattern, Float(d.entrySoloStartX).bitPattern)
-            XCTAssertFalse(s.players[out].inGame, "the partner is still out")
-            XCTAssertTrue(s.running)
+            let c = "player \(dies + 1), partner out \(partnerOut)"
+            XCTAssertEqual(p.lifeState, 4, "\(c): respawned")
+            XCTAssertEqual(p.stateEntered, killed + d.dyingTime + 1, c)
+            XCTAssertEqual(p.lives, 2, c)
+            XCTAssertTrue(p.inGame, c)
+            XCTAssertEqual(p.object.x.bitPattern, Float(d.entryMultiStartX).bitPattern, c)
+            XCTAssertEqual(p.object.y.bitPattern, Float(330).bitPattern, c)
+            XCTAssertNotEqual(p.object.x.bitPattern, Float(d.entrySoloStartX).bitPattern, c)
+            if partnerOut {
+                XCTAssertFalse(s.players[out].inGame, "\(c): the partner is still out")
+            } else {
+                XCTAssertTrue(s.players[out].inGame, "\(c): the partner is still in")
+                XCTAssertEqual(s.players[out].lifeState, 4, "\(c): the partner is still playing")
+            }
+            XCTAssertTrue(s.running, c)
         }
     }
 
@@ -385,22 +400,37 @@ final class TwoPlayerTests: XCTestCase {
                                       clip: rect(0, 0, 480, 640), layer: 8, drawNow: true, colour: 0x4B7C))
         }
         XCTAssertEqual(words(44, "0000000"), digits, "tefo 44, undimmed (alpha 0; dimmed it is 16)")
+        // The red count (tefo 48 `sll2`: CENT at (498, 285), blend 0, colour ff0000, mono cell 6): "0" starts at
+        // fctiwz(498 − 3) = 495, glyph '0' (tesm 61, 7 wide, 13 high) centred at x 495 + 3, y 285 + 6.
+        let redZero = RenderOp.draw(DrawCommand(face: FourCC("tesm")!, frame: 61, x: 498, y: 291, flags: 4, scale: 1,
+                                                alpha: 0, clip: rect(0, 0, 480, 640), layer: 8, drawNow: true,
+                                                colour: 0x7C00))
+        XCTAssertEqual(words(48, "0"), [redZero], "tefo 48, active with 0 left (10032188..10032194)")
         XCTAssertNotEqual(words(48, "0"), words(46, "0"), "the red count is a different format")
-        // The icons' places are P2's own, not P1's (F128…F133).
-        XCTAssertNotEqual([flli(134), flli(135)], [flli(128), flli(129)])
+        // P2's icons sit at P1's x (F134/136/138 = F128/130/132), only y differs (F135/137/139 = 434, P1's 199).
+        XCTAssertEqual([flli(134), flli(136), flli(138)], [flli(128), flli(130), flli(132)])
+        XCTAssertEqual([flli(135), flli(137), flli(139)], [434, 434, 434])
+        XCTAssertEqual([flli(129), flli(131), flli(133)], [199, 199, 199])
 
         let play = try XCTUnwrap(FourCC("play")), shme = try XCTUnwrap(FourCC("shme"))
         var expected: [RenderOp] = [restore(rect(317, 25, 333, 135))] + digits
         expected += [restore(rect(257, 98, 297, 138)), hud(play, 1, 534, 276)]          // F114/F115, no dim
         XCTAssertEqual([flli(114), flli(115)], [534, 276])
         expected.append(restore(rect(263, 56, 307, 102)))
-        expected += words(48, "0")                                                       // 1 life: 0 left, red
+        expected.append(redZero)                                                         // 1 life: 0 left, red
         let iconRects = [rect(416, 33, 451, 65), rect(423, 76, 445, 95), rect(423, 103, 445, 124)]
+        // Slot 0 selected (F141 = 6, scale 1.0), slots 1–2 not (F140 = 16, F142 = 0.7f = 0x3F333333).
+        let iconXY: [(Int32, Int32)] = [(467, 434), (502, 434), (530, 434)]
+        let iconAlpha: [UInt32] = [6, 16, 16]
+        let iconScale: [UInt32] = [Float(1).bitPattern, 0x3F33_3333, 0x3F33_3333]
+        XCTAssertEqual(f[142].bitPattern, 0x3F33_3333)
+        XCTAssertEqual([flli(141), flli(140)], [6, 16])
         for k in 0..<3 {
             expected.append(restore(iconRects[k]))
             let icon = r2.icons[k]
-            expected.append(hud(icon.face, Int(icon.frame), flli(134 + 2 * k), flli(135 + 2 * k), flags: 1,
-                                alpha: UInt32(flli(k == 0 ? 141 : 140)), scale: k == 0 ? 1 : f[142]))
+            XCTAssertEqual([flli(134 + 2 * k), flli(135 + 2 * k)], [iconXY[k].0, iconXY[k].1], "slot \(k)")
+            expected.append(hud(icon.face, Int(icon.frame), iconXY[k].0, iconXY[k].1, flags: 1,
+                                alpha: iconAlpha[k], scale: Float(bitPattern: iconScale[k])))
         }
         expected += [restore(rect(353, 31, 368, 127)), hud(shme, 0, 495, 359), cost(rect(353, 447, 368, 543))]
         expected += [restore(rect(388, 31, 403, 127)), hud(shme, 1, 495, 394), cost(rect(388, 447, 403, 543))]
@@ -414,10 +444,14 @@ final class TwoPlayerTests: XCTestCase {
         for (i, (got, want)) in zip(ops, expected).enumerated() { XCTAssertEqual(got, want, "P2 op \(i)") }
         // … and the session's first pass emits that sequence as part of the level start's ops.
         let first = tick(&s)
-        let found = (0...max(0, first.ops.count - expected.count)).contains {
-            Array(first.ops[$0..<($0 + expected.count)]) == expected
+        if first.ops.count < expected.count {
+            XCTFail("the first pass has \(first.ops.count) ops, fewer than P2's \(expected.count)")
+        } else {
+            let found = (0...(first.ops.count - expected.count)).contains {
+                Array(first.ops[$0..<($0 + expected.count)]) == expected
+            }
+            XCTAssertTrue(found, "the level start's ops carry P2's active elements")
         }
-        XCTAssertTrue(found, "the level start's ops carry P2's active elements")
 
         // The update keeps P2's record live: its shield follower rises with P2's respawn like P1's.
         run(&s, to: 56)
@@ -429,6 +463,30 @@ final class TwoPlayerTests: XCTestCase {
             XCTAssertTrue(s.scoreBar.records[1].dirty.contains(.shield))
             XCTAssertTrue(s.scoreBar.records[1].drawActive)
         }
+        // … and its power and lives followers, from poked values: the shown power steps toward P2's target by
+        // F127 = 4 down / F126 = 2 up (state 4) each tick; last lives 7 becomes P2's 1 on the next tick (lives count
+        // dirty) and then stays; a changed life count is picked up again.
+        XCTAssertEqual([f[126], f[127]], [2, 4])
+        let target = s.players[1].handler.powerPercent
+        var shown: Float = target < 50 ? 90 : 10
+        s.game.scoreBar.records[1].shownPower = shown
+        s.game.scoreBar.records[1].lastLives = 7
+        XCTAssertEqual(s.players[1].lives, 1)
+        for k in 1...3 {
+            tick(&s)
+            XCTAssertEqual(s.players[1].handler.powerPercent.bitPattern, target.bitPattern, "tick \(k)")
+            shown = shown > target ? max(target, shown - 4) : min(target, shown + 2)
+            let r = s.scoreBar.records[1]
+            XCTAssertEqual(r.shownPower.bitPattern, shown.bitPattern, "P2's shown power, tick \(k)")
+            XCTAssertTrue(r.dirty.contains(.power), "tick \(k)")
+            XCTAssertEqual(r.lastLives, 1, "P2's last lives, tick \(k)")
+            XCTAssertEqual(r.dirty.contains(.livesCount), k == 1, "tick \(k)")
+        }
+        XCTAssertNotEqual(shown, target, "still following after three ticks")
+        s.game.players[1].lives = 4
+        tick(&s)
+        XCTAssertEqual(s.scoreBar.records[1].lastLives, 4)
+        XCTAssertTrue(s.scoreBar.records[1].dirty.contains(.livesCount))
         // P2 scores: the next tick stores it and redraws P2's score (R8) — P1's score element stays clean.
         s.game.players[1].score = 5_000
         let next = tick(&s)
@@ -459,7 +517,7 @@ final class TwoPlayerTests: XCTestCase {
             var s = GameState(assets: a, prefs: DeimosPrefs.fresh, seed: 0x469c2)
             s.flags.numPlayers = 2
             s.flags.sector = 12
-            s.flags.level = FourCC("le07")!
+            s.flags.level = FourCC("le09")!                                  // sector 12 = le09 Yamato
             s.flags.running = true
             s.scroll.levelStart(rect: MacRect(top: 0, left: 0, bottom: 3600, right: 480))
             try s.setupPlayer(0)
@@ -476,14 +534,19 @@ final class TwoPlayerTests: XCTestCase {
             s.accuracyTier(now: 0)
             let start = s.players.map(\.score)
             var atMission: [Int32]?, livesAtMission: [Int32] = []
+            var thresholdAtMission: [Int32] = [], p2AtMission: [String] = []
             var payments: Int32 = 0
             var done = false
             for t in Int32(1)...4000 {
                 let before = s.players.map(\.score), paid = s.tally.missionPayments
+                let thresholdBefore = s.players.map(\.extraLifeThreshold)
+                let p2Before = atMission == nil && p2Out ? Self.fields(s.players[1]) : []
                 done = s.accuracyTally(now: t)
                 if atMission == nil && s.tally.missionBonus {
                     atMission = before
                     livesAtMission = s.players.map(\.lives)
+                    thresholdAtMission = thresholdBefore
+                    p2AtMission = p2Before
                 }
                 let delta = zip(s.players.map(\.score), before).map { $0 - $1 }
                 if s.tally.missionPayments != paid {
@@ -503,10 +566,19 @@ final class TwoPlayerTests: XCTestCase {
             XCTAssertEqual(zip(mission, start).map { $0 - $1 }, tier, "p2Out \(p2Out): the tier")
             XCTAssertEqual(zip(s.players.map(\.score), mission).map { $0 - $1 }, [1_000_000, p2Out ? 0 : 1_000_000])
             XCTAssertEqual(s.players.map(\.lives), livesAtMission, "raw payments give no extra life")
+            // The raw branch (10029ad0..10029aec) stores only the step +0xa0; the threshold +0x9c is written only on
+            // the non-raw life path (10029a84..10029aa8), so it is unchanged across the mission bonus.
+            XCTAssertEqual(s.players.map(\.extraLifeThreshold), thresholdAtMission,
+                           "p2Out \(p2Out): the raw payments leave the extra-life threshold alone")
+            XCTAssertLessThan(thresholdAtMission[0], s.players[0].score, "P1's score passed the threshold, no life")
             let adjust = EntityDraw.fctiwz(a.floats[182])
             XCTAssertEqual(s.players[0].extraLifeStep, s.players[0].score &+ adjust, "the raw branch (10029ad0)")
             if !p2Out {
                 XCTAssertEqual(s.players[1].extraLifeStep, s.players[1].score &+ adjust, "P2 paid raw too")
+            } else {
+                XCTAssertFalse(p2AtMission.isEmpty)
+                XCTAssertEqual(Self.fields(s.players[1]), p2AtMission,
+                               "the out P2 is untouched by the payments (10029a28..10029a30 come first)")
             }
         }
     }
