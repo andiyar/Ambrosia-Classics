@@ -1,5 +1,22 @@
 # Ferazel's Wand for Windows — what to expect (Phase 5 gate build: the enemies, levels 1–5 through the first boss door)
 
+## Test build 5 (18 November 2026): the Warrior is now a real boss
+This build is the Phase 5 build below plus the first boss fight. Where the card below says the Warrior stands still,
+never dies and the gate stays shut, **that is no longer true in this build**:
+- **The Warrior on level 5 fights.** He walks, runs, swings and shoots. Shots, spells and weapons do not hurt him.
+- **He is beaten with the crates.** Climb to the ledge on the right of his arena and push a crate over the edge as he
+  walks beneath. A new crate drops after each one lands on him. Ten crushes beat him.
+- **When he dies** the screen shakes and flashes, the gate opens and the music changes.
+- **Levels after 5 are still closed.** Choosing one on the map shows "Level n is not built yet (Phase 6)." and returns
+  to the map. That message is expected.
+
+**Machine checks re-run on this build's code (18 November 2026):** the visit sweep on levels 1–5, 3,488 visits, 0
+problems, through the Windows game path and again through the Mac game path (15 of 15 teleports arrived; 37 of 37 level
+exits reached the map); the random-play bot on levels 1–5, 108,000 steps, 0 failures, through each path (16 deaths, 112
+level exits, 22 conversations, 1 save); the Windows package's suite, 82 tests, 0 failed (2 skipped by design); the
+game's suite, 693 tests, 0 failed (2 skipped by design), and the same suite under CrossOver on 15 November: 690 passed,
+0 failed, 3 skipped, 0 crashed. The boot check of this zip is on its download page.
+
 **Status: machine gates green; Ben's and Andrew's gate pending.**
 
 Ferazel's Wand 1.0.3 for Windows: Ambrosia's Ferazel's Wand (2000), rebuilt to run on Windows 10 and 11 (64-bit) from
@@ -30,9 +47,9 @@ crawlers and roaches, bats, frogs and blobs; getting hurt and hurting them; the 
 up to the Warrior's arena; and the things you may only feel.
 On Windows, Shift / Alt / Ctrl act as the Mac's Shift / Option / ⌘, and Esc leaves level 5's locked arena (abort).
 
-**Note anything that differs from the Mac** — a picture, a sound, a timing, a dialog. As on the Mac, until Phase 6 the
-Warrior stands still and never dies, no rocks drop into its arena, no spell, weapon or the Ring of Smiting harms it,
-and the gate stays shut. Before the arena locks, walking back right leaves level 5 through its own exit to the map
+**Note anything that differs from the Mac** — a picture, a sound, a timing, a dialog. In the first Phase 5 build the
+Warrior stood still and never died, no spell, weapon or the Ring of Smiting harmed it, and the gate stayed shut (test
+build 5 replaces this: see the top of this card). Before the arena locks, walking back right leaves level 5 through its own exit to the map
 (0 of 1 enemies on the stage-complete panel), and a save point can be reached before the lock. Level 10 and later
 can't be reached in normal play (only an original saved game from a later level would show "not built yet").
 
