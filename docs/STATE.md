@@ -21,7 +21,7 @@ Settled history lives in docs/STATE-history.md.
 - **Run 53 stopped after one task on Ben's word** ("finish this task and close", in chat): 6A-RP and 6A-BX1a were
   not started and head run 54.
 - **Windows test build 5 is with Andrew** (Ben asked, 2026-11-18): GitHub pre-release `ferazel-windows-test-5`, staged
-  from c06d24d (run 53's game code; the Windows card gained a "test build 5" section: the Warrior is real, levels past
+  from 02717f8 (run 53's game code; the Windows card gained a "test build 5" section: the Warrior is real, levels past
   5 closed). Before it went up: WinKit 82 / 0 / 2, visit sweep 3,488 x 2 rows 0, bot 108,000 x 2 failures 0, the zip's
   boot check (GW6) three screens identical. The zip and its checksum are in `releases/ferazel-windows-test-5/`. His
   report is the Windows half of Q18; Ben's Mac verdict is still open. The Desktop builds were not replaced.
