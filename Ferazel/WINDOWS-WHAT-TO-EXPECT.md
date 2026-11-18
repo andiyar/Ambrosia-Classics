@@ -3,9 +3,7 @@
 ## Test build 5 (18 November 2026): the Warrior is now a real boss
 This build is the Phase 5 build below plus the first boss fight. Where the card below says the Warrior stands still,
 never dies and the gate stays shut, **that is no longer true in this build**:
-- **The Warrior on level 5 fights.** He walks, runs, swings and shoots. Shots, spells and weapons do not hurt him.
-- **He is beaten with the crates.** Climb to the ledge on the right of his arena and push a crate over the edge as he
-  walks beneath. A new crate drops after each one lands on him. Ten crushes beat him.
+- **The Warrior on level 5 fights**, and he can be beaten. Working out how is part of the game.
 - **When he dies** the screen shakes and flashes, the gate opens and the music changes.
 - **Levels after 5 are still closed.** Choosing one on the map shows "Level n is not built yet (Phase 6)." and returns
   to the map. That message is expected.
