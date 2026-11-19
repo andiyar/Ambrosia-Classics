@@ -12,5 +12,10 @@ public enum MusicCue: Equatable, Sendable {
     /// paused stream is disposed at once. The original busy-waits for the fade inside the same call (`10048164..
     /// 100481ac`, until TickCount > t0 + 600): Core puts that wait in the pass's ops after the cue, as
     /// `RenderOp.hostWait(.musicStopped(maxTicks: 600))` — the cue itself does not wait.
+    ///
+    /// **When cues reach the sink:** the driver routes ALL of a pass's sound and music cues when the pass begins,
+    /// before any of that pass's ops run (the in-game transition-fade and pause splits aside, `DeimosDriver`). So the
+    /// `.musicStopped` wait in the same pass already sees this stop-with-fade, and a screen that wants a cue to start
+    /// after a wait or a fade must put that cue in a later pass.
     case stopWithFade
 }

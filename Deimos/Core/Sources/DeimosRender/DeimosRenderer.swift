@@ -109,8 +109,8 @@ public final class DeimosRenderer {
     /// (`1001d1e0..1001d1e8`, `mullw` / `divw`); a column with clipLeft ≤ x < clipRight and top < bottom runs rows
     /// y = top ..< bottom (`1001d200..1001d250`, CTR = bottom − top); a row with clipTop ≤ y < clipBottom copies the
     /// 16-bit pixel at source row `srcH·(y − top) / (bottom − top)` (`1001d228..1001d248`). Nothing else is tested —
-    /// the original writes wherever the clip lets it; the replica traps on a pixel outside `dst` instead of writing
-    /// past the buffer (the level select's clip, the preview rect, lies inside the back buffer).
+    /// the original writes wherever the clip lets it; the replica traps on a pixel outside the destination buffer's
+    /// bounds instead of writing past it (the level select's clip, the preview rect, lies inside the back buffer).
     static func scaledCopy(from src: Pixmap555, to dst: inout Pixmap555, dstRect d: MacRect, clip c: MacRect) {
         let srcW = Int32(src.width), srcH = Int32(src.height)
         let spanX = d.right &- d.left, spanY = d.bottom &- d.top

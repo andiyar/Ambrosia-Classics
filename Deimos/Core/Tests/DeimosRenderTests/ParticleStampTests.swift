@@ -97,6 +97,7 @@ final class ParticleStampTests: XCTestCase {
         assets.shellPictures[1000] = ShellPicture(width: 3, height: 2, pixels: [0x0001, 0x0002, 0x0003,
                                                                                0x0004, 0x0005, 0x0006])
         let half = MacRect(top: 100, left: 300, bottom: 200, right: 373)   // the 146 × 306 preview at 1/2 × 1/3.06
+        let leftPart = MacRect(top: 100, left: 300, bottom: 200, right: 340)   // a clip ≠ dst: its left 40 columns
         var cost = DrawCommand.template
         cost.face = FourCC("COST")!
         cost.costRect = MacRect(top: 10, left: 10, bottom: 20, right: 20)
@@ -119,7 +120,7 @@ final class ParticleStampTests: XCTestCase {
             .pauseWait(.gameScreen),
             .hostWait(.ticks(1)),
             .drawPicture(id: 1000, into: .back, top: 30, left: 50),
-            .scaledCopy(image: level.previewImage, into: .back, dst: half, clip: half),
+            .scaledCopy(image: level.previewImage, into: .back, dst: half, clip: leftPart),
         ]
         func name(_ op: RenderOp) -> String {
             switch op {
@@ -157,13 +158,16 @@ final class ParticleStampTests: XCTestCase {
         XCTAssertEqual(back[53, 30], 0x0421, "at its own size")
         XCTAssertEqual(back[30, 50], 0x0421)
 
-        // The scaled copy of the shipped preview, through the op: src x = 146·(x − 300) / 73, y = 306·(y − 100) / 100.
+        // The scaled copy of the shipped preview, through the op: src x = 146·(x − 300) / 73, y = 306·(y − 100) / 100
+        // (the scale is the dst rect's), written only inside the clip, x < 340 (dst and clip are not interchangeable).
         let preview = try XCTUnwrap(ImageCache.shared.image(level.previewImage, index: assets.index))
         XCTAssertEqual(preview.width, 146)
         XCTAssertEqual(preview.height, 306)
         XCTAssertEqual(back[300, 100], preview[0, 0])
-        XCTAssertEqual(back[372, 199], preview[144, 302])
         XCTAssertEqual(back[301, 101], preview[2, 3])
+        XCTAssertEqual(back[339, 199], preview[78, 302], "146·39/73 = 78, the dst rect's scale")
+        XCTAssertEqual(back[340, 199], 0x0421, "column 340 lies right of the clip")
+        XCTAssertEqual(back[372, 199], 0x0421)
 
         // `FUN_1001d1b0` on a made-up 4 × 3 image (pixel = 0x100·y + x + 1): dst rect {top 1, left 2, bottom 7,
         // right 14} (3× across, 2× down), clip {top 2, left 3, bottom 6, right 13} — inside it on all four sides, as

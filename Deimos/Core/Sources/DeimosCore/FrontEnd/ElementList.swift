@@ -91,10 +91,11 @@ public struct ElementList: Equatable, Sendable {
     /// ≠ 0 (`1000d78c..1000d79c`), draw the local copy (`FUN_1000d380`), present the rect; loop while blend ≠ 0. Blend
     /// 32 → 32 passes at 31 … 0; blend 0 → one pass at 0. The record itself is not changed.
     ///
-    /// The blend must lie in 0…32 (precondition): the only caller passes 0x20, and a negative blend would make the
-    /// original spin through 2³² decrements before it reached 0 — refused here rather than hung (G11).
+    /// A blend above 32 is accepted as the original accepts it: it simply runs more passes (blend n → n passes at
+    /// n − 1 … 0). Only a negative blend is refused (precondition): the original would spin through ~2³² decrements
+    /// (about 4 billion passes) before it reached 0 — refused here rather than hung (G11). The only caller passes 0x20.
     public static func fadeOne(_ record: TextRequest, text: TextLayout) -> [RenderOp] {
-        precondition((0...32).contains(record.format.blendAmount), "fadeOne: blend \(record.format.blendAmount) outside 0…32")
+        precondition(record.format.blendAmount >= 0, "fadeOne: negative blend \(record.format.blendAmount)")
         let r = text.layout(record, draw: false).bounds
         var copy = record
         var ops: [RenderOp] = []
@@ -110,10 +111,43 @@ public struct ElementList: Equatable, Sendable {
         return ops
     }
 
+    /// `FUN_1000d7f0(list, restoreText, present)` — draw every element once at its own blend: no level, no wait, no
+    /// pass. An empty list draws nothing (`if (count != 0)`). Per element in list order:
+    /// - text → measure the record (`FUN_1000d260`), restore the rect only if `restoreText` (`1000d87c`), draw the
+    ///   record itself (`FUN_1000d380(rec, 0)`, its own `+0x114`);
+    /// - sprite → the rect at the record's scale (`1000d8b8 lfs f1,0x118`), restore it **always** (`1000d924`, not
+    ///   gated), the command from the G_Text template with x, y = centre, face, frame, flags template | 1, **scale
+    ///   `+0x118`** (cmd +0x18, `1000d9a8`) and **alpha = own `+0x114`** (cmd +0x1c, `1000d98c`) — unlike the fades —
+    ///   draw-now `+0x110`, layer `+0x10c`, clip = back-buffer bounds unless `+0x10d`; drawn (`FUN_10019570`);
+    /// - then present the rect only if `present` (`1000d9d8`).
+    ///
+    /// The callers: the menu redraw `FUN_100258e0` and the scores screen (`FUN_10021950`, `FUN_10021bd0` before its
+    /// loop) pass (false, false) — the shell presents later; the name-entry redraw inside `FUN_10021bd0`'s loop passes
+    /// (true, true).
+    public func drawOnce(restoreText: Bool, present: Bool, text: TextLayout, assets: DeimosAssets) -> [RenderOp] {
+        var ops: [RenderOp] = []
+        for e in elements {
+            let r = Self.rect(e, text: text, assets: assets)
+            if e.isText {
+                if restoreText { ops.append(Self.restore(r)) }
+                ops += text.draw(e.record).map { .draw($0) }
+            } else {
+                ops.append(Self.restore(r))
+                var cmd = Self.spriteCommand(e)
+                cmd.scale = e.record.scale
+                cmd.alpha = UInt32(bitPattern: e.record.format.blendAmount)
+                ops.append(.draw(cmd))
+            }
+            if present { ops.append(Self.present(r)) }
+        }
+        return ops
+    }
+
     // MARK: - The pass body shared by `FUN_1000db90` and `FUN_1000df00`
 
     /// One pass per level. Pass k > 1 waits until `TickCount ≥ (pass k−1's start) + rate` (`1000dbe4 cmplw r26,r3;
-    /// bgt` unsigned, `1000dbf8 add r26,r23,r3`): the host's `.ticks(rate)`, counted from where it reaches the wait.
+    /// bgt` unsigned, `1000dbf8 add r26,r23,r3`): the host's `.ticks(rate)`. No pacing difference: the driver reads its
+    /// clock once per `idle` call and `.screenBlit` does not end the call, so the wait counts from the pass's start tick.
     /// The first pass does not wait (t = 0) and nothing follows the last. Then, per element in list order (a record
     /// copy, `+0x114` = max(level, own) unsigned, `1000dd20 cmplw r25,r0; blt`): text → measure the copy, restore,
     /// draw the copy (`FUN_1000d380`); sprite → rect at the record's scale, restore, the command from the G_Text
@@ -137,22 +171,30 @@ public struct ElementList: Equatable, Sendable {
                     copy.format.blendAmount = Int32(bitPattern: own <= level ? level : own)
                     ops += text.draw(copy).map { .draw($0) }
                 } else {
-                    var cmd = DrawCommand.template
-                    cmd.x = e.record.format.locX
-                    cmd.y = e.record.format.locY
-                    cmd.face = e.sprite
-                    cmd.frame = e.frame
-                    cmd.flags = DrawCommand.template.flags | 1
+                    var cmd = Self.spriteCommand(e)
                     cmd.alpha = level
-                    cmd.drawNow = e.record.drawNow
-                    cmd.layer = e.record.layer
-                    if !e.record.keepTemplateClip { cmd.clip = EntityDraw.backBufferBounds }   // FUN_1000a530(D+0x68)
                     ops.append(.draw(cmd))
                 }
                 ops.append(Self.present(r))
             }
         }
         return ops
+    }
+
+    /// A sprite element's command, the fields `FUN_1000d7f0`, `FUN_1000db90` and `FUN_1000df00` share: the G_Text
+    /// template with x, y = centre, face, frame, flags template | 1, draw-now `+0x110`, layer `+0x10c`, clip =
+    /// back-buffer bounds unless `+0x10d` (`FUN_1000a530(D+0x68)`). Scale and alpha are each caller's.
+    static func spriteCommand(_ e: Element) -> DrawCommand {
+        var cmd = DrawCommand.template
+        cmd.x = e.record.format.locX
+        cmd.y = e.record.format.locY
+        cmd.face = e.sprite
+        cmd.frame = e.frame
+        cmd.flags = DrawCommand.template.flags | 1
+        cmd.drawNow = e.record.drawNow
+        cmd.layer = e.record.layer
+        if !e.record.keepTemplateClip { cmd.clip = EntityDraw.backBufferBounds }
+        return cmd
     }
 
     /// The element's rect (see the type's comment).

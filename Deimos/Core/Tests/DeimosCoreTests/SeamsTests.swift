@@ -18,7 +18,6 @@ final class SeamsTests: XCTestCase {
         XCTAssertEqual(try a.interfaceStrings().string(at: 6), "Loading Permanent Image:  ")
         XCTAssertEqual(try a.credits().lines.count, 102)
 
-
         let bare = HeldKeys()
         XCTAssertNil(bare.mouse)
         XCTAssertFalse(bare.mouseButton)

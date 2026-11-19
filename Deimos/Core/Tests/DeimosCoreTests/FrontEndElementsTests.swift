@@ -3,8 +3,9 @@ import HectorResources
 @testable import DeimosCore
 
 /// G_Text's element lists and their fades (text-metrics-lists.md §3, §3.1; grounding A §5.2): bounds `FUN_1000da50`,
-/// fade in `FUN_1000db90`, fade out `FUN_1000df00`, one-element fade `FUN_1000d6d0`. Real formats, strings and sprite
-/// frames from the shipped data; every loop is bounded by the op list it reads (G11: a pass count over 32 fails).
+/// fade in `FUN_1000db90`, fade out `FUN_1000df00`, one-element fade `FUN_1000d6d0`, draw once `FUN_1000d7f0`. Real
+/// formats, strings and sprite frames from the shipped data; every loop is bounded by the op list it reads (G11: a
+/// pass count over its bound fails).
 final class FrontEndElementsTests: XCTestCase {
     static let layout: Result<TextLayout, Error> = Result { try TextLayout(assets: TestAssets.loaded.get()) }
 
@@ -215,6 +216,61 @@ final class FrontEndElementsTests: XCTestCase {
         XCTAssertEqual(once.passes.count, 1)
         XCTAssertEqual(once.waits, [])
         XCTAssertEqual(once.passes.first.map { Set(draws($0).map(\.alpha)) }, [0])
+        // Above 32 the original simply runs more passes: blend 34 → 34 passes at 33 … 0, 33 waits.
+        r.format.blendAmount = 34
+        let more = passes(ElementList.fadeOne(r, text: t))
+        XCTAssertEqual(more.passes.count, 34)
+        guard more.passes.count <= 34 else { return XCTFail("\(more.passes.count) passes, bound 34") }
+        XCTAssertEqual(more.waits, Array(repeating: .ticks(1), count: 33))
+        XCTAssertEqual(more.passes.map { Set(draws($0).map(\.alpha)) }, (0...33).reversed().map { [UInt32($0)] })
+    }
+
+    /// `FUN_1000d7f0(list, restoreText, present)` — draw every element once at its own blend, no wait, no fade. Per
+    /// element in list order: text → measure (`FUN_1000d260`), restore the rect only if `restoreText`, draw the record
+    /// (`FUN_1000d380`); sprite → rect at its scale, ALWAYS restore, the command with alpha = own `+0x114` (cmd +0x1c,
+    /// `1000d98c`) and scale `+0x118` (cmd +0x18, `1000d9a8`); then present the rect only if `present`. The callers:
+    /// the menu redraw `FUN_100258e0` (0, 0), the scores screen `FUN_10021950` / `FUN_10021bd0` (0, 0), and the
+    /// name-entry redraw in `FUN_10021bd0` (1, 1).
+    func testElementDrawOnce() throws {
+        let a = try TestAssets.loaded.get()
+        let t = try Self.layout.get()
+        var logo = Self.logo(a)
+        logo.record.format.blendAmount = 20                           // the sprite's own alpha reaches the command
+        logo.record.scale = 0.5                                       // and so does its scale
+        let web = try Self.web(a)                                     // own blend 12
+        let list = ElementList([logo, web])
+        // Logo at 0.5: trunc(158·0.5) × trunc(109·0.5) = 79 × 54 → (320 − 39, 101 − 27).
+        let logoRect = MacRect(top: 74, left: 281, bottom: 128, right: 360)
+        let webRect = MacRect(top: 426, left: 249, bottom: 439, right: 392)
+        XCTAssertEqual(list.bounds(of: 0, text: t, assets: a), logoRect)
+        var sprite = DrawCommand.template
+        sprite.face = FourCC("galo")!
+        sprite.frame = 0
+        sprite.x = 320
+        sprite.y = 101
+        sprite.flags = 1
+        sprite.scale = 0.5
+        sprite.alpha = 20
+        sprite.clip = MacRect(top: 0, left: 0, bottom: 480, right: 640)
+        sprite.layer = 8
+        sprite.drawNow = true
+        let glyphs = t.draw(web.record).map { RenderOp.draw($0) }
+        XCTAssertEqual(glyphs.count, 20)
+        XCTAssertEqual(Set(draws(glyphs).map(\.alpha)), [12])
+        let restoreLogo = RenderOp.copy(from: .terrain, to: .back, src: logoRect, dst: logoRect, interlaced: false)
+        let restoreWeb = RenderOp.copy(from: .terrain, to: .back, src: webRect, dst: webRect, interlaced: false)
+
+        let bare: [RenderOp] = [restoreLogo, .draw(sprite)] + glyphs
+        let full: [RenderOp] = [restoreLogo, .draw(sprite), .screenBlit(src: logoRect, dst: logoRect), restoreWeb]
+            + glyphs + [.screenBlit(src: webRect, dst: webRect)]
+        for (use, restoreText, present, expected) in [("menu redraw", false, false, bare),
+                                                      ("scores screen", false, false, bare),
+                                                      ("name-entry redraw", true, true, full)] {
+            let ops = list.drawOnce(restoreText: restoreText, present: present, text: t, assets: a)
+            XCTAssertEqual(ops, expected, use)
+            XCTAssertFalse(ops.contains { if case .hostWait = $0 { return true } else { return false } }, use)
+        }
+        XCTAssertEqual(ElementList().drawOnce(restoreText: true, present: true, text: t, assets: a), [])
     }
 
     /// `FUN_1000db90` / `FUN_1000df00` test the count first (`if (count != 0)`): an empty list makes no pass, no wait

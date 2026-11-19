@@ -10,6 +10,11 @@ import Foundation
 /// (credits: "the fades and the 60-tick wait leave events queued", A §4). A wait that ends on input
 /// (`clickOrKey`, `answer`) leaves that input queued too — the next pass reads it.
 ///
+/// **Cues are not ops:** the driver routes ALL of a pass's sound and music cues when the pass begins, before any of
+/// that pass's ops run — so a cue never waits behind a wait or a fade in its own pass. A screen that wants a cue to
+/// start after a wait or a fade must put it in a later pass. It follows that `.musicStopped` sees a
+/// `MusicCue.stopWithFade` issued in the same pass (already sent when the wait is reached).
+///
 /// **No audio-thread read in Core** (standing rule 10): only the host asks whether a voice still sounds, and only to
 /// end a wait; no logic decision in Core depends on it.
 public enum HostWait: Equatable, Sendable {
@@ -31,6 +36,7 @@ public enum HostWait: Equatable, Sendable {
     /// the original logs an error there, `10048188..10048190`). The original's bound is 600 (`1004819c addi r31,r3,
     /// 0x258`), so every `stopWithFade` is followed by `.musicStopped(maxTicks: 600)`. No music, or no sound system: it
     /// ends at once. A fade moves only while the audio renders, so with no audio rendering it releases at the bound —
-    /// never a hang. Phase 4.
+    /// never a hang. The `stopWithFade` it waits on rides in the same pass's music cues, sent when that pass began
+    /// (above), so the wait sees it. Phase 4.
     case musicStopped(maxTicks: UInt32)
 }
