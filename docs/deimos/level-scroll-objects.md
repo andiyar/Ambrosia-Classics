@@ -93,6 +93,10 @@ Consequences (all [HIGH] arithmetic on the listings above, no pauses assumed unl
 - A placement with yLoc Y < 3056 spawns on scroll tick **k = 3056 − Y**; with no pause before it
   that is **game time 3055 − Y** (game time is reset to 0 by `FUN_100064d0` and incremented after
   each tick's update, engine-loop.md §3).
+  ⚑ corrected (Phase 3, 2026-11): "game time 3055 − Y" holds for the **first level of a session only**. Every
+  later level runs one game-time step later: the level start inside the transition pass sets 0 and the loop
+  adds 1 before that pass ends (`100059e0..100059f0`), so the new level's first tick is at game time **1** and a
+  placement spawns at game time 3056 − Y (plan ruling 4; appendix A §2 disagreement 2).
 - Spawn match is exact integer equality `fctiwz(yLoc) == row` (`100330f4 lfs f0,0xa0(r29) /
   fctiwz / cmpw r27,r0 / bne`); rows advance by exactly 1, so no row is skipped while speed is 1.
   Rows below 0 are rejected (`10033098 or. r27,r3,r3 / blt`).
@@ -134,6 +138,8 @@ Properties that follow [HIGH]:
 `FUN_100100b0(char right) @ 100100b0`: step = right ? +1 : −1; offset += step; clamp: below −32 →
 −32, above 31 → 31 (`100100dc cmpwi r0,-0x20 / bge`, `100100fc cmpwi r0,0x1f / ble`); the step
 actually taken is stored in `0x100e0140`. Range **[−32, +31]**. [HIGH]
+⚑ Phase 3 (2026-11): pinned by test — the right-hand clamp acts only above 31, so 31 itself is reached and kept
+unclamped (`100100b0..10010118`; DECISIONS D50 wave 3.2 as-built (5)).
 **Driver**: only caller is the player update `FUN_10028170`, once per tick **per active player**,
 inside the branch `player+0xc4 (active) != 0 && player state +0xc6 == 4`:
 ```
@@ -264,7 +270,7 @@ Game struct at `PTR_DAT_100defd0` (0x180 bytes, zeroed once): fields used here:
 | +0x10 | levels started this session (0 before the first) | `FUN_100064d0` `+0x10 += 1` |
 | +0x14 | current sector (1–12) = `FUN_10005cd0()` | `FUN_100064d0` |
 | +0x18 | current level tag (`none` = no more levels) | |
-| +0x1c | game time, **reset to 0 at every level start** | `FUN_100064d0` first statement |
+| +0x1c | game time, **reset to 0 at every level start** — ⚑ corrected (Phase 3, 2026-11): true, but on a level change the loop adds 1 before the transition pass ends, so the new level's first tick is at game time **1** (`100059e0`; §3 note) | `FUN_100064d0` first statement |
 | +0x29 / +0x2c | level-end handled / its game time | `FUN_10006b50` |
 | +0x39 | level ending (passed to player update as its last arg) | `FUN_10006b50` |
 [HIGH for each write quoted; the labels of +0x0a/+0x39 are MED (usage)]
@@ -279,8 +285,8 @@ flag (+0xbd); plus +0x0d and +0x0e. [HIGH reading]
 **Level start** `FUN_100064d0(film, info) @ 100064d0`, in order: game time = 0; flags cleared;
 accuracy counters reset (`FUN_10007130/7150/7280`); first level → load `+0x18`; later level →
 sector = sector(tag) + 1, and if > `FUN_10011de0()` (= 12) the tag becomes `none`; else load it.
-`+0x10 += 1`. Tag `none` → stop music, session ends (`+0x08 = 0`). Otherwise: `+0x14` = sector;
-`FUN_1002b3a0(sector)` (per-sector setup of `PEAA`/`PEAG`/`SPEC` items — not read); music; each
+`+0x10 += 1`. Tag `none` → ~~stop music~~, session ends (`+0x08 = 0`). Otherwise: `+0x14` = sector;
+`FUN_1002b3a0(sector)` (per-sector setup of `PEAA`/`PEAG`/`SPEC` items — ~~not read~~); music; each
 player `FUN_100269a0(player, tag, 0)`; message/debris/particle lists reset; `FUN_1000fa90` (§2);
 `FUN_10032e60` (entity groups + pending list); free the parsed object list; notices reset;
 `FUN_1000fa10` (load-time spawns, §2); spawn `PermObjectID(sector + 9)` = **Notice_Level_NN**
@@ -288,6 +294,14 @@ at game-area (416·0.5, 480·0.5) = **(208, 240)** with req +0x0c = 0 (template 
 r2−0x268c; factor `*(float*)(0x100d6354+8)` = 0.5 from the code image); score bar redraw;
 first terrain draw. [HIGH — listing `1000682c…100068c4` for the notice; call order from the
 decompile]
+⚑ corrected (Phase 3, 2026-11) (appendix A §2 disagreement 1): tag `none` calls `FUN_10048220(0)` = music
+**resume** (`10006698..1000669c`), a no-op because `FUN_10007170` already stopped the music (`10007204`).
+⚑ corrected (Phase 3, 2026-11) (disagreement 4): `FUN_1002b3a0` is now read — resource preload only: every `wede`
+of type `PEAA`/`PEAG`/`SPEC` whose level range contains the sector gets its sprite groups (`FUN_1001f950`) and
+unit resources (`FUN_1003e580`) loaded; no game state (appendix A §4).
+⚑ corrected (Phase 3, 2026-11) (disagreement 6): `FUN_10007130` is the five cheat-use counters, not an accuracy
+counter, and the level start runs it at **every level start** (`10006514`; ground counts `10006518`, tally
+`1000651c`), so the cheat usage limits reset per level.
 
 **Level end** (branch of `FUN_10006b50` when `FUN_10010000` returns 1), listing `10006d9c…`:
 1. `+0x39 = 1` every tick from now on.
@@ -309,7 +323,8 @@ decompile]
    holds one level); else stop music, play `PermSoundID(3)` (`tran` InterfaceTransition, vol
    75/100), `FUN_1000b9a0(display, 1)`, clear `+0x09`/`+0x39`, frame-controller reset
    `FUN_100302e0`, then **`FUN_100064d0(0, info)` → next sector**. No active player → session
-   ends. [HIGH reading] ⚑ corrected (wave 2, 2026-10-03): was "vol 75/100" — the arguments are priority 75, volume
+   ends. [HIGH reading] ⚑ corrected (Phase 3, 2026-11): the listing passes `r25` (the film flag) as the first
+   argument, which is 0 on this path — same effect, wording only (appendix A §2 disagreement 5). ⚑ corrected (wave 2, 2026-10-03): was "vol 75/100" — the arguments are priority 75, volume
    100 (`FUN_10047670(id, priority, volume, allowMultiple)`, sound-music.md §2.3);
    `FUN_1000b9a0` is the fade to black (33 steps, loose-ends-session.md §6).
 The defence bonus is paid inside the player update when `+0x39` is set: once per level per active
@@ -328,6 +343,23 @@ and add score `Player_DefenceBonusBaseAmount (2000) × sector` (`FUN_10029a10(p,
 | weapons | `FUN_1003ade0(…, sector)`: default ground weapon (`DEAG`), air weapon = the `PEAA` def whose level range contains the start sector (`FUN_1003cdb0`) | `FUN_1003af90(handler, 1)`: transient fire/overload state cleared, pending `PEAG` pickup applied, `PEAA` swapped if a `PEAA` def has min level == current sector (`FUN_1003cd30`) | [MED — arguments partly dropped by the decompiler; weapons reader owns it] |
 | position, velocity, appear fade, state 2 at time 0 | | reset (`FUN_10026b10`, `FUN_10026c80(p,2,t)`, PermFloats 163–165) | [MED] |
 | inactive (dead) player | | stays out (`FUN_100269a0` returns at once if `+0xc4 == 0`) | [HIGH] |
+⚑ corrected (Phase 3, 2026-11) (appendix A §2 disagreement 3 — the table omitted these; appendix A's carry/reset
+table is the full reference): **carried** — score multiplier `+0xb4` (reset only by setup `10026898` and death
+`10028150`), its indicator serial `+0xb8` (stale: the first respawn may remove serial X of the new level,
+`1002a094`), invulnerability `+0xce` set non-sticky at the level end (`10006f28`) so the next level's first
+state 4 is invulnerable until now > entry + 60 (with G+0x39 clear), perfect-accuracy levels G+0x44; **reset** — shield refilled to 100
+(`FUN_10027400(p,1)`, `10026a58`), the money counter (`FUN_10027630`, `10026a48`), `+0xd0` and `+0xc5` = 0
+(`100269d4`), `+0xc0` levelRef = the new tag (`100269f4`), G+0x0c reward armed = G+0x0b and G+0x0b = 0, both
+air power-up blocks idled (serial −1, level 0, percent 0; `1003b054..1003b0a8`). Weapons: a `PEAA` with min level
+== sector is equipped and the pending air weapon dropped (`1003b0dc..1003b108`); with no match the pending air
+weapon is **kept, not applied** (`1003b0ec beq 1003b138`) and the current air weapon carries — sector 4 keeps
+whatever air weapon was last selected, even the Ion Cannon outside sector 4's own range (no weapon has minimum
+level 4). There is one air-weapon slot and no inventory: Select cycles the air weapons the current sector allows
+(plan corrections 3, 4).
+⚑ Phase 3 (2026-11) (pinned by tests, DECISIONS D50 wave 3.2 as-built (4)): the coin tally crosses a level change in
+its real final state 8 (a poked state 3 stops the level completing); the weapon test holds fire through the
+crossing because a release would apply the pending weapon (`1003b44c` / `1003c4b4`); the pending **ground** weapon is
+unreachable in shipped play (its only source is the unregistered debug command at `10008490`).
 Starting sector > 1 thus gets 1 life and a later air weapon — the code side of the level-select
 "Starting Bonus" lines (NOT-RESOLVED #28, narrowed; the displayed text is not traced). [MED]
 Demo note (out of scope): unregistered copies stop after sector `FUN_10011b00()` = 4 (`+0x0e`),
@@ -354,7 +386,8 @@ and `FUN_10011b30(info)` tests membership of the first 4 identifiers. [HIGH read
 
 ## Worked example — `Level 01 [le01]` (Kepler Massif, sector 10), first 10 placements
 Data: `$W/data/Game/leve/Level 01[le01].leve.txt` (46 objects); unit fields from the decoded
-`unde` files. Formulas: §3 (k = 3056 − Y; game time = 3055 − Y if no pause yet), §6.2 (x − 32
+`unde` files. Formulas: §3 (k = 3056 − Y; game time = 3055 − Y if no pause yet — ⚑ corrected (Phase 3, 2026-11):
+first level of a session only; a later level is one step later, 3056 − Y, `100059e0..100059f0`, §3), §6.2 (x − 32
 iff `isGroundBased`), §6.4 (spawn y = −64), §7 (buffer x = world x − hOffset; screen x =
 buffer x + 32 [MED]). hOffset = 0 assumed (it moves only with left/right input).
 | # | unit | layer | xLoc | yLoc | hdg | stat/terr | ground? | world x | scroll tick k | game time (no pause) | spawn y | screen x @ off 0 |

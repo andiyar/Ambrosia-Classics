@@ -219,6 +219,8 @@ reset (`10029dd0..10029dfc`); `+0xc5 = 1`; **state = 4, enter = now** (`10029e04
 `10029e08 stw r29,0xc8`); appear fade = flli 163/164/165 (§4.3); spawn `entry_Spawn_ID` (+0xa0,
 `plen`) at the ship if not none; `FUN_10029fe0` (multiplier unit, scoring reader);
 `FUN_1003af90(+0x240, 0)` (weapon handler). It does **not** touch money, lives or `+0xce`.
+⚑ Phase 3 (2026-11) (pinned by test, DECISIONS D50 wave 3.2 as-built (5)): respawn placement reads only the
+player's own fields — nothing of the other player decides where a ship reappears.
 
 ### 4.2 Level start: `FUN_100269a0 @ 100269a0(player, levelRef, now)` [HIGH]
 Caller `FUN_100064d0` (level start; loops P1 then P2, levelRef = `game+0x18`). If in game: `+0xd0 = 0` (defence bonus
@@ -298,6 +300,9 @@ Timeline with the shipped values, start at tick t0: flashes at t0+9, +17, +24, +
 +48 (7 sounds), destruction at **t0+54** unless cancelled. [MED — derived by stepping the listing;
 assumes `FUN_10026ee0` first runs at t0+1, which follows from the call order §2]
 The overload sound's pitch is Min 1.0 = Max 1.0, so it draws no RNG (engine-loop.md §9).
+⚑ Phase 3 (2026-11) (DECISIONS D50 wave 3.3 as-built (3)): an overload destroys the ship **even while it is
+invulnerable** — past the 180-tick overload time the weapon overloads (`1003c230..1003c248`) and the last warning
+kills the ship (`10026ee0..1002705c` into `FUN_10027e50`), with no invulnerability check anywhere on that path.
 
 ## 7. Setup, lives, money, score: `FUN_10026410 @ 10026410(player, index, numPlayers, now, sector)`
 Caller `FUN_100051a0` for index 0 and 1 (`FUN_10026410(*p, i, game+0x21, game+0x1c, sector)`,

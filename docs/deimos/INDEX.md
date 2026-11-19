@@ -16,6 +16,7 @@ honesty gates.
 | language | `PowerPC:BE:32:default:macosx` — forced; auto-detect picks the wrong VLE language | `grep 'Using Language' ghidra/analyze-Deimos_pef.log` |
 | function count | Ghidra log: **"wrote 2580/2588 functions"**; dump blocks `grep -c '^// ==== '` → **2580**; named `FUN_…` → **2133**; the rest are import glue (`.glue::Name`) and `entry` | tool output |
 | address model | code `0x10000000` (910128 B), data `0x100de330` (pidata unpacked by Ghidra), TOC r2 = `0x100e6330` | `DumpMemory.java` log; disassembly of accessors |
+| full listing (`$W`) | ⚑ corrected (Phase 3, 2026-11): the bank files define `$W` as `ghidra/deimos-proj` in the repo; the full listing used in Phase 3 lives at `~/Developer/Ghidra/deimos/proj/disasm-review3-all.txt`, not under `ghidra/deimos-proj/` in the repo (DECISIONS D50 wave 3.2 as-built (7)) | given |
 | memory image | `tools/DumpMemory.java` → `<dir>/10000000.bin`, `100de330.bin`, `1011ef10.bin` (used to resolve strings/tables the decompile prints as raw hex) | headless post-script on the existing project |
 
 Stripped binary: roles come from strings (assert texts carry source-file names such as
@@ -424,8 +425,12 @@ Micro-wave additions (2026-10-06)
 63. Entity-pool slot pre-allocation: who fills each slot's entity pointer (slot +0x10) before
     `FUN_100385d0` hands it out (micro-wave-2026-10-06.md §3.7, NR 2). Not replay-relevant (fixes object
     addresses only).
-64. `12gc` S2 spawn-set delay (the tick R at which the `aieg` group is requested; R = T0+95 only if that
-    set's delay is 0) — loose-ends-session.md §5.3, micro-wave NR 4. Settle by decoding `12gc`'s spawn set.
+64. ~~`12gc` S2 spawn-set delay (the tick R at which the `aieg` group is requested; R = T0+95 only if that
+    set's delay is 0) — loose-ends-session.md §5.3, micro-wave NR 4. Settle by decoding `12gc`'s spawn set.~~ →
+    ⚑ corrected (Phase 3, 2026-11) #64 closed → loose-ends-session.md §5.3: the set has no delay
+    (DelayBetweenEntities 0/0, Rate 0/0, NumInVolley 1/1, RepeatSpawns FALSE, `Level 12 - Game Comp[12gc].unde.txt`
+    lines 483–495), so `aieg` is requested on S2 entry, R = T0+95; pinned by test (DECISIONS D50 wave 3.2 as-built)
+    [HIGH].
 
 ## Append rule
 New findings append to the topical file they belong to (or a new topical file of ≤ ~600 lines)
