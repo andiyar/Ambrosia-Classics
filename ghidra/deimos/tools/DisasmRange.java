@@ -12,6 +12,7 @@ public class DisasmRange extends GhidraScript {
         String[] a = getScriptArgs();
         PrintWriter w = new PrintWriter(new FileWriter(a[0]));
         Listing lst = currentProgram.getListing();
+        int n = 0, undecoded = 0;
         for (int i = 1; i < a.length; i++) {
             String[] p = a[i].split(":");
             Address s = toAddr(Long.parseLong(p[0], 16));
@@ -25,13 +26,16 @@ public class DisasmRange extends GhidraScript {
                     cmd.applyTo(currentProgram);
                     ins = lst.getInstructionAt(cur);
                 }
-                if (ins == null) { w.printf("%s  ??%n", cur); cur = cur.add(4); continue; }
+                if (ins == null) { w.printf("%s  ??%n", cur); cur = cur.add(4); undecoded++; continue; }
                 Function f = getFunctionAt(cur);
                 if (f != null) w.printf("// -- %s%n", f.getName());
                 w.printf("%s  %s%n", ins.getAddress(), ins.toString());
                 cur = cur.add(ins.getLength());
+                n++;
             }
         }
         w.close();
+        if (w.checkError()) throw new IOException("DisasmRange: write error on " + a[0]);
+        println("DisasmRange: " + n + " instructions, " + undecoded + " undecoded words");
     }
 }

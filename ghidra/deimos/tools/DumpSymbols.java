@@ -54,13 +54,29 @@ public class DumpSymbols extends GhidraScript {
             w.printf("symbol TOC at %s%n", s.getAddress());
         }
 
-        w.printf("%n// ==== functions: entry size(bytes) bodyMin bodyMax name [thunk|external] ====%n");
+        w.printf("%n// ==== functions: entry size span bodyMin bodyMax name [thunk|external] ====%n");
+        w.printf("// entry   function entry address%n");
+        w.printf("// size    bytes in Ghidra's function body (decimal). Without the decompiler (none on this machine) switch%n");
+        w.printf("//         tables (bctr through a jump table) are not followed, so the cases past such a table are left out%n");
+        w.printf("//         of the body and size UNDERCOUNTS for those functions%n");
+        w.printf("// span    bytes from this entry to the next function entry (decimal); for the last function in a memory%n");
+        w.printf("//         block, to that block's end (the code section ends at 100e3a10). Includes alignment padding and%n");
+        w.printf("//         any code no function claims (after the last function: the tail of the section), so for a%n");
+        w.printf("//         function whose body is contiguous it is an upper bound on its extent%n");
+        w.printf("// bodyMin bodyMax  lowest and highest address in the body (the body can have holes)%n");
+        java.util.List<Function> fns = new java.util.ArrayList<>();
         FunctionIterator it = currentProgram.getFunctionManager().getFunctions(true);
+        while (it.hasNext()) fns.add(it.next());
         int count = 0;
-        while (it.hasNext()) {
-            Function f = it.next();
+        for (int i = 0; i < fns.size(); i++) {
+            Function f = fns.get(i);
             AddressSetView body = f.getBody();
-            w.printf("%s %6d %s %s %s%s%n", f.getEntryPoint(), body.getNumAddresses(),
+            Address entry = f.getEntryPoint();
+            MemoryBlock blk = currentProgram.getMemory().getBlock(entry);
+            Address next = (i + 1 < fns.size()) ? fns.get(i + 1).getEntryPoint() : null;
+            if (next == null || blk == null || !blk.contains(next)) next = blk == null ? null : blk.getEnd().add(1);
+            String span = next == null ? "?" : Long.toString(next.subtract(entry));
+            w.printf("%s %6d %6s %s %s %s%s%n", entry, body.getNumAddresses(), span,
                 body.getMinAddress(), body.getMaxAddress(), f.getName(),
                 f.isThunk() ? " [thunk]" : (f.isExternal() ? " [external]" : ""));
             count++;
@@ -88,6 +104,7 @@ public class DumpSymbols extends GhidraScript {
         }
         w.printf("// %d external symbols%n", ne);
         w.close();
+        if (w.checkError()) throw new IOException("DumpSymbols: write error on " + getScriptArgs()[0]);
         println("DumpSymbols: " + count + " functions, " + ns + " named symbols, " + ne + " externals");
     }
 }

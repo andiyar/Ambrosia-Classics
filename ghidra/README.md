@@ -67,20 +67,34 @@ The Deimos Rising 1.0.6 data fork (`deimos/Deimos_pef`) holds three PEF fragment
 **X**), and a "FATCarbon 1.5.1" stub at 0x1f3490. The length is both the cfrg entry's and the PEF container's
 last-section end.
 
-Regenerate from scratch (fresh import each run, ~20 s; deletes and recreates only `~/Developer/Ghidra/deimos/proj-osx/`):
+Regenerate from scratch, from any directory (fresh import each run, ~15 s; deletes and recreates only
+`~/Developer/Ghidra/deimos/proj-osx/`):
 ```sh
 ghidra/regen-deimos-osx.sh
 ```
-It extracts X with `dd`, imports it with Ghidra 12.2 (`-processor PowerPC:BE:32:default -cspec macosx`), analyzes,
-runs `deimos/tools/DumpSymbols.java` then `deimos/tools/DisasmRange.java` over the code section
-10000000–100e3a10, writes into `~/Developer/Ghidra/deimos/` and copies into `deimos/`:
+It extracts X with `dd`, imports it with Ghidra 12.2 (`-processor PowerPC:BE:32:default -cspec macosx`; the script
+pins 12.2's Homebrew Cellar path, `/opt/homebrew/Cellar/ghidra/12.2/`, and stops if it is missing), analyzes, runs
+`deimos/tools/DumpSymbols.java`, `deimos/tools/DumpData.java` over the data section 100e3a10–10125484, then
+`deimos/tools/DisasmRange.java` over the code section 10000000–100e3a10, writes into `~/Developer/Ghidra/deimos/`
+(with the raw Ghidra log, which stays there) and copies into `deimos/`:
 - `Deimos_osx_pef` — the extracted fragment;
 - `Deimos_osx.disasm.txt` — the full listing, one instruction per line (`<addr>  <instruction>`, `// -- <function>`
-  before each function entry, `??` where the bytes are data);
+  before each function entry). Bytes that do not decode print as `??`; data that happens to decode as a valid
+  instruction prints as one, so an instruction line is not proof of code. TOC loads stay raw (`lwz rX,-0x77a0(r2)`):
+  look the slot up in the data dump;
 - `Deimos_osx.functions.txt` — memory blocks, the r2 (TOC) value Ghidra records (100eba10), every function
-  (entry, size, body bounds, name), the named symbols and the imports;
-- `analyze-Deimos_osx.log`.
+  (entry, body size, **span**, body bounds, name), the named symbols and the imports. Span is the distance to the next
+  function entry (the last one: to the code section end 100e3a10). Body size undercounts functions with a switch
+  table, because without the decompiler the jump table (`bctr`) is not followed — compare span as well;
+- `Deimos_osx.data.txt` — the data/TOC dump: every 4-byte word of the data section as Ghidra loaded it (PEF unpacked,
+  relocations applied), with its r2 slot written as the listing writes it (`-0x77a0(r2)`) for the 16,384 words
+  within reach of r2, its value, what the value points at (import, function, label, transition vector, or the
+  memory block) and the labels, strings and data Ghidra defined in the word; in the zero-filled part only labelled
+  words are listed. So `grep -F ' -0x77a0(r2) ' deimos/Deimos_osx.data.txt` resolves a TOC load;
+- `analyze-Deimos_osx.log` — the Ghidra log, sanitised (repo root → `<repo>`, home → `~`, user name → `<user>`,
+  timings → `#`), so it carries no personal paths.
 
 Homebrew Ghidra 12.2 ships **no arm64 decompiler** (`os/mac_arm_64/decompile does not exist` in the log), so X is a
 listing, not C. In `docs/`, an address written "X 1xxxxxxx" means this listing; a bare `FUN_1xxxxxxx` means L.
-The listing is byte-identical across re-runs.
+Every committed output, the log included, is byte-identical across re-runs; the script checks the expected counts
+(2,676 functions, 26,697 initialized data words) and stops loudly on any post-script error.
