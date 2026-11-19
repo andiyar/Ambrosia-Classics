@@ -60,6 +60,9 @@ public struct ParallaxBlitter: Sendable {
         /// 6A-RP: a ripple-table row whose sine index `(r + (phase >> 8)) mod 55` is negative under the binary's signed
         /// `mulhw` remainder (`10012024..1001203c`) — the phase `*_DAT_1009fd74` wrapped negative, after 2^23 frames in
         /// one level: the binary reads before the 55-entry table (the `SpriteBlitter.Refusal.ripplePhase` time bound).
+        /// Unreachable in play: the phase starts at 0x200 at every level start and grows by 0x100 a call, so it turns
+        /// negative only after about 2^23 calls (over 77 hours at 30 frames a second, the audit's `.ripplePhaseHours`)
+        /// without leaving the level. Refused rather than reading outside the table as the original would.
         case ripplePhase(Int32)
         /// PT: a cell-table slot with no face (a PxBack / PxMid map cell outside the loaded set): the binary reads an
         /// unloaded pointer (§2.4–§2.5).
@@ -107,8 +110,9 @@ public struct ParallaxBlitter: Sendable {
     /// The ripple table `*_DAT_1009ffb8` (i32 per virtual row, `rippleTableRows` of them; each row's x offset is
     /// `−(entry >> 8)`), zeroed at every level setup (`.SetupLevelSprites` M l. 1994–2014; one blitter per level start).
     /// 6A-RP: allocated only with header `0x26ca` ≠ 0 (levels 11, 18), where `rippleAddEveryCall` and `rippleFill`
-    /// write rows 0x200…0x47f; empty (reads 0) on every other level, whose compositor offsets stay 0.
-    public var rippleTable: [Int32]
+    /// write rows 0x200…0x47f; empty (reads 0) on every other level, whose compositor offsets stay 0. Written only inside
+    /// this module (`internal(set)`): the writers index rows up to 0x47f unchecked, so no outside code may shorten it.
+    public internal(set) var rippleTable: [Int32]
     /// `_DAT_1009ffbc` (i16 per virtual row), added into ripple rows 0x200…0x47f on every `.PaintFrameWrap` call: cleared
     /// by `.InitGameGlobals` (M l. 725, 763–782) and `.SetupLevelSprites` (M l. 1994–2014), no non-zero writer anywhere in
     /// the dump — 0 as shipped (ENG §2.5 step 1). Transcribed with the add; allocated as `rippleTable` is.

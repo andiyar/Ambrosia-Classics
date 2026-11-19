@@ -428,7 +428,10 @@ final class FeatureGoldenTests: XCTestCase {
     /// 6A-RP's player start on level 11's fixture (`LevelRun`'s `start:` override): the header's start column (x 16299)
     /// dropped to y 600, just above the river (BG water fills rows 20–31, y 640…1023, across the level). From the
     /// header's own start (16299, 275) the camera opens at v 31 and settles at v 56, so no backdrop row ≥ 512 is ever on
-    /// screen (measured, 6A-RP); from here it opens at v 388 — view rows 388…771 — with water cells in view.
+    /// screen (measured, 6A-RP); from here it opens at v 388 — view rows 388…771 — with water cells in view. The moved
+    /// start is ratified by the seat (6A-RP review round, as D51.1 for the tree): the level's own start never shows the
+    /// ripple. So this golden must be KEPT when 6A-L10L11 adds level 11's own first-frame golden — that frame will not
+    /// show the ripple, and this one is the only golden that does.
     static let rippleStart = (x: 16299, y: 600)
 
     /// Level 11's fixture (`RippleTests.level11`, 27 left out) with `header` patched, seed 1, `FerazelPrefs()`, the

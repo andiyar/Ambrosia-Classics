@@ -96,6 +96,11 @@ final class RippleTests: XCTestCase {
         XCTAssertEqual(ParallaxBlitter.fctiwz(3e9), Int32.max)
         XCTAssertEqual(ParallaxBlitter.fctiwz(-3e9), Int32.min)
         XCTAssertEqual(ParallaxBlitter.fctiwz(-2.9), -2)
+        // The edges of `fctiwz` (PowerPC: NaN and ≥ 2^31 give the saturated words, never a trap).
+        XCTAssertEqual(ParallaxBlitter.fctiwz(2_147_483_648.0), Int32.max)
+        XCTAssertEqual(ParallaxBlitter.fctiwz(2_147_483_647.5), Int32.max)
+        XCTAssertEqual(ParallaxBlitter.fctiwz(-2_147_483_648.5), Int32.min)
+        XCTAssertEqual(ParallaxBlitter.fctiwz(.nan), Int32.min)
     }
 
     /// Rows 0x280…0x47f: fctiwz(275.2 · (S[(r + a) mod 55] − b)) (f64 275.2 at `100a15c8`).
@@ -356,6 +361,19 @@ final class RippleTests: XCTestCase {
                 : [(fg[t2], .copy), (grid.blend.faces[k2], grid.blendOp(pattern: pattern, water: nil)),
                    (fgWater[t2], .table(water))]
             check("27043", cellBytes(ports.tiles, B), oracle(B, before(t2) + blendB))
+            // M l. 27043 without the port's `blendOp`: the dry op from the dump's tables (0154 / 015c / 0158 and the
+            // plain pattern face), and `.BlitEncFaceTileBlendSpecial` (raw `1002aa00…`) as table w applied to
+            // `.BlitEncFaceTileBlend`'s result on the pixels the blend face writes (`.erase` marks them 0xFF).
+            let dryOp = TileBlitters.Op.blend(pattern: sets.patternPlain.faces[pattern],
+                                              patternWidth: sets.patternPlain.arguments.cellWidth,
+                                              quarter: tables.pair(.quarterSprite), half: tables.pair(.average),
+                                              threeQuarter: tables.pair(.threeQuarterSprite), water: nil)
+            let dry = oracle(B, before(t2) + [(fg[t2], on ? .table(water) : .copy), (grid.blend.faces[k2], dryOp)]
+                                + (on ? [] : [(fgWater[t2], .table(water))]))
+            let cover = oracle(B, [(grid.blend.faces[k2], .erase)])
+            XCTAssertTrue(cover.contains(0xff) && cover.contains(0), "the blend face covers part of the cell")
+            XCTAssertEqual(cellBytes(ports.tiles, B), on ? zip(dry, cover).map { $1 == 0xff ? water[Int($0)] : $0 } : dry,
+                           "M l. 27043: TileBlend with 0x26c6 = 0, table w after it with 1 (flag \(flag))")
             // M l. 9982 (`.RedrawScrollGrid`, t = 95): the pattern tile plain, or through table w.
             check("9982", cellBytes(ports.tiles, C), oracle(C, before(0x5f) + [(patternC, on ? .table(water) : .copy)]))
 
@@ -365,6 +383,17 @@ final class RippleTests: XCTestCase {
             try grid.plainWrapFGTile(col: A.col, row: A.row, scroll: scroll, ports: &plain)
             check("9618", cellBytes(plain.tiles, A),
                   oracle(A, on ? [(fg[t1], .table(water))] : [(fg[t1], .copy), (fgWater[t1], .table(water))]))
+            // M l. 27043 through `.PlainWrapFGTile` (M l. 9622–9626, mode (w + 0x15) << 16 | pattern; LightRenderer's
+            // blend arm): cell B's tile (kind 1) — FG, the FG-water face, the dry blend with 0; FG through table w and
+            // the water blend with 1.
+            try grid.plainWrapFGTile(col: B.col, row: B.row, scroll: scroll, ports: &plain)
+            let wetOp = TileBlitters.Op.blend(pattern: sets.patternPlain.faces[pattern],
+                                              patternWidth: sets.patternPlain.arguments.cellWidth,
+                                              quarter: tables.pair(.quarterSprite), half: tables.pair(.average),
+                                              threeQuarter: tables.pair(.threeQuarterSprite), water: on ? water : nil)
+            check("27043 plain", cellBytes(plain.tiles, B),
+                  oracle(B, on ? [(fg[t2], .table(water)), (grid.blend.faces[k2], wetOp)]
+                               : [(fg[t2], .copy), (fgWater[t2], .table(water)), (grid.blend.faces[k2], wetOp)]))
             // M l. 9635 (`.PlainWrapFGTile`, t = 95): the pattern tile plain, or through table w.
             try grid.plainWrapFGTile(col: C.col, row: C.row, scroll: scroll, ports: &plain)
             check("9635", cellBytes(plain.tiles, C), oracle(C, [(patternC, on ? .table(water) : .copy)]))
@@ -388,9 +417,16 @@ final class RippleTests: XCTestCase {
                                          particles: &pool, dustShape: &shape)
             XCTAssertEqual(face, on ? nil : WaterFaceDraw(cellX: B.col, cellY: B.row, tile: Int16(t2), waterKind: Int16(w)),
                            "8825 flag \(flag)")
+            // The same reader with its env built from the header (`WaterEffects.run`, WaterEffects.swift:201): the
+            // drawn pair (0, 0), the parity set, Effects 1 — cell B's face only with 0x26c6 = 0.
+            let world = SpriteWorld(level: L, seed: 1)
+            world.parity = true
+            var we = WaterEffects()
+            let faces = we.run(world: world, h: 0, v: 0, effects: 1)
+            XCTAssertEqual(faces.contains { $0.cellX == B.col && $0.cellY == B.row }, !on, "8825 via the header, flag \(flag)")
         }
         // Each site's two arms draw different cells here (so each assert above tells the arms apart).
-        XCTAssertEqual(seen.keys.sorted(), ["27043", "9618", "9635", "9728", "9957", "9982"])
+        XCTAssertEqual(seen.keys.sorted(), ["27043", "27043 plain", "9618", "9635", "9728", "9957", "9982"])
         for (site, cells) in seen.sorted(by: { $0.key < $1.key }) {
             XCTAssertEqual(cells.count, 2)
             XCTAssertNotEqual(cells.first, cells.last, "M l. \(site): the flag changes the cell")

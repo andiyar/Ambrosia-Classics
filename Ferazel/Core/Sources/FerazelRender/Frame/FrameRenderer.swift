@@ -478,14 +478,34 @@ public final class FrameRenderer {
                                           ports: &ports)
                 executed.append(.waterEffects(list.count))
                 // 6A-RP: `.PaintFrameWrap`'s ripple add (M l. 9211–9226), on every call: this op is the one every
-                // `.PaintFrameWrap` call carries exactly once (`FerazelSession.paintFrameWrap`). The binary adds after
-                // `.WrapDrawSprites`; only the compositor reads the table (`.DoubleBlitPPCParallaxOneLayer`), so here,
-                // just before the sprite op, is the same table at every read.
-                if parallax.parallaxRipple != 0 { parallax.rippleAddEveryCall() }
+                // `.PaintFrameWrap` call carries exactly once (`FerazelSession.paintFrameWrap`). This runs one op
+                // EARLIER than the dump: the binary adds right after `.WrapDrawSprites`, here it is just before the
+                // sprite op (a passage jump also emits `.wrapDrawSprites`, M l. 49677, so that op is not once a call).
+                // Nothing can see the difference: in play the table's only reader is the compositor
+                // (`.DoubleBlitPPCParallaxOneLayer`, at the copy, after both positions), the sprite op does not read it,
+                // and the add rows `_DAT_1009ffbc` are 0 as shipped.
+                // Both ripple arms write the table in place: the sprite pass's copy (`sprites.parallax`, set at each
+                // `.wrapDrawSprites`) shares the 32 KB table, so it is dropped before the write and shared again after
+                // (when it was set), as the OmniPx update arm does — no copy of the table. The sprite pass never reads
+                // the ripple table (`pxRowContents` reads the PxBack cells and factors only), and the blitter's other
+                // writers re-share themselves (the OmniPx update) or run at the level start before any share (the
+                // OmniPx turn-on), so sharing the written copy moves no pixel.
+                if parallax.parallaxRipple != 0 {
+                    let shared = sprites.parallax != nil
+                    sprites.parallax = nil
+                    defer { if shared { sprites.parallax = parallax } }
+                    parallax.rippleAddEveryCall()
+                }
             case .drawParticles(let list):
                 // 6A-RP: the drawn frame's ripple rows (M l. 9255–9425), before the flash step and `.DrawParticles`, from
-                // the phase as this call found it (its + 0x100 comes at `.wrapEraseSprites`).
-                if parallax.parallaxRipple != 0 { try parallax.rippleFill(phase: sprites.ripplePhase) }
+                // the phase as this call found it (its + 0x100 comes at `.wrapEraseSprites`); the sprite pass's copy
+                // unshared around the write as in `.wrapDrawWaterEffects`.
+                if parallax.parallaxRipple != 0 {
+                    let shared = sprites.parallax != nil
+                    sprites.parallax = nil
+                    defer { if shared { sprites.parallax = parallax } }
+                    try parallax.rippleFill(phase: sprites.ripplePhase)
+                }
                 particles.draw(list, scroll: scroll, ports: &ports)
                 executed.append(.particles(list.count))
             case .eraseParticles:
