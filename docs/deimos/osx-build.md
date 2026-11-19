@@ -1,7 +1,9 @@
 # Deimos Rising 1.0.6 — the front end, OS 9 build (L) against OS X build (X)
 
-Scope (Phase 4 S0/CMP, 2026-11-20): every function the Phase 4 grounding appendices cite for a front-end screen,
-compared between the two builds in the one app, plus the callees that turned out to differ. Ruling 5 of the Phase 4
+Scope (Phase 4 S0/CMP, 2026-11-20): the front-end functions in the §2 table (the screens the Phase 4 grounding
+appendices cite, and the callees that turned out to differ), compared between the two builds in the one app. A
+function not in §2, including an unlisted callee of a listed one, was **not** compared for this file and is not
+claimed the same: the automatic pass of §1 may have paired it as identical, but no one read it. Ruling 5 of the Phase 4
 plan says the front end follows X where the builds differ; each screen task reads this file first. This file
 **reports** differences; it changes nothing else in the bank (corrections go to the S0/BK task).
 
@@ -95,6 +97,7 @@ L span (to the next function in the C dump) / X body size and span. Callees the 
 | (new in X) key-set fetch per player | — | 10004f20 | — | 88 / 96 | — | — | HIGH |
 | display init (takes Full Screen byte) | 1000ae20 | 1000b080 | 1808 | 1836 / 1840 | differs (D6) | differs (D6) | HIGH |
 | event pump | 10048f30 | 1004a270 | 544 | 244 / 576³ | differs (D16) | differs (D16) | HIGH |
+| event reader (scores, name entry, credits, advert; grounding B §2c, §5) | 10048c90 | 10049f60 | 224 | 288 / 288 | differs (D24) | same | HIGH |
 | menu bar set-up | 100491d0 | 1004a530 | 336 | 320 / 320 | differs (D7) | differs (D7) | HIGH |
 | About item on/off | 10049320 | 1004a670 | 80 | 4 / 16 | differs (D9: empty in X) | — | HIGH |
 | menu item → code | 10049370 | 1004a680 | 144 | 72 / 80 | differs (no desk accessories) | same codes | HIGH |
@@ -169,8 +172,11 @@ it **once**, at app start (X 10049660 in X 10049630); none of the six X counterp
 **`EnableMenuCommand(nil, 'pref')`** — the application menu's Preferences… item is live (X 1004a57c..1004a588); no
 Apple-menu handle and no desk accessories; **deletes the File menu** (X 1004a5bc..1004a5c0), so Quit is only the
 application menu's Quit (a Quit AppleEvent → quit flag); Edit greyed as in L; `DrawMenuBar` (X 1004a654). A player on
-OS X sees Deimos Rising ▸ About…, Preferences…, Quit, and a greyed Edit menu; no File menu. **Changes what Phase 4
-builds** (the return path in B §1b steps 11a/11b loses its menu-bar step; ruling 12's menu list). HIGH.
+OS X sees Deimos Rising ▸ About…, Preferences…, Quit, and a greyed Edit menu; no File menu. The exact list on screen
+is OS X's to lay out (the application menu also carries the system's own items), and in full screen DrawSprocket
+hides the bar, so it is seen only in windowed mode (D6). **Changes what Phase 4 builds** (the return path in B §1b
+steps 11a/11b loses its menu-bar step; ruling 12's menu list). HIGH for the code; MED for the menu list the player
+sees.
 
 **D8 — Preferences… in the application menu opens the configuration dialog.** X installs a fifth AppleEvent handler,
 `aevt`/`pref` (X 1004ae50..1004ae94; L installs four: oapp, odoc, quit, pdoc), whose body (X 1004b020) calls
@@ -188,19 +194,38 @@ the same places (X 10023928, …). In X the About item stays enabled during a ga
 **D10 — The pause and the level select listen for app switching and Quit.** X adds a background event pump
 (X 10023300): one event through the normal pump (X 1004a270); resume → X 10024200 (resume), suspend → X 10024190
 (suspend), Quit AppleEvent → resume if suspended, then the quit flag (X 10023374, flag r2 − 0x5ec0 = L's b8,
-r2 − 0x6178); it returns 1 only when the pump reported nothing it acts on (code 0). X's pause calls it every loop (X 10023214; L's loop
+r2 − 0x6178); it returns 1 only when the pump reported no event (code 0), and 0 otherwise — for the three codes it
+acts on and also for every code it ignores, e.g. a menu choice such as About (D23), which is simply dropped. X's
+pause calls it every loop (X 10023214; L's loop
 10022f68..10022fa4 reads no events), and tests Caps Lock only after an idle pump while not suspended
 (X 100231f0..10023210). X's level select calls it after each begin-frame when `EventAvail(everyEvent)` says an event
-waits (X 1002ec2c..1002ec5c; nothing in L 1002e86c..1002e880). A player on OS X can ⌘-Tab away and back, or Quit
-from the Dock, while paused or choosing a sector; on OS 9 those events wait for the menu. **Changes what Phase 4
-builds.** HIGH.
+waits (X 1002ec2c..1002ec5c; nothing in L 1002e86c..1002e880). So the level select removes one waiting event of any
+kind per frame, keys and clicks included; that is harmless, because the level select reads keys through the per-pass
+key read (X 1004cdf0) and the mouse through `Button` / `GetMouse` (X 1004a1a0, 1004a220), never from events. A player
+on OS X can ⌘-Tab away and back while paused or choosing a sector (D11); on OS 9 those events wait for the menu.
+**Quit from the Dock does not quit at once in the level select.** The pump sets the quit flag, but the level select
+never reads it: the flag's only readers are the main menu (X 10022bb0), the pause (X 10023120), the start/return path
+(X 100238c0) and the getter X 10023110 (used only by the event pump, X 1004a458). Nothing happens until a sector is
+chosen or the level select is cancelled; cancelling returns to the menu, which then quits; choosing a sector starts
+the level, which plays on until the next pause (MED: nothing in the game loop reads the flag). Quit while paused ends
+the pause loop at once (X 10023228..10023244, returning 1); the paused-frame hook then sets the frame controller's quit
+byte (X 10030cb8), the game ends, the post-game check (X 10023a6c) skips the high scores, and the menu quits.
+**Changes what Phase 4 builds.** HIGH (MED where marked).
 
 **D11 — Leaving the app pauses the game.** The frame controller's paused-frame hook (L 10030870 ↔ X 10030c50) enters
 the pause screen not only when a pause was requested but also when `EventAvail(0x8100)` (operating-system and
-activate events) finds one waiting (X 10030c58..10030c7c). Inside the pause (D10) the suspend is handled; on return,
-with Caps Lock off, the pause ends by itself. A player who switches away mid-level or in the level select finds the
-game frozen, music paused, until they come back. **Changes what Phase 4 builds.** HIGH (MED for the exact first-frame
-order on return).
+activate events) finds one waiting (X 10030c58..10030c7c). Entering the pause this way does what every pause entry
+does: flush the event queue, stop all effects, play the Paused sound and pause the music (X 10023150..10023184);
+whether that flush drops the waiting suspend event is not settled by the listing (LOW). Inside the pause (D10) the
+suspend is handled; on return, with Caps Lock off, the pause ends by itself. A player who switches away mid-level
+finds the game frozen, music paused, until they come back. **In the level select it is a race:** each frame the level
+select pumps one event (X 1002ec5c) before the frame's pause check runs at the end of the frame (X 1003097c, reached
+from X 1002f204). A switch the pump catches runs the suspend (X 10024190: music paused) with no pause screen and no
+Paused sound, and the check then finds nothing waiting; only a switch that arrives after the pump and before the
+check opens the pause screen. Activate events (mask 0x0100) can also trigger the pause; they matter only in windowed
+mode (D6), where clicking another window deactivates the game's (LOW in practice). **Changes what Phase 4 builds.**
+HIGH for the code; MED for which way an app switch in the level select goes, and for the exact first-frame order on
+return.
 
 **D12 — The pause shows the cursor during a game.** When a game is running (X 10005d20 reads G + 8, the "session
 running" byte), X's pause shows the cursor and leaves in-game display mode (X 100231a8..100231b8: X 1000ba00 = L
@@ -208,9 +233,14 @@ running" byte), X's pause shows the cursor and leaves in-game display mode (X 10
 cursor and re-enters in-game mode (X 10023250..10023270: X 1000b960 = L 1000b6e0, X 1000c670 = L 1000c3f0). L does
 none of this (L 10022f5c..10022f68). **Changes what Phase 4 builds** (cursor visible while paused in a game). HIGH.
 
-**D13 — Films keep the cursor.** At game start X skips the hide-cursor when the session is a film (demo or Last Film)
-(X 1002393c..10023948 tests r27 = film; L 1002354c..10023550 hides it always). A player watching a demo on OS X sees
-the mouse pointer (a click ends a demo). **Changes what Phase 4 builds.** HIGH.
+**D13 — Films keep the cursor, until an app switch.** At game start X skips the hide-cursor when the session is a
+film (demo or Last Film) (X 1002393c..10023948 tests r27 = film; L 1002354c..10023550 hides it always). A player
+watching a demo on OS X sees the mouse pointer (a click ends a demo). But the paused-frame hook's app-switch check
+(D11) is not limited to games, and the session-running byte the pause tests (D12) is set for every session, films
+included (X 10005874, reached by both the play and the record path). So an app switch during a film enters the pause,
+which shows the cursor, and its normal exit hides it (X 10023250..10023270): the pointer is gone for the rest of that
+film. **Changes what Phase 4 builds.** MED (each step read in X; the chain through the frame controller during a film
+is inferred).
 
 **D14 — (folded into D7)** the start/return path's two menu-bar rebuilds (L 100238bc, 10023a28) are absent in X.
 
@@ -255,6 +285,16 @@ differs.
 **D23 — Menu clicks.** X's mouse-down handling inlines the menu-item mapping (X 1004acc8..1004ad10; L 100499c0 calls
 L 10049370), drops `OpenDeskAcc`/`SystemClick`, and reads window bounds through accessors. Codes unchanged: Apple 128
 item 1 → About (1), File 2000 item 1 → 2 (unreachable in X: no File menu). **No change for Phase 4.** HIGH.
+
+**D24 — The screens' event reader waits instead of polling.** The reader used by the scores screen, name entry, the
+credits and the advert screen (grounding B §2c, §2d, §5; L 10048c90 ↔ X 10049f60; call sites L 10021ae0, 10021e74,
+10025f8c, 10025a6c ↔ X 10021cf0, 10022084, 1002634c, 10025e2c) calls `GetNextEvent(everyEvent)` in L (L 10048cc0)
+and `WaitNextEvent(everyEvent, sleep, nil)` in X (X 10049fcc), sleeping 60 ticks while suspended, 1 tick when the
+session-running byte (D12) is clear — the menus — and 0 when it is set (X 10049f8c..10049fb4). Everything after the
+call is the same (L 10048cd0..10048d54 ↔ X 10049fdc..1004a060): the DrawSprocket hand-off and the codes returned
+(1 mouseDown, 2 keyDown and 3 autoKey with the character, 4 update; any other event 0). These screens time themselves
+by `TickCount`, so the sleep adds at most a tick of latency to a key or click. **No change for Phase 4** (nothing the
+player sees). HIGH for the code; MED that nothing visible differs.
 
 ## 4. Ruling 13 and grounding C §6a items 1, 2, 5
 
@@ -313,6 +353,7 @@ All three confirm grounding C §3a's field ↔ slot mapping. HIGH.
 5. Whether X processes ⌘, (Preferences…) or menu-bar clicks during pause and level select in full screen (D8; the
    menu bar is hidden by DrawSprocket there).
 6. Corrections for S0/BK (listed, not made here): display-window-present §8.1 "Full Screen does nothing" is L only
-   (D6); grounding A §5.2 and B §1a fade counts are L's (D1); A §5.3 pause, B §1b steps 2 and 11 (menu bar, cursor),
+   (D6); grounding A §5.2 and B §1a fade counts are L's (D1); A §5.3 pause, B §1a step 2 (the cursor) and B §1b step 11
+(the menu bar),
    C §1b's X prefs addresses (D20), C §5's "No Preferences menu item" (D8); ruling 17's reason (D5) and ruling 12's
    About detail (D9) are the seat's to revisit.
