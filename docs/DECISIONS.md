@@ -2493,3 +2493,19 @@ beside it, and to `out/Deimos/` in the main checkout.
    docs and one comment only.
 6. **Ben, in chat, 2026-11-15 mid-run: "finish this task and close."** Run 53 closed after 6A-TR; 6A-RP and 6A-BX1a
    moved to run 54's chip unbuilt.
+
+## D52 — Deimos Rising: the Phase 4 (front end) plan and the seat's rulings (2026-11-20)
+
+**Decided (the seat, Claude Fable 5.2, planning under a Coordinator; every item is Ben's to overturn):** the plan is
+`docs/superpowers/plans/2026-11-20-deimos-phase4.md` with grounding appendices A–D beside it; twelve orchestrator
+sections S0–S8b, running order and seats in the plan. Its seventeen rulings are listed there; the ones that shape the
+build: `FrontEnd` lives in DeimosCore and owns the session; the locked seams grow by addition in section S1a only; no
+demo starts by itself and Last Film is the `F` key (as the original — there is no attract mode); where the OS 9 and
+OS X builds differ the front end follows OS X; the settings file keeps the original's layout under Application
+Support and is written at quit only; the two settings windows are drawn by the game; PICTs are decoded by the shell
+and handed to Core; `-players` and `-sector` go when the menu lands, `-film` stays hidden; the controller follows
+D36/D37 with one pad. **Found while grounding:** the app file holds two builds (OS 9 at offset 0, OS X at 0xf67c0);
+the whole research bank describes the OS 9 one. INDEX #62 and #14 are closable (appendices A §3.4, C §3b).
+**Questions for Ben (eight, none blocking):** in the plan and in `docs/handoff-2026-11-20-deimos-phase4-plan.md`.
+**Reviewed by:** two Opus 5.5 legs (pass with fixes, 37 findings folded in), then the seat's cross-check.
+

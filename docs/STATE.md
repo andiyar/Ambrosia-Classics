@@ -149,6 +149,10 @@ Settled history lives in docs/STATE-history.md.
   scores, level select, settings on disk, the controls window). It has cards in the remainder plan
   (`docs/superpowers/plans/2026-11-05-deimos-remainder.md`) but no plan of its own; nothing of it is started. Ben's
   notes from either gate become a fix wave first.
+- **Phase 4 is planned (2026-11-20, D52), nothing built:** `docs/superpowers/plans/2026-11-20-deimos-phase4.md`, twelve
+  sections S0–S8b with four grounding appendices; running order, eight questions for Ben and the first brief are in
+  `docs/handoff-2026-11-20-deimos-phase4-plan.md`. S0 and S1a can start now. The app file holds an OS 9 and an OS X
+  build; the research read the OS 9 one, and S0 puts the OS X one on file.
 - **Data:** `Resources/Deimos/` in git; `deimos-census` 872 entries, 0 failures.
 - **Open:** RE bank `docs/deimos/INDEX.md` #13, #59 residue, #62, #63 and 134 cross-file label mismatches (#64 closed 2026-11-20); Ben's
   ear/eye items (on the gate card). Not modelled until Phase 4: the mouse button ending a film; the quit flag
