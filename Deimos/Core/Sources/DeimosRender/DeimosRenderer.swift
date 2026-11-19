@@ -27,7 +27,10 @@ import DeimosCore
 /// - `.screenBlit(src, dst)` — `FUN_1000bbd0` (`1000bbd0…1000bc5c`): one CopyBits srcCopy, back → window.
 /// - `.present(kind)` — `Presents`.
 /// - `.particles(stamps)` — `FUN_10043ba0` (`ParticleStamps`): the 7×7 spread-555 stamps into the back buffer.
-/// - `.pauseWait` traps with `.fade` / `.limit` (`RenderOp.isHostOp`).
+/// - `.drawPicture(id, into, top, left)` — `FUN_10044c30` (Phase 4): the shell-supplied picture
+///   (`DeimosAssets.shellPictures`) copied srcCopy at its own size with its top-left at (`left`, `top`), clipped to the
+///   buffer; a picture the shell did not supply draws nothing (`GetPicture` nil, `10044c5c`).
+/// - `.pauseWait` and `.hostWait` trap with `.fade` / `.limit` (`RenderOp.isHostOp`).
 ///
 /// Image decodes are cached per process (`ImageCache`); sprite groups through the assets' own cache. Missing data
 /// stops the renderer the same way for both: an `im16` that is missing or not a 16-bit TGA, and a sprite group
@@ -74,8 +77,16 @@ public final class DeimosRenderer {
             buffers.present(kind)
         case let .particles(stamps):
             ParticleStamps.stamp(stamps, into: &buffers.back)                       // FUN_10043ba0 at 10030cd0
-        case .fade, .limit, .pauseWait:
-            preconditionFailure("DeimosRenderer.apply: \(op) is the host's (fadeBegin/fadeStep/fadeEnd; limit; pauseWait)")
+        case let .drawPicture(id, into, top, left):
+            // FUN_10044c30: GetPicture nil → the error log and no draw (10044c5c); else DrawPicture at its own size.
+            guard let pic = assets.shellPictures[id] else { break }
+            var img = Pixmap555(width: pic.width, height: pic.height)
+            img.pixels = pic.pixels
+            let dst = MacRect(top: top, left: left, bottom: top &+ Int32(pic.height), right: left &+ Int32(pic.width))
+            withBuffer(into) { CopyBits.copy(from: img, to: &$0, srcRect: img.bounds, dstRect: dst) }
+        case .fade, .limit, .pauseWait, .hostWait:
+            preconditionFailure("DeimosRenderer.apply: \(op) is the host's (fadeBegin/fadeStep/fadeEnd; limit; pauseWait; "
+                                + "hostWait)")
         }
     }
 

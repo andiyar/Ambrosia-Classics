@@ -34,6 +34,11 @@ public struct DeimosAssets: Sendable {
     public let unitIndex: [FourCC: Int]
     public let levelOrder: LevelOrder
     private let cache: SpriteGroupCache
+    /// The pictures of the app's resource fork (the developer logo PICT 1000; the controls window's PICTs 190–197),
+    /// by PICT id, decoded by the shell with HectorKit and handed in at start-up (ruling 9: Core never decodes a
+    /// PICT). Empty by default; headless tests hand in made-up images. `RenderOp.drawPicture` reads it. Phase 4
+    /// (plan S1a).
+    public var shellPictures: [Int16: ShellPicture] = [:]
 
     /// Rows of the game-string table (`iVar6 < 0x25`) and its row size (0x80, NUL included).
     public static let gameStringCount = 37
@@ -94,6 +99,42 @@ public struct DeimosAssets: Sendable {
     /// Sprite group `id` (`SpriteGroup.load`), decoded once and cached.
     public func spriteGroup(_ id: FourCC) throws -> SpriteGroup {
         try cache.group(id) { try SpriteGroup.load(id: id, index: index) }
+    }
+
+    /// `stli inte`, the interface strings (`FUN_10002e50('inte', n, …)`: the loading lines 6–15, the console prompt
+    /// 16, the menu's 28 — grounding A §1, §2.3), read from the tag index on each call. Phase 4 (plan S1a).
+    public func interfaceStrings() throws -> StringList {
+        try stringList("inte")
+    }
+
+    /// `stli cred`, the credits' lines (`FUN_10025b90('cred')`: `<page n>` / `<title>` lines and plain lines,
+    /// grounding A §4), read from the tag index on each call. Phase 4 (plan S1a).
+    public func credits() throws -> StringList {
+        try stringList("cred")
+    }
+
+    private func stringList(_ id: String) throws -> StringList {
+        guard let r = index.record(type: FourCC("stli")!, id: FourCC(id)!) else {
+            throw DeimosAssetsError.missingTag(type: "stli", id: id)
+        }
+        return StringList(data: try index.data(for: r))
+    }
+}
+
+/// A picture the shell decoded from the app's resource fork (ruling 9): `width` × `height` x1R5G5B5 pixels, row 0 at
+/// the top — the game's 16-bit buffer format, as `DrawPicture` into a 16-bit GWorld leaves it. Phase 4 (plan S1a).
+public struct ShellPicture: Equatable, Sendable {
+    public let width: Int
+    public let height: Int
+    /// Row-major, row 0 top, `width` pixels per row (`width × height` of them).
+    public let pixels: [UInt16]
+
+    /// nil unless `pixels` holds exactly `width × height` values and neither is negative.
+    public init?(width: Int, height: Int, pixels: [UInt16]) {
+        guard width >= 0, height >= 0, pixels.count == width * height else { return nil }
+        self.width = width
+        self.height = height
+        self.pixels = pixels
     }
 }
 

@@ -250,6 +250,7 @@ import Synchronization
             switch request {
             case .hideCursor: wantsCursorHidden = true
             case .showCursor: wantsCursorHidden = false
+            case .aboutEnabled, .quit, .saveLastFilm, .ask: break   // Phase 4 seams: nothing emits them yet (S8a)
             }
         }
         if out.screenChanged { present() }

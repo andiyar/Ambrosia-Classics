@@ -112,6 +112,8 @@ final class ParticleStampTests: XCTestCase {
             .present(.gameScreen),
             .particles([ParticleStamp(x: 0, y: 0, core: 0x7FFF, fringe: 0x03E0, fade: 4)]),
             .pauseWait(.gameScreen),
+            .hostWait(.ticks(1)),
+            .drawPicture(id: 1000, into: .back, top: 0, left: 0),
         ]
         func name(_ op: RenderOp) -> String {
             switch op {
@@ -128,10 +130,12 @@ final class ParticleStampTests: XCTestCase {
             case .present: return "present"
             case .particles: return "particles"
             case .pauseWait: return "pauseWait"
+            case .hostWait: return "hostWait"
+            case .drawPicture: return "drawPicture"
             }
         }
-        XCTAssertEqual(Set(all.map(name)).count, 13, "one instance of every case")
-        XCTAssertEqual(Set(all.filter(RenderOp.isHostOp).map(name)), ["fade", "limit", "pauseWait"])
+        XCTAssertEqual(Set(all.map(name)).count, 15, "one instance of every case")
+        XCTAssertEqual(Set(all.filter(RenderOp.isHostOp).map(name)), ["fade", "limit", "pauseWait", "hostWait"])
 
         let r = DeimosRenderer(assets: assets)
         for op in all where !RenderOp.isHostOp(op) { r.apply(op) }
