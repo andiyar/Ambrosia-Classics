@@ -55,6 +55,8 @@ velocity after `entry_InitialDelay` (player-physics.md §4.1/4.2); dying lasts `
 ## 2. Session results and the post-game gates (`FUN_100234d0`, listing)
 
 ### 2.1 What `FUN_100051a0` hands back [HIGH — dump + listing]
+⚑ corrected (Phase 4 S0, 2026-11-20, grounding B §9.3): on a film-load failure `FUN_100051a0` returns before filling the result
+(`100056dc..100056f0` → `10005ca0`), so the caller sees all zeros. "Attract demo" below = the DEMOS button / `D` key film (no attract mode exists, grounding B §0).
 Request (8 bytes at `r1+0x3c` in `FUN_100234d0`): +0 level ID (from level select; 0 for films),
 +4 number of players (`stb r19,0x40(r1)`), +5 film flag (`stb r20,0x41(r1)`: 0 play, 1 "Last
 Film", 2 attract demo). Result (0x18 bytes at `r1+0x44`), filled at the end of `FUN_100051a0`:
@@ -155,6 +157,8 @@ raw scan for displacement 0x129c/0x12a0 finds only the prefs save/load/copy rout
 dead in 1.0.6. [MED — no indexed read via a computed base was ruled out beyond the scan]
 
 ### 3.2 Name entry `FUN_10021bd0 (player, slot, prefsCopy, afterGame)` [MED — dump, key branches listed]
+⚑ corrected (Phase 4 S0, 2026-11-20, grounding B §9.5): the key loop accepts autoKey (event 3) as well as keyDown (`0 < code < 4`); the confirmed
+name keeps its case — the easter eggs test an uppercase copy only.
 Copies the player's stored name into the slot and shows the table (`FUN_100222f0`). Then a key loop
 (`FUN_10048c90`): `0x0d` Return or `0x0a` → commit (`10021ec4 cmpwi r0,0xd; beq 0x10021f18`,
 `10021ee8 cmpwi r0,0xb; bge …; b 0x10021f18`); `0x08` → delete the last char; other printable
@@ -198,6 +202,11 @@ after the last player leaves. In a two-player game the game continues while eith
 Trigger (scoring-bonuses.md §8, level-scroll-objects.md §8, HIGH there): at the level-end point
 of sector 12 in a session that started at sector 1 (`G+0x14 == 12 && G+0x10 == 12`) →
 `G+0x0d = 1` and PermObject 23 **`noal`** instead of `nole` at (208, 240).
+⚑ Phase 3 (2026-11): both tests must hold — the level that ends is the last sector **and** the count of levels
+started in this game equals the number of levels (`10006de8..10006dfc`; `Deimos/Core/Sources/DeimosCore/Game/LevelEnd.swift`
+around line 83). So only a game that began at sector 1 reaches the finale. A game started at a later sector (the
+level select) ends sector 12 with the ordinary level-end notice and no finale, and can never earn the mission bonus
+(twelve perfect levels, scoring-bonuses.md §6.4).
 
 ### 5.1 `noal` "Notice - All Levels Completed" (data, decoded with the state rules of bosses.md §3.2)
 Group of 1, `x/yOffset` 0/0 and −90/−90 → rectangular placement (waves-and-enemies.md §4) at
@@ -241,16 +250,16 @@ truncated integer distance (54.6 → 54); the −32 frame rule is settled by loo
 | tick | event |
 |---|---|
 | T0 | `noal` S0, `acbo`; players made invulnerable; accuracy timer starts (`FUN_100072c0`) |
-| T0+3, +6, … | Flash Off/On every 3 ticks; `acbo` on each Flash On (15 plays, T0…T0+84) |
+| T0+3, +6, … | Flash Off/On every 3 ticks; `acbo` on each Flash On (15 plays, ~~T0…T0+84~~) — ⚑ corrected (Phase 3, 2026-11): a state entered by its timer sounds on the **next** tick (the sound step `10033b64..10033c54` runs before the timer step `10033c58..10033d6c`; state entry `FUN_100146f0` plays nothing), so `acbo` plays at T0 (state 0 entered at spawn) and then fourteen more at **T0+6k+1 = T0+7 … T0+85** (plan correction 1; pinned by test, D50 wave 3.2 (1)) |
 | T0+90 | 16th Flash On → counter → S6; `12gc` spawned the same tick (delay 0, spawn-and-waves.md §2.3) |
 | T0+92 | `noal` S5 Scale Out |
-| T0+95 | `12gc` S2; Air Explosion Group (`aieg`) requested at tick R: 50 explosions, member k first processed at **R + S_k − 1** with S_k = Σ_{j≤k} R(5,6) (a per-member cumulative spawn countdown, 50 RNG draws in member order; first at R+4 or R+5, last ∈ [R+249, R+299]); R = T0+95 if `12gc`'s S2 spawn set has delay 0 (not re-checked, INDEX #64) — ⚑ corrected (micro-wave, 2026-10-06) #47: was "50 explosions staggered 5–6 ticks (≈ T0+95…T0+370)" (micro-wave-2026-10-06.md §5) |
-| T0+102 | `noal` S4 Scale In + **`leen`** (only play); then pulses 90↔100 % every 10 ticks until the session ends |
-| T0+395 | `12gc` S1 entry 1: flags at ≈ T0+395, +464, +534, +604 (delay d issues at entry + max(d−1,0)) → irises open; storms ≈ 18–19 ticks after each flag |
+| T0+95 | `12gc` S2; Air Explosion Group (`aieg`) requested at tick R: 50 explosions, member k first processed at **R + S_k − 1** with S_k = Σ_{j≤k} R(5,6) (a per-member cumulative spawn countdown, 50 RNG draws in member order; first at R+4 or R+5, last ∈ [R+249, R+299]); R = T0+95 ~~if `12gc`'s S2 spawn set has delay 0 (not re-checked, INDEX #64)~~ — ⚑ corrected (micro-wave, 2026-10-06) #47: was "50 explosions staggered 5–6 ticks (≈ T0+95…T0+370)" (micro-wave-2026-10-06.md §5) — ⚑ corrected (Phase 3, 2026-11): R = T0+95 unconditionally — the S2 `aieg` set has DelayBetweenEntities 0/0, Rate 0/0, NumInVolley 1/1, RepeatSpawns FALSE (`Level 12 - Game Comp[12gc].unde.txt` lines 483–496), so it is issued on S2 entry (INDEX #64 closed). The explosion pass at T0+95 makes exactly **200** RNG draws, four per member in the order heading `10037988`, radius `100379b8`, scale tolerance `10014b14`, group delay `10035fc8` (pinned by test, D50 wave 3.2 (2)) |
+| T0+102 | `noal` S4 Scale In ~~+ **`leen`** (only play)~~; then pulses 90↔100 % every 10 ticks until the session ends — ⚑ corrected (Phase 3, 2026-11): `leen` (its only play) sounds on the next tick, **T0+103** (same rule as the `acbo` row; plan correction 1) |
+| T0+395 | `12gc` S1 entry 1: flags at ≈ T0+395, +464, +534, +604 (delay d issues at entry + max(d−1,0)) → irises open; storms ~~≈ 18–19 ticks~~ after each flag — ⚑ corrected (Phase 3, 2026-11): each iris releases at exactly its flag + 19 in both rounds: T0+414/694, 483/763, 553/833, 623/903 (pinned by test, D50 wave 3.2 (2)) |
 | T0+675 | S1 entry 2 (self-timer 280): second flag round ≈ T0+675, +744, +814, +884 → each iris releases a second storm |
 | T0+955 | S1 entry 3 → counter 3 → `12gc` deleted |
 | T0+1201 | accuracy tally state 1 ends (flli 196 = 1200, strict wait) → tally, then the mission bonus if all 12 levels were 100 %, then the coin bonus (scoring-bonuses.md §6.4–6.5; the money from the storms counts) |
-| tally done | `G+9` → `FUN_10007170`: `tran`, fade to black (§6), `FUN_100064d0` finds sector 13 → `none` → `G+8 = 0` |
+| tally done | `G+9` → `FUN_10007170`: `tran`, fade to black (§6), `FUN_100064d0` finds sector 13 → `none` → `G+8 = 0` — ⚑ corrected (Phase 3, 2026-11) (appendix B §2c, §2b): `FUN_10007170` stops the music and plays `tran` **before** the fade; `FUN_100064d0`'s resets run **before** its `none` test — game time = 0 (`10006500`), appeared G+0x38 = 0 (`10006510`), levels started becomes **13** (`1000667c..10006684`); `none` then calls the music resume at `10006698` (a no-op after the stop). The pass then adds 1, so game time at the session's end is **1**, not 0 (plan correction 2), and with appeared = 0 there is no present: the screen stays black. Session-end tick (pinned by test, D50 wave 3.2 (2)): **T0+1476** with no money and 0 % accuracy; **T0+1567** with twelve perfect levels (ten mission-bonus payments of 100,000 from T0+1337, every 9 ticks) |
 | after | `FUN_100234d0`: result +0x14 = 1 → best sector 12 (no −1) → pref 3 = 12; high-score check (§2.2) |
 [Timeline: HIGH for the same-tick order and the `aieg` stagger rule — ⚑ corrected (micro-wave, 2026-10-06) #47
 (micro-wave-2026-10-06.md §5): `noal` is requested owner-less at `10006ee4` before the entity update
@@ -258,8 +267,8 @@ truncated integer distance (54.6 → 54); the −32 frame rule is settled by loo
 group delay 0 (countdown 0 → −1 ≤ 0 at `10033a54..10033a70`) and is processed on T0; `12gc` likewise on
 T0+90; `aieg` members get the cumulative countdown `10035fb8..10035fe0` (sum zeroed by the wrapper
 `FUN_10035bf0` at `10035c20`). The per-state numbers are data (HIGH) and the timer/counter/spawn rules
-are HIGH in bosses.md §3.2 and spawn-and-waves.md §2.3. Still open: R itself (the `12gc` S2 spawn-set
-delay, INDEX #64). Was: "MED overall … because the exact same-tick order of creation versus the first
+are HIGH in bosses.md §3.2 and spawn-and-waves.md §2.3. ~~Still open: R itself (the `12gc` S2 spawn-set
+delay, INDEX #64).~~ ⚑ corrected (Phase 3, 2026-11): R closed — the set has no delay, R = T0+95 (T0+95 row; INDEX #64). Was: "MED overall … because the exact same-tick order of creation versus the first
 update, and the group-delay semantics of `aieg`, were not re-walked here."]
 The game itself never "ends" during the 1200-tick wait. The players keep flying (invulnerable)
 and can collect the storm pickups. The session ends only after the tallies.
@@ -311,7 +320,8 @@ frames (`FUN_10009750`, brute-forced idiom = signed `cursor > frames` — ⚑ co
 `10005a24..10005a48`), or at level complete, or at game over. `FUN_100097a0` still reads the
 byte at `cursor == frames` (zero), so the replay runs one tick past the recording [⚑ corrected (Phase 2, 2026-11) #55: confirmed by machine, MED → HIGH — the replica replays all four shipped films to their stored scores, each ending with the cursor at frames + 1: de01 25,050 (4,809 frames, cursor 4,810), de02 116,180 (read 8,357), de03 57,520 (read 10,058), de04 24,670 (read 5,649). The four films postdate the 1.0.6 game data and agree with the 1.0.6 code]. P2's frames
 are never checked. While replaying, "REPLAY" (GameString 9) is drawn and cheats are refused.
-**Film modes** [HIGH]: `FUN_10024de0` = `FUN_100234d0(2,1)` attract demo. It cycles film tags whose
+**Film modes** [HIGH]: `FUN_10024de0` = `FUN_100234d0(2,1)` attract demo (⚑ corrected (Phase 4 S0, 2026-11-20, grounding B §0: no attract mode — only the
+DEMOS button `10022d8c` and the `D` key `10023cec` call it; `FUN_10024e10` Last Film is reached only by the `F` key `10023d14`, no button). It cycles film tags whose
 name contains "Demo" with the counter `G+0x24`, wrapping to the first; `G+0x24` is not in the
 session reset list, so it persists across sessions. `FUN_10024e10` = `FUN_100234d0(1,1)` plays tag
 `last`. Films skip level select, pref and high-score handling (`r27`).
@@ -450,6 +460,7 @@ would corrupt one row of the table.
    listings.~~ → ⚑ corrected (micro-wave, 2026-10-06) #47: §5.3 (now HIGH) and micro-wave-2026-10-06.md §5 — `noal` is
    created before the same tick's entity update and processed on T0; `aieg` members carry a cumulative
    `R(5,6)` countdown (member k at R + S_k − 1). Residue: R itself (`12gc` S2 spawn-set delay) → INDEX #64.
+   ⚑ corrected (Phase 3, 2026-11): residue closed — the set has no delay, R = T0+95 (§5.3; INDEX #64).
 4. ~~The rule-2 distance (`FUN_10035070`/`FUN_10042e90`, bosses.md NR 1) and the frame of
    spawn-set children versus level objects (−32 x shift, bosses.md NR 4). Both affect whether every
    flag opens its iris; §5.2 shows a ≥ 5 px margin under the stated assumptions.~~ → ⚑ corrected (review wave 2, 2026-10-03)

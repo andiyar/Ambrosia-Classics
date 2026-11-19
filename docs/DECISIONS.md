@@ -2444,6 +2444,32 @@ dropped on restart) and all four are caught after the fix rounds. (9) The whole 
 minutes (per-sector 454 s, campaign 259 s, two-player 26 s): longer than one 10-minute tool call, so run it one test
 at a time with `--filter DeimosCampaignTests.CampaignSweepTests/<name>`.
 
+**As built — Phase 3 (D50), task ST and the phase cross-check (wave 3.4, 2026-11-20).** No game source changed.
+Commits: bank notes 4ef49c6 + review fixes 88d4c54 + 6ba71bf (29 notes: 17 corrections, 12 additions); the card
+4df24aa. Gates re-run at main c47416e (five days of Ferazel commits since wave 3.3; no Deimos path had changed; HectorKit
+ef2c341 clean): G1 366 passed + 4 Aki skips; G2 **372/0/0**; G3 unchanged; G4 4/0 and four PASS lines; G5 Deimos
+(Debug, and Release by the staging script), Aki, BubbleTroubleX; G7 empty; G8 **3/0** (454 s; 291 s for the other
+two). **G9, the boot check, was not run** (no say-so from Ben by the close): the staged app has never been launched.
+(1) **The cross-check (the Fable seat, over `611347d..main -- Deimos`)** found no code defect: the transition, the
+driver's cue split around the fade, the restart at the launch's sector and the two arguments fit as the as-built
+entries say. It found three things the per-task reviews could not, all about what Ben is told, and all are now on
+the card: (a) **a game started with `-sector N` has no finale and can never earn the mission bonus** — the finale
+needs the last sector AND twelve levels started in this game (`LevelEnd.swift:83`, listing `10006de8..10006dfc`), so
+the seat's first draft of the card ("or start with `-sector 12`") was false; a card reviewer caught it. This also
+narrows the wave 3.3 entry's item (7): "after the finale a new game starts at the launch's sector" can only ever
+mean sector 1, because a finale implies a sector-1 launch. (b) **In the staged Release build a bad `-film`,
+`-players` or `-sector` value quits with no message**; the alert the wave 3.3 handoff promised is DEBUG-only
+(`DeimosController.refuseLaunch`). (c) An overload also kills during the level-end tally's invulnerability, not
+only the two seconds after re-entry (`PlayerLife.swift:62`). (2) **Corrections to the wave 3.3 entry, from the
+bank review:** `11e1`'s hold is 2,250–2,325 ticks, not 2,360 (that is `11s1`'s minimum); the five holds are random
+ranges (`11s1` 2,360–2,600, `11m1` / `11m2` 3,130–3,325, `11m3` 2,820–2,890), and the entry's figures are values
+inside them; on its fourth "Spawn Flippers" `12e1` goes on to "Pause, Wait, Delete", which holds the scroll another
+130–140 ticks before the level ends. (3) `FUN_10007130` (the cheat-use counters) runs at game start AND at every
+level start. (4) `-film last` plays the shipped Last Film (`FilmLookup.swift:17`); the card names only de01–de04.
+(5) The card keeps the whole Phase 2 gate card as its Part B: Ben has not ruled on Phase 2, and one app now serves
+both gates. (6) Staged from 4df24aa to `~/Desktop/Deimos Rising.app` (replacing the Phase 2 build) with the card
+beside it, and to `out/Deimos/` in the main checkout.
+
 ## D51 — Ferazel's Wand: run 53's rulings (6A-TR — trees; 2026-11-15)
 
 1. **The tree golden starts above a tree, not at the first frame with a tree on screen.** The engine contract asks
@@ -2467,3 +2493,19 @@ at a time with `--filter DeimosCampaignTests.CampaignSweepTests/<name>`.
    docs and one comment only.
 6. **Ben, in chat, 2026-11-15 mid-run: "finish this task and close."** Run 53 closed after 6A-TR; 6A-RP and 6A-BX1a
    moved to run 54's chip unbuilt.
+
+## D52 — Deimos Rising: the Phase 4 (front end) plan and the seat's rulings (2026-11-20)
+
+**Decided (the seat, Claude Fable 5.2, planning under a Coordinator; every item is Ben's to overturn):** the plan is
+`docs/superpowers/plans/2026-11-20-deimos-phase4.md` with grounding appendices A–D beside it; twelve orchestrator
+sections S0–S8b, running order and seats in the plan. Its seventeen rulings are listed there; the ones that shape the
+build: `FrontEnd` lives in DeimosCore and owns the session; the locked seams grow by addition in section S1a only; no
+demo starts by itself and Last Film is the `F` key (as the original — there is no attract mode); where the OS 9 and
+OS X builds differ the front end follows OS X; the settings file keeps the original's layout under Application
+Support and is written at quit only; the two settings windows are drawn by the game; PICTs are decoded by the shell
+and handed to Core; `-players` and `-sector` go when the menu lands, `-film` stays hidden; the controller follows
+D36/D37 with one pad. **Found while grounding:** the app file holds two builds (OS 9 at offset 0, OS X at 0xf67c0);
+the whole research bank describes the OS 9 one. INDEX #62 and #14 are closable (appendices A §3.4, C §3b).
+**Questions for Ben (eight, none blocking):** in the plan and in `docs/handoff-2026-11-20-deimos-phase4-plan.md`.
+**Reviewed by:** two Opus 5.5 legs (pass with fixes, 37 findings folded in), then the seat's cross-check.
+

@@ -212,6 +212,8 @@ per player: dirty score/symbol/count/weapons/shield/power = 1, displayed shield/
 last score/lives = current, `+0x12e = +0x12f = in game (+0xc4)`; then `FUN_10031ae0`; release the
 image (`FUN_10020e00(img,-1)`). Player index outside 0/1 → assert `"FALSE"`, `G_ScoreBar.cc`
 line 0x16b. [HIGH]
+⚑ Phase 3 (2026-11) (pinned by test, DECISIONS D50 wave 3.2 as-built (4)): the per-player copy is
+`1003160c..10031628` for player 1 and `10031660..1003167c` for player 2.
 
 ## 8. Two-player layout and the solo game
 

@@ -1,0 +1,135 @@
+openjdk version "27" 2026-09-15
+OpenJDK Runtime Environment Homebrew (build 27)
+OpenJDK 64-Bit Server VM Homebrew (build 27, mixed mode)
+INFO  Using log config file: jar:file:/opt/homebrew/Cellar/ghidra/12.2/libexec/Ghidra/Framework/Generic/lib/Generic.jar!/generic.log4j.xml (LoggingInitialization)  
+INFO  Using log file: ~/Library/ghidra/ghidra_12.2_PUBLIC/application.log (LoggingInitialization)  
+INFO  Loading user preferences: ~/Library/ghidra/ghidra_12.2_PUBLIC/preferences (Preferences)  
+INFO  Loading previous preferences: ~/Library/ghidra/ghidra_12.1.3_PUBLIC/preferences (Preferences)  
+INFO  Searching for classes... (ClassSearcher)  
+INFO  Class search complete (# ms) (ClassSearcher)  
+WARNING: Final field name in class ghidra.util.charset.CharsetInfo has been mutated reflectively by class com.google.gson.internal.bind.ReflectiveTypeAdapterFactory$2 in unnamed module @<id> (file:/opt/homebrew/Cellar/ghidra/12.2/libexec/Ghidra/Framework/Generic/lib/gson-2.13.2.jar)
+WARNING: Use --enable-final-field-mutation=ALL-UNNAMED to avoid a warning
+WARNING: Mutating final fields will be blocked in a future release unless final field mutation is enabled
+INFO  Initializing SSL Context (DefaultSSLContextInitializer)  
+INFO  Initializing Random Number Generator... (SecureRandomFactory)  
+INFO  Random Number Generator initialization complete: NativePRNGNonBlocking (SecureRandomFactory)  
+INFO  Loaded 9 trusted CA certificates from the OS trust store. (DefaultTrustManagerFactory)  
+INFO  Loaded 111 trusted CA certificates from the Java default trust store. (DefaultTrustManagerFactory)  
+INFO  Headless startup complete (# ms) (AnalyzeHeadless)  
+INFO  Class searcher loaded 60 extension points (19 false positives) (ClassSearcher)  
+INFO  HEADLESS Script Paths:
+    /opt/homebrew/Cellar/ghidra/12.2/libexec/Ghidra/Features/WildcardAssembler/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.2/libexec/Ghidra/Features/Decompiler/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.2/libexec/Ghidra/Features/SystemEmulation/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.2/libexec/Ghidra/Features/FunctionID/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.2/libexec/Ghidra/Features/FileFormats/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.2/libexec/Ghidra/Processors/8051/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.2/libexec/Ghidra/Features/VersionTracking/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.2/libexec/Ghidra/Debug/Debugger-rmi-trace/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.2/libexec/Ghidra/Features/BSim/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.2/libexec/Ghidra/Features/DecompilerDependent/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.2/libexec/Ghidra/Processors/Atmel/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.2/libexec/Ghidra/Features/Swift/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.2/libexec/Ghidra/Processors/DATA/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.2/libexec/Ghidra/Debug/Debugger/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.2/libexec/Ghidra/Processors/JVM/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.2/libexec/Ghidra/Processors/PIC/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.2/libexec/Ghidra/Features/GnuDemangler/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.2/libexec/Ghidra/Features/PDB/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.2/libexec/Ghidra/Features/BytePatterns/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.2/libexec/Ghidra/Features/PyGhidra/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.2/libexec/Ghidra/Features/Base/ghidra_scripts
+    <repo>/ghidra/deimos/tools
+    /opt/homebrew/Cellar/ghidra/12.2/libexec/Ghidra/Features/MicrosoftCodeAnalyzer/ghidra_scripts (HeadlessAnalyzer)  
+INFO  HEADLESS: execution starts (HeadlessAnalyzer)  
+INFO  Creating project: ~/Developer/Ghidra/deimos/proj-osx/Deimos_osx (HeadlessAnalyzer)  
+INFO  Creating project: ~/Developer/Ghidra/deimos/proj-osx/Deimos_osx (DefaultProject)  
+INFO  REPORT: Processing input files:  (HeadlessAnalyzer)  
+INFO       project: ~/Developer/Ghidra/deimos/proj-osx/Deimos_osx (HeadlessAnalyzer)  
+INFO  IMPORTING: file://~/Developer/Ghidra/deimos/Deimos_osx_pef (HeadlessAnalyzer)  
+INFO  Using Loader: Preferred Executable Format (PEF) (ProgramLoader)  
+INFO  Using Language/Compiler: PowerPC:BE:32:default:macosx (ProgramLoader)  
+INFO  Using Library Search Path: [., /System/Library/dyld/dyld_shared_cache_arm64e, /System/Library/dyld/dyld_shared_cache_x86_64, /System/Library/dyld/dyld_shared_cache_x86_64h, /System/Cryptexes/OS/System/Library/dyld/dyld_shared_cache_arm64e, /System/Cryptexes/OS/System/Library/dyld/dyld_shared_cache_x86_64, /System/Cryptexes/OS/System/Library/dyld/dyld_shared_cache_x86_64h, ~/Library/Java/Extensions, /Library/Java/Extensions, /Network/Library/Java/Extensions, /System/Library/Java/Extensions, /usr/lib/java] (ProgramLoader)  
+INFO  IMPORTING: Loaded 0 additional files (HeadlessAnalyzer)  
+INFO  ANALYZING all memory and code: file://~/Developer/Ghidra/deimos/Deimos_osx_pef (HeadlessAnalyzer)  
+ERROR Invalid PNG data at 100dd29c (PngDataType)  
+ERROR Invalid GIF data at 100fa05c (GifDataType)  
+ERROR Invalid GIF data at 100fa064 (GifDataType)  
+ERROR os/mac_arm_64/decompile does not exist (see GettingStarted.md, 'Building Native Components') (DecompileProcessFactory)  
+INFO  Packed database cache: /var/tmp/<user>-ghidra/packed-db-cache (PackedDatabaseCache)  
+INFO  Applied data type archive: generic_clib (ApplyDataArchiveAnalyzer)  
+ERROR Unexpected exception (DecompilerCallConventionAnalyzer) java.util.concurrent.ExecutionException: java.io.IOException: Unable to create decompiler for program: Deimos_osx_pef - .ProgramDB
+Could not find decompiler executable
+	at java.base/java.util.concurrent.FutureTask.report(FutureTask.java:124)
+	at java.base/java.util.concurrent.FutureTask.get(FutureTask.java:193)
+	at generic.concurrent.QResult.<init>(QResult.java:40)
+	at generic.concurrent.FutureTaskMonitor.run(FutureTaskMonitor.java:77)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1090)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:614)
+	at java.base/java.lang.Thread.run(Thread.java:1527)
+Caused by: java.io.IOException: Unable to create decompiler for program: Deimos_osx_pef - .ProgramDB
+Could not find decompiler executable
+	at ghidra.app.cmd.function.DecompilerParallelConventionAnalysisCmd.createDecompilerInterface(DecompilerParallelConventionAnalysisCmd.java:67)
+	at ghidra.app.plugin.core.analysis.DecompilerCallConventionAnalyzer$DecompilerFactory.doCreate(DecompilerCallConventionAnalyzer.java:259)
+	at ghidra.app.plugin.core.analysis.DecompilerCallConventionAnalyzer$DecompilerFactory.doCreate(DecompilerCallConventionAnalyzer.java:249)
+	at generic.cache.CountingBasicFactory.create(CountingBasicFactory.java:30)
+	at generic.cache.CachingPool.get(CachingPool.java:81)
+	at ghidra.app.plugin.core.analysis.DecompilerCallConventionAnalyzer$ParallelDecompilerCallback.run(DecompilerCallConventionAnalyzer.java:284)
+	at ghidra.app.plugin.core.analysis.DecompilerCallConventionAnalyzer$ParallelDecompilerCallback.run(DecompilerCallConventionAnalyzer.java:268)
+	at generic.concurrent.QRunnableAdapter.process(QRunnableAdapter.java:31)
+	at generic.concurrent.ConcurrentQ$CallbackCallable.call(ConcurrentQ.java:706)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:330)
+	at generic.concurrent.FutureTaskMonitor.run(FutureTaskMonitor.java:75)
+	... 3 more
+ 
+INFO  No functions detected that make variadic function calls with format strings containing format specifiers (FormatStringAnalyzer)  
+INFO  -----------------------------------------------------
+    ASCII Strings                              # secs
+    Apply Data Archives                        # secs
+    Call Convention ID                         # secs
+    Call-Fixup Installer                       # secs
+    Create Address Tables                      # secs
+    Create Address Tables - One Time           # secs
+    Create Function                            # secs
+    Data Reference                             # secs
+    Decompiler Switch Analysis                 # secs
+    Demangler GNU                              # secs
+    Disassemble                                # secs
+    Disassemble Entry Points                   # secs
+    Embedded Media                             # secs
+    External Entry References                  # secs
+    Function ID                                # secs
+    Function Start Pre Search                  # secs
+    Function Start Search                      # secs
+    Function Start Search After Code           # secs
+    Function Start Search After Data           # secs
+    Function Start Search delayed - One Time   # secs
+    Non-Returning Functions - Discovered       # secs
+    PEF Debug                                  # secs
+    PEF Indirect Addressing                    # secs
+    PowerPC Constant Reference Analyzer        # secs
+    Reference                                  # secs
+    Shared Return Calls                        # secs
+    Source Language Support                    # secs
+    Stack                                      # secs
+    Subroutine References                      # secs
+    Variadic Function Signature Override       # secs
+-----------------------------------------------------
+     Total Time   # secs
+-----------------------------------------------------
+ (AutoAnalysisManager)  
+INFO  REPORT: Analysis succeeded for file: file://~/Developer/Ghidra/deimos/Deimos_osx_pef (HeadlessAnalyzer)  
+INFO  REPORT: Execute script: DumpSymbols.java '~/Developer/Ghidra/deimos/Deimos_osx.functions.txt'  (HeadlessAnalyzer)  
+INFO  SCRIPT: <repo>/ghidra/deimos/tools/DumpSymbols.java (HeadlessAnalyzer)  
+INFO  DumpSymbols.java> DumpSymbols: 2676 functions, 1605 named symbols, 534 externals (GhidraScript)  
+INFO  REPORT: Execute script: DumpData.java '~/Developer/Ghidra/deimos/Deimos_osx.data.txt' '100e3a10:10125484'  (HeadlessAnalyzer)  
+INFO  SCRIPT: <repo>/ghidra/deimos/tools/DumpData.java (HeadlessAnalyzer)  
+INFO  DumpData.java> DumpData: 26697 initialized words, 16384 r2 slots, 47 labelled uninitialized words (GhidraScript)  
+INFO  REPORT: Execute script: DisasmRange.java '~/Developer/Ghidra/deimos/Deimos_osx.disasm.txt' '10000000:100e3a10'  (HeadlessAnalyzer)  
+INFO  SCRIPT: <repo>/ghidra/deimos/tools/DisasmRange.java (HeadlessAnalyzer)  
+INFO  DisasmRange.java> DisasmRange: 224225 instructions, 8867 undecoded words (GhidraScript)  
+INFO  ANALYZING changes made by post scripts: file://~/Developer/Ghidra/deimos/Deimos_osx_pef (HeadlessAnalyzer)  
+INFO  REPORT: Post-analysis succeeded for file: file://~/Developer/Ghidra/deimos/Deimos_osx_pef (HeadlessAnalyzer)  
+INFO  /Deimos_osx_pef: file created (<user>) (LocalFileSystem)  
+INFO  REPORT: Save succeeded for: /Deimos_osx_pef (Deimos_osx:/Deimos_osx_pef) (HeadlessAnalyzer)  
+INFO  REPORT: Import succeeded (HeadlessAnalyzer)  

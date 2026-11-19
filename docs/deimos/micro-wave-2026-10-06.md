@@ -24,7 +24,8 @@ come from the decoded `$W/data/Game/{unde,flli}`. Labels follow `brief.md`.
 - `SetControlAction(ctl, upp)` (`100111d4`, `10011220`).
 
 TVs: `r2−0x78ec` → `0x100e08f0` → **`0x10011750`** goes on item 12 (Sound Volume, int pref 0).
-`r2−0x78f0` → `0x100e08e8` → **`0x100118e0`** goes on item 15 (Music Volume, int pref 1). The item↔pref
+`r2−0x78f0` → `0x100e08e8` → **`0x100118e0`** goes on item 15 (Music Volume, int pref 1). ⚑ corrected (Phase 4 S0, 2026-11-20, grounding C §8.5:
+items 12/15 reference CNTL 2000/2001, which are absent from the shipped resource fork — the controls' art and min/max are unknown.) The item↔pref
 mapping is from sound-music.md §3 table rows `+0x68`/`+0x6C`.
 
 **Body** (the two procs are identical except for the label item). Arguments are `(ControlRef r3,
@@ -230,7 +231,8 @@ State `*(r2−0x6f7c)` = `0x1010332c` (bss): +0 mode (0 off / 1 accept / 2 fail)
 Values from `$W/data/Game/flli/Game[gafl].flli.txt` lines 45–48. Accept (float32): 6 ticks up
 (1.9 → 2.08 → clamp 2.0), 6 down (0.92 → 1.0). Fail: exactly 4 + 4. The flash ends on the first tick
 where both scale is back at 1.0 and alpha has reached 32, i.e. the alpha walk dominates. The
-starter/initial values are set by the caller `FUN_1002e310` (not re-read here). Mode ≥ 3 would use
+starter/initial values are set by the caller `FUN_1002e310` (⚑ corrected (Phase 4 S0, 2026-11-20, grounding A §11.10: they are set by `FUN_1002fe40`,
+as the fold-in said; the reset values `FUN_1002fc90` are mode 0, colour 0x7fff, alpha 32, scale 1.0) (not re-read here). Mode ≥ 3 would use
 uninitialised f31/f1, but it is unreachable as far as read. Closes gameplay-leftovers NR 2 and front-end
 NR 9 except for the initial alpha.
 
