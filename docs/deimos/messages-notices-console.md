@@ -321,7 +321,7 @@ Otherwise post the refusal (type 1) and play `gaso[5]`.
 Counters are zeroed at every game start by `FUN_10007130`, the only writer (raw scan for `stw …,0x16c…0x17c`:
 `10007138..48`), called from `FUN_100051a0`'s new-game branch. The very first game uses the 0x180-byte memset.
 ⚑ Phase 3 (2026-11): the zeroing **also** runs at **every level start** — the level start `FUN_100064d0` calls
-`FUN_10007130` at `10006514` (appendix A §2 disagreement 6) — so each cheat's usage limit resets per level.
+`FUN_10007130` at `10006514` (appendix A §2, the cheat-counters row) — so each cheat's usage limit resets per level.
 The guide's "all codes have usage limits" is true except for `accuracy`.
 
 ### 5.5 The raw range `0x10007d60–0x1000922c`, function by function (unreachable rows are debug only)
