@@ -1689,6 +1689,47 @@ ids; its `--check` reads this table):
   Asserts: ENG §2.5's three.
 - **Gate:** Gate-F (G2 703). **Commit:** `FerazelRender: the river ripple of levels 11 and 18; the submerged tint
   proven; 10 tests`.
+- **As executed — 6A-RP (run 54):** task dea9c0b (10 tests: 9 in `RippleTests`, the golden in `FeatureGoldenTests`),
+  ledger anchors 5af5ec4, review fix round 5cbade1 (asserts inside the named tests, two comments, one small Sources
+  change that moves no pixel) and its ledger anchors 77e79f4. Ferazel/Core 693 → 703; the fix round added no test
+  (D51.2). **What was built:** the river backdrop of levels 11 and 18 now ripples — the original's per-frame loops
+  fill the backdrop's row offsets (a 55-entry sine table; rows 0x200…0x27f and 0x280…0x47f by their formulas; the
+  rows drift 2 a frame, so the river flows), and the level-open refusal is gone. The seven submerged-tint readers
+  are proven against the dump with the flag both ways. **The golden (measured):** level 11's fixture with the 27
+  records left out; the player started at (16299, 600), not the level's own start (16299, 275) — from the level's
+  own start the camera stays at v 31…56 for 3,000 ticks and never shows a backdrop row ≥ 512, so the ripple never
+  reaches the screen; the moved start is **ratified by the seat** (as D51.1 for the tree). Tick 143, the first
+  presented frame, `c92fbe9fb87250c3`; the ripple moved 4,912 screen bytes; with the fill stubbed
+  `974417c1b079fa29`; with the submerged flag forced off `7c7042ee30a1f6d3`. **Keep this golden at 6A-L10L11:** level
+  11's own first frame will not show the ripple. **Three differences from the dump:** (a) the every-call add runs
+  one op earlier — just before the sprite op instead of just after it (a passage jump also emits the sprite op, so
+  only the water-effects op is once a call); nothing can see it, because only the compositor reads the table, at the
+  copy, and the add rows are 0 as shipped; (b) a new refusal, `Refusal.ripplePhase`, where the original would read
+  before the sine table once the phase wraps negative — about 2^23 frames in one level, unreachable in play (an
+  audit time-bound row); (c) the table is allocated only on the two ripple levels (empty, reading 0, elsewhere),
+  where the binary zeroes it on every level — the same values. **Deviations:** `ParallaxTests.swift` edited
+  (levels 11 and 18 now open instead of refusing; the fire levels unchanged); the ledger script changed (its
+  ripple anchor, the readers column, one state line); the golden lives in `FeatureGoldenTests` (the plan's
+  verification model and 6A-TR's precedent; the card said all ten in `RippleTests`); the renderer's `parallax`
+  became `internal(set)` so a test can set the add rows. **Reviews:** leg 1 (spec) MERGEABLE, 0 / 1 / 9 — every
+  constant, the sine table and all implementer numbers reproduced independently; leg 2 (quality) MERGEABLE AFTER
+  FIXES, 0 / 3 / 5; 68 mutations planted: 58 caught, 6 equivalent, 4 survived. **Fix round:** leg 2's asserts went
+  into `testSubmergedTintSitesMatchDump` (reader 27043 through the plain FG-tile path; the blend-special result
+  checked against the dump's own tables, not the port's blend op; reader 8825 with its settings built from the
+  level header) and `testRippleRowsShallow` (the truncation's NaN and 2^31 edges); the 4 survivors now fail (two
+  re-checked by hand here: the plain-path flag inverted, the header wiring set to 0), so 62 caught, 6 equivalent,
+  0 survived. Both ripple writes now drop the sprite pass's shared copy of the backdrop blitter first (as the OmniPx
+  update does), so the 32 KB table is no longer copied (up to twice a call before) — the sprite pass never reads
+  it, and every ripple test and golden stayed identical. `rippleTable` is now `public internal(set)`. No pinned value moved: levels 1–5,
+  level 21's fixture, level 10's strip, wind, cannons and tree, and the ripple golden are all as they were. Gates
+  (fix round): G5 succeeded, GW1 0 / 2, GW3 0 / 1, GW4 `Build complete!`, G7 / G7b / G8 / G10 empty; ledger
+  `--check` OK. **Carries left:** the flag is tested both in the renderer and in the method (kept: the renderer's
+  test now also skips the unsharing); a few test lines restate the code (the drift identity, `v + 383 ≥ 0x200`,
+  "ffbc is 0") — no independent replacement was proposed, the literal values beside them do the pinning; swallowing
+  the fill's refusal is caught only by `DrawModeAuditTests`; on a refusal the rows before the failing row are
+  already written (unobservable — the run stops); the golden alone cannot see a sine-index shift or the slope (the
+  synthetic row tests carry those); ENG §2.5 still asks for Mac and Windows references (the plan makes feature
+  goldens Mac-only); the ledger lists `.RipplePxBackOffsets` as a reader of 0x26ca (true, but it never runs).
 
 #### 6A-BX1a — minor — Box scenery: decorations, outcrops, mushrooms, the graves' mirrored hot rect (→ 709)
 - **Files:** `Sources/FerazelCore/Sprites/SetupFaces.swift` (the Setup-face table rows; `:493` decorations and the
