@@ -242,7 +242,6 @@ PORT_CACHE = cached_records()
 # ---------------------------------------------------------------- the port: one rule per type range
 
 BUILT_S, REFUSED, NOTBUILT, PARTIAL = 'built', 'refused', 'not built', 'built (Setup) / Handle arm not built'
-FLIPLESS = 'built (Setup) / hot-rect flip not built'
 
 
 def port_arm(t, cls, lvs=None):
@@ -357,12 +356,14 @@ def _port_arm(t, cls, ps, n1):
             if lo <= t <= hi:
                 arm = anchor(SF, rx)
                 extra = ' (the 2907 countdown Handle is built)' if t == 0xb5b else ''
-                flip = t in FLIP_RECT and n1 > 0
-                if flip:
+                if t in FLIP_RECT and n1 > 0:
+                    # 6A-BX1a built the `.FlipHRect` (M l. 59670–59673): anchored on the Swift call and on the width
+                    # table as written, so a removed flip (or a dropped width) fails --check.
                     extra += (f'; p1 ≠ 0 on {n1} record{"s" if n1 != 1 else ""} with a non-empty hot rect: the `.FlipHRect` (M l. 59670–59673) '
-                              f'is not built ({anchor(BOX, r"later: `[.]FlipHRect")})')
+                              f'built (6A-BX1a: {anchor(BOX, r"PlatformSprite[.]flipH[(]s[.]hotRect, w[)]")}, widths '
+                              f'{anchor(BOX, r"static let decorationFaceWidths: .*0x%x: " % t)})')
                 if t in SHEETS:
-                    return (FLIPLESS if flip else BUILT_S, arm, what + extra)
+                    return (BUILT_S, arm, what + extra)
                 return (REFUSED, face_refusal(), f'{what}: arm {arm} built; face {h(t)} not in the Setup-face table{extra}')
         fixed = {0x426: r'case 0x426:', 0x429: r'case 0x429:', 0x42e: r'case 0x42e, 0x433, 0x434:',
                  0x433: r'case 0x42e, 0x433, 0x434:', 0x434: r'case 0x42e, 0x433, 0x434:', 0x42f: r'case 0x42f, 0x430:',

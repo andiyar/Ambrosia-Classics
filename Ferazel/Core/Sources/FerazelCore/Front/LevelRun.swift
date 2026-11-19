@@ -1337,8 +1337,12 @@ public struct CachedFaces: Equatable, Sendable {
     /// 2826, 2829, 2840, 2841 → their singles (59647); the Platform 1403, the save point 1065, the gate 2940, the exit
     /// 3249 and the Bonus 1059 / 1340 / 3100 / 3214 Setups store no mark.
     /// 6A-TR: every tree 0xc08…0xc0f → its own single (`_DAT_100a0ae0[type − 0xc08]`, M l. 62603; #137–#144).
+    /// 6A-BX1a: the Box scenery of levels 10–22 → its own single — the decorations 2808, 2816, 2817, 2827, 2831, 2833,
+    /// 2834, 2836, 2837, 2846, 2847 (M l. 59647; #13, #21, #22, #32, #36, #38, #39, #41, #42, #51, #52), the outcrops
+    /// 2850, 2852, 2857, 2861 (M l. 59699, flag 1; #81, #83, #88, #92) and the mushrooms 2872, 2873, 2875, 2876 (M l.
+    /// 59709; #103, #104, #106, #107).
     /// Every other built type marks nothing. // later: Phase 6 — the marks of the types not built yet, with their
-    /// Setups (the clouds, plants, scenery, the carpet set 0x438, fire 1208's 0x4b8 + 0x4b9, the bosses' own
+    /// Setups (the clouds, plants, the other scenery, the carpet set 0x438, fire 1208's 0x4b8 + 0x4b9, the bosses' own
     /// records and 0x46a's / 0x77b's: the Wizard `0848` only, the Chief 0x77b, the Demon all three 0x46a records,
     /// Xichra `0848` + `0840` + 0x77b — LL §1 finding 8).
     static func markedRecords(type t: Int16, p1: Int16 = 0) -> [RecordKey] {
@@ -1381,7 +1385,9 @@ public struct CachedFaces: Equatable, Sendable {
         case 0x5b8, 0xa96, 0xa99, 0xa9a, 0xbba, 0xb54, 0xb55, 0xb1a, 0xb20, 0xb21, 0xb87, 0xb88, 0xb8a, 0xb25,
              0xb36, 0xb37, 0xb3a, 0xb43, 0xb6a, 0xb6c, 0xb6d, 0xb6e, 0xb6f, 0xb70,
              0xafc, 0xafd, 0xb04, 0xb05, 0xb10, 0xb1b, 0xb34, 0xb35, 0xb44,
-             0xb06, 0xb0a, 0xb0d, 0xb18, 0xb19:
+             0xb06, 0xb0a, 0xb0d, 0xb18, 0xb19,
+             0xaf8, 0xb00, 0xb01, 0xb0b, 0xb0f, 0xb11, 0xb12, 0xb14, 0xb15, 0xb1e, 0xb1f,
+             0xb22, 0xb24, 0xb29, 0xb2d, 0xb38, 0xb39, 0xb3b, 0xb3c:
             return [single(t)]
         default: return []
         }

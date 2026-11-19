@@ -240,6 +240,13 @@ public enum SetupFaces {
         // 0x71c / 0x71d 8, 0x71e 6 × 0xb4×0xa0, one row each, flag 0).
         for p: Int16 in [0xb06, 0xb0a, 0xb0d, 0xb18, 0xb19] { all.append(one(p)) }
         all += Warrior.sheets.map { ($0.pict, $0) }
+        // 6A-BX1a — the Box scenery of levels 10–22 (`.InitBoxSprite` M l. 58775–58827): the decorations 2808, 2816,
+        // 2817, 2827, 2831, 2833, 2834, 2836, 2837, 2846, 2847 (the 0x2d cache singles 0xaf5+i, flag 0), the mushrooms
+        // 2872, 2873, 2875, 2876 (cache 0xb36+i, flag 0) and the rock outcrops 2850, 2852, 2857, 2861 (cache 0xb22+i,
+        // flag 1 → the level+base CLUT, `levelClutCache`).
+        for p: Int16 in [0xaf8, 0xb00, 0xb01, 0xb0b, 0xb0f, 0xb11, 0xb12, 0xb14, 0xb15, 0xb1e, 0xb1f,
+                         0xb38, 0xb39, 0xb3b, 0xb3c] { all.append(one(p)) }
+        for p: Int16 in [0xb22, 0xb24, 0xb29, 0xb2d] { all.append(one(p, clut: 202)) }
         // 6A-TR: the trees 0xc08…0xc0f (`.InitBackgroundSprite` M l. 61889–61895: cache singles 0xc08 + i, flag 1 →
         // the level+base CLUT, `levelClutCache`), faced by their Handle.
         for p in BackgroundSprite.trees { all.append(one(p, clut: 202)) }

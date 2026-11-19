@@ -403,8 +403,10 @@ public enum BoxSprite {
             }
             if p.p1 != 0 {
                 s.mirrored = true
-                // later: `.FlipHRect(+0x34, face +6)` — Core has no face record; every decoration placed on levels 1–5
-                // has the empty rect, which the flip leaves empty (left = right = w): no contact either way.
+                // `.FlipHRect(+0x34, face +6)` (M l. 59670–59673; 6A-BX1a): `PlatformSprite.flipH` with the face's width
+                // (`decorationFaceWidths`). The empty rect of every other decoration flips to left = right = w — still
+                // empty, met by no `SectRect` — so it is kept (0, 0, 0, 0): every decoration on levels 1–5 has it.
+                if let w = decorationFaceWidths[t] { s.hotRect = PlatformSprite.flipH(s.hotRect, w) }
             }
             if p.p2 != 0 { s.mode = UInt32(truncatingIfNeeded: Int(p.p2) + 0x10000) }
             if p.p3 != 0 { s.layer = 10000 }
@@ -444,6 +446,13 @@ public enum BoxSprite {
         s.y = s.oldPosition.y
         s.pushForce = 0x80
     }
+
+    /// The face width `.FlipHRect` reads (face `+6`, M l. 59672) for the six decorations whose Setup gives a non-empty
+    /// hot rect (M l. 59650–59668): their cache single's picture frame width, read from the shipped Sprites file —
+    /// Core's Setup has no face records (the session reads the same widths, `FerazelSession.frameRect`; pinned against
+    /// it in `BoxSceneryTests.testGraveHotRectFlip`). Placed mirrored (p1 ≠ 0): only the level-21 graves 2834 / 2836
+    /// (and 2833, whose rect 5…59 is symmetric in its 64-px face).
+    static let decorationFaceWidths: [Int16: Int] = [0xb0b: 74, 0xb10: 54, 0xb11: 64, 0xb12: 40, 0xb13: 36, 0xb14: 34]
 
     /// The enemy pipes 1490…1493 (0x5d2 up, 0x5d3 down, 0x5d4 right, 0x5d5 left; enemies-ground-2 §6, enemies-flyers
     /// §7.4) and their cue 459 (`*_DAT_100a0364`, `SoundSlots`).

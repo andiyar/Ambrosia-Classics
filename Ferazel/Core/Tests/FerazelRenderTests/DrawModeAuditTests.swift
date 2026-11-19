@@ -437,11 +437,11 @@ final class DrawModeAuditTests: XCTestCase {
         // `SpriteBlitter.behindTilesWalk` (no built level has a strip: header 0x2716 = 0 on levels 1–5).
         W("Sprites/PxSprites.swift:242", .mode, .words([0x80000]), "pxSprite", at: ["28"],
           pins: ["s.mode = PxSprites.drawMode", "drawMode: UInt32 = 0x80000"]),
-        W("Sprites/SetupFaces.swift:410", .mirrored, .flags([true]), "background.plant"),
-        W("Sprites/SetupFaces.swift:411", .mode, .placedTint(0xa8c...0xaef), "background.plant",
+        W("Sprites/SetupFaces.swift:417", .mirrored, .flags([true]), "background.plant"),
+        W("Sprites/SetupFaces.swift:418", .mode, .placedTint(0xa8c...0xaef), "background.plant",
           pins: ["if p.p2 != 0 { s.mode = UInt32(truncatingIfNeeded: Int(p.p2) + 0x10000) }"]),
-        W("Sprites/SetupFaces.swift:471", .mode, .words([0x90000]), "box.teleporter"),
-        W("Sprites/SetupFaces.swift:493", .mode, .words([0x90000]), "box.chest"),
+        W("Sprites/SetupFaces.swift:478", .mode, .words([0x90000]), "box.teleporter"),
+        W("Sprites/SetupFaces.swift:500", .mode, .words([0x90000]), "box.chest"),
         W("Sprites/SpriteSlot.swift:606", .mode, .words([0]), "platform.raft", "box.boulder", "background.maceBall",
           "chain.maceChain"),
         W("Sprites/SpriteSlot.swift:608", .mode, .levelLight, "platform.raft", "box.boulder", "background.maceBall",
@@ -504,41 +504,41 @@ final class DrawModeAuditTests: XCTestCase {
         W("World/Movers/BoxSprite.swift:333", .mode, .words([0x10018]), "box.gate"),          // hdr 0x26cd ≠ 0
         W("World/Movers/BoxSprite.swift:365", .mode, .words([0xb0001]), "box.lantern"),
         W("World/Movers/BoxSprite.swift:405", .mirrored, .flags([true]), "box.decoration"),
-        W("World/Movers/BoxSprite.swift:409", .mode, .placedTint(0xaf5...0xb21), "box.decoration",
+        W("World/Movers/BoxSprite.swift:411", .mode, .placedTint(0xaf5...0xb21), "box.decoration",
           pins: ["if p.p2 != 0 { s.mode = UInt32(truncatingIfNeeded: Int(p.p2) + 0x10000) }"]),
-        W("World/Movers/BoxSprite.swift:419", .mode, .words([0x10006]), "box.outcrop"),
-        W("World/Movers/BoxSprite.swift:420", .mode, .words([0x10007]), "box.outcrop"),
-        W("World/Movers/BoxSprite.swift:421", .mode, .words([0xb0005]), "box.outcrop"),
-        W("World/Movers/BoxSprite.swift:562", .mode, .words([0xb0002, 0xb0000, 0xb0001]), "box.trunk"),
-        W("World/Movers/BoxSprite.swift:613", .mirrored, .flags([true]), "box.statue"),
-        W("World/Movers/BoxSprite.swift:667", .waterKind, .copy, "box.cart"),
+        W("World/Movers/BoxSprite.swift:421", .mode, .words([0x10006]), "box.outcrop"),
+        W("World/Movers/BoxSprite.swift:422", .mode, .words([0x10007]), "box.outcrop"),
+        W("World/Movers/BoxSprite.swift:423", .mode, .words([0xb0005]), "box.outcrop"),
+        W("World/Movers/BoxSprite.swift:571", .mode, .words([0xb0002, 0xb0000, 0xb0001]), "box.trunk"),
+        W("World/Movers/BoxSprite.swift:622", .mirrored, .flags([true]), "box.statue"),
+        W("World/Movers/BoxSprite.swift:676", .waterKind, .copy, "box.cart"),
         // The hovering rock (`+0x160 < 0`): see `hoverUnreachable` — a separate sprite state from the roll (:643).
-        W("World/Movers/BoxSprite.swift:700", .mode, .words([0xb0000, 0xb0002]), "box.boulder.hover"),
-        W("World/Movers/BoxSprite.swift:702", .mode, .words([0xb0002, 0]), "box.boulder.hover"),
-        W("World/Movers/BoxSprite.swift:706", .mode, .words([0]), "box.boulder.hover"),
-        W("World/Movers/BoxSprite.swift:721", .rotation, .range(0...359), "box.boulder", at: ["719", "720"],
+        W("World/Movers/BoxSprite.swift:709", .mode, .words([0xb0000, 0xb0002]), "box.boulder.hover"),
+        W("World/Movers/BoxSprite.swift:711", .mode, .words([0xb0002, 0]), "box.boulder.hover"),
+        W("World/Movers/BoxSprite.swift:715", .mode, .words([0]), "box.boulder.hover"),
+        W("World/Movers/BoxSprite.swift:730", .rotation, .range(0...359), "box.boulder", at: ["728", "729"],
           pins: ["while s.phase < 0 { s.phase &+= 0x168 }", "while 0x167 < s.phase { s.phase &-= 0x168 }"]),
         // The gate's clip: `+0x158 − y` (0…100 in 2-pixel steps: up while < 100 open, down while > 0 shut) + 7, + 0x20.
-        W("World/Movers/BoxSprite.swift:834", .clipTop, .range(7...139), "box.gate",
-          at: ["813", "816", "817", "818", "832", "833"],
+        W("World/Movers/BoxSprite.swift:843", .clipTop, .range(7...139), "box.gate",
+          at: ["822", "825", "826", "827", "841", "842"],
           pins: ["if 0 < above { step = 0x200 }", "} else if above < 100 {", "step = -0x200",
                  "Int16(truncatingIfNeeded: g.y) &+ 7", "if p2 != 0 { c &+= 0x20 }"]),
-        W("World/Movers/BoxSprite.swift:1088", .mirrored, .copy, "box.balloon"),
+        W("World/Movers/BoxSprite.swift:1097", .mirrored, .copy, "box.balloon"),
         // PI: an emerging pipe child's clip edge (`.HandleBoxSprite` M l. 60706–60740: (pipe + 7 or + 0x1d) − child,
         // below 1 → 0): within the child's hot rect plus 3 px a step for at most `+0x154` steps — under 0x100 for the
         // shipped children (1700, 1705, 1730, 1860); the release (M l. 60751–60755) reopens all four edges.
-        W("World/Movers/BoxSprite.swift:977", .clipBottom, .range(0...0x100), "pipe.child", at: ["973"],
+        W("World/Movers/BoxSprite.swift:986", .clipBottom, .range(0...0x100), "pipe.child", at: ["982"],
           pins: ["edge(h(s.y) + 7 - h(k.y))", "v < 1 ? 0"]),
-        W("World/Movers/BoxSprite.swift:980", .clipTop, .range(0...0x100), "pipe.child", at: ["973"],
+        W("World/Movers/BoxSprite.swift:989", .clipTop, .range(0...0x100), "pipe.child", at: ["982"],
           pins: ["edge(h(s.y) + 0x1d - h(k.y))", "v < 1 ? 0"]),
-        W("World/Movers/BoxSprite.swift:983", .clipLeft, .range(0...0x100), "pipe.child", at: ["973"],
+        W("World/Movers/BoxSprite.swift:992", .clipLeft, .range(0...0x100), "pipe.child", at: ["982"],
           pins: ["edge(h(s.x) + 0x1d - h(k.x))", "v < 1 ? 0"]),
-        W("World/Movers/BoxSprite.swift:986", .clipRight, .range(0...0x100), "pipe.child", at: ["973"],
+        W("World/Movers/BoxSprite.swift:995", .clipRight, .range(0...0x100), "pipe.child", at: ["982"],
           pins: ["edge(h(s.x) + 7 - h(k.x))", "v < 1 ? 0"]),
-        W("World/Movers/BoxSprite.swift:992", .clipRight, .range(32000...32000), "pipe.child"),
-        W("World/Movers/BoxSprite.swift:993", .clipBottom, .range(32000...32000), "pipe.child"),
-        W("World/Movers/BoxSprite.swift:994", .clipLeft, .range(0...0), "pipe.child"),
-        W("World/Movers/BoxSprite.swift:995", .clipTop, .range(0...0), "pipe.child"),
+        W("World/Movers/BoxSprite.swift:1001", .clipRight, .range(32000...32000), "pipe.child"),
+        W("World/Movers/BoxSprite.swift:1002", .clipBottom, .range(32000...32000), "pipe.child"),
+        W("World/Movers/BoxSprite.swift:1003", .clipLeft, .range(0...0), "pipe.child"),
+        W("World/Movers/BoxSprite.swift:1004", .clipTop, .range(0...0), "pipe.child"),
         // GY: the geyser head's tint by liquid kind (`.HandleGeyserColumn` M l. 59811–59821: kind 1 → 0x10017, 0 → 0, 2 →
         // 0x1000c — mode-1 remaps through tint tables 0x17 / 0xc; kinds 3 / 4 unchanged), the segments' copy of it (M l.
         // 59842) and the top segment's clipped rows `+0x1bc` = 32·n − h_px, 0…31 (M l. 59844–59850).
@@ -1373,7 +1373,7 @@ final class DrawModeAuditTests: XCTestCase {
           + "level with header 0x3268 = 1 names a loaded image and mask slot; OX: OmniPx's base cells 6…14 (all "
           + "`6 + (c >> 1)` can name, c ≤ 0x11) are loaded slots on level 5"),
         R("Frame/TileGridRenderer.swift", "Refusal.waterTable", 1, .dataAbsent, [.waterKindsInTables],
-          "no built level has a BG tile of kind 206…209 (water tables 6…9, never built by the original)"),
+          "no level of the 24 has a BG tile of kind 206…209 (water tables 6…9, never built by the original)"),
         R("Frame/LightRenderer.swift", "Refusal.darkness", 2, .dataAbsent, [.lightBytesInRange],
           "the tile light pass's D is a light byte, 0…15 on every built level (the ambient rows)"),
         R("Frame/LightRenderer.swift", "Refusal.lightIndex", 1, .dataAbsent, [.lightBytesInRange, .lightIndexInRange],
@@ -1925,6 +1925,19 @@ final class DrawModeAuditTests: XCTestCase {
                 }
                 for k in kinds where LiquidTiles.range.contains(k) {
                     XCTAssertLessThan(k - 200, n, "\(c): level \(a.level.number) BG kind \(k)")
+                }
+            }
+            // 6A-BX1a (ENG §5): widened to every level of the world file, built or not — no BG cell of kind 206…209
+            // on any of the 24 (the census: kinds 200…205 only), so the six tables stay all the original builds.
+            let levels = try Self.resources.get().world.resources(of: "Mlvl")
+            XCTAssertEqual(levels.count, 24, "\(c): the world file's levels")
+            for res in levels {
+                let L = try LevelFile(resource: res)
+                for row in 0..<L.bg.height {
+                    for col in 0..<L.bg.width {
+                        let k = L.bgKind(tile: L.bgTile(col: col, row: row))
+                        if LiquidTiles.range.contains(k) { XCTAssertLessThan(k - 200, 6, "\(c): level \(res.id) BG kind \(k)") }
+                    }
                 }
             }
         case .overlaysInSet:
