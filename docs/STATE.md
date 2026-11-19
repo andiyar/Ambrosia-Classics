@@ -119,18 +119,16 @@ Settled history lives in docs/STATE-history.md.
   - Older small carries from Phases 2–4: listed in the history file's Snapshot B; each closes when a task next touches
     its file.
 
-## Deimos Rising — 2026-11-15 (Phase 2 staged, Ben's gate queued; Phase 3: every build task done — only staging and Ben's gate 3 remain)
+## Deimos Rising — 2026-11-20 (Phase 3 staged; Ben's gates 2 and 3 both wait on the one app)
 
-- **Where it stands:** Phase 1 "level 1 look" gate passed 2026-10-07. Phase 2 "level 1 plays" is **built, merged to
-  local main (not pushed) and staged** at `~/Desktop/Deimos Rising.app` with `~/Desktop/Deimos Rising —
-  WHAT-TO-EXPECT.md` (the gate card); all four shipped demo films replay to the score the original recorded.
-  **Phase 3, waves 3.1–3.3 done (local main, not pushed):** a finished level fades to black and starts the next
-  sector in the same game; after sector 12 the session ends. Tests prove, against the original's listing, what a
-  player keeps and loses between levels, the two-player rules and the finale. A machine sweep now plays every one
-  of the twelve sectors to its end with an invulnerable ship, and one run goes from sector 1 through the finale. The
-  app takes `-players 2` and `-sector N` until the menu exists; a restart returns to the sector the game was
-  launched at. **The staged app on the Desktop predates all of Phase 3.**
-- **Numbers (the seat's own runs at main ce77f57, 2026-11-15, HectorKit ef2c341 clean):**
+- **Where it stands:** Phase 1 "level 1 look" gate passed 2026-10-07. Phase 2 "level 1 plays" and **Phase 3 "the
+  campaign" are both built, merged to local main (not pushed) and staged as ONE app**: `~/Desktop/Deimos Rising.app`
+  with `~/Desktop/Deimos Rising — WHAT-TO-EXPECT.md` beside it (also `out/Deimos/` in the main checkout). The card's
+  Part A is the gate-3 card (the campaign, two players, the finale); Part B is the Phase 2 card, kept because Ben has
+  not ruled on it. The game plays all twelve sectors in one game, carries lives, score and multiplier across, runs
+  the finale after sector 12 in a game begun at sector 1, and takes `-players 2` and `-sector N` until the menu
+  exists. **The staged app has never been launched by a session.**
+- **Numbers (the wave 3.4 seat's own runs at main c47416e, 2026-11-20, HectorKit ef2c341 clean):**
 
 | check | value |
 |---|---|
@@ -139,20 +137,25 @@ Settled history lives in docs/STATE-history.md.
 | `DeimosCampaignTests` (the sweep; run one test at a time, about 13 minutes in all) | **3 / 0** |
 | app builds | Deimos Debug and Release, Aki, BubbleTroubleX: all succeeded |
 | layering grep; census file | empty; unchanged |
+| HectorKit zero-skip | 366 passed + 4 Aki 1.1 skips (the known four) |
 
-- **Waiting on Ben:** (1) the staged Phase 2 app has never been launched by a session — the first run is his, or a
-  muted daytime boot check on his say-so; (2) his "level 1 plays" verdict against the gate card. Neither blocks
-  staging Phase 3.
-- **The plan:** `docs/superpowers/plans/2026-11-14-deimos-phase3.md` (D50). Six of seven tasks are merged. **Next =
-  wave 3.4, task ST:** the seat's cross-check of the whole phase, stage the app, the gate-3 card, the late bank
-  notes; then Ben's gate 3. The session brief is in `docs/handoff-2026-11-15-deimos-phase3-wave33.md`.
-  Ben, 2026-11-14: sessions chain until a hard stop that needs him (a Coordinator session starts each one).
+- **Waiting on Ben:** (1) the first launch — his own, or a muted daytime boot check on his say-so (asked through
+  the Coordinator on 2026-11-20; no answer by the close); (2) his verdict on Part B, "does level 1 play like
+  Deimos"; (3) his verdict on Part A, "does the campaign play like Deimos", with four short questions the card asks
+  by name: flip pitch; can sector 12 end with the Beamer alive; should your own overload kill you while
+  invulnerable; are player 2's keys the ones he remembers.
+- **The plan:** `docs/superpowers/plans/2026-11-14-deimos-phase3.md` (D50) — all seven tasks done. The close is in
+  `docs/handoff-2026-11-15-deimos-phase3-wave34.md`. **Next, after gate 3:** Phase 4, the front end (menu, high
+  scores, level select, settings on disk, the controls window). It has cards in the remainder plan
+  (`docs/superpowers/plans/2026-11-05-deimos-remainder.md`) but no plan of its own; nothing of it is started. Ben's
+  notes from either gate become a fix wave first.
 - **Data:** `Resources/Deimos/` in git; `deimos-census` 872 entries, 0 failures.
-- **Open:** RE bank `docs/deimos/INDEX.md` #13, #59 residue, #62–#64 and 134 cross-file label mismatches; Ben's
+- **Open:** RE bank `docs/deimos/INDEX.md` #13, #59 residue, #62, #63 and 134 cross-file label mismatches (#64 closed 2026-11-20); Ben's
   ear/eye items (on the gate card). Not modelled until Phase 4: the mouse button ending a film; the quit flag
   inside the Caps Lock wait; a film that ends restarts the same film (the original returned to its menu). Not
   proved by any test: winning sector 12's end fight by destroying the Beamer (the sweep outlasts it on the
-  controller's timer, as the data allows); the feel of sectors 5–12 (no film covers them). Small follow-ups: four
+  controller's timer, as the data allows); the feel of sectors 5–12 (no film covers them). A game started with
+  `-sector N` has no finale (the original's rule). A bad launch value quits silently in a Release build. Small follow-ups: four
   private film lookups remain inside the core test bundle; the app's argument parser has no test target; the
   DEBUG-only `-debugCapsLock` swallows a following flag; the app's two data alerts do not use the shared refusal
   helper; a failed `--frames` write can hide a film's result line; `HeadlessRunner` traps on an end no rule
