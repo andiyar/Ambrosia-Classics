@@ -55,6 +55,8 @@ velocity after `entry_InitialDelay` (player-physics.md §4.1/4.2); dying lasts `
 ## 2. Session results and the post-game gates (`FUN_100234d0`, listing)
 
 ### 2.1 What `FUN_100051a0` hands back [HIGH — dump + listing]
+⚑ corrected (Phase 4 S0, 2026-11-20, grounding B §9.3): on a film-load failure `FUN_100051a0` returns before filling the result
+(`100056dc..100056f0` → `10005ca0`), so the caller sees all zeros. "Attract demo" below = the DEMOS button / `D` key film (no attract mode exists, grounding B §0).
 Request (8 bytes at `r1+0x3c` in `FUN_100234d0`): +0 level ID (from level select; 0 for films),
 +4 number of players (`stb r19,0x40(r1)`), +5 film flag (`stb r20,0x41(r1)`: 0 play, 1 "Last
 Film", 2 attract demo). Result (0x18 bytes at `r1+0x44`), filled at the end of `FUN_100051a0`:
@@ -155,6 +157,8 @@ raw scan for displacement 0x129c/0x12a0 finds only the prefs save/load/copy rout
 dead in 1.0.6. [MED — no indexed read via a computed base was ruled out beyond the scan]
 
 ### 3.2 Name entry `FUN_10021bd0 (player, slot, prefsCopy, afterGame)` [MED — dump, key branches listed]
+⚑ corrected (Phase 4 S0, 2026-11-20, grounding B §9.5): the key loop accepts autoKey (event 3) as well as keyDown (`0 < code < 4`); the confirmed
+name keeps its case — the easter eggs test an uppercase copy only.
 Copies the player's stored name into the slot and shows the table (`FUN_100222f0`). Then a key loop
 (`FUN_10048c90`): `0x0d` Return or `0x0a` → commit (`10021ec4 cmpwi r0,0xd; beq 0x10021f18`,
 `10021ee8 cmpwi r0,0xb; bge …; b 0x10021f18`); `0x08` → delete the last char; other printable
@@ -316,7 +320,8 @@ frames (`FUN_10009750`, brute-forced idiom = signed `cursor > frames` — ⚑ co
 `10005a24..10005a48`), or at level complete, or at game over. `FUN_100097a0` still reads the
 byte at `cursor == frames` (zero), so the replay runs one tick past the recording [⚑ corrected (Phase 2, 2026-11) #55: confirmed by machine, MED → HIGH — the replica replays all four shipped films to their stored scores, each ending with the cursor at frames + 1: de01 25,050 (4,809 frames, cursor 4,810), de02 116,180 (read 8,357), de03 57,520 (read 10,058), de04 24,670 (read 5,649). The four films postdate the 1.0.6 game data and agree with the 1.0.6 code]. P2's frames
 are never checked. While replaying, "REPLAY" (GameString 9) is drawn and cheats are refused.
-**Film modes** [HIGH]: `FUN_10024de0` = `FUN_100234d0(2,1)` attract demo. It cycles film tags whose
+**Film modes** [HIGH]: `FUN_10024de0` = `FUN_100234d0(2,1)` attract demo (⚑ corrected (Phase 4 S0, 2026-11-20, grounding B §0: no attract mode — only the
+DEMOS button `10022d8c` and the `D` key `10023cec` call it; `FUN_10024e10` Last Film is reached only by the `F` key `10023d14`, no button). It cycles film tags whose
 name contains "Demo" with the counter `G+0x24`, wrapping to the first; `G+0x24` is not in the
 session reset list, so it persists across sessions. `FUN_10024e10` = `FUN_100234d0(1,1)` plays tag
 `last`. Films skip level select, pref and high-score handling (`r27`).

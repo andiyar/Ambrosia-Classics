@@ -259,13 +259,16 @@ final class ParallaxTests: XCTestCase {
         XCTAssertFalse(try trace(b, h: 0, v: 1391, screen: &screen).flatMap { $0 }.contains { $0.mid })
 
         // The named refusals through the public init (an empty PxBack sheet: the header gates come first).
-        // Fire variant hdr+0x2722 > 0 (52 → 1, 55 → 2); ripple hdr+0x26ca ≠ 0 (11, 18); level 10 builds.
+        // Fire variant hdr+0x2722 > 0 (52 → 1, 55 → 2); level 10 builds; 6A-RP: the ripple levels 11 and 18 build too.
         let empty = PlainFaceSheet(picture: try ConvertedPicture(id: 0, width: 1, height: 1, pixels: [0], clutId: 0),
                                    arguments: try FaceSheet.Arguments(pict: 0, count: 0, cellWidth: 1, cellHeight: 1, columns: 1))
         XCTAssertNoThrow(try ParallaxBlitter(level: f.level10, pxBack: empty, pxMid: nil))
         let resources = try FerazelData.open(try FerazelData.dataDirectory())
-        let refusals: [(Int16, ParallaxBlitter.Refusal)] = [(52, .fireVariant(flameMode: 1)), (55, .fireVariant(flameMode: 2)),
-                                                            (11, .ripple(flag: 1)), (18, .ripple(flag: 1))]
+        for id: Int16 in [11, 18] {
+            XCTAssertNoThrow(try ParallaxBlitter(level: try LevelFile.load(from: resources, level: id), pxBack: empty,
+                                                 pxMid: nil), "level \(id)")
+        }
+        let refusals: [(Int16, ParallaxBlitter.Refusal)] = [(52, .fireVariant(flameMode: 1)), (55, .fireVariant(flameMode: 2))]
         for (id, want) in refusals {
             let level = try LevelFile.load(from: resources, level: id)
             XCTAssertThrowsError(try ParallaxBlitter(level: level, pxBack: empty, pxMid: nil), "level \(id)") {

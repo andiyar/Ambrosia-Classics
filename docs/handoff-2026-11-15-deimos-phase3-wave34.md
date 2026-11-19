@@ -18,12 +18,13 @@ name the Coordinator gave it; the work was done on 2026-11-20.
 | a second copy of both | `out/Deimos/` in the main checkout (git-ignored) |
 | the card's source | `Deimos/WHAT-TO-EXPECT.md` |
 
-- **Never launched.** No session has started this app. A muted boot check was asked of Ben through the
-  Coordinator on 2026-11-20 at 07:45; no answer had come by the close (08:10), so it was not run.
+- **Boot check passed (added after the close).** Ben's answer came through the Coordinator after this file was
+  first written: "of course". At 09:01 on 2026-11-20, with the Mac muted, the staged app opened, ran for eight
+  seconds and quit cleanly, with no crash report. Nobody has seen or heard it play.
 
 ## What waits on Ben
 
-1. **The first launch** — his own double-click, or his say-so for a muted boot check by day.
+1. **His first real play** of the staged app.
 2. **Part B of the card: "does level 1 play like Deimos?"** — the Phase 2 question, still open.
 3. **Part A of the card: "does the campaign play like Deimos?"** — the gate-3 question.
 4. Four short questions the card asks by name:
@@ -67,8 +68,8 @@ end (menu, high scores, level select, settings on disk, the controls window). It
 
 ## Not independently confirmed
 
-- The app has not been launched, so nothing about sound from the speakers, the window, or the launch options in
-  the real app is confirmed. The launch options were checked by reading and building only.
+- The app has only been boot-checked, muted and unwatched, so nothing about sound from the speakers, the
+  picture, or the launch options in the real app is confirmed. The launch options were checked by reading and building only.
 - The card's corrections after review were made by the seat and not re-reviewed.
 - The fix round on the bank notes was checked by its own implementer against the listing, not by a third reader.
 - No machine run wins sector 12's last fight by destroying the Beamer.

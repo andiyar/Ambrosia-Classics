@@ -24,7 +24,9 @@ obfuscated, decoded with the `FUN_10046470` transform `((b>>4|b<<4)^0xff)`). But
 sprite sheet `Game/im08/Menu Buttons IC[mebu].gif` viewed as an image.
 
 Time unit everywhere: Mac **ticks** (TickCount, ~60.15 Hz). All front-end waits are
-TickCount loops, not frame-controller ticks.
+TickCount loops, not frame-controller ticks — ⚑ corrected (Phase 4 S0, 2026-11-20, grounding A §11.2): **except the level select**, which runs the
+frame controller (`FUN_10030210(ctrl,0,0,0)` `1002e554`, begin `1002e87c`, end `1002ee24`): two-tick frames, with Esc, console,
+pause, volume keys and F6 live.
 
 ## 1. Front-end state (globals, r2 = 0x100e6330)
 
@@ -151,6 +153,8 @@ menu 2000 (File) item 1 → 2. [HIGH — read]
   logo, then while `StillDown`: hilite the button when the mouse is inside its rect, unhilite all
   otherwise, redraw; on release unhilite all; returns "released inside".
 - 4 (key): `FUN_10023b00(char)`, reset `t0`.
+  ⚑ corrected (Phase 4 S0, 2026-11-20, grounding B §9.4): `t0` is reset **before** a click's action (`10022d50`) but **after** a key's
+  (`10022e20`); with no `b6` after a film, a demo started by a click makes the copyright line flip at once on return.
 - 6 resume → `FUN_10023e10`; 7 suspend → `FUN_10023da0`; both reset `t0`.
 - 8 (quit AE): if suspended resume, then `b8 = 1`.
 
@@ -161,8 +165,8 @@ menu 2000 (File) item 1 → 2. [HIGH — read]
 | 1 | 1 PLAYER | `FUN_10024d80` → `FUN_100234d0(0, 1)` (§3) |
 | 2 | 2 PLAYER | `FUN_10024db0` → `FUN_100234d0(0, 2)` |
 | 3 | PREFERENCES | `FUN_10024e40` → configuration dialog `FUN_100047c0(0)`, then `b6 = 1` |
-| 4 | SCORES | if **Option** (key 0x3a) is down: suspend, alert `FUN_100498e0(inte 24 "Erase High Scores", 25 "Are you sure…", 26 "Erase", 27 "Cancel")`; Erase → `FUN_10004ae0` (default table, engine-loop.md §10); resume. Then `FUN_10024e70` (scores screen §4.1) |
-| 5 | DEMOS | `FUN_10024de0` → `FUN_100234d0(2, 1)`: play the next film whose name contains `Demo` (cycling counter `G+0x24`, wraps) |
+| 4 | SCORES | if **Option** (key 0x3a) is down: suspend, alert `FUN_100498e0(inte 24 "Erase High Scores", 25 "Are you sure…", 26 "Erase", 27 "Cancel")`; Erase → `FUN_10004ae0` (default table, engine-loop.md §10; ⚑ corrected (Phase 4 S0, 2026-11-20, grounding B §9.1): it also resets both player names to "Player %i", dump `2842` first loop); resume. Then `FUN_10024e70` (scores screen §4.1) |
+| 5 | DEMOS | `FUN_10024de0` → `FUN_100234d0(2, 1)`: play the next film whose name contains `Demo` (cycling counter `G+0x24`, wraps). ⚑ corrected (Phase 4 S0, 2026-11-20, grounding B §0): no demo ever starts by itself — `FUN_10024de0`'s only callers are this button (`10022d8c`) and the `D` key (`10023cec`); there is no attract mode, and `G+0x24` is the demo cycle counter. There is no replay button either: Last Film is the `F` key only (`10023d14`) |
 | 6 | QUIT | `b9 = 1` (leave menu) |
 | 7 | REGISTER | `FUN_10025190`: fullscreen → suspend display (DSp state 2) else `FUN_10049870`; registration dialog `FUN_10010e00(…,1)`; resume if frontmost |
 | 8 | web link | `FUN_10025270`: suspend; alert (inte 20 "Visit the Deimos Rising Website Now?", 21, 22 "Launch", 23 "Cancel"); Launch → `ICLaunchURL(inte 19 "www.deimosrising.com")` (stays suspended until the OS resume event); Cancel → resume |
@@ -272,7 +276,8 @@ first regardless of score). Each call is a full screen:
      `shwa`. Tab, Esc, Enter (0x03), arrows: ignored silently. A compare with 0x5e5b at
      `10021ef4` can never match a sign-extended byte (dead code). Mouse clicks are ignored while
      editing.
-   - confirm: SND 4 `CommandConfirmation` `incl`; uppercase copy; easter eggs by substring:
+   - confirm: SND 4 `CommandConfirmation` `incl`; uppercase copy; easter eggs by substring (⚑ corrected (Phase 4 S0, 2026-11-20, grounding B §9.5: the confirmed name keeps its case; the eggs test the
+     uppercase copy only; the key loop accepts autoKey as well as keyDown, `0 < code < 4`):
      `BIKI` → "Filthy Communist", `DILVISH` → "Just Ship It, Baby", `SUPERCOBRA` → "Munkis Rool
      J00", `PYTHOS` → "Leonard Cohen Rules J00", `FISJ` → "Daikajinn!!" (checked in that order,
      the last match wins); empty → "Jar Jar Must Die". Rebuild with `edit = 0, dim = 1` (row
@@ -342,7 +347,8 @@ text after the tag; others FMT 9 `crno`; all left-aligned at x 120 (format), y =
 F75 (16)·lineIndex (reset each page). Cycle: page shown → when its time is up: fade out (32 steps ×
 F160), free, **wait 60 ticks** (`10025d50 li r3,0x3c; bl 0x10049820`), build next page, fade in
 (32 steps), restart the timer. The first page has time 0, so it appears after the 60-tick wait.
-After the last page times out → exit. Input (`FUN_10048c90`): mouseDown → SND 2 (0x32,100,1),
+After the last page times out → exit (⚑ corrected (Phase 4 S0, 2026-11-20, grounding A §11.9 [MED]: a blank page — the empty last `cred` line — is shown for the
+stale 420 ticks first). Input (`FUN_10048c90`): mouseDown → SND 2 (0x32,100,1),
 exit; any key → SND 2 and exit, `N`/`n` → return 1 (caller `FUN_10025060` starts a 1-player game).
 Exit fades the page out. Page times in the file: 200, 210, 120, 120, … (first four `<page>`
 lines). [HIGH — listing indices F74/F75/F160/0x3c, strings from the image, file bytes]
@@ -352,11 +358,12 @@ lines). [HIGH — listing indices F74/F75/F160/0x3c, strings from the image, fil
   (`0x6c657365`), fade in 9 ticks (`FUN_1000ba70`), exit fade 33 ticks. [HIGH — dump]
 - Three previews (the chosen sector in the middle, neighbours with wrap), x = F39 (55) + i·F41
   (191) → 55/246/437, y = F40 (76) + i·F42 (0); click rects reli 18–20 `LevSel_Button_*`
-  (55,76,200,382 / 246,76,392,382 / 438,76,583,382). The preview list always starts at **sector 1**
+  (55,76,200,382 / 246,76,392,382 / 438,76,583,382). ⚑ corrected (Phase 4 S0, 2026-11-20, grounding A §11.4): these rects are the whole preview areas; the
+  `<`/START/`>` sprites sit on their centres, and a click on the left/right preview moves the choice. The preview list always starts at **sector 1**
   (`FUN_1002efb0(list, 1, …)` before the loop). Over each preview `FUN_10006240` tiles the video
   grid (§7.1). [HIGH for indices; layout claims MED via scoring-bonuses]
 - Three sprite buttons from SPR 6/7 (`mebu`/`mebh`, hover → 7): `<` frame F96 12 at (F90 128, F91
-  228), START frame F97 10 / NO ACCESS F98 11 (unreachable) at (F92 320, F93 228), `>` frame F99 13
+  228), START frame F97 10 / NO ACCESS F98 11 (⚑ corrected (Phase 4 S0, 2026-11-20, grounding A §11.1): was "unreachable" — shown whenever the middle sector is not reachable, `1002eaa0..1002eacc`) at (F92 320, F93 228), `>` frame F99 13
   at (F94 511, F95 228); hilited scale F100 1.1. [HIGH — listing indices]
 - Selectable = `sector ≤ int pref 3` (fresh prefs: 1); unregistered: sectors > 4
   (`FUN_10011b00` returns 4) show "Registration Required" (pgsl 5) instead of "Sector Not Reached"
@@ -380,7 +387,8 @@ Called from the frame controller's `FUN_10030870` when Caps Lock started a pause
 `FUN_10030360` shows pgsl 0 "Press Caps Lock"; engine-loop.md §4). Sets `b5`, FlushEvents,
 `FUN_100476a0` (sound halt — MED), SND 8 `Paused` `incl` (0x32,100,1), pauses music. Then a tight
 poll with **no event processing**: leave when Caps Lock (key 0x39) is up and the app is not
-suspended; the loop also ends if `b8` was already set (returns 1 → controller `+2` = quit).
+suspended; the loop also ends if `b8` was already set (returns 1 → controller `+2` = quit). ⚑ corrected (Phase 4 S0, 2026-11-20, grounding B §9.2): that exit is dead
+in 1.0.6 (loose-ends-session.md §2.3, INDEX #48), and it also skips the music resume (`10022fb0`).
 On a normal resume: resume music; `hideCursor` (always 0 from the controller); present with the
 game-screen routine if `presentMode == 1`, full screen if 0 (⚑ corrected (review wave 2, 2026-10-03) #C2: was "interlaced";
 `presentMode` = controller +4, and `FUN_10022ef0` is a caller of both `FUN_1000beb0` and
@@ -394,6 +402,8 @@ game-screen routine if `presentMode == 1`, full screen if 0 (⚑ corrected (revi
 0x20; each line i at y = base + i·F64 (20) (`100231ac li r3,0x40`); the last line gets `text`,
 faded in when `fadeIn`, else drawn; present. `FUN_100232d0` (boot end) fades the lines out
 (32 × F160) and frees them. F65 `Interface_Progress_MinTimeBetweenBlocks` has **no consumer**.
+⚑ corrected (Phase 4 S0, 2026-11-20, grounding A §11.8): only a new line fades in (blend 0x20 at creation); rewrites draw at once; every call
+restores the whole back buffer; there are 5 lines; units use the hard-coded "Unpacking Unit: " (`inte 10/11` unread).
 
 ## 10. Function census
 | function | lines | role | label |
@@ -455,7 +465,8 @@ faded in when `fadeIn`, else drawn; present. `FUN_100232d0` (boot end) fades the
 ## Worked example — cold start → main menu → 1-player game at sector 1
 Boot (engine-loop.md §2 order; fade lengths from §5.1): 5-tick wait; fade to black 33; publisher
 logo `pucr` + `publ` (unless Command held); fade in 9; hold until `publ` ends, or until 130 ticks
-(F66) after the timestamp taken before the fade-in; fade to black 33; developer logo, `inmu`
+(F66) after the timestamp taken before the fade-in (⚑ corrected (Phase 4 S0, 2026-11-20, grounding A §11.7): exclusive branches,
+`100003b0..10000404` then `b 0x10000434` — with sound, it holds until `publ` ends with no 130 floor or cap; 130 ticks only without sound); fade to black 33; developer logo, `inmu`
 starts; fade in 9; hold to 240 ticks after its timestamp; fade to black 33; `back` loading screen,
 fade in 9; progress lines (x 50, y 100, 120, 140 … ); lines fade out ≈32 ticks (`FUN_100232d0`).
 Menu (`FUN_100229a0`): `back` redrawn, the elements fade in ≈32 ticks: logo (y 101), 1 PLAYER
@@ -468,7 +479,8 @@ instead: SND 2, 10-tick hilite, same call.)
 Start: music paused; menu elements fade out ≈32 ticks; SND 3 `tran`; fade to black 33; music
 stopped, `ammu` starts; level selection: `lese` + previews (left = sector 12 Carthage by wrap,
 middle = sector 1 Mariner Valley, right = sector 2 Cydonia Plateau), fade in 9 ticks; fresh
-prefs (pref 3 = 1) ⇒ START (frame 10) shown. Fire/Return/click middle → SND 12 `lsse`, accept
+prefs (pref 3 = 1) ⇒ START (frame 10) shown. Fire/click middle → SND 12 `lsse`, accept (⚑ corrected (Phase 4 S0, 2026-11-20, grounding A §11.3: Return is not an accept; accept = player-0 key slots 4–6
+or a press inside reli 19, `1002ec0c..`, D:27498)
 flash (F44/F45), fade to black 33; returns level ID of le07 (`Lucena`), `sector = 1`.
 Game: `FUN_100051a0({le07, players 1, mode 0})`, 3 lives (start sector 1). On game over (110-tick
 notice) control returns: score > 15th entry (1000 by default) → fade to black 33, `back` fade in 9,

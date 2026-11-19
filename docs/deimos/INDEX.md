@@ -70,6 +70,7 @@ handlers, not counted; function-roles.md header).
 | `loose-ends-combat.md` | 557 | 0 constants; 1 trig + heading convention settled; 2 game flag `+0x39` = level end reached; 3 pickups + player `+0xce/+0xcf`; 4 removal bookkeeping (double `FUN_10036120`, `+0x13c..e`, `+0xd8` owner); 5 spawn geometry (−32 shift, orbit/lock/link); 6 weapon handler + crosshair; 7 accessors (`FUN_10017150` ruling, closest player); worked example (wave 2) | 37/2/0 |
 | `loose-ends-session.md` | 468 | 1 `plde` fly-in keys unread; 2 session results + post-game gates, quit flag; 3 high-score insertion + name entry; 4 game over + lives gate; 5 all-levels finale sequence; 6 screen transitions (fades); 7 film end to end; 8 miscellany (ExitToShell, `FUN_10000fd0` non-fatal, Local overrides, `+0x39` writers); worked two-player table (wave 2) | 25/4/0 |
 | `sound-music.md` | 521 | 1 architecture; 2 sound effects (load, conversion, play parameters, is-playing); 3 voice list (16 voices, priority, stealing, mixing); 4 master/device volume + prefs + keys; 5 state sounds; 6 music (level/fade arithmetic, streaming, when, pause); 7 `gaso` call sites; 8 audible vs implementation detail; worked Ion Cannon (wave 2) | 40/3/0 |
+| `osx-build.md` | 359 | 1 the two builds, files, method; 2 L ↔ X address table (front-end functions); 3 differences, each marked for Phase 4; 4 ruling 13 and grounding C §6a items 1, 2, 5; 5 open items — added Phase 4 S0, 2026-11-20 | 85/14/4 |
 | `front-end.md` | 528 | 1 front-end state; 2 main menu (buttons, layout, idle, event pump, dispatch, actions, keys); 3 start/return flow; 4 scores + name entry; 5 fades, advert, sounds; 6 credits; 7 level select (front view) + video grid; 8 pause; 9 loading lines; 10 census; worked cold start (wave 2) | 31/2/0 |
 | `blit-pixel-rules.md` | 587 | 0 constants; 1 dispatch `FUN_10019570` → 30 leaves (selection, argument passing, leaf matrix); 2 blend kernel; 3 unscaled leaves per-pixel rules (mode 2 partial alpha); 4 clipped twins instruction diff; 5 scaled path (geometry, nearest-neighbour sampling, clipped scaled, per-mode formulas); 6 the three switches — writer scan; 7 render-list reset, entity `+0x1a` writer; worked example (wave 3+4) | 15/3/0 |
 | `static-init-audit.md` | 456 | 1 what runs before `main` (entry chain, dispatcher, 29 game + 3 library initialisers, image = unexecuted data); 2 the four record kinds; 3 table A per initialiser; 4 static-ness, no post-`main` writer, clip survivors; 5 table B — 49 bank claims swept (41 right / 8 wrong), the −1 owner serial; ⚑ conflicts; worked sprite template (wave 3+4) | 10/4/0 |
@@ -202,6 +203,8 @@ Engine
     `M_HIDConfigure.cc`, `STR#` 130). ⚑ narrowed (wave 2, 2026-10-03): the default key codes
     (2 players × 7) written by `FUN_100050f0` are listed in timing-frame.md §6; consumer not found.
     Phase 2 (2026-11): slots 4/5/6 = fire air / fire ground / select, pinned from the guide's Default Controls and the film census (timing-frame.md §6, note #5); the consumer is still not found.
+    ⚑ corrected (Phase 4 S0, 2026-11-20) **closed** → grounding C §3b / §8.2: the consumer is in the OS X fragment, X `FUN_1004cdf0`; slots 4/5/6 = fire air /
+    fire ground / select HIGH; the key window is DITL 191 (X `FUN_100435d0`). L (this bank's fragment) has no consumer. osx-build.md.
 15. ~~ISp y-axis polarity (which input byte is "up").~~ → engine-loop.md §8: [0]=up, [2]=down
     (HIGH, `FUN_10028170` disassembly). ⚑ corrected (review 2026-10-03) #5
 16. ~~`srand` argument at game start.~~ → engine-loop.md §9: `srand(TickCount())`, same value =
@@ -403,6 +406,8 @@ Wave 3+4 additions (2026-10-04)
     to x < 416, y < 480 [HIGH — text half closed]. `FUN_1002f7a0`'s level-select `COST` strip always keeps
     it (`1002fb94..1002fc10`, no store to cmd+0x20..+0x2c). Still open: whether that strip rect reaches
     x ≥ 416 / y ≥ 480 on the 640-wide level-select screen, and whether the `COST` leaf honours the clip.
+    ⚑ corrected (Phase 4 S0, 2026-11-20, grounding A §11.6): residue — the `COST` leaf is all-or-nothing (rejected wholly outside the clip, else filled
+    whole, `100197ac..`), so the right-hand level preview's hover strip is never drawn.
 60. ~~Film object +0xc/+0x10 writers outside `0x10009390–0x10009980` not searched (`FUN_10009400` frees
     them) — gameplay-leftovers.md NR 1.~~ → ⚑ corrected (micro-wave, 2026-10-06) #60 closed → micro-wave-2026-10-06.md §7: the film
     pointer is never stored to memory (`r25` only, passed into calls); all consumers lie in
@@ -422,6 +427,9 @@ Micro-wave additions (2026-10-06)
     order is read). Decides the exact flash length — front-end.md NR 9, gameplay-leftovers.md NR 2,
     micro-wave NR 1. (The micro-wave named the caller `FUN_1002e310`; the fold-in found the stores in
     `FUN_1002fe40`.)
+    ⚑ corrected (Phase 4 S0, 2026-11-20) **closed** → grounding A §3.4 / §11.5: formats 27/28 are `lsca`/`lscf` (0-based `idli gate`), start alpha 16;
+    the flash is 16 **frames** (≈ 30 ticks; the level select runs the frame controller), not ticks, and its last step is never
+    presented (D:27569).
 63. Entity-pool slot pre-allocation: who fills each slot's entity pointer (slot +0x10) before
     `FUN_100385d0` hands it out (micro-wave-2026-10-06.md §3.7, NR 2). Not replay-relevant (fixes object
     addresses only).

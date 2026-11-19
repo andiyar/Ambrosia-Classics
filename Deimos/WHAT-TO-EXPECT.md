@@ -2,8 +2,8 @@
 
 *Built 2026-11-20 from local main. **This one app serves two gates.** It replaces the Phase 2 build that was on your
 Desktop, which you had not yet judged: everything in that build is in this one, so the Phase 2 card ("does level 1
-play like Deimos") is kept below, unchanged, as Part B. The build session has not launched this app: the first run is
-yours, or a muted boot check on your say-so.*
+play like Deimos") is kept below, unchanged, as Part B. On your say-so the build session did one muted boot check (2026-11-20, 09:01): the app opened, ran for eight
+seconds and quit cleanly. Nobody has yet seen or heard it play: that is yours.*
 
 This is the third build of the Deimos Rising 1.0.6 replica. Gate 1 settled the look. Gate 2 asks whether level 1
 plays. This one adds **the campaign: all twelve sectors, one after another, in one game, through to the finale** —
@@ -192,9 +192,10 @@ says.
 - **Sector 12's last fight.** No machine run wins it by destroying the Beamer. As the game's data reads, the fight
   ends on a timer and destroying the Beamer only ends it sooner; the sweep simply outlasts it, with the Beamer still
   alive when the finale begins. **Do you remember the level ending with the Beamer still alive?**
-- **The launch options** (`-players`, `-sector`) were checked by reading and building, not by starting the app.
-- **Sound out of your speakers.** An offline check of the sound path passed, but the app itself has not been
-  launched by the build session.
+- **The launch options** (`-players`, `-sector`) were checked by reading and building, not by starting the app
+  with them.
+- **Sound out of your speakers.** An offline check of the sound path passed, and the app's one boot check was
+  muted, so no one has heard it.
 
 ## Part A — the gate-3 card: does the campaign play like Deimos
 
