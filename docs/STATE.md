@@ -151,10 +151,13 @@ Settled history lives in docs/STATE-history.md.
   notes from either gate become a fix wave first.
 - **Phase 4 is planned (2026-11-20, D52), nothing built:** `docs/superpowers/plans/2026-11-20-deimos-phase4.md`, twelve
   sections S0–S8b with four grounding appendices; running order, eight questions for Ben and the first brief are in
-  `docs/handoff-2026-11-20-deimos-phase4-plan.md`. S0 and S1a can start now. The app file holds an OS 9 and an OS X
-  build; the research read the OS 9 one, and S0 puts the OS X one on file.
+  `docs/handoff-2026-11-20-deimos-phase4-plan.md`. The app file holds an OS 9 and an OS X build; the research read the
+  OS 9 one. **S0 closed 2026-11-20** (`docs/handoff-deimos-phase4-s0.md`): the OS X build is on file (`ghidra/deimos/Deimos_osx.*`,
+  `ghidra/regen-deimos-osx.sh`), its front end is compared with the OS 9 one in `docs/deimos/osx-build.md` (14 differences
+  change what Phase 4 builds; rulings 12 and 17 and the fade timings in grounding A §5.2 / B §1a are wrong for X), and the bank
+  corrections are in (INDEX #14 and #62 closed). No Swift or test changed.
 - **Data:** `Resources/Deimos/` in git; `deimos-census` 872 entries, 0 failures.
-- **Open:** RE bank `docs/deimos/INDEX.md` #13, #59 residue, #62, #63 and 134 cross-file label mismatches (#64 closed 2026-11-20); Ben's
+- **Open:** RE bank `docs/deimos/INDEX.md` #13, #59 residue, #63 and 134 cross-file label mismatches (#64 closed 2026-11-20); Ben's
   ear/eye items (on the gate card). Not modelled until Phase 4: the mouse button ending a film; the quit flag
   inside the Caps Lock wait; a film that ends restarts the same film (the original returned to its menu). Not
   proved by any test: winning sector 12's end fight by destroying the Beamer (the sweep outlasts it on the
