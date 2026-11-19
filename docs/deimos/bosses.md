@@ -257,6 +257,19 @@ children's own figures are in the turret table after this one. ⚑ corrected (re
 | 12 | le09 Carthage | `12e1` End 1 (377) | 261 | 2750–2905 | `be02` Is Not Active → 140 → Delete; counter 4 on "Spawn Flippers" | `bacc` every 320; `fl02` | `be02` 2.0→6 *after* both `ns02` 40.0→100 each |
 [HIGH for every number — decoded `leve`/`unde` files, scripted; MED for the pause-top arithmetic
 (assumes the controller is live on its spawn tick: group of 1, `groupDelayMin` 0)]
+⚑ Phase 3 (2026-11) (DECISIONS D50 wave 3.3 as-built (1); confirmed by two review legs): sector 11 (le10, the
+longest level) has five scroll pauses, each from the level's own controller: `11s1` row 2746, `11m1` 2407,
+`11m2` 1884, `11m3` 1276, `11e1` 205. Each holds for the sum of that controller's state timers on its timer path
+(counters followed, rule exits ignored, as in the table above). The timers are random ranges, so each hold is a
+range: `11s1` 2,360–2,600, `11m1` and `11m2` 3,130–3,325, `11m3` 2,820–2,890, `11e1` 2,250–2,325 (the table's
+figure, re-derived from the state timers). The sweep's measured holds 2,480 / 3,225 / 3,225 / 2,855 fall inside the
+first four; the as-built entry's 2,360 for `11e1` cannot occur (it is `11s1`'s minimum, below `11e1`'s range). The
+hold is read at `10033d70` (§2.2) and applied at `1000703c`.
+⚑ Phase 3 (2026-11) (DECISIONS D50 wave 3.3 as-built (4)): sector 12's end fight ends on the
+controller's **timer**: on its fourth entry to "Spawn Flippers" `12e1` goes on to "Pause, Wait, Delete" (counter
+test at listing `10014dc8`), which still holds the scroll for 130–140 ticks before the level ends; the Beamer `be02` dying is only an early exit, and the level does not need it dead. In the sweep the
+Beamer is alive from game time 10,376 through the level end and into the finale (the level end deletes nothing,
+`10006da4`; MED on the original's side).
 Turret / bubble children of the gated bases above (decoded `unde`; shields = min(base +
 increment × (sector − 1), max); float32 hit count as in §3.4; none of them is in the rule-#5 gate,
 all die with their owner) [HIGH — data + numpy float32 replay] ⚑ corrected (review wave 1, 2026-10-03) #I1 (new):

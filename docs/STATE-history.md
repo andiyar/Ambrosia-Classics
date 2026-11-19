@@ -4,6 +4,14 @@
 > only). Nothing current reads this file; the live state is `docs/STATE.md`. Each later close that settles something
 > adds a dated section at the top, newest first. The two snapshots below are verbatim (headings demoted only).
 
+## Settled at Deimos Phase 3 wave 3.4's close (2026-11-20)
+
+- **The wave 3.3 Deimos block** (main ce77f57): every build task of Phase 3 merged, the Phase 2 build on the
+  Desktop, staging and the gate-3 card still to do. Wave 3.4 replaced it: the whole-phase cross-check found no code
+  defect, the research bank took 29 Phase 3 notes, and the Phase 3 build replaced the Phase 2 build on the Desktop
+  with one card for both gates. The story is in `docs/handoff-2026-11-15-deimos-phase3-wave34.md` and the DECISIONS
+  as-built entry for ST.
+
 ## Settled at Deimos Phase 3 wave 3.3's close (2026-11-15)
 
 - **The wave 3.2 Deimos block** (main 7df2d3a): the level transition built; carry-over, two players and the finale
