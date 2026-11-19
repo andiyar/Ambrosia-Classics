@@ -422,4 +422,88 @@ final class FeatureGoldenTests: XCTestCase {
         XCTAssertEqual(ticks[4], 1620)
         XCTAssertEqual(String(fnv[4], radix: 16), "d7ba88433f138e72", "the level-10 tree feature golden")
     }
+
+    // MARK: - 6A-RP: the river ripple
+
+    /// 6A-RP's player start on level 11's fixture (`LevelRun`'s `start:` override): the header's start column (x 16299)
+    /// dropped to y 600, just above the river (BG water fills rows 20–31, y 640…1023, across the level). From the
+    /// header's own start (16299, 275) the camera opens at v 31 and settles at v 56, so no backdrop row ≥ 512 is ever on
+    /// screen (measured, 6A-RP); from here it opens at v 388 — view rows 388…771 — with water cells in view.
+    static let rippleStart = (x: 16299, y: 600)
+
+    /// Level 11's fixture (`RippleTests.level11`, 27 left out) with `header` patched, seed 1, `FerazelPrefs()`, the
+    /// player started at `rippleStart` — its first presented frame (the first tick whose level draws hold a
+    /// `.copyToScreen`, as `LevelFixtureServices.firstPresentedFrame`), the ops applied one at a time so that, at the
+    /// copy, the same copy is also made with the ripple table emptied: the tick count, the renderer, the FNV of the
+    /// screen indices, the screen bytes the ripple changed, and the copy's v.
+    static func level11RippleFrame(header: [LevelFixture.HeaderPatch])
+        throws -> (ticks: UInt32, renderer: FrameRenderer, fnv: UInt64, changed: Int, v: Int) {
+        let (run, services) = try LevelFixtureServices.open(level: 11, leaveOut: RippleTests.level11, header: header,
+                                                            start: rippleStart)
+        var now: UInt32 = 0
+        while now < 4000 {
+            let out = try run.tick(now: now, input: FrontInput())
+            now += 1
+            var copied: (changed: Int, v: Int)?
+            for g in out.segments where g.target == .level {
+                let r = try XCTUnwrap(services.renderer, "a level draw before the renderer exists")
+                for op in g.output.draws {
+                    guard case .copyToScreen(let h, let v, let graphicsMode, let backdrop) = op else {
+                        try r.apply(FrameOps(draws: [op]))
+                        continue
+                    }
+                    var flat = r.parallax
+                    flat.rippleTable = []
+                    var plain = r.screen.pixels
+                    try flat.copyToScreen(ports: r.ports, h: h, v: v, graphicsMode: graphicsMode, backdrop: backdrop,
+                                          parallax: Int(r.prefs.parallax), screen: &plain)
+                    try r.apply(FrameOps(draws: [op]))
+                    copied = (zip(plain, r.screen.pixels).filter { $0 != $1 }.count, v)
+                }
+            }
+            if let copied, let r = services.renderer {
+                return (now, r, LevelFixtureServices.fnv1a(r.screen.pixels), copied.changed, copied.v)
+            }
+        }
+        throw LevelFixtureServices.FrameFailure(now: now, description: "no presented level-11 frame within 4000 ticks")
+    }
+
+    /// 6A-RP: level 11's fixture (`RippleTests.level11`, 27 left out), seed 1, `FerazelPrefs()`, the player started at
+    /// `rippleStart`, no input — the first presented frame, which is the first frame whose view shows a PxBack row ≥
+    /// 512 (rows 388…771; yb = 256, so backdrop rows track the view 1:1), the ripple table non-zero there. Kept at
+    /// 6A-L10L11 (not frame 1 of the level's own start, ENG §2.5).
+    func testLevel11RippleFeatureGolden() throws {
+        // The fixture's 27 records, by type, re-derived from the level file.
+        let real = try LevelFile.load(from: try LevelFixture.base.get(), level: 11)
+        let out = try LevelFixture.leftOut(real, RippleTests.level11)
+        XCTAssertEqual(out.count, 27, "the 27 refused records")
+        var perType: [Int16: Int] = [:]
+        for i in out { perType[real.placements[i].type, default: 0] += 1 }
+        XCTAssertEqual(perType, [2816: 4, 2817: 2, 2831: 3, 2837: 1, 2857: 2, 2872: 6, 2873: 3, 2875: 2, 2876: 3,
+                                 2955: 1])
+        XCTAssertEqual(perType.count, RippleTests.level11.count)
+        XCTAssertEqual([Int(real.header.parallaxRipple), Int(real.header.pxBackYFactor)], [1, 256])
+
+        let f = try Self.level11RippleFrame(header: [])
+        // The same frame through the fixture's own first-presented-frame helper (all of a tick's ops at once).
+        let (run, services) = try LevelFixtureServices.open(level: 11, leaveOut: RippleTests.level11,
+                                                            start: Self.rippleStart)
+        let first = try services.firstPresentedFrame(run)
+        XCTAssertEqual(run.iterations, 1)
+        XCTAssertEqual(first.ticks, f.ticks)
+        XCTAssertEqual(first.fnv, f.fnv)
+        // The view's rows reach the river band (virtual rows 0x200…0x47f); the table is filled there (the phase this
+        // first drawn call found is 0x200: row 0x200 −64, offset 1 px; row 0x280 −1651, 7 px), and the ripple moved
+        // screen bytes in this frame.
+        XCTAssertEqual(f.v, 388)
+        XCTAssertGreaterThanOrEqual(f.v + 383, 0x200)
+        XCTAssertEqual([f.renderer.parallax.rippleTable[0x200], f.renderer.parallax.rippleTable[0x280]], [-64, -1651])
+        // Measured at 6A-RP (FNV-1a 64 of the 640×480 screen indices after that tick's level draws, the test colour
+        // model): the first presented frame — the first `.GameLoop` iteration — on the 143rd tick (now 142). With the
+        // drawn-frame fill stubbed (one local patch, never committed) the table stays 0, nothing moves and the frame is
+        // 974417c1b079fa29.
+        XCTAssertEqual(f.changed, 4912, "the screen bytes the ripple moved")
+        XCTAssertEqual(f.ticks, 143)
+        XCTAssertEqual(String(f.fnv, radix: 16), "c92fbe9fb87250c3", "the level-11 ripple feature golden")
+    }
 }

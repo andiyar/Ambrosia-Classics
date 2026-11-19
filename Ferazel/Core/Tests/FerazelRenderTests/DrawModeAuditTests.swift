@@ -763,7 +763,9 @@ final class DrawModeAuditTests: XCTestCase {
     /// PT: the throwing calls a skipped op's arm may make (`skippedOpsCannotThrow`).
     static let skippedTries = ["copyToScreen": ["try parallax.copyToScreen("],
                                "copyMaskToScreen": ["try parallax.copyMaskToScreen("],
-                               "drawLightsOntoTiles": ["try grid.drawLightsOntoTiles("]]
+                               "drawLightsOntoTiles": ["try grid.drawLightsOntoTiles("],
+                               // 6A-RP: its throw (`Refusal.ripplePhase`) is the phase's time bound, not data.
+                               "drawParticles": ["try parallax.rippleFill("]]
 
     /// The op's case name (a switch: `String(describing:)` of a sprite list is far too slow for the run).
     static func name(_ op: DrawOp) -> String {
@@ -1226,7 +1228,6 @@ final class DrawModeAuditTests: XCTestCase {
             let n = a.level.number, L = a.level.file
             // The backdrop and OmniPx inputs: the level's header names the backdrop the renderer draws.
             XCTAssertLessThanOrEqual(L.header.flameMode, 0, "level \(n): the Fire backdrop")
-            XCTAssertEqual(L.header.parallaxRipple, 0, "level \(n): the backdrop ripple")
             // OX: OmniPx modes 2 / 4 / 5 draw (the port as PxBack slot 0); the rest are refused at level open.
             XCTAssertTrue([0, 2, 4, 5].contains(L.header.omniPxMode), "level \(n): OmniPx \(L.header.omniPxMode)")
 
@@ -1301,7 +1302,7 @@ final class DrawModeAuditTests: XCTestCase {
     enum Check: Hashable {
         case writtenWordsDraw, untransformableNotTransformed, gaugeNotMirrored, mode5Seeded, facesLoaded, facesNarrow
         case noCopyAfterCopy, parallaxAttached, pxBackSlotsLoaded, lightBytesInRange, lightIndexInRange
-        case headerFlame, headerRipple, levelsLoad, lightSlotsFit, tintDraws510, attachedBeforeApply, levelClut
+        case headerFlame, levelsLoad, lightSlotsFit, tintDraws510, attachedBeforeApply, levelClut
         case deathSteps, waterTilesInSheet, levelOpsRouted, skippedOpsCannotThrow, ripplePhaseHours
         case rotationRanges, notNamedByLevelFrame(String)
         case headerCamera, coreNotNamed(String), callersTry([String])
@@ -1359,8 +1360,11 @@ final class DrawModeAuditTests: XCTestCase {
         // ParallaxBlitter (rendering-omnipx-titles §1.6): at level open.
         R("Frame/ParallaxBlitter.swift", "Refusal.fireVariant", 1, .headerZero, [.headerFlame],
           "header 0x2722 ≤ 0 on every built level (levels 52, 55 only)"),
-        R("Frame/ParallaxBlitter.swift", "Refusal.ripple", 1, .headerZero, [.headerRipple],
-          "header 0x26ca = 0 on every built level (levels 11, 18 only)"),
+        // 6A-RP: the ripple is drawn (the level-open refusal `Refusal.ripple` is gone); its rows' sine index goes
+        // negative only once the phase wraps.
+        R("Frame/ParallaxBlitter.swift", "Refusal.ripplePhase", 1, .timeBound, [.ripplePhaseHours],
+          "the ripple rows read the sprite pass's phase (`rippleFill(phase: sprites.ripplePhase)`): negative only after "
+          + "2^23 frames, as above"),
         // PT: the renderer's traps a level's data can reach, now refusals (the skipped copy / light ops reach them
         // too: `skippedOpsCannotThrow` admits those calls because these checks read the data, not the run).
         R("Frame/ParallaxBlitter.swift", "Refusal.cellSlot", 1, .dataAbsent,
@@ -1781,8 +1785,6 @@ final class DrawModeAuditTests: XCTestCase {
             }
         case .headerFlame:
             for a in audits { XCTAssertLessThanOrEqual(a.level.file.header.flameMode, 0, "\(c): \(a.level.number)") }
-        case .headerRipple:
-            for a in audits { XCTAssertEqual(a.level.file.header.parallaxRipple, 0, "\(c): \(a.level.number)") }
         case .levelsLoad:
             // Every built level's renderer was built (faces, tile sets, tables, parallax, status bar), its Setup lights
             // and tint table attached and PICT 129 drawn by the run; every `.Load1LightFaceFromPICT` site loads.
@@ -1869,8 +1871,9 @@ final class DrawModeAuditTests: XCTestCase {
                 }
                 XCTAssertGreaterThan(arms, 0, "\(c): no `case .\(op)` arm")
             }
-            // Each admitted call is made (the mosaic copy and the plain copy: two `copyToScreen` arms).
-            XCTAssertEqual(tries, 4, "\(c): the admitted calls")
+            // Each admitted call is made (the mosaic copy and the plain copy: two `copyToScreen` arms; 6A-RP: the
+            // ripple fill in the `drawParticles` arm).
+            XCTAssertEqual(tries, 5, "\(c): the admitted calls")
         case .ripplePhaseHours:
             // 0x200 + 0x100·k stays non-negative for k < 2^23 − 2 frames: over 77 hours at 30 frames a second in one
             // level (a level start resets it: one renderer per level start).

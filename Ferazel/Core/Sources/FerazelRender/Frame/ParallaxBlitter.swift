@@ -6,9 +6,10 @@ import FerazelCore
 /// `.DoubleBlitUniversal @ 10022e34` → `.DoubleBlitPPCParallaxOneLayer @ 10017924`. The Fire variant
 /// (`…Fire @ 10018dd4`, header `0x2722 > 0`, levels 52/55, §1.6) is not built: a level with a flame mode is refused.
 /// OmniPx (§3; OX, modes 2 / 4 / 5): `turnOnOmniPx` makes `.GetPxBackTile` answer 0 (`1003c4f8..1003c514`) and puts
-/// the 128×128 port in PxBack slot 0, which `updateOmniPx` rebuilds each drawn frame (`DrawOp.omniPx`). The
-/// ripple table's producer is not built either, so a level with the ripple flag (header `0x26ca`, levels 11, 18) is
-/// refused too (Invariant 6) rather than drawn without its ripple.
+/// the 128×128 port in PxBack slot 0, which `updateOmniPx` rebuilds each drawn frame (`DrawOp.omniPx`). 6A-RP: the
+/// ripple table's producer is `.PaintFrameWrap`'s own two loops (ENG §2.5; not `.RipplePxBackOffsets`, gated on header
+/// `0x271e`, 0 on all 24 levels): `rippleAddEveryCall` and `rippleFill`, which `FrameRenderer` runs at their positions
+/// on a level with the ripple flag (header `0x26ca`, levels 11, 18 — the river backdrop).
 ///
 /// Sources per output byte (§1.2): **F** the source port (the frame `000c`), **M** the mask port `0008` (0xFF where
 /// the backdrop may show), and the 8 col × 6 row cell tables **I** (`PTR_DAT_100a1020`) and **K** (`_DAT_100a101c`)
@@ -56,8 +57,10 @@ public struct ParallaxBlitter: Sendable {
     public enum Refusal: Error, Equatable {
         /// Header `0x2722 > 0`: `.DoubleBlitUniversal` takes the Fire variant (§1.6), not built.
         case fireVariant(flameMode: Int16)
-        /// Header `0x26ca ≠ 0` (levels 11, 18): the rows need the ripple table, whose producer is not built.
-        case ripple(flag: UInt8)
+        /// 6A-RP: a ripple-table row whose sine index `(r + (phase >> 8)) mod 55` is negative under the binary's signed
+        /// `mulhw` remainder (`10012024..1001203c`) — the phase `*_DAT_1009fd74` wrapped negative, after 2^23 frames in
+        /// one level: the binary reads before the 55-entry table (the `SpriteBlitter.Refusal.ripplePhase` time bound).
+        case ripplePhase(Int32)
         /// PT: a cell-table slot with no face (a PxBack / PxMid map cell outside the loaded set): the binary reads an
         /// unloaded pointer (§2.4–§2.5).
         case cellSlot(Int)
@@ -101,10 +104,15 @@ public struct ParallaxBlitter: Sendable {
 
     /// Game globals `+0x174` (OmniPx on): `.GetPxBackTile` returns 0.
     public var omniPxActive = false
-    /// The ripple table `*_DAT_1009ffb8` (i32 per virtual row; each row's x offset is `−(entry >> 8)`), non-zero only
-    /// with header `0x26ca` (levels 11, 18). Not produced in Phase 1: its producer is not built and those levels are
-    /// refused at init, so it stays empty (reads 0).
-    public var rippleTable: [Int32] = []
+    /// The ripple table `*_DAT_1009ffb8` (i32 per virtual row, `rippleTableRows` of them; each row's x offset is
+    /// `−(entry >> 8)`), zeroed at every level setup (`.SetupLevelSprites` M l. 1994–2014; one blitter per level start).
+    /// 6A-RP: allocated only with header `0x26ca` ≠ 0 (levels 11, 18), where `rippleAddEveryCall` and `rippleFill`
+    /// write rows 0x200…0x47f; empty (reads 0) on every other level, whose compositor offsets stay 0.
+    public var rippleTable: [Int32]
+    /// `_DAT_1009ffbc` (i16 per virtual row), added into ripple rows 0x200…0x47f on every `.PaintFrameWrap` call: cleared
+    /// by `.InitGameGlobals` (M l. 725, 763–782) and `.SetupLevelSprites` (M l. 1994–2014), no non-zero writer anywhere in
+    /// the dump — 0 as shipped (ENG §2.5 step 1). Transcribed with the add; allocated as `rippleTable` is.
+    var rippleAdd: [Int16]
 
     /// The blitter for a level with its loaded PxBack and PxMid sets (`TileSets`).
     public init(level: LevelFile, pxBack: PlainFaceSheet, pxMid: TileSets.PxMid<PlainFaceSheet>?) throws {
@@ -121,13 +129,15 @@ public struct ParallaxBlitter: Sendable {
         try self.init(level: level, pxBack: sets.pxBack, pxMid: sets.pxMid)
     }
 
-    /// Faces by slot (`slotCount` entries, each nil or `cellBytes` bytes). Every init path ends here, so both
-    /// refusals apply to all of them.
+    /// Faces by slot (`slotCount` entries, each nil or `cellBytes` bytes). Every init path ends here, so the
+    /// refusal applies to all of them.
     init(level: LevelFile, faceSlots: [[UInt8]?]) throws {
         precondition(faceSlots.count == Self.slotCount, "ParallaxBlitter: \(Self.slotCount) face slots")
         let h = level.header
         guard h.flameMode <= 0 else { throw Refusal.fireVariant(flameMode: h.flameMode) }
-        guard h.parallaxRipple == 0 else { throw Refusal.ripple(flag: h.parallaxRipple) }
+        let rows = h.parallaxRipple != 0 ? Self.rippleTableRows : 0
+        rippleTable = [Int32](repeating: 0, count: rows)
+        rippleAdd = [Int16](repeating: 0, count: rows)
         backFactors = level.backFactors
         midFactors = level.midFactors
         backYFactor = Int(h.pxBackYFactor)
@@ -310,6 +320,67 @@ public struct ParallaxBlitter: Sendable {
     func midFactor(_ i: Int) -> Int { (0..<midFactors.count).contains(i) ? Int(midFactors[i]) : 0 }
 
     func ripple(_ i: Int) -> Int { (0..<rippleTable.count).contains(i) ? Int(rippleTable[i]) : 0 }
+
+    // MARK: The ripple table's producer (6A-RP; ENG §2.5)
+
+    /// The rows of `*_DAT_1009ffb8` / `_DAT_1009ffbc` the game zeroes (`0x2000`, M l. 764 / 1996).
+    static let rippleTableRows = 0x2000
+    /// The rows both loops of `.PaintFrameWrap` write: virtual rows 0x200…0x47f (the shallow ones 0x200…0x27f).
+    static let rippleRows = 0x200..<0x480
+    static let rippleShallowEnd = 0x280
+
+    /// `.BuildSineTable`'s second table `_DAT_100a00d0` (M l. 17389–17397, raw `10020250..100202b8`), i16:
+    /// S[i] = fctiwz(f32(f32(sin(f32(i) · c)) · 3.0f)) for i = 0…54, c = f32 `0x3de9f678` at `100a1724` (0.11423963, a
+    /// hair under 2π/55), 3.0f at `100a1720` — `fsubs`, `fmuls`, `bl sin`, `frsp`, `fmuls`, `fctiwz`, `sth` (the
+    /// 35-entry `SpriteBlitter.rippleOffsets` loop beside it multiplies in f64; this one in f32).
+    static let rippleSine: [Int16] = (0..<55).map { i in
+        let a = Float(i) * Float(bitPattern: 0x3de9_f678)           // fsubs, fmuls
+        let s = Float(sin(Double(a)))                               // bl sin, frsp
+        let v = s * Float(bitPattern: 0x4040_0000)                  // fmuls 3.0f
+        return Int16(v.rounded(.towardZero))                        // fctiwz, sth
+    }
+
+    /// `.PaintFrameWrap` M l. 9211–9226 — on every call, drawn or not, after `.WrapDrawSprites` and before the
+    /// drawn-frame test (M l. 9254), while header `0x26ca` ≠ 0: rows 0x200…0x47f += `_DAT_1009ffbc`[row] (i16, a 32-bit
+    /// add). `rippleAdd` is 0 as shipped, so this is a no-op the port keeps (ENG §2.5 step 1).
+    mutating func rippleAddEveryCall() {
+        guard parallaxRipple != 0 else { return }
+        for r in Self.rippleRows { rippleTable[r] &+= Int32(rippleAdd[r]) }
+    }
+
+    /// `.PaintFrameWrap` M l. 9255–9425 (raw `10011fe0..100126c8`) — on drawn frames only, while header `0x26ca` ≠ 0,
+    /// before the flash step and `.DrawParticles`: with t = `*_DAT_1009fd74` as this call found it (its + 0x100 is the
+    /// call's last act, M l. 9456), a = t >> 8, b = t >> 7, and S[(r + a) mod 55] (a 32-bit add of the i16 row, the
+    /// signed remainder by `mulhw 0x094f2095`) minus b as a 32-bit integer:
+    /// - rows 0x200…0x27f: `fctiwz((1.9 · (r − 0x200) + 32.0) · (S − b))` — `fmadd` (one rounding) then `fmul` (f64
+    ///   1.9 at `100a15d0`, 32.0 at `100a15d8`; raw `10012070..1001209c`);
+    /// - rows 0x280…0x47f: `fctiwz(275.2 · (S − b))` (f64 275.2 at `100a15c8`).
+    /// b grows by 2 a frame, so each row's offset `−(entry >> 8)` drifts as it wobbles: the river flows. `fctiwz`
+    /// saturates at ±2³¹ (the products pass it after about 3.9 million frames).
+    /// - Throws: `Refusal.ripplePhase` where the remainder is negative (the phase wrapped, 2^23 frames in one level).
+    mutating func rippleFill(phase t: Int32) throws {
+        guard parallaxRipple != 0 else { return }
+        let a = t >> 8, b = t >> 7                                  // srawi r5,r0,8 / srawi r6,r0,7
+        let slope = Double(bitPattern: 0x3ffe_6666_6666_6666)       // 1.9 (100a15d0)
+        let base = Double(bitPattern: 0x4040_0000_0000_0000)        // 32.0 (100a15d8)
+        let deep = Double(bitPattern: 0x4071_3333_3333_3333)        // 275.2 (100a15c8)
+        for r in Self.rippleRows {
+            let m = (Int32(r) &+ a) % 55                            // extsh, add; mulhw 0x094f2095 → signed remainder
+            guard m >= 0 else { throw Refusal.ripplePhase(t) }
+            let d = Double(Int32(Self.rippleSine[Int(m)]) &- b)     // lhax; subf r7,r6,r7
+            let x = r < Self.rippleShallowEnd
+                ? base.addingProduct(slope, Double(r - 0x200)) * d  // fmadd f4,f2,f4,f0; fmul
+                : deep * d                                          // fmul
+            rippleTable[r] = Self.fctiwz(x)                         // fctiwz, stw
+        }
+    }
+
+    /// `fctiwz`: f64 → i32 rounding toward zero, saturating at ±2³¹ (NaN → 0x80000000).
+    static func fctiwz(_ x: Double) -> Int32 {
+        if x.isNaN || x <= -2_147_483_648.0 { return .min }
+        if x >= 2_147_483_648.0 { return .max }
+        return Int32(x.rounded(.towardZero))
+    }
 
     /// The byte split of one horizontal piece in tile space (`10017dd8..10017e40`): `lead = ((x+3)&~3) − x` bytes,
     /// `words = (w − lead) >> 2`, `tail = (w − lead) & 3`, `edge` = words to the cell edge after the lead; all bytes

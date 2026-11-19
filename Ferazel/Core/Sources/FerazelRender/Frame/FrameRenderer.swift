@@ -28,7 +28,10 @@ import FerazelCore
 /// - `wrapDrawSprites`: `SpriteBlitter.wrapDrawSprites` at the scroll point, culled by the grid's drawn pair. A passage
 ///   jump's own `.WrapDrawSprites` (`.HitPlayerSprite` l. 49677) has no `.HandleLights` before it.
 /// - `drawParticles` / `eraseParticles` (E1a): `ParticleRenderer.draw` into the frame port at the scroll point, and
-///   its erase after the copy.
+///   its erase after the copy. 6A-RP: on a level with the ripple flag (header `0x26ca`, levels 11, 18) the drawn
+///   frame's ripple rows are filled first (`ParallaxBlitter.rippleFill`, M l. 9255–9425), and every
+///   `wrapDrawWaterEffects` (once per `.PaintFrameWrap` call) runs the every-call add (`rippleAddEveryCall`, M l.
+///   9211–9226) — the river backdrop's per-row offsets, read by the next `copyToScreen`.
 /// - `copyToScreen`: `ParallaxBlitter.copyToScreen` from the frame port into the screen (prefs+4 = parallax).
 /// - `copyMaskToScreen` (EF, the flash): the same pieces with the mask port as the compositor's source F (its M is the
 ///   mask port either way); the plain `CopyBits` pieces copy what `copyToScreen`'s do (`*(_DAT_1009ff58 + 8)`, not
@@ -132,7 +135,9 @@ public final class FrameRenderer {
     public private(set) var grid: TileGridRenderer
     public private(set) var sprites: SpriteBlitter
     /// OX: `DrawOp.omniPx(.turnOn)` turns OmniPx on (`ParallaxBlitter.turnOnOmniPx`); each `.update` rebuilds slot 0.
-    public private(set) var parallax: ParallaxBlitter
+    /// 6A-RP: its ripple table is written at `.wrapDrawWaterEffects` and `.drawParticles` (`internal(set)`: the ripple
+    /// tests set the add rows `_DAT_1009ffbc`, 0 as shipped, to see the every-call add).
+    public internal(set) var parallax: ParallaxBlitter
     public private(set) var statusBar: StatusBar
     /// `_DAT_100a0128`: the light slots the grid and the sprite light pass read.
     public private(set) var lights: LightRenderer
@@ -472,7 +477,15 @@ public final class FrameRenderer {
                 try WaterFaceBlitter.draw(list, faces: grid.sets.fgWater.sheet, sprites: sprites, scroll: scroll,
                                           ports: &ports)
                 executed.append(.waterEffects(list.count))
+                // 6A-RP: `.PaintFrameWrap`'s ripple add (M l. 9211–9226), on every call: this op is the one every
+                // `.PaintFrameWrap` call carries exactly once (`FerazelSession.paintFrameWrap`). The binary adds after
+                // `.WrapDrawSprites`; only the compositor reads the table (`.DoubleBlitPPCParallaxOneLayer`), so here,
+                // just before the sprite op, is the same table at every read.
+                if parallax.parallaxRipple != 0 { parallax.rippleAddEveryCall() }
             case .drawParticles(let list):
+                // 6A-RP: the drawn frame's ripple rows (M l. 9255–9425), before the flash step and `.DrawParticles`, from
+                // the phase as this call found it (its + 0x100 comes at `.wrapEraseSprites`).
+                if parallax.parallaxRipple != 0 { try parallax.rippleFill(phase: sprites.ripplePhase) }
                 particles.draw(list, scroll: scroll, ports: &ports)
                 executed.append(.particles(list.count))
             case .eraseParticles:

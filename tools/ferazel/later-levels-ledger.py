@@ -541,7 +541,7 @@ FIELDS = [  # (off, size, LevelHeader property, meaning, original readers (dump)
     (0x26c7, 1, 'omniPxMode', 'OmniPx mode', '.SetupOmniPx, .TurnOnOmniPx, .UpdateOmniPx, .PaintFrameWrap', None, 'LevelOpenRefusal.omniPxMode'),
     (0x26c8, 1, 'startFacingLeft', 'player starts facing left', '.NewGame / .ContinueGame → G+0x16', 'L', None),
     (0x26c9, 1, 'waterSurfaceEffect', 'water-surface effect', '.WrapDrawWaterEffects', 'L', None),
-    (0x26ca, 1, 'parallaxRipple', 'parallax ripple', '.RipplePxBackOffsets, .DoubleBlitPPCParallaxOneLayer', '6A-RP', 'Refusal.ripple'),
+    (0x26ca, 1, 'parallaxRipple', 'parallax ripple', '.PaintFrameWrap, .DoubleBlitPPCParallaxOneLayer', '6A-RP', None),
     (0x26cb, 1, 'patternPeriodSix', 'FG pattern period 6×6', '.GetFGPatternTile', 'L', None),
     (0x26cc, 1, 'pxUsesLevelBaseClut', 'px tilesets under the level+base CLUT', '.LoadPxBackTileset, .LoadPxMidTileset, .MTAddPxSprite', 'L', None),
     (0x26cd, 1, 'inLiquid', 'level-wide "in liquid"', '.HandlePlayerSprite, .SetupBackgroundSprite, .SetupBoxSprite, .SetupFrogSprite', '6B-ICE', None),
@@ -625,10 +625,13 @@ SWITCH_STATE = {   # LL's reading of the port today, by field (evidence = the po
     'submergedFaces': 'built: the FG-cell draw (TileGridRenderer) and the lights redraw, overlay cells included '
                       '(LightRenderer `plainWrapFGOverlayTile` = .PlainWrapFGOverlayTile M l. 9720–9735: overlay '
                       'faces tinted under water whatever the flag, the pattern cell with it; the original tints overlay '
-                      'cells only there) — 6A-T11 proves it, nothing to build',
+                      'cells only there) — nothing to build; proven at 6A-RP (RippleTests: the seven readers, the switch-off)',
     'omniPxMode': 'modes 0/2/4/5 built (OX); 1, 3, 6, 7, ≥ 8 refused at level open',
     'startFacingLeft': 'built', 'waterSurfaceEffect': 'built', 'patternPeriodSix': 'built',
-    'parallaxRipple': 'refused (backdrop compositor init)', 'pxUsesLevelBaseClut': 'built',
+    'parallaxRipple': 'built (6A-RP): .PaintFrameWrap\'s two ripple loops (M l. 9211–9226 every call, 9255–9425 '
+                      'drawn frames) fill the compositor\'s table (ParallaxBlitter `rippleAddEveryCall` / `rippleFill`, '
+                      'FrameRenderer); .RipplePxBackOffsets is not it (hdr 0x271e, 0 on all 24)',
+    'pxUsesLevelBaseClut': 'built',
     'inLiquid': 'built at the readers listed (player liquids, Box gate, Background spring/spike, Frog)',
     'levelSounds': 'not built (0 in all 24)', 'darknessEnable': 'built', 'cameraOffsetX': 'built',
     'cameraOffsetY': 'built', 'landingDamage': 'built', 'iceSlipperiness': 'built (any value)', 'gammaFadeIn': 'built',
