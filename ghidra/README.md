@@ -59,3 +59,28 @@ never in `~` itself, and delete the copies when the wave closes (Deimos's 31 rea
   NOT work on the Aki 1.1 PPC binary on this machine (`otool`/`objdump` refuse it: truncated symtab /
   obsolete load command) — use a Ghidra disassembly post-script (`docs/ferazel/tools/FzDisasm.java` is a
   reusable one) or a listing decoder. For PEF, likewise Ghidra post-script, or cite decompile + data bytes.
+
+## Deimos OS X fragment (X)
+The Deimos Rising 1.0.6 data fork (`deimos/Deimos_pef`) holds three PEF fragments (its `cfrg 0` lists them):
+"Deimos Rising.PPC" at 0x0 (1,009,597 B, the Mac OS 9 build — **L**, the one `Deimos_pef.decompiled.c` and
+`docs/deimos` describe), **"Deimos Rising.OSX" at 0xf67c0, 1,035,460 B** (the CarbonLib build Mac OS X runs —
+**X**), and a "FATCarbon 1.5.1" stub at 0x1f3490. The length is both the cfrg entry's and the PEF container's
+last-section end.
+
+Regenerate from scratch (fresh import each run, ~20 s; deletes and recreates only `~/Developer/Ghidra/deimos/proj-osx/`):
+```sh
+ghidra/regen-deimos-osx.sh
+```
+It extracts X with `dd`, imports it with Ghidra 12.2 (`-processor PowerPC:BE:32:default -cspec macosx`), analyzes,
+runs `deimos/tools/DumpSymbols.java` then `deimos/tools/DisasmRange.java` over the code section
+10000000–100e3a10, writes into `~/Developer/Ghidra/deimos/` and copies into `deimos/`:
+- `Deimos_osx_pef` — the extracted fragment;
+- `Deimos_osx.disasm.txt` — the full listing, one instruction per line (`<addr>  <instruction>`, `// -- <function>`
+  before each function entry, `??` where the bytes are data);
+- `Deimos_osx.functions.txt` — memory blocks, the r2 (TOC) value Ghidra records (100eba10), every function
+  (entry, size, body bounds, name), the named symbols and the imports;
+- `analyze-Deimos_osx.log`.
+
+Homebrew Ghidra 12.2 ships **no arm64 decompiler** (`os/mac_arm_64/decompile does not exist` in the log), so X is a
+listing, not C. In `docs/`, an address written "X 1xxxxxxx" means this listing; a bare `FUN_1xxxxxxx` means L.
+The listing is byte-identical across re-runs.
