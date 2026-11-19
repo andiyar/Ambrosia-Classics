@@ -294,7 +294,9 @@ DITL 190 "Game - Preferences" (⚑ corrected (review wave 2, 2026-10-03) #M6: th
 `xattr` `com.apple.ResourceFork`, 151602 B): 1 Save, 2 Cancel, 3 Defaults, 4 Revert, 5–7 group
 boxes (CNTL 200 "Video", 201 "Audio", 202 "Controls"), items 8–17 as above, 18 "Set Controls…"
 (→ `ISpConfigure` `FUN_1004ae00`), 19 "Set Gamepad Controls..." (hidden by
-`HideDialogItem(…,0x13)`), 20 "(Hold down Option during launch to display this dialog)". No
+`HideDialogItem(…,0x13)`; ⚑ corrected (Phase 4 S0, 2026-11-20, grounding C §8.4: hidden only in L — X shows it when its HID layer loads; item 18 →
+ISpConfigure in L only, X opens its own controls window DITL 191; L deactivates item 8 at open `10011188`, X deactivates 10–13
+`10011348..10011380`; items 12/15 reference CNTL 2000/2001, absent from the shipped fork, C §8.5; see osx-build.md), 20 "(Hold down Option during launch to display this dialog)". No
 speed, FPS or limiter item. [HIGH — resource bytes; item→pref mapping from `FUN_10010fc0` switch]
 **Console:** `FUN_1002d080(name, help, handler, p4, p5, p6)` skips registration when `p5 ≠ 0`
 (`1002d0a4 rlwinm. r0,r7,… ; 1002d0ac bne 0x1002d174`). `FPS` is registered with r7 = 0
@@ -307,7 +309,8 @@ Default key table (prefs `+0x14b8…+0x14ec`, 14 ints of Mac virtual key codes, 
 0x7E ↑, 0x7B ←, 0x7C →, 0x7D ↓, 0x37 Command, 0x3A Option, 0x31 Space | 0x5B kp8, 0x56 kp4,
 0x58 kp6, 0x57 kp5, 0x77 End, 0x75 Fwd-Delete, 0x79 Page Down — two players × 7 controls. Only the
 prefs load/save copies (`100049ec…`, `10004e2c…`) touch it; no game-side consumer found (likely the
-OS X keyboard path of INDEX #14). [HIGH values; LOW for the per-slot meaning]
+OS X keyboard path of INDEX #14). [HIGH values; LOW for the per-slot meaning] ⚑ corrected (Phase 4 S0, 2026-11-20, grounding C §8.2: per-slot meaning
+HIGH — the consumer is X `FUN_1004cdf0` in the OS X fragment: 4 = fire air, 5 = fire ground, 6 = select; INDEX #14 closed)
 
 ⚑ corrected (Phase 2, 2026-11) #5 — button slots (cite only): the guide's Default Controls (Fire Air = Command, Select Air = Space, Fire Ground = Option; also Esc, Caps Lock, F6, Tilde) pin slots 4/5/6 of each player's 7 defaults above (0x37 Command, 0x3A Option, 0x31 Space) to fire air / fire ground / select. Film census: the select bit (bit 6) appears in de02 (15 ticks), de03 (26) and de04 (3) and never in de01 (one air weapon). [cite: guide + film bytes]
 
@@ -369,7 +372,8 @@ pref 6 is 0.
    (`FUN_10004f00(2)` not searched exhaustively by listing). Settle: raw scan for
    `lwz rX,0x70(prefs)` and `li r3,2 ; bl 0x10004f00`.
 2. Per-slot meaning of the default key table (`+0x14b8…`, 2 × 7 codes) and its consumer —
-   needs the OS X keyboard path (INDEX #14) or `M_ControlsConfigure.cc` code.
+   needs the OS X keyboard path (INDEX #14) or `M_ControlsConfigure.cc` code. ⚑ corrected (Phase 4 S0, 2026-11-20: closed — consumer X `FUN_1004cdf0`,
+   slots 4/5/6 HIGH, grounding C §3b / §8.2.)
 3. ~~`FUN_10018b20(0)` flushes layers 0–1 **before** the background blit: whether
    `FUN_1001a650(0/1)` draws into the terrain picture or into the work buffer (layer 1 = shadows,
    engine-loop §5) — read `FUN_1001a650`.~~ → ⚑ corrected (review wave 2, 2026-10-03) #C3 #S: sprite-geometry-draw.md §6

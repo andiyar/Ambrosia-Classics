@@ -154,6 +154,9 @@ extensions.", 1)` — fatal Stop alert "Quit", then shutdown [HIGH: dump lines 3
 ---
 
 ## 5. Dialog and menu helpers (preferences dialog DLOG 190, menus)
+⚑ corrected (Phase 4 S0, 2026-11-20, grounding C §8.4): this section reads the OS 9 build (L). In the OS X build item 19 "Set Gamepad Controls..." is
+shown when the HID layer loads (hidden only in L); item 18 goes to ISpConfigure in L only (X opens its own DITL 191 window); L
+deactivates item 8 at open (`10011188`), X deactivates items 10–13 (`10011348..10011380`). See osx-build.md for the X dialog `FUN_10011240`.
 
 All are thin glue wrappers; `dlg, item` are DialogPtr and DITL item number.
 

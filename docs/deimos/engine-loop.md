@@ -15,6 +15,11 @@ libraries: MathLib, QuickTimeLib, AppearanceLib, InternetConfigLib (the loader-s
 **InterfaceLib (384 imports)**, SoundLib, UnicodeConverter, TextCommon, InputSprocketLib. No
 CarbonLib. This data fork is a classic Mac OS 8/9 CFM/PEF application, not a Carbon one, even
 though its resource fork carries `carb` 0 and `plst` resources. [HIGH — loader section bytes]
+⚑ corrected (Phase 4 S0, 2026-11-20, grounding C §8.1): true of **fragment 1 only**. `cfrg 0` lists three PowerPC fragments in the one data fork:
+"Deimos Rising.PPC" at 0 (1,009,597 B — the build this whole bank and the dump describe), **"Deimos Rising.OSX" at 0xf67c0**
+(1,035,460 B; CarbonLib, `GetKeys`, CFBundle → `HID.bundle` — the build Mac OS X runs, which Ben played) and a "FATCarbon 1.5.1"
+stub at 0x1f3490. Every address in this bank is fragment 1's. The OS X build is on file as a listing (`ghidra/deimos/Deimos_osx.*`,
+ghidra/README.md) and its front end is compared function by function in **osx-build.md**; the "OS X–only pieces" below live in fragment 2.
 OS X–only pieces (`HID.bundle`, "M_HIDConfigure.cc", "M_ControlsConfigure.cc" strings) are not
 reachable through the imports above; `GetSharedLibrary`/`FindSymbol` are imported, so run-time
 binding may exist. [LOW]
@@ -39,7 +44,7 @@ memory, `FUN_1002cef0` console) → pak tag index (`FUN_100015a0` → `FUN_10001
 sound init `FUN_10047160(PermFloat 38)` → if Option held or pref byte 2 == 0: configuration
 dialog `FUN_100047c0` ("Presenting Configuration Dialog") and set pref byte 2 → display
 `FUN_1000ae20(…, 640, 480, 16, pref byte 4)` → publisher logo `pucr` (+ sound `publ` unless
-Command held), wait PermFloat 66 (=130) ticks or the sound → developer logo, interface music
+Command held), wait PermFloat 66 (=130) ticks or the sound (⚑ corrected (Phase 4 S0, 2026-11-20, grounding A §11.7): exclusive branches `100003b0..10000404` then `b 0x10000434` — with sound it holds until the sound ends, no 130 floor or cap; 130 ticks only without sound) → developer logo, interface music
 `inmu` (unless Command held), wait 0xF0 (240) ticks → loading screen `back` → load permanent
 sprites/sounds/strings `FUN_1001fe60`, levels `FUN_10011a70`, units `FUN_1003cf10`, weapons,
 players, score bar, etc. [HIGH for order; MED for each callee role]
@@ -51,6 +56,8 @@ highest completed sector and store it in int pref 3 (`FUN_10004ac0(3,…)`) only
 sector 1 (`!bVar1`, i.e. start index ≤ 1) and no cheating flag; if a player's score beats the
 15th table entry (`FUN_10021470`, compares with prefs `+0x1298`) enter the high-score screen
 `FUN_100214c0`. [MED — the flags `local_a6/a7/a8` were not fully named]
+⚑ corrected (Phase 4 S0, 2026-11-20, grounding B §9.6): this summary omits the quit-flag and film gates on the way to the high scores —
+superseded by loose-ends-session.md §2.2 (MED there).
 Guide cross-check (cite): the guide says highest level is remembered only when starting from
 Mariner Valley, and a higher start gives no high score — consistent with this reading.
 
@@ -311,6 +318,8 @@ version 0x2715, seed 0x000469c2, level `le07`, 1 player; P1: 0x12c9 = 4809 ticks
 0xb3ac2 = 0x61da = 25050 (score), level `le07`, inputs from 0x1c: zeros then `01` (left) runs,
 `02` (right) runs. P2 block at 0x4ebc is empty except `none` at 0x4ec4. Demo headers: de01 le07,
 de02 le06, de03 le02, de04 le08 (seeds 0x469c2, 0x4f655, 0x54c83, 0x5afed). [HIGH]
+⚑ corrected (Phase 4 S0, 2026-11-20, grounding B §0: there is **no attract mode** — no demo ever starts by itself; `FUN_10024de0`'s only callers are the
+DEMOS button `10022d8c` and the `D` key `10023cec`, and `G+0x24` is the demo cycle counter. Read "attract" below as "demo".)
 Attract mode: `FUN_100069b0` cycles through `film` tags whose name contains "Demo"
 (`_DAT_100e00f8` → "Demo"), wrapping; a normal game saves itself as tag `last` ("Last Film").
 
@@ -352,7 +361,9 @@ table is ~~still NOT RESOLVED, INDEX #7~~ → ⚑ corrected (review wave 3, 2026
 Defaults (guide, cite only): arrows move, Command fire air, Space select weapon, Option fire
 ground, Esc quit, Caps Lock pause, F6 interlace, ~ console. The resource fork `STR#` 130 is a
 key-name table indexed by virtual key code ("A","S","D","F","H","G","Z","X",…) used by a key
-configurator. The OS X key/HID mapping code and the default key table are NOT RESOLVED. ⚑ corrected (review wave 3, 2026-10-06) #S: narrowed — the default key codes (2 × 7) are listed in timing-frame.md §6, and a `0x14b8` D-form scan finds no consumer in the PEF beyond the defaults writer and the prefs copy routines `FUN_100047f0`/`FUN_10004c30` (critic wave 3 §3); what is left is a ruling for Ben (INDEX #14).
+configurator. The OS X key/HID mapping code and the default key table are NOT RESOLVED. ⚑ corrected (Phase 4 S0, 2026-11-20, grounding C §8.2:
+resolved in the OS X fragment — the key-set consumer is X `FUN_1004cdf0`; slot meanings HIGH: 4 = fire air, 5 = fire ground, 6 = select;
+the key window is DITL 191 in X, `FUN_100435d0`; see osx-build.md.) ⚑ corrected (review wave 3, 2026-10-06) #S: narrowed — the default key codes (2 × 7) are listed in timing-frame.md §6, and a `0x14b8` D-form scan finds no consumer in the PEF beyond the defaults writer and the prefs copy routines `FUN_100047f0`/`FUN_10004c30` (critic wave 3 §3); what is left is a ruling for Ben (INDEX #14).
 
 Phase 2 correction (2026-11): the per-slot meaning of the default key table (slots 4/5/6 = fire air / fire ground / select) and the select-bit film census are in timing-frame.md §6 (note #5); INDEX #14.
 
@@ -478,3 +489,6 @@ names decoded from a 15×21 table at `0x100d61c0`: Mars, Supercobra, Neurotik, E
 Sam, Vodi, Fisj, Alex, h'biki, Goldenberry, Leadfeather, Troll, Thomas, Electrofryer. [HIGH for
 offsets and arithmetic; MED for byte-pref meanings (from console/caller context); the rest of
 the 0x34f0 block (≈0x1000 bytes from 0x0b0, likely key/ISp config) NOT RESOLVED]
+⚑ corrected (Phase 4 S0, 2026-11-20, grounding C §8.3 and §8.6): "≈0x1000 bytes from 0x0b0" is wrong — byte prefs 0x04–0x67 (100), int prefs
+0x68–0x1f7 (100), reserved 0x1f8–0x10f7 and 0x14f0–0x34ef, pad 0x125d–0x125f (copy routines L `FUN_100047f0`/`FUN_10004c30`);
+the table above omits byte 7 and byte 11. The pak fallback for the prefs exists, but the shipped `Local/pref` folder is empty.
