@@ -259,11 +259,15 @@ children's own figures are in the turret table after this one. ⚑ corrected (re
 (assumes the controller is live on its spawn tick: group of 1, `groupDelayMin` 0)]
 ⚑ Phase 3 (2026-11) (DECISIONS D50 wave 3.3 as-built (1); confirmed by two review legs): sector 11 (le10, the
 longest level) has five scroll pauses, each from the level's own controller: `11s1` row 2746, `11m1` 2407,
-`11m2` 1884, `11m3` 1276, `11e1` 205. The first four each hold for the sum of that controller's state timers in
-the data: 2,480 / 3,225 / 3,225 / 2,855 ticks. The hold is read at `10033d70` (§2.2) and applied at `1000703c`.
+`11m2` 1884, `11m3` 1276, `11e1` 205. Each holds for the sum of that controller's state timers on its timer path
+(counters followed, rule exits ignored, as in the table above). The timers are random ranges, so each hold is a
+range: `11s1` 2,360–2,600, `11m1` and `11m2` 3,130–3,325, `11m3` 2,820–2,890, `11e1` 2,250–2,325 (the table's
+figure, re-derived from the state timers). The sweep's measured holds 2,480 / 3,225 / 3,225 / 2,855 fall inside the
+first four; the as-built entry's 2,360 for `11e1` cannot occur (it is `11s1`'s minimum, below `11e1`'s range). The
+hold is read at `10033d70` (§2.2) and applied at `1000703c`.
 ⚑ Phase 3 (2026-11) (DECISIONS D50 wave 3.3 as-built (4)): sector 12's end fight ends on the
-controller's **timer**: `12e1` leaves its hold when it enters "Spawn Flippers" for the fourth time (listing
-`10014dc8`); the Beamer `be02` dying is only an early exit, and the level does not need it dead. In the sweep the
+controller's **timer**: on its fourth entry to "Spawn Flippers" `12e1` goes on to "Pause, Wait, Delete" (counter
+test at listing `10014dc8`), which still holds the scroll for 130–140 ticks before the level ends; the Beamer `be02` dying is only an early exit, and the level does not need it dead. In the sweep the
 Beamer is alive from game time 10,376 through the level end and into the finale (the level end deletes nothing,
 `10006da4`; MED on the original's side).
 Turret / bubble children of the gated bases above (decoded `unde`; shields = min(base +

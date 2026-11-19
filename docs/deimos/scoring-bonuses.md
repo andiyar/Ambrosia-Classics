@@ -110,8 +110,9 @@ score = new
   lives; the score is not clamped at 0. [HIGH — listing]
 - The `raw` branch is reached only by the mission bonus (§6.4); it awards no life and replaces the
   step with `score + 10000` (so the threshold after the next crossing jumps by ≥ the score). [HIGH]
-  ⚑ Phase 3 (2026-11) (pinned by test, DECISIONS D50 wave 3.2 as-built (5)): the raw mission-bonus payment never
-  moves the extra-life threshold (`10029a10..10029af8`).
+  ⚑ Phase 3 (2026-11) (pinned by test, DECISIONS D50 wave 3.2 as-built (5)): the raw mission-bonus payment writes
+  only the step (+0xa0, `10029ad0..aec`); the extra-life threshold itself (+0x9c) is left as it was and changes only
+  at the next non-raw crossing, by the rewritten step (`10029a10..10029af8`).
 
 ### 3.2 Initial values — closes the threshold part of NOT-RESOLVED #26 [HIGH]
 `FUN_10026cc0 @ 10026cc0 (player, fullStart)`, called only from `FUN_10026410` (raw bl-scan

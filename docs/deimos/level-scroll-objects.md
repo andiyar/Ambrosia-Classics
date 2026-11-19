@@ -299,7 +299,7 @@ decompile]
 ⚑ corrected (Phase 3, 2026-11) (disagreement 4): `FUN_1002b3a0` is now read — resource preload only: every `wede`
 of type `PEAA`/`PEAG`/`SPEC` whose level range contains the sector gets its sprite groups (`FUN_1001f950`) and
 unit resources (`FUN_1003e580`) loaded; no game state (appendix A §4).
-⚑ corrected (Phase 3, 2026-11) (disagreement 6): `FUN_10007130` is the five cheat-use counters, not an accuracy
+⚑ corrected (Phase 3, 2026-11) (appendix A §2 carry/reset table, cheat-counters row): `FUN_10007130` is the five cheat-use counters, not an accuracy
 counter, and the level start runs it at **every level start** (`10006514`; ground counts `10006518`, tally
 `1000651c`), so the cheat usage limits reset per level.
 
@@ -343,6 +343,8 @@ and add score `Player_DefenceBonusBaseAmount (2000) × sector` (`FUN_10029a10(p,
 | weapons | `FUN_1003ade0(…, sector)`: default ground weapon (`DEAG`), air weapon = the `PEAA` def whose level range contains the start sector (`FUN_1003cdb0`) | `FUN_1003af90(handler, 1)`: transient fire/overload state cleared, pending `PEAG` pickup applied, `PEAA` swapped if a `PEAA` def has min level == current sector (`FUN_1003cd30`) | [MED — arguments partly dropped by the decompiler; weapons reader owns it] |
 | position, velocity, appear fade, state 2 at time 0 | | reset (`FUN_10026b10`, `FUN_10026c80(p,2,t)`, PermFloats 163–165) | [MED] |
 | inactive (dead) player | | stays out (`FUN_100269a0` returns at once if `+0xc4 == 0`) | [HIGH] |
+Starting sector > 1 thus gets 1 life and a later air weapon — the code side of the level-select
+"Starting Bonus" lines (NOT-RESOLVED #28, narrowed; the displayed text is not traced). [MED]
 ⚑ corrected (Phase 3, 2026-11) (appendix A §2 disagreement 3 — the table omitted these; appendix A's carry/reset
 table is the full reference): **carried** — score multiplier `+0xb4` (reset only by setup `10026898` and death
 `10028150`), its indicator serial `+0xb8` (stale: the first respawn may remove serial X of the new level,
@@ -360,8 +362,6 @@ level 4). There is one air-weapon slot and no inventory: Select cycles the air w
 its real final state 8 (a poked state 3 stops the level completing); the weapon test holds fire through the
 crossing because a release would apply the pending weapon (`1003b44c` / `1003c4b4`); the pending **ground** weapon is
 unreachable in shipped play (its only source is the unregistered debug command at `10008490`).
-Starting sector > 1 thus gets 1 life and a later air weapon — the code side of the level-select
-"Starting Bonus" lines (NOT-RESOLVED #28, narrowed; the displayed text is not traced). [MED]
 Demo note (out of scope): unregistered copies stop after sector `FUN_10011b00()` = 4 (`+0x0e`),
 and `FUN_10011b30(info)` tests membership of the first 4 identifiers. [HIGH reading, not specified]
 

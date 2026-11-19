@@ -318,9 +318,9 @@ Otherwise post the refusal (type 1) and play `gaso[5]`.
 | `score` | `G+0x174` | 2 | `FUN_10029a10(p, 10000, 0)`: not raw, so **× multiplier**, and it can award an extra life (scoring-bonuses.md §3.1) | `Points Points Points!` | `I Think Not, Young Kitty!` |
 | `shields` | `G+0x178` | 1 | `FUN_10027490(p, 100.0)` (float `0x100d6360` = `42c80000`) | `Maximum Shields!` | `Use The Force, Luke!` |
 | `mult` | `G+0x17c` | 1 | `FUN_10029b20(p)` next multiplier step | `Bonus Multiplier!` | `Play Bubble Trouble!` |
-Counters are zeroed at ~~every game start~~ by `FUN_10007130`, the only writer (raw scan for `stw …,0x16c…0x17c`:
+Counters are zeroed at every game start by `FUN_10007130`, the only writer (raw scan for `stw …,0x16c…0x17c`:
 `10007138..48`), called from `FUN_100051a0`'s new-game branch. The very first game uses the 0x180-byte memset.
-⚑ corrected (Phase 3, 2026-11): the zeroing runs at **every level start** — the level start `FUN_100064d0` calls
+⚑ Phase 3 (2026-11): the zeroing **also** runs at **every level start** — the level start `FUN_100064d0` calls
 `FUN_10007130` at `10006514` (appendix A §2 disagreement 6) — so each cheat's usage limit resets per level.
 The guide's "all codes have usage limits" is true except for `accuracy`.
 
@@ -434,7 +434,7 @@ solid + ~1.0 s fade. A second `life` this game → `Tut tut!  What a greedy pigg
 | `FUN_10007d60` | G_Game.cc (span) | draw accuracy-tally text (format 53, alpha G+0x50) | HIGH | listing `10007d60..10007df8` |
 | `0x10007e00`…`0x100090d0` (no functions; `FUN_10008820` is GAMETIME) | G_Game.cc (span) | 18 console handlers (§5.5): FPS, VERSION, supermunki, 6 cheats reachable; the rest debug-only | HIGH | raw listing + TVs `0x100defc8…0x100def84` |
 | ⚑ corrected `FUN_10009230` | G_Game.cc (span) | post "Please Register Deimos Rising!" (de-obfuscated `0x100e447c`), type 1 | HIGH | listing; was LOW "show decoded notice text" |
-| `FUN_10007130` | G_Game.cc (span) | reset the 5 cheat-use counters G+0x16c…0x17c ~~at game start~~ — ⚑ corrected (Phase 3, 2026-11): at every level start (`10006514` in `FUN_100064d0`) | HIGH | decompile + raw writer scan |
+| `FUN_10007130` | G_Game.cc (span) | reset the 5 cheat-use counters G+0x16c…0x17c at game start — ⚑ Phase 3 (2026-11): and also at every level start (`10006514` in `FUN_100064d0`) | HIGH | decompile + raw writer scan |
 | `FUN_10030870` | frame controller | after the paused frame: console reset, pause screen, clear notice, unpause, quit request | HIGH | listing `10030870..100308f0` |
 | `FUN_10022ef0` | G_Scores (span) | modal pause screen: gaso[8], music pause, wait for Caps Lock release; returns quit | MED | decompile |
 | `FUN_10005ce0` | G_Game.cc (span) | game time getter `G+0x1c` | HIGH | decompile one-liner + GAMETIME TV use |
