@@ -353,8 +353,13 @@ public struct DeimosSession: Sendable {
             game.cues.music = pause.musicAfterWait                   // 10022fb4 FUN_10048220(0), after the wait
         }
         if !game.flags.running {                                     // 10005b38..10005c18
-            // `end` is set on every path that clears G+0x08 in a pass (begin frame, tick, film branch above).
-            result = makeResult(end: end ?? .escape)
+            // `end` is set on every path that clears G+0x08 in a pass (begin frame, tick, film branch above); an end
+            // none of them explains is a bug, not an Esc.
+            guard let end else {
+                preconditionFailure("DeimosSession.pass: the running flag (G+0x08) cleared by no known rule — not the "
+                                    + "begin frame's quit, the tick, or the film branch")
+            }
+            result = makeResult(end: end)
         }
         return PassOutput(ops: ops, sounds: cues.sounds, music: cues.music, requests: requests, ticked: begin.tick,
                           sessionEnded: !game.flags.running, haltEffectsAt: cues.haltEffectsAt,

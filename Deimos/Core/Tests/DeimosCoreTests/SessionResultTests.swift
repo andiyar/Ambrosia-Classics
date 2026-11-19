@@ -59,7 +59,8 @@ final class SessionResultTests: XCTestCase {
 
     /// The finale (FinaleTests' recipe: sector 12 with eleven levels already started, P1 invulnerable, the scroll near
     /// the map's end): the session ends at the campaign end with G+0x0d set → end `.finale`, allLevels (+0x14), P1's
-    /// level `le09`, start sector 12. Bound: 3,000 passes.
+    /// level `le09`, start sector 12. Then the tick's other end, the game over, reported as `.gameOver`. Bounds:
+    /// 3,000 and 3,125 passes.
     func testSessionResultAfterFinale() throws {
         var s = try DeimosSession(assets: assets(), prefs: .fresh, start: SessionStart(sector: 12, players: 1, film: nil),
                                   seed: 0x469c2)
@@ -87,6 +88,22 @@ final class SessionResultTests: XCTestCase {
         XCTAssertEqual(r.scores, [s.players[0].score, 0])
         XCTAssertGreaterThan(r.scores[0], 0)
         XCTAssertFalse(r.cheated)
+
+        // The other tick-cleared end: the game over (`10006d68..10006d98`). Sector 1 with no keys loses P1's three
+        // lives and ends at pass 1195 (`DeimosSessionTests.testTerrainTopPerPass`). Bound: 3,125 passes.
+        var lost = try DeimosSession(assets: assets(), prefs: .fresh, start: SessionStart(sector: 1, players: 1, film: nil),
+                                     seed: 0x469c2)
+        var over: (pass: Int, out: PassOutput)?
+        for n in 0..<3125 {
+            let o = lost.pass(keys: HeldKeys(), ticks: 0)
+            if o.sessionEnded { over = (n, o); break }
+        }
+        let (n, o) = try XCTUnwrap(over, "bound: the session still runs after 3,125 passes")
+        XCTAssertEqual(n, 1195)
+        XCTAssertTrue(lost.game.flags.noPlayerAlive)
+        XCTAssertEqual(o.result?.end, .gameOver, "no player in game: the game over, not Esc")
+        XCTAssertEqual(o.result?.allLevels, false)
+        XCTAssertEqual(o.result?.levels, [FourCC("le07")!, .none])
     }
 
     /// Cheated (+0x15) = any PRESENT slot's +0xbd (`10005ba4..10005bbc`) — player 2's slot counts in a one-player

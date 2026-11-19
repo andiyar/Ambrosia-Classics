@@ -9,7 +9,8 @@ public enum MusicCue: Equatable, Sendable {
     case level(Int32)
     /// `FUN_10048120(1)` (Phase 4, plan S1a): a stream that is playing fades out over 1000 ms (`FUN_100d04d8(1000)`,
     /// the double-buffer callback stepping the fade 0x100 → 0, `100d0750..100d0848`), is paused, then disposed; a
-    /// paused stream is disposed at once. The original busy-waits for the fade (≤ 600 ticks) — that wait is the
-    /// caller's, not the cue's.
+    /// paused stream is disposed at once. The original busy-waits for the fade inside the same call (`10048164..
+    /// 100481ac`, until TickCount > t0 + 600): Core puts that wait in the pass's ops after the cue, as
+    /// `RenderOp.hostWait(.musicStopped(maxTicks: 600))` — the cue itself does not wait.
     case stopWithFade
 }

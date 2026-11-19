@@ -79,7 +79,9 @@ public struct DriverOutput: Equatable, Sendable {
 ///   reaches it; the op stream stays there, and no pass begins, until the wait is over — `.ticks(n)`: `TickCount ≥
 ///   t0 + n` (unsigned, wrapping); `.voiceEnd(id)`: `audio?.isPlaying(id)` false (`FUN_100476e0`; no sink = no mixer =
 ///   nothing sounds) — asked here, by the host, only to end the wait (standing rule 10); `.clickOrKey`: a mouseDown,
-///   keyDown or autoKey event queued; `.answer`: a `ShellEvent.answer` queued. The waits present nothing.
+///   keyDown or autoKey event queued; `.answer`: a `ShellEvent.answer` queued; `.musicStopped(n)`:
+///   `audio?.isMusicFading()` false (`FUN_100d05a8`; no sink = no music) or `TickCount > t0 + n` (unsigned, wrapping)
+///   — asked, like the voice, only to end the wait. The waits present nothing.
 /// - **Input queue** (Phase 4) — like `typed`, a pass's `keyEvents`, `mouseDowns` and `events` are everything handed
 ///   to `idle` since the previous pass began, in order: queued across every wait (limiter, fade, pause, host wait),
 ///   never dropped, except that the original's `FlushEvents` (a restart, the pause wait's begin, a transition fade's
@@ -470,7 +472,8 @@ public struct DeimosDriver {
 
     /// Whether `wait`, reached at `t0`, is over at `now` (`HostWait`): the tick count (unsigned, the sum wrapping, as
     /// the fades); the voice no longer sounding (`FUN_100476e0`; no sink = no mixer = silent); a mouseDown, keyDown or
-    /// autoKey event queued; an answer queued. The input stays queued for the next pass.
+    /// autoKey event queued; an answer queued; the music's fade over or the bound passed. The input stays queued for
+    /// the next pass.
     private func hostWaitOver(_ wait: HostWait, t0: UInt32, now: UInt32) -> Bool {
         switch wait {
         case let .ticks(n):
@@ -481,6 +484,9 @@ public struct DeimosDriver {
             return !typedQueue.isEmpty || !keyEventQueue.isEmpty || !mouseDownQueue.isEmpty
         case .answer:
             return shellEventQueue.contains { if case .answer = $0 { return true } else { return false } }
+        case let .musicStopped(maxTicks):
+            // 100481a0..100481ac FUN_100d05a8, then 10048178..10048184 TickCount > t0 + n (cmplw; ble).
+            return !(audio?.isMusicFading() ?? false) || now > t0 &+ maxTicks
         }
     }
 

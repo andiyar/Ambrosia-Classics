@@ -8,8 +8,17 @@ final class SeamsTests: XCTestCase {
     private func assets() throws -> DeimosAssets { try TestAssets.loaded.get() }
 
     /// A `HeldKeys` built as every earlier shell and test builds it (held keys, Caps Lock, typed) has no mouse to
-    /// report, the button up and no mouse, key or shell events: the session sees what it saw before Phase 4.
-    func testHeldKeysMouseDefaultsUp() {
+    /// report, the button up and no mouse, key or shell events: the session sees what it saw before Phase 4. The
+    /// assets' additions too: no shell picture unless the shell hands one in, and the `inte` / `cred` accessors read
+    /// their own lists (28 and 102 lines, `TextListsTests`).
+    func testHeldKeysMouseDefaultsUp() throws {
+        let a = try assets()
+        XCTAssertTrue(a.shellPictures.isEmpty, "no shell picture by default")
+        XCTAssertEqual(try a.interfaceStrings().lines.count, 28)
+        XCTAssertEqual(try a.interfaceStrings().string(at: 6), "Loading Permanent Image:  ")
+        XCTAssertEqual(try a.credits().lines.count, 102)
+
+
         let bare = HeldKeys()
         XCTAssertNil(bare.mouse)
         XCTAssertFalse(bare.mouseButton)

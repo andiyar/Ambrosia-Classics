@@ -88,10 +88,15 @@ final class ParticleStampTests: XCTestCase {
 
     /// Every `RenderOp` case is listed (the exhaustive switch below fails to compile when a case is added);
     /// `isHostOp` is true for exactly `.fade`, `.limit`, `.pauseWait`, and every other op applies on a fresh
-    /// renderer without trapping. The host ops are not sent (`apply` traps on them by contract).
+    /// renderer without trapping. The host ops are not sent (`apply` traps on them by contract). Phase 4's draws are
+    /// pinned here too: a shell picture lands at (left, top), and the opaque scaled copy samples as `FUN_1001d1b0`.
     func testIsHostOpMatchesRendererTraps() throws {
-        let assets = try ShippedAssets.get()
+        var assets = try ShippedAssets.get()
         let level = try XCTUnwrap(assets.definitions.levels.first)
+        // A made-up shell picture (ruling 9), 3 × 2, drawn with its top-left at (left 50, top 30).
+        assets.shellPictures[1000] = ShellPicture(width: 3, height: 2, pixels: [0x0001, 0x0002, 0x0003,
+                                                                               0x0004, 0x0005, 0x0006])
+        let half = MacRect(top: 100, left: 300, bottom: 200, right: 373)   // the 146 × 306 preview at 1/2 × 1/3.06
         var cost = DrawCommand.template
         cost.face = FourCC("COST")!
         cost.costRect = MacRect(top: 10, left: 10, bottom: 20, right: 20)
@@ -113,7 +118,8 @@ final class ParticleStampTests: XCTestCase {
             .particles([ParticleStamp(x: 0, y: 0, core: 0x7FFF, fringe: 0x03E0, fade: 4)]),
             .pauseWait(.gameScreen),
             .hostWait(.ticks(1)),
-            .drawPicture(id: 1000, into: .back, top: 0, left: 0),
+            .drawPicture(id: 1000, into: .back, top: 30, left: 50),
+            .scaledCopy(image: level.previewImage, into: .back, dst: half, clip: half),
         ]
         func name(_ op: RenderOp) -> String {
             switch op {
@@ -132,13 +138,53 @@ final class ParticleStampTests: XCTestCase {
             case .pauseWait: return "pauseWait"
             case .hostWait: return "hostWait"
             case .drawPicture: return "drawPicture"
+            case .scaledCopy: return "scaledCopy"
             }
         }
-        XCTAssertEqual(Set(all.map(name)).count, 15, "one instance of every case")
+        XCTAssertEqual(Set(all.map(name)).count, 16, "one instance of every case")
         XCTAssertEqual(Set(all.filter(RenderOp.isHostOp).map(name)), ["fade", "limit", "pauseWait", "hostWait"])
 
         let r = DeimosRenderer(assets: assets)
         for op in all where !RenderOp.isHostOp(op) { r.apply(op) }
-        XCTAssertNotEqual(r.buffer(.back)[0, 0], 0x0421, "the particle stamp reached the back buffer")
+        let back = r.buffer(.back)
+        XCTAssertNotEqual(back[0, 0], 0x0421, "the particle stamp reached the back buffer")
+
+        // The shell picture: x = left + column, y = top + row; (x 30, y 50) — top and left swapped — is untouched.
+        XCTAssertEqual(back[50, 30], 0x0001)
+        XCTAssertEqual(back[52, 30], 0x0003)
+        XCTAssertEqual(back[50, 31], 0x0004)
+        XCTAssertEqual(back[52, 31], 0x0006)
+        XCTAssertEqual(back[53, 30], 0x0421, "at its own size")
+        XCTAssertEqual(back[30, 50], 0x0421)
+
+        // The scaled copy of the shipped preview, through the op: src x = 146·(x − 300) / 73, y = 306·(y − 100) / 100.
+        let preview = try XCTUnwrap(ImageCache.shared.image(level.previewImage, index: assets.index))
+        XCTAssertEqual(preview.width, 146)
+        XCTAssertEqual(preview.height, 306)
+        XCTAssertEqual(back[300, 100], preview[0, 0])
+        XCTAssertEqual(back[372, 199], preview[144, 302])
+        XCTAssertEqual(back[301, 101], preview[2, 3])
+
+        // `FUN_1001d1b0` on a made-up 4 × 3 image (pixel = 0x100·y + x + 1): dst rect {top 1, left 2, bottom 7,
+        // right 14} (3× across, 2× down), clip {top 2, left 3, bottom 6, right 13} — inside it on all four sides, as
+        // the zoomed preview against its unscaled rect. Per pixel inside both: src x = 4·(x − 2) / 12, src y =
+        // 3·(y − 1) / 6, truncated (`divw`), opaque.
+        var src = Pixmap555(width: 4, height: 3)
+        for y in 0..<3 { for x in 0..<4 { src[x, y] = UInt16(0x100 * y + x + 1) } }
+        var dst = Pixmap555(width: 16, height: 8)
+        dst.fill(0x7C00)
+        DeimosRenderer.scaledCopy(from: src, to: &dst, dstRect: MacRect(top: 1, left: 2, bottom: 7, right: 14),
+                                  clip: MacRect(top: 2, left: 3, bottom: 6, right: 13))
+        XCTAssertEqual(dst[3, 2], src[0, 0])
+        XCTAssertEqual(dst[4, 2], src[0, 0], "8/12 truncates to 0")
+        XCTAssertEqual(dst[5, 2], src[1, 0])
+        XCTAssertEqual(dst[6, 3], src[1, 1])
+        XCTAssertEqual(dst[3, 4], src[0, 1], "9/6 truncates to 1")
+        XCTAssertEqual(dst[12, 5], src[3, 2])
+        XCTAssertEqual(dst[5, 1], 0x7C00, "row 1 lies above the clip")
+        XCTAssertEqual(dst[12, 6], 0x7C00, "row 6 lies below the clip")
+        XCTAssertEqual(dst[2, 3], 0x7C00, "column 2 lies left of the clip")
+        XCTAssertEqual(dst[13, 5], 0x7C00, "column 13 lies right of the clip")
+        XCTAssertEqual(dst.pixels.filter { $0 != 0x7C00 }.count, 10 * 4, "x 3..<13 × y 2..<6 written, nothing else")
     }
 }

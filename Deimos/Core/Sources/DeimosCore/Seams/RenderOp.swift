@@ -67,6 +67,13 @@ public enum RenderOp: Equatable, Sendable {
     /// it to Core as a plain image (ruling 9, `DeimosAssets.shellPictures`); a picture the shell did not supply
     /// draws nothing (`GetPicture` nil → the error log, `10044c5c`, no draw). Phase 4 (plan S1a).
     case drawPicture(id: Int16, into: BufferID, top: Int32, left: Int32)
+    /// `FUN_1001d1b0` — the opaque scaled copy (the level select's middle preview while its flash scale ≠ 1,
+    /// `1002f9f8..1002fb80`): the WHOLE `image` (an `im16`, the preview; its width and height are the source size)
+    /// point-sampled into `dst` of the buffer, written only inside `clip` (the caller passes the unscaled preview
+    /// rect). Per destination pixel x ∈ [left, right), y ∈ [top, bottom) with clip.left ≤ x < clip.right and
+    /// clip.top ≤ y < clip.bottom: source x = srcW·(x − left) / (right − left), y = srcH·(y − top) / (bottom − top),
+    /// integer division truncating (`divw`); the 16-bit pixel is copied as is (`lhzx` / `sthx`). Phase 4.
+    case scaledCopy(image: FourCC, into: BufferID, dst: MacRect, clip: MacRect)
 
     /// The ops the host steps itself (`DeimosRenderer.apply` traps on them): `.fade`, `.limit`, `.pauseWait`,
     /// `.hostWait`.

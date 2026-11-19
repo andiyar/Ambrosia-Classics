@@ -11,12 +11,14 @@ public protocol DeimosAudioSink: AnyObject, Sendable {
     func apply(sounds: [SoundCue], music: [MusicCue], haltEffectsAt: Int?)
     /// `FUN_100476e0(id)`: the effect's last started voice is still in the mixer's list ("voice ended" = false). The
     /// host asks it only to end a `HostWait.voiceEnd` (Phase 4, plan S1a); Core never reads it (standing rule 10).
-    /// Default: false — a sink with no mixer sounds nothing.
+    /// Required: every sink answers (a sink with no mixer behind it answers false — nothing sounds).
     func isPlaying(_ id: FourCC) -> Bool
-}
-
-extension DeimosAudioSink {
-    public func isPlaying(_ id: FourCC) -> Bool { false }
+    /// `FUN_100d05a8`: the music's fade-out (`MusicCue.stopWithFade`, `FUN_100d04d8(1000)`) is still running — its
+    /// rate `0x100e075c` is non-zero until the level reaches 0 (`100d0750..100d0848`). The host asks it only to end a
+    /// `HostWait.musicStopped` (Phase 4); Core never reads it (standing rule 10). Required: a sink with no music
+    /// behind it answers false. It moves only while the sink renders: with no audio rendering a fade never ends and
+    /// the wait releases at its bound.
+    func isMusicFading() -> Bool
 }
 
 /// The game's audio: the 16-voice / 8-audible effects mixer (`EffectMixer`, A1) and the music streamer
@@ -196,6 +198,16 @@ public final class DeimosAudioEngine: DeimosAudioSink, PCMPullSource {
     /// `FUN_100476e0(id)` on the mixer (`EffectMixer.isPlaying`), under the lock (game thread; Phase 4).
     public func isPlaying(_ id: FourCC) -> Bool {
         state.withLock { s in s.effects.isPlaying(id) }
+    }
+
+    /// `FUN_100d05a8` (game thread; Phase 4): a `stopWithFade` fade has begun on a stream and `render` has not yet
+    /// brought its level to 0 (the render that does pauses the stream, `100481b0`); a `.play` or `.stop` ends it, and
+    /// no stream means no fade.
+    public func isMusicFading() -> Bool {
+        state.withLock { s in
+            guard s.musicFadeFrames != nil, let m = s.music else { return false }
+            return !m.paused
+        }
     }
 
     // MARK: Inspection (tests)

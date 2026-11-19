@@ -47,6 +47,7 @@ final class DeimosSessionTests: XCTestCase {
         case .pauseWait: return "pauseWait"
         case .hostWait: return "hostWait"
         case .drawPicture: return "drawPicture"
+        case .scaledCopy: return "scaledCopy"
         }
     }
 

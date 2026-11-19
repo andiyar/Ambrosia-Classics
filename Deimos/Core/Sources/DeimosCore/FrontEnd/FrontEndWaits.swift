@@ -25,4 +25,12 @@ public enum HostWait: Equatable, Sendable {
     case clickOrKey
     /// Until the shell answers the question the pass put (`ShellRequest.ask`): a `ShellEvent.answer` is queued.
     case answer
+    /// Until the music's fade-out is over, at most `maxTicks` — `FUN_10048120(1)`'s spin after `MusicCue
+    /// .stopWithFade` (`10048164..100481ac`): t0 = `TickCount`; while the fade runs (`FUN_100d05a8`, the sink's
+    /// `isMusicFading`) idle, and leave once `TickCount > t0 + maxTicks` (`cmplw; ble`: unsigned, the sum wrapping;
+    /// the original logs an error there, `10048188..10048190`). The original's bound is 600 (`1004819c addi r31,r3,
+    /// 0x258`), so every `stopWithFade` is followed by `.musicStopped(maxTicks: 600)`. No music, or no sound system: it
+    /// ends at once. A fade moves only while the audio renders, so with no audio rendering it releases at the bound —
+    /// never a hang. Phase 4.
+    case musicStopped(maxTicks: UInt32)
 }

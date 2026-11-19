@@ -715,8 +715,11 @@ final class DriverTests: XCTestCase {
     /// 1. `.ticks(10)`: held until `TickCount ≥ t0 + 10`, t0 = the tick the wait was reached; then `.clickOrKey`, which
     ///    the input that arrived during the tick wait releases at once — and all of it (typed, key events, a mouse-down,
     ///    a shell event) reaches the next pass: queued, not dropped (the console shows the typed `a`).
-    /// 2. `.clickOrKey` with nothing but a held key: held; a mouse-down releases it.
+    /// 2. `.clickOrKey` with nothing but a held key: held; a mouse-down releases it, and so does a lone autoKey event
+    ///    (no typed character, no click).
     /// 3. `.answer`: an unrelated shell event does not release it; the answer does, and both events reach the pass.
+    /// 4. FlushEvents (here the pause wait's, `10022f1c`) empties the OS queue — typed, key events, mouse-downs — and
+    ///    keeps the shell's own events: a Quit request queued before it reaches the next pass.
     /// Bound: 50,000 polls (fake clock).
     func testDriverRunsHostWaits() throws {
         var driver = try makeDriver()
@@ -783,6 +786,18 @@ final class DriverTests: XCTestCase {
         while driver.passCount == held { guard idle() else { return XCTFail("no pass after the click") } }
         XCTAssertEqual(driver.lastPassKeys.mouseDowns, [down])
 
+        // 2b. A key event alone (an autoKey: no typed character) releases it too.
+        driver.insertOps([.hostWait(.clickOrKey)])
+        let keyed = driver.passCount
+        for _ in 0..<300 { guard idle() else { return XCTFail("cap") } }
+        XCTAssertEqual(driver.waitingOn, .clickOrKey)
+        let repeatA = KeyEvent(charCode: 0x61, keyCode: 0x00, autoRepeat: true)
+        guard idle(HeldKeys(keyEvents: [repeatA])) else { return XCTFail("cap") }
+        XCTAssertNotEqual(driver.waitingOn, .clickOrKey, "a key event ends click-or-key")
+        while driver.passCount == keyed { guard idle() else { return XCTFail("no pass after the key") } }
+        XCTAssertEqual(driver.lastPassKeys.keyEvents, [repeatA])
+        XCTAssertEqual(driver.lastPassKeys.typed, [])
+
         // 3. The answer to a question.
         driver.insertOps([.hostWait(.answer)])
         let asked = driver.passCount
@@ -794,11 +809,28 @@ final class DriverTests: XCTestCase {
         while driver.passCount == asked { guard idle() else { return XCTFail("no pass after the answer") } }
         XCTAssertEqual(driver.lastPassKeys.events, [.aboutChosen, .answer(.second)])
         XCTAssertEqual(driver.lastPassKeys.typed, [0x62])
+
+        // 4. FlushEvents keeps the shell's events: input queued during a tick wait, then the pause wait's flush.
+        let console = driver.session.console.text
+        driver.insertOps([.hostWait(.ticks(3)), .pauseWait(.gameScreen)])
+        let flushed = driver.passCount
+        guard idle() else { return XCTFail("cap") }
+        XCTAssertEqual(driver.waitingOn, .ticks(3))
+        guard idle(HeldKeys(typed: [0x63], mouseDowns: [click], keyEvents: [KeyEvent(charCode: 0x63, keyCode: 0x08)],
+                            events: [.quitRequested])) else { return XCTFail("cap") }
+        while driver.passCount == flushed { guard idle() else { return XCTFail("no pass after the pause wait") } }
+        XCTAssertEqual(driver.lastPassKeys.typed, [], "FlushEvents empties the OS queue")
+        XCTAssertEqual(driver.lastPassKeys.keyEvents, [])
+        XCTAssertEqual(driver.lastPassKeys.mouseDowns, [])
+        XCTAssertEqual(driver.lastPassKeys.events, [.quitRequested], "the shell's own events are not OS-queue events")
+        for _ in 0..<10 { guard idle() else { return XCTFail("cap") } }
+        XCTAssertEqual(driver.session.console.text, console, "the flushed character never reached the game")
     }
 
     /// Phase 4 SK-a — `.voiceEnd(id)` (boot step 12, `100003b0..10000404`: spin while `FUN_100476e0('publ')`): held
     /// while the sink reports the id sounding — another id ending does not matter — and released by the first poll
-    /// after it stops; with no sound system (`audio == nil`, no mixer) nothing sounds and the wait ends at once.
+    /// after it stops; with no sound system (`audio == nil`, no mixer) nothing sounds and the wait ends at once. Then
+    /// the other audio wait, `.musicStopped(maxTicks:)`: its bound, its release on the fade's end, no sink.
     /// Bound: 50,000 polls (fake clock).
     func testVoiceEndWaitReleases() throws {
         let publ = FourCC("publ")!, incl = FourCC("incl")!
@@ -834,16 +866,51 @@ final class DriverTests: XCTestCase {
         silent.insertOps([.hostWait(.voiceEnd(publ))])
         guard idle(&silent) else { return XCTFail("cap") }
         XCTAssertNil(silent.waitingOn)
+
+        // The music fade's wait (`FUN_10048120(1)`, `10048164..100481ac`): t0 = TickCount, then while the fade runs
+        // (`FUN_100d05a8`) idle and leave once TickCount > t0 + 600 (`cmplw; ble`). A fade that never ends — no audio
+        // rendering — releases on the first poll at t0 + 601; a fade that ends releases on the next poll.
+        sink.fading = true
+        driver.insertOps([.hostWait(.musicStopped(maxTicks: 600))])
+        var t0: UInt32?
+        while t0 == nil {
+            let now = clock.ticks
+            guard idle(&driver) else { return XCTFail("cap") }
+            if driver.waitingOn == .musicStopped(maxTicks: 600) { t0 = now }
+        }
+        let reached = try XCTUnwrap(t0)
+        var releasedAt: UInt32?
+        while releasedAt == nil {
+            let now = clock.ticks
+            guard idle(&driver) else { return XCTFail("bound: the music wait never released") }
+            if driver.waitingOn == nil { releasedAt = now } else { XCTAssertLessThanOrEqual(now, reached &+ 600) }
+        }
+        XCTAssertEqual(releasedAt, reached &+ 601, "the bound: the first TickCount past t0 + 600")
+
+        driver.insertOps([.hostWait(.musicStopped(maxTicks: 600))])
+        for _ in 0..<300 { guard idle(&driver) else { return XCTFail("cap") } }
+        XCTAssertEqual(driver.waitingOn, .musicStopped(maxTicks: 600), "the fade runs: the wait holds")
+        sink.fading = false
+        guard idle(&driver) else { return XCTFail("cap") }
+        XCTAssertNil(driver.waitingOn, "the fade is over: released on the next poll")
+
+        silent.insertOps([.hostWait(.musicStopped(maxTicks: 600))])
+        guard idle(&silent) else { return XCTFail("cap") }
+        XCTAssertNil(silent.waitingOn, "no sound system: no music fades")
     }
 }
 
 /// A sink whose effects "sound" while their ids are in `playing` (single-threaded tests).
 final class VoiceSink: DeimosAudioSink, @unchecked Sendable {
     var playing: Set<FourCC> = []
+    /// The music's fade-out "runs" while true.
+    var fading = false
 
     func apply(sounds: [SoundCue], music: [MusicCue], haltEffectsAt: Int?) {}
 
     func isPlaying(_ id: FourCC) -> Bool { playing.contains(id) }
+
+    func isMusicFading() -> Bool { fading }
 }
 
 /// A sink that records every `apply`, in order (single-threaded tests).
@@ -858,4 +925,9 @@ final class RecordingSink: DeimosAudioSink, @unchecked Sendable {
     func apply(sounds: [SoundCue], music: [MusicCue], haltEffectsAt: Int?) {
         applies.append(Apply(sounds: sounds, music: music, halt: haltEffectsAt))
     }
+
+    /// No mixer behind it: nothing sounds, no music fades.
+    func isPlaying(_ id: FourCC) -> Bool { false }
+
+    func isMusicFading() -> Bool { false }
 }

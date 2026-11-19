@@ -15,6 +15,9 @@ public enum ShellRequest: Equatable, Sendable {
     /// Put a two-button question (question 8: the "erase all scores?" alert); the answer comes back as
     /// `ShellEvent.answer` in `HeldKeys.events`. Phase 4.
     case ask(ShellQuestion)
+    /// `SysBeep(1)`: the system alert sound — the controls window refusing a key another slot already holds
+    /// (`10043c00`, grounding C §3a: `FlushEvents` + `SysBeep`, nothing changes). Phase 4.
+    case beep
 }
 
 /// A two-button question the shell puts to the player (question 8 default: a normal macOS alert). Phase 4.
