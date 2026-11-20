@@ -8,7 +8,9 @@ import HectorResources
 /// **Frozen entry.** `init(player:slot:prefs:fromGame:)` — the player (0 or 1), the table row (0…14), the prefs
 /// copy A the insertion has already shifted, and `fromGame` (always true from the insertion). **Returns** prefs A as
 /// name entry left it — the row's name and the remembered player name written; name entry also copies it into the
-/// live prefs on exit (`FUN_100047f0(A)`), and the insertion hands it to the second player's entry.
+/// live prefs on exit (`FUN_100047f0(A)`). When both players qualified, the caller sets `player2Slot` on player 1's
+/// entry and player 2's entry follows inside this screen over the prefs player 1 left (see **Both players**); the value
+/// returned is then the prefs after player 2.
 ///
 /// **The screen** (first pass): back ← black, `back` → back and save, the row's name ← the player's remembered name
 /// (`strcpy`), the edit buffer ← its first 20 bytes (`FUN_10046510`), the list built with edit 1, dim 1, the slot and
@@ -63,7 +65,18 @@ public struct NameEntry: Sendable {
     public let fromGame: Bool
     /// Player 2's row, set on player 1's entry when both players qualified: player 2's entry follows inside this
     /// screen (see the type's comment). nil: one entry only.
-    public var player2Slot: Int?
+    /// Checked when set: a table row, and never player 1's — the insertion's adjustment (idx2 ≥ idx1 → idx2 + 1;
+    /// idx1 > idx2 → idx1 + 1) always separates the two rows, or drops one off the table.
+    public var player2Slot: Int? {
+        didSet {
+            if let s2 = player2Slot {
+                precondition((0..<HighScoreTable.rowCount).contains(s2),
+                             "NameEntry: player2Slot \(s2) is not a table row (0…14)")
+                precondition(player == 0 && s2 != slot, "NameEntry: player2Slot \(s2) needs player 1's entry in "
+                             + "another row (player \(player), slot \(slot))")
+            }
+        }
+    }
 
     /// The entry running now: player 1, then player 2 at `player2Slot`.
     private var entryPlayer: Int
@@ -125,8 +138,6 @@ public struct NameEntry: Sendable {
                 out.ops += [.copy(from: .terrain, to: .back, src: nil, dst: nil, interlaced: false),
                             .present(.fullScreen)]
                 guard let slot2 = player2Slot, entryPlayer == 0 else { return .finish(edited, out) }
-                precondition((0..<HighScoreTable.rowCount).contains(slot2),
-                             "NameEntry: player2Slot \(slot2) is not a table row (0…14)")
                 beginPlayer2(slot: slot2)                            // FUN_10021bd0(1, idx2, A, 1)
                 start(ticks: ticks, state: state, out: &out)
                 continue                                             // the unread events are player 2's

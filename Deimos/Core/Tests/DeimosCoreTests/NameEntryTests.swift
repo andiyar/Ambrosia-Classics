@@ -238,13 +238,16 @@ final class NameEntryTests: XCTestCase {
         }
         XCTAssertEqual(back, tk + 31)
         // A refused key (Esc) neither hides it nor restarts the 30 ticks (dump: only edits set the key clock).
-        let te = tk + 41
+        // (The loop above stepped every tick to tk + 40; the cursor shows from tk + 31 until the flip at tk + 42.)
+        let te = tk + 40
         let before = nameText(e, slot: 0)
         _ = step(&e, &s, ticks: te, keys: HeldKeys(keyEvents: [Self.esc]))
         XCTAssertEqual(nameText(e, slot: 0), before)
         XCTAssertTrue(before.hasSuffix("_"))
-        // Backspace hides it at once and restarts the key clock: back only 31 ticks after it.
+        // Backspace, arriving while the cursor shows (tk + 41: no flip is due), hides it at once and restarts the key
+        // clock: back only 31 ticks after it.
         let tb = te + 1
+        XCTAssertTrue(nameText(e, slot: 0).hasSuffix("_"), "showing when Backspace arrives")
         _ = step(&e, &s, ticks: tb, keys: HeldKeys(keyEvents: [Self.backspace]))
         XCTAssertEqual(nameText(e, slot: 0), "Player 1")
         var again: UInt32?
