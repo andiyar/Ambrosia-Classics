@@ -231,9 +231,11 @@ final class BootTests: XCTestCase {
         // A late hold pass: the 130 are already over.
         var late = try run(a, launch: LaunchModifiers(command: true))
         let lateSteps = boot(&late, hold1: Self.t1 + 130)
+        XCTAssertEqual(lateSteps.count, 6, "a late hold pass at T1 + 130: six passes")
         if lateSteps.count == 6 { XCTAssertEqual(lateSteps[2].output.ops.first, .hostWait(.ticks(0))) }
         var later = try run(a, launch: LaunchModifiers(command: true))
         let laterSteps = boot(&later, hold1: Self.t1 + 129)
+        XCTAssertEqual(laterSteps.count, 6, "a late hold pass at T1 + 129: six passes")
         if laterSteps.count == 6 { XCTAssertEqual(laterSteps[2].output.ops.first, .hostWait(.ticks(1))) }
     }
 
@@ -280,8 +282,15 @@ final class BootTests: XCTestCase {
         XCTAssertEqual(calls.filter(\.newLine).count, 5)
         XCTAssertEqual(calls[1].text, "Loading Permanent Image:  Video Grid", "the im08 name less \" IC\"")
         XCTAssertEqual(calls[33].text, "Unpacking Unit:  ", "two spaces")
+        // The units' order, pinned apart from the index call `script` shares with the boot: the display names of
+        // unde 0, 100, 250 and 385 as read from Resources/Deimos/Data/Paks/Game.pak's zip directory (`unzip -Z1`,
+        // the `unde/` entries in order: ` NULL[NULL]`, `Juno Gun - Bullet Hi[jgbh]`, `Platform - Laser Bul[plbh]`,
+        // `Random Bonus - Enemy[rben]`; the first and last also open and close the unde rows of
+        // docs/deimos/data-census.md).
         XCTAssertEqual(calls[34].text, "Unpacking Unit:   NULL", "the first unde's display name")
-        XCTAssertEqual(calls[419].text, "Unpacking Unit:  Random Bonus - Enemy")
+        XCTAssertEqual(calls[134].text, "Unpacking Unit:  Juno Gun - Bullet Hi", "unde 100")
+        XCTAssertEqual(calls[284].text, "Unpacking Unit:  Platform - Laser Bul", "unde 250")
+        XCTAssertEqual(calls[419].text, "Unpacking Unit:  Random Bonus - Enemy", "the last unde (385)")
 
         let lines = expected(a, text, calls)
         XCTAssertEqual(ops.filter { $0 == .present(.fullScreen) }.count, 432, "one screen update per call")

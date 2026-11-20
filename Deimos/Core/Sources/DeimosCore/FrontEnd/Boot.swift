@@ -97,6 +97,8 @@ public struct Boot: Sendable {
             phase = .publisherHold
         case .publisherHold:
             if !quiet && state.soundAvailable {                         // 100003b0..100003c4 FUN_10047910
+                // No time limit (plan ruling 15): the spin at 100003cc..100003f0 has no floor and no cap, so a host
+                // whose mixer never ends `publ`'s voice holds here for good, as the original would.
                 out.ops.append(.hostWait(.voiceEnd(Self.publ)))         // 100003cc..100003f0 FUN_100476e0('publ')
             } else {                                                    // 10000408..10000430: flli 66
                 let hold = UInt32(bitPattern: EntityDraw.fctiwz(a.floats[0x42]))
@@ -132,7 +134,8 @@ public struct Boot: Sendable {
 
     // MARK: - The loading lines
 
-    /// The loaders' lines, in boot order (`10000598..100005b8`; only these five call `FUN_10023040`, 16 sites), then
+    /// The loaders' lines, in boot order (`10000598..100005b8`; only these four functions call `FUN_10023040`, 16
+    /// sites, writing five lines — `FUN_1001fe60` writes two), then
     /// `FUN_100232d0`: the list faded out (`FUN_1000df00`, rate flli 160; X `100236c0` → `1000e180`, 16 passes, D1)
     /// and freed. Every call passes fadeIn = 1.
     /// - `FUN_1001fe60` (`1001fe60..1002007c`): `inte 6` (sprintf'd with "" — no conversion in the shipped text) as a
@@ -153,11 +156,12 @@ public struct Boot: Sendable {
             preconditionFailure("Boot: the interface strings do not load (\(error))")
         }
         func string(_ n: Int) -> [UInt8] {                              // FUN_10002e50('inte', n, buf, 0x100)
-            guard let s = Credits.read(inte, n) else { preconditionFailure("Boot: no inte \(n)") }
-            return s
+            Credits.read(inte, n) ?? []                                 // empty: `line` draws nothing (10023074..)
         }
-        func name(_ type: String, _ id: FourCC) -> [UInt8] {            // FUN_100024f0: the display name (rec+0x130)
-            guard let r = a.index.record(type: FourCC(type)!, id: id) else { return [] }
+        func name(_ type: FourCC, _ id: FourCC) -> [UInt8] {            // FUN_100024f0: the display name (rec+0x130)
+            // FUN_100024f0 returns 0 when no record matches (or for `none`), and its callers sprintf that pointer;
+            // the shipped data never reaches it. The replica writes no name: the line is the head alone.
+            guard let r = a.index.record(type: type, id: id) else { return [] }
             return MacRoman.encode(r.displayName, lossy: true) ?? []
         }
         func item(_ head: [UInt8], _ list: [[UInt8]], _ done: [UInt8]) {
@@ -168,7 +172,7 @@ public struct Boot: Sendable {
 
         // FUN_1001fe60: the permanent images.
         item(string(6), a.sprites.map { id in
-            var n = name("im08", id)
+            var n = name(Self.im08, id)
             for cut in Self.spriteNameCuts {                            // FUN_1001a1f0
                 if let at = Credits.find(cut, in: n) { n = Array(n[..<at]) }
             }
@@ -177,18 +181,18 @@ public struct Boot: Sendable {
         // The permanent sounds.
         if state.soundAvailable {
             item(string(8), a.sounds.filter { id in                    // FUN_1001f950(0, id, 0)
-                id != .none && a.index.record(type: FourCC("soun")!, id: id) != nil
-            }.map { name("soun", $0) }, string(9))
+                id != .none && a.index.record(type: Self.soun, id: id) != nil
+            }.map { name(Self.soun, $0) }, string(9))
         } else {
             line(string(8), newLine: true, state: state, &ops)
             line(Self.noSound, newLine: false, state: state, &ops)      // 100200dc..100200e8
             line(string(9), newLine: false, state: state, &ops)
         }
         // FUN_1003d0a0(1): the units.
-        item(Self.unpacking, a.index.records(ofType: FourCC("unde")!).map { name("unde", $0.id) }, Self.unpackingDone)
+        item(Self.unpacking, a.index.records(ofType: Self.unde).map { name(Self.unde, $0.id) }, Self.unpackingDone)
         // FUN_1002ab20(1): the weapons; FUN_10039280(1): the players.
-        item(string(12), a.index.records(ofType: FourCC("wede")!).map { name("wede", $0.id) }, string(13))
-        item(string(14), a.index.records(ofType: FourCC("plde")!).map { name("plde", $0.id) }, string(15))
+        item(string(12), a.index.records(ofType: Self.wede).map { name(Self.wede, $0.id) }, string(13))
+        item(string(14), a.index.records(ofType: Self.plde).map { name(Self.plde, $0.id) }, string(15))
 
         // FUN_100232d0: the fade-out, then the list freed.
         ops += lines.fadeOut(rate: ElementList.fadeRate(floats: a.floats), text: state.text, assets: a)
@@ -272,6 +276,9 @@ public struct Boot: Sendable {
     static let publ = FourCC("publ")!
     static let inmu = FourCC("inmu")!
     static let back = FourCC("back")!
+    /// The record types the loading lines name.
+    static let im08 = FourCC("im08")!, soun = FourCC("soun")!, unde = FourCC("unde")!, wede = FourCC("wede")!,
+               plde = FourCC("plde")!
     /// `0x100e6aeb` " IA", `0x100e6aef` " IC" (`_DAT_100e0164`, `_DAT_100e0168`).
     static let spriteNameCuts = [Array(" IA".utf8), Array(" IC".utf8)]
     /// `0x100e813c`.
