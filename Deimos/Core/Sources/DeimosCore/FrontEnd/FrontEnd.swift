@@ -4,7 +4,7 @@ import Foundation
 
 /// Where the settings live (the original's prefs file, `U_Prefs.cc`; grounding C §1). Core never touches a disk: the
 /// host builds the store (S4's `PrefsStore`, given a folder) and the driver hands the live prefs to it at shutdown.
-public protocol SettingsStore {
+public protocol SettingsStore: Sendable {
     /// The settings at launch (a missing or unreadable file is the store's to turn into the fresh record).
     func load() throws -> DeimosPrefs
     /// Write the settings (at quit only, as the original: `FUN_10000630 → FUN_100045f0`).
@@ -13,7 +13,7 @@ public protocol SettingsStore {
 
 /// Where Last Film lives (`FUN_100095b0(film, 'last')`, grounding B §4b). The driver saves a pass's
 /// `ShellRequest.saveLastFilm` bytes through it; S5 builds the real one.
-public protocol LastFilmStore {
+public protocol LastFilmStore: Sendable {
     func save(_ film: [UInt8]) throws
     func load() throws -> [UInt8]?
 }
@@ -59,7 +59,7 @@ public struct ShellResourceKey: Hashable, Sendable {
 }
 
 /// The value a screen returns when it returns nothing (boot, the main menu, the films).
-public struct Done: Equatable, Sendable {
+public struct ScreenDone: Equatable, Sendable {
     public init() {}
 }
 
@@ -185,6 +185,7 @@ public struct FrontEndState: Sendable {
             keys.keyEvents = []
             keys.mouseDowns = []
         }
+        run.lastKeys = keys
         var out = run.session.pass(keys: keys, ticks: ticks)
         if out.sessionEnded && !run.prefsReturned {
             run.prefsReturned = true
@@ -211,6 +212,8 @@ public struct GameRun: Sendable {
     var begun = false
     /// The ending pass has handed the prefs back.
     var prefsReturned = false
+    /// The keys the session's last pass was handed, after the front end's flush (inspection, tests).
+    var lastKeys = HeldKeys()
 
     init(session: DeimosSession, provisional: Bool) {
         self.session = session
@@ -344,12 +347,12 @@ public enum ScreenResult: Equatable, Sendable {
 
 /// One pass of a screen: what it drew and played this pass, and what happens next — stay (its next pass runs it
 /// again), call another screen (which runs from the next step; this one resumes when that one returns, handed its
-/// result), or finish with its result.
-public struct ScreenStep<Result> {
+/// result), or finish with its result (`Value`: the screen's `Result`).
+public struct ScreenStep<Value> {
     public enum Next {
         case stay
         case call(FrontEndScreen)
-        case finish(Result)
+        case finish(Value)
     }
 
     public var output: PassOutput
@@ -368,12 +371,12 @@ public struct ScreenStep<Result> {
         ScreenStep(output, next: .call(callee))
     }
 
-    public static func finish(_ result: Result, _ output: PassOutput = PassOutput()) -> ScreenStep {
+    public static func finish(_ result: Value, _ output: PassOutput = PassOutput()) -> ScreenStep {
         ScreenStep(output, next: .finish(result))
     }
 
     /// The result, when this step finishes (inspection).
-    public var finished: Result? {
+    public var finished: Value? {
         if case let .finish(r) = next { return r }
         return nil
     }
@@ -396,12 +399,18 @@ public struct ScreenStep<Result> {
 ///   `ShellRequest.quit`. The direct start (ruling 10): no boot, no menu — start/return's game at a given start, a
 ///   new one at the same start when it ends (seed = the TickCount of the pass that starts it), and after a game that
 ///   ends with the quit flag set, `ShellRequest.quit` and no new game. The app runs the direct start until the menu
-///   lands (S2), and the tests and `-film` keep it for good (G12).
+///   lands (S2), and the tests keep it for good (G12). Today the app's `-film` runs on the direct start too (the film
+///   as the start, a new run of it each time it ends); S8a changes that (ruling 10): `-film` then takes the boot
+///   entry, plays the film after the boot and returns to the menu, as a demo does.
 /// - **One pass.** Shell events are read first: Quit chosen or requested sets the quit flag (it does not end a game
 ///   in play), suspend / resume set `suspended`. Then the top screen runs. A step that calls or returns runs on into
 ///   the next screen in the same pass as long as it drew nothing (no ops) and did not end a game, merging the
 ///   outputs in order, up to `maxChainedSteps` (a screen loop traps, G11). The queued input (typed characters, key
 ///   events, mouse-downs, shell events) goes to the pass's first step only — a chained step sees the held state.
+///   One pass holds at most one halt and one transition fade (`merge` traps on a second of either), so a chained
+///   pass may carry only one: a screen's return sequence with two (a fade out, then a fade in) must split them across
+///   passes. The "did not end a game" clause cannot act today — a game's ending pass always draws, so the ops
+///   stop the chain first — and is there for a game pass that some day ends without drawing.
 /// - **Music.** `state.musicAlive` follows the pass's music cues in order.
 public struct FrontEnd: Sendable {
     /// The most screen steps one pass may chain without drawing (G11): a front end that exceeds it is looping.
@@ -526,7 +535,7 @@ public struct FrontEnd: Sendable {
             Self.merge(output, into: &out)
             stepKeys = HeldKeys(held: keys.held, capsLock: keys.capsLock, mouse: keys.mouse,
                                 mouseButton: keys.mouseButton)            // the queue is read once per pass
-            if !output.ops.isEmpty || output.sessionEnded { stop = true }
+            if !output.ops.isEmpty || output.sessionEnded { stop = true }   // (a game end always draws today)
             if stop {
                 trackMusic(out.music)
                 return out

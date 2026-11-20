@@ -139,6 +139,8 @@ public struct DeimosDriver {
     /// Passes begun, `.present` ops run and game ends handled — over the driver's life (inspection).
     private(set) var passCount = 0
     private(set) var presentCount = 0
+    /// Every game end, including the last one before a quit (the game that ends with the quit flag set is counted,
+    /// though no new game follows it).
     private(set) var restarts = 0
     /// Tests (G12): set to record a row per ticked pass of a game (nil = off).
     var trace: ReplayTrace?
@@ -230,8 +232,12 @@ public struct DeimosDriver {
     }
 
     /// The app's suspend handler (`10023db4..10023dcc`): once per suspension, suspended = 1 and the music pause
-    /// (`FUN_10048220(1)`). [Its window and cursor calls are the app's.]
+    /// (`FUN_10048220(1)`). [Its window and cursor calls are the app's.] The original has one suspended byte: the
+    /// front end's shared state (`FrontEndState.suspended`) is kept in step with the driver's here and in `resume()`,
+    /// so the screens can trust it whichever way the suspension arrives (the call, its shell event, or the resume
+    /// a Quit runs inside the pause's wait).
     public mutating func suspend() {
+        frontEnd.state.suspended = true                                              // the one flag, shared
         guard !suspended else { return }                                             // 10023db4..10023dbc
         suspended = true                                                             // 10023dc0..10023dc4
         audio?.apply(sounds: [], music: [.pause], haltEffectsAt: nil)                // 10023dc8..10023dcc
@@ -240,6 +246,7 @@ public struct DeimosDriver {
     /// The app's resume handler (`10023e10`): suspended = 0 (`10023e34`); the music resume (`FUN_10048220(0)`) unless
     /// a pause holds the music (r2−0x617b, `10023e7c..10023e8c`).
     public mutating func resume() {
+        frontEnd.state.suspended = false                                             // the one flag, shared
         guard suspended else { return }
         suspended = false                                                            // 10023e34
         if !pauseHoldsMusic {                                                        // 10023e7c..10023e84
@@ -379,7 +386,8 @@ public struct DeimosDriver {
     /// Begin a pass: sample `keys` (a latched Esc reads as up) with the queued input, run the front end's pass at
     /// `ticks`, note a new game, route its cues, save a Last Film it hands out, take its ops. An empty `sessionEnded`
     /// output (a game that could not be built) is a finished pass with no ops: the loop ends it again, within the
-    /// per-call bound, and the front end tries again on its next pass.
+    /// per-call bound, and the front end tries again on its next pass. Such a pass is not counted in `passCount`,
+    /// but its requests and cues are passed on like any pass's (none carries any today; a later screen may).
     private mutating func beginPass(keys: HeldKeys, ticks: UInt32, _ out: inout DriverOutput) {
         var sampled = keys
         if escLatched {
@@ -409,15 +417,16 @@ public struct DeimosDriver {
         }
         passBegun = true
         sessionEndMusic = nil
+        out.requests += pass.requests
         if pass.sessionEnded && pass.ops.isEmpty {
             ops = []
             next = 0
             endAfterPass = true
             passLimited = false
+            route(pass)                                               // its requests (above) and cues still go on
             return
         }
         passCount += 1
-        out.requests += pass.requests
         if pass.ticked, trace != nil, let game = frontEnd.session { trace?.record(game) }
         ops = pass.ops
         next = 0

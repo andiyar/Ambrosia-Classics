@@ -5,16 +5,16 @@ import Foundation
 ///
 /// **Frozen entry.** `init()` — the boot reads everything it needs from `FrontEndState`: the launch modifiers
 /// (Command = the quiet launch, Option = the configuration window), sound available, the prefs. **Returns** nothing
-/// (`Done`); the front end then enters the main menu (`FUN_100000a0`).
+/// (`ScreenDone`); the front end then enters the main menu (`FUN_100000a0`).
 ///
 /// **The stub.** Draws nothing and returns at once.
 public struct Boot: Sendable {
-    public typealias Result = Done
+    public typealias Result = ScreenDone
 
     public init() {}
 
     public mutating func pass(keys: HeldKeys, ticks: UInt32, returned: ScreenResult?,
                               state: inout FrontEndState) -> ScreenStep<Result> {
-        .finish(Done())
+        .finish(ScreenDone())
     }
 }

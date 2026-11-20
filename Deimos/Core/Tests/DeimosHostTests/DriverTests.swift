@@ -744,7 +744,9 @@ final class DriverTests: XCTestCase {
     ///    (no typed character, no click).
     /// 3. `.answer`: an unrelated shell event does not release it; the answer does, and both events reach the pass.
     /// 4. FlushEvents (here the pause wait's, `10022f1c`) empties the OS queue — typed, key events, mouse-downs — and
-    ///    keeps the shell's own events: a Quit request queued before it reaches the next pass.
+    ///    keeps the shell's own events: an About chosen queued before it reaches the next pass. (Not a Quit: a queued
+    ///    Quit lets the pause's wait go and ends the game — `testQuitInsideCapsLockWait`.) The game runs on with its
+    ///    console open, so the flushed character could have reached it, and did not.
     /// Bound: 50,000 polls (fake clock).
     func testDriverRunsHostWaits() throws {
         var driver = try makeDriver()
@@ -842,13 +844,16 @@ final class DriverTests: XCTestCase {
         guard idle() else { return XCTFail("cap") }
         XCTAssertEqual(driver.waitingOn, .ticks(3))
         guard idle(HeldKeys(typed: [0x63], mouseDowns: [click], keyEvents: [KeyEvent(charCode: 0x63, keyCode: 0x08)],
-                            events: [.quitRequested])) else { return XCTFail("cap") }
+                            events: [.aboutChosen])) else { return XCTFail("cap") }
         while driver.passCount == flushed { guard idle() else { return XCTFail("no pass after the pause wait") } }
         XCTAssertEqual(driver.lastPassKeys.typed, [], "FlushEvents empties the OS queue")
         XCTAssertEqual(driver.lastPassKeys.keyEvents, [])
         XCTAssertEqual(driver.lastPassKeys.mouseDowns, [])
-        XCTAssertEqual(driver.lastPassKeys.events, [.quitRequested], "the shell's own events are not OS-queue events")
+        XCTAssertEqual(driver.lastPassKeys.events, [.aboutChosen], "the shell's own events are not OS-queue events")
+        XCTAssertFalse(driver.frontEnd.state.quit)
         for _ in 0..<10 { guard idle() else { return XCTFail("cap") } }
+        XCTAssertTrue(driver.session.running, "the same game runs on")
+        XCTAssertTrue(driver.session.console.isOpen, "its console still takes characters")
         XCTAssertEqual(driver.session.console.text, console, "the flushed character never reached the game")
     }
 
@@ -1148,12 +1153,14 @@ final class DriverTests: XCTestCase {
         while held.passCount == before2 { guard idle2(caps) else { return XCTFail("no pass with Caps Lock (2)") } }
         let pause2 = held.passCount
         held.suspend()
+        XCTAssertTrue(held.frontEnd.state.suspended, "one suspended flag: the front end's follows the driver's")
         for _ in 0..<10 { guard idle2(caps) else { return XCTFail("cap (2)") } }
         XCTAssertEqual(held.passCount, pause2, "the wait holds while suspended")
         XCTAssertTrue(held.suspended)
         let applies2 = sink2.applies.count
         guard idle2(HeldKeys(capsLock: true, events: [.quitRequested])) else { return XCTFail("cap (2)") }
         XCTAssertFalse(held.suspended, "the resume handler ran first")
+        XCTAssertFalse(held.frontEnd.state.suspended, "and cleared the front end's flag with the driver's")
         XCTAssertTrue(held.frontEnd.state.quit, "then the quit flag")
         XCTAssertEqual(held.passCount, pause2 + 1, "the wait let go")
         XCTAssertFalse(held.session.running, "the game ended")

@@ -5,7 +5,7 @@ import Foundation
 /// `FUN_100234d0(1, 1)`, Last Film (the film held in memory, `FrontEndState.lastFilm`, else the one on disk).
 /// ◇ Phase 4 S1b stub; S5 builds it.
 ///
-/// **Frozen entry.** `init(kind:)`. **Returns** nothing (`Done`): it chooses the film and plays it through
+/// **Frozen entry.** `init(kind:)`. **Returns** nothing (`ScreenDone`): it chooses the film and plays it through
 /// start/return (`StartReturn(mode: .demo / .lastFilm, players: 1, film:)`), then returns to the menu.
 ///
 /// **The stub.** Draws nothing, plays nothing and returns at once.
@@ -15,7 +15,7 @@ public struct Films: Sendable {
         case lastFilm
     }
 
-    public typealias Result = Done
+    public typealias Result = ScreenDone
 
     public let kind: Kind
 
@@ -25,6 +25,6 @@ public struct Films: Sendable {
 
     public mutating func pass(keys: HeldKeys, ticks: UInt32, returned: ScreenResult?,
                               state: inout FrontEndState) -> ScreenStep<Result> {
-        .finish(Done())
+        .finish(ScreenDone())
     }
 }

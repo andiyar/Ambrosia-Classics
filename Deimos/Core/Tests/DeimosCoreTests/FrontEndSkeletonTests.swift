@@ -38,7 +38,9 @@ final class FrontEndSkeletonTests: XCTestCase {
 
     /// The boot entry walks boot → main menu → start/return → level select (sector 1) → a running game, all in the
     /// first pass (no stub draws, so the steps chain); the game's first pass is the bare session's, seeded with that
-    /// pass's ticks, and carries the cursor hide. When the game ends, start/return hands its result back and shows the
+    /// pass's ticks (its frame controller's FPS clock too), and carries the cursor hide. That pass's queued input —
+    /// typed, a key event, a mouse-down, a shell event — reaches only its first step (the boot): the game, reached
+    /// by chained steps, is handed the held state alone. When the game ends, start/return hands its result back and shows the
     /// cursor, and the menu stub starts the next game in the same pass. Every other stub returns at once with its
     /// declared value and an empty output. The shell's resources reach the shared state; a game with an empty
     /// recording, or a film session, leaves the Last Film alone. Bound: 3,000 passes.
@@ -52,7 +54,9 @@ final class FrontEndSkeletonTests: XCTestCase {
         XCTAssertEqual(fe.screens, [.boot])
         XCTAssertNil(fe.session, "no game before the first pass")
         let t0: UInt32 = 5_000
-        let first = fe.pass(keys: HeldKeys(), ticks: t0)
+        let queued = HeldKeys(typed: [0x61], mouseDowns: [MousePoint(h: 10, v: 20)],
+                              keyEvents: [KeyEvent(charCode: 0x61, keyCode: 0x00)], events: [.aboutChosen])
+        let first = fe.pass(keys: queued, ticks: t0)
         XCTAssertEqual(fe.screens, [.mainMenu, .startReturn], "boot returned; the level select returned")
         let s = try XCTUnwrap(fe.session)
         XCTAssertEqual(s.sector, 1)
@@ -65,6 +69,10 @@ final class FrontEndSkeletonTests: XCTestCase {
         XCTAssertEqual(first.music, reference.music)
         XCTAssertEqual(first.requests, [.hideCursor], "the front end hides the cursor on the pass that starts a game")
         XCTAssertEqual(fe.session?.rng, bare.rng)
+        XCTAssertEqual(fe.session?.controller, bare.controller,
+                       "its frame controller's FPS clock starts at that pass's ticks (FUN_100305e0)")
+        XCTAssertEqual(fe.state.game?.lastKeys, HeldKeys(),
+                       "the queued input went to the boot (the first step); the chained game saw none of it")
 
         // Esc ends the game; the next pass returns its result to the menu, which starts another.
         var ticks = t0 &+ 2
@@ -87,7 +95,7 @@ final class FrontEndSkeletonTests: XCTestCase {
             XCTAssertEqual(step.output, PassOutput(), "\(label): a stub draws nothing")
         }
         var boot = Boot()
-        check(boot.pass(keys: HeldKeys(), ticks: 0, returned: nil, state: &state), Done(), "boot")
+        check(boot.pass(keys: HeldKeys(), ticks: 0, returned: nil, state: &state), ScreenDone(), "boot")
         var levelSelect = LevelSelect()
         check(levelSelect.pass(keys: HeldKeys(), ticks: 0, returned: nil, state: &state), 1, "level select")
         var scores = Scores()
@@ -98,7 +106,7 @@ final class FrontEndSkeletonTests: XCTestCase {
         check(credits.pass(keys: HeldKeys(), ticks: 0, returned: nil, state: &state), .leave, "credits")
         for kind in [Films.Kind.demo, .lastFilm] {
             var films = Films(kind: kind)
-            check(films.pass(keys: HeldKeys(), ticks: 0, returned: nil, state: &state), Done(), "films \(kind)")
+            check(films.pass(keys: HeldKeys(), ticks: 0, returned: nil, state: &state), ScreenDone(), "films \(kind)")
         }
         var config = ConfigDialog(firstLaunch: true)
         check(config.pass(keys: HeldKeys(), ticks: 0, returned: nil, state: &state), false, "configuration window")
@@ -112,7 +120,7 @@ final class FrontEndSkeletonTests: XCTestCase {
         XCTAssertEqual(call.callee, .levelSelect)
         var menu = MainMenu()
         state.quit = true
-        check(menu.pass(keys: HeldKeys(), ticks: 0, returned: nil, state: &state), Done(), "main menu, quit set")
+        check(menu.pass(keys: HeldKeys(), ticks: 0, returned: nil, state: &state), ScreenDone(), "main menu, quit set")
 
         // A film session (start/return in demo mode, de01) that ends with a recording leaves the Last Film alone.
         let index = try RealData.index()
@@ -132,8 +140,10 @@ final class FrontEndSkeletonTests: XCTestCase {
         XCTAssertEqual(state.lastFilm, [0x01], "a film session leaves the Last Film alone")
     }
 
-    /// A Quit (menu command or the system's request) reaching a pass sets the front end's quit flag; it does not end
-    /// the game in play. When the game ends, the direct start asks the shell to quit and starts no new game; through
+    /// The direct start's first pass starts its game as that pass's first step, and the session start's FlushEvents
+    /// (`FUN_10030210`) empties the OS queue the game is handed — typed, key events, mouse-downs — keeping the shell's
+    /// events. A Quit (menu command or the system's request) reaching a pass sets the front end's quit flag; it does
+    /// not end the game in play. When the game ends, the direct start asks the shell to quit and starts no new game; through
     /// the boot entry, start/return comes back to the menu stub, which returns, and the front end asks the shell to
     /// quit. A Quit before the first game: the menu stub never starts one. Bound: 1,000 passes per wait.
     func testQuitRequestReachesFrontEnd() throws {
@@ -142,7 +152,13 @@ final class FrontEndSkeletonTests: XCTestCase {
 
         // The direct start.
         var direct = try FrontEnd(direct: Self.one, assets: a, prefs: .fresh)
-        run(&direct, 20, ticks: &ticks)
+        _ = direct.pass(keys: HeldKeys(typed: [0x61], mouseDowns: [MousePoint(h: 10, v: 20)],
+                                       keyEvents: [KeyEvent(charCode: 0x61, keyCode: 0x00)], events: [.aboutChosen]),
+                        ticks: ticks)
+        ticks &+= 2
+        XCTAssertEqual(direct.state.game?.lastKeys, HeldKeys(events: [.aboutChosen]),
+                       "a game's start flushes the OS queue (FUN_10030210); the shell's events stay")
+        run(&direct, 19, ticks: &ticks)
         XCTAssertFalse(direct.state.quit)
         let quitPass = direct.pass(keys: HeldKeys(events: [.quitRequested]), ticks: ticks)
         XCTAssertTrue(direct.state.quit)
