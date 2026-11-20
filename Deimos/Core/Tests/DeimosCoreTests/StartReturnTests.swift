@@ -54,6 +54,18 @@ final class StartReturnTests: XCTestCase {
         return s
     }
 
+    /// The real boot (Phase 4 S6 BT, `BootTests`): passes at `ticks` until the main menu is the top screen — six with
+    /// fresh prefs, the configuration window's stub running inside the first — so the menu's entry runs at `ticks`,
+    /// as the boot stub's single pass did. Returns the last pass's output (the boot's return chained into the menu's
+    /// entry). Bound: 10 passes (G11).
+    @discardableResult
+    private func bootToMenu(_ fe: inout FrontEnd, ticks: UInt32) -> PassOutput {
+        var out = fe.pass(keys: HeldKeys(), ticks: ticks)
+        for _ in 1..<10 where fe.screens.last != .mainMenu { out = fe.pass(keys: HeldKeys(), ticks: ticks) }
+        if fe.screens.last != .mainMenu { XCTFail("bound: the menu is not up within 10 boot passes") }
+        return out
+    }
+
     private func step(_ sr: inout StartReturn, _ s: inout FrontEndState, _ ticks: inout UInt32,
                       keys: HeldKeys = HeldKeys(), returned: ScreenResult? = nil) -> ScreenStep<StartReturn.Result> {
         let st = sr.pass(keys: keys, ticks: ticks, returned: returned, state: &s)
@@ -103,7 +115,7 @@ final class StartReturnTests: XCTestCase {
         let a = try assets()
         var fe = try FrontEnd(assets: a, prefs: .fresh)
         var t: UInt32 = 3_000
-        _ = fe.pass(keys: HeldKeys(), ticks: t)
+        bootToMenu(&fe, ticks: t)
         t += 2
         let flash = fe.pass(keys: Self.typeOne, ticks: t)
         t += 2
@@ -171,7 +183,8 @@ final class StartReturnTests: XCTestCase {
                 t += 2
                 return out
             }
-            _ = pass()
+            bootToMenu(&fe, ticks: t)
+            t += 2
             _ = pass(Self.typeOne)
             for _ in 0..<3 { _ = pass() }
             XCTAssertEqual(fe.state.gamesStarted, 1, label)
@@ -290,7 +303,8 @@ final class StartReturnTests: XCTestCase {
             outs.append(out)
             return out
         }
-        _ = pass()
+        outs.append(bootToMenu(&fe, ticks: t))
+        t += 2
         let list = fe.state
         let one = pass()
         XCTAssertEqual(fe.screens, [.mainMenu, .startReturn])

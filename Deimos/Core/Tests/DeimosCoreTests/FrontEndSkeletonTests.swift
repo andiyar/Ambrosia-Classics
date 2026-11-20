@@ -28,6 +28,18 @@ final class FrontEndSkeletonTests: XCTestCase {
         return nil
     }
 
+    /// The real boot (Phase 4 S6 BT, `BootTests`): passes at `ticks` until the main menu is the top screen — six with
+    /// fresh prefs, the configuration window's stub running inside the first — so the menu's entry runs at `ticks`,
+    /// as the boot stub's single pass did. `first` is the first pass's input (it reaches the boot). Returns the last
+    /// pass's output (the boot's return chained into the menu's entry). Bound: 10 passes (G11).
+    @discardableResult
+    private func bootToMenu(_ fe: inout FrontEnd, first: HeldKeys = HeldKeys(), ticks: UInt32) -> PassOutput {
+        var out = fe.pass(keys: first, ticks: ticks)
+        for _ in 1..<10 where fe.screens.last != .mainMenu { out = fe.pass(keys: HeldKeys(), ticks: ticks) }
+        if fe.screens.last != .mainMenu { XCTFail("bound: the menu is not up within 10 boot passes") }
+        return out
+    }
+
     /// Exactly `n` passes with `keys`.
     private func run(_ fe: inout FrontEnd, _ n: Int, keys: HeldKeys = HeldKeys(), ticks: inout UInt32) {
         for _ in 0..<n {
@@ -110,7 +122,7 @@ final class FrontEndSkeletonTests: XCTestCase {
         let t0: UInt32 = 5_000
         let queued = HeldKeys(typed: [0x61], mouseDowns: [MousePoint(h: 10, v: 20)],
                               keyEvents: [KeyEvent(charCode: 0x61, keyCode: 0x00)], events: [.aboutChosen])
-        _ = fe.pass(keys: queued, ticks: t0)
+        bootToMenu(&fe, first: queued, ticks: t0)
         XCTAssertEqual(fe.screens, [.mainMenu],
                        "boot returned; the menu is up (the queued About went to the boot, the first step, not the menu)")
         XCTAssertNil(fe.session, "the menu waits for the player")
@@ -258,7 +270,8 @@ final class FrontEndSkeletonTests: XCTestCase {
 
         // The boot entry: Quit chosen during the game.
         var boot = try FrontEnd(assets: a, prefs: .fresh)
-        run(&boot, 1, ticks: &ticks)
+        bootToMenu(&boot, ticks: ticks)
+        ticks &+= 2
         startFromMenu(&boot, ticks: &ticks, "boot entry")
         run(&boot, 17, ticks: &ticks)
         _ = boot.pass(keys: HeldKeys(events: [.quitChosen]), ticks: ticks)
@@ -282,7 +295,7 @@ final class FrontEndSkeletonTests: XCTestCase {
         // The boot entry: Quit before any game. The menu comes up (b8 kept), runs its quit sequence and never
         // starts a game.
         var early = try FrontEnd(assets: a, prefs: .fresh)
-        let out = early.pass(keys: HeldKeys(events: [.quitRequested]), ticks: ticks)
+        let out = bootToMenu(&early, first: HeldKeys(events: [.quitRequested]), ticks: ticks)
         ticks &+= 2
         XCTAssertTrue(early.state.quit)
         XCTAssertEqual(early.screens, [.mainMenu])
@@ -312,7 +325,8 @@ final class FrontEndSkeletonTests: XCTestCase {
             if entry == "direct" {
                 run(&fe, 20, ticks: &ticks)
             } else {
-                run(&fe, 1, ticks: &ticks)
+                bootToMenu(&fe, ticks: ticks)
+                ticks &+= 2
                 startFromMenu(&fe, ticks: &ticks, entry)
                 run(&fe, 17, ticks: &ticks)
             }

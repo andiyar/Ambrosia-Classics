@@ -41,10 +41,13 @@ final class MainMenuTests: XCTestCase {
         return (menu, state, entry)
     }
 
-    /// A front end whose first pass (boot stub → menu entry) ran at `t0`.
+    /// A front end whose boot (Phase 4 S6 BT, `BootTests`) ran at `t0` until the main menu was the top screen — six
+    /// passes with fresh prefs, the configuration window's stub inside the first — so the menu's entry ran at `t0`, as
+    /// the boot stub's single pass did. Bound: 10 passes (G11).
     private func frontEnd(_ a: DeimosAssets, t0: UInt32 = 1_000) throws -> FrontEnd {
         var fe = try FrontEnd(assets: a, prefs: .fresh)
-        _ = fe.pass(keys: HeldKeys(), ticks: t0)
+        for _ in 0..<10 where fe.screens.last != .mainMenu { _ = fe.pass(keys: HeldKeys(), ticks: t0) }
+        if fe.screens.last != .mainMenu { XCTFail("bound: the menu is not up within 10 boot passes") }
         XCTAssertEqual(fe.screens, [.mainMenu])
         return fe
     }
