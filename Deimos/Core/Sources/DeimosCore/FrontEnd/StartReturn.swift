@@ -214,7 +214,10 @@ public struct StartReturn: Sendable {
         if gameRan { out.ops.append(.fade(.toBlack, .gameLayout)) }   // 1002378c FUN_1000b9a0(D, 1)
         out.ops += Self.backIntoBoth                                  // 10023794..10023818
         out.ops.append(.fade(.fromBlack, .fullScreen))                // 10023834 FUN_1000ba70(D, 0)
-        // 1002383c..1002386c: no cheat, not started later, not a film, no quit, a qualifier.
+        // 1002383c..1002386c: no cheat, not started later, not a film, no quit, a qualifier. The listing tests the cheat
+        // (1002383c, the result's +0x15) and the quit flag (1002385c, r24 = b8 as 10023674 read it) a second time
+        // here, though a qualifier (r23) is only ever set inside the gates, which both skip; kept as the listing has
+        // them.
         let cheated = result?.cheated ?? false
         if !cheated && !startedLater && !isFilm && !state.quit && qualifies {
             step = .table
@@ -231,10 +234,14 @@ public struct StartReturn: Sendable {
         var best: Int32 = -1                                          // 10023698
         var qualifies = false
         let last = state.prefs.highScores[HighScoreTable.rowCount - 1]
-        for p in 0..<2 where result.present.indices.contains(p) && result.present[p] {   // 100236a8
+        // A slot with no score or level in the result counts as HighScoreTable.insert counts it: no score → absent,
+        // no level → a level not in the order.
+        for p in 0..<2 where result.present.indices.contains(p) && result.present[p]       // 100236a8
+            && result.scores.indices.contains(p) {
             let score = result.scores[p]
             if score > 0 {                                            // 100236bc
-                let sector = Int32(state.assets.levelOrder.sector(of: result.levels[p]) ?? 0)   // FUN_10011e30
+                let level = result.levels.indices.contains(p) ? result.levels[p] : .none
+                let sector = Int32(state.assets.levelOrder.sector(of: level) ?? 0)   // FUN_10011e30
                 if sector > best { best = sector }                    // 100236d0 cmpw
             }
             if !qualifies && score > last { qualifies = true }        // 100236dc..100236f8 FUN_10021470
@@ -253,6 +260,7 @@ public struct StartReturn: Sendable {
         // 10023890 FlushEvents: this pass's queued input reached this step (its first) and goes no further.
         // [10023898 About on: empty in X, D9.]
         step = .tableMenu
+        // Invariant: `.table` is set only by `comeBack` when `gates` returned true, which needs a non-nil result.
         guard let result else { preconditionFailure("StartReturn: the table path with no result") }
         let insertion = HighScoreTable.insert(result, into: state.prefs, assets: state.assets)   // FUN_100214c0
         var entry: NameEntry
@@ -265,6 +273,7 @@ public struct StartReturn: Sendable {
         case let (nil, s2?):
             entry = NameEntry(player: 1, slot: s2, prefs: insertion.prefs)
         case (nil, nil):                                              // a qualifier always keeps one row
+            // Invariant: `gates` qualified a present slot whose score beats row 15, and insert gives that slot a row.
             preconditionFailure("StartReturn: a qualifier with no table row")
         }
         return .call(.nameEntry(entry), out)

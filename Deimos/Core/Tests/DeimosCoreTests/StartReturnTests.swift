@@ -315,47 +315,62 @@ final class StartReturnTests: XCTestCase {
                        "no stop, play, pause or resume: inmu plays on")
         XCTAssertEqual(fe.state.gamesStarted, 1)
 
-        // The film that fails to load (`100056dc..100056f0`): no game; fades 33 + 9 and the menu, no tran, no b6.
-        var s = try menuState(a)
-        var sr = StartReturn(mode: .lastFilm, players: 1, film: nil)
-        var ticks: UInt32 = 13_000
-        _ = step(&sr, &s, &ticks)
-        _ = step(&sr, &s, &ticks)
-        let failed = step(&sr, &s, &ticks)
-        let zero: SessionResult? = .filmLoadFailed(startSector: 0)
-        XCTAssertEqual(failed.finished, zero)
-        XCTAssertEqual(failed.output.ops, Self.gameFades + Self.menuOps(s))
-        XCTAssertEqual(failed.output.sounds, [])
-        XCTAssertEqual(failed.output.music, [])
-        XCTAssertEqual(failed.output.requests, [.showCursor])
-        XCTAssertNil(s.game, "no game ran")
-        XCTAssertFalse(s.menuMusic)
+        // The film that fails to load (`100056dc..100056f0`): no game; fades 33 + 9 and the menu, no tran, no b6. A
+        // film whose game cannot be built (prefs one byte short; no original counterpart) returns the same.
+        for unbuildable in [false, true] {
+            let label = unbuildable ? "a film game that cannot be built" : "no film"
+            var s = try menuState(a)
+            if unbuildable { s.prefs.bytePrefs.removeLast() }
+            var sr = unbuildable ? StartReturn(mode: .demo, players: 1, film: film)
+                                 : StartReturn(mode: .lastFilm, players: 1, film: nil)
+            var ticks: UInt32 = 13_000
+            _ = step(&sr, &s, &ticks)
+            _ = step(&sr, &s, &ticks)
+            let failed = step(&sr, &s, &ticks)
+            let zero: SessionResult? = .filmLoadFailed(startSector: 0)
+            XCTAssertEqual(failed.finished, zero, label)
+            XCTAssertEqual(failed.output.ops, Self.gameFades + Self.menuOps(s), label)
+            XCTAssertEqual(failed.output.sounds, [], label)
+            XCTAssertEqual(failed.output.music, [], label)
+            XCTAssertEqual(failed.output.requests, [.showCursor], label)
+            XCTAssertNil(s.game, "\(label): no game ran")
+            XCTAssertFalse(s.menuMusic, label)
+        }
     }
 
     /// The level select cancelled (`none`, r26 = 0; `10023768..10023774`, `1002377c`): no game, no gates; the music
     /// (`ammu`) stopped; no fade to black — `back` and the 9-step fade in; then 11b with `tran` and b6, so the menu's
-    /// next turn restarts `inmu`. Returns nil.
+    /// next turn restarts `inmu`. Returns nil. The menu's lit button (2 here) stays lit through R1 and is unlit by 11b
+    /// (`FUN_10024a00(0)`, before the fade-in). A play game that cannot be built (prefs one byte short; no original
+    /// counterpart) returns exactly as the cancel does.
     func testCancelledLevelSelectNoFadeOut() throws {
         let a = try assets()
-        var s = try menuState(a)
-        s.prefs.intPrefs[3] = 4
-        var sr = StartReturn(mode: .play, players: 1)
-        var t: UInt32 = 15_000
-        let r1 = startPlay(&sr, &s, &t, sector: nil)
-        XCTAssertNil(r1.callee)
-        XCTAssertTrue(stays(r1), "the return goes on")
-        XCTAssertEqual(r1.output.music, [.stop])
-        XCTAssertEqual(r1.output.sounds, [])
-        XCTAssertEqual(r1.output.ops, Self.backBoth + [.fade(.fromBlack, .fullScreen)], "no fade to black")
-        XCTAssertEqual(r1.output.requests, [])
-        XCTAssertNil(s.game, "no game ran")
-        let r2 = step(&sr, &s, &t)
-        guard case .finish(nil) = r2.next else { return XCTFail("returns nil: \(r2.next)") }
-        XCTAssertEqual(r2.output.sounds, [Self.tran(a, 0x32)])
-        XCTAssertEqual(r2.output.ops, Self.menuOps(s))
-        XCTAssertEqual(r2.output.requests, [.showCursor])
-        XCTAssertTrue(s.menuMusic, "b6: inmu restarts")
-        XCTAssertEqual(s.prefs.intPrefs[3], 4, "no gates")
+        for unbuildable in [false, true] {
+            let label = unbuildable ? "a game that cannot be built" : "cancelled"
+            var s = try menuState(a)
+            s.prefs.intPrefs[3] = 4
+            s.menuLit = 2
+            if unbuildable { s.prefs.bytePrefs.removeLast() }
+            var sr = StartReturn(mode: .play, players: 1)
+            var t: UInt32 = 15_000
+            let r1 = startPlay(&sr, &s, &t, sector: unbuildable ? 1 : nil)
+            XCTAssertNil(r1.callee, label)
+            XCTAssertTrue(stays(r1), "\(label): the return goes on")
+            XCTAssertEqual(r1.output.music, [.stop], label)
+            XCTAssertEqual(r1.output.sounds, [], label)
+            XCTAssertEqual(r1.output.ops, Self.backBoth + [.fade(.fromBlack, .fullScreen)], "\(label): no fade to black")
+            XCTAssertEqual(r1.output.requests, [], label)
+            XCTAssertNil(s.game, "\(label): no game ran")
+            XCTAssertEqual(s.menuLit, 2, "\(label): R1 unlights nothing")
+            let r2 = step(&sr, &s, &t)
+            guard case .finish(nil) = r2.next else { return XCTFail("\(label): returns nil: \(r2.next)") }
+            XCTAssertEqual(r2.output.sounds, [Self.tran(a, 0x32)], label)
+            XCTAssertEqual(r2.output.ops, Self.menuOps(s), label)
+            XCTAssertEqual(r2.output.requests, [.showCursor], label)
+            XCTAssertNil(s.menuLit, "\(label): 11b unlights every button")
+            XCTAssertTrue(s.menuMusic, "\(label): b6: inmu restarts")
+            XCTAssertEqual(s.prefs.intPrefs[3], 4, "\(label): no gates")
+        }
     }
 
     /// The finale (G+0x0d) from a sector-1 start (the level select's 1; the running game then set to the last sector
@@ -399,8 +414,12 @@ final class StartReturnTests: XCTestCase {
     /// B §1d / §8 as one table (`10023674..10023764`, `1002383c..1002386c`; HighScoreTable over the fresh rows 15,000 …
     /// 1,000). Each row: the level select's sector, both players' scores and sectors (poked just before Esc), a cheat,
     /// the quit flag, pref 3 before; then pref 3 after and the name entry called (player, row, player 2's row) or none.
+    /// The worked example is `loose-ends-session.md`'s (B §8): P1 at le02 (sector 3) with 12,500, P2 at le06 (sector 2)
+    /// with 600 → best 3, pref 3 = 2, P1 alone at row 3. Starts at sector 1 and 2 pin r25's "above 1" (`100235dc`).
     func testPostGameGatesTable() throws {
         let a = try assets()
+        XCTAssertEqual(a.levelOrder.level(sector: 3), FourCC("le02"))
+        XCTAssertEqual(a.levelOrder.level(sector: 2), FourCC("le06"))
         struct Row {
             var label: String
             var start = 1
@@ -416,6 +435,8 @@ final class StartReturnTests: XCTestCase {
         let rows = [
             Row(label: "best minus one (P2's 0 not counted)", scores: [12_500, 0], sectors: [3, 5], wantPref3: 2,
                 wantEntry: (0, 3, nil)),
+            Row(label: "the worked example (P1 le02 12,500, P2 le06 600)", scores: [12_500, 600], sectors: [3, 2],
+                wantPref3: 2, wantEntry: (0, 3, nil)),
             Row(label: "both on the table", scores: [12_500, 8_000], sectors: [3, 5], wantPref3: 4,
                 wantEntry: (0, 3, 9)),
             Row(label: "player 2 alone", scores: [0, 8_000], sectors: [6, 2], wantPref3: 1, wantEntry: (1, 8, nil)),
@@ -425,6 +446,8 @@ final class StartReturnTests: XCTestCase {
                 wantEntry: (0, 3, nil)),
             Row(label: "a later start writes no pref and no table", start: 3, scores: [12_500, 0], sectors: [7, 5],
                 wantPref3: 1, wantEntry: nil),
+            Row(label: "sector 2 is already a later start (r25: above 1)", start: 2, scores: [12_500, 0],
+                sectors: [7, 5], wantPref3: 1, wantEntry: nil),
             Row(label: "a cheat skips the gates", scores: [12_500, 0], sectors: [3, 5], cheat: true, wantPref3: 1,
                 wantEntry: nil),
             Row(label: "the quit flag skips the gates", scores: [12_500, 0], sectors: [3, 5], quit: true, wantPref3: 1,
