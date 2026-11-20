@@ -93,9 +93,12 @@ public struct Credits: Sendable {
         case .running:
             break
         }
+        // Across kinds the order is the locked input seam's (About, then keys, then clicks), not arrival order.
         queue += keys.events.filter { $0 == .aboutChosen }.map { _ in Event.click }   // a menu-bar mouseDown
         queue += keys.keyEvents.map { Event.key($0.charCode) }
         queue += keys.mouseDowns.map { _ in Event.click }
+        // A menu Quit here only sets the frame's b8, which the menu acts on when the credits end (ruled; the OS X
+        // build probably loses it — MED, on Ben's card).
         if timerOnNextPass {                                            // 10025f7c: timer = TickCount, then the read
             timerOnNextPass = false
             timer = ticks
@@ -125,8 +128,10 @@ public struct Credits: Sendable {
         out.ops.append(.loadImage(image: Self.back, into: .back, dst: screen))   // FUN_10020da0 + FUN_10009fd0
         out.ops.append(.copy(from: .back, to: .terrain, src: screen, dst: screen, interlaced: false))
         out.ops.append(.present(.fullScreen))                           // FUN_1000bc60
-        queue = []                                                      // FUN_10048e30 FlushEvents
-        lines = (try? a.credits())?.lines ?? []
+        // FUN_10048e30 FlushEvents: this pass's input is never queued (the entry case returns before the enqueue).
+        do { lines = try a.credits().lines } catch {                    // the shipped data always holds `stli cred`
+            preconditionFailure("Credits: the credits' string list does not load (\(error))")
+        }
         page = ElementList()                                            // FUN_1004d320(0xc) + FUN_10000890
         line = 0
         more = true

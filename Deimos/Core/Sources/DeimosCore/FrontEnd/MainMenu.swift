@@ -50,7 +50,8 @@ public struct MainMenu: Sendable {
     /// `FUN_10048120(1)`'s spin bound (`1004819c`).
     static let musicStopTicks: UInt32 = 600
     static let screen = MacRect(top: 0, left: 0, bottom: 480, right: 640)
-    static let commandKey: UInt16 = 0x37
+    /// The left and right Command keys (`cmdKey` in the event's modifiers: either one).
+    static let commandKeys: Set<UInt16> = [0x37, 0x36]
 
     /// One button record (`FUN_10024430`, 0x124 bytes): id `+0x000`, text `+0x001`, hit rect `+0x104…+0x110`,
     /// sprites `+0x114` / `+0x118`, frame `+0x11c`, lit `+0x120`, dirty `+0x121`, type `+0x122`.
@@ -134,6 +135,10 @@ public struct MainMenu: Sendable {
             out.ops.append(.hostWait(.musicStopped(maxTicks: Self.musicStopTicks)))
             return .finish(ScreenDone(), out)
         case let .waiting(after):
+            // The input of a pass whose first step is this return arrived after the called screen ended: it waits
+            // for the menu's pump (the actions FUN_10024d80 / db0 / de0 / e10 / e40 flush nothing after their
+            // screen), unless the return's own FlushEvents (the SCORES / About tail) or the next call drops it.
+            enqueue(keys)
             return back(after, returned: returned, ticks: ticks, state: &state, &out)
         case .idle, .afterQuitFlash, .tracking:
             break
@@ -172,7 +177,7 @@ public struct MainMenu: Sendable {
         buttons.append(Button(id: 9, kind: .copyright, text: Self.bytes(Self.copyright), normal: .none, lit: .none,
                               frame: 0))
         layout(&state)                                                  // FUN_10025420
-        queue = []                                                      // FUN_10048e30 FlushEvents
+        flushEvents()                                                   // FUN_10048e30 FlushEvents
         // FUN_10023410 (X 10023800: no DrawMenuBar, D7).
         out.ops.append(.loadImage(image: Self.back, into: .back, dst: Self.screen))
         out.ops.append(.loadImage(image: Self.back, into: .terrain, dst: Self.screen))
@@ -270,18 +275,17 @@ public struct MainMenu: Sendable {
             return .stay(out)
         case .shell(.quitRequested):                                    // code 8: resume if suspended; b8 (the frame)
             if state.suspended {
-                // Known limit (S8a): the driver's own suspended flag stays set, so its next suspend() is skipped.
+                // Known limit (S8a): the driver's own suspended flag stays set, so its next suspend() is skipped and
+                // its next resume() resumes the music once more.
                 state.suspended = false
-                lastSuspended = false
+                lastSuspended = false                                   // the edge: this resume is done here
                 resumeWork(state: &state, &out)
             }
             return .stay(out)
-        case .shell(.suspend):                                          // code 7: FUN_10023da0 (b7, the music: the
-            lastSuspended = state.suspended                             // frame and the driver), t0 = now
-            state.copyrightClock = ticks
+        case .shell(.suspend):                                          // code 7: FUN_10023da0, t0 = now (b7 is
+            state.copyrightClock = ticks                                // the frame's, the music pause the driver's)
             return .stay(out)
         case .shell(.resume):                                           // code 6: FUN_10023e10, t0 = now
-            lastSuspended = state.suspended
             resumeWork(state: &state, &out)
             state.copyrightClock = ticks
             return .stay(out)
@@ -399,7 +403,7 @@ public struct MainMenu: Sendable {
     /// Call `screen`; the menu resumes in `after` when it returns. The OS events still queued here are dropped.
     private mutating func call(_ screen: FrontEndScreen, after: After,
                                _ out: inout PassOutput) -> ScreenStep<Result> {
-        queue.removeAll { if case .shell = $0 { return false } else { return true } }
+        flushEvents()
         phase = .waiting(after)
         return .call(screen, out)
     }
@@ -414,7 +418,7 @@ public struct MainMenu: Sendable {
     /// … and after it (X: no DrawMenuBar, D7): FlushEvents, `back` into both buffers, every button unlit, the
     /// element fade-in (of the list as last built), the redraw, a full present.
     private mutating func wrapperTail(key: Bool, state: inout FrontEndState, _ out: inout PassOutput) {
-        queue.removeAll { if case .shell = $0 { return false } else { return true } }
+        flushEvents()
         out.ops.append(.loadImage(image: Self.back, into: .back, dst: Self.screen))
         out.ops.append(.loadImage(image: Self.back, into: .terrain, dst: Self.screen))
         unhiliteAll(&state)
@@ -555,9 +559,15 @@ public struct MainMenu: Sendable {
 
     private mutating func enqueue(_ keys: HeldKeys) {
         queue += keys.events.map(Event.shell)
-        let command = keys.held.contains(Self.commandKey)
+        let command = !keys.held.isDisjoint(with: Self.commandKeys)
         queue += keys.keyEvents.map { Event.key($0, command: command) }
         queue += keys.mouseDowns.map(Event.click)
+    }
+
+    /// `FlushEvents(0xffff, 0)` (`FUN_10048e30`): the keys and mouse-downs go; the shell's events stay queued, as
+    /// FlushEvents leaves suspend, resume and Apple Events in the queue.
+    private mutating func flushEvents() {
+        queue.removeAll { if case .shell = $0 { return false } else { return true } }
     }
 
     private func sound(_ i: Int, _ state: FrontEndState) -> SoundCue {

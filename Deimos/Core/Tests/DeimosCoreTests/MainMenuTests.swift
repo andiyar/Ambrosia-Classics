@@ -321,7 +321,9 @@ final class MainMenuTests: XCTestCase {
             case .scores: returned = .scores(.leave)
             case .demos, .lastFilm: returned = .films(ScreenDone())
             }
-            let back = menu.pass(keys: HeldKeys(), ticks: 1_200, returned: returned, state: &s)
+            // A `2` typed on the pass the screen returns on reaches the menu's queue (the frame hands that pass's input
+            // to its first step, the menu's return).
+            let back = menu.pass(keys: Self.key(0x32), ticks: 1_200, returned: returned, state: &s)
             XCTAssertNil(back.callee, label)
             if case .scores = want {
                 // The tail of FUN_10024e70: `back` reloaded into both buffers, the fade-in, the redraw, a present.
@@ -329,12 +331,22 @@ final class MainMenuTests: XCTestCase {
                                                            .loadImage(image: FourCC("back")!, into: .terrain, dst: Self.full)])
                 XCTAssertEqual(tickWaits(back.output.ops, 1), 15, label)
                 XCTAssertEqual(back.output.ops.last, .present(.fullScreen), label)
-                _ = menu.pass(keys: HeldKeys(), ticks: 1_210, returned: nil, state: &s)
+                let after = menu.pass(keys: HeldKeys(), ticks: 1_210, returned: nil, state: &s)
                 XCTAssertEqual(s.copyrightClock, 1_210, "\(label): restarted after the tail's fade-in")
+                XCTAssertNil(after.callee, "\(label): the tail's FlushEvents dropped the 2")
+                XCTAssertEqual(after.output.sounds, [], "\(label): the tail's FlushEvents dropped the 2")
             } else {
                 XCTAssertEqual(s.copyrightClock, 1_200, label)
             }
             XCTAssertEqual(s.menuMusic, { if case .prefs = want { return true } else { return false } }(), label)
+            if case .scores = want { continue }
+            // No FlushEvents after these screens (FUN_10024d80 / db0 / de0 / e10 / e40): the 2 is read next.
+            let next = menu.pass(keys: HeldKeys(), ticks: 1_201, returned: nil, state: &s)
+            guard case let .call(.startReturn(two)) = next.next else {
+                XCTFail("\(label): the 2 typed on the return was lost: \(String(describing: next.callee))")
+                continue
+            }
+            XCTAssertEqual(two.players, 2, label)
         }
 
         // Keys with no flash and no screen.
@@ -369,18 +381,41 @@ final class MainMenuTests: XCTestCase {
         let step = cmd.pass(keys: keys, ticks: 1_100, returned: nil, state: &cs)
         XCTAssertNil(step.callee)
         XCTAssertEqual(step.output.sounds, [])
+        // … either Command key: the right one (0x36) too.
+        var (rcmd, rs, _) = try entered(a)
+        keys.held = [0x36]
+        let right = rcmd.pass(keys: keys, ticks: 1_100, returned: nil, state: &rs)
+        XCTAssertNil(right.callee, "right Command + 1 is the menu bar's")
+        XCTAssertEqual(right.output.sounds, [])
 
-        // The entry's FlushEvents (FUN_10048e30): a key and a click that reached the pump before the menu came up
-        // are dropped, so the first pass after it acts on neither.
+        // The entry's FlushEvents (FUN_10048e30, mask 0xffff): a key and a click that reached the pump before the
+        // menu came up are dropped, so the first pass after it acts on neither; a suspend stays queued (FlushEvents
+        // leaves the OS events), and is dispatched on that pass (t0 = now).
         var early = try FrontEndState(assets: a, prefs: .fresh, soundAvailable: true)
+        early.suspended = true                                          // (as the frame applied the event)
         var flushed = MainMenu()
         _ = flushed.pass(keys: HeldKeys(mouse: Self.nowhere, mouseDowns: [Self.button(2)],
-                                        keyEvents: [KeyEvent(charCode: 0x31, keyCode: 0)]),
+                                        keyEvents: [KeyEvent(charCode: 0x31, keyCode: 0)], events: [.suspend]),
                          ticks: 1_000, returned: nil, state: &early)
         for t in UInt32(1_001)...1_002 {
             let after = flushed.pass(keys: HeldKeys(mouse: Self.nowhere), ticks: t, returned: nil, state: &early)
             XCTAssertNil(after.callee, "flushed at the entry (pass \(t))")
             XCTAssertEqual(after.output.sounds, [], "flushed at the entry (pass \(t))")
+            if t == 1_001 { XCTAssertEqual(early.copyrightClock, 1_001, "the suspend survived the entry's flush") }
+        }
+
+        // Keys queued behind the one that calls a screen are dropped at the call (that screen's FlushEvents or event
+        // loop takes them): `1` then `2` in one pass starts one game, and nothing follows its return.
+        var (twice, ts, _) = try entered(a)
+        let both = HeldKeys(keyEvents: [KeyEvent(charCode: 0x31, keyCode: 0), KeyEvent(charCode: 0x32, keyCode: 0)])
+        guard case let .call(.startReturn(first)) = twice.pass(keys: both, ticks: 1_100, returned: nil, state: &ts).next
+        else { return XCTFail("1 calls start/return") }
+        XCTAssertEqual(first.players, 1)
+        _ = twice.pass(keys: HeldKeys(), ticks: 1_200, returned: .startReturn(nil), state: &ts)
+        for t in UInt32(1_201)...1_203 {
+            let after = twice.pass(keys: HeldKeys(), ticks: t, returned: nil, state: &ts)
+            XCTAssertNil(after.callee, "the 2 queued behind the call was dropped (pass \(t))")
+            XCTAssertEqual(after.output.sounds, [], "pass \(t)")
         }
     }
 
@@ -475,17 +510,29 @@ final class MainMenuTests: XCTestCase {
         _ = menu.pass(keys: HeldKeys(), ticks: t, returned: .startReturn(nil), state: &s)
         t += 1
 
-        // PREFERENCES, SCORES, DEMOS and the copyright line call their screens; the copyright line is About.
+        // The web line: the click sound (only the logo has none), the hover's rollover first; its action is nothing.
+        step = pass(HeldKeys(mouse: Self.webPoint, mouseDowns: [Self.webPoint]))
+        XCTAssertEqual(step.output.sounds, [mbro, incl], "the web line clicks")
+        XCTAssertNil(step.callee)
+        _ = pass(HeldKeys())
+
+        // PREFERENCES, SCORES, DEMOS and the copyright line call their screens; the copyright line is About, and it
+        // clicks. A volume key typed on the pass the screen returns on is read next after PREFERENCES and DEMOS (no
+        // FlushEvents there) and dropped by the SCORES / About tail's FlushEvents.
         let calls: [(MousePoint, FrontEndScreen.Kind)] = [(Self.button(3), .configDialog), (Self.button(4), .scores),
                                                           (Self.button(5), .films), (Self.copyrightPoint, .credits)]
         for (p, kind) in calls {
             step = pass(HeldKeys(mouse: p, mouseDowns: [p]))
             XCTAssertEqual(step.callee, kind)
+            XCTAssertEqual(step.output.sounds, [mbro, incl], "\(kind): the rollover, then the click")
             let returned: ScreenResult = kind == .configDialog ? .configDialog(false) : kind == .scores ? .scores(.leave)
                 : kind == .films ? .films(ScreenDone()) : .credits(.leave)
-            _ = menu.pass(keys: HeldKeys(), ticks: t, returned: returned, state: &s)
+            let volume = s.prefs.intPrefs[0]
+            _ = menu.pass(keys: Self.key(0x9d), ticks: t, returned: returned, state: &s)
             t += 1
             _ = pass(HeldKeys())
+            let kept = kind == .configDialog || kind == .films
+            XCTAssertEqual(s.prefs.intPrefs[0], kept ? volume - 10 : volume, "\(kind): the key typed on the return")
         }
 
         // About from the menu bar (FUN_10023330(1) → FUN_10025060) opens the credits as the copyright line does; the
@@ -537,7 +584,12 @@ final class MainMenuTests: XCTestCase {
         fe.state.musicAlive = true
         for cycle in 1...2 {
             if cycle == 1 {
-                _ = fe.pass(keys: HeldKeys(events: [.suspend]), ticks: t)
+                // The queued suspend has not changed b7 yet on its own pass: the hover and b6 still run there.
+                fe.state.menuMusic = true
+                let own = fe.pass(keys: HeldKeys(mouse: Self.button(2), events: [.suspend]), ticks: t)
+                XCTAssertEqual(own.sounds, [Self.mbro(a)], "the suspend's own pass hovers")
+                XCTAssertEqual(own.music, [.resume], "the suspend's own pass serves b6")
+                XCTAssertEqual(fe.state.menuLit, 2)
             } else {
                 fe.state.suspended = true
                 _ = fe.pass(keys: HeldKeys(), ticks: t)
@@ -552,7 +604,7 @@ final class MainMenuTests: XCTestCase {
                 XCTAssertEqual(out.music, [], "cycle \(cycle): no music while suspended")
             }
             XCTAssertEqual(copyrightText(fe.state), text, "cycle \(cycle): no flip while suspended")
-            XCTAssertNil(fe.state.menuLit)
+            XCTAssertEqual(fe.state.menuLit, cycle == 1 ? 2 : nil, "cycle \(cycle): no hover while suspended")
 
             // The resume event is dispatched in step 5, after the pass's step 3, so its b6 is served on the next
             // pass; the edge is seen in step 2, before step 3, so its b6 is served in the same pass.
@@ -584,6 +636,17 @@ final class MainMenuTests: XCTestCase {
             if cycle == 1 { fe.state.musicAlive = false }             // cycle 2: the stream is gone
         }
         XCTAssertTrue(fe.state.musicAlive, "the front end tracked the play")
+
+        // The menu comes up while the app is suspended, and the driver's resume() clears the flag before the menu's
+        // first turn: that turn sees the edge and does the resume work (the cursor, b6 served at once).
+        var held = try FrontEndState(assets: a, prefs: .fresh, soundAvailable: true)
+        held.suspended = true
+        var menu = MainMenu()
+        _ = menu.pass(keys: HeldKeys(), ticks: 1_000, returned: nil, state: &held)
+        held.suspended = false
+        let first = menu.pass(keys: HeldKeys(), ticks: 1_001, returned: nil, state: &held)
+        XCTAssertEqual(first.output.requests, [.showCursor], "the resume work after a suspended entry")
+        XCTAssertEqual(first.output.music, [.play(FourCC("inmu")!, loop: true)])
     }
 
     // MARK: - Menu music
@@ -677,6 +740,7 @@ final class MainMenuTests: XCTestCase {
                 XCTAssertFalse(fe.state.quit, "\(way): b8 cleared")
                 XCTAssertTrue(fe.state.leave, "\(way): b9")
                 XCTAssertEqual(flash.music, [], way)
+                XCTAssertEqual(flash.requests, [], "\(way): the system Quit's resume work ran once, not again here")
                 let rest = pass()
                 XCTAssertEqual(rest.ops, [], "\(way): the rest of the loop")
             }
@@ -693,7 +757,8 @@ final class MainMenuTests: XCTestCase {
             XCTAssertEqual(done.requests, [.quit], way)
             XCTAssertTrue(fe.isFinished, way)
             XCTAssertEqual(fe.screens, [], way)
-            XCTAssertLessThanOrEqual(outs.count, 10, way)
+            let passes = ["Q": 6, "menu Quit": 5, "system Quit while suspended": 7, "QUIT button": 4]
+            XCTAssertEqual(outs.count, passes[way], "\(way): the passes from the first input to the quit")
             for out in outs {
                 XCTAssertFalse(out.ops.contains { if case .fade = $0 { return true } else { return false } }, "\(way): no advert")
                 XCTAssertFalse(out.ops.contains { if case let .loadImage(img, _, _) = $0 { return img == FourCC("adve")! } else { return false } }, way)

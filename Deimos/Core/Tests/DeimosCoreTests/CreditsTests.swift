@@ -85,7 +85,10 @@ final class CreditsTests: XCTestCase {
         let a = try assets()
         let rate = ElementList.fadeRate(floats: a.floats)
         let e: UInt32 = 10_000
-        var (run, entry) = try entered(a, t0: e, keys: Self.click)
+        // The entry's FlushEvents: a click, a key and the menu bar's About (read as a click) are all dropped.
+        let early = HeldKeys(mouseDowns: [MousePoint(h: 320, v: 240)], keyEvents: [KeyEvent(charCode: 0x4e, keyCode: 0)],
+                             events: [.aboutChosen])
+        var (run, entry) = try entered(a, t0: e, keys: early)
         let state0 = run.state
         XCTAssertEqual(entry.output.ops, [.fill(.back, colour: 0),
                                           .loadImage(image: FourCC("back")!, into: .back, dst: Self.full),
@@ -113,7 +116,7 @@ final class CreditsTests: XCTestCase {
             XCTAssertEqual(change.output.ops, previous.fadeOut(rate: rate, text: run.state.text, assets: a)
                            + [.hostWait(.ticks(60))] + page.fadeIn(rate: rate, text: run.state.text, assets: a),
                            "page \(p + 1): fade-out, 60-tick wait, fade-in")
-            XCTAssertEqual(change.output.sounds, [], "page \(p + 1): the click before the first page was flushed")
+            XCTAssertEqual(change.output.sounds, [], "page \(p + 1): the input before the first page was flushed")
             XCTAssertNil(change.finished)
             XCTAssertEqual(page.count, Self.counts[p], "page \(p + 1): its lines")
             for (k, el) in page.elements.enumerated() {
