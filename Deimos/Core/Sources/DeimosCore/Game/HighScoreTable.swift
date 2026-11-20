@@ -4,7 +4,12 @@ import Foundation
 /// loose-ends-session.md §3.1): the insertion after a game, `FUN_100214c0(result)` (listing `100214c0..10021940`), and
 /// the defaults routine `FUN_10004ae0` that both a fresh settings file and the menu's Option-click erase run. Both are
 /// pure: they take a prefs value and return the changed one. The caller (start/return, S3a) runs name entry for the
-/// slots the insertion returns, player 1 first, and the erase question lives in `Scores`.
+/// slots the insertion returns, player 1 first (`NameEntry.player2Slot` when both qualified). The erase question is
+/// the menu's (S2): it builds the question with `eraseQuestion(_:)`, asks it through the question wait, and applies the
+/// answer with `erase(_:answer:)`.
+///
+/// Known divergence (kept): a row shift copies names with `strcpy` in the original, so a 23-byte row (the PYTHOS egg,
+/// `NameEntry`) moved into row 14 would spill "00" into player 1's remembered name; the replica moves whole strings.
 public enum HighScoreTable {
     /// Rows in the table (`prefs+0x1260`, 15 × i32).
     public static let rowCount = 15
@@ -95,6 +100,22 @@ public enum HighScoreTable {
         p.highScoreNames = fresh.highScoreNames
         p.highScoreSectorNames = fresh.highScoreSectorNames
         return p
+    }
+
+    /// The menu's Option-click question (front-end.md §2.7: `FUN_100498e0(inte 24, 25, 26, 27)` → `FUN_10045c60`, a
+    /// Note alert: title 24 "Erase High Scores", message 25, default button 26 "Erase", cancel 27 "Cancel"; plan
+    /// question 8: a normal macOS alert). `ShellQuestion` carries one message, so title and message are joined by a
+    /// line break. The first button is "Erase".
+    public static func eraseQuestion(_ assets: DeimosAssets) -> ShellQuestion {
+        let inte = try? assets.interfaceStrings()
+        func line(_ i: Int) -> String { inte?.string(at: i) ?? "" }
+        return ShellQuestion(message: line(24) + "\n" + line(25), firstButton: line(26), secondButton: line(27))
+    }
+
+    /// The prefs after the shell's answer to `eraseQuestion`: "Erase" (the first button, `itemHit == 1`) runs
+    /// `erase(_:)`; "Cancel" changes nothing.
+    public static func erase(_ prefs: DeimosPrefs, answer: QuestionButton) -> DeimosPrefs {
+        answer == .first ? erase(prefs) : prefs
     }
 
     /// `for i = idx … 14: if i + 1 < 15: A[i + 1] = from[i]` (`10021700..1002177c`, `100217b0..1002182c`).

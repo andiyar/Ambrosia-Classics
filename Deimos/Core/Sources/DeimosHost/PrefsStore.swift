@@ -9,8 +9,8 @@ import DeimosCore
 /// - `load` (`FUN_10004540` → `FUN_10004f80`): a file that reads with version 0x2714 — even a short one — is the
 ///   record; a missing, unreadable or wrong-version file gives the fresh record, **written at once**. As the original,
 ///   a failed write of the fresh record does not stop the launch (it logged "ERROR: Couldn't save preferences").
-/// - `save` (`FUN_10004640`): the typed prefs over the kept record, 0x34f0 bytes out. Called at quit only (the
-///   driver's shutdown), as the original.
+/// - `save` (`FUN_10004640`): the typed prefs over the kept record, 0x34f0 bytes out — except over a file that exists
+///   but cannot be read, which is left as it is. Called at quit only (the driver's shutdown), as the original.
 public final class PrefsStore: SettingsStore {
     /// The original's file name (`_DAT_100df59c + 0x5d`).
     public static let fileName = "Deimos Rising Preferences"
@@ -48,6 +48,10 @@ public final class PrefsStore: SettingsStore {
             var file = kept ?? .fresh
             file.apply(prefs)
             kept = file
+            // A file that is there but cannot be read is not replaced at quit either: the original's save opens it
+            // (`HOpen` fails), then tries to create it (`HCreate` fails: it exists) and writes nothing.
+            let path = fileURL.path
+            if FileManager.default.fileExists(atPath: path), !FileManager.default.isReadableFile(atPath: path) { return }
             try write(file)
         }
     }

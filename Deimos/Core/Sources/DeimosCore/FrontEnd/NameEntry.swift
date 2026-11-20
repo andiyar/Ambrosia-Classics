@@ -44,6 +44,16 @@ import HectorResources
 /// **Leaving:** if confirmed (always: nothing else ends the loop) the live prefs ← A (`FUN_100047f0`), save buffer →
 /// back buffer, present. No time limit and no way out before Return; a Quit does not end it (the original reads only
 /// the simple events here).
+///
+/// **Both players** (`player2Slot`): the insertion's two calls run back to back and read one event queue, so the keys
+/// and clicks queued behind the one that ends player 1's entry are player 2's. The caller sets `player2Slot` on player
+/// 1's entry when both qualified; that value then runs player 2's entry at that row next, over the prefs player 1 left,
+/// in the same pass and handing it the unread events, and returns once player 2 leaves. Without it, events queued
+/// behind the one that ends the entry go nowhere: under the frame's rule a pass's queue reaches only its first step.
+///
+/// Known divergences (kept): player 1 typing PYTHOS into row 14 — the original's `strcpy` of that row into the
+/// remembered name overlaps itself and runs away (a crash); the replica copies from a snapshot (`NameFields`). A
+/// 23-byte name reads back as 20 after a relaunch: the settings file writes each field cut to its width less the NUL.
 public struct NameEntry: Sendable {
     public typealias Result = DeimosPrefs
 
@@ -51,7 +61,13 @@ public struct NameEntry: Sendable {
     public let slot: Int
     public let prefs: DeimosPrefs
     public let fromGame: Bool
+    /// Player 2's row, set on player 1's entry when both players qualified: player 2's entry follows inside this
+    /// screen (see the type's comment). nil: one entry only.
+    public var player2Slot: Int?
 
+    /// The entry running now: player 1, then player 2 at `player2Slot`.
+    private var entryPlayer: Int
+    private var entrySlot: Int
     /// Prefs A as edited so far (the value returned).
     var edited: DeimosPrefs
     /// The edit buffer (`abStack_ad + 1`): Mac Roman bytes, at most 20 while typing (an egg can be longer).
@@ -78,6 +94,10 @@ public struct NameEntry: Sendable {
         self.prefs = prefs
         self.fromGame = fromGame
         edited = prefs
+        precondition(player == 0 || player == 1, "NameEntry: player \(player) is not 0 or 1")
+        precondition((0..<HighScoreTable.rowCount).contains(slot), "NameEntry: slot \(slot) is not a table row (0…14)")
+        entryPlayer = player
+        entrySlot = slot
     }
 
     /// The cap (`10022110 cmplwi r3,0x14`).
@@ -97,12 +117,19 @@ public struct NameEntry: Sendable {
         let wait = UInt32(bitPattern: EntityDraw.fctiwz(a.floats[fromGame ? 79 : 78]))
         let keyWait = UInt32(bitPattern: EntityDraw.fctiwz(a.floats[82]))
         let flipWait = UInt32(bitPattern: EntityDraw.fctiwz(a.floats[83]))
-        for turn in 0...events.count {                               // one turn per event, then one with none
+        var next = 0                                                 // the next unread event
+        var lastTurnDone = false
+        while !lastTurnDone {                                        // one turn per event, then one with none
             if !running || (!editing && confirmTime &+ wait < ticks) {
                 if confirmed { state.prefs = edited }                // FUN_100047f0(A)
                 out.ops += [.copy(from: .terrain, to: .back, src: nil, dst: nil, interlaced: false),
                             .present(.fullScreen)]
-                return .finish(edited, out)
+                guard let slot2 = player2Slot, entryPlayer == 0 else { return .finish(edited, out) }
+                precondition((0..<HighScoreTable.rowCount).contains(slot2),
+                             "NameEntry: player2Slot \(slot2) is not a table row (0…14)")
+                beginPlayer2(slot: slot2)                            // FUN_10021bd0(1, idx2, A, 1)
+                start(ticks: ticks, state: state, out: &out)
+                continue                                             // the unread events are player 2's
             }
             var redraw = false
             if lastKey &+ keyWait < ticks, lastFlip &+ flipWait < ticks {
@@ -110,8 +137,9 @@ public struct NameEntry: Sendable {
                 cursorShown.toggle()
                 redraw = true
             }
-            if turn < events.count {
-                switch events[turn] {
+            if next < events.count {
+                defer { next += 1 }
+                switch events[next] {
                 case .click:
                     if !editing { running = false }
                 case let .key(c):
@@ -121,6 +149,8 @@ public struct NameEntry: Sendable {
                         handle(c, ticks: ticks, state: state, out: &out, redraw: &redraw)
                     }
                 }
+            } else {
+                lastTurnDone = true
             }
             if redraw { self.redraw(state: state, out: &out) }
         }
@@ -129,13 +159,25 @@ public struct NameEntry: Sendable {
 
     // MARK: - The steps
 
+    /// Player 2's entry, from player 1's prefs A, every flag as a fresh call has it.
+    private mutating func beginPlayer2(slot: Int) {
+        entryPlayer = 1
+        entrySlot = slot
+        buffer = []
+        running = true
+        editing = true
+        confirmed = false
+        cursorShown = false
+    }
+
     private mutating func start(ticks: UInt32, state: FrontEndState, out: inout PassOutput) {
         started = true
         var fields = NameFields(edited)
-        fields.strcpy(to: slot, fields.string(NameFields.player(player)))   // row ← remembered name
+        fields.strcpy(to: entrySlot, fields.string(NameFields.player(entryPlayer)))     // row ← remembered
         fields.store(into: &edited)
-        buffer = Array(fields.string(slot).prefix(Self.maxLength))         // FUN_10046510(buf, row, 0x14)
-        list = Scores.tableList(prefs: edited, edit: true, dim: true, slot: slot, player: player, assets: state.assets)
+        buffer = Array(fields.string(entrySlot).prefix(Self.maxLength))    // FUN_10046510(buf, row, 0x14)
+        list = Scores.tableList(prefs: edited, edit: true, dim: true, slot: entrySlot, player: entryPlayer,
+                                assets: state.assets)
         out.ops += Scores.screenOpen
         out.ops += list.drawOnce(restoreText: false, present: false, text: state.text, assets: state.assets)
         out.ops.append(.present(.fullScreen))
@@ -157,7 +199,7 @@ public struct NameEntry: Sendable {
             redraw = true
             cursorShown = false
             buffer = Self.confirmedName(buffer)
-            list = Scores.tableList(prefs: edited, edit: false, dim: true, slot: 0, player: player,
+            list = Scores.tableList(prefs: edited, edit: false, dim: true, slot: 0, player: entryPlayer,
                                     assets: state.assets)
         case 0x08:                                                   // Backspace
             lastKey = ticks
@@ -183,14 +225,14 @@ public struct NameEntry: Sendable {
 
     /// `LAB_10022174`.
     private mutating func redraw(state: FrontEndState, out: inout PassOutput) {
-        let nameIndex = 4 + 4 * slot                                 // FUN_10000cf0(list, slot·4 + 4), 0-based
+        let nameIndex = 4 + 4 * entrySlot                            // FUN_10000cf0(list, slot·4 + 4), 0-based
         var shown = buffer
         var fields = NameFields(edited)
-        fields.strcpy(to: slot, buffer)                              // row ← buffer
+        fields.strcpy(to: entrySlot, buffer)                         // row ← buffer
         if editing, cursorShown, shown.count < Self.maxLength {
             shown += state.assets.gameStrings[7]                     // pgsl 7 `_`
         }
-        fields.strcpy(to: NameFields.player(player), fields.string(slot))   // remembered ← row
+        fields.strcpy(to: NameFields.player(entryPlayer), fields.string(entrySlot))  // remembered ← row
         fields.store(into: &edited)
         if list.elements.indices.contains(nameIndex) { list.elements[nameIndex].record.text = shown }
         out.ops.append(.loadImage(image: Scores.backImage, into: .back, dst: Scores.fullRect))

@@ -95,11 +95,36 @@ final class NameEntryTests: XCTestCase {
         var st = try FrontEndState(assets: assets(), prefs: .fresh)
         var e = NameEntry(player: 0, slot: 2, prefs: .fresh)
         _ = step(&e, &st, ticks: 10)
-        _ = step(&e, &st, ticks: 11, keys: HeldKeys(keyEvents: [Self.enterKey, Self.esc]))
+        let ignored = step(&e, &st, ticks: 11, keys: HeldKeys(keyEvents: [Self.enterKey, Self.esc]))
         XCTAssertTrue(e.editing, "Enter and Esc do nothing")
+        XCTAssertEqual(e.buffer, Array("Player 1".utf8), "nothing appended")
+        XCTAssertEqual(ignored.output.sounds, [], "silently")
+        XCTAssertEqual(ignored.output.ops, [], "no redraw")
         _ = step(&e, &st, ticks: 12, keys: HeldKeys(keyEvents: [KeyEvent(charCode: 0x0a, keyCode: 0)]))
         XCTAssertFalse(e.editing, "0x0a confirms")
         XCTAssertEqual(e.edited.highScoreNames[2], "Player 1", "the pre-filled remembered name, kept as it was")
+
+        // Both players (player2Slot): player 2's entry follows inside the screen, and the events queued behind the
+        // key that ends player 1's entry (the "x" after Return) are player 2's.
+        var st2 = try FrontEndState(assets: assets(), prefs: .fresh)
+        var both = NameEntry(player: 0, slot: 1, prefs: .fresh)
+        both.player2Slot = 4
+        _ = step(&both, &st2, ticks: 10)
+        let queue = keys("A") + [Self.returnKey] + keys("x") + Array(repeating: Self.backspace, count: 8) + keys("Zed")
+            + [Self.returnKey]
+        let mid = step(&both, &st2, ticks: 11, keys: HeldKeys(keyEvents: queue))
+        XCTAssertNil(finished(mid), "player 2 is still on screen")
+        XCTAssertEqual(st2.prefs.highScoreNames[1], "Player 1A", "player 1's entry left: live prefs ← A")
+        XCTAssertFalse(both.editing, "player 2 pressed Return too")
+        XCTAssertEqual(both.buffer, Array("Zed".utf8))
+        let exitAt = try XCTUnwrap(mid.output.ops.firstIndex(of: .copy(from: .terrain, to: .back, src: nil, dst: nil,
+                                                                         interlaced: false)))
+        XCTAssertEqual(mid.output.ops[exitAt + 2], .fill(.back, colour: 0), "player 1 leaves, player 2's screen opens")
+        let final = try XCTUnwrap(finished(step(&both, &st2, ticks: 37)))
+        XCTAssertEqual(final.highScoreNames[1], "Player 1A")
+        XCTAssertEqual(final.highScoreNames[4], "Zed")
+        XCTAssertEqual(final.playerNames, ["Player 1A", "Zed"])
+        XCTAssertEqual(st2.prefs, final)
     }
 
     /// The edit buffer is pre-filled with the remembered name ("Player 1": 8 characters). A character whose MSL
@@ -115,6 +140,12 @@ final class NameEntryTests: XCTestCase {
         XCTAssertEqual(first.output.sounds, [cue(9)], "gaso 9 HighScoreAchieved (none) at the start")
         XCTAssertEqual(nameText(e, slot: 5), "Player 1", "the row shows the remembered name")
         XCTAssertEqual(e.buffer, Array("Player 1".utf8))
+        // A remembered name longer than 20 is cut to 20 in the buffer (FUN_10046510(buf, row, 0x14)).
+        var long = DeimosPrefs.fresh
+        long.playerNames[0] = "ABCDEFGHIJKLMNOPQRSTUVWXY"
+        var cut = NameEntry(player: 0, slot: 2, prefs: long)
+        _ = step(&cut, &s, ticks: 100)
+        XCTAssertEqual(cut.buffer, Array("ABCDEFGHIJKLMNOPQRST".utf8))
         // Twelve more (four of them auto-repeat) reach 20; the 21st is refused.
         var st = step(&e, &s, ticks: 101, keys: HeldKeys(keyEvents: keys("abcdefgh") + keys("xxxx", autoRepeat: true)))
         XCTAssertEqual(e.buffer, Array("Player 1abcdefghxxxx".utf8))
@@ -201,7 +232,8 @@ final class NameEntryTests: XCTestCase {
         XCTAssertEqual(nameText(e, slot: 0), "Player 1!")
         var back: UInt32?
         for t in (tk + 1)...(tk + 40) {
-            _ = step(&e, &s, ticks: t)
+            // An Esc on the way does not restart the 30 ticks (dump: only an edit sets the key clock).
+            _ = step(&e, &s, ticks: t, keys: t == tk + 15 ? HeldKeys(keyEvents: [Self.esc]) : HeldKeys())
             if back == nil, nameText(e, slot: 0).hasSuffix("_") { back = t }
         }
         XCTAssertEqual(back, tk + 31)
@@ -210,6 +242,17 @@ final class NameEntryTests: XCTestCase {
         let before = nameText(e, slot: 0)
         _ = step(&e, &s, ticks: te, keys: HeldKeys(keyEvents: [Self.esc]))
         XCTAssertEqual(nameText(e, slot: 0), before)
+        XCTAssertTrue(before.hasSuffix("_"))
+        // Backspace hides it at once and restarts the key clock: back only 31 ticks after it.
+        let tb = te + 1
+        _ = step(&e, &s, ticks: tb, keys: HeldKeys(keyEvents: [Self.backspace]))
+        XCTAssertEqual(nameText(e, slot: 0), "Player 1")
+        var again: UInt32?
+        for t in (tb + 1)...(tb + 40) {
+            _ = step(&e, &s, ticks: t)
+            if again == nil, nameText(e, slot: 0).hasSuffix("_") { again = t }
+        }
+        XCTAssertEqual(again, tb + 31)
         // At 20 characters the cursor is never appended.
         var full = NameEntry(player: 0, slot: 0, prefs: .fresh)
         _ = step(&full, &s, ticks: 0)

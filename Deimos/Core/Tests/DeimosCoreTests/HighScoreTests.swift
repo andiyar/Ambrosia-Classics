@@ -108,5 +108,15 @@ final class HighScoreTests: XCTestCase {
         // Two players tied with each other between the same rows: P1 first (both 12000 → 4, 5).
         r = insert(result(12_000, 12_000))
         XCTAssertEqual(r.slots, [4, 5])
+        // Pushed off the table. P1: idx1 14 (1500 > 1000) below P2's 0 → 15 → off; only P2's row is written.
+        r = insert(result(1_500, 20_000))
+        XCTAssertEqual(r.slots, [nil, 0])
+        XCTAssertEqual(r.prefs.highScores, [20_000] + Array(Self.fresh.highScores.prefix(14)))
+        XCTAssertEqual(r.prefs.highScoreNames[0], "Player 2")
+        // P2: both 14 → idx2 15 → off; P1 takes the last row.
+        r = insert(result(1_500, 1_200))
+        XCTAssertEqual(r.slots, [14, nil])
+        XCTAssertEqual(r.prefs.highScores, Array(Self.fresh.highScores.prefix(14)) + [1_500])
+        XCTAssertEqual(r.prefs.highScoreNames[14], "Player 1")
     }
 }

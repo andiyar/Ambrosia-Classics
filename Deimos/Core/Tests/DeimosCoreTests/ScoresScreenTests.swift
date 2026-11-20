@@ -161,10 +161,10 @@ final class ScoresScreenTests: XCTestCase {
         XCTAssertEqual(a.formats[14].coloriseColor, 0x03ff, "hilite colourises cyan 00ffff")
     }
 
-    /// Option-click on SCORES (front-end.md §2.7): the question (`inte` 24 "Erase High Scores", 25, buttons 26
-    /// "Erase" / 27 "Cancel") goes to the shell through the question wait; "Erase" runs `FUN_10004ae0`, which writes the
+    /// Option-click on SCORES (front-end.md §2.7): the menu asks the question (`inte` 24 "Erase High Scores", 25,
+    /// buttons 26 "Erase" / 27 "Cancel") through the question wait; "Erase" runs `FUN_10004ae0`, which writes the
     /// default table AND resets both remembered player names to "Player %i" (its first loop, dump line 2842) — live
-    /// prefs only. "Cancel" changes nothing. Either way the scores screen then shows the table.
+    /// prefs only. "Cancel" changes nothing. The scores screen itself never asks.
     func testEraseResetsPlayerNames() throws {
         let a = try assets()
         let inte = try a.interfaceStrings()
@@ -186,33 +186,21 @@ final class ScoresScreenTests: XCTestCase {
         XCTAssertEqual(erased.intPrefs, prefs.intPrefs, "only the table and the player names")
         XCTAssertEqual(erased.keyTable, prefs.keyTable)
 
-        for (answer, want) in [(QuestionButton.first, erased), (.second, prefs)] {
-            var s = try FrontEndState(assets: a, prefs: prefs)
-            var sc = Scores()
-            sc.askErase = true
-            let ask = step(&sc, &s, ticks: 10)
-            XCTAssertNil(exit(ask))
-            XCTAssertEqual(ask.output.requests, [.ask(Scores.eraseQuestion(a))])
-            XCTAssertEqual(ask.output.ops, [.hostWait(.answer)])
-            let q = Scores.eraseQuestion(a)
-            XCTAssertEqual(q.firstButton, inte.string(at: 26))
-            XCTAssertEqual(q.secondButton, inte.string(at: 27))
-            XCTAssertEqual(q.firstButton, "Erase")
-            XCTAssertEqual(q.secondButton, "Cancel")
-            XCTAssertTrue(q.message.hasPrefix("Erase High Scores"), q.message)
-            XCTAssertEqual(s.prefs, prefs, "nothing erased before the answer")
-            // A pass without the answer keeps waiting.
-            let wait = step(&sc, &s, ticks: 11)
-            XCTAssertEqual(wait.output.ops, [.hostWait(.answer)])
-            XCTAssertEqual(wait.output.requests, [])
-            let shown = step(&sc, &s, ticks: 400, keys: HeldKeys(events: [.answer(answer)]))
-            XCTAssertEqual(s.prefs, want, "answer \(answer)")
-            XCTAssertNil(exit(shown))
-            XCTAssertEqual(shown.output.ops.first, .fill(.back, colour: 0), "then the scores screen")
-            XCTAssertEqual(MacRoman.decode(sc.list.elements[4].record.text), want.highScoreNames[0])
-            // Its 600 ticks count from the screen, not the question.
-            XCTAssertNil(exit(step(&sc, &s, ticks: 1_000)))
-            XCTAssertEqual(exit(step(&sc, &s, ticks: 1_001)), .leave)
-        }
+        // The question the menu asks (inte 24–27), and the answer applied: "Erase" (first) erases, "Cancel" does not.
+        let q = HighScoreTable.eraseQuestion(a)
+        XCTAssertEqual(q.message, try XCTUnwrap(inte.string(at: 24)) + "\n" + XCTUnwrap(inte.string(at: 25)))
+        XCTAssertEqual(inte.string(at: 24), "Erase High Scores")
+        XCTAssertEqual(q.firstButton, inte.string(at: 26))
+        XCTAssertEqual(q.secondButton, inte.string(at: 27))
+        XCTAssertEqual(q.firstButton, "Erase")
+        XCTAssertEqual(q.secondButton, "Cancel")
+        XCTAssertEqual(HighScoreTable.erase(prefs, answer: .first), erased)
+        XCTAssertEqual(HighScoreTable.erase(prefs, answer: .second), prefs, "Cancel changes nothing")
+        // The scores screen shows whatever table it is given; it never asks.
+        var s = try FrontEndState(assets: a, prefs: erased)
+        var sc = Scores()
+        let shown = step(&sc, &s, ticks: 400)
+        XCTAssertEqual(shown.output.requests, [], "the question is the menu's")
+        XCTAssertEqual(MacRoman.decode(sc.list.elements[4].record.text), "Mars")
     }
 }

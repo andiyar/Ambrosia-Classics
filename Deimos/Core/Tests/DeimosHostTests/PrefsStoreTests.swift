@@ -54,7 +54,12 @@ final class PrefsStoreTests: XCTestCase {
         try putOnDisk(kept)
         try FileManager.default.setAttributes([.posixPermissions: 0o200], ofItemAtPath: fileURL.path)
         defer { try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: fileURL.path) }
-        XCTAssertEqual(try PrefsStore(folder: folder).load(), DeimosPrefs.fresh)
+        let locked = PrefsStore(folder: folder)
+        XCTAssertEqual(try locked.load(), DeimosPrefs.fresh)
+        // ...and not at quit either (HOpen fails, HCreate fails on the existing file: nothing written).
+        var changed = DeimosPrefs.fresh
+        changed.highScoreNames[0] = "Ben"
+        try locked.save(changed)
         try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: fileURL.path)
         XCTAssertEqual(try onDisk(), kept)
     }

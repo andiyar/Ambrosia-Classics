@@ -1,18 +1,17 @@
 import Foundation
 
 /// The high-score screen — `FUN_10021950` (grounding B §2d; `front-end.md` §4.1: 600 ticks, a click or a key leaves,
-/// `N` starts a one-player game), its table layout `FUN_100222f0` (front-end.md §4.2, shared with name entry), and the
-/// menu's Option-click erase question (front-end.md §2.7; plan question 8). Phase 4 S4 HS.
+/// `N` starts a one-player game) and its table layout `FUN_100222f0` (front-end.md §4.2, shared with name entry). Phase
+/// 4 S4 HS.
 ///
 /// **Frozen entry.** `init()` — the table is `FrontEndState.prefs`. **Returns** how it was left: `.newGame` for `N`
 /// (its caller `FUN_10024e70` then starts a one-player game, `10024eb0`), else `.leave`.
 ///
-/// **The erase question.** In the original it belongs to the menu's SCORES click, before this screen: if Option (key
-/// 0x3a) is down on a CLICK (not the S / H keys), the menu suspends, asks `inte` 24–27 ("Erase High Scores", "Are you
-/// sure…", "Erase", "Cancel"), runs `FUN_10004ae0` on "Erase", resumes, and only then calls `FUN_10024e70`. Here the
-/// caller sets `askErase` for an Option-click: the screen's first pass puts the question to the shell
-/// (`ShellRequest.ask`) and waits (`HostWait.answer`); on the answer it erases (or not) and the screen begins in that
-/// same pass. The menu's own suspend / resume around the alert (window, music, its flags) stay the menu's.
+/// **The erase question is the menu's, not this screen's** (front-end.md §2.7, seat ruling 2026-11-20): on a CLICK on
+/// SCORES with Option (key 0x3a) down — not the S / H keys — the menu suspends, asks `inte` 24–27 through the question
+/// wait (`HighScoreTable.eraseQuestion`, `ShellRequest.ask`, `HostWait.answer`), applies the answer
+/// (`HighScoreTable.erase(_:answer:)`, `FUN_10004ae0` on "Erase"), resumes, and only then runs `FUN_10024e70` (present,
+/// the menu's fade-out, this screen). The suspend / resume around the alert are the menu's too.
 ///
 /// **The screen** (dump `FUN_10021950`): back ← black, the `back` TGA → back and save buffers, the list built with
 /// edit 0 / dim 0, present, the list drawn once (no restore, no present), present — no fade; then FlushEvents
@@ -20,7 +19,9 @@ import Foundation
 /// at that pass's TickCount: leave once `start + F78 < now` (unsigned; F78 = 600), tested before any event; then the
 /// events in order — key events (keyDown and autoKey, `0 < code < 4`) first, then clicks, as the shell's lists keep
 /// them apart — a click leaves silently, a key leaves, `N` / `n` after gaso 2 (0x32, 100, 1) with `.newGame`. Leaving:
-/// save buffer → back buffer, present. (The `update` event's present has no input here.)
+/// save buffer → back buffer, present. (The `update` event's present has no input here.) Events queued behind the one
+/// that leaves stay in the original's queue for the next screen; under the frame's rule a pass's queue reaches only its
+/// first step, so they cannot be handed on and are dropped here.
 public struct Scores: Sendable {
     public enum Exit: Equatable, Sendable {
         case leave
@@ -29,12 +30,8 @@ public struct Scores: Sendable {
 
     public typealias Result = Exit
 
-    /// Set by the caller for an Option-click on SCORES: ask the erase question before the screen.
-    public var askErase = false
-
     private enum Phase: Sendable {
         case begin
-        case awaitingAnswer
         case shown(start: UInt32)
     }
 
@@ -48,21 +45,6 @@ public struct Scores: Sendable {
                               state: inout FrontEndState) -> ScreenStep<Result> {
         var out = PassOutput()
         switch phase {
-        case .begin where askErase:
-            out.requests.append(.ask(Self.eraseQuestion(state.assets)))
-            out.ops.append(.hostWait(.answer))
-            phase = .awaitingAnswer
-            return .stay(out)
-        case .awaitingAnswer:
-            guard let answer = keys.events.lazy.compactMap({ e -> QuestionButton? in
-                if case let .answer(b) = e { return b } else { return nil }
-            }).first else {
-                out.ops.append(.hostWait(.answer))                    // still waiting for the shell's answer
-                return .stay(out)
-            }
-            if answer == .first { state.prefs = HighScoreTable.erase(state.prefs) }   // "Erase" → FUN_10004ae0
-            begin(ticks: ticks, state: state, out: &out)
-            return .stay(out)
         case .begin:
             begin(ticks: ticks, state: state, out: &out)
             return .stay(out)                                         // FlushEvents: this pass's input is dropped
@@ -155,14 +137,5 @@ public struct Scores: Sendable {
             rowY &+= EntityDraw.fctiwz(f[76])
         }
         return list
-    }
-
-    /// The erase question (`FUN_100498e0(inte 24, 25, 26, 27)` → `FUN_10045c60`: a Note alert, title 24, message 25,
-    /// default button 26 "Erase", cancel 27 "Cancel"). `ShellQuestion` carries one message, so the title and the
-    /// message are joined by a line break.
-    public static func eraseQuestion(_ assets: DeimosAssets) -> ShellQuestion {
-        let inte = try? assets.interfaceStrings()
-        func line(_ i: Int) -> String { inte?.string(at: i) ?? "" }
-        return ShellQuestion(message: line(24) + "\n" + line(25), firstButton: line(26), secondButton: line(27))
     }
 }
