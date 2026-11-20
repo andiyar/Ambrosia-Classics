@@ -178,6 +178,65 @@ final class ScreenTests: XCTestCase {
         XCTAssertEqual(Array(partial.dropFirst(2)), before.entries.dropFirst(2).map { RGB16($0) })
     }
 
+    /// 6A-MC: a level's chapter card as `.GameLoop` shows it on entry (hdr+0x273c ≠ 0, M l. 5223–5227) — the level
+    /// header read from its file (no level opened), `ChapterScreenRun` made as `LevelRun` makes it, and its first tick
+    /// (`.ChapterScreen` M l. 5038–5089: `SetScreenClut(n + 0x118)`, PICT `n·10 + 0x11f8` drawn into (0, 0, 640, 480),
+    /// the slow fade-in's tick 0) applied by the shared `ScreenRenderer` on the level chain, as `FerazelDriver`'s
+    /// level screen does. The run, the chapter, the card PICT's picFrame (width, height) and the surface after that tick.
+    private func chapterCard(level: Int16) throws
+        -> (run: ChapterScreenRun, chapter: Int16, frame: [Int16], surface: ScreenSurface) {
+        let res = try Self.resources.get()
+        let h = try LevelFile.load(from: res, level: level).header
+        var fade = ScreenFade()
+        fade.faded = true                                   // the level entry's fade-out came first
+        let m = try XCTUnwrap(ChapterScreenRun(chapter: h.chapter, levelClut: ColorLUT.screenClutId(h),
+                                               statusBar: StatusBarState(), resources: res), "level \(level)'s card clut")
+        let pict = [UInt8](try XCTUnwrap(res.resource(type: "PICT", id: m.pictureId, chain: .level)).data.prefix(10))
+        func i16(_ o: Int) -> Int16 { Int16(bitPattern: UInt16(pict[o]) << 8 | UInt16(pict[o + 1])) }
+        let size = [i16(8) - i16(4), i16(6) - i16(2)]
+        var run = m
+        let first = run.tick(now: 1000, input: FrontInput(), fade: &fade)
+        // The PICT's whole frame stretched into (0, 0, 640, 480) (`MTGetandDrawPICTResInRect`).
+        XCTAssertEqual(Array(first.draws.prefix(2)), [
+            .setScreenClut(id: m.clutId),
+            .copyPicture(id: m.pictureId, chain: .level, source: Rect16(top: 0, left: 0, bottom: size[1], right: size[0]),
+                         dest: Rect16(top: 0, left: 0, bottom: 480, right: 640), forceClut: nil, transparent: false),
+        ], "level \(level)")
+        let r = try renderer(clut: 0x80)                    // a fresh surface under some other CLUT; the op sets the card's
+        r.chain = .level
+        try r.apply(first.draws)
+        XCTAssertEqual(r.surface.clut.id, m.clutId)
+        return (m, h.chapter, size, r.surface)
+    }
+
+    func testChapterCard2FrameGolden() throws {
+        let card = try chapterCard(level: 10)
+        // LL §4 level 10 item 3: chapter card 2 — PICT 4620, clut 282, from the dump's `chapter·10 + 0x11f8`,
+        // `chapter + 0x118`.
+        XCTAssertEqual([card.chapter, card.run.pictureId, card.run.clutId], [2, 4620, 282])
+        XCTAssertEqual(card.frame, [608, 480])                          // a 608-wide card, widened to 640
+        // Measured golden (6A-MC first green, 2026-11-20): FNV-1a 64 of the 640×480 indices then the CLUT's 256 entries
+        // as 16-bit big-endian R, G, B — PICT 4620 converted under clut 282 (`.ruled`, lowest tie-break, error
+        // diffusion), every pixel copied by colour.
+        XCTAssertEqual(String(fnv1a(image(card.surface)), radix: 16), "f33072b0df2cab4d")
+        XCTAssertGreaterThan(Set(card.surface.frame.pixels).count, 16)   // a picture, not a flat fill
+    }
+
+    func testChapterCard5FrameGolden() throws {
+        let card = try chapterCard(level: 22)
+        // LL §4 level 22 item 3: chapter card 5 — PICT 4650, clut 285.
+        XCTAssertEqual([card.chapter, card.run.pictureId, card.run.clutId], [5, 4650, 285])
+        XCTAssertEqual(card.frame, [640, 480])
+        // Measured golden (6A-MC first green, 2026-11-20): as card 2's — PICT 4650 under clut 285.
+        XCTAssertEqual(String(fnv1a(image(card.surface)), radix: 16), "517ec825dbca68cc")
+        XCTAssertGreaterThan(Set(card.surface.frame.pixels).count, 16)
+        // Not card 2's frame: other pixels, not only another CLUT.
+        let two = try chapterCard(level: 10)
+        XCTAssertNotEqual(card.surface.frame.pixels, two.surface.frame.pixels)
+        let differing = zip(card.surface.frame.pixels, two.surface.frame.pixels).filter { $0 != $1 }.count
+        XCTAssertGreaterThan(differing, card.surface.frame.pixels.count / 4)
+    }
+
     func testStretchedPanelRows() throws {
         let src = Rect16(top: 0, left: 0, bottom: 110, right: 320)
         func panel(_ s: Int) throws -> ScreenRenderer {
