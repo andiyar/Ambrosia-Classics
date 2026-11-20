@@ -166,8 +166,6 @@ final class FrontEndSkeletonTests: XCTestCase {
         }
         var boot = Boot()
         check(boot.pass(keys: HeldKeys(), ticks: 0, returned: nil, state: &state), ScreenDone(), "boot")
-        var levelSelect = LevelSelect()
-        check(levelSelect.pass(keys: HeldKeys(), ticks: 0, returned: nil, state: &state), 1, "level select")
         // Scores and name entry are built (Phase 4 S4 HS): ScoresScreenTests, NameEntryTests.
         // (The credits are no longer a stub — S2 CR: CreditsTests owns them.)
         // Films is built (Phase 4 S5 DM): FilmsTests.
