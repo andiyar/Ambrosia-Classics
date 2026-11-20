@@ -32,26 +32,6 @@ brother's Windows machine.
 
 ## Open
 
-### Q20 — 2026-11-21 — The Windows test run takes 13 minutes; sessions under the Coordinator are cut off at ten
-Context: at the end of each group of tasks the machine runs the whole test suite once more inside CrossOver, muted
-(the "Proof B" check). It is one command that takes 13 minutes or more and cannot be split. Sessions started by the
-Coordinator have background work switched off, and a foreground command is stopped at ten minutes, so those sessions
-cannot run it. It has been owed since run 56 (2026-11-21).
-Options: (a) allow that one script to run detached (started with `nohup`, the session polls its log) even when
-background work is off; (b) the Coordinator runs it itself by day and records the result; (c) you run
-`tools/windows/proof-b-ferazel.sh` once by day and paste the last line.
-Recommendation: a — it keeps the chain moving with no one at the keyboard; the script already mutes itself.
-Blocks: the next two tasks (the plants and the rain) cannot start until this check has run by day.
-Update 2026-11-21 (run 58, at night): the cross-check's fix round is done and merged, so this check is now the very
-next step — nothing else is left that a night-time or ten-minute-limited session can do.
-Update 2026-11-21 (run 59, 07:57): **this now blocks everything — the build is stopped on this one answer.** Your
-"it's fine, go" at 07:56 lifted the wait for 09:00 but does not answer this, and the two check scripts refuse to run
-before 09:00 on their own (no override), so run 59 changed nothing. A letter is enough: **a** (let the session start
-that one script detached and watch its log), **b** (the Coordinator runs it) or **c** (you run it once after 09:00:
-`cd ~/Developer/Ambrosia-Classics && tools/windows/proof-b-ferazel.sh`, and paste the last line here).
-Blocks: everything.
-Answer:
-
 ### Q19 — 2026-11-11 — Phase 6A plan (to the Goblin Chief): three small choices, for your later read
 Context: the plan for levels 10–22 is written and reviewed (run 50): the Warrior's real fight, then the horizon strip,
 wind, cannons, trees, the river ripple, rain and thunder, the Goblin Chief, clouds, blades, maces and the magic carpet,
@@ -173,6 +153,29 @@ Answer:
 ## Answered
 
 _(moved here by the run that acted on the answer, with what it did)_
+
+### Q20 — 2026-11-21 — The Windows test run takes 13 minutes; sessions under the Coordinator are cut off at ten
+Context: at the end of each group of tasks the machine runs the whole test suite once more inside CrossOver, muted
+(the "Proof B" check). It is one command that takes 13 minutes or more and cannot be split. Sessions started by the
+Coordinator have background work switched off, and a foreground command is stopped at ten minutes, so those sessions
+cannot run it. It has been owed since run 56 (2026-11-21).
+Options: (a) allow that one script to run detached (started with `nohup`, the session polls its log) even when
+background work is off; (b) the Coordinator runs it itself by day and records the result; (c) you run
+`tools/windows/proof-b-ferazel.sh` once by day and paste the last line.
+Recommendation: a — it keeps the chain moving with no one at the keyboard; the script already mutes itself.
+Blocks: the next two tasks (the plants and the rain) cannot start until this check has run by day.
+Update 2026-11-21 (run 58, at night): the cross-check's fix round is done and merged, so this check is now the very
+next step — nothing else is left that a night-time or ten-minute-limited session can do.
+Update 2026-11-21 (run 59, 07:57): **this now blocks everything — the build is stopped on this one answer.** Your
+"it's fine, go" at 07:56 lifted the wait for 09:00 but does not answer this, and the two check scripts refuse to run
+before 09:00 on their own (no override), so run 59 changed nothing. A letter is enough: **a** (let the session start
+that one script detached and watch its log), **b** (the Coordinator runs it) or **c** (you run it once after 09:00:
+`cd ~/Developer/Ambrosia-Classics && tools/windows/proof-b-ferazel.sh`, and paste the last line here).
+Blocks: everything.
+Answer: **a: run detached** — Ben, typed to the Coordinator on 2026-11-21 in reply to the three options as listed here; passed to
+run 60 in its brief. Recorded as D58.1: that one script (`tools/windows/proof-b-ferazel.sh`) may be started detached
+with `nohup` while the session polls its log, even when background work is off. It covers that script only.
+Acted on by run 60 (2026-11-21): the block on `docs/NEXT.md` lifted.
 
 ### Q14 — 2026-10-27 — Windows gate: does Ferazel's Wand on Windows behave like the Mac build?
 Context: The Windows build of Ferazel's Wand (the same game as the Phase 4 Mac build: levels 1–4, spells, items, saves,

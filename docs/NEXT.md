@@ -1,4 +1,4 @@
-STATUS: BLOCKED — Q20 in docs/QUESTIONS.md (how the 13-minute Windows test run may run); see D57
+STATUS: CONTINUE — Q20 answered (a: run detached; D58.1), run 60 in progress
 
 # NEXT — Ferazel's Wand, run 60: the wave 6A.2 end (two launch checks, by day), then 6A-BG1c and 6A-RN ⚑
 

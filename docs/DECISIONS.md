@@ -2607,3 +2607,12 @@ The seat's rulings (Fable 5.2, under the Coordinator). Per-task detail is under 
    the Coordinator's "foreground only" rule. `docs/NEXT.md` is `STATUS: BLOCKED` until Q20 has an answer.
 4. **The run closed at once rather than waiting an hour for the smoke alone**, so the one question reaches Ben while
    he is at the keyboard. Both checks stay owed, in the same order.
+
+## D58 — Ferazel's Wand: run 60's rulings (Q20 answered; 2026-11-21)
+
+1. **Q20 answered by Ben: "a: run detached".** Typed to the Coordinator on 2026-11-21 in reply to Q20's three
+   options (a, b, c) as the question lists them, and passed word for word to run 60 in its brief. It is option (a):
+   the Windows test run, `tools/windows/proof-b-ferazel.sh`, may be started detached (`nohup`) with the session
+   polling its log, even in a session whose background work is switched off. **It covers that one script only** —
+   every other long suite still runs in the foreground, in parts under ten minutes. The script's own clock check and
+   mute are untouched. `docs/NEXT.md`'s BLOCKED status is lifted by this answer; Q20 moved to "Answered".
