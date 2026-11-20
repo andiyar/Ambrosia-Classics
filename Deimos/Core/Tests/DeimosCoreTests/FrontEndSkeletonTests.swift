@@ -174,8 +174,7 @@ final class FrontEndSkeletonTests: XCTestCase {
             XCTAssertEqual(step.finished, value, label)
             XCTAssertEqual(step.output, PassOutput(), "\(label): a stub draws nothing")
         }
-        var boot = Boot()
-        check(boot.pass(keys: HeldKeys(), ticks: 0, returned: nil, state: &state), ScreenDone(), "boot")
+        // The boot is no longer a stub (Phase 4 S6 built it): BootTests and ConfigDialogTests pin it.
         var levelSelect = LevelSelect()
         check(levelSelect.pass(keys: HeldKeys(), ticks: 0, returned: nil, state: &state), 1, "level select")
         // Scores and name entry are built (Phase 4 S4 HS): ScoresScreenTests, NameEntryTests.
