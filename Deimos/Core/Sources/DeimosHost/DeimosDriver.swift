@@ -105,7 +105,10 @@ public struct DriverOutput: Equatable, Sendable {
 ///   never dropped, except that the original's `FlushEvents` (a game end, the pause wait's begin, a transition fade's
 ///   end) empties the OS event queue — `typed`, `keyEvents`, `mouseDowns` — and keeps the shell's own `events`. The
 ///   held state (`held`, `capsLock`, `mouse`, `mouseButton`) is the `idle`'s in which the pass begins. A
-///   `ShellEvent.suspend` / `.resume` only rides to the pass: the app still calls `suspend()` / `resume()`.
+///   `ShellEvent.suspend` / `.resume` only rides to the pass: the app still calls `suspend()` / `resume()`. The one
+///   other drop: when a pause's wait lets go on a queued Quit while suspended, the resume it runs first (D10) ends
+///   the suspension, so the suspend / resume events queued before it are dropped — a stale `.suspend` would set the
+///   front end's flag again with the driver's clear, and the menu would never flash the Quit.
 /// - **Suspend / resume** (H2; the app's suspend and resume handlers, `10023db4..10023dcc` and `10023e34..10023e8c`)
 ///   — `suspend()` pauses the music (`FUN_10048220(1)`) once; `resume()` resumes it (`FUN_10048220(0)`) unless the
 ///   pause flag r2−0x617b is set (`10023e7c`): set while a pause holds the music — here from the paused pass's
@@ -365,7 +368,10 @@ public struct DeimosDriver {
                 if !waitReleased {
                     let quitQueued = frontEnd.quitRequestPending || shellEventQueue.contains(where: Self.isQuit)
                     if frontEnd.state.quit || quitQueued {                    // 10022f8c b8; X 10023214
-                        if quitQueued && suspended { resume() }               // D10: X 10023374 resumes first
+                        if quitQueued && suspended {                          // D10: X 10023374 resumes first —
+                            resume()                                          // so every suspend / resume queued
+                            shellEventQueue.removeAll(where: Self.isSuspension)   // before it is over: dropped
+                        }
                         shellEventQueue.removeAll(where: Self.isQuit)         // the pause's pump took it
                         waitReleased = true
                         musicAfterWait = []                                   // 10022fb0: no resume (10022fb4)
@@ -585,6 +591,9 @@ public struct DeimosDriver {
     /// The Quit that lets the pause's wait go: the system's request only — ⌘Q / the menu-bar Quit is ignored in a game
     /// (Phase 4 S8a CR; `FrontEnd.shellEvents`).
     private static func isQuit(_ event: ShellEvent) -> Bool { event == .quitRequested }
+
+    /// The app's suspend / resume events (`ShellEvent.suspend` / `.resume`).
+    private static func isSuspension(_ event: ShellEvent) -> Bool { event == .suspend || event == .resume }
 
     /// Mac virtual key code of Esc (`FUN_100307c0`).
     static let escKey: UInt16 = 0x35
