@@ -4,6 +4,13 @@
 > only). Nothing current reads this file; the live state is `docs/STATE.md`. Each later close that settles something
 > adds a dated section at the top, newest first. The two snapshots below are verbatim (headings demoted only).
 
+## Settled at Ferazel run 54's close (2026-11-20)
+
+- **The run 53 Ferazel block** (main c47416e): trees built, Core 693, run 53 stopped after one task on Ben's word, the
+  river ripple and the Box scenery heading run 54. Run 54 replaced it: the ripple (6A-RP), the Box scenery (6A-BX1a)
+  and the teleporter / furniture / character pictures (6A-BX1b) are merged, Core 713. The story is in
+  `docs/handoff-2026-11-20-ferazel-run54.md`, the rulings in D53, the per-task record under each card in the plan.
+
 ## Settled at Deimos Phase 3 wave 3.4's close (2026-11-20)
 
 - **The wave 3.3 Deimos block** (main ce77f57): every build task of Phase 3 merged, the Phase 2 build on the

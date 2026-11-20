@@ -2509,3 +2509,31 @@ the whole research bank describes the OS 9 one. INDEX #62 and #14 are closable (
 **Questions for Ben (eight, none blocking):** in the plan and in `docs/handoff-2026-11-20-deimos-phase4-plan.md`.
 **Reviewed by:** two Opus 5.5 legs (pass with fixes, 37 findings folded in), then the seat's cross-check.
 
+## D53 — Ferazel's Wand: run 54's rulings (6A-RP, 6A-BX1a, 6A-BX1b; 2026-11-20)
+
+The seat's rulings (Fable 5.2, under the Coordinator). Per-task detail is under each card's "As executed" in the plan.
+
+1. **The ripple picture starts the player low on level 11** — at (16299, 600), not the level's own start. From the
+   level's start the camera never gets low enough to show a rippling backdrop row (checked over 3,000 ticks), so a
+   picture taken there could not fail. Same reasoning as D51.1 (the tree). Consequence: level 11's own first-frame
+   picture (6A-L10L11) will not show the ripple; the fixture picture is kept as the ripple's only one.
+2. **Mirrored decorations with no touchable area are left un-mirrored — a recorded difference from the original.** The
+   original mirrors every decoration placed mirrored, storing a mirrored (still empty) rectangle and so putting the
+   object's centre one picture-width to the right; the port keeps the all-zero rectangle. Two reviewers each checked
+   every reader of that rectangle and centre and found none for such a decoration. Matching the original would move
+   two pinned level 1–5 values, which no task in run 54 may do. Left as an open carry; a marked task could do it later.
+3. **The plan's sentence "every decoration on levels 1–5 has an empty rectangle" is wrong** — one type (2832) has a
+   real one on levels 3, 10 and 21 and is never placed mirrored. Corrected to "every mirrored decoration" in the code
+   comment, the ledger and the As executed note.
+4. **Core's setup uses a six-entry table of picture widths for the mirrored graves.** Setup cannot see pictures; the
+   table is pinned by a test against the game's own width reader and against the list of types that get a rectangle.
+5. **The three teleporter kinds share one setup arm** (the original's three arms are identical apart from the picture);
+   the audited water-mode line now also serves the two new kinds. Two level-21 teleporters really stand in water.
+6. **The ripple adds one refusal**: if the ripple's counter ever wrapped, the original would read outside its table;
+   the port refuses instead. It needs 2^23 frames inside one level, so it cannot happen in play.
+7. **Method, forced by this run's foreground-only rule:** a fix round is done by a fresh implementer briefed from the
+   two review files and the reviewer's patch, not by resuming the first implementer (a resumed helper runs in the
+   background). The seat's whole-suite run is four foreground commands (rules half; render classes A–E, F–L, M–Z).
+8. **The weekly usage limit passed 85% during the run** (Fable 87% then 89%, all models 87% at the close; resets
+   2026-11-23). Told to Ben in the close.
+
