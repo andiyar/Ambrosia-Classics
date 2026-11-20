@@ -250,6 +250,9 @@ public enum SetupFaces {
         // 6A-TR: the trees 0xc08…0xc0f (`.InitBackgroundSprite` M l. 61889–61895: cache singles 0xc08 + i, flag 1 →
         // the level+base CLUT, `levelClutCache`), faced by their Handle.
         for p in BackgroundSprite.trees { all.append(one(p, clut: 202)) }
+        // 6A-BG1c: the plants of levels 15 and 18 — 2700, 2701, 2702, 2705, 2711 (`.InitBackgroundSprite` M l.
+        // 61908–61914: cache singles 0xa8c + i, flag 1 → the level+base CLUT, `levelClutCache`), faced at Setup.
+        for p: Int16 in [0xa8c, 0xa8d, 0xa8e, 0xa91, 0xa97] { all.append(one(p, clut: 202)) }
         // 6A-BX1b — the Box faces and talkers of levels 10–22: the teleporters 1060 / 1061 (`.InitBoxSprite` M l.
         // 58737–58740: the boot singles 0x424 / 0x425), the furniture 2921 (M l. 58830: cache single 0xb68+i, flag 0)
         // and the NPCs 2955, 2956, 2962 (M l. 58781: cache singles 0xb86+i, flag 0).
