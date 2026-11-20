@@ -7,20 +7,21 @@ Settled history lives in docs/STATE-history.md.
 > numbers and open items and moves anything settled to the top of `docs/STATE-history.md`; it never appends a run story
 > here. Forks go in `docs/DECISIONS.md`, narrative in the handoff. Re-verify before acting.
 
-## Ferazel's Wand — 2026-11-20 (attended run 54 closed: river ripple, Box scenery, teleporters and characters built; run 55 next)
+## Ferazel's Wand — 2026-11-20 (attended run 55 closed: the conversations and chapter cards of levels 10–22 proven; run 56 next)
 
 - **Where it stands:** Phase 5 "Enemies" is closed on the machine side — **Ben's gate pending (Q18)**. Phase 6A
   "through the Goblin Chief" is being built (the plan: "Wave 5 — Phase 6A" in the one plan file; rulings D46–D49, D51,
   D53). **Wave 6A.1 is built**: on level 5 the Warrior is a real boss, beaten by pushing crates onto him. **Wave 6A.2
-  so far:** the test-only level fixture, the horizon strip, wind, rotating cannons, trees, and in run 54 **6A-RP** (the
-  river backdrop of levels 11 and 18 ripples), **6A-BX1a** (the scenery of levels 10–22: decorations, outcrops,
-  mushrooms; the three graves on level 21 can be read or bumped from the correct side) and **6A-BX1b** (teleporters on
-  levels 21 and 22, furniture, and the three characters who talk, each with the right conversation). None is visible to
-  a player yet: no level past 5 opens until 6A-L10L11, which is next but one.
+  so far:** the test-only level fixture, the horizon strip, wind, rotating cannons, trees, the river ripple, the
+  scenery, teleporters, furniture and talking characters of levels 10–22, and in run 55 **6A-MC**: the six
+  conversations of levels 10–22 run to their end with the right portraits, and the two chapter cards (before level 10
+  and before level 22) draw — proven by tests, no game code needed changing. None of this is visible to a player yet:
+  no level past 5 opens until 6A-L10L11, which is next.
 - **Launch checks: none owed.** Run 53 ran both by day, muted (2026-11-15, 09:14–09:27): Proof B 690 / 0 / 3 / 0 of
   693 (at 44cb75a, trees in) and the Mac SDL smoke (main menu identical, exit 0). The next Proof B is wave 6A.2's end.
-- **Run 54 (2026-11-20) built three tasks:** the river ripple, the Box scenery, and the teleporter / furniture /
-  character pictures (below). One recorded difference from the original, invisible in play (D53.2, in the carries).
+- **Run 55 (2026-11-20) built one task** (6A-MC) and stopped there on purpose: the account's weekly usage limit stood
+  at 92% mid-run (resets 2026-11-23), and opening levels 10 and 11 is one large task that must not be split from its
+  long checks. It goes whole to run 56.
 - **Windows test build 5 is with Andrew** (Ben asked, 2026-11-18): GitHub pre-release `ferazel-windows-test-5`, staged
   from 02717f8 (run 53's game code; the Windows card gained a "test build 5" section: the Warrior is real, levels past
   5 closed). Before it went up: WinKit 82 / 0 / 2, visit sweep 3,488 x 2 rows 0, bot 108,000 x 2 failures 0, the zip's
@@ -28,21 +29,21 @@ Settled history lives in docs/STATE-history.md.
   report is the Windows half of Q18; Ben's Mac verdict is still open. The Desktop builds were not replaced.
 - **Staged builds on the Desktop are old** (game code as e9183ce, run 50): they still show the stand-in Warrior. The
   next stage is the 6A phase end unless Ben asks for one.
-- **Next:** run 55 = 6A-MC (the conversations and chapter cards of levels 10–22, proven), then 6A-L10L11 ⚑ (levels 10
-  and 11 open — the first new levels a player can see) with the wave 6A.2 end: Core 713 → 716 → 722. It does not wait
-  for Ben's verdict. Wave 6A.2's end owes a Proof B by day, muted.
+- **Next:** run 56 = 6A-L10L11 ⚑ (levels 10 and 11 open — the first new levels a player can see) with the wave 6A.2
+  end: Core 716 → 722, WinKit 82 → 84. It does not wait for Ben's verdict. Wave 6A.2's end owes a Proof B by day,
+  muted. **Best started after the weekly limit resets (2026-11-23)** — it is the largest task of the wave.
 - **The plan:** `docs/superpowers/plans/2026-11-04-ferazel-remainder.md` (self-contained); the design:
   `docs/superpowers/specs/2026-11-04-ferazel-remainder-design.md`.
 - **Ben's gates:** Phase 1 passed; Phases 2 and 3 passed with notes; Phase 4 passed (Fireball note) and the Windows
   twin passed on Andrew's word (2026-11-07); **Phase 5 waiting (Q18)**. Then three gated Phase 6 parts (6A to the Goblin
   Chief, 6B to the Wizard and the fire, 6C the whole game), then one release `ferazel-1.0`.
-- **Current numbers** (Core suite: the seat's own run at 579b17f, 2026-11-20, in four foreground parts; G5 / GW1 / GW3 /
-  GW4: the implementers' at aae8457; Proof B and the Mac SDL smoke: run 53 at 44cb75a; WinKit and the census: run 52
+- **Current numbers** (Core suite: the seat's own run at 988a1e1, 2026-11-20, in four foreground parts; G5 / GW1 / GW3 /
+  GW4: the implementer's at b999329; Proof B and the Mac SDL smoke: run 53 at 44cb75a; WinKit and the census: run 52
   at 4134bbc — no Shared, Windows, Resources or decoder change since; the full sweep and bot: run 48, older code):
 
 | gate | value |
 |---|---|
-| Ferazel/Core suite (G2) | **713** = 550 rules + 163 render; 711 passed, 0 failed, 2 opt-in skips by name: `FerazelRenderTests.VisitSweepTests testVisitEveryObject`, `FerazelRenderTests.RandomPlayTests testRandomPlay` |
+| Ferazel/Core suite (G2) | **716** = 551 rules + 165 render; 714 passed, 0 failed, 2 opt-in skips by name: `FerazelRenderTests.VisitSweepTests testVisitEveryObject`, `FerazelRenderTests.RandomPlayTests testRandomPlay` |
 | FerazelWinKit (GW2) | **82**; 80 passed, 0 failed, 2 opt-in skips (`WinVisitSweepTests testVisitEveryObjectThroughWinGame`, `WinRandomPlayTests testRandomPlayThroughWinGame`) |
 | census (G3) | items 1,108 decoded, failures 0 (run 52) |
 | level 5 quick checks (run 52, core) | bot: levels 1, seeds 4, steps 7200, deaths 1, exits 17, failures 0; visit sweep: 128 visits, rows 0, exit 0 |
@@ -52,7 +53,7 @@ Settled history lives in docs/STATE-history.md.
 | Mac SDL smoke (GW4R) | main menu identical, exit 0, `video=dummy audio=none` (run 53); GW6 and G9M last passed in run 50 |
 | GW1 / GW3 / GW4 / G5 | 0 then 2 / 0 then 1 / Build complete! / BUILD SUCCEEDED |
 | HectorKit (G1) | main **ef2c341**, clean; zero-skip executed **370**; Ferazel follows HectorKit main |
-| ladder from here | 713 → MC 716 → L10L11 722 (run 55) … 814 at the 6A end; WinKit 82 → 90 |
+| ladder from here | 716 → L10L11 722 (run 56) … 814 at the 6A end; WinKit 82 → 90 |
 
 - **Goldens (◈):** level 5's pins moved in 6A-W1 for the three crates — init 46 / `0xb039da66a884cb8a` (held), f30 58 /
   `0x1142f7a252aecfcd`, f120 58 / `0x9806297cea4531f2`; nothing else moved. The Warrior's scripted fight is pinned:
@@ -64,9 +65,10 @@ Settled history lives in docs/STATE-history.md.
   New in run 54: level 11's ripple `c92fbe9fb87250c3` (fixture, player started at (16299, 600), tick 143; the fill
   stubbed `974417c1b079fa29`; the submerged flag forced off `7c7042ee30a1f6d3`). Level 22's load-bar count moved for
   one more cached picture: [33, 168, 336, 33] → [34, 169, 338, 34] (the card named it).
-- **Waiting on Ben (QUESTIONS.md "Open"; nothing blocks; none answered at run 54's start):** **Q18 (the Phase 5
+  New in run 55: chapter card 2 (level 10) `f33072b0df2cab4d`; chapter card 5 (level 22) `517ec825dbca68cc`.
+- **Waiting on Ben (QUESTIONS.md "Open"; nothing blocks; none answered at run 55's start):** **Q18 (the Phase 5
   gate)**, Q19 (three small choices in the 6A plan), Q17, Q16 (defaults stand), Q15's follow-ups, Q13.
-- **Worktrees:** run 54's `silly-lalande-df734f` was removed at its close. `compassionate-leavitt-7ca958` is run 53's (merged; it was run 49's before). `gallant-brahmagupta-56ed81`
+- **Worktrees:** run 55's `sharp-yonath-db4807` was removed at its close. `compassionate-leavitt-7ca958` is run 53's (merged; it was run 49's before). `gallant-brahmagupta-56ed81`
   (run 52), `eager-fermat-db9ed9` (run 51), `hungry-bun-395f55` (run 50; `out/` holds the latest stages), `nifty-mendel-0ad40e` (run 48),
   `ferazel-run-47-e0431c` and `ferazel-run-44-7428b3` are finished and merged — Ben or their sessions remove them.
   The others belong to other sessions.
@@ -78,6 +80,10 @@ Settled history lives in docs/STATE-history.md.
 - **Known deviation of muted launches (D44 As built run 48 (d)):** a muted run draws the random stream differently
   from an audible one; boot checks only.
 - **Open carries** [LOW unless marked]:
+  - From run 55: the record a level-21 conversation arms (283) is proven as a save write only — its appearing on a
+    revisit is the level-21 task's to check; the conversation test counts a portrait as loaded when it is drawn and
+    its picture exists (nothing decodes it there); three small decoders of a picture's size exist (one in the game,
+    one in each test target).
   - From run 54: mirrored decorations with no touchable area keep an all-zero rectangle where the original stores a
     mirrored (still empty) one, which puts that object's centre one picture-width to the left of the original's;
     nothing reads it, and matching it would move two pinned level 1–5 values (`BoxRopeTests`, the hot-rect hash in

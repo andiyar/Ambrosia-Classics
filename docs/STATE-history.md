@@ -4,6 +4,14 @@
 > only). Nothing current reads this file; the live state is `docs/STATE.md`. Each later close that settles something
 > adds a dated section at the top, newest first. The two snapshots below are verbatim (headings demoted only).
 
+## Settled at Ferazel run 55's close (2026-11-20)
+
+- **The run 54 Ferazel block** (main 158d668): the ripple, the Box scenery and the teleporters / furniture / characters
+  built, Core 713, 6A-MC and 6A-L10L11 heading run 55. Run 55 replaced it: 6A-MC (the conversations and chapter cards
+  of levels 10–22, proven; no game code changed) is merged, Core 716; 6A-L10L11 was not started (the weekly usage
+  limit) and heads run 56. The story is in `docs/handoff-2026-11-20-ferazel-run55.md`, the record under the card in
+  the plan. No ruling was needed (no new DECISIONS entry).
+
 ## Settled at Ferazel run 54's close (2026-11-20)
 
 - **The run 53 Ferazel block** (main c47416e): trees built, Core 693, run 53 stopped after one task on Ben's word, the
