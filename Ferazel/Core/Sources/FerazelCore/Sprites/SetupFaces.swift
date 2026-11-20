@@ -250,6 +250,10 @@ public enum SetupFaces {
         // 6A-TR: the trees 0xc08…0xc0f (`.InitBackgroundSprite` M l. 61889–61895: cache singles 0xc08 + i, flag 1 →
         // the level+base CLUT, `levelClutCache`), faced by their Handle.
         for p in BackgroundSprite.trees { all.append(one(p, clut: 202)) }
+        // 6A-BX1b — the Box faces and talkers of levels 10–22: the teleporters 1060 / 1061 (`.InitBoxSprite` M l.
+        // 58737–58740: the boot singles 0x424 / 0x425), the furniture 2921 (M l. 58830: cache single 0xb68+i, flag 0)
+        // and the NPCs 2955, 2956, 2962 (M l. 58781: cache singles 0xb86+i, flag 0).
+        for p: Int16 in [0x424, 0x425, 0xb69, 0xb8b, 0xb8c, 0xb92] { all.append(one(p)) }
         all.append(one(placeholderPict))
         // BN: every face `.InitBonusSprite` loads (`BonusSprite.sheets`; the level-1/2 entries above are the same sheets).
         var table = Dictionary(uniqueKeysWithValues: all)
@@ -473,8 +477,8 @@ public enum SetupFaces {
                 BoxSprite.setup(&s, record: p, level: c.level)
             }
             switch t {
-            case 0x426:                                        // teleporter 3 (l. 59012)
-                face(0x426, 0, .setup)
+            case 0x424...0x426:                                // teleporters 1–3 (M l. 58984, 58953, 59012; 1 / 2: 6A-BX1b)
+                face(Int16(t), 0, .setup)                      // `+0xc0 = *_DAT_100a0ab0` / `0aac` / `0aa8` (boot singles)
                 if inWater() { s.mode = 0x90000 }
             case 0x429:                                        // save point: set 0x429 cell p1 (l. 59000)
                 face(0x429, Int(p.p1), .setup)
