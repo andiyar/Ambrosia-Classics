@@ -29,7 +29,8 @@ import Foundation
 ///   its music half sets the music level from int pref 1 — `MusicCue.level` (`applyVolume`).
 /// - **Keys and clicks** are `ModalDialogRunner`'s (the standard filter, `ModalDialog`, `TrackControl`): Return or
 ///   Enter = item 1; Esc or ⌘. = item 2 when there is a cancel item; a click outside the window beeps, a click on its
-///   frame or on no live item does nothing. The two sliders are this screen's own items (the runner's extension point).
+///   frame or on no live item does nothing; any other key comes back unhandled and is ignored. The two sliders are
+///   this screen's own items (the runner's extension point).
 ///
 /// **How it is drawn** (ruling 8, question 6's default): by the game, with `DialogDraw`, centred on the picture; the
 /// picture under the window is saved at open and put back at close (the window repaints what it covered: the boot's
@@ -192,6 +193,8 @@ public struct ConfigDialog: Sendable {
             return pollPage(keys: keys, fresh: true, state: &state, &out)
         case .ownPoll:
             return followSlide(keys: keys, state: &state, &out)
+        case .key:                                                      // no item here takes typing
+            return nil
         }
     }
 

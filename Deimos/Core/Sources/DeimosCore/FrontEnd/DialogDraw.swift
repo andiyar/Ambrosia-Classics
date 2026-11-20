@@ -520,19 +520,33 @@ public enum DialogDraw {
 /// the queued input, the press, the standard keys, the item-by-item draw and the redraw-only-on-change check — shared
 /// by the configuration window (DITL 190) and S7's controls window (DITL 191). It holds no window's own numbers: the
 /// screen opens it from its parsed `DITL` with its default and cancel items, sets the item states (`inactive`,
-/// `hidden`, `values`, `labels`), and feeds it every pass:
+/// `hidden`, `values`, `labels`, `ownItems`, `screenFiltersKeys`), and feeds it every pass, in this order:
 ///
+///     if nested window returned { runner.invalidate() }          // it drew over this one
 ///     runner.begin(keys: keys)
 ///     for _ in 0...runner.turnsLeft {
 ///         guard let action = runner.next(keys: keys, &out) else { break }
 ///         // .hit(n): ModalDialog returned item n — the screen's item action (it may finish or call)
+///         // .ownPress / .ownPoll: the screen's own item (below)
+///         // .key(k, command): a key the runner did not use (below)
 ///     }
+///     // the screen's per-pass work on `keys` itself (e.g. modifier edges from `keys.held`)
 ///     if runner.needsRedraw() { out.ops += runner.draw { item, rect, active in nil } }
 ///
 /// **What it does** (the standard filter and `ModalDialog`, Inside Macintosh: Macintosh Toolbox Essentials ch. 6):
 /// - The pass's key events, then its mouse-downs, join a queue; events behind a held press wait for its release.
-/// - Return or Enter → the default item; Esc or ⌘. → the cancel item when there is one. Other keys are dropped
-///   (no item here takes typing; S7's edit-text field will need them handed back — add it there).
+/// - Return or Enter → the default item; Esc or ⌘. → the cancel item when there is one (`standardKey`). Every
+///   other key — and Esc / ⌘. when there is no cancel item — comes back as `.key(event, command:)`, the `KeyEvent`
+///   exactly as the seam delivered it (char code, virtual key code, autoKey flag; `command` = ⌘ held in the pass),
+///   one per turn in arrival order, interleaved with the clicks as they were queued. A screen that takes no typing
+///   ignores it (the configuration window does).
+/// - `screenFiltersKeys` (off by default): the screen's filter sees every key FIRST — Return, Enter, Esc and ⌘.
+///   included — as `.key`, and the runner gives none of them a standard meaning. A screen that declines a key asks
+///   `standardKey(_:command:)` for the item it would have hit and acts on that itself. This is the original controls
+///   window's filter (grounding C §3a, X 10043f90): keyDown / autoKey events are consumed by the key capture, so
+///   Return / Esc / Tab / arrows / F-keys are bindable and never press Save or Cancel. Modifier keys alone make no
+///   key event; the original reads them as `GetKeys` edges on null events — the screen reads them from the pass's
+///   `keys.held` itself, which `begin` / `next` leave alone.
 /// - A click outside the window beeps (`SysBeep`, a `.beep` request). A click inside the window on no live item —
 ///   the 6-pixel frame, the bare content, a greyed or disabled item — does nothing: no item, no beep (the click is
 ///   in the front window, so `ModalDialog` takes it and finds no control).
@@ -545,10 +559,16 @@ public enum DialogDraw {
 /// **Extension point — item kinds the runner does not know** (the configuration window's sliders; S7's edit-text
 /// field, focus ring, tab control and picture). Put the item's number in `ownItems`: a click on it comes back as
 /// `.ownPress(item:at:)` — the screen tracks it itself and polls it at once — then as `.ownPoll(item:)` once in each
-/// later pass while it is held; the screen calls `endOwnPress()` when the button comes up and decides whether the
-/// item was hit. To draw, `draw(own:)` asks the screen first for every shown item: the screen returns that item's
-/// ops, or nil to let the runner draw it (push buttons, check boxes, static text; any other kind left to nil is not
-/// drawn).
+/// later pass while it is held; the screen calls `endOwnPress()` when the button comes up (at once, for a click
+/// that only moves focus) and decides whether the item was hit. Any live, enabled, shown item can be one, whatever
+/// its kind (edit text, a `CNTL` such as the tab control); the innermost holding the point wins, so a field inside
+/// the tab control's rect takes its own clicks. To draw, `draw(own:)` asks the screen first for every shown item, in
+/// item order, over the frame and content: the screen returns that item's ops (any `RenderOp` — the `DialogDraw`
+/// primitives, `.drawPicture` for a `PICT` item, its own focus ring or tabs), or nil to let the runner draw it (push
+/// buttons, check boxes, static text; any other kind left to nil is not drawn). The closure may read the screen's
+/// own state (which field has focus, which tab is up). The runner redraws only when its own item state changes
+/// (`needsRedraw`; a field's text kept in `labels` counts); when state it cannot see changes — focus moved, the
+/// tab — the screen calls `invalidate()` and the whole window is drawn at the next check.
 ///
 /// **Save-under rule.** Only the outermost window saves and restores the picture under it (`DialogDraw.saveUnder`
 /// at open, `DialogDraw.restoreUnder` at close — the screen emits them, the runner does not). A window opened from
@@ -563,6 +583,9 @@ public struct ModalDialogRunner: Sendable {
         case ownPress(item: Int, at: MousePoint)
         /// The screen's own press on item `n` is still being followed: poll it once.
         case ownPoll(item: Int)
+        /// A key the runner did not use (or, with `screenFiltersKeys`, any key), as the seam delivered it;
+        /// `command` = ⌘ held in the pass.
+        case key(KeyEvent, command: Bool)
     }
 
     /// What a press is following.
@@ -609,6 +632,9 @@ public struct ModalDialogRunner: Sendable {
     public var labels: [Int: [UInt8]] = [:]
     /// The extension point: items the screen tracks and (usually) draws itself.
     public var ownItems: Set<Int> = []
+    /// The screen's filter sees every key first, Return / Enter / Esc / ⌘. included, as `.key` (S7's key capture);
+    /// off = those keys hit the default and cancel items.
+    public var screenFiltersKeys = false
     public private(set) var tracking: Tracking?
     /// Turns left this pass (see `begin`).
     public private(set) var turnsLeft = 0
@@ -674,10 +700,8 @@ public struct ModalDialogRunner: Sendable {
             guard !queue.isEmpty else { return stop() }
             switch queue.removeFirst() {
             case let .key(k, command):
-                if k.charCode == 0x0D || k.charCode == 0x03 { return .hit(defaultItem) }          // Return, Enter
-                if let c = cancelItem, k.charCode == 0x1B || (command && k.charCode == 0x2E) {   // Esc, ⌘.
-                    return .hit(c)
-                }
+                if !screenFiltersKeys, let n = standardKey(k, command: command) { return .hit(n) }
+                return .key(k, command: command)
             case let .click(p):
                 guard DialogDraw.contains(windowRect, p) else {         // outside the modal window
                     out.requests.append(.beep)
@@ -699,6 +723,14 @@ public struct ModalDialogRunner: Sendable {
             }
         }
         turnsLeft = 0
+        return nil
+    }
+
+    /// The item key `k` stands for in the standard filter: Return or Enter → the default item; Esc or ⌘. → the
+    /// cancel item when there is one; nil for any other key.
+    public func standardKey(_ k: KeyEvent, command: Bool) -> Int? {
+        if k.charCode == 0x0D || k.charCode == 0x03 { return defaultItem }                       // Return, Enter
+        if let c = cancelItem, k.charCode == 0x1B || (command && k.charCode == 0x2E) { return c } // Esc, ⌘.
         return nil
     }
 

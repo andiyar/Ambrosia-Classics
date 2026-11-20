@@ -216,6 +216,34 @@ final class ConfigDialogTests: XCTestCase {
         XCTAssertNil(key(&r, Self.escKey).finished, "no cancel item: Esc does nothing")
         XCTAssertNil(key(&r, KeyEvent(charCode: 0x2E, keyCode: 0x2F), command: true).finished, "nor ⌘.")
         XCTAssertEqual(r.state.prefs.bytePrefs[5], 1)
+
+        // Keys the window does not use come back from the runner unhandled, in arrival order, as the seam delivered
+        // them (S7's key capture takes them); the configuration window ignores them: nothing changes, nothing drawn.
+        let tab = KeyEvent(charCode: 0x09, keyCode: 0x30), a = KeyEvent(charCode: 0x61, keyCode: 0x00, autoRepeat: true)
+        var runner = r.dialog.runner                                    // a copy: the window is untouched
+        let held = HeldKeys(keyEvents: [tab, a, Self.escKey])
+        runner.begin(keys: held)
+        var out = PassOutput()
+        var got: [ModalDialogRunner.Action] = []
+        for _ in 0...runner.turnsLeft {
+            guard let action = runner.next(keys: held, &out) else { break }
+            got.append(action)
+        }
+        XCTAssertEqual(got, [.key(tab, command: false), .key(a, command: false), .key(Self.escKey, command: false)],
+                       "Tab, a typed key and Esc with no cancel item are handed back")
+        XCTAssertEqual(out, PassOutput())
+        runner.screenFiltersKeys = true                                 // the screen sees keys before Return / Esc
+        let ret = HeldKeys(keyEvents: [Self.returnKey])
+        runner.begin(keys: ret)
+        XCTAssertEqual(runner.next(keys: ret, &out), .key(Self.returnKey, command: false), "Return to the screen first")
+        XCTAssertEqual(runner.standardKey(Self.returnKey, command: false), 1, "its standard meaning: the default item")
+        XCTAssertNil(runner.standardKey(tab, command: false))
+        let before = r.state.prefs
+        let typed = pass(&r, HeldKeys(keyEvents: [tab, a]))
+        XCTAssertNil(typed.finished)
+        XCTAssertEqual(typed.output, PassOutput(), "the window ignores them: nothing drawn")
+        XCTAssertEqual(r.state.prefs, before, "nothing changed")
+
         XCTAssertEqual(click(&r, 1).finished, true, "Save closes")
         XCTAssertEqual(r.state.prefs.bytePrefs[5], 1)
 
