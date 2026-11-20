@@ -91,6 +91,22 @@ import XCTest
         return game.lastOutput.present
     }
 
+    /// Leg 2 (S2): a fresh game of `level` run on from its first presented level frame, untouched, to the first
+    /// presented frame after `.GameLoop`'s `GammaFadeInAsync(0x28)` is done (`AsyncGammaFade.done`): the flow step, the
+    /// iteration and the presented RGBA.
+    static func firstFadedInFrame(level: Int) throws -> (steps: Int, iterations: Int, rgba: [UInt8]) {
+        let (game, host) = try Self.game(level: level)
+        _ = try firstLevelFrame(game, host, level: level)
+        var last = game.flowSteps
+        for _ in 1...24_000 {
+            guard wake(game, host, last: &last) else { continue }
+            guard try XCTUnwrap(game.flow.levelRun?.session).world.gammaFade.done else { continue }
+            return (game.flowSteps, game.flow.levelRun?.iterations ?? -1, try XCTUnwrap(game.lastPresented))
+        }
+        XCTFail("no faded-in level-\(level) frame in 24,000 wakes")
+        return (0, 0, [])
+    }
+
     func testLevel10FirstFrameReference() throws {
         let (game, host) = try Self.game(level: 10)
         let f = try Self.firstLevelFrame(game, host, level: 10)
@@ -102,6 +118,11 @@ import XCTest
         XCTAssertEqual(Self.lit(f.rgba), 0)
         XCTAssertEqual([f.wakes, f.steps], [3513, 879])
         XCTAssertEqual(String(WinGame.fnv1a64(f.rgba), radix: 16), "742a0703fa4da325", "level 10's first presented frame")
+        // Leg 2 (S2): that frame is the fade's black start; the first frame with the fade done shows the level.
+        let lit10 = try Self.firstFadedInFrame(level: 10)
+        // Measured: flow step 959, the 41st iteration, 248,556 pixels lit.
+        XCTAssertEqual([lit10.steps, lit10.iterations, Self.lit(lit10.rgba)], [959, 41, 248_556])
+        XCTAssertEqual(String(WinGame.fnv1a64(lit10.rgba), radix: 16), "17aa796b2ef29b5", "level 10's first faded-in frame")
         // The hold: the same game twice, the twin's strip sprites removed (`.pxSprite`, 6A-S8's nine); both players put
         // at the strip golden's start (600, 1150) after the first frame. The first presented frame where the two differ
         // is the first that shows a strip pixel (the shell path drew mode 8).
@@ -143,26 +164,71 @@ import XCTest
         XCTAssertEqual(Self.lit(f.rgba), 0)
         XCTAssertEqual([f.wakes, f.steps], [2433, 609])
         XCTAssertEqual(String(WinGame.fnv1a64(f.rgba), radix: 16), "742a0703fa4da325", "level 11's first presented frame")
+        // Leg 2 (S2): the first frame with the fade done.
+        let lit11 = try Self.firstFadedInFrame(level: 11)
+        // Measured: flow step 689, the 41st iteration, 256,074 pixels lit.
+        XCTAssertEqual([lit11.steps, lit11.iterations, Self.lit(lit11.rgba)], [689, 41, 256_074])
+        XCTAssertEqual(String(WinGame.fnv1a64(lit11.rgba), radix: 16), "d02281f5e0d7cdca", "level 11's first faded-in frame")
+        // Leg 2 (S1): a twin game whose renderer runs level 11 with header 0x26ca patched to 0 (no ripple table, no
+        // fill: the backdrop rows unshifted), from the first level frame on — the first presented frame where the two
+        // differ is the first that shows the ripple through the shell.
+        let (twin, twinHost) = try Self.game(level: 11)
+        let g = try Self.firstLevelFrame(twin, twinHost, level: 11)
+        XCTAssertEqual([g.steps, g.wakes], [f.steps, f.wakes])
+        XCTAssertEqual(g.rgba, f.rgba)
+        do {
+            let res = try XCTUnwrap(twin.driver.resources.world.resource(type: "Mlvl", id: 11))
+            var d = res.data
+            XCTAssertEqual(d[d.startIndex + 0x26ca], 1)
+            d[d.startIndex + 0x26ca] = 0
+            let flat = try LevelFile(id: 11, data: d)
+            let tr = try XCTUnwrap(twin.driver.levelRenderer)
+            var p = try ParallaxBlitter(level: flat, faceSlots: [[UInt8]?](repeating: nil, count: ParallaxBlitter.slotCount))
+            p.faces = tr.parallax.faces
+            p.slotLoaded = tr.parallax.slotLoaded
+            p.omniPxActive = tr.parallax.omniPxActive
+            XCTAssertEqual(p.rippleTable.count, 0)
+            tr.parallax = p
+        }
+        try Self.put(twin, x: 16299, y: 600)
+        var twinLast = twin.flowSteps
+        var held = false
         // The hold: the player put at the ripple golden's start (16299, 600); the first presented frame whose view
         // reaches the river band — a backdrop row ≥ 512 (yb 256: rows track the view, v + 383 ≥ 0x200) — with the ripple
         // table filled there (6A-RP's rows 0x200 / 0x280).
         try Self.put(game, x: 16299, y: 600)
         var last = game.flowSteps
         for _ in 1...24_000 {
-            guard Self.wake(game, host, last: &last) else { continue }
+            let presented = Self.wake(game, host, last: &last)
+            XCTAssertEqual(Self.wake(twin, twinHost, last: &twinLast), presented)
+            guard presented else { continue }
             let s = try XCTUnwrap(game.flow.levelRun?.session)
             guard s.camera.scrollV + 383 >= 0x200 else { continue }
             let r = try XCTUnwrap(game.driver.levelRenderer)
             let rgba = try XCTUnwrap(game.lastPresented)
+            let flat = try XCTUnwrap(twin.lastPresented)
+            if held {
+                guard rgba != flat else { continue }
+                // Leg 2 (S1): measured — the first presented frame the ripple changes: flow step 629, the 11th iteration,
+                // the camera at (15744, 389); every pixel lit, 9,131 RGBA bytes the ripple moved.
+                XCTAssertEqual([game.flowSteps, game.flow.levelRun?.iterations ?? -1], [629, 11])
+                XCTAssertEqual([s.camera.scrollH, s.camera.scrollV], [15744, 389])
+                XCTAssertEqual([Self.lit(rgba), zip(rgba, flat).filter { $0 != $1 }.count], [307_200, 9_131])
+                XCTAssertEqual(String(WinGame.fnv1a64(rgba), radix: 16), "f8032383209e56e0", "level 11's first rippled frame")
+                return
+            }
+            held = true
+            // Leg 2 (S1): measured — the held frame below is the same with the ripple off (its river rows show no
+            // shifted pixel); the frame that does is pinned above.
+            XCTAssertEqual(rgba == flat, true, "the held frame with and without the ripple")
             // Measured: flow step 615, the fourth iteration (still fading in), the camera at (15744, 158) — rows 512…541
             // in view; the table −288 / −3302; 254,169 pixels lit.
             XCTAssertEqual(Self.lit(rgba), 254_169)
             XCTAssertEqual([game.flowSteps, game.flow.levelRun?.iterations ?? -1], [615, 4])
             XCTAssertEqual([s.camera.scrollH, s.camera.scrollV], [15744, 158])
             XCTAssertEqual([r.parallax.rippleTable[0x200], r.parallax.rippleTable[0x280]], [-288, -3302])
-            XCTAssertEqual(String(WinGame.fnv1a64(rgba), radix: 16), "ba061897f247a79f", "level 11's first ripple frame")
-            return
+            XCTAssertEqual(String(WinGame.fnv1a64(rgba), radix: 16), "ba061897f247a79f", "level 11's first frame with the river rows in view")
         }
-        XCTFail("no ripple row in 24,000 wakes")
+        XCTFail("no ripple row / rippled frame in 24,000 wakes")
     }
 }

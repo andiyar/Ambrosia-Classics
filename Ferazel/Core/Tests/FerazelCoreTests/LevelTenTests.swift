@@ -62,10 +62,40 @@ final class LevelTenTests: XCTestCase {
             XCTAssertEqual([rec(a).type, rec(a).p1, rec(a).p2, rec(b).type, rec(b).p1, rec(b).p2],
                            [2900, Int16(b), 0, 2900, Int16(a), 0], "passages \(a) ↔ \(b)")
         }
+        // Leg 2 (N1): the passage arm's partner scan itself (M l. 49594–49683) on 192 → 193: on the 0x16th transit
+        // frame the player moves to the idle entry of record p1, his offset from the passage kept.
+        do {
+            XCTAssertEqual(s.world.idle.inUseEntries(record: 193).count, 1)
+            let e = try XCTUnwrap(s.world.idle.entries[s.world.idle.inUseEntries(record: 193)[0]])
+            let id = s.world.active.insert(try setup(192).slot)
+            let pid = try XCTUnwrap(s.world.playerID)
+            let p0 = try XCTUnwrap(s.world.active.record(id: pid)), o = try XCTUnwrap(s.world.active.record(id: id))
+            s.world.player.doorTransit = 0x15
+            HitPlayerSprite.passage(s.world, player: pid, passage: id, keys: InputActions())
+            let p1 = try XCTUnwrap(s.world.active.record(id: pid))
+            XCTAssertEqual([p1.x - e.saved.x, p1.y - e.saved.y], [p0.x - o.x, p0.y - o.y], "passage 192 → 193")
+            XCTAssertEqual(s.world.player.doorTransit, -0x16)
+            s.world.player.doorTransit = 0
+            _ = s.world.active.remove(id: id)
+            s.world.active.update(id: pid) { $0 = p0 }
+        }
         // 2940 gates p1 201 / 270 (levels 1–5: −1, 90): `.HandleBoxSprite`'s gate opens on record[p1].p4 == 1 (M l.
         // 61000ff; `BoxSprite.gate`), and both name a button 1322, whose press writes its record's p4 = 1.
         for (g, b) in [(202, 201), (266, 270)] {
             XCTAssertEqual([rec(g).type, rec(g).p1, rec(b).type], [2940, Int16(b), 1322], "gate \(g)")
+            // Leg 2 (N1): the gate arm itself — shut with the button's p4 0 (no move at its start), open with p4 1
+            // (`+0x1c −= 0x200` while under 100 above its start).
+            for (p4, dy) in [(Int16(0), Int32(0)), (1, -0x200)] {
+                let b0 = s.world.records[b]
+                s.world.records[b] = Placement(index: b0.index, flag: b0.flag, byte1: b0.byte1, type: b0.type, p1: b0.p1,
+                                               p2: b0.p2, p3: b0.p3, p4: p4, y: b0.y, x: b0.x)
+                let id = s.world.active.insert(try setup(g).slot)
+                let y0 = try XCTUnwrap(s.world.active.record(id: id)).y256
+                BoxSprite.gateArm(s.world, id: id)
+                XCTAssertEqual(try XCTUnwrap(s.world.active.record(id: id)).y256 - y0, dy, "gate \(g), button p4 \(p4)")
+                _ = s.world.active.remove(id: id)
+                s.world.records[b] = b0
+            }
         }
         // 1307 torches p3 1 (levels 1–5: 0): `.SetupBonusSprite` M l. 52556–52561 — the light colour 0x58, not 0x16.
         for i in [10, 11, 12, 13, 14, 15, 16, 54, 55, 194, 195, 206, 207, 208, 209, 246, 247, 248, 289] {
@@ -73,7 +103,7 @@ final class LevelTenTests: XCTestCase {
             XCTAssertEqual(try setup(i).light?.colour, 0x58, "torch \(i)")
         }
         // 1401 blinking platforms p1 52 (mode 0x34; levels 1–5 p1 1 / 10), p2 25, p3 125, p4 0…100: the first Handle's
-        // `.DoSetupPlatformSprite` (M l. 54931–54948) — `+0x14c` = p1, `+0x150` = p2, `+0x154` = p3, `+0xa6` = p4,
+        // `.DoSetupPlatformSprite` (the 0x34 arm, M l. 54890–54906) — `+0x14c` = p1, `+0x150` = p2, `+0x154` = p3, `+0xa6` = p4,
         // `+0x46` 0 inside the on-time (p4 < p2) else 0x14.
         for i in [57, 99, 100, 101, 102, 103, 104, 105] {
             let p = rec(i)
@@ -89,6 +119,34 @@ final class LevelTenTests: XCTestCase {
         // 1410 catapult p1 1 (levels 1–5: 2): only p1 == 2 makes it walk-through in `.HitPlayerSprite`'s Platform arm
         // (M l. 49124–49147) — this one is solid.
         XCTAssertEqual([rec(278).type, rec(278).p1], [1410, 1])
+        // Leg 2 (N1): the arm itself — the player standing into the catapult's top is bounced off it (p1 1: solid);
+        // the same contact with the record's p1 2 leaves him where he was (walk-through).
+        do {
+            let pid = try XCTUnwrap(s.world.playerID)
+            let p0 = try XCTUnwrap(s.world.active.record(id: pid))
+            let saved = s.world.records[278]
+            var moved: [Bool] = []
+            for p1 in [Int16(1), 2] {
+                s.world.records[278] = Placement(index: saved.index, flag: saved.flag, byte1: saved.byte1, type: saved.type,
+                                                 p1: p1, p2: saved.p2, p3: saved.p3, p4: saved.p4, y: saved.y, x: saved.x)
+                let id = s.world.active.insert(try setup(278).slot)
+                PlatformSprite.doSetup(s.world, id: id)
+                let c = try XCTUnwrap(s.world.active.record(id: id))
+                s.world.active.update(id: pid) { p in
+                    p = p0
+                    p.x = c.x + c.hotRect.left; p.y = c.y + c.hotRect.top - p0.hotRect.bottom + 4
+                    p.x256 = Int32(p.x) << 8; p.y256 = Int32(p.y) << 8; p.vx = 0; p.vy = 0x200
+                }
+                let before = try XCTUnwrap(s.world.active.record(id: pid))
+                HitPlayerSprite.hit(s.world, player: pid, other: id)
+                let after = try XCTUnwrap(s.world.active.record(id: pid))
+                moved.append([after.y256, after.vy] != [before.y256, before.vy])
+                _ = s.world.active.remove(id: id)
+            }
+            XCTAssertEqual(moved, [true, false], "1410 p1 1 solid, p1 2 walk-through")
+            s.world.records[278] = saved
+            s.world.active.update(id: pid) { $0 = p0 }
+        }
         // 1485 balls p1 12 / 14, p2 100 / 150, p3 90 / 100 / 1400, p4 0 / 210 (levels 1–5: p1 12, p2 120, p3 0, p4 190 /
         // 350): `.SetupBackgroundSprite` M l. 62312–62427 — mode p1; 12 → `.MakeRadial(r p2, speed 0, angle p4, g p3,
         // persp 1)`, 14 → `(r p2, speed p3, angle p4, g 0, persp 2)` with the spokes 0x59c; p2 / 16 spokes.
@@ -107,7 +165,8 @@ final class LevelTenTests: XCTestCase {
             XCTAssertFalse(spokes.isEmpty, "ball \(i)'s spokes")
         }
         // 1700 p3 3, 1705 p3 5 (levels 1–5: 0 / 1): the Walker tier (`.SetupWalkerSprite` M l. 57008–57078) —
-        // cooldown 0xd / 10, HP 0x3b6 / 0x352, mode 0x10012 / 0x10014.
+        // cooldown 0xd / 10, HP 0x3b6 / 0x352, mode 0x10012 / 0x10014. 1705 p3 ≥ 3 also reaches the spear guard
+        // Handle's friction 0.7 arm (`.HandleWalkerSprite` M l. 57818: p3 < 3 → 0.9, else 0.7; pinned on level 11).
         let w236 = try setup(236).slot, w44 = try setup(44).slot
         XCTAssertEqual([Int(w236.classWord158), Int(w236.hp), Int(w236.mode)], [0xd, 0x3b6, 0x10012])
         XCTAssertEqual([Int(w44.classWord158), Int(w44.hp), Int(w44.mode)], [10, 0x352, 0x10014])
@@ -161,16 +220,61 @@ final class LevelTenTests: XCTestCase {
             XCTAssertEqual(Set(e.children.map(\.type)), [0x74c], "swarm \(i)")
             XCTAssertEqual(e.slot.classWord154, 0x4b)
         }
-        // The platforms 1407 p1 3: the raft arm (M l. 54642–54649).
+        // The platforms 1407 p1 3: the raft arm (M l. 54641–54648).
         for i in [256, 258] {
             let id = s.world.active.insert(try setup(i).slot)
             PlatformSprite.doSetup(s.world, id: id)
             let q = try XCTUnwrap(s.world.active.record(id: id))
             XCTAssertEqual([Int(q.subtype), Int(q.buoyancy), Int(q.gravity)], [3, 0x50, 0x15e], "raft \(i)")
+            // Leg 2: the rest of the raft arm (M l. 54641–54648): sag 0x2d, push mass 0x3c, the rect (5, 6, 0x1e, 0x4c).
+            XCTAssertEqual([Int(q.sag), Int(q.pushMass), q.hotRect.top, q.hotRect.left, q.hotRect.bottom, q.hotRect.right],
+                           [0x2d, 0x3c, 5, 6, 0x1e, 0x4c], "raft \(i)")
             _ = s.world.active.remove(id: id)
         }
-        // The Walkers 1750 (p1 0 / 1, p3 0 / 1): p1 is read by no Setup or Handle arm of the 1750 (M l. 56898–57100);
-        // p3 1 → the tier's HP 500 (the 1750 column).
+        // Leg 2: the geysers 121 / 307 (1440, p1…p4 all 0 — first placed here): the defaults of the geyser arm of
+        // `.SetupBoxSprite` — target 0x6400 (p1 0), on / off 0x3c (p2 / p3 0), `+0xa6` = p4, the top margin target >> 8,
+        // a single base (kind 0, type 0x5a0).
+        for i in [121, 307] {
+            XCTAssertEqual([rec(i).type, rec(i).p1, rec(i).p2, rec(i).p3, rec(i).p4], [1440, 0, 0, 0, 0], "geyser \(i)")
+            let g = try setup(i).slot
+            XCTAssertEqual([Int(g.geyserTarget), Int(g.geyserOn), Int(g.geyserOff), Int(g.counterA6), g.margins.top,
+                            Int(g.geyserKind), Int(g.geyserTriple), Int(g.type)],
+                           [0x6400, 0x3c, 0x3c, 0, 0x64, 0, 0, 0x5a0], "geyser \(i)")
+        }
+        // Leg 2 (N3): the cannons 1091 (88), 1094 (90), 1095 (144), 1093 (145), 1096 (153, 154), p1 0: launch speed
+        // 9000 (M l. 62113–62118).
+        for i in [88, 90, 144, 145, 153, 154] {
+            XCTAssertEqual(rec(i).p1, 0, "cannon \(i)")
+            XCTAssertEqual(try setup(i).slot.launchSpeed, 9000, "cannon \(i)")
+        }
+        // Leg 2: the sphere 1330 (227) — the sphere arm of `.SetupBonusSprite` (M l. 52710–52720): its own face 1330
+        // for the Handle, rect (0, 0, 0x20, 0x1b); the item 3217 (310), p1 0 — gravity kept (only p1 ≠ 0 zeroes it,
+        // M l. 52703–52706).
+        let sphere = try setup(227).slot
+        XCTAssertEqual(sphere.face, FaceRef(pict: 1330, index: 0, set: .encoded), "the face the Handle draws, cell 0")
+        XCTAssertEqual([sphere.hotRect.top, sphere.hotRect.left, sphere.hotRect.bottom, sphere.hotRect.right],
+                       [0, 0, 0x1b, 0x20])
+        XCTAssertEqual([rec(310).type, rec(310).p1], [3217, 0])
+        XCTAssertNotEqual(try setup(310).slot.gravity, 0, "item 3217 p1 0: gravity kept")
+        // Leg 2 (N1): the teleporter's live p1 chooses the entry `.TeleportPlayer` moves the player to (M l. 49416ff.):
+        // 203 → the idle entry of record 204, the player's offset from the teleporter kept.
+        do {
+            let tel = s.world.active.insert(try setup(203).slot)
+            let pid = try XCTUnwrap(s.world.playerID)
+            let p0 = try XCTUnwrap(s.world.active.record(id: pid)), o = try XCTUnwrap(s.world.active.record(id: tel))
+            s.world.player.teleportTail = tel
+            let matched = HitPlayerSprite.teleportMove(s.world, player: pid) {}
+            XCTAssertEqual(matched.map { s.world.idle.entries[$0]?.saved.recordIndex }, [204])
+            let e = try XCTUnwrap(s.world.idle.entries[try XCTUnwrap(matched.first)])
+            let p1 = try XCTUnwrap(s.world.active.record(id: pid))
+            XCTAssertEqual([p1.x - e.saved.x, p1.y - e.saved.y], [p0.x - o.x, p0.y - o.y], "the offset kept")
+            s.world.player.teleportTail = nil
+            _ = s.world.active.remove(id: tel)
+        }
+        // The Walkers 1750 (p1 0 / 1, p3 0 / 1): p1 is read by no Setup or Handle arm of the 1750 (`.SetupWalkerSprite`
+        // M l. 56898–57100; `.AxGoblinCoreLogic` M l. 57101–57344 reads no record word; `.HandleWalkerSprite` reads a
+        // record's p1 only in the 1700 arm, M l. 57663, and the 1760 arm, M l. 58052); p3 1 → the tier's HP 500 (the
+        // 1750 column).
         for i in [30, 31, 41, 42, 43, 159, 160, 161] where rec(i).p3 == 1 {
             XCTAssertEqual(try setup(i).slot.hp, 500, "1750 \(i)")
         }
@@ -255,6 +359,7 @@ final class LevelTenTests: XCTestCase {
         // The dump links them through the parent's member block `+0x9c` and those two centre words only: no store to a
         // member's `+0x1d4` (M l. 68160–68213).
         let s = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: 10, seed: 1)
+        let L10 = try LevelFile.load(from: r, level: 10)
         func swarm(_ rec: Int16) throws -> (parent: SpriteSlot, members: [SpriteSlot]) {
             XCTAssertNil(s.world.active.sprites.first { $0.recordIndex == rec }, "swarm \(rec): its parent is not active")
             let e = try XCTUnwrap(s.world.idle.entries.compactMap { $0 }.first { $0.saved.recordIndex == rec })
@@ -285,6 +390,90 @@ final class LevelTenTests: XCTestCase {
             }
             if !before.isEmpty { XCTAssertNotEqual(positions, before, "frame \(frame): the members still move") }
             before = positions
+        }
+        // Leg 2 (S4): the parent ACTIVE, then idled by the player leaving its margins. Swarm 170 brought in (the player
+        // put on its centre): while it runs, its Handle re-writes every member's `+0x14c` / `+0x150` to its own x, y each
+        // frame; one member killed → alive 7 of 8, its slot dropped; the player gone again → the parent idles with that
+        // block, the members (record 0x200) are never idle entries, never counted (`countIfWindow` is the centre's
+        // only), and keep moving while it is idle.
+        do {
+            let (parent0, members0) = try swarm(170)
+            let ids = try XCTUnwrap(parent0.swarm?.members)
+            XCTAssertTrue(members0.allSatisfy { !$0.countedInTotals }, "members never counted")
+            XCTAssertTrue(parent0.countedInTotals, "the centre is counted (`countIfWindow`, M l. 68210–68213)")
+            let live0 = s.world.enemies.live
+            let pid = try XCTUnwrap(s.world.playerID)
+            func put(_ x: Int, _ y: Int) {
+                s.world.active.update(id: pid) { p in
+                    p.x = x; p.y = y; p.x256 = Int32(x) << 8; p.y256 = Int32(y) << 8; p.vx = 0; p.vy = 0
+                }
+            }
+            func active170() -> SpriteSlot? { s.world.active.sprites.first { $0.recordIndex == 170 } }
+            func noMemberIdle() -> Bool { !s.world.idle.entries.contains { $0?.saved.recordIndex == 0x200 } }
+            put(parent0.x, parent0.y)
+            var k = 0
+            while active170() == nil && k < 200 { _ = s.step(keys: KeyState()); k += 1 }
+            XCTAssertEqual(k, 1, "measured: brought in on the first frame")
+            var centres: Set<[Int]> = []
+            for _ in 0..<10 {
+                // The Handle writes the centre before its own move (step 6, `+0x14 += vx`): the members carry the
+                // parent's position as the frame found it.
+                let q = try XCTUnwrap(active170())
+                _ = s.step(keys: KeyState())
+                let p = try XCTUnwrap(active170())
+                XCTAssertEqual(p.swarm?.members, ids)
+                for id in ids {
+                    let m = try XCTUnwrap(id.flatMap { s.world.active.record(id: $0) })
+                    XCTAssertEqual([Int(m.classTimer), Int(m.classWord150)], [Int(Int16(truncatingIfNeeded: q.x)),
+                                                                               Int(Int16(truncatingIfNeeded: q.y))],
+                                   "the active parent's Handle re-centres its members")
+                    centres.insert([Int(m.classTimer), Int(m.classWord150)])
+                }
+                XCTAssertTrue(noMemberIdle())
+            }
+            XCTAssertGreaterThan(centres.count, 1, "the parent moved, its members' centre with it")
+            XCTAssertEqual(s.world.enemies.live, live0, "no member counted on the way in")
+            let victim = try XCTUnwrap(ids[0])
+            s.world.active.update(id: victim) { $0.dead = true }
+            for _ in 0..<2 { _ = s.step(keys: KeyState()) }
+            let p = try XCTUnwrap(active170())
+            XCTAssertEqual([Int(p.swarm?.alive ?? -1), Int(p.swarm?.total ?? -1)], [7, 8])
+            XCTAssertNil(p.swarm?.members.first ?? nil, "the dead member's slot dropped")
+            put(Int(L10.header.startX), Int(L10.header.startY))
+            k = 0
+            while active170() != nil && k < 200 { _ = s.step(keys: KeyState()); k += 1 }
+            XCTAssertLessThan(k, 200, "idled again")
+            func idleMembers() throws -> (SpriteSlot, [SpriteSlot]) {
+                let e = try XCTUnwrap(s.world.idle.entries.compactMap { $0 }.first { $0.saved.recordIndex == 170 })
+                XCTAssertNil(e.activeID)
+                return (e.saved, (e.saved.swarm?.members ?? []).compactMap { $0.flatMap { s.world.active.record(id: $0) } })
+            }
+            let (parent1, members1) = try idleMembers()
+            XCTAssertEqual([Int(parent1.swarm?.alive ?? -1), members1.count], [7, 7])
+            XCTAssertEqual(parent1.swarm?.members.dropFirst().map { $0 }, ids.dropFirst().map { $0 })
+            let at = members1.map { [$0.x, $0.y] }
+            for _ in 0..<5 { _ = s.step(keys: KeyState()) }
+            XCTAssertNotEqual(try idleMembers().1.map { [$0.x, $0.y] }, at, "members run on while the parent idles")
+            XCTAssertTrue(noMemberIdle())
+        }
+        // Leg 2 (S4): level 11's swarms 60 / 61 (p1 8: member type 8) are linked the same way — eight members each,
+        // record 0x200, the member Handle, the centre words the parent's x, y, no `+0x1d4` link.
+        do {
+            let s11 = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: 11, seed: 1)
+            for rec in [Int16(60), 61] {
+                let parent = try XCTUnwrap(s11.world.active.sprites.first { $0.recordIndex == rec }
+                    ?? s11.world.idle.entries.compactMap { $0?.saved }.first { $0.recordIndex == rec }, "swarm \(rec)")
+                let ids = try XCTUnwrap(parent.swarm?.members)
+                XCTAssertEqual(ids.count, 8)
+                for id in ids {
+                    let m = try XCTUnwrap(id.flatMap { s11.world.active.record(id: $0) }, "swarm \(rec)")
+                    XCTAssertEqual([Int(m.recordIndex), Int(m.type), Int(m.classTimer), Int(m.classWord150)],
+                                   [0x200, 8, parent.x, parent.y], "swarm \(rec)")
+                    XCTAssertEqual(m.handler, .swarmMember)
+                    XCTAssertNil(m.siblings.first)
+                    XCTAssertFalse(m.countedInTotals)
+                }
+            }
         }
 
         // Level 11's path bat 201 (1851 = 0x73b, p1 −2: path mode 2, p2 360, p3 700, p4 200 — p4 read by no Bat arm):

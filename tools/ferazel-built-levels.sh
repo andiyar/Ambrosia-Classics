@@ -2,8 +2,8 @@
 # Ferazel's Wand — the built-level list (6A-BL), printed for the scripts from its one source line.
 #
 # Prints `BuiltLevels.list` (Ferazel/Core/Sources/FerazelCore/Front/BuiltLevels.swift) as one comma-separated line,
-# e.g. `1,2,3,4,5`. It reads exactly one line of the shape
-#     public static let list: [Int] = [1, 2, 3, 4, 5]
+# e.g. `1,2,3,4,5,10,11`. It reads exactly one line of the shape
+#     public static let list: [Int] = [1, 2, 3, 4, 5, 10, 11]
 # (leading and trailing blanks allowed, nothing else on the line); `BuiltLevelsTests.testBuiltLevelsSourceLineParses`
 # pins the same parse in Swift, so the scripts and the code cannot drift. The visit sweep and the random-play bot take
 # their level scope from here and check FERAZEL_VISIT_LEVELS / FERAZEL_BOT_LEVELS against it.

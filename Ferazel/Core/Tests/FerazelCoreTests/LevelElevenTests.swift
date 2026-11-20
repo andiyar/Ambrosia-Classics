@@ -39,6 +39,10 @@ final class LevelElevenTests: XCTestCase {
         XCTAssertEqual(run.music.currentTrack, 6)
         let session = try XCTUnwrap(run.session)
         XCTAssertEqual(session.globals.startFacing, 1)
+        // Leg 2: …and the player sprite reads it (`.SetupPlayerSprite` `+0x17e`, facing 1 = left).
+        let player = try XCTUnwrap(session.world.playerID.flatMap { session.world.active.record(id: $0) })
+        XCTAssertTrue(player.mirrored, "the player starts facing left")
+        XCTAssertEqual(session.world.player.facing, 1)
 
         try traceLevel11(r, L)
     }
@@ -57,8 +61,37 @@ final class LevelElevenTests: XCTestCase {
             XCTAssertEqual([rec(i).type, rec(i).p1, rec(i).p2], [1250, 2, 162], "switch block \(i)")
         }
         XCTAssertEqual(rec(162).type, 1322)
+        // Leg 2 (N1): the arm itself — with button 162's p4 1 the block is solid (rect (1, 1, 0x23, 0x23)), with p4 0 it
+        // is empty.
+        let button = s.world.records[162]
+        for p4 in [Int16(1), 0] {
+            s.world.records[162] = Placement(index: button.index, flag: button.flag, byte1: button.byte1,
+                                             type: button.type, p1: button.p1, p2: button.p2, p3: button.p3, p4: p4,
+                                             y: button.y, x: button.x)
+            for i in [158, 164, 165, 166, 168] {
+                let id = s.world.active.insert(try setup(i).slot)
+                BoxSprite.switchBlockArm(s.world, id: id)
+                let r = try XCTUnwrap(s.world.active.record(id: id)).hotRect
+                XCTAssertEqual([r.top, r.left, r.bottom, r.right], p4 == 1 ? [1, 1, 0x23, 0x23] : [0, 0, 0, 0],
+                               "switch block \(i), button p4 \(p4)")
+                _ = s.world.active.remove(id: id)
+            }
+        }
+        s.world.records[162] = button
         // 2940 gate p1 142 (levels 1–5: −1, 90): opens on record[142].p4 == 1 — a button 1322.
         XCTAssertEqual([rec(138).type, rec(138).p1, rec(142).type], [2940, 142, 1322])
+        // Leg 2 (N1): the gate arm — shut while button 142's p4 is 0, opening (`+0x1c −= 0x200`) once it is 1.
+        let b142 = s.world.records[142]
+        for (p4, dy) in [(Int16(0), Int32(0)), (1, -0x200)] {
+            s.world.records[142] = Placement(index: b142.index, flag: b142.flag, byte1: b142.byte1, type: b142.type,
+                                             p1: b142.p1, p2: b142.p2, p3: b142.p3, p4: p4, y: b142.y, x: b142.x)
+            let id = s.world.active.insert(try setup(138).slot)
+            let y0 = try XCTUnwrap(s.world.active.record(id: id)).y256
+            BoxSprite.gateArm(s.world, id: id)
+            XCTAssertEqual(try XCTUnwrap(s.world.active.record(id: id)).y256 - y0, dy, "gate 138, button p4 \(p4)")
+            _ = s.world.active.remove(id: id)
+        }
+        s.world.records[142] = b142
         // 2900 passages 102 ↔ 103, 136 ↔ 137, p2 0 (the darkness arm `// later` not reached).
         for (a, b) in [(102, 103), (136, 137)] {
             XCTAssertEqual([rec(a).type, rec(a).p1, rec(a).p2, rec(b).type, rec(b).p1, rec(b).p2],
@@ -76,10 +109,19 @@ final class LevelElevenTests: XCTestCase {
         XCTAssertEqual([Int(ball.subtype), Int(radial.radius >> 8), Int(radial.speed), Int(radial.angle >> 8),
                         Int(radial.gravity), Int(radial.persp)], [12, 120, 0, 190, 90, 1])
         XCTAssertEqual(sp.records[210].p3, 90, "p3 ≠ 0 is kept, not defaulted")
-        // 1705 p3 3 (levels 1–5: 0 / 1): tier 3 — cooldown 0xd, HP 0x3b6, mode 0x10012 (M l. 57008–57078).
+        // 1705 p3 3 (levels 1–5: 0 / 1): tier 3 — cooldown 0xd, HP 0x3b6, mode 0x10012 (M l. 57008–57078); the spear
+        // guard Handle's friction 0.7 (`.HandleWalkerSprite` M l. 57818).
         for i in [203, 262, 357] {
             let w = try setup(i).slot
             XCTAssertEqual([Int(w.classWord158), Int(w.hp), Int(w.mode)], [0xd, 0x3b6, 0x10012], "1705 \(i)")
+            // Leg 2 (N2): p3 3 also reaches the Handle's other friction arm (M l. 57818: p3 < 3 → 0.9, else 0.7) —
+            // vx 1000 → 700 (0.9 would give 900).
+            let id = s.world.active.insert(w)
+            s.world.active.update(id: id) { $0.vx = 1000 }
+            Walker.spearGuardArm(s.world, id: id)
+            XCTAssertEqual(try XCTUnwrap(s.world.active.record(id: id)).vx, 700,
+                           "1705 \(i): friction 0.7")
+            _ = s.world.active.remove(id: id)
         }
         // 1750 p3 5 (record 167): tier 5 in the 1750 column — cooldown 10, HP 0x5dc, mode 0x10014.
         let ax = try setup(167).slot
@@ -123,6 +165,23 @@ final class LevelElevenTests: XCTestCase {
                            p3: bat.p3, p4: 0, y: bat.y, x: bat.x)
         XCTAssertEqual(try setup(201).slot, try SetupFaces.setup(b0, context: c).slot)
         XCTAssertEqual(try setup(201).slot.pathMode, 2)
+        // Leg 2: p1 < 0 (201 and 304, p1 −2) → the 1850 family's back arm (M l. 68262–68268): layer 8, `+0x160` 1 (the
+        // 0x73b faces), not counted.
+        for i in [201, 304] {
+            let b = try setup(i).slot
+            XCTAssertEqual([Int(rec(i).type), Int(b.layer), Int(b.classWord160)], [1851, 8, 1], "bat \(i)")
+            XCTAssertFalse(b.countedInTotals, "bat \(i)")
+        }
+        // Leg 2: the retracting spikes 1840 (224, 225 — 0x730) and 1843 (232, 233 — 0x733), p1…p4 all 0, first placed
+        // here (M l. 62279–62309, 62440–62480): `+0x150` 32000 (p2 0: never retracts), `+0x154` p3, `+0xa6` p4, out
+        // (`+0x46` 0), HP 500; 0x733 keeps its y in `+0x158`.
+        for i in [224, 225, 232, 233] {
+            let p = rec(i), k = try setup(i).slot
+            XCTAssertEqual([p.p1, p.p2, p.p3, p.p4], [0, 0, 0, 0], "spikes \(i)")
+            XCTAssertEqual([Int(k.classTimer), Int(k.classWord150), Int(k.classWord154), Int(k.counterA6), Int(k.phase),
+                            Int(k.hp)], [0, 32000, 0, 0, 0, 500], "spikes \(i)")
+            if p.type == 1843 { XCTAssertEqual(Int(k.classWord158), k.y, "spikes \(i)") }
+        }
         // The cannons 1092 (record 284) and 1096 (78, 79), p1 0: launch speed 9000 (M l. 62113–62118).
         for i in [284, 78, 79] { XCTAssertEqual(try setup(i).slot.launchSpeed, 9000, "cannon \(i)") }
         // Nimbo 2955 (record 135): p1 206 is the conversation the NPC arm opens (`testLevel11NimboConversationOnContact`).

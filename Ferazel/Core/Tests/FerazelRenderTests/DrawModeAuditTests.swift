@@ -1019,21 +1019,23 @@ final class DrawModeAuditTests: XCTestCase {
     /// `.InitSprite`'s clip (`SpriteSlot.clip`, `.StandardSpriteHandles`' reset): the whole face.
     static let openClip = SpriteClip(left: 0, right: 32000, bottom: 32000, top: 0)
 
-    /// The widest loaded face (the transforms' and the erase twins' bound) and a small one, by PICT order. The trees'
-    /// faces (0xc08…0xc0f, up to 301 wide; 6A-TR) are left out: no rotation or scale writer names a tree
-    /// (`.untransformableNotTransformed`'s tree check), so a rotated or scaled probe on one asks for a draw the game never
-    /// makes (6A-L10L11: level 10 is the first built level to load one; on levels 1–5 the probes are unchanged).
-    private static func probeFaces(_ r: FrameRenderer) -> [FaceRef] {
-        var wide: (FaceRef, Int)?, small: (FaceRef, Int)?
-        for (pict, s) in r.sprites.faces.sheets.sorted(by: { $0.key < $1.key })
-            where !BackgroundSprite.trees.contains(pict) {
+    /// The widest loaded face (the erase twins' bound), the widest a rotation or scale may name (the transforms'
+    /// bound) and a small one, by PICT order. The trees' faces (0xc08…0xc0f, up to 301 wide; 6A-TR) are left out of the
+    /// second only: no rotation or scale writer names a tree (`.untransformableNotTransformed`'s tree check), so a
+    /// rotated or scaled probe on one asks for a draw the game never makes; the plain mode-word, mirror and clip probes
+    /// keep them (6A-L10L11: level 10 is the first built level to load one; on levels 1–5 the two are the same face).
+    private static func probeFaces(_ r: FrameRenderer) -> (wide: FaceRef, transformable: FaceRef, small: FaceRef)? {
+        var wide: (FaceRef, Int)?, wideT: (FaceRef, Int)?, small: (FaceRef, Int)?
+        for (pict, s) in r.sprites.faces.sheets.sorted(by: { $0.key < $1.key }) {
             for (i, f) in s.faces.enumerated() where f.height > 4 {
                 let ref = FaceRef(pict: pict, index: i, set: .encoded)
                 if f.width > (wide?.1 ?? -1) { wide = (ref, f.width) }
+                if !BackgroundSprite.trees.contains(pict) && f.width > (wideT?.1 ?? -1) { wideT = (ref, f.width) }
                 if f.width >= 0x18 && f.width < (small?.1 ?? Int.max) { small = (ref, f.width) }
             }
         }
-        return [wide?.0, small?.0].compactMap { $0 }
+        guard let wide, let wideT, let small else { return nil }
+        return (wide.0, wideT.0, small.0)
     }
 
     /// Every value of every row drawn on `a`'s level (each distinct value once), under each transform the renderer
@@ -1042,8 +1044,9 @@ final class DrawModeAuditTests: XCTestCase {
         let r = a.level.renderer
         var pad = Pad(r)
         var failures: [String] = []
-        let faces = probeFaces(r)
-        guard let wide = faces.first, let small = faces.last else { return ["level \(a.level.number): no probe face"] }
+        guard let faces = probeFaces(r) else { return ["level \(a.level.number): no probe face"] }
+        let wide = faces.wide, wideT = faces.transformable, small = faces.small
+        func face(_ rot: Int16, _ sc: Int16 = 0x100) -> FaceRef { rot == 0 && sc == 0x100 ? wide : wideT }
         // Every probe has the whole face (`openClip`), reaches its mode read (checked), and each place / transform is
         // proved once by the control draw.
         var proved = Set<String>()
@@ -1091,11 +1094,11 @@ final class DrawModeAuditTests: XCTestCase {
             guard transformSafe.contains(m) else { continue }
             for mirrored in [false, true] {
                 for rot: Int16 in [90, 359] {
-                    put(SpriteDraw(face: wide, x: 120, y: 100, mode: word, mirrored: mirrored, rotation: rot),
+                    put(SpriteDraw(face: wideT, x: 120, y: 100, mode: word, mirrored: mirrored, rotation: rot),
                         "\(site) word \(hex(word)) rotation \(rot)")
                 }
                 for sc: Int16 in [0x5f, 0x133] {
-                    put(SpriteDraw(face: wide, x: 120, y: 100, mode: word, mirrored: mirrored, scale: sc),
+                    put(SpriteDraw(face: wideT, x: 120, y: 100, mode: word, mirrored: mirrored, scale: sc),
                         "\(site) word \(hex(word)) scale \(sc)")
                 }
             }
@@ -1106,7 +1109,7 @@ final class DrawModeAuditTests: XCTestCase {
                     "\(site) rotation \(rot)")
             }
             if rot % 45 == 1 || rot == 359 {
-                put(SpriteDraw(face: wide, x: 120, y: 100, mode: 0xc0000, mirrored: true, rotation: Int16(rot)),
+                put(SpriteDraw(face: wideT, x: 120, y: 100, mode: 0xc0000, mirrored: true, rotation: Int16(rot)),
                     "\(site) rotation \(rot) wide")
             }
         }
@@ -1114,7 +1117,7 @@ final class DrawModeAuditTests: XCTestCase {
             put(SpriteDraw(face: small, x: 120, y: 100, mode: 0xc0000, scale: Int16(sc)), "\(site) scale \(sc)")
             if sc % 32 == 0 || sc == 0x133 {
                 for mirrored in [false, true] {
-                    put(SpriteDraw(face: wide, x: 120, y: 100, mode: 0xc0000, mirrored: mirrored, scale: Int16(sc)),
+                    put(SpriteDraw(face: wideT, x: 120, y: 100, mode: 0xc0000, mirrored: mirrored, scale: Int16(sc)),
                         "\(site) scale \(sc) wide")
                 }
             }
@@ -1122,7 +1125,7 @@ final class DrawModeAuditTests: XCTestCase {
         for (n, site) in flashes.sorted(by: { $0.key < $1.key }) {
             for table: UInt8 in [0, 1] {
                 for rot: Int16 in [0, 90] {
-                    put(SpriteDraw(face: wide, x: 120, y: 100, rotation: rot, flash: Int16(n), flashTable: table),
+                    put(SpriteDraw(face: face(rot), x: 120, y: 100, rotation: rot, flash: Int16(n), flashTable: table),
                         "\(site) flash \(n) table \(table) rotation \(rot)")
                 }
             }
@@ -1132,7 +1135,7 @@ final class DrawModeAuditTests: XCTestCase {
                 for row in [1, 5] {
                     for mirrored in [false, true] {
                         for rot: Int16 in [0, 90] {
-                            put(SpriteDraw(face: wide, x: 120, y: 100, mirrored: mirrored, lightOverlay: true,
+                            put(SpriteDraw(face: face(rot), x: 120, y: 100, mirrored: mirrored, lightOverlay: true,
                                            waterRow: row, rotation: rot, waterKind: k),
                                 "\(site) water kind \(k) row \(row) rotation \(rot)")
                         }
@@ -1178,7 +1181,7 @@ final class DrawModeAuditTests: XCTestCase {
                         var shapes: [(Int16, Int16)] = [(0, 0x100)]
                         if transforms && transformSafe.contains(m) { shapes += [(90, 0x100), (0, 0x5f), (359, 0x133)] }
                         for (rot, sc) in shapes {
-                            let d = SpriteDraw(face: wide, x: 100, y: 100, mode: word, mirrored: mirrored, clip: clip,
+                            let d = SpriteDraw(face: face(rot, sc), x: 100, y: 100, mode: word, mirrored: mirrored, clip: clip,
                                                lightOverlay: true, rotation: rot, scale: sc, randomSeed: seed)
                             if pad.reaches(d) { clipDrawn += 1 }
                             if let e = pad.draw(d) {

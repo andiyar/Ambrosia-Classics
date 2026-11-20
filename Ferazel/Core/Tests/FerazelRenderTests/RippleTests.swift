@@ -185,8 +185,8 @@ final class RippleTests: XCTestCase {
         XCTAssertEqual(b.rippleTable[0x47f], before[0x47f] - 3)
         XCTAssertEqual(b.rippleTable[0x300], Int32.min, "a 32-bit add")
         XCTAssertEqual([b.rippleTable[0x1ff], b.rippleTable[0x480]], [0, 0])
-        // A level without the flag (level 1 — and every built level, levels 1–5: header 0x26ca = 0): no table, no add,
-        // no fill — the compositor's offsets stay 0.
+        // A level without the flag (level 1 — and every built level but 11: levels 1–5 checked here, level 10 in
+        // `LevelTenTests`, header 0x26ca = 0): no table, no add, no fill — the compositor's offsets stay 0.
         for n: Int16 in 1...5 {
             let plain = try level(n)
             XCTAssertEqual(plain.header.parallaxRipple, 0, "level \(n)")
@@ -435,8 +435,8 @@ final class RippleTests: XCTestCase {
 
     /// 6A-T11's switch-off check (ENG §2.6): level 11's fixture with the header patch forcing `0x26c6`
     /// (`submergedFaces`) to 0 — the feature golden's start and frame — changes the feature golden; levels 1–5 hold 0
-    /// there, so nothing reads it on a built level and their goldens (FrameGoldenTests, Phase2GoldenTests,
-    /// BootFacesTests) cannot move.
+    /// there (checked here; level 10 too, in `LevelTenTests` — of the built levels only 11 sets it), so nothing reads it
+    /// on those levels and their goldens (FrameGoldenTests, Phase2GoldenTests, BootFacesTests) cannot move.
     func testLevel11SubmergedSwitchOff() throws {
         let res = try LevelFixture.base.get()
         for n: Int16 in 1...5 {
