@@ -1817,6 +1817,40 @@ ids; its `--check` reads this table):
   2956 → 220 / 221 by record, 2962 → 300; the flag-99 record does not talk) · `testTeleporterSheetsSpawnable`
   (`FaceTests.testEverySpawnableTypeHasSheet`'s rule holds for the new types).
 - **Gate:** Gate-F (G2 713). **Commit:** `FerazelCore: teleporter faces, furniture and NPCs of levels 10–22; 4 tests`.
+- **As executed — 6A-BX1b (run 54):** task aae8457 (4 tests, all in `BoxTalkerTests`), ledger a9600cc, review fix
+  round 0c44f1a (asserts inside the named tests, two comments, the audit's anchors) and its ledger ff7672d.
+  Ferazel/Core 709 → 713; the fix round added no test (D51.2). **What was built, per type:** the teleporters 1061
+  (× 14, level 21) and 1060 (× 8, level 22) are faced at Setup from the boot singles 0x425 / 0x424 and mark no
+  picture-cache record; the furniture 2921 (× 2, level 21, single #118) and the NPCs 2955 (× 1, level 11, single
+  #60), 2956 (× 1, level 22, single #61, plus level 11's dormant record 283 with flag 99, which is never spawned) and
+  2962 (× 1, level 21, single #67) get their faces in the Setup-face table and mark their singles (all flag 0); the
+  Handle faces them. **The conversations:** on contact 2955 opens Mcnv 206, 2962 opens 300, level 22's 2956 opens
+  221; record 283 opens 220 only once armed (flag 1). **The water check is live:** level 21's teleporters 193 and
+  200 stand on a liquid cell and get draw mode 0x90000; the other 20 are dry. **The merged arm:** the Setup's
+  teleporter case now covers 0x424…0x426 in one arm, because the original's three arms are identical apart from the
+  face (M l. 58953–58963, 58984–58994, 59012–59022); 0x426 behaves as before, and 1060 / 1061 now reach the audited
+  water-mode writer (`DrawModeAuditTests`' `box.teleporter` row, value unchanged); the arm's comment says so.
+  **Pinned value moved (named by the card):** `CachedFacesTests`' level-22 load bar [33, 168, 336, 33] →
+  [34, 169, 338, 34] — the eight 1060 now set up but mark nothing, and 2956 marks its one single. **The ledger** now
+  counts the records the port refuses as level 10: 0, 11: 0, 15: 22, 18: 6, 20: 208, 21: 6, 22: 43. **Reviews:**
+  leg 1 (spec) MERGEABLE AFTER FIXES, 0 / 1 / 6 — faces, cache positions, record counts, conversation ids and the
+  flag-99 gate reproduced independently; leg 2 (quality) MERGEABLE AFTER FIXES, 0 / 1 / 5; 48 mutations planted:
+  47 caught, 0 equivalent, 1 survived (dropping the `+ 0xc` row offset of the water check). **Fix round:** leg 2's
+  asserts went into `testTeleporterFacesFromBootSingles` (the mode of all 22 teleporters; record 193 moved to y 1716
+  is wet and to y 1715 dry, which pins the `+ 0xc`) and `testNpcConversationIds` (the cooldown 150 as read, not the
+  code's constant); `testTeleporterSheetsSpawnable` now also sets up every record of the six types on all 24 levels
+  (45 records, any flag) without a refusal; the 2921 is called "the furniture", not "crate-furniture", in the
+  ledger. The survivor and the two mutations caught only elsewhere now fail in the card's own tests (the row offset
+  and the water test dropped re-checked by hand here): 48 caught, 0 equivalent, 0 survived. No pinned value moved
+  in the fix round. Gates (fix round, comment-only Sources): G5 succeeded, GW4 `Build complete!`, G7 / G7b / G8 /
+  G10 empty; ledger `--check` OK. **Carries left:** `testTeleporterSheetsSpawnable` is a hand copy of the
+  Render-side load rule (`FrameRenderer.spriteSheets`, which Core cannot call), said so in the test; its
+  `handleBuilt` check is weak (false for six types only); the audit's rows are keyed to line numbers; the
+  face, cache and boot lists are hand-kept in parallel and trap at startup on a duplicate (existing patterns); the
+  records of these types outside 10–22 (1060 × 4 on 31, 1061 × 9 on 40, 2921 × 3 on 30, 2956 × 1 on 70, Mcnv 202)
+  set up but no test pins their state; level 40's nine 1061 all point at record 89, which points at itself — the
+  task that opens level 40 checks it through the teleport arm; "Mcnv 221's action 10 arms record 283" is the
+  ledger's reading, proven when 6A-MC runs the conversations.
 
 #### 6A-MC — minor — conversations and chapter cards of levels 10–22 (prove) (→ 716)
 - **Files:** `Sources/FerazelCore/Talk/{ConvActions,ConversationRun}.swift` and `Sources/FerazelCore/Front/StageScreens.swift`
