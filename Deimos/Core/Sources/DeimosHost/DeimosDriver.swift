@@ -75,6 +75,19 @@ public struct DriverOutput: Equatable, Sendable {
 ///   driver sends the cues through `.pause` when the pass begins, the resume when the wait ends (`10022fb4`), and
 ///   the session end's halt + stop (`10005ad8`, `10005ae4`) — a second apply, halt index 0 — when the pass's ops are
 ///   done, before the restart.
+/// - **`.hostWait(wait)`** (Phase 4, plan S1a; `HostWait`) — held like a fade: t0 = `TickCount` of the `idle` that
+///   reaches it; the op stream stays there, and no pass begins, until the wait is over — `.ticks(n)`: `TickCount ≥
+///   t0 + n` (unsigned, wrapping); `.voiceEnd(id)`: `audio?.isPlaying(id)` false (`FUN_100476e0`; no sink = no mixer =
+///   nothing sounds) — asked here, by the host, only to end the wait (standing rule 10); `.clickOrKey`: a mouseDown,
+///   keyDown or autoKey event queued; `.answer`: a `ShellEvent.answer` queued; `.musicStopped(n)`:
+///   `audio?.isMusicFading()` false (`FUN_100d05a8`; no sink = no music) or `TickCount > t0 + n` (unsigned, wrapping)
+///   — asked, like the voice, only to end the wait. The waits present nothing.
+/// - **Input queue** (Phase 4) — like `typed`, a pass's `keyEvents`, `mouseDowns` and `events` are everything handed
+///   to `idle` since the previous pass began, in order: queued across every wait (limiter, fade, pause, host wait),
+///   never dropped, except that the original's `FlushEvents` (a restart, the pause wait's begin, a transition fade's
+///   end) empties the OS event queue — `typed`, `keyEvents`, `mouseDowns` — and keeps the shell's own `events`. The
+///   held state (`held`, `capsLock`, `mouse`, `mouseButton`) is the `idle`'s in which the pass begins. A
+///   `ShellEvent.suspend` / `.resume` only rides to the pass: the app still calls `suspend()` / `resume()`.
 /// - **Suspend / resume** (H2; the app's suspend and resume handlers, `10023db4..10023dcc` and `10023e34..10023e8c`)
 ///   — `suspend()` pauses the music (`FUN_10048220(1)`) once; `resume()` resumes it (`FUN_10048220(0)`) unless the
 ///   pause flag r2−0x617b is set (`10023e7c`): set while a pause holds the music — here from the paused pass's
@@ -132,6 +145,15 @@ public struct DeimosDriver {
     private var fade: Fade?
     /// Key-downs handed to `idle` since the last pass began (the OS event queue).
     private(set) var typedQueue: [UInt8] = []
+    /// The other events handed to `idle` since the last pass began (Phase 4): keyDown / autoKey events, mouse-downs
+    /// (the OS event queue, with `typedQueue`) and the shell's own events.
+    private(set) var keyEventQueue: [KeyEvent] = []
+    private(set) var mouseDownQueue: [MousePoint] = []
+    private(set) var shellEventQueue: [ShellEvent] = []
+    /// The host wait in progress and the tick at which it was reached.
+    private var hostWaiting: (wait: HostWait, t0: UInt32)?
+    /// The keys the last pass began with, as sampled and with the queued events (inspection).
+    private(set) var lastPassKeys = HeldKeys()
     /// The app is suspended (r2−0x6179, set by the suspend handler `10023dc4`, cleared by the resume `10023e34`).
     public private(set) var suspended = false
     /// The pause flag r2−0x617b: a pause holds the music (from the paused pass's begin to the wait's present).
@@ -193,6 +215,9 @@ public struct DeimosDriver {
         presentedThisCall = false
         restartedThisCall = false
         typedQueue += keys.typed
+        keyEventQueue += keys.keyEvents
+        mouseDownQueue += keys.mouseDowns
+        shellEventQueue += keys.events
         if escLatched && !keys.held.contains(DeimosDriver.escKey) { escLatched = false }   // ◇ any idle releases it
         if !seeded {
             seeded = true
@@ -211,7 +236,7 @@ public struct DeimosDriver {
                 renderer.fadeEnd()
                 fade = nil
                 if f.kind == .toBlack, cuesAfterFade != nil {
-                    typedQueue = []                                                   // 10030328 FlushEvents
+                    flushOSEvents()                                                   // 10030328 FlushEvents
                     session.transitionFadeEnded(ticks: now)                           // 10030314 FUN_100305e0
                     sendCuesAfterFade()
                 }
@@ -267,7 +292,7 @@ public struct DeimosDriver {
             case let .pauseWait(present):
                 if !waitEntered {
                     waitEntered = true
-                    typedQueue = []                                           // 10022f1c FlushEvents
+                    flushOSEvents()                                           // 10022f1c FlushEvents
                 }
                 if !waitReleased {
                     guard !suspended, !keys.capsLock else { return out }      // 10022f68..10022fa4
@@ -285,6 +310,16 @@ public struct DeimosDriver {
                 waitEntered = false
                 waitReleased = false
                 pauseHoldsMusic = false                                       // 10023010
+            case let .hostWait(wait):
+                let t0: UInt32
+                if let held = hostWaiting {
+                    t0 = held.t0
+                } else {
+                    t0 = now                                                  // the tick the wait is reached
+                    hostWaiting = (wait, now)
+                }
+                guard hostWaitOver(wait, t0: t0, now: now) else { return out }
+                hostWaiting = nil
             default:
                 renderer.apply(op)
             }
@@ -305,7 +340,14 @@ public struct DeimosDriver {
             }
         }
         sampled.typed = typedQueue
+        sampled.keyEvents = keyEventQueue
+        sampled.mouseDowns = mouseDownQueue
+        sampled.events = shellEventQueue
         typedQueue = []
+        keyEventQueue = []
+        mouseDownQueue = []
+        shellEventQueue = []
+        lastPassKeys = sampled
         let pass = session.pass(keys: sampled, ticks: ticks)
         passBegun = true
         sessionEndMusic = nil
@@ -409,13 +451,51 @@ public struct DeimosDriver {
         passLimited = false
         fade = nil
         releasedThisCall = false
-        typedQueue = []                                                       // FUN_10030210 FlushEvents
+        flushOSEvents()                                                       // FUN_10030210 FlushEvents
+        hostWaiting = nil
         pauseHoldsMusic = false
         waitEntered = false
         waitReleased = false
         musicAfterWait = []
         sessionEndMusic = nil
         cuesAfterFade = nil
+    }
+
+    /// Tests (`@testable`): splice `inserted` into the current pass at the next op to run — the driver runs them as
+    /// the pass's own (no session emits a host wait before the front end lands).
+    mutating func insertOps(_ inserted: [RenderOp]) {
+        ops.insert(contentsOf: inserted, at: next)
+    }
+
+    /// The host wait in progress (inspection).
+    var waitingOn: HostWait? { hostWaiting?.wait }
+
+    /// Whether `wait`, reached at `t0`, is over at `now` (`HostWait`): the tick count (unsigned, the sum wrapping, as
+    /// the fades); the voice no longer sounding (`FUN_100476e0`; no sink = no mixer = silent); a mouseDown, keyDown or
+    /// autoKey event queued; an answer queued; the music's fade over or the bound passed. The input stays queued for
+    /// the next pass.
+    private func hostWaitOver(_ wait: HostWait, t0: UInt32, now: UInt32) -> Bool {
+        switch wait {
+        case let .ticks(n):
+            return now >= t0 &+ n
+        case let .voiceEnd(id):
+            return !(audio?.isPlaying(id) ?? false)
+        case .clickOrKey:
+            return !typedQueue.isEmpty || !keyEventQueue.isEmpty || !mouseDownQueue.isEmpty
+        case .answer:
+            return shellEventQueue.contains { if case .answer = $0 { return true } else { return false } }
+        case let .musicStopped(maxTicks):
+            // 100481a0..100481ac FUN_100d05a8, then 10048178..10048184 TickCount > t0 + n (cmplw; ble).
+            return !(audio?.isMusicFading() ?? false) || now > t0 &+ maxTicks
+        }
+    }
+
+    /// `FlushEvents(everyEvent, 0)`: the OS event queue — keyDown, autoKey, mouseDown. The shell's own events
+    /// (menu commands, the Quit request, suspend / resume, answers) are not OS-queue events and are kept.
+    private mutating func flushOSEvents() {
+        typedQueue = []
+        keyEventQueue = []
+        mouseDownQueue = []
     }
 
     /// Mac virtual key code of Esc (`FUN_100307c0`).

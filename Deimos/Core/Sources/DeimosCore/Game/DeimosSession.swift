@@ -9,11 +9,18 @@ public struct SessionStart: Equatable, Sendable {
     public var players: Int
     /// A replay to play back (`FUN_100069b0`): seed, level and player count come from it.
     public var film: Film?
+    /// The music is already playing as the session starts (`FUN_10047f80`, `DAT_100e02a0`: a stream exists and is
+    /// not paused) — the level select's `ammu` (plan Phase 4 correction; ruling: the level select passes true).
+    /// The first level start then skips its stop-and-play of `ammu` (`10006754..1000678c`) and only stops
+    /// (`100067c4..100067c8`). Default false: no music playing, the branch every earlier phase built (stand-in 4).
+    /// Not read for a film (the whole branch is skipped). Phase 4 (plan S1a).
+    public var musicAlreadyPlaying: Bool
 
-    public init(sector: Int, players: Int, film: Film?) {
+    public init(sector: Int, players: Int, film: Film?, musicAlreadyPlaying: Bool = false) {
         self.sector = sector
         self.players = players
         self.film = film
+        self.musicAlreadyPlaying = musicAlreadyPlaying
     }
 }
 
@@ -99,6 +106,11 @@ public struct DeimosSession: Sendable {
     private let text: TextLayout
     /// `fctiwz(PermFloat 18)`: the game time at which the game appears (`10005930..1000595c`).
     private let appearTime: Int32
+    /// The sector the session started at (`10005844`: the film's level's or the start's) — `SessionResult`.
+    private let startSector: Int
+    /// The session's result, once it has ended (Phase 4, plan S1a): built by the pass that ended it, which also
+    /// carries it (`PassOutput.result`).
+    public private(set) var result: SessionResult?
 
     // MARK: - Forwarding accessors (standing rule 7: the Phase-1 properties stay)
 
@@ -162,6 +174,7 @@ public struct DeimosSession: Sendable {
         guard tag != .none, assets.definitions.levels.contains(where: { $0.id == tag }) else {
             throw SessionError.noLevel(sector: start.film == nil ? start.sector : 0)
         }
+        startSector = sector
 
         // srand: the film's seed (FUN_100069b0 → FUN_10055400) or TickCount (100057d4).
         var g = GameState(assets: assets, prefs: prefs, seed: start.film?.seed ?? seed)
@@ -192,7 +205,8 @@ public struct DeimosSession: Sendable {
         game = g
         controller = c
         console = con
-        game.levelStart(film: start.film != nil)                     // 100058a0 FUN_100064d0: the state part
+        game.levelStart(film: start.film != nil,                     // 100058a0 FUN_100064d0: the state part
+                        musicPlaying: start.musicAlreadyPlaying)     // 1000675c FUN_10047f80
         pendingOps = levelStartOps()                                 // … and its drawing part
     }
 
@@ -279,12 +293,22 @@ public struct DeimosSession: Sendable {
         ops.append(.clearLayers)                                     // 10030388 FUN_100189f0
         let begin = FrameKeys.beginFrame(controller: &controller, console: &console, game: &game, keys: keys)
         game.flags.framesPresented = begin.framesPresented           // 10005910
-        if begin.quit { game.flags.running = false }                 // 1000591c FUN_100064c0
+        // The rule that clears G+0x08 first in this pass (`SessionResult.End`).
+        var end: SessionResult.End?
+        if begin.quit {
+            game.flags.running = false                               // 1000591c FUN_100064c0
+            end = .escape
+        }
 
         // 2. The tick.
         var levelStarted = false
         if begin.tick {                                              // 10005920..10005928
             levelStarted = tick(keys: keys, withheld: begin.inputWithheld, ticks: ticks, ops: &ops)
+        }
+        if end == nil && !game.flags.running {
+            // The tick cleared it: a film's level end (`100071e8..100071f8`) or lost pilots end the film; else the
+            // campaign end finds level `none` (`10006620..100066c8`); else the game over.
+            end = film ? .filmEnded : (game.flags.level == .none ? .finale : .gameOver)
         }
 
         // 3. The tick's ops (its terrain stamps, then a transition's fade to black and layer clear), the drawing part
@@ -298,6 +322,7 @@ public struct DeimosSession: Sendable {
         if film {                                                    // 10005a1c..10005a20
             if game.film?.finished ?? true {                         // 10005a24..10005a44 (FUN_10048e60: ◇ no mouse)
                 game.flags.running = false                           // 10005a48 FUN_100064c0
+                if end == nil { end = .filmEnded }
             } else {
                 var banner = TextRequest(format: assets.formats[0x26], text: assets.gameStrings[9])   // 10005a50..10005a74
                 banner.drawNow = false                               // 10005a7c..10005a84 (+0x110)
@@ -327,9 +352,41 @@ public struct DeimosSession: Sendable {
         if let pause, game.flags.running {
             game.cues.music = pause.musicAfterWait                   // 10022fb4 FUN_10048220(0), after the wait
         }
+        if !game.flags.running {                                     // 10005b38..10005c18
+            // `end` is set on every path that clears G+0x08 in a pass (begin frame, tick, film branch above); an end
+            // none of them explains is a bug, not an Esc.
+            guard let end else {
+                preconditionFailure("DeimosSession.pass: the running flag (G+0x08) cleared by no known rule — not the "
+                                    + "begin frame's quit, the tick, or the film branch")
+            }
+            result = makeResult(end: end)
+        }
         return PassOutput(ops: ops, sounds: cues.sounds, music: cues.music, requests: requests, ticked: begin.tick,
                           sessionEnded: !game.flags.running, haltEffectsAt: cues.haltEffectsAt,
-                          fadeToBlackAt: fadeMark)
+                          fadeToBlackAt: fadeMark, result: result)
+    }
+
+    /// The result `FUN_100051a0` fills after its loop (`10005b38..10005c18`; `SessionResult`'s comment): per slot,
+    /// present = index byte +0xcc ≠ −1; present → the decoded score, the level +0xc0 and the cheat flag +0xbd; absent →
+    /// score 0, level `none`; then all-levels G+0x0d. The film flag and the start sector are the session's.
+    private func makeResult(end: SessionResult.End) -> SessionResult {
+        var present: [Bool] = [], scores: [Int32] = [], levels: [FourCC] = []
+        var cheated = false
+        for p in game.players.prefix(2) {                            // 10005b48..10005c04
+            let here = p.index != -1                                 // 10005b54..10005b70 FUN_10026c90
+            present.append(here)
+            if here {
+                scores.append(p.score)                               // 10005b80..10005b90 FUN_100299f0
+                levels.append(p.levelRef)                            // 10005b94..10005ba0 FUN_10029cb0
+                if p.cheated { cheated = true }                      // 10005ba4..10005bbc FUN_10029be0 → +0x15
+            } else {
+                scores.append(0)                                     // 10005bc4..10005bd0
+                levels.append(.none)                                 // 10005bcc..10005bd8
+            }
+        }
+        return SessionResult(end: end, isFilm: game.flags.filmPlaying, startSector: startSector, present: present,
+                             scores: scores, levels: levels, allLevels: game.flags.allLevels,   // 10005c08..10005c10
+                             cheated: cheated)
     }
 
     /// The Phase-1 entry point, kept for the driver (standing rule 7): `pass(keys:ticks:)` with a TickCount of 0
@@ -424,12 +481,15 @@ extension GameState {
     /// comment). The session's set-up calls it for the first level and `levelCompleteStep` for the next one, inside
     /// the same game; its drawing part is the session's (`DeimosSession.levelStartOps`, read from the state left
     /// here). `film` = the caller's film flag (G+0x20 at the set-up; `FUN_10007170` passes its own, 0 on that path).
+    /// `musicPlaying` = `FUN_10047f80()` (`1000675c`, the music-playing byte `DAT_100e02a0`): the session's set-up
+    /// passes `SessionStart.musicAlreadyPlaying`; `FUN_10007170` has just stopped the music (`10007204`), so the
+    /// default false holds there (Phase 4, plan S1a).
     /// Levels started == 0 → the level of +0x18 (`10006560..10006588`); else sector(+0x18) + 1 (`10006594..100065a8`),
     /// level `none` above the order's count (`100065ac..100065bc`, `10006620..10006628`), else that sector's tag and
     /// level info (`100065c4..100065dc`). Levels started += 1 BEFORE the `none` test (`1000667c..10006684`); `none` →
     /// music resume, running = 0, return before any player or world reset (`10006688..100066c8`). The first level
     /// start needs G+0x18 (`flags.level`) set to a tag of the order.
-    public mutating func levelStart(film: Bool) {
+    public mutating func levelStart(film: Bool, musicPlaying: Bool = false) {
         flags.gameTime = 0                                           // 10006500
         flags.levelEndHandled = false                                // 10006504
         flags.levelEndTime = flags.gameTime                          // 10006508..1000650c
@@ -474,7 +534,7 @@ extension GameState {
         }
         flags.sector = Int32(sector)                                 // 100066e8
         // [100066f0 FUN_1002b3a0 resource preload; 100066f8..1000674c the terrain buffer, superseded by the map load]
-        if !film {                                                   // 10006754..10006768 (FUN_10047f80)
+        if !film && !musicPlaying {                                  // 10006754..10006768 (FUN_10047f80)
             cues.music.append(.play(FourCC("ammu")!, loop: true))    // 1000676c..10006788 ◇ stand-in 4
         }
         for i in 0..<2 {                                             // 10006798..100067b8 FUN_100269a0

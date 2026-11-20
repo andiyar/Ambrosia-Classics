@@ -111,7 +111,8 @@ public struct MusicStream: Sendable {
 
     /// `FUN_100d0470(m)` then `FUN_100d136c`: `m` capped at 0x100 (`100d048c cmplwi r0,0x100; bge → 0x100`),
     /// `amp = min(255, (m × fade) >> 8)` (`100d139c mullw; rlwinm …,24,8,31; cmplwi r31,0xff`). `fade` stays 0x100
-    /// (data image `0x100e0730` = 0x00000100): the only fade is `stopMusic(fade: 1)` at quit (§6.2), not a cue.
+    /// (data image `0x100e0730` = 0x00000100) except during `FUN_10048120(1)`'s fade-out (§6.2) — Phase 4's
+    /// `MusicCue.stopWithFade`, stepped by the engine.
     public static func amp(level m: UInt16, fade: UInt16 = 0x100) -> Int {
         let capped = UInt32(m >= 0x100 ? 0x100 : m)
         let v = (capped &* UInt32(fade)) >> 8

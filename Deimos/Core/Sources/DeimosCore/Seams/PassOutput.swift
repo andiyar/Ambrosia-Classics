@@ -28,10 +28,14 @@ public struct PassOutput: Equatable, Sendable {
     /// `tran`), the rest only after its last step (the next level's cues, or the session end's). The halt belongs to
     /// the side its index falls on. nil = no transition this pass (plan LT; additive, as H2's pause).
     public var fadeToBlackAt: CueMark?
+    /// The session's result (`SessionResult`, `10005b38..10005c18`), carried by the pass that ended the session
+    /// (the one whose `sessionEnded` is first set, with its ops); nil on every other pass, including the empty ones
+    /// an ended session returns afterwards (`DeimosSession.result` keeps it). Phase 4 (plan S1a).
+    public var result: SessionResult?
 
     public init(ops: [RenderOp] = [], sounds: [SoundCue] = [], music: [MusicCue] = [],
                 requests: [ShellRequest] = [], ticked: Bool = false, sessionEnded: Bool = false,
-                haltEffectsAt: Int? = nil, fadeToBlackAt: CueMark? = nil) {
+                haltEffectsAt: Int? = nil, fadeToBlackAt: CueMark? = nil, result: SessionResult? = nil) {
         self.ops = ops
         self.sounds = sounds
         self.music = music
@@ -40,5 +44,6 @@ public struct PassOutput: Equatable, Sendable {
         self.sessionEnded = sessionEnded
         self.haltEffectsAt = haltEffectsAt
         self.fadeToBlackAt = fadeToBlackAt
+        self.result = result
     }
 }

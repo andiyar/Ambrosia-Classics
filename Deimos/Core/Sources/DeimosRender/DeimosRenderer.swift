@@ -27,7 +27,12 @@ import DeimosCore
 /// - `.screenBlit(src, dst)` — `FUN_1000bbd0` (`1000bbd0…1000bc5c`): one CopyBits srcCopy, back → window.
 /// - `.present(kind)` — `Presents`.
 /// - `.particles(stamps)` — `FUN_10043ba0` (`ParticleStamps`): the 7×7 spread-555 stamps into the back buffer.
-/// - `.pauseWait` traps with `.fade` / `.limit` (`RenderOp.isHostOp`).
+/// - `.drawPicture(id, into, top, left)` — `FUN_10044c30` (Phase 4): the shell-supplied picture
+///   (`DeimosAssets.shellPictures`) copied srcCopy at its own size with its top-left at (`left`, `top`), clipped to the
+///   buffer; a picture the shell did not supply draws nothing (`GetPicture` nil, `10044c5c`).
+/// - `.scaledCopy(image, into, dst, clip)` — `FUN_1001d1b0` (Phase 4): the whole im16 point-sampled into `dst`,
+///   written inside `clip` only (`scaledCopy(from:to:dstRect:clip:)`).
+/// - `.pauseWait` and `.hostWait` trap with `.fade` / `.limit` (`RenderOp.isHostOp`).
 ///
 /// Image decodes are cached per process (`ImageCache`); sprite groups through the assets' own cache. Missing data
 /// stops the renderer the same way for both: an `im16` that is missing or not a 16-bit TGA, and a sprite group
@@ -74,8 +79,19 @@ public final class DeimosRenderer {
             buffers.present(kind)
         case let .particles(stamps):
             ParticleStamps.stamp(stamps, into: &buffers.back)                       // FUN_10043ba0 at 10030cd0
-        case .fade, .limit, .pauseWait:
-            preconditionFailure("DeimosRenderer.apply: \(op) is the host's (fadeBegin/fadeStep/fadeEnd; limit; pauseWait)")
+        case let .drawPicture(id, into, top, left):
+            // FUN_10044c30: GetPicture nil → the error log and no draw (10044c5c); else DrawPicture at its own size.
+            guard let pic = assets.shellPictures[id] else { break }
+            var img = Pixmap555(width: pic.width, height: pic.height)
+            img.pixels = pic.pixels
+            let dst = MacRect(top: top, left: left, bottom: top &+ Int32(pic.height), right: left &+ Int32(pic.width))
+            withBuffer(into) { CopyBits.copy(from: img, to: &$0, srcRect: img.bounds, dstRect: dst) }
+        case let .scaledCopy(image, into, dst, clip):
+            let img = self.image(image)                                             // the source: the whole im16
+            withBuffer(into) { Self.scaledCopy(from: img, to: &$0, dstRect: dst, clip: clip) }
+        case .fade, .limit, .pauseWait, .hostWait:
+            preconditionFailure("DeimosRenderer.apply: \(op) is the host's (fadeBegin/fadeStep/fadeEnd; limit; pauseWait; "
+                                + "hostWait)")
         }
     }
 
@@ -86,6 +102,37 @@ public final class DeimosRenderer {
     }
 
     public func fadeEnd() { buffers.fadeEnd() }
+
+    /// `FUN_1001d1b0(srcBase, dstBase, srcRowBytes, dstRowBytes, srcW, srcH, left, top, right, bottom, clipLeft,
+    /// clipTop, clipRight, clipBottom)` (`1001d1b0..1001d268`), as written: columns x = left ..< right outer
+    /// (`1001d25c`, `cmpw` signed), the source column `srcW·(x − left) / (right − left)` computed per column
+    /// (`1001d1e0..1001d1e8`, `mullw` / `divw`); a column with clipLeft ≤ x < clipRight and top < bottom runs rows
+    /// y = top ..< bottom (`1001d200..1001d250`, CTR = bottom − top); a row with clipTop ≤ y < clipBottom copies the
+    /// 16-bit pixel at source row `srcH·(y − top) / (bottom − top)` (`1001d228..1001d248`). Nothing else is tested —
+    /// the original writes wherever the clip lets it; the replica traps on a pixel outside the destination buffer's
+    /// bounds instead of writing past it (the level select's clip, the preview rect, lies inside the back buffer).
+    static func scaledCopy(from src: Pixmap555, to dst: inout Pixmap555, dstRect d: MacRect, clip c: MacRect) {
+        let srcW = Int32(src.width), srcH = Int32(src.height)
+        let spanX = d.right &- d.left, spanY = d.bottom &- d.top
+        var x = d.left
+        while x < d.right {
+            let sx = (srcW &* (x &- d.left)) / spanX                               // 1001d1e0..1001d1e8
+            if x >= c.left && x < c.right && d.top < d.bottom {                    // 1001d1ec..1001d210
+                var y = d.top
+                while y < d.bottom {
+                    if y >= c.top && y < c.bottom {                                // 1001d218..1001d224
+                        let sy = (srcH &* (y &- d.top)) / spanY                    // 1001d228..1001d230
+                        precondition(x >= 0 && Int(x) < dst.width && y >= 0 && Int(y) < dst.height,
+                                     "DeimosRenderer.scaledCopy: (\(x), \(y)) lies outside the \(dst.width)×"
+                                     + "\(dst.height) buffer (dst \(d), clip \(c))")
+                        dst[Int(x), Int(y)] = src[Int(sx), Int(sy)]                // 1001d240 lhzx, 1001d248 sthx
+                    }
+                    y += 1
+                }
+            }
+            x += 1
+        }
+    }
 
     // MARK: - Internals
 

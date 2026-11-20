@@ -29,8 +29,8 @@ public enum FadeKind: Sendable {
 }
 
 /// One original draw-side call, recorded by Core at its call site, in pass order; DeimosRender executes it
-/// on persistent buffers (`.fade` and `.limit` are host waits). ★ LOCKED seam (plan S3) — cases may be added,
-/// never renamed.
+/// on persistent buffers (`.fade`, `.limit`, `.pauseWait` and `.hostWait` are host waits). ★ LOCKED seam (plan S3) —
+/// cases may be added, never renamed.
 public enum RenderOp: Equatable, Sendable {
     /// `FUN_1000fbc0`: terrain buffer ← the level's im16 map, resized.
     case loadTerrain(image: FourCC)
@@ -59,11 +59,27 @@ public enum RenderOp: Equatable, Sendable {
     case particles([ParticleStamp])
     /// `FUN_10030870` → `FUN_10022ef0`: blocking; the host waits for Caps Lock up, then presents. Phase 2 (plan S3).
     case pauseWait(PresentKind)
+    /// A front-end wait (`FrontEndWaits.swift`): blocking in the original; the host holds the op stream there and
+    /// queues every input that arrives meanwhile. Phase 4 (plan S1a).
+    case hostWait(HostWait)
+    /// `FUN_10044c30` / a DITL picture item: `DrawPicture` of the app's resource-fork PICT `id` into the buffer,
+    /// its top-left at (`left`, `top`), at its own size, clipped to the buffer. The shell decodes the PICT and hands
+    /// it to Core as a plain image (ruling 9, `DeimosAssets.shellPictures`); a picture the shell did not supply
+    /// draws nothing (`GetPicture` nil → the error log, `10044c5c`, no draw). Phase 4 (plan S1a).
+    case drawPicture(id: Int16, into: BufferID, top: Int32, left: Int32)
+    /// `FUN_1001d1b0` — the opaque scaled copy (the level select's middle preview while its flash scale ≠ 1,
+    /// `1002f9f8..1002fb80`): the WHOLE `image` (an `im16`, the preview; its width and height are the source size)
+    /// point-sampled into `dst` of the buffer, written only inside `clip` (the caller passes the unscaled preview
+    /// rect). Per destination pixel x ∈ [left, right), y ∈ [top, bottom) with clip.left ≤ x < clip.right and
+    /// clip.top ≤ y < clip.bottom: source x = srcW·(x − left) / (right − left), y = srcH·(y − top) / (bottom − top),
+    /// integer division truncating (`divw`); the 16-bit pixel is copied as is (`lhzx` / `sthx`). Phase 4.
+    case scaledCopy(image: FourCC, into: BufferID, dst: MacRect, clip: MacRect)
 
-    /// The ops the host steps itself (`DeimosRenderer.apply` traps on them): `.fade`, `.limit`, `.pauseWait`.
+    /// The ops the host steps itself (`DeimosRenderer.apply` traps on them): `.fade`, `.limit`, `.pauseWait`,
+    /// `.hostWait`.
     public static func isHostOp(_ op: RenderOp) -> Bool {
         switch op {
-        case .fade, .limit, .pauseWait: return true
+        case .fade, .limit, .pauseWait, .hostWait: return true
         default: return false
         }
     }
