@@ -1097,8 +1097,11 @@ final class DriverTests: XCTestCase {
     /// ⌘Q / the menu-bar Quit (`quitChosen`; Ben's ruling 2026-11-21, as X, where the application menu's Quit is the
     /// Quit Apple event, D10) lets the wait go exactly as the request does — the game ends, the post-game check skips
     /// the table (no scores, no name entry, the table as it stood, though the score qualifies), the menu quits and the
-    /// settings are written once. A ⌘Q in play is dropped and not remembered: the pause that follows does not let go
-    /// on it. A film never pauses on Caps Lock, so a ⌘Q there is one in play. Fake-clock cap 120 s per driver.
+    /// settings are written once. A ⌘Q in play, or one queued as the wait begins, is dropped and not remembered: the
+    /// pause does not let go on it; a system request queued as the wait begins does let it go. A film never pauses on
+    /// Caps Lock, so a ⌘Q there is one in play. The level select's own pause is the same wait: a ⌘Q queued as it
+    /// begins is dropped, a ⌘Q inside it lets it go at once (no level, the menu quits, the settings written once), and
+    /// a request queued as it begins lets it go. Fake-clock cap 120 s per driver (600 s for the level select's).
     func testQuitInsideCapsLockWait() throws {
         let sink = RecordingSink()
         var driver = try makeDriver(audio: sink)
@@ -1123,10 +1126,14 @@ final class DriverTests: XCTestCase {
         let pausePass = driver.passCount
         let applies = sink.applies.count
         XCTAssertEqual(sink.applies.last?.music.last, .pause)
+        // ⌘Q in the idle right after the pause's pass began, before its wait is reached: still queued as the wait
+        // begins, and the wait's FlushEvents drops it there (10022f1c) — it never lets the wait go.
+        guard idle(HeldKeys(capsLock: true, events: [.quitChosen])) else { return XCTFail("cap") }
         let holdEnd = clock.seconds + 1
         while clock.seconds < holdEnd { guard idle(caps) else { return XCTFail("cap") } }
-        XCTAssertEqual(driver.passCount, pausePass, "the wait holds while Caps Lock is down: the ⌘Q from play is gone")
+        XCTAssertEqual(driver.passCount, pausePass, "the wait holds while Caps Lock is down: the ⌘Q before it is gone")
         XCTAssertFalse(driver.frontEnd.state.quit)
+        XCTAssertEqual(driver.shellEventQueue, [], "dropped, not left for a later pass")
 
         let presents = driver.presentCount
         guard idle(HeldKeys(capsLock: true, events: [.quitRequested])) else { return XCTFail("cap") }
@@ -1201,6 +1208,25 @@ final class DriverTests: XCTestCase {
         XCTAssertTrue(early.frontEnd.state.quit, "the wait let go on the held request")
         XCTAssertEqual(early.session.result?.end, .escape)
 
+        // A request that arrives right after the pause's pass began, before its wait: still queued as the wait begins,
+        // and the wait's FlushEvents keeps it (an Apple event; only a ⌘Q is dropped there) — the wait lets go at once.
+        var mid = try makeDriver(audio: RecordingSink())
+        var clockM = FakeClock(rate: .classic)
+        func idleM(_ keys: HeldKeys) -> Bool {
+            _ = mid.idle(seconds: clockM.seconds, keys: keys)
+            clockM.seconds += Self.poll
+            return clockM.seconds <= 120
+        }
+        while mid.presentCount < 20 { guard idleM(Self.capsUp) else { return XCTFail("no presents (3b)") } }
+        let beforeM = mid.passCount
+        while mid.passCount == beforeM { guard idleM(caps) else { return XCTFail("no pass with Caps Lock (3b)") } }
+        let pauseM = mid.passCount
+        guard idleM(HeldKeys(capsLock: true, events: [.quitRequested])) else { return XCTFail("cap (3b)") }
+        for _ in 0..<30 where mid.passCount == pauseM { guard idleM(caps) else { return XCTFail("cap (3b)") } }
+        XCTAssertEqual(mid.passCount, pauseM + 1, "the wait let go as it was reached, Caps Lock down (3b)")
+        XCTAssertTrue(mid.frontEnd.state.quit, "the quit flag (3b)")
+        XCTAssertFalse(mid.session.running, "the game ended (3b)")
+
         // ⌘Q inside the wait of a game played from the menu, its score good for the table: the game ends, the table
         // is skipped (X 10023a6c), the menu quits, the settings are written once with the table as it stood.
         let store = RecordingSettingsStore()
@@ -1256,11 +1282,11 @@ final class DriverTests: XCTestCase {
         XCTAssertEqual(store.saved.first?.highScores, table, "with the table as it stood")
 
         // A film: Caps Lock does not pause it (the begin frame refuses during film playback, 10030408..1003041c), so a
-        // ⌘Q there is a ⌘Q in play — dropped, the film plays on, nothing written. (A film's pause, were one entered,
-        // takes it as a game's does: the wait's rule is every session's.)
+        // ⌘Q there is a ⌘Q in play — dropped, the film plays on, nothing written.
         let filmStore = RecordingSettingsStore()
+        let filmSink = RecordingSink()
         let film = try FilmLookup.film("de01", in: try ShippedAssets.get())
-        var filmDriver = try directDriver(SessionStart(sector: 1, players: 1, film: film), audio: RecordingSink(),
+        var filmDriver = try directDriver(SessionStart(sector: 1, players: 1, film: film), audio: filmSink,
                                           settings: filmStore)
         var clock5 = FakeClock(rate: .classic)
         var requests5: [ShellRequest] = []
@@ -1274,11 +1300,81 @@ final class DriverTests: XCTestCase {
         let before5 = filmDriver.passCount
         guard idle5(HeldKeys(capsLock: true, events: [.quitChosen])) else { return XCTFail("cap (5)") }
         while filmDriver.passCount < before5 + 30 { guard idle5(caps) else { return XCTFail("the film stopped (5)") } }
-        XCTAssertFalse(filmDriver.session.controller.paused, "Caps Lock does not pause a film")
+        XCTAssertFalse(filmSink.applies.flatMap(\.music).contains(.pause), "Caps Lock never paused the film")
         XCTAssertFalse(filmDriver.frontEnd.state.quit, "⌘Q in a film: ignored")
         XCTAssertTrue(filmDriver.session.running, "the film plays on")
         XCTAssertFalse(requests5.contains(.quit))
         XCTAssertEqual(filmStore.saved.count, 0, "nothing written")
+
+        // The level select's own Caps Lock pause (the same wait, osx-build.md D10: "Quit while paused ends the pause
+        // loop at once"): a ⌘Q queued as its wait begins is dropped there too; a ⌘Q inside the wait lets it go at
+        // once, Caps Lock down — the level select leaves as with Esc, no level starts, the menu quits and the
+        // settings are written once. A system request queued as the wait begins lets it go at once too.
+        func levelSelectPause(_ store: RecordingSettingsStore, _ label: String)
+            throws -> (driver: DeimosDriver, clock: FakeClock, requests: [ShellRequest])? {
+            let sink = RecordingSink()
+            var d = DeimosDriver(frontEnd: try FrontEnd(assets: try ShippedAssets.get(), prefs: .fresh),
+                                 rate: .classic, audio: sink, settingsStore: store)
+            var c = FakeClock(rate: .classic)
+            var r: [ShellRequest] = []
+            func run(_ keys: HeldKeys, until done: (DeimosDriver) -> Bool) -> Bool {
+                let end = c.seconds + 120
+                while !done(d) {
+                    guard c.seconds < end else { return false }
+                    r += d.idle(seconds: c.seconds, keys: keys).requests
+                    c.seconds += Self.poll
+                }
+                return true
+            }
+            guard run(HeldKeys(), until: { $0.frontEnd.screens == [.mainMenu] && $0.waitingOn == nil
+                                            && !$0.isFading }) else { XCTFail("bound: no menu (\(label))"); return nil }
+            r += d.idle(seconds: c.seconds, keys: HeldKeys(keyEvents: [KeyEvent(charCode: 0x31, keyCode: 0x12)]))
+                .requests
+            c.seconds += Self.poll                                      // `1`: one player, to the level select
+            guard run(HeldKeys(), until: { $0.frontEnd.screens.last == .levelSelect && !$0.isFading })
+            else { XCTFail("bound: no level select (\(label))"); return nil }
+            let before = d.passCount
+            guard run(caps, until: { $0.passCount > before }) else { XCTFail("no pause (\(label))"); return nil }
+            XCTAssertEqual(d.frontEnd.screens.last, .levelSelect, label)
+            XCTAssertEqual(sink.applies.last?.music.last, .pause, "the level select's pause (\(label))")
+            return (d, c, r)
+        }
+
+        let selectStore = RecordingSettingsStore()
+        guard let at6 = try levelSelectPause(selectStore, "6") else { return }
+        var (select, clock6, requests6) = at6
+        func idle6(_ keys: HeldKeys) -> Bool {
+            requests6 += select.idle(seconds: clock6.seconds, keys: keys).requests
+            clock6.seconds += Self.poll
+            return clock6.seconds <= 600
+        }
+        let pause6 = select.passCount
+        guard idle6(HeldKeys(capsLock: true, events: [.quitChosen])) else { return XCTFail("cap (6)") }
+        let hold6 = clock6.seconds + 1
+        while clock6.seconds < hold6 { guard idle6(caps) else { return XCTFail("cap (6)") } }
+        XCTAssertEqual(select.passCount, pause6, "the level select's wait holds: the ⌘Q before it is gone (6)")
+        XCTAssertFalse(select.frontEnd.state.quit, "(6)")
+        XCTAssertEqual(select.shellEventQueue, [], "dropped, not left for a later pass (6)")
+        guard idle6(HeldKeys(capsLock: true, events: [.quitChosen])) else { return XCTFail("cap (6)") }
+        XCTAssertEqual(select.passCount, pause6 + 1, "⌘Q in the level select's pause: the wait let go at once (6)")
+        XCTAssertTrue(select.frontEnd.state.quit, "the quit flag (6)")
+        XCTAssertEqual(select.lastPassKeys.events, [], "the pause took the ⌘Q off the queue (6)")
+        while !select.frontEnd.isFinished { guard idle6(caps) else { return XCTFail("bound: no quit (6)") } }
+        XCTAssertEqual(requests6.filter { $0 == .quit }.count, 1, "the menu quits (6)")
+        XCTAssertEqual(select.frontEnd.state.gamesStarted, 0, "no level started (6)")
+        XCTAssertEqual(selectStore.saved.count, 1, "the settings written once (6)")
+
+        guard let at7 = try levelSelectPause(RecordingSettingsStore(), "7") else { return }
+        var (request7, clock7) = (at7.driver, at7.clock)
+        let pause7 = request7.passCount
+        _ = request7.idle(seconds: clock7.seconds, keys: HeldKeys(capsLock: true, events: [.quitRequested]))
+        clock7.seconds += Self.poll
+        for _ in 0..<30 where request7.passCount == pause7 {
+            _ = request7.idle(seconds: clock7.seconds, keys: caps)
+            clock7.seconds += Self.poll
+        }
+        XCTAssertEqual(request7.passCount, pause7 + 1, "a request queued as the wait began: let go as reached (7)")
+        XCTAssertTrue(request7.frontEnd.state.quit, "the quit flag (7)")
     }
 
     /// The original's one suspended byte b7 (the suspend handler `FUN_10023da0` tests it first, `10023db4..10023dbc`;

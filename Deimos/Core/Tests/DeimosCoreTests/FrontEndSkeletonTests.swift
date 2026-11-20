@@ -369,7 +369,7 @@ final class FrontEndSkeletonTests: XCTestCase {
         XCTAssertEqual(fe.state.gamesStarted, 0, label)
     }
 
-    /// ⌘Q / the menu-bar Quit (`ShellEvent.quitChosen`) is ignored in a game, as the original (grounding B §5: the
+    /// ⌘Q / the menu-bar Quit (`ShellEvent.quitChosen`) is ignored in play, as the original (grounding B §5: the
     /// quit flag's setters are reached only from the menu loop's event pump, and no pump runs in play; Ben
     /// 2026-11-20): the quit flag stays clear, nothing is held, the game is not handed it and plays on; its end
     /// returns to the menu, which stays up. The same during the boot (the loading lines' X pump acts on suspend and
