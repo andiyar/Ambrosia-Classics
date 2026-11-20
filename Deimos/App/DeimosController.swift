@@ -156,9 +156,11 @@ import Synchronization
         present()                                                       // black until the first pass presents
         // Ruling 13 (`osx-build.md` D6, X `10000230`): byte pref 4 (Full Screen, 1 in a fresh file) read at launch —
         // set: full screen; clear: the 640×480 window. A change in the settings window takes effect at the next launch.
+        // Entering full screen does nothing with no main screen: the window is shown then.
         if prefs.bytePrefs.indices.contains(4), prefs.bytePrefs[4] != 0 {
             shell.enterFullscreen()
-        } else {
+        }
+        if !shell.isFullscreen {
             shell.windowedWindow.makeKeyAndOrderFront(nil)
         }
         NSApp.activate()
