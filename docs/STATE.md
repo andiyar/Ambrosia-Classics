@@ -159,102 +159,81 @@ Settled history lives in docs/STATE-history.md.
   - Older small carries from Phases 2–4: listed in the history file's Snapshot B; each closes when a task next touches
     its file.
 
-## Deimos Rising — 2026-11-20 (Phase 3 staged; Ben's gates 2 and 3 both wait on the one app)
+## Deimos Rising — 2026-11-21 (Phase 4 built and staged; Ben's gates 2, 3 and 4 all wait on the one app)
 
-- **Where it stands:** Phase 1 "level 1 look" gate passed 2026-10-07. Phase 2 "level 1 plays" and **Phase 3 "the
-  campaign" are both built, merged to local main (not pushed) and staged as ONE app**: `~/Desktop/Deimos Rising.app`
-  with `~/Desktop/Deimos Rising — WHAT-TO-EXPECT.md` beside it (also `out/Deimos/` in the main checkout). The card's
-  Part A is the gate-3 card (the campaign, two players, the finale); Part B is the Phase 2 card, kept because Ben has
-  not ruled on it. The game plays all twelve sectors in one game, carries lives, score and multiplier across, runs
-  the finale after sector 12 in a game begun at sector 1, and takes `-players 2` and `-sector N` until the menu
-  exists. **A muted boot check passed on 2026-11-20 at 09:01** (Ben: "of course"): the app opened, ran eight
-  seconds, quit cleanly, no crash report. Nobody has seen or heard it play.
-- **Numbers (the wave 3.4 seat's own runs at main c47416e, 2026-11-20, HectorKit ef2c341 clean):**
+- **Where it stands:** Phase 1 "level 1 look" gate passed 2026-10-07. Phase 2 "level 1 plays", Phase 3 "the
+  campaign" and **Phase 4 "the front end" are all built, merged to local main and staged as ONE app**:
+  `~/Desktop/Deimos Rising.app` with `~/Desktop/Deimos Rising — WHAT-TO-EXPECT.md` beside it (also `out/Deimos/` in
+  the main checkout). The card (`Deimos/WHAT-TO-EXPECT.md`) leads with gate 4 ("cold start → game → scores → quit":
+  ten steps, Ben's answers as built, every ruling numbered for him to overturn, the known gaps); the gate-3 and gate-2
+  cards follow, trimmed where the front end replaced their stand-ins. The app now boots to the original's menu
+  (logos, loading screen, menu), with the level select, high scores and name entry, demos and Last Film (`F`), credits,
+  the settings and controls windows drawn by the game, a controller, and quit-with-save. `-players` / `-sector` are
+  gone; `-film deNN` and `-mute` are hidden switches. First launch: {{LAUNCH}}.
+- **Numbers (S8b's seat, at the staged head):**
 
 | check | value |
 |---|---|
-| `Deimos/Core` (without the replay and campaign bundles) | **372 / 0 / 0** |
-| `DeimosReplayTests`, and `deimos-replay --all` | **4 / 0**; four PASS lines, exit 0 |
-| `DeimosCampaignTests` (the sweep; run one test at a time, about 13 minutes in all) | **3 / 0** |
-| app builds | Deimos Debug and Release, Aki, BubbleTroubleX: all succeeded |
-| layering grep; census file | empty; unchanged |
-| HectorKit zero-skip | 366 passed + 4 Aki 1.1 skips (the known four) |
+| `Deimos/Core` (without the replay and campaign bundles) | {{G2}} (the phase's ladder ends at 491: S8a's 483 + eight goldens) |
+| `DeimosReplayTests`, and `deimos-replay --all` | {{G4}} |
+| `DeimosCampaignTests` (one test at a time) | {{G8}} |
+| HectorKit zero-skip | {{G1}} |
+| app builds | {{BUILDS}} |
+| census file; layering grep | unchanged; empty |
 
-- **Waiting on Ben:** (1) his first real play of the staged app; (2) his verdict on Part B, "does level 1 play like
-  Deimos"; (3) his verdict on Part A, "does the campaign play like Deimos", with four short questions the card asks
-  by name: flip pitch; can sector 12 end with the Beamer alive; should your own overload kill you while
-  invulnerable; are player 2's keys the ones he remembers.
-- **The plan:** `docs/superpowers/plans/2026-11-14-deimos-phase3.md` (D50) — all seven tasks done. The close is in
-  `docs/handoff-2026-11-15-deimos-phase3-wave34.md`. **Next, after gate 3:** Phase 4, the front end (menu, high
-  scores, level select, settings on disk, the controls window). It has cards in the remainder plan
-  (`docs/superpowers/plans/2026-11-05-deimos-remainder.md`) but no plan of its own; nothing of it is started. Ben's
-  notes from either gate become a fix wave first.
-- **Phase 4 is planned (2026-11-20, D52), nothing built:** `docs/superpowers/plans/2026-11-20-deimos-phase4.md`, twelve
-  sections S0–S8b with four grounding appendices; running order, eight questions for Ben and the first brief are in
-  `docs/handoff-2026-11-20-deimos-phase4-plan.md`. The app file holds an OS 9 and an OS X build; the research read the
-  OS 9 one. **S0 closed 2026-11-20** (`docs/handoff-deimos-phase4-s0.md`): the OS X build is on file (`ghidra/deimos/Deimos_osx.*`,
-  `ghidra/regen-deimos-osx.sh`), its front end is compared with the OS 9 one in `docs/deimos/osx-build.md` (14 differences
-  change what Phase 4 builds; rulings 12 and 17 and the fade timings in grounding A §5.2 / B §1a are wrong for X), and the bank
-  corrections are in (INDEX #14 and #62 closed). No Swift or test changed.
-  **S1a closed 2026-11-20** (`docs/handoff-deimos-phase4-s1a.md`): the joins between the game's parts are widened for the
-  front end (mouse, key and menu events in; waits, a session result, new shell requests and two draw steps out) and the
-  shared element list with its fades is built; nothing a player would notice yet. `Deimos/Core` is now **385 / 0 / 0**
-  (one above the plan's 384: a draw-once test; the phase now ends at 478); replay 4 / 0 unchanged. The element fades
-  follow the OS X build (16 passes).
-  **S1b closed 2026-11-20** (`docs/handoff-deimos-phase4-s1b.md`): the game now runs inside a new front end with an
-  empty placeholder for every screen (boot, menu, level select, scores, name entry, credits, films, the two settings
-  windows); the app behaves exactly as before. `Deimos/Core` is **392 / 0 / 0**; replay 4 / 0 and the campaign sweep
-  3 / 0 unchanged; Debug and Release build. Each screen's entry is frozen and listed in the handoff.
-  **S4 closed 2026-11-20** (`docs/handoff-deimos-phase4-s4.md`): the settings file (read and written byte for byte as
-  the original), the high-score table, name entry and the scores screen are built but not yet reachable from the menu
-  (S2/S3a wire them). `Deimos/Core` is **406 / 0 / 0** with S4 alone (S2's tests add on top); replay 4 / 0; Debug and
-  Release build. The erase-scores question moved to the menu's SCORES action (seat ruling, in the handoff).
-  **S2 closed 2026-11-20** (`docs/handoff-deimos-phase4-s2.md`): the main menu and the credits screen are the
-  original's, proved by tests (`Deimos/Core` **416 / 0 / 0** with S2 and S4 both in); the app still opens straight into a game
-  until S8a connects mouse and keys to the front end. Found: the credits have ten pages, no blank eleventh (ruling 15).
-  **Next: S3a (starting a game and coming back) and S5 (Last Film, demos)**, started by the Coordinator.
-  **S3a closed 2026-11-20** (`docs/handoff-deimos-phase4-s3a.md`): choosing a game on the menu now runs the original's
-  start (fades, transition sound, level-select music, the level select — still a placeholder) and a game's end runs
-  the original's way back (fades, high-score entry when a score places, the menu and its music). Nothing a player
-  would notice until S8a. `Deimos/Core` is **423 / 0 / 0**; replay 4 / 0; Debug and Release build. Left for S8a,
-  waiting on Ben: deleting `-players` / `-sector`, and the menu's "erase high scores?" question.
-  **S5 closed 2026-11-20** (`docs/handoff-deimos-phase4-s5.md`): every game you play is now recorded the original's
-  way and kept as the Last Film (byte-exact: re-recording demo 1's keys gives demo 1's file); DEMOS / `D` cycle the four
-  demos for the app's life, `F` replays the last game, and a mouse click or Esc ends a film. Nothing a player would
-  notice until S8a wires the mouse, keys and the Last Film folder. `Deimos/Core` is **433 / 0 / 0**; replay 4 / 0;
-  campaign 3 / 0; Debug and Release build.
-  **S6 closed 2026-11-20** (`docs/handoff-deimos-phase4-s6.md`): the boot is the original's — loading screen with
-  its lines, publisher logo held for its sound, developer logo with the menu music, fades, the quiet launch — and
-  the settings window (DITL 190) is drawn by the game in Apple's Geneva 9, with shared drawn-control code for S7's
-  controls window. `Deimos/Core` **454 / 0 / 0** with S5 and S3b merged in. Nothing visible in the app until S8a
-  wires it. **S7 may start.**
-  **S7 closed 2026-11-20** (`docs/handoff-deimos-phase4-s7.md`): the controls window (DITL 191, both players'
-  keys, drawn by the game) and the controller layout (Ben's default buttons in one table; plus pauses, minus is Esc).
-  `Deimos/Core` **467 / 0 / 0**. Nothing visible in the app until S8a wires it. **Every screen section is closed;
-  S8a may start.**
-  **S8a closed 2026-11-20** (`docs/handoff-deimos-phase4-s8a.md`): the app now boots to the menu (loading screen,
-  logos, menu) with mouse, keys, controller, the menu bar, settings and Last Film on disk; `-players` / `-sector`
-  deleted; the erase-scores question; unit names on the first launch only; Command-Q ignored in a game.
-  `Deimos/Core` **483 / 0 / 0**; replay 4 / 0; all four builds. **Never launched yet.** S8b may start (goldens → 491,
-  stage, gate 4).
-  **S3b closed 2026-11-20** (`docs/handoff-deimos-phase4-s3b.md`): the level select is the original's — three
-  previews, START / NO ACCESS, the hover outline, moving, the accept and refusal flashes, Esc, the pause. Nothing a
-  player would notice until S8a. The listing showed the right-hand preview DOES draw its hover outline (plan ruling 15
-  and grounding A risk 7 were wrong; correction listed for the gate-4 card). `Deimos/Core` is **441 / 0 / 0**;
-  replay 4 / 0; Debug and Release build.
+- **Waiting on Ben:** (1) his first play of the staged app — the first launch of the front end ever, unless the line
+  above says otherwise; (2) gate 4, "does the front end work like Deimos", and any of the card's numbered decisions he
+  wants changed; (3) gate 3, "does the campaign play like Deimos", with its four named questions (flip pitch; sector
+  12 ending with the Beamer alive; own overload while invulnerable; player 2's keys); (4) gate 2, "does level 1 play
+  like Deimos". His notes from any gate become a fix wave first.
+- **Where things are:** the plan `docs/superpowers/plans/2026-11-20-deimos-phase4.md` (D52; as executed: D57); the
+  section handoffs `docs/handoff-deimos-phase4-*.md` (history below); Ben's answers in
+  `~/.claude/coordinator-notes/deimos-phase4-mailbox.md`; the OS X build compared with the OS 9 one in
+  `docs/deimos/osx-build.md`; the controller guide `Deimos/GAMEPAD.md`.
+- **Next after the gates:** the fix wave from Ben's notes; the whole-game OS 9 / OS X comparison (Ben: "Yes, after
+  Phase 4"); Phase 5 (Windows).
+- **Open from Phase 4** (all on the card's "Known gaps and faults"): one narrow known fault (an app switch during the
+  erase question, then Quit, leaves the suspended flags set); the original's pause screen on leaving the app not
+  built (a macOS quit during play waits for the player's return); the OS X build's Preferences… menu item and Edit
+  menu not built; the pressed 1 / 2 PLAYER button lit a pass too long on the way back; the menu loading `back` into a
+  level-map-sized buffer (unchecked against the listing); input on the pass where a screen that draws nothing
+  finishes; small ones (a key with no character sent as 0, the background pump's bound, the logo sound on a quit
+  during the boot, no test for an unreadable settings file or a sector chosen after a Quit at the level select);
+  `FrontEndState.recordedFilmForTests` unused. Nothing a test can check proves how any screen looks.
 - **Data:** `Resources/Deimos/` in git; `deimos-census` 872 entries, 0 failures.
-- **Open:** RE bank `docs/deimos/INDEX.md` #13, #59 residue, #63 and 134 cross-file label mismatches (#64 closed 2026-11-20); Ben's
-  ear/eye items (on the gate card). Not modelled until Phase 4: the quit flag inside the Caps Lock wait (the mouse ending a film and
-  a film returning to the menu landed in S5 / S3a; the app passes no mouse button until S8a). Not
-  proved by any test: winning sector 12's end fight by destroying the Beamer (the sweep outlasts it on the
-  controller's timer, as the data allows); the feel of sectors 5–12 (no film covers them). A game started with
-  `-sector N` has no finale (the original's rule). A bad launch value quits silently in a Release build. Small follow-ups: four
-  private film lookups remain inside the core test bundle; the app's argument parser has no test target; the
+- **Open (older):** RE bank `docs/deimos/INDEX.md` #13, #59 residue, #63 and 134 cross-file label mismatches (#64
+  closed 2026-11-20); Ben's ear/eye items (on the gate cards). Not proved by any test: winning sector 12's end fight by
+  destroying the Beamer (the sweep outlasts it on the controller's timer, as the data allows); the feel of sectors
+  5–12 (no film covers them). A game started above sector 1 has no finale (the original's rule). Small follow-ups:
+  four private film lookups remain inside the core test bundle; the app's argument parser has no test target; the
   DEBUG-only `-debugCapsLock` swallows a following flag; the app's two data alerts do not use the shared refusal
   helper; a failed `--frames` write can hide a film's result line; `HeadlessRunner` traps on an end no rule
   explains; stale comments (`ScrollState.step` "Phase 2", `Removal.swift:59`); `MotionBlurPool.emit` copies +0x90.
   Not independently confirmed: sound actually reaching the speakers (an offline probe of the same audio graph
   passed); frame checks under translucent or scaled draws.
+- **Deimos Phase 4 history** (each section closed 2026-11-20 unless dated; `Deimos/Core` count at its close):
+  - **Plan** (D52): twelve sections, four grounding appendices; `docs/handoff-2026-11-20-deimos-phase4-plan.md`.
+  - **S0** the OS X build on file and compared (14 differences change the build); bank corrections; no Swift —
+    `docs/handoff-deimos-phase4-s0.md`.
+  - **S1a** the seam additions and the element list; fades follow OS X (16 passes); 385 —
+    `docs/handoff-deimos-phase4-s1a.md`.
+  - **S1b** the `FrontEnd` frame, a placeholder per screen, the direct start; 392 — `docs/handoff-deimos-phase4-s1b.md`.
+  - **S4** the settings file, high-score table, name entry, scores screen; erase question moved to the menu; 406 —
+    `docs/handoff-deimos-phase4-s4.md`.
+  - **S2** the main menu and the credits (ten pages, no blank eleventh); 416 — `docs/handoff-deimos-phase4-s2.md`.
+  - **S3a** starting a game and coming back; `-players` / `-sector` and the erase question left for S8a; 423 —
+    `docs/handoff-deimos-phase4-s3a.md`.
+  - **S5** the film recorder (byte-exact against demo 1), Last Film, the demo cycle and `F`; 433 —
+    `docs/handoff-deimos-phase4-s5.md`.
+  - **S3b** the level select; the right-hand preview does draw its hover outline (ruling 15 corrected); 441 —
+    `docs/handoff-deimos-phase4-s3b.md`.
+  - **S6** the boot and the configuration window (Apple's Geneva 9; the drawn-control helpers); 454 —
+    `docs/handoff-deimos-phase4-s6.md`.
+  - **S7** the controls window and the controller layout; 467 — `docs/handoff-deimos-phase4-s7.md`.
+  - **S8a** the app wired to the front end; `-players` / `-sector` deleted; the erase question; unit names on the
+    first launch only; Command-Q ignored in a game; `-mute`; 483 — `docs/handoff-deimos-phase4-s8a.md`.
+  - **S8b** (2026-11-21) Command-Q quits from the pause (Ben's A5); eight front-end goldens; the gate-4 card; staged;
+    {{G2}} — `docs/handoff-deimos-phase4-s8b.md`.
 
 ## Cythera — 2026-11-15 (wave 1 session A closed: C8 + C9 merged; session B next)
 
