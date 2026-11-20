@@ -244,8 +244,9 @@ public struct DeimosSession: Sendable {
     ///    `FUN_10046ae0` (`10007094`) → `FUN_100298c0` P1, P2 incl. the coin-tally text (`100070a8..100070c0`) → the
     ///    accuracy tally text `FUN_10007d60` (`100070c4`) → the notice `FUN_100184b0` (`100070c8`) → the score bar
     ///    `FUN_10031ae0` (`100070f0`), its screen blits off when not appeared (`100070d0..10007108`).
-    /// 4. A film (`10005a1c..10005aa0`): `FUN_10048e60` (the mouse button — ◇ stand-in 8, `HeldKeys` has no mouse)
-    ///    or `FUN_10009750` (P1's cursor > frames) → `FUN_100064c0` and no banner (`10005a48 → 10005aa4`); else the
+    /// 4. A film (`10005a1c..10005aa0`): `FUN_10048e60` (`Button()`, the mouse button's live state: `HeldKeys
+    ///    .mouseButton`) or `FUN_10009750` (P1's cursor > frames) → `FUN_100064c0` (G+0x08 = 0, nothing else) and no
+    ///    banner (`10005a48 → 10005aa4`); else the
     ///    REPLAY banner (`10005a50..10005a9c`: format 0x26, GameString 9, +0x10c = 15, +0x10d = 1, +0x110 = 0,
     ///    `FUN_1000d380(rec, 0)`).
     /// 5. End frame `FUN_10030570(ctrl, 1, appeared)` (`10005ab0`) → `FUN_10030bc0` (`10030bec..10030dc4`): messages
@@ -318,7 +319,7 @@ public struct DeimosSession: Sendable {
 
         // 4. The film overlay.
         if film {                                                    // 10005a1c..10005a20
-            if game.film?.finished ?? true {                         // 10005a24..10005a44 (FUN_10048e60: ◇ no mouse)
+            if keys.mouseButton || (game.film?.finished ?? true) {   // 10005a24 FUN_10048e60 Button(); 10005a38
                 game.flags.running = false                           // 10005a48 FUN_100064c0
                 if end == nil { end = .filmEnded }
             } else {

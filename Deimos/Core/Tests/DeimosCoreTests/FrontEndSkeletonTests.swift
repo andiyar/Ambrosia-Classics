@@ -103,10 +103,7 @@ final class FrontEndSkeletonTests: XCTestCase {
         // Scores and name entry are built (Phase 4 S4 HS): ScoresScreenTests, NameEntryTests.
         var credits = Credits()
         check(credits.pass(keys: HeldKeys(), ticks: 0, returned: nil, state: &state), .leave, "credits")
-        for kind in [Films.Kind.demo, .lastFilm] {
-            var films = Films(kind: kind)
-            check(films.pass(keys: HeldKeys(), ticks: 0, returned: nil, state: &state), ScreenDone(), "films \(kind)")
-        }
+        // Films is built (Phase 4 S5 DM): FilmsTests.
         var config = ConfigDialog(firstLaunch: true)
         check(config.pass(keys: HeldKeys(), ticks: 0, returned: nil, state: &state), false, "configuration window")
         var controls = ControlsDialog()
