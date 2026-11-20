@@ -148,18 +148,6 @@ final class FeatureGoldenTests: XCTestCase {
         XCTAssertEqual(t.ticks, 1730)
     }
 
-    /// 6A-WD: the trace's last frame (the 60th iteration's presented screen). Deleted at 6A-L10L11 (the wind draws
-    /// nothing of its own; the trace and level 10's first-frame golden cover it).
-    func testLevel10WindFeatureGolden() throws {
-        let t = try Self.windTrace()
-        XCTAssertEqual(String(Self.hash(t.trace), radix: 16), "20b0a649c605b4d0", "the same trace")
-        // Measured at the 6A-WD review fix round (FNV-1a 64 of the 640×480 screen indices after the 60th iteration's
-        // draws, the test colour model), on the 1,730th tick (now 1729). With the wind branch stubbed the trace and this
-        // frame differ (checked once at the fix round, never committed).
-        XCTAssertEqual(t.ticks, 1730)
-        XCTAssertEqual(String(t.fnv, radix: 16), "c9ad94cdb8b2d287", "the level-10 wind feature golden")
-    }
-
     // MARK: - 6A-RC: rotating cannons
 
     /// 6A-RC's level-10 leave-out list (ENG §7.2; the card): the 27 records the port still refuses there once the
@@ -314,31 +302,6 @@ final class FeatureGoldenTests: XCTestCase {
         XCTAssertEqual(String(Self.hash(a.trace), radix: 16), "a94f59ac15d64d04", "record 89's trace")
         XCTAssertEqual(String(Self.hash(b.trace), radix: 16), "2970c03ffb33c302", "record 200's trace")
         XCTAssertEqual([a.ticks.first, a.ticks.last, b.ticks.first, b.ticks.last], [1612, 1870, 1612, 1870])
-    }
-
-    /// 6A-RC: the first presented frame on which a rotating cannon on screen has turned — record 200 from
-    /// `cannon200Start`, whole in the view. Deleted at 6A-L10L11 (the trace pins the turning; level 10's first-frame
-    /// golden pins the draw).
-    func testLevel10RotatingCannonFeatureGolden() throws {
-        let t = try Self.cannonTrace(record: 200, start: Self.cannon200Start, frames: 12)
-        // The first Handle that turns it: iteration 9's (its pause 8 counted down on iterations 1…8).
-        let i = try XCTUnwrap(t.trace.firstIndex { $0.aim != t.trace[0].aim })
-        XCTAssertEqual(i + 1, 9)
-        let k = t.trace[i]
-        XCTAssertEqual([Int(t.trace[i - 1].aim), t.trace[i - 1].face, Int(t.trace[i - 1].rotation)], [0, 0, 0])
-        XCTAssertEqual([Int(k.aim), k.face, Int(k.rotation)], [2, 0, 336])   // cell 0 at 2·((30·180 / 16) / 2)
-        // An iteration draws (`.PaintFrameWrap`'s `.WrapDrawSprites`) BEFORE its `.HandleSprites`, so iteration 9's frame
-        // still shows aim 0: the turned cannon is first drawn by iteration 10 — the golden frame. On screen there: its
-        // 150 × 150 cell inside the 640 × 416 view.
-        let g = i + 1, view = t.scroll[i]
-        XCTAssertTrue(view.x <= k.x && k.x + 0x96 <= view.x + 640 && view.y <= k.y && k.y + 0x96 <= view.y + 416)
-        XCTAssertNotEqual(t.fnv[g], t.fnv[i])
-        // Measured at 6A-RC (FNV-1a 64 of the 640×480 screen indices after that iteration's draws, the test colour
-        // model), on the 1,630th tick (now 1629). With the rotation stubbed (one local patch, never committed) this
-        // frame is 5189680b496e8bbd and iteration 9's is unchanged (1fe12083e4c9326e) — the turn first shows here.
-        XCTAssertEqual(t.ticks[g], 1630)
-        XCTAssertEqual(String(t.fnv[i], radix: 16), "1fe12083e4c9326e", "iteration 9: the cannon still drawn at aim 0")
-        XCTAssertEqual(String(t.fnv[g], radix: 16), "1f159e3178d4733", "the level-10 rotating-cannon feature golden")
     }
 
     // MARK: - 6A-TR: trees and their branches

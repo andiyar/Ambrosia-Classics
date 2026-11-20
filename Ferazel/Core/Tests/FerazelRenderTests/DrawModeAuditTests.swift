@@ -1019,10 +1019,14 @@ final class DrawModeAuditTests: XCTestCase {
     /// `.InitSprite`'s clip (`SpriteSlot.clip`, `.StandardSpriteHandles`' reset): the whole face.
     static let openClip = SpriteClip(left: 0, right: 32000, bottom: 32000, top: 0)
 
-    /// The widest loaded face (the transforms' and the erase twins' bound) and a small one, by PICT order.
+    /// The widest loaded face (the transforms' and the erase twins' bound) and a small one, by PICT order. The trees'
+    /// faces (0xc08…0xc0f, up to 301 wide; 6A-TR) are left out: no rotation or scale writer names a tree
+    /// (`.untransformableNotTransformed`'s tree check), so a rotated or scaled probe on one asks for a draw the game never
+    /// makes (6A-L10L11: level 10 is the first built level to load one; on levels 1–5 the probes are unchanged).
     private static func probeFaces(_ r: FrameRenderer) -> [FaceRef] {
         var wide: (FaceRef, Int)?, small: (FaceRef, Int)?
-        for (pict, s) in r.sprites.faces.sheets.sorted(by: { $0.key < $1.key }) {
+        for (pict, s) in r.sprites.faces.sheets.sorted(by: { $0.key < $1.key })
+            where !BackgroundSprite.trees.contains(pict) {
             for (i, f) in s.faces.enumerated() where f.height > 4 {
                 let ref = FaceRef(pict: pict, index: i, set: .encoded)
                 if f.width > (wide?.1 ?? -1) { wide = (ref, f.width) }
@@ -1990,13 +1994,14 @@ final class DrawModeAuditTests: XCTestCase {
             XCTAssertNoThrow(try r.apply(FrameOps(draws: ops)), "\(c)")
             XCTAssertEqual(r.executed, [.omniPxOn(2)] + Array(repeating: .omniPx(4), count: 9), "\(c)")
         case .headerOmniPxStrip:
-            // Every built level opens: OmniPx 0 / 2 / 4 / 5 (built: 0; level 5's 2 arrives with LV5); no built level has a
-            // horizon strip (header 0x2716 = 0 on levels 1–5 — 6A-S8's switch-off: no strip sprite, no mode 8).
+            // Every built level opens: OmniPx 0 / 2 / 4 / 5 (built: 0; level 5's 2 arrives with LV5); no built level but
+            // level 10 has a horizon strip (header 0x2716 = 0 on levels 1–5 and 11 — 6A-S8's switch-off: no strip
+            // sprite, no mode 8; level 10's PICT 265, built by 6A-S8, joined the built levels at 6A-L10L11).
             for a in audits {
                 let h = a.level.file.header
                 XCTAssertTrue([0, 2, 4, 5].contains(h.omniPxMode),
                               "\(c): level \(a.level.number) OmniPx \(h.omniPxMode)")
-                XCTAssertEqual(h.stripPict, 0, "\(c): level \(a.level.number) strip")
+                XCTAssertEqual(h.stripPict, a.level.number == 10 ? 265 : 0, "\(c): level \(a.level.number) strip")
                 XCTAssertNoThrow(try LevelRun.refuseUndrawnHeader(h), "\(c): level \(a.level.number)")
             }
             // A synthetic header (level 1's Mlvl, one byte changed) is refused by value.

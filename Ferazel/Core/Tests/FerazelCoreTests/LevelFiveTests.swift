@@ -6,7 +6,8 @@ import HectorResources
 /// to the Warrior's arena — every one of its 32 records sets up (16 types; new: the Warrior 1820 and the decorations
 /// 2822, 2826, 2829, 2840, 2841), the arena lock at x 1384 with the camera's 40-frame pan (`BossArena`, bosses §1.3),
 /// the gate 2940 (p1 −1) shut while the Warrior is alive, the boss-music rule at both `.GameLoop` sites reading "no
-/// boss alive" live, the Warrior (his Handle real since 6A-W1, his ◇ Hit until 6A-W2), and `BuiltLevels = 1...5`.
+/// boss alive" live, the Warrior (his Handle real since 6A-W1, his ◇ Hit until 6A-W2), and `BuiltLevels = 1...5`
+/// (6A-L10L11: [1…5, 10, 11] — level 5's exit enters level 10).
 /// Against the committed `Resources/Ferazel` (D26); a missing data file is a FAILURE, never a skip.
 final class LevelFiveTests: XCTestCase {
 
@@ -325,8 +326,8 @@ final class LevelFiveTests: XCTestCase {
     }
 
     func testBuiltLevelsFive() throws {
-        XCTAssertEqual(BuiltLevels.list, [1, 2, 3, 4, 5])
-        XCTAssertEqual(BuiltLevels.notBuiltReport(10), "Level 10 is not built yet (Phase 6).")
+        XCTAssertEqual(BuiltLevels.list, [1, 2, 3, 4, 5, 10, 11])
+        XCTAssertEqual(BuiltLevels.notBuiltReport(15), "Level 15 is not built yet (Phase 6).")
         let r = try resources()
         // `startLevel` 5 (the hidden `FerazelLevel` switch) is accepted: New Game at level 5, nothing asked.
         let rig = Rig(r, start: 5)
@@ -361,27 +362,31 @@ final class LevelFiveTests: XCTestCase {
             XCTAssertEqual(ops.draws.filter { if case .omniPx(.update) = $0 { true } else { false } }.count, 1)
         }
         XCTAssertEqual(s.globals.omniPxActive, 1)
-        // Level 5's exit p1 1 (record 26, x −93, beyond the gate) → node 10 → Return → "Level 10 is not built yet
-        // (Phase 6)." and no level run; the level's end turned OmniPx off and killed it, and its counter runs on.
+        // Level 5's exit p1 1 (record 26, x −93, beyond the gate) → node 10 → Return → level 10 (6A-L10L11: built; before
+        // it, "Level 10 is not built yet (Phase 6)." and no level run); the level's end turned OmniPx off and killed it,
+        // and its counter runs on.
         let exit = try LevelFile.load(from: r, level: 5).placements[26]
         XCTAssertEqual([exit.type, exit.p1, exit.x], [3249, 1, -93])
         // The pan counter `_DAT_1009ff9c` runs on across the level exit (only `.InitGameGlobals` zeroes it, M l. 806):
         // armed far below 0 here, still counting up when the level ends.
         s.world.arena.panCounter = -1000
         try rig.exit(26, toNode: 10)
-        XCTAssertEqual(rig.asked.last, .report(text: "Level 10 is not built yet (Phase 6)."))
-        XCTAssertNil(rig.flow.levelRun)
+        XCTAssertEqual(rig.asked, [], "no not-built report")
+        XCTAssertEqual(rig.flow.levelRun?.levelNumber, 10)
         XCTAssertEqual(s.globals.omniPxActive, 0, "`.TurnOffOmniPx` at the level's end")
         XCTAssertTrue(s.omniPx.faces.allSatisfy { $0 == nil }, "`.KillOmniPx` at the level's end")
         XCTAssertGreaterThan(s.omniPx.counter, 0)
         XCTAssertEqual(rig.flow.levelCarry.omniPxCounter, s.omniPx.counter)
-        XCTAssertEqual(rig.levels.prepared, [5])
         // The pan counter left at the exit is the flow's carry and the next level's session starts on it; New Game's
         // `.InitGameGlobals` zeroes it (M l. 806, 822).
         XCTAssertLessThan(s.world.arena.panCounter, 0)
         XCTAssertEqual(rig.flow.levelCarry.panCounter, s.world.arena.panCounter)
         let next = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: 5, carry: rig.flow.levelCarry)
         XCTAssertEqual(next.world.arena.panCounter, s.world.arena.panCounter)
+        // Level 10 runs: its own set-up (`prepare`), its first iterations.
+        rig.drive { f in (f.levelRun?.iterations ?? 0) >= 1 }
+        XCTAssertEqual(rig.levels.prepared, [5, 10])
+        XCTAssertEqual(rig.asked, [])
         rig.flow.initGameGlobals()
         XCTAssertEqual(rig.flow.levelCarry.panCounter, 0)
     }

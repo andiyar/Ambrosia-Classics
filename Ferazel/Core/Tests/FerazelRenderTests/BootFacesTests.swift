@@ -345,12 +345,18 @@ final class BootFacesTests: XCTestCase {
         // / f120: the real Warrior Handle spawns his three crates 0x433 on its first frame (+3 rows, 55 → 58) and runs
         // his head (hot rect) every frame; with the Handle body stubbed back to LV5's stand-in (switch-off check) every
         // old value returned — was f30 55 / 0x69068d5e8151b0cc, f120 55 / 0xb9f08ee19927f3e7; L5 init unchanged.
+        // 6A-L10L11 added levels 10 and 11 (`BuiltLevels` [1…5, 10, 11]): their six rows are new pins, measured (no
+        // earlier value exists); levels 1–5 untouched.
         let pinned: [String: (rows: Int, fnv: UInt64)] = [
             "L1 init": (190, 0x157d6742ce800e1f), "L1 f30": (240, 0x8190d7eb68896260), "L1 f120": (240, 0xcda33ae9706a4618),
             "L2 init": (229, 0x8fb8d314f8d35783), "L2 f30": (278, 0x7e9c0511f07e745d), "L2 f120": (278, 0x35c9c2eb3280e4b0),
             "L3 init": (234, 0x9ee49e49aaa668a4), "L3 f30": (310, 0x56a7ccb0dd544488), "L3 f120": (310, 0xc43bacea46d2ff94),
             "L4 init": (264, 0x1d9360dec485c68b), "L4 f30": (342, 0x96ede8588083992a), "L4 f120": (342, 0xc6e32956a351c41f),
             "L5 init": (46, 0xb039da66a884cb8a), "L5 f30": (58, 0x1142f7a252aecfcd), "L5 f120": (58, 0x9806297cea4531f2),
+            "L10 init": (385, 0xbb961ddb0ecba42d), "L10 f30": (398, 0xf7d378409aba7e2e),
+            "L10 f120": (398, 0x29a5b373220a24e1),
+            "L11 init": (434, 0xc83aaf016c964735), "L11 f30": (479, 0xf004624fe7acbe58),
+            "L11 f120": (479, 0xf55033eec8d3de69),
         ]
         func rect(_ x: IdleSprites.Rect) -> String { "(\(x.top),\(x.left),\(x.bottom),\(x.right))" }
         func emitter(_ f: ParticleFace?) -> String {

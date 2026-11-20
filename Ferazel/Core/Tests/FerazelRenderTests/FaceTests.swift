@@ -659,14 +659,21 @@ final class FaceTests: XCTestCase {
         // 1305, 3202, 3201, 1302, 1293; L3 1302, 1305, 3205; L4 3201, 1305, 1302. LV5: level 5 places no chest, door,
         // crate, Bat, Frog or Blob (its 16 types: Bonus 1059, 1340, 3100, 3214; Box 1065, 2820, 2821, 2822, 2826, 2829,
         // 2840, 2841, 2940; Platform 1403; Warrior 1820; Background 3249) — no key face, no drop, none of those sets;
-        // its own cache faces are the Warrior's three sets.
-        let keys: [Int: [Int16]] = [1: [0xc81, 0xc82], 2: [0xc81, 0xc82], 3: [0xc83], 4: [0xc81], 5: []]
+        // its own cache faces are the Warrior's three sets. 6A-L10L11: level 10 places no chest, door or crate; level 11
+        // places two chests (139 p2 3201 → 0xc81, p3 1; 356 p2 1302 → the hurt coin 0x516, p3 10), both unlocked (p1 0),
+        // and the door 140 p1 1 (key face 0xc81). Their Handles' cache sets: the 1750's (both levels), the swarm members'
+        // 0x74d (both: records 0x200 of the swarms 1869), the geysers' three (level 10), the 1851's 0x73a / 0x73b (level
+        // 11, p1 < 0 records mark 0x73b too).
+        let keys: [Int: [Int16]] = [1: [0xc81, 0xc82], 2: [0xc81, 0xc82], 3: [0xc83], 4: [0xc81], 5: [], 10: [],
+                                    11: [0xc81]]
         let drops: [Int: [(Int16, Int)]] = [
             1: [(0xc81, 1), (0xc82, 1), (0x51d, 9), (0x516, 9), (0xc93, 1), (0x50b, 1), (0x50d, 1)],
             2: [(0x51d, 9), (0xc82, 1), (0xc81, 1), (0x516, 9), (0x50d, 1)],
             3: [(0x516, 9), (0x51d, 9), (0xc85, 1)],
             4: [(0xc81, 1), (0x51d, 9), (0x516, 9)],
             5: [],
+            10: [],
+            11: [(0xc81, 1), (0x516, 9)],
         ]
         for n in BuiltLevels.list {
             let frame = n == 1 ? one : try renderer(n)
@@ -676,6 +683,21 @@ final class FaceTests: XCTestCase {
             if (3...4).contains(n) { want("level \(n) blob set", BlobCrab.blobSet, cells: 16, in: frame) }
             if n == 5 {
                 for sh in Warrior.sheets { want("level 5 Warrior set", sh.pict, cells: sh.count, in: frame) }
+            }
+            if n == 10 || n == 11 {
+                for sh in CachedFaces.sheets(markedBy: [Int16(0x6d6)]) {
+                    want("level \(n) 1750 set", sh.pict, cells: sh.single ? 1 : sh.count, in: frame)
+                }
+                want("level \(n) swarm member set", Bat.memberSet, cells: 8, in: frame)
+            }
+            if n == 10 {
+                for (p, cells) in [(Geyser.baseSet, 12), (Geyser.headSet, 6), (Geyser.segmentSet, 6)] {
+                    want("level 10 geyser set", p, cells: cells, in: frame)
+                }
+            }
+            if n == 11 {
+                want("level 11 1851 set", Bat.familySet, cells: 12, in: frame)
+                want("level 11 1851 back set", Bat.familyBackSet, cells: 12, in: frame)
             }
             for k in try XCTUnwrap(keys[n], "level \(n): no key row") { want("level \(n) key face", k, in: frame) }
             for (pict, cells) in try XCTUnwrap(drops[n], "level \(n): no drop row") { want("level \(n) drop", pict, cells: cells, in: frame) }
