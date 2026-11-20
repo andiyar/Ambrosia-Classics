@@ -197,9 +197,17 @@ final class CachedFacesTests: XCTestCase {
             XCTAssertTrue(m.records.contains(k), "\(t)")
         }
         XCTAssertTrue(m.records.contains(.set(28)))
-        // Measured at CF's point (6A-CF): needed records, n, q, steps (24 sets, 9 singles). Every later task that adds
-        // a mark on level 22 or makes one of its records set up re-derives these (BX1b, BD, MP, CP).
-        XCTAssertEqual(bar(m.records, m.L), [33, 168, 336, 33])
+        // 6A-BX1b: the eight teleporters 1060 now set up and mark nothing (boot single 0x424); the NPC 2956 (record
+        // 405) sets up and marks its single 0xb8c (#61, 0-based `.single(60)`, M l. 59716).
+        XCTAssertTrue(types.isSuperset(of: [1060, 2956]))
+        XCTAssertEqual(m.setUp.filter { $0.type == 1060 }.count, 8)
+        XCTAssertEqual(CachedFaces.markedRecords(type: 1060), [])
+        XCTAssertTrue(m.records.contains(.single(60)))
+        XCTAssertEqual(CachedFaces.record(.single(60)).pict, 2956)
+        // Measured: needed records, n, q, steps. At CF's point (6A-CF) [33, 168, 336, 33] (24 sets, 9 singles); at
+        // 6A-BX1b [34, 169, 338, 34] (+ 2956's single, one face: 24 sets, 10 singles). Every later task that adds a mark
+        // on level 22 or makes one of its records set up re-derives these (BD, MP, CP).
+        XCTAssertEqual(bar(m.records, m.L), [34, 169, 338, 34])
     }
 
     func testShot46bReadsRecord0844() throws {
