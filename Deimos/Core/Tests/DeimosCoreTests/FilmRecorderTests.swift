@@ -209,6 +209,16 @@ final class FilmRecorderTests: XCTestCase {
             if ref.players[0].lifeState == 4 { firstAppear = ref.gameTime }
         }
         let appear = try XCTUnwrap(firstAppear, "player 1 never reached state 4 within \(bound) passes")
+        // The block's level field is the CURRENT level G+0x18 at each write (`10009940 FUN_10005cc0`), not the start
+        // level the header keeps: with G+0x18 poked to le06, the next recorded tick stores le06.
+        let before = try XCTUnwrap(ref.game.recorder).cursors[0]
+        ref.game.flags.level = FourCC("le06")!
+        _ = ref.pass(keys: HeldKeys(), ticks: 0)
+        let rec = try XCTUnwrap(ref.game.recorder)
+        XCTAssertEqual(rec.cursors[0], before + 1, "the poked pass recorded a tick")
+        let recorded = try Film(data: Data(rec.image))
+        XCTAssertEqual(recorded.level, FourCC("le07"), "the header keeps the start level")
+        XCTAssertEqual(recorded.players[0].level, FourCC("le06"), "the block keeps the current level")
 
         var r = try DeimosSession(assets: a, prefs: .fresh, start: SessionStart(sector: 1, players: 1, film: film),
                                   seed: 0)

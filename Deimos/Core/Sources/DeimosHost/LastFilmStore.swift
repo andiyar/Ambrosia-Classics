@@ -45,9 +45,12 @@ public struct LastFilmFileStore: LastFilmStore {
         try Data(film).write(to: fileURL, options: .atomic)
     }
 
-    /// The saved image, or nil when none has been saved.
+    /// The saved image, or nil when none has been saved; a file that is not exactly `Film.size` bytes throws
+    /// (`FilmError.wrongSize`).
     public func load() throws -> [UInt8]? {
         guard FileManager.default.fileExists(atPath: fileURL.path) else { return nil }
-        return [UInt8](try Data(contentsOf: fileURL))
+        let bytes = [UInt8](try Data(contentsOf: fileURL))
+        guard bytes.count == Film.size else { throw FilmError.wrongSize(bytes.count) }
+        return bytes
     }
 }

@@ -77,25 +77,6 @@ public struct Film: Sendable, Equatable {
         trailingBytesAreZero = zero
     }
 
-    /// The film's file image, the inverse of `init(data:)` (Phase 4 S5): the header, both blocks' frames, biased
-    /// score and level, and each block's `frames` input bytes; every other byte zero (bytes 0x0d–0x0f and each block
-    /// past its last input — exact for a film whose `trailingBytesAreZero`, as every shipped film and every recorded
-    /// one is).
-    public var image: [UInt8] {
-        var b = [UInt8](repeating: 0, count: Self.size)
-        Self.store(version, at: 0, in: &b)
-        Self.store(seed, at: 4, in: &b)
-        Self.store(level.rawValue, at: 8, in: &b)
-        b[0x0c] = UInt8(truncatingIfNeeded: playerCount)
-        for (block, base) in zip(players, Self.blockOffsets) {
-            Self.store(UInt32(block.frames), at: base, in: &b)
-            Self.store(UInt32(bitPattern: block.score) &+ Self.scoreBias, at: base + 4, in: &b)
-            Self.store(block.level.rawValue, at: base + 8, in: &b)
-            b.replaceSubrange((base + 0xc)..<(base + 0xc + block.inputs.count), with: block.inputs)
-        }
-        return b
-    }
-
     /// Writes `value` big-endian at `offset` of a film image (the `stw`s of `FUN_10009390`, `FUN_10009710` and
     /// `FUN_10009830` — Phase 4 S5).
     static func store(_ value: UInt32, at offset: Int, in image: inout [UInt8]) {

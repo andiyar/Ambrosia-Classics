@@ -52,7 +52,4 @@ public struct FilmRecorder: Equatable, Sendable {
         Film.store(UInt32(bitPattern: score) &+ Film.scoreBias, at: base + 4, in: &image)   // 10009920..1000993c
         Film.store(level.rawValue, at: base + 8, in: &image)                 // 10009940..1000994c FUN_10005cc0
     }
-
-    /// Player `p`'s recorded ticks (the block's frames field).
-    public func frames(player p: Int) -> Int { cursors[p] }
 }

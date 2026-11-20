@@ -52,5 +52,8 @@ final class LastFilmStoreTests: XCTestCase {
         // A second save replaces the first.
         try store.save(shippedLast)
         XCTAssertEqual(try store.load(), shippedLast)
+        // A file of the wrong size is refused.
+        try store.save(Array(shippedLast.dropLast()))
+        XCTAssertThrowsError(try store.load()) { XCTAssertEqual($0 as? FilmError, .wrongSize(Film.size - 1)) }
     }
 }

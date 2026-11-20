@@ -49,8 +49,9 @@ public enum SessionError: Error, Equatable, Sendable {
 ///   from the film (`FUN_10009680`), `srand(seed)`; the cursors are 0 (`FUN_10009970`). Not a film: level = the
 ///   start's sector's, G+0x21 = players (`10005770`), `srand(TickCount())` (`100057c8..100057d4`, here `seed`), the
 ///   recorder `FUN_10009710(film, level, G+0x21, seed)` (`100057ec`, `GameState.recorder`, Phase 4 S5). Then
-///   G+0x08 = 1, +0x0a = +0x09 = +0x39 = 0, +0x18 = level (`1000580c..1000582c`), +0x14 = sector `FUN_10011e30` (`10005844`), level info `FUN_10011fd0`, `FUN_10026410`
-///   for P1 then P2 (`10005860..10005888`, `GameState.setupPlayer`), `FUN_1004a990(1)` (input, no op), `FUN_100064d0`.
+///   G+0x08 = 1, +0x0a = +0x09 = +0x39 = 0, +0x18 = level (`1000580c..1000582c`), +0x14 = sector `FUN_10011e30`
+///   (`10005844`), level info `FUN_10011fd0`, `FUN_10026410` for P1 then P2 (`10005860..10005888`,
+///   `GameState.setupPlayer`), `FUN_1004a990(1)` (input, no op), `FUN_100064d0`.
 /// - **Level start** `FUN_100064d0(film, info)` (`100064d0..10006984`) — split in two (plan LT, ruling 5): its STATE
 ///   part is `GameState.levelStart(film:)`, which `levelCompleteStep` also calls for the next sector; its DRAWING
 ///   part (the `.loadTerrain`, the fill, the score bar's level-start ops, the first terrain blit) is
