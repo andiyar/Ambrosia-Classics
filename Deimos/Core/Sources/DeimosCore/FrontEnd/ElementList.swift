@@ -72,24 +72,32 @@ public struct ElementList: Equatable, Sendable {
         return Self.rect(elements[index], text: text, assets: assets)
     }
 
-    /// `FUN_1000db90(list, rate)` — fade the list in: level 32 (`1000dbd0 li r25,0x20`); each pass lowers it by 1 while
-    /// ≠ 0 and draws every element at it; 32 passes at 31 … 0 (`1000dee0 cmplwi r25,0; bne`). An empty list: no pass.
+    /// `FUN_1000db90(list, rate)` (OS X build: `FUN_1000de10`) — fade the list in. The code follows X, per ruling 5
+    /// (osx-build.md D1): level 32 (X `1000de50 li r25,0x20`); each pass lowers it by **2** while ≠ 0 (X `1000de74
+    /// cmplwi r25,0; beq` / `1000de80 subi r25,r25,0x2`) and draws every element at it; 16 passes at 30, 28 … 0 (X
+    /// `1000e160 cmplwi r25,0; bne`). The Mac OS 9 build steps by 1 (L `1000dc00 subi r25,r25,0x1`; 32 passes at 31 …
+    /// 0, L `1000dee0`). An empty list: no pass.
     public func fadeIn(rate: UInt32, text: TextLayout, assets: DeimosAssets) -> [RenderOp] {
-        fade(levels: (0...31).reversed(), rate: rate, text: text, assets: assets)
+        fade(levels: stride(from: 30, through: 0, by: -2), rate: rate, text: text, assets: assets)
     }
 
-    /// `FUN_1000df00(list, rate)` — fade the list out: level 0 (`1000df40 li r25,0`); each pass raises it by 1 while
-    /// < 32; 32 passes at 1 … 32 (`1000e250 cmplwi r25,0x20; bne`). The last pass (alpha 32) only restores: the draw
-    /// of alpha 32 draws nothing (`100195a4`), so the elements are erased. An empty list: no pass.
+    /// `FUN_1000df00(list, rate)` (OS X build: `FUN_1000e180`) — fade the list out. The code follows X, per ruling 5
+    /// (osx-build.md D1): level 0 (X `1000e1c0 li r25,0`); each pass raises it by **2** while < 32 (X `1000e1e4
+    /// cmplwi r25,0x20; bge` / `1000e1f0 addi r25,r25,0x2`); 16 passes at 2, 4 … 32 (X `1000e4d0 cmplwi r25,0x20;
+    /// bne`). The Mac OS 9 build steps by 1 (L `1000df70`; 32 passes at 1 … 32, L `1000e250`). The last pass (alpha
+    /// 32) only restores: the draw of alpha 32 draws nothing (L `100195a4`, X `100197b4 cmplwi r0,0x20; beq`), so the
+    /// elements are erased. An empty list: no pass.
     public func fadeOut(rate: UInt32, text: TextLayout, assets: DeimosAssets) -> [RenderOp] {
-        fade(levels: 1...32, rate: rate, text: text, assets: assets)
+        fade(levels: stride(from: 2, through: 32, by: 2), rate: rate, text: text, assets: assets)
     }
 
     /// `FUN_1000d6d0(fmt)` — fade one text record in (the loading lines; `FUN_10023040` starts them at blend 0x20).
     /// The rect is measured once from the record (`FUN_1000d260`, before the loop). Each pass: wait until `TickCount ≥
     /// prev + 1` (the constant 1, not the rate; the first pass unwaited, `prev` = 0), restore the rect, `blend −= 1` if
     /// ≠ 0 (`1000d78c..1000d79c`), draw the local copy (`FUN_1000d380`), present the rect; loop while blend ≠ 0. Blend
-    /// 32 → 32 passes at 31 … 0; blend 0 → one pass at 0. The record itself is not changed.
+    /// 32 → 32 passes at 31 … 0; blend 0 → one pass at 0. The record itself is not changed. The OS X build's
+    /// counterpart `FUN_1000d950` is the same (X `1000d9ec addi r29,r3,0x1` wait, `1000da18 subi r0,r3,0x1`,
+    /// `1000da48 cmplwi r0,0; bne`): D1 does not reach the one-element fade.
     ///
     /// A blend above 32 is accepted as the original accepts it: it simply runs more passes (blend n → n passes at
     /// n − 1 … 0). Only a negative blend is refused (precondition): the original would spin through ~2³² decrements
@@ -120,6 +128,9 @@ public struct ElementList: Equatable, Sendable {
     ///   `+0x118`** (cmd +0x18, `1000d9a8`) and **alpha = own `+0x114`** (cmd +0x1c, `1000d98c`) — unlike the fades —
     ///   draw-now `+0x110`, layer `+0x10c`, clip = back-buffer bounds unless `+0x10d`; drawn (`FUN_10019570`);
     /// - then present the rect only if `present` (`1000d9d8`).
+    ///
+    /// The OS X build's counterpart `FUN_1000da70` is the same (no level, no wait; alpha own `+0x114` X `1000dc0c`,
+    /// scale `+0x118` X `1000dc28`; sprite restore ungated X `1000dba4`).
     ///
     /// The callers: the menu redraw `FUN_100258e0` and the scores screen (`FUN_10021950`, `FUN_10021bd0` before its
     /// loop) pass (false, false) — the shell presents later; the name-entry redraw inside `FUN_10021bd0`'s loop passes
@@ -153,7 +164,9 @@ public struct ElementList: Equatable, Sendable {
     /// draw the copy (`FUN_1000d380`); sprite → rect at the record's scale, restore, the command from the G_Text
     /// template `0x100e5298` (x, y = centre, face, frame, flags template | 1, alpha = level `1000de58 stw r25,0x84(r1)`,
     /// draw-now `+0x110`, layer `+0x10c`, clip = back-buffer bounds unless `+0x10d`; **no scale store** — the template's
-    /// 1.0, TM §3.1 quirk), drawn (`FUN_10019570`); then present the rect.
+    /// 1.0, TM §3.1 quirk), drawn (`FUN_10019570`); then present the rect. The OS X build's pass body is the same
+    /// (X `1000de64` wait, `1000dfa0` max, `1000e0d8` alpha = level, no store to cmd +0x18); only the level's stride
+    /// differs (D1, the callers' `levels`).
     func fade(levels: some Sequence<Int>, rate: UInt32, text: TextLayout, assets: DeimosAssets) -> [RenderOp] {
         guard !elements.isEmpty else { return [] }                   // if (count != 0)
         var ops: [RenderOp] = []

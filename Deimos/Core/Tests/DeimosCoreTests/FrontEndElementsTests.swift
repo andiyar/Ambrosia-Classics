@@ -2,8 +2,9 @@ import XCTest
 import HectorResources
 @testable import DeimosCore
 
-/// G_Text's element lists and their fades (text-metrics-lists.md §3, §3.1; grounding A §5.2): bounds `FUN_1000da50`,
-/// fade in `FUN_1000db90`, fade out `FUN_1000df00`, one-element fade `FUN_1000d6d0`, draw once `FUN_1000d7f0`. Real
+/// G_Text's element lists and their fades (text-metrics-lists.md §3, §3.1; grounding A §5.2; osx-build.md D1): bounds
+/// `FUN_1000da50`, fade in `FUN_1000db90` (X `1000de10`), fade out `FUN_1000df00` (X `1000e180`), one-element fade
+/// `FUN_1000d6d0` (X `1000d950`), draw once `FUN_1000d7f0` (X `1000da70`). Real
 /// formats, strings and sprite frames from the shipped data; every loop is bounded by the op list it reads (G11: a
 /// pass count over its bound fails).
 final class FrontEndElementsTests: XCTestCase {
@@ -47,7 +48,8 @@ final class FrontEndElementsTests: XCTestCase {
         pass.compactMap { if case let .draw(c) = $0 { return c } else { return nil } }
     }
 
-    /// `FUN_1000db90` / `FUN_1000df00` (TM §3.1): 32 passes at levels 31 … 0 (in) and 1 … 32 (out), the rate
+    /// `FUN_1000db90` / `FUN_1000df00` as the OS X build runs them (X `1000de10` / `1000e180`, osx-build.md D1, ruling
+    /// 5): the level steps by 2 — 16 passes at levels 30, 28 … 0 (in) and 2, 4 … 32 (out), the rate
     /// `fctiwz(F160)` = 1 tick between pass starts, the first pass unwaited and nothing after the last; per element in
     /// list order: restore the rect from D+0x6c, draw, present the rect (D+0xc origin = 0, 0). Text alpha = max(level,
     /// own +0x114), unsigned; sprite alpha = level (own ignored), flags template | 1, scale the template's 1.0.
@@ -63,12 +65,13 @@ final class FrontEndElementsTests: XCTestCase {
         let logoRect = MacRect(top: 47, left: 241, bottom: 156, right: 399)
         let webRect = MacRect(top: 426, left: 249, bottom: 439, right: 392)
 
-        for (name, ops, levels) in [("in", list.fadeIn(rate: rate, text: t, assets: a), Array((0...31).reversed())),
-                                    ("out", list.fadeOut(rate: rate, text: t, assets: a), Array(1...32))] {
+        let inLevels = Array(stride(from: 30, through: 0, by: -2)), outLevels = Array(stride(from: 2, through: 32, by: 2))
+        for (name, ops, levels) in [("in", list.fadeIn(rate: rate, text: t, assets: a), inLevels),
+                                    ("out", list.fadeOut(rate: rate, text: t, assets: a), outLevels)] {
             let (ps, waits) = passes(ops)
-            XCTAssertEqual(ps.count, 32, name)
-            guard ps.count <= 32 else { return XCTFail("\(name): \(ps.count) passes, bound 32") }
-            XCTAssertEqual(waits, Array(repeating: .ticks(1), count: 31), name)
+            XCTAssertEqual(ps.count, 16, name)
+            guard ps.count <= 16 else { return XCTFail("\(name): \(ps.count) passes, bound 16") }
+            XCTAssertEqual(waits, Array(repeating: .ticks(1), count: 15), name)
             XCTAssertFalse({ if case .hostWait = ops.first { return true } else { return false } }(), name)
             XCTAssertFalse({ if case .hostWait = ops.last { return true } else { return false } }(), name)
             for (k, pass) in ps.enumerated() {
@@ -101,19 +104,19 @@ final class FrontEndElementsTests: XCTestCase {
                 XCTAssertEqual(glyphs.first?.face, FourCC("tesm"))
             }
         }
-        // Worked example B (TM §3.1): passes 1–5 of the fade-in at 31 … 27; inwe holds 12 from level 12 down.
+        // Worked example B (TM §3.1) as X runs it: passes 1–5 of the fade-in at 30 … 22; inwe holds 12 from level 12
+        // down.
         let inPasses = passes(list.fadeIn(rate: rate, text: t, assets: a)).passes
-        XCTAssertEqual(inPasses.prefix(5).map { draws($0).first?.alpha }, [31, 30, 29, 28, 27])
+        XCTAssertEqual(inPasses.prefix(5).map { draws($0).first?.alpha }, [30, 28, 26, 24, 22])
         XCTAssertEqual(inPasses.map { draws($0).dropFirst().first?.alpha },
-                       [31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13]
-                       + Array(repeating: 12, count: 13))
+                       [30, 28, 26, 24, 22, 20, 18, 16, 14] + Array(repeating: 12, count: 7))
         // The rate is the caller's: rate 3 waits 3 ticks between pass starts.
-        XCTAssertEqual(passes(list.fadeOut(rate: 3, text: t, assets: a)).waits, Array(repeating: .ticks(3), count: 31))
+        XCTAssertEqual(passes(list.fadeOut(rate: 3, text: t, assets: a)).waits, Array(repeating: .ticks(3), count: 15))
         // A colourised text element (format 2 `inwh`, own blend 0): flags 4, colour white, alpha = level.
         var hilite = try Self.web(a)
         hilite.record.format = a.formats[2]
         let h = passes(ElementList([hilite]).fadeOut(rate: rate, text: t, assets: a)).passes
-        XCTAssertEqual(h.map { draws($0).first?.alpha }, (1...32).map { UInt32($0) })
+        XCTAssertEqual(h.map { draws($0).first?.alpha }, stride(from: 2, through: 32, by: 2).map { UInt32($0) })
         XCTAssertEqual(Set(h.flatMap { draws($0).map(\.flags) }), [4])
         XCTAssertEqual(h.first.flatMap { draws($0).first }?.colour, a.formats[2].coloriseColor)
     }
@@ -180,7 +183,7 @@ final class FrontEndElementsTests: XCTestCase {
         XCTAssertEqual(list.bounds(of: 3, text: t, assets: a), MacRect(top: 47, left: 241, bottom: 156, right: 399))
     }
 
-    /// `FUN_1000d6d0(fmt)` (TM §3 table): the rect measured once; per pass wait until `TickCount ≥ prev + 1` (the first
+    /// `FUN_1000d6d0(fmt)` (TM §3 table; X `1000d950` steps by 1 as well): the rect measured once; per pass wait until `TickCount ≥ prev + 1` (the first
     /// pass unwaited), restore, `blend −= 1` if ≠ 0, draw, present; loop while blend ≠ 0. A loading line starts at blend
     /// 0x20 (`FUN_10023040`) → 32 draws at 31 … 0, one tick apart.
     func testOneElementFade() throws {
@@ -225,7 +228,7 @@ final class FrontEndElementsTests: XCTestCase {
         XCTAssertEqual(more.passes.map { Set(draws($0).map(\.alpha)) }, (0...33).reversed().map { [UInt32($0)] })
     }
 
-    /// `FUN_1000d7f0(list, restoreText, present)` — draw every element once at its own blend, no wait, no fade. Per
+    /// `FUN_1000d7f0(list, restoreText, present)` (X `1000da70`, the same) — draw every element once at its own blend, no wait, no fade. Per
     /// element in list order: text → measure (`FUN_1000d260`), restore the rect only if `restoreText`, draw the record
     /// (`FUN_1000d380`); sprite → rect at its scale, ALWAYS restore, the command with alpha = own `+0x114` (cmd +0x1c,
     /// `1000d98c`) and scale `+0x118` (cmd +0x18, `1000d9a8`); then present the rect only if `present`. The callers:
