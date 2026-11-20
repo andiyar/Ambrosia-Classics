@@ -318,8 +318,12 @@ final class ControlsDialogTests: XCTestCase {
             key(&r, 0x01)                                                   // P2 slot 0 = s
             key(&r, 0x02)                                                   // P2 slot 1 = d
             XCTAssertEqual(r.state.prefs, .fresh, "the live prefs wait for Save")
-            let s = click(&r, item: save ? 1 : 2)
+            // A click outside the window (a beep) and then Save or Cancel, in the same pass: the beep is kept.
+            let button = try XCTUnwrap(r.dialog.runner.rect(save ? 1 : 2))
+            let outside = MousePoint(h: 10, v: 10)
+            let s = pass(&r, HeldKeys(mouse: centre(button), mouseButton: false, mouseDowns: [outside, centre(button)]))
             XCTAssertEqual(s.finished, save)
+            XCTAssertEqual(s.output.requests, [.beep], "the pass's beep survives the close")
             XCTAssertFalse(s.output.ops.contains { if case .copy = $0 { true } else { false } }, "no restore")
             var expected = DeimosPrefs.fresh
             if save {

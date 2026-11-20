@@ -16,9 +16,11 @@ import Foundation
 ///   `10043f90` until item 1 or 2.
 /// - **Items hit** (the jump table at 0x100f57a0, items 3–17): the tab control (3, X 10043798) sets the focus
 ///   variable to 5, then reads the control's value: a change of player refills the fields and selects field 5; the
-///   tab already up changes nothing else (the selection stays where it was — a quirk kept, ruling 15). A field
-///   (5, 7, …, 17, X 10043774) is focused and selected (`ModalDialog`'s `TEClick` already made it the active one); a
-///   picture (4, 6, …, 16) does nothing.
+///   tab already up changes nothing else (no refill, no selection: the selection stays where it was while the focus
+///   variable says 5 — a quirk kept, X 10043798). A field (5, 7, …, 17, X 10043774..10043794) not already focused is
+///   focused and selected (`ModalDialog`'s `TEClick` already made it the active one); X does nothing when the clicked
+///   field already has the focus, leaving `TEClick`'s caret, where the replica keeps the field highlighted — a known
+///   difference, for the gate card. A picture (4, 6, …, 16) does nothing.
 /// - **The filter** (`10043f90`): every keyDown / autoKey → the virtual key code `(message >> 8) & 0xFF`, sign-extended
 ///   (`extsb`), assigned and consumed — Return, Enter, Esc, Tab, arrows and F-keys are bindable and never press Save or
 ///   Cancel (`screenFiltersKeys`). A null event polls `GetKeys` for left Control 0x3B, Shift 0x38, Option 0x3A and
@@ -177,8 +179,8 @@ public struct ControlsDialog: Sendable {
                               _ out: inout PassOutput) -> ScreenStep<Result>? {
         switch action {
         case let .hit(n):
-            if n == Self.save { return close(saved: true, state: &state) }
-            if n == Self.cancel { return close(saved: false, state: &state) }
+            if n == Self.save { return close(saved: true, state: &state, &out) }
+            if n == Self.cancel { return close(saved: false, state: &state, &out) }
         case let .ownPress(n, p):
             if n == Self.tabControl, let tab = tabIndex(at: p) {
                 tabPress = tab
@@ -260,7 +262,8 @@ public struct ControlsDialog: Sendable {
     }
 
     /// Item 1 or 2 ended the loop: Save copies both working sets into the prefs (1004386c..100438ec).
-    private mutating func close(saved: Bool, state: inout FrontEndState) -> ScreenStep<Result> {
+    private mutating func close(saved: Bool, state: inout FrontEndState,
+                                _ out: inout PassOutput) -> ScreenStep<Result> {
         if saved {
             var table = state.prefs.keyTable
             if table.count < 14 { table += Array(repeating: 0, count: 14 - table.count) }
@@ -271,7 +274,7 @@ public struct ControlsDialog: Sendable {
         runner.close()
         phase = .closed
         result = saved
-        return .finish(saved)                                           // nested: nothing restored
+        return .finish(saved, out)                                      // nested: nothing restored
     }
 
     // MARK: - The tab control
