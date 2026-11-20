@@ -31,6 +31,12 @@ import HectorResources
 /// 5. Fewer than **100** records after the override pass → the non-fatal "Tag Index Incomplete!"
 ///    alert (threshold `_DAT_100e00ec` = 100).
 ///
+/// **A second Local root** (Phase 4 S5, plan ruling 7; optional, default none): the folder the replica writes Last
+/// Film to (`…/Deimos Rising/Local`, as the original wrote `Data:Local:film:Last Film[last].film` through
+/// `FUN_100025b0` and rebuilt the index with `FUN_100016c0(0, 0)`, which scans exactly as the boot build does). Its
+/// files are scanned as if they stood in `Data/Local`: per type folder, the two folders' names merged in one sorted
+/// list, a name in both taken from the second root (the original's write replaced the shipped file of that name).
+///
 /// `alerts` holds the original's log lines, each the 1.0.6 format string (data image `0x100e3266`…
 /// `0x100e38f7`, `0x100f04d4`…`0x100f0588`) with its arguments filled in, in the order they would be
 /// logged. Paths are this machine's (`URL.path`) where the original prints its relative
@@ -91,7 +97,8 @@ public struct TagIndex: Sendable {
         }
     }
 
-    public init(dataDirectory: URL) throws {
+    /// `secondLocalRoot`: a second `Local` folder (holding `film/` and the other type folders), nil for none.
+    public init(dataDirectory: URL, secondLocalRoot: URL? = nil) throws {
         let fm = FileManager.default
         var list: [(record: Record, path: String)] = []
         var alerts: [String] = []
@@ -100,8 +107,13 @@ public struct TagIndex: Sendable {
         let local = dataDirectory.appendingPathComponent("Local", isDirectory: true)
         for folderType in TagName.typeOrder {
             let dir = local.appendingPathComponent(folderType.description, isDirectory: true)
-            for name in Self.sortedNames(in: dir, fm) {
-                let url = dir.appendingPathComponent(name)
+            var urls: [String: URL] = [:]
+            for name in Self.sortedNames(in: dir, fm) { urls[name] = dir.appendingPathComponent(name) }
+            if let second = secondLocalRoot?.appendingPathComponent(folderType.description, isDirectory: true) {
+                for name in Self.sortedNames(in: second, fm) { urls[name] = second.appendingPathComponent(name) }
+            }
+            for name in Self.sorted(Array(urls.keys)) {
+                guard let url = urls[name] else { continue }
                 guard let size = Self.regularFileSize(url, fm), size > 0 else { continue }
                 if name.lowercased().contains(".tag") {
                     alerts.append("FILE ALERT.  Skipping file.  (.tag header files are not supported)")
@@ -235,7 +247,12 @@ public struct TagIndex: Sendable {
     /// order the original's indexed enumeration returns). A missing folder is empty.
     static func sortedNames(in dir: URL, _ fm: FileManager) -> [String] {
         guard let names = try? fm.contentsOfDirectory(atPath: dir.path) else { return [] }
-        return names.sorted { a, b in
+        return sorted(names)
+    }
+
+    /// `sortedNames`' order: case-insensitively, then by raw name.
+    static func sorted(_ names: [String]) -> [String] {
+        names.sorted { a, b in
             let la = a.lowercased(), lb = b.lowercased()
             return la != lb ? la < lb : a < b
         }

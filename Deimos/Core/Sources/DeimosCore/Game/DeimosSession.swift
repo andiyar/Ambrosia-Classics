@@ -48,9 +48,10 @@ public enum SessionError: Error, Equatable, Sendable {
 ///   `FUN_10030210(ctrl, film, 1, 1)` (`FrameKeys.startSession`). Film (`FUN_100069b0`): level, player count and seed
 ///   from the film (`FUN_10009680`), `srand(seed)`; the cursors are 0 (`FUN_10009970`). Not a film: level = the
 ///   start's sector's, G+0x21 = players (`10005770`), `srand(TickCount())` (`100057c8..100057d4`, here `seed`), the
-///   recorder `FUN_10009710` (not modelled). Then G+0x08 = 1, +0x0a = +0x09 = +0x39 = 0, +0x18 = level
-///   (`1000580c..1000582c`), +0x14 = sector `FUN_10011e30` (`10005844`), level info `FUN_10011fd0`, `FUN_10026410`
-///   for P1 then P2 (`10005860..10005888`, `GameState.setupPlayer`), `FUN_1004a990(1)` (input, no op), `FUN_100064d0`.
+///   recorder `FUN_10009710(film, level, G+0x21, seed)` (`100057ec`, `GameState.recorder`, Phase 4 S5). Then
+///   G+0x08 = 1, +0x0a = +0x09 = +0x39 = 0, +0x18 = level (`1000580c..1000582c`), +0x14 = sector `FUN_10011e30`
+///   (`10005844`), level info `FUN_10011fd0`, `FUN_10026410` for P1 then P2 (`10005860..10005888`,
+///   `GameState.setupPlayer`), `FUN_1004a990(1)` (input, no op), `FUN_100064d0`.
 /// - **Level start** `FUN_100064d0(film, info)` (`100064d0..10006984`) — split in two (plan LT, ruling 5): its STATE
 ///   part is `GameState.levelStart(film:)`, which `levelCompleteStep` also calls for the next sector; its DRAWING
 ///   part (the `.loadTerrain`, the fill, the score bar's level-start ops, the first terrain blit) is
@@ -180,6 +181,9 @@ public struct DeimosSession: Sendable {
         g.flags.filmPlaying = start.film != nil                      // 10005670..1000568c (G+0x20)
         g.film = start.film.map(FilmCursor.init(film:))              // FUN_100069b0: cursors 0 (FUN_10009970)
         g.flags.numPlayers = UInt8(truncatingIfNeeded: players)      // FUN_10009680 / 10005770 (G+0x21)
+        if start.film == nil {                                       // 10005634 FUN_10009390 + 100057ec FUN_10009710
+            g.recorder = FilmRecorder(seed: seed, level: tag, players: Int(g.flags.numPlayers))
+        }
 
         // Frame controller: FUN_10030190 + FUN_10030210(ctrl, film, 1, 1) (10005690..100056ac).
         var c = FrameController(fpsMaxRate: EntityDraw.fctiwz(f[32]))
@@ -240,10 +244,10 @@ public struct DeimosSession: Sendable {
     ///    `FUN_10046ae0` (`10007094`) → `FUN_100298c0` P1, P2 incl. the coin-tally text (`100070a8..100070c0`) → the
     ///    accuracy tally text `FUN_10007d60` (`100070c4`) → the notice `FUN_100184b0` (`100070c8`) → the score bar
     ///    `FUN_10031ae0` (`100070f0`), its screen blits off when not appeared (`100070d0..10007108`).
-    /// 4. A film (`10005a1c..10005aa0`): `FUN_10048e60` (the mouse button — ◇ stand-in 8, `HeldKeys` has no mouse)
-    ///    or `FUN_10009750` (P1's cursor > frames) → `FUN_100064c0` and no banner (`10005a48 → 10005aa4`); else the
-    ///    REPLAY banner (`10005a50..10005a9c`: format 0x26, GameString 9, +0x10c = 15, +0x10d = 1, +0x110 = 0,
-    ///    `FUN_1000d380(rec, 0)`).
+    /// 4. A film (`10005a1c..10005aa0`): `FUN_10048e60` (`Button()`, the mouse button's live state:
+    ///    `HeldKeys.mouseButton`) or `FUN_10009750` (P1's cursor > frames) → `FUN_100064c0` (G+0x08 = 0, nothing
+    ///    else) and no banner (`10005a48 → 10005aa4`); else the REPLAY banner (`10005a50..10005a9c`: format 0x26,
+    ///    GameString 9, +0x10c = 15, +0x10d = 1, +0x110 = 0, `FUN_1000d380(rec, 0)`).
     /// 5. End frame `FUN_10030570(ctrl, 1, appeared)` (`10005ab0`) → `FUN_10030bc0` (`10030bec..10030dc4`): messages
     ///    `FUN_1002dea0` (`10030bec`) → the FPS counter (byte pref 9, `10030bf4..10030c90`) → the console
     ///    `FUN_1002d410` (`10030c98`) → `FUN_10018b20(0)` layers 0–1 (`10030ca4`) → the terrain blit `FUN_10010120`
@@ -314,7 +318,7 @@ public struct DeimosSession: Sendable {
 
         // 4. The film overlay.
         if film {                                                    // 10005a1c..10005a20
-            if game.film?.finished ?? true {                         // 10005a24..10005a44 (FUN_10048e60: ◇ no mouse)
+            if keys.mouseButton || (game.film?.finished ?? true) {   // 10005a24 FUN_10048e60 Button(); 10005a38
                 game.flags.running = false                           // 10005a48 FUN_100064c0
                 if end == nil { end = .filmEnded }
             } else {
@@ -362,7 +366,8 @@ public struct DeimosSession: Sendable {
 
     /// The result `FUN_100051a0` fills after its loop (`10005b38..10005c18`; `SessionResult`'s comment): per slot,
     /// present = index byte +0xcc ≠ −1; present → the decoded score, the level +0xc0 and the cheat flag +0xbd; absent →
-    /// score 0, level `none`; then all-levels G+0x0d. The film flag and the start sector are the session's.
+    /// score 0, level `none`; then all-levels G+0x0d. The film flag and the start sector are the session's; the recorded
+    /// film is the recorder's image (Phase 4 S5: the film object `FUN_100095b0(film, 'last')` saves), empty for a film.
     private func makeResult(end: SessionResult.End) -> SessionResult {
         var present: [Bool] = [], scores: [Int32] = [], levels: [FourCC] = []
         var cheated = false
@@ -380,7 +385,7 @@ public struct DeimosSession: Sendable {
         }
         return SessionResult(end: end, isFilm: game.flags.filmPlaying, startSector: startSector, present: present,
                              scores: scores, levels: levels, allLevels: game.flags.allLevels,   // 10005c08..10005c10
-                             cheated: cheated)
+                             cheated: cheated, recordedFilm: game.recorder?.image ?? [])
     }
 
     /// The Phase-1 entry point, kept for the driver (standing rule 7): `pass(keys:ticks:)` with a TickCount of 0

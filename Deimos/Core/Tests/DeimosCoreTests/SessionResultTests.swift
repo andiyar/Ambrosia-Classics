@@ -40,7 +40,8 @@ final class SessionResultTests: XCTestCase {
         XCTAssertEqual(r.levels, [FourCC("le07")!, .none])
         XCTAssertFalse(r.allLevels)
         XCTAssertFalse(r.cheated)
-        XCTAssertEqual(r.recordedFilm, [], "empty until the recorder lands (S5)")
+        XCTAssertEqual(r.recordedFilm, s.game.recorder?.image, "the recorder's image (S5): every non-film game records")
+        XCTAssertEqual(r.recordedFilm.count, Film.size)
         XCTAssertEqual(s.result, r)
 
         let after = s.pass(keys: HeldKeys(), ticks: 0)
