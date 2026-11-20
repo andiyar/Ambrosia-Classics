@@ -1,6 +1,6 @@
 STATUS: CONTINUE
 
-# NEXT — Ferazel's Wand, run 57: the wave 6A.2 end (two launch checks, the Fable cross-check), then 6A-BG1c and 6A-RN ⚑
+# NEXT — Ferazel's Wand, run 58: the wave 6A.2 end (the cross-check's fix round, two launch checks), then 6A-BG1c and 6A-RN ⚑
 
 You are the seat for **Ferazel's Wand** in Ambrosia Classics, repo `/Users/andiyar/Developer/Ambrosia-Classics`
 (`$REPO`). Method: `~/Developer/Toolkits/fable-kit/orchestrator.md`. This is a build run. In your first message say
@@ -18,46 +18,59 @@ verification model", "Invariants and hazards" and "Shared architecture" themselv
 1. `CLAUDE.md` (repo root).
 2. `docs/STATE.md` — the Ferazel block: the live state. This chip holds no state.
 3. `docs/QUESTIONS.md` "Open" — act first on any new text under an `Answer:` (Q18 is Ben's Phase 5 gate: notes become
-   tasks at the head of the order; a fail stops the build and becomes a fix wave. Q19: his choices on the 6A plan) and
+   tasks at the head of the order; a fail stops the build and becomes a fix wave. Q19: his choices on the 6A plan; **Q20: how Proof B runs when one command is cut off at ten minutes**) and
    record it in `docs/DECISIONS.md`.
-4. `docs/DECISIONS.md` D54, D53 and D51 (D46–D49 only where a card cites them) and
-   `docs/handoff-2026-11-21-ferazel-run56.md`.
+4. `docs/DECISIONS.md` D55, D54, D53 and D51 (D46–D49 only where a card cites them) and
+   `docs/handoff-2026-11-21-ferazel-run57.md`.
+5. The plan's bullet "Wave 6A.2 — the Fable cross-check" (under `#### 6A-L10L11`): the fix round's three items.
 
 ## Before anything else
-- **The weekly usage limit:** read it with `get_usage`. Above about 70%, do not start a ⚑ task: do the owed checks and
+- **The weekly usage limit:** read it with `get_usage`. Above about 70%, do not start a ⚑ task: do the owed items and
   the small task only, or stop with nothing changed, and say so.
-- **The hour.** The first three items below need daylight: nothing may be launched outside 09:00–21:00. If you start
-  at night, say so and stop with nothing changed (`STOPPED … — started at night; the owed launch checks need 09:00–21:00`):
-  no task may start while the wave end is owed (the plan's "Wave end" line).
+- **The hour.** Item 1 below is headless and may run at any hour. Items 2 and 3 launch a build: 09:00–21:00 only. No
+  task (BG1c, RN) may start until all three are done (the plan's "Wave end" line). If items 2 and 3 cannot run when
+  item 1 is finished (night), close the run there and say so — do not wait and do not start a task.
 - **Whether one command can run longer than ten minutes.** Proof B is ONE whole run of about 13 minutes or more
   (`tools/windows/proof-b-ferazel.sh`, no argument; its `--class` form is only for finding a crash) and cannot be
-  split. If background work is off and a foreground command is cut off at ten minutes, you cannot run it as written:
-  ask the session that started you how it wants Proof B run before doing anything else; if it cannot answer, close
-  with `STOPPED … — Proof B needs one command longer than ten minutes`. Do not start a task around an owed Proof B.
+  split. Read Q20's `Answer:` first — it says how to run it. With no answer, background work off and a foreground
+  command cut off at ten minutes, you cannot run it: do item 1, then close with
+  `STOPPED … — Proof B needs one command longer than ten minutes (Q20)`.
+- **Your own context.** Run 57 began at 116k and reached 227k after reading the wave's diff. Read the meter before
+  the first dispatch; this run needs no diff reading — the findings are written down.
 
 ## Reconcile first
-- `git -C "$REPO" worktree list`, `git -C "$REPO" log --oneline -8 main`: main at or past run 56's close. Other
-  sessions (Deimos, Castles) also merge to local main: merge main into your branch before each `--ff-only`.
-- G1 HectorKit per the plan's gate table.
-- G2 at the head, once, from a `git archive` copy with `HECTORKIT_PATH=$HOME/Developer/HectorKit` set: **722**, 0
-  failed, the two opt-in skips by name. In the foreground it is five commands after one `swift build --build-tests`,
-  each `swift test --skip-build --filter …`: `FerazelCoreTests` (97 s, 557), then `'FerazelRenderTests\.[A-C]'` (240 s,
-  26), `'FerazelRenderTests\.[D-E]'` (424 s, 18), `'FerazelRenderTests\.[F-L]'` (417 s, 51),
-  `'FerazelRenderTests\.[M-Z]'` (137 s, 70). **Do not join A–C with D–E: together they pass ten minutes.** You may run
-  these beside ONE working helper. This Mac has no `timeout` command — use the Bash tool's own timeout.
+- `git -C "$REPO" worktree list`, `git -C "$REPO" log --oneline -8 main`: main at or past run 57's close (docs only
+  since ae3a20e — run 56's suite numbers stand for the code). Other sessions (Deimos, Castles) also merge to local
+  main: merge main into your branch before each `--ff-only`.
+- G1 HectorKit per the plan's gate table (main ef2c341, clean, at run 57).
+- G2 after the fix round (it is the first thing that changes code), from a `git archive` copy with
+  `HECTORKIT_PATH=$HOME/Developer/HectorKit` set: **722**, 0 failed, the two opt-in skips by name. In the foreground
+  it is five commands after one `swift build --build-tests`, each `swift test --skip-build --filter …`:
+  `FerazelCoreTests` (97 s, 557), then `'FerazelRenderTests\.[A-C]'` (240 s, 26), `'FerazelRenderTests\.[D-E]'`
+  (424 s, 18), `'FerazelRenderTests\.[F-L]'` (417 s, 51), `'FerazelRenderTests\.[M-Z]'` (137 s, 70). **Do not join
+  A–C with D–E: together they pass ten minutes.** You may run these beside ONE working helper. This Mac has no
+  `timeout` command — use the Bash tool's own timeout.
 
 ## This run, in this order
-1. **Proof B, by day, muted** (LAUNCH GUARD first; the script mutes itself): expect
+1. **The cross-check's fix round** (headless; any hour). One `fk-implementer`, then two Opus review legs (spec, then
+   quality with a mutation table), a second small round only if they ask. Brief it from the plan's bullet "Wave 6A.2
+   — the Fable cross-check": (a) Continue from a save that is not a checkpoint on a level whose header says "start
+   facing left" (built: 3, 5, 11) takes the facing from the header, and a checkpoint save keeps the saved one — assert
+   both on level 11 inside an existing named test (`ContinueGame.swift:142`; decompile l. 6919–6920); (b) at the real
+   header values of levels 10 and 11, ice (`0x2710` 80), landing damage (`0x270e` 150), the water current in the
+   particle effects (`0x2714` −512) and the light renderer's underwater arm (level 11) each get an assert inside
+   `LevelTenTests` / `LevelElevenTests` or the render test that owns the feature, each proven by a planted bug that
+   the new assert catches; (c) the four stale comments. **Tests and comments only: if an assert shows the game is
+   wrong, STOP and report — that is a fault, not a fix-round item.** No new test methods (D51.2): Core stays 722,
+   WinKit 84; no pinned value moves. New asserts follow the Proof-B rules (no Foundation string search or trim, no
+   regular expressions). Then the ledger check, your own G2, and the merge. Record the result under the same plan
+   bullet and in LOOP-LOG.
+2. **Proof B, by day, muted** (LAUNCH GUARD first; the script mutes itself): expect
    `proof-b: 719 passed / 0 failed / 3 skipped / 0 crashed (of 722)`. Nothing else heavy beside it.
-2. **The Mac SDL smoke, by day:** `tools/windows/smoke-ferazel-win.sh --mac-only` — exit 0, a line ending
+3. **The Mac SDL smoke, by day:** `tools/windows/smoke-ferazel-win.sh --mac-only` — exit 0, a line ending
    `video=dummy audio=none`.
-3. **The Fable cross-check of wave 6A.2** (your one review this run; no helper): the whole diff
-   `git diff 520590c^ main -- Ferazel tools docs/ferazel` (6A-FX … 6A-L10L11, runs 52–56) and the wave's gate numbers in
-   STATE. Look for what no single task's review could see: a pinned value that moved without its card naming it, a
-   fixture leave-out list that a later task changed, stale "levels 1–5" assumptions now that the list is wider, the
-   five test gaps run 56 carried (STATE "From run 56" — the first, Continue from a level-11 save ignoring the facing,
-   may be a real fault). Findings go to one fix round by an `fk-implementer` with two Opus legs, before the next task;
-   record the result under the plan's Wave 5 heading and in LOOP-LOG.
+
+The wave's Fable cross-check itself is done (run 57, D55): do not repeat it.
 
 | task | what it must produce | Core after | WinKit after |
 |---|---|---|---|
@@ -66,7 +79,7 @@ verification model", "Invariants and hazards" and "Shared architecture" themselv
 
 - Both are feature tasks (**Gate-F**): no full sweep or bot (those follow a level task). BG1c before RN (RN's fixture
   needs the plants built); never at once.
-- **6A-L15** (level 15 opens; Core 740, WinKit 86; a level task with the full sweep and bot, Gate-L) is run 58's unless
+- **6A-L15** (level 15 opens; Core 740, WinKit 86; a level task with the full sweep and bot, Gate-L) is run 59's unless
   your context after RN is under about 200k and it is still early in the day — a level task is never split from its
   gate or started when it cannot finish.
 - **The level fixture is built**: its interface is in the plan's "As executed — 6A-FX". Render tests open through
@@ -101,18 +114,18 @@ verification model", "Invariants and hazards" and "Shared architecture" themselv
 - Never wait silently. Cap 300k of your own context (`get_usage` before each dispatch and at the close; at ~240k
   finish the task in flight and close). Run 56's measure: 150k before the first dispatch (the chip, STATE, the gate
   block, the card), about 60k for one ⚑ level task with its whole gate (three briefs, four reports, about thirty
-  check commands), about 30k for the close. A helper's long silence is normal: run 56's implementer took 78 minutes,
+  check commands), about 30k for the close. Run 57's: reading a wave's whole diff cost about 110k. A helper's long silence is normal: run 56's implementer took 78 minutes,
   its quality leg 103.
 - Dump beats bank beats plan. Explicit-path commits, no `git stash`, `git branch --show-current` before each commit.
 
 ## Close (in this order)
 1. Merge to local main `--ff-only` by SHA.
 2. "As executed" under each card; the plan's "Goldens" paragraph gains new values; rulings in `docs/DECISIONS.md`
-   under the next free number (D55).
+   under the next free number (D56).
 3. `docs/STATE.md`: replace the Ferazel block with today's state only; settled bits to the top of
    `docs/STATE-history.md`. One line in `docs/LOOP-LOG.md`. A short handoff. One memory note + index line.
-4. Rebuild this file from nothing for the next run (run 58: what is left of BG1c / RN, then 6A-L15 with its full
-   sweep and bot, per the plan's "Execution order").
+4. Rebuild this file from nothing for the next run (run 59: what is left of the owed items and of BG1c / RN, then
+   6A-L15 with its full sweep and bot, per the plan's "Execution order").
 5. Push main, then start the next attended session (`start_session`, fresh context, brief "read docs/NEXT.md and run
    it") — unless a Coordinator started you (then it starts the next one), or a question only Ben can answer blocks the
    next step (then `STATUS: BLOCKED`, the item in QUESTIONS with `Blocks: everything`, no new session).

@@ -240,7 +240,11 @@ wind and cannon traces `20b0a649c605b4d0`, `a94f59ac15d64d04`, `2970c03ffb33c302
 6A-L10L11); the tree `d7ba88433f138e72`; the ripple `c92fbe9fb87250c3`; chapter cards 2 and 5 `f33072b0df2cab4d`,
 `517ec825dbca68cc`; level 10's first frame `e76116216b6d605`, level 11's `5d78b001424a6898`; the Windows level
 references in `WinLevelReferenceTests` (black first frame `742a0703fa4da325`; level 10 steps 885 `e8f72bddcaf3b7a1` and
-959 `17aa796b2ef29b5`; level 11 steps 629 `f8032383209e56e0` and 689 `d02281f5e0d7cdca`).
+959 `17aa796b2ef29b5`; level 11 steps 615 `ba061897f247a79f` (the river rows first in view, still fading in), 629
+`f8032383209e56e0` and 689 `d02281f5e0d7cdca`); the state pins of levels 10 and 11 in `BootFacesTests` (rows / hash) —
+L10 init 385 / `0xbb961ddb0ecba42d`, f30 398 / `0xf7d378409aba7e2e`, f120 398 / `0x29a5b373220a24e1`; L11 init 434 /
+`0xc83aaf016c964735`, f30 479 / `0xf004624fe7acbe58`, f120 479 / `0xf55033eec8d3de69` (the last seven values were in
+the tests since 6A-L10L11 but not listed here until run 57's cross-check).
 
 **What the machine does NOT prove:** the feel of every enemy's AI at 30 steps a second; the colours of the tint tables
 (through the replica's colour search, LOW); the underwater tint's strength on screen (gamma, MED); the OmniPx
@@ -1979,6 +1983,29 @@ ids; its `--check` reads this table):
   - **Wave 6A.2 end — owed:** GWB (719 / 0 / 3 / 0 of 722) and GW4R fell under the night rule (the checks finished at
     00:37) and are the first act of run 57, by day; the Fable cross-check of FX … L10L11 (`520590c^..` main) opens
     run 57 after them (the seat's context was spent).
+  - **Wave 6A.2 — the Fable cross-check (run 57, 2026-11-21, at night; D55):** done over `520590c^..74b418d`
+    (`Ferazel tools docs/ferazel`, 53 files): **PASS WITH FIXES — tests, comments and records only; no game fault
+    found.** GWB and GW4R are **still owed** (run 57 started at 00:42; nothing was launched). Checked and clean: the
+    test counts against the ladder (557 rules + 165 render = 722; WinKit 84); every pinned value in STATE against the
+    tests (levels 1–5's state pins untouched, the two retired feature pictures gone from the tests); the fixture and
+    its leave-out list (two commits, both 6A-FX's — no later task touched them); every reader of the built-level list
+    (the game flow, Continue, the sweep and bot scripts all read the one line); no branch on a level number anywhere
+    in shipped source; the passages on levels 10 and 11 (all p2 0, so the one silent `// later:` skip in the passage
+    jump is not reached). **The fix round is owed — the first act of run 58, any hour (headless), before GWB:**
+    1. *Continue on a start-left level is unproven.* `ContinueGame.swift:142` matches the original (decompile l.
+       6919–6920: a save that is not a checkpoint takes the facing from the header byte `0x26c8`; a checkpoint save
+       keeps the saved one) — **not a fault** (closes run 56's MED carry as a test gap). No test continues from a
+       non-checkpoint save on a level whose byte is 1 (built: 3, 5, 11). Assert it inside an existing named test.
+    2. *Four header-driven behaviours are live on levels 10 and 11 with no proof at the level:* ice (`0x2710` 80 on
+       both), landing damage (`0x270e` 150), the water current in the particle effects (`0x2714` −512), and the light
+       renderer's underwater arm (level 11, `0x26c6` 1). `LevelTenTests` / `LevelElevenTests` assert the header values
+       only; run 56's planted bugs in each passed. Asserts go inside the named tests (D51.2), each proven by a planted
+       bug; the ladder stays 722 / 84.
+    3. *Stale reasons in comments* (they say "levels 1–4" or "1–5" where the list is now wider): the passage jump's
+       `// later:` (`HitPlayerSprite.swift:1002`; true of every level 10–70 per the ledger, whose own text still cites
+       `:970`), `FerazelSession.swift:391` and `:570`, `HitPlayerSprite.swift:126`. Comment-only; run the ledger check
+       after.
+    The seat fixed what was the seat's: the seven pinned values missing from "Goldens" above.
 
 #### 6A-BG1c — minor — plants (→ 725)
 - **Files:** `Sources/FerazelCore/Sprites/SetupFaces.swift` (`:401` the arm, built; the Setup-face table rows; `:715`),

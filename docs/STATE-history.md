@@ -4,6 +4,14 @@
 > only). Nothing current reads this file; the live state is `docs/STATE.md`. Each later close that settles something
 > adds a dated section at the top, newest first. The two snapshots below are verbatim (headings demoted only).
 
+## Settled at Ferazel run 57's close (2026-11-21)
+
+- Run 57 started at night (00:42) and launched nothing. It did the wave 6A.2 Fable cross-check (PASS WITH FIXES, no
+  game fault; D55; the findings are in the plan under "Wave 6A.2 — the Fable cross-check").
+- Run 56's MED carry "Continue from a level-11 save ignores the start-left facing" is settled as a missing test, not
+  a fault: the port matches the original (decompile l. 6919–6920).
+- Seven pinned values that were in the tests but not in the plan's "Goldens" paragraph were added to it.
+
 ## Settled at Ferazel run 56's close (2026-11-21)
 
 - **The run 55 Ferazel block** (main 988a1e1 for Ferazel): the conversations and chapter cards proven, Core 716,

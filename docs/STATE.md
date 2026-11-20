@@ -7,7 +7,7 @@ Settled history lives in docs/STATE-history.md.
 > numbers and open items and moves anything settled to the top of `docs/STATE-history.md`; it never appends a run story
 > here. Forks go in `docs/DECISIONS.md`, narrative in the handoff. Re-verify before acting.
 
-## Ferazel's Wand — 2026-11-21 (attended run 56 closed: levels 10 and 11 open; two launch checks and the wave cross-check head run 57)
+## Ferazel's Wand — 2026-11-21 (attended run 57 closed at night: the wave cross-check done, its fix round and the two launch checks head run 58)
 
 - **Where it stands:** Phase 5 "Enemies" is closed on the machine side — **Ben's gate pending (Q18)**. Phase 6A
   "through the Goblin Chief" is being built (the plan: "Wave 5 — Phase 6A" in the one plan file; rulings D46–D49, D51,
@@ -15,19 +15,23 @@ Settled history lives in docs/STATE-history.md.
   **levels 10 "Unemployed In Greenland" and 11 "River of Fears"** — the first new levels a player can reach: beat the
   Warrior, leave level 5, see the chapter card, and play on with the horizon strip, wind, rotating cannons, trees and
   the river. Level 10 leads to level 11; the next places on the map (15, 18) are not built yet and say so.
-- **Wave 6A.2's end is NOT closed: three things are owed, first in run 57, by day (09:00–21:00):** the Windows test
-  run under CrossOver, muted (Proof B, expected 719 / 0 / 3 / 0 of 722); the Mac SDL smoke; then the Fable cross-check
-  of the whole wave's diff (`520590c^..` main). Run 56's checks finished at 00:37, when nothing may be launched (D54.5).
-  **Proof B is one whole run of 13 minutes or more and cannot be split** — a seat whose commands are cut off at ten
-  minutes cannot run it in the foreground.
+- **Wave 6A.2's end is NOT closed. Owed, in this order:** (1) the fix round of the wave's cross-check — headless,
+  any hour: tests and comments only (the list is in the plan under "Wave 6A.2 — the Fable cross-check"; D55);
+  (2) by day (09:00–21:00), the Windows test run under CrossOver, muted (Proof B, expected 719 / 0 / 3 / 0 of 722);
+  (3) by day, the Mac SDL smoke. No task may start before all three. Run 57 started at 00:42, launched nothing, and
+  did the cross-check itself: **PASS WITH FIXES, no game fault** — the suspected facing fault on Continue is the
+  original's own rule (D55.2).
+- **Proof B is one whole run of 13 minutes or more and cannot be split** — a seat whose commands are cut off at ten
+  minutes, with background work off, cannot run it. Q20 asks Ben how it should run; until he answers, such a seat
+  stops at that step and says so.
 - **Windows test build 5 is with Andrew** (Ben asked, 2026-11-18): GitHub pre-release `ferazel-windows-test-5`, staged
   from 02717f8 (levels past 5 closed). His report is the Windows half of Q18; Ben's Mac verdict is still open. The zip
   and its checksum are in `releases/ferazel-windows-test-5/`.
 - **Staged builds on the Desktop are old** (game code as e9183ce, run 50): they still show the stand-in Warrior and no
   level past 5. The next stage is the 6A phase end unless Ben asks for one.
-- **Next:** run 57 = the three owed items above, then 6A-BG1c (plants, Core → 725) and 6A-RN ⚑ (rain, thunder, the
+- **Next:** run 58 = the three owed items above, then 6A-BG1c (plants, Core → 725) and 6A-RN ⚑ (rain, thunder, the
   side push, Core → 737, WinKit → 85); 6A-L15 (level 15 opens, with the full sweep) follows, alone if the context is
-  spent. None of it waits for Ben's verdict.
+  spent. None of it waits for Ben's verdict on Phase 5.
 - **The plan:** `docs/superpowers/plans/2026-11-04-ferazel-remainder.md` (self-contained); the design:
   `docs/superpowers/specs/2026-11-04-ferazel-remainder-design.md`.
 - **Ben's gates:** Phase 1 passed; Phases 2 and 3 passed with notes; Phase 4 passed (Fireball note) and the Windows
@@ -65,9 +69,10 @@ Settled history lives in docs/STATE-history.md.
   Windows level references — the black first frame `742a0703fa4da325` on both, level 10 steps 885 `e8f72bddcaf3b7a1`
   (strip) and 959 `17aa796b2ef29b5` (faded in), level 11 steps 629 `f8032383209e56e0` (ripple) and 689
   `d02281f5e0d7cdca` (faded in); the full list is in the plan's "Goldens" paragraph.
-- **Waiting on Ben (QUESTIONS.md "Open"; nothing blocks; none answered at run 56's start):** **Q18 (the Phase 5
+- **Waiting on Ben (QUESTIONS.md "Open"; none answered at run 57's start):** **Q20 (how to run the 13-minute
+  Windows test run when a session's commands are cut off at ten — it holds up the next tasks)**, **Q18 (the Phase 5
   gate)**, Q19 (three small choices in the 6A plan), Q17, Q16 (defaults stand), Q15's follow-ups, Q13.
-- **Worktrees:** run 56's `vibrant-easley-9d49bf` was removed at its close. `compassionate-leavitt-7ca958` is run 53's (merged; it was run 49's before). `gallant-brahmagupta-56ed81`
+- **Worktrees:** run 57's `strange-hopper-b151f9` and run 56's `vibrant-easley-9d49bf` were removed at their closes. `compassionate-leavitt-7ca958` is run 53's (merged; it was run 49's before). `gallant-brahmagupta-56ed81`
   (run 52), `eager-fermat-db9ed9` (run 51), `hungry-bun-395f55` (run 50; `out/` holds the latest stages), `nifty-mendel-0ad40e` (run 48),
   `ferazel-run-47-e0431c` and `ferazel-run-44-7428b3` are finished and merged — Ben or their sessions remove them.
   The others belong to other sessions.
@@ -79,10 +84,13 @@ Settled history lives in docs/STATE-history.md.
 - **Known deviation of muted launches (D44 As built run 48 (d)):** a muted run draws the random stream differently
   from an audible one; boot checks only.
 - **Open carries** [LOW unless marked]:
-  - From run 56: five planted bugs outside the level task's scope still pass every test — Continue from a level-11
-    save ignores the start-left facing; the light renderer's underwater arm; the water current in the particle
-    effects; ice slipperiness; landing damage (each a test gap, no known game fault) [MED for the first, it may be a
-    real fault: check when a save task next runs]; the ledger script still treats only levels 1–5 as built, so levels
+  - From run 57's cross-check: the fix round above is owed (Continue on a start-left level; ice, landing damage, the
+    water current and the underwater light arm proven at levels 10 and 11; four stale comments). Kept as carries: the
+    passage jump skips its p2 ≠ 0 arm without a refusal (no passage on any level 10–70 has p2 ≠ 0, per the ledger);
+    the renderer works out the horizon strip's colour table by the same formula as the game rather than reading the
+    game's answer (they can drift; no test compares the two on all six strip levels).
+  - From run 56: five planted bugs outside the level task's scope still pass every test (the fix round above closes
+    them; the first is not a fault, D55.2); the ledger script still treats only levels 1–5 as built, so levels
     10 and 11 still show as later levels (no generated number is wrong); a missing rippled frame in the Windows
     level-11 test shows as an unwrap failure, not a clear message; refused spawns on levels 10 and 11 are asserted
     over a short run only (the sweep and bot would not report one); the sweep costs about 0.2 s a visit, twice the

@@ -32,6 +32,19 @@ brother's Windows machine.
 
 ## Open
 
+### Q20 — 2026-11-21 — The Windows test run takes 13 minutes; sessions under the Coordinator are cut off at ten
+Context: at the end of each group of tasks the machine runs the whole test suite once more inside CrossOver, muted
+(the "Proof B" check). It is one command that takes 13 minutes or more and cannot be split. Sessions started by the
+Coordinator have background work switched off, and a foreground command is stopped at ten minutes, so those sessions
+cannot run it. It has been owed since run 56 (2026-11-21).
+Options: (a) allow that one script to run detached (started with `nohup`, the session polls its log) even when
+background work is off; (b) the Coordinator runs it itself by day and records the result; (c) you run
+`tools/windows/proof-b-ferazel.sh` once by day and paste the last line.
+Recommendation: a — it keeps the chain moving with no one at the keyboard; the script already mutes itself.
+Blocks: the next two tasks (the plants and the rain) cannot start until this check has run by day. The cross-check's
+fix round can.
+Answer:
+
 ### Q19 — 2026-11-11 — Phase 6A plan (to the Goblin Chief): three small choices, for your later read
 Context: the plan for levels 10–22 is written and reviewed (run 50): the Warrior's real fight, then the horizon strip,
 wind, cannons, trees, the river ripple, rain and thunder, the Goblin Chief, clouds, blades, maces and the magic carpet,

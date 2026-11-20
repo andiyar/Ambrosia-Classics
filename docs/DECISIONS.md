@@ -2556,3 +2556,19 @@ The seat's rulings (Fable 5.2, under the Coordinator). Per-task detail is under 
    line already says: run 56 merged the level task with its whole headless gate at 00:37 and handed Proof B, the Mac
    SDL smoke and the wave's Fable cross-check to run 57, first, by day.
 
+## D55 — Ferazel's Wand: run 57's rulings (the wave 6A.2 cross-check, done at night; 2026-11-21)
+
+1. **A run that starts at night may do the wave's Fable cross-check before the two launch checks.** The cross-check
+   reads a diff and launches nothing; the Coordinator's instruction was to order the work so nothing launches at
+   night, which wins over the chip's "stop with nothing changed". Proof B and the Mac SDL smoke stay owed and still
+   come before any task (the plan's "Wave end" line). A fix round the cross-check asks for is headless too and may
+   run at any hour; Proof B then runs once, on the fixed code.
+2. **Continue's facing is as the original has it — not a fault.** A save that is not a checkpoint takes the player's
+   facing from the level header; a checkpoint save keeps the saved one (decompile l. 6919–6920,
+   `ContinueGame.swift:142`). Run 56's MED carry is a missing test only.
+3. **The cross-check's fix round was not run in run 57**: the seat's own context reached 227k of the 300k cap after
+   reading the diff (it began at 116k), which leaves no room for an implementer, two review legs, the suite and a
+   close. The findings are written under the plan's Wave 5 heading ("Wave 6A.2 — the Fable cross-check") and the fix
+   round is run 58's first act.
+4. **Proof B with background work off** is a question for Ben (Q20): it is one command of 13 minutes or more, and a
+   foreground command is cut off at ten.
