@@ -188,6 +188,11 @@ Settled history lives in docs/STATE-history.md.
   original's, proved by tests (`Deimos/Core` **416 / 0 / 0** with S2 and S4 both in); the app still opens straight into a game
   until S8a connects mouse and keys to the front end. Found: the credits have ten pages, no blank eleventh (ruling 15).
   **Next: S3a (starting a game and coming back) and S5 (Last Film, demos)**, started by the Coordinator.
+  **S3a closed 2026-11-20** (`docs/handoff-deimos-phase4-s3a.md`): choosing a game on the menu now runs the original's
+  start (fades, transition sound, level-select music, the level select — still a placeholder) and a game's end runs
+  the original's way back (fades, high-score entry when a score places, the menu and its music). Nothing a player
+  would notice until S8a. `Deimos/Core` is **423 / 0 / 0**; replay 4 / 0; Debug and Release build. Left for S8a,
+  waiting on Ben: deleting `-players` / `-sector`, and the menu's "erase high scores?" question.
 - **Data:** `Resources/Deimos/` in git; `deimos-census` 872 entries, 0 failures.
 - **Open:** RE bank `docs/deimos/INDEX.md` #13, #59 residue, #63 and 134 cross-file label mismatches (#64 closed 2026-11-20); Ben's
   ear/eye items (on the gate card). Not modelled until Phase 4: the mouse button ending a film; the quit flag
