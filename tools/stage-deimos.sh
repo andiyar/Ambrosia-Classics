@@ -51,11 +51,13 @@ xattr -cr "$OUT/$NAME"
 codesign --force --deep --sign - "$OUT/$NAME"
 codesign --verify --deep "$OUT/$NAME"
 cp "$ROOT/Deimos/WHAT-TO-EXPECT.md" "$OUT/WHAT-TO-EXPECT.md"
+cp "$ROOT/Deimos/GAMEPAD.md" "$OUT/GAMEPAD.md"
 
 if [ "${DEIMOS_STAGE_NO_DESKTOP:-0}" != "1" ]; then
     rm -rf "$HOME/Desktop/$NAME"
     ditto "$OUT/$NAME" "$HOME/Desktop/$NAME"
     ditto "$OUT/WHAT-TO-EXPECT.md" "$HOME/Desktop/Deimos Rising — WHAT-TO-EXPECT.md"
+    ditto "$OUT/GAMEPAD.md" "$HOME/Desktop/Deimos Rising — GAMEPAD.md"
     echo "desktop: $HOME/Desktop/$NAME"
 fi
 
