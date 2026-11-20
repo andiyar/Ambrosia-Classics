@@ -686,7 +686,7 @@ public enum SpriteHandler: Equatable, Hashable, Sendable {
     /// `.swarmMember` 0470 and the insect body (BA), `.gremlin` 04a4 / `.floater` 04ac (GF), `.frog` 04a8 /
     /// `.salamander` 049c (FR), `.blob` 04c0, the dead Blob, `.crab` 046c and its segments (BL), `.enemyShot` 0488 (ES),
     /// `.geyserSegment` (`.HandleGeyserSegSprite`, GY), `.warrior` 0494 (LV5; its Handle 6A-W1). `.inert` stays for the four
-    /// bosses not placed on levels 1–5 (Demon 04b0, Chief 04bc, Wizard 0490, Xichra 048c).
+    /// bosses (on levels 18, 25, 55, 67 only: Demon 04b0, Chief 04bc, Wizard 0490, Xichra 048c).
     case walker, crawler, roach, dillo, bat, swarmMember, insectBody, gremlin, floater, frog, salamander, blob,
          deadBlob, crab, crabSegment, enemyShot, geyserSegment, warrior
 

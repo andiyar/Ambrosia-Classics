@@ -390,7 +390,7 @@ public struct PlayerState: Equatable, Sendable {
     /// reader of the countdown (M l. 47169, 53921, 61025) runs after that point, so the value they see is the binary's
     /// — except a reader later in the same frame, which in the binary sees the new value and here the old one: the
     /// gate's −2 arm (M l. 61025, BT's) and the player Handle's 0x78-key test (M l. 47169) when they run after the
-    /// player pass [LOW: no 2907 on levels 1–4].
+    /// player pass [LOW: no 2907 on levels 1–5, 10, 11; first on 40].
     public var countdownStore: Int32?
     /// `PTR_DAT_100a070c` / `PTR_DAT_100a0708`: touching a teleporter this frame / the teleporter fires (070c set by
     /// the teleporters' arm, `HitPlayerSprite.teleporter`; 0708 by row 36 at charge 80, cleared by the teleport).

@@ -437,7 +437,7 @@ public enum SetupFaces {
             case 0x76c...0x76f:                                // the dart traps (M l. 62495–62520; ES)
                 // `BackgroundSprite.setupDartTrap`: p1 / p2 defaults written back; `+0xc0` stays 0 — the Handle faces
                 // cell `+0x46 >> 2` = 4 of its cache set (0x76d: 0x76c's, mirrored by the Handle). None placed on
-                // levels 1–5.
+                // levels 1–5, 10, 11 (first on 22).
                 record = BackgroundSprite.setupDartTrap(&s, record: p)
                 face(BackgroundSprite.dartTrapSheet(Int16(t)), Int(s.phase >> 2), .handle)
             case 0xc08...0xc0f:                                // trees (M l. 62597–62617; 6A-TR `setupTree`)

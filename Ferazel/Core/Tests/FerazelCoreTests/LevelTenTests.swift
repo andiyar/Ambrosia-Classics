@@ -41,11 +41,13 @@ final class LevelTenTests: XCTestCase {
         // Wave 6A.2 fix round (D55, item 2): three header switches at work at level 10's own values, which are 0 here
         // (the plan's "80 on both" / 150 / −512 are level 11's): ice 0x2710 0 → `0694` 0x100·800 >> 8 = 800, `+0x112` 0;
         // the damaging surface 0x270e 0 → the default 0x70 (no level 1–5 holds 0 there); the current 0x2714 0 → every
-        // mote over water 200 stands still (vx 0, shape 1; 205's shape 4).
+        // mote over water 200 stands still (vx 0, shape 1). Leg 2: level 10 has no BG 205 cell (200, 201, 203 only) and
+        // the helper keeps 200's and 205's motes, so every mote is 200's (−210).
         XCTAssertEqual([h.iceSlipperiness, h.landingDamage, h.waterCurrent], [0, 0, 0], "0x2710 / 0x270e / 0x2714")
         let b = try TenEleven.headerBehaviour(r, level: 10)
         XCTAssertEqual([b.ice, b.slip, b.damage], [800, 0, 0x70])
         XCTAssertFalse(b.motes.isEmpty, "motes emitted")
+        XCTAssertEqual(Set(b.motes.map { $0[0] }), [-210], "BG 200 motes only (no 205 cell on level 10)")
         XCTAssertEqual(b.motes.filter { $0[1] != ($0[0] == -215 ? 4 : 1) || $0[2] != 0 }, [], "no current")
 
         try traceLevel10(r, L)

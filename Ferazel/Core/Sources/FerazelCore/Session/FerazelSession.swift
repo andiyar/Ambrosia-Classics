@@ -399,7 +399,7 @@ public final class FerazelSession {
             for _ in 0..<6 {
                 // `.inert`: the digit Handle `.anon_10060c78` (SSH + SSC of a faceless sprite) // later: `.UpdateDigits`
                 // (gives the digits faces once the countdown shows; the 2907 timer's store is built, BX2 — none on
-                // levels 1–4).
+                // levels 1–5, 10, 11; first on level 40).
                 w.newSprite(type: digitType, x: s.x, y: s.y, layer: 0x7fff, handler: .inert) { d in
                     d.lightOverlay = false
                     d.layer = 0x7fff
@@ -567,7 +567,7 @@ public final class FerazelSession {
             // `.MTHandlePxSprites` runs it again after the next `.FindUpperLeftCorner` (`findUpperLeftCorner`).
             PxSprites.handle(world: world, id: id, h: camera.scrollH, v: camera.scrollV)
         case .inert:
-            break                                       // the four bosses (levels 18, 25, 55, 67) // later: Phase 6
+            break // the countdown digits, any unmapped class, the four bosses (levels 18, 25, 55, 67) // later: Phase 6
         case .enemyShot:
             // `.HandleEnemyShotSprite @ 1005bffc` (ES, `EnemyShot.handle`): its Kills' Effects take `lightTable` and
             // prefs+6; the Chief boulder's hot rect reads the face bounds.

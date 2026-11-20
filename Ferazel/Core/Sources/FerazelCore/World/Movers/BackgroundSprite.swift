@@ -10,7 +10,7 @@ import Foundation
 /// Handle arm (`dartTrap`) and Setup arm (`setupDartTrap`), built as read — first placed on level 22, unreachable on
 /// levels 1–5. 6A-TR: the trees 0xc08…0xc0f (`setupTree`, the Handle arm `tree`, `.SetupTree` = `plantBranches`) —
 /// first placed on level 10. // later: fire 0x4b8 / 0x4bb…0x4bd, 0x73f / 0x740, 0xb4a…0xb4d, 0xbf4 — none placed on
-/// levels 1–5.
+/// levels 1–5, 10, 11.
 public enum BackgroundSprite {
     /// The radial bars (0x5c8…0x5cc) and balls (0x5cd…0x5d1).
     public static let maces: ClosedRange<Int16> = 0x5c8...0x5d1
@@ -114,7 +114,7 @@ public enum BackgroundSprite {
 
     /// The types whose `.HandleBackgroundSprite` arm is not built: their Handle is not run (as before W2a), so
     /// nothing of it — `.StandardSpriteHandles` included — changes them. // later: fire, 0x73f / 0x740, clouds,
-    /// 0xbf4 (none placed on levels 1–4, so `SetupFaces` refuses them; the spikes: LV3; the dart traps: ES; the trees:
+    /// 0xbf4 (none on levels 1–5, 10, 11, so `SetupFaces` refuses them; the spikes: LV3; the dart traps: ES; the trees:
     /// 6A-TR).
     static func isUnbuiltArm(_ t: Int16) -> Bool {
         t == 0x4b8 || (0x4bb...0x4bd).contains(t) || (0x73f...0x740).contains(t)
@@ -134,7 +134,7 @@ public enum BackgroundSprite {
     /// (`spring`), passages 0xb54 / 0xb55 (`passage`) and the two below; `.StandardSpriteCleanup` (`LAB_10074e14`).
     /// - 0x5c8…0x5d1 (l. 63136–63186): **the face re-set every frame** from the class cache (`+0xc0 =
     ///   PTR_DAT_100a09f4[type − 0x5c8] + 4`); modes 1, 2 → `.HandleProgrammedPath` + `.ApplyGravityAndSeparate`
-    ///   (// later: no level 1–5 placement; the Setup refuses them); modes 10…14: `+0xa6` < 0 counts up, else 0;
+    ///   (// later: none on levels 1–5, 10, 11; Setup refuses them); modes 10…14: `+0xa6` < 0 counts up, else 0;
     ///   vx = vy = 0; below 0x5cd the centre `+0x10 = +0xc + 0x40`, `+0xe = +0xa + 0x32`; `.UpdateRadialPos`;
     ///   `.UpdateRadiusSprites(s, 0, 0)`; `+0x194 = 0`; modes 10, 11: `+0x170 = 1`, rotation `+0x1aa = (angle >> 8)
     ///   + 90` (− 360 past 359), `+0x88 = 0`, `+0x89 = 1`; modes 12…14: `depthBand` — the layer through
