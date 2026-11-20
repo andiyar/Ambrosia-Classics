@@ -2611,7 +2611,8 @@ Ben's answers are in `~/.claude/coordinator-notes/deimos-phase4-mailbox.md`; the
 11. A3, unit names: "First launch only (Recommended)" — "Names flash past on the very first launch (when no settings
     file exists yet); four lines and a quicker start afterwards."
 12. A5 (a), Command-Q while paused: "Quit from the pause (Recommended)" — "Command-Q does nothing while playing, but
-    quits (saving settings and scores) while the game is paused." Built in S8b (8d52eeb).
+    quits (saving settings and scores) while the game is paused." Built in S8b (8d52eeb). As built, "scores" is the
+    table as it stood: the game in progress earns no high score and opens no sector (departure 8).
 13. A5 (b), macOS asking to quit on a non-menu screen: "Remember it, quit at the menu (Recommended)" (as built).
 14. A2, S6 may fix the nine older tests' set-up itself: "Yes, S6 fixes them (Recommended)" (internal).
 
@@ -2627,17 +2628,32 @@ Ben's answers are in `~/.claude/coordinator-notes/deimos-phase4-mailbox.md`; the
    first launch (S8a).
 6. **Fades follow the OS X build: 16 passes, not 32** (ruling 5; osx-build D1; S1a).
 7. **Unit names on the first launch only** = no settings file existed (Ben's A3); a later launch shows four lines (S8a).
-8. **Command-Q:** ignored in play (Q4); quits from a game's Caps Lock pause (A5 a, S8b); quits at the menu and acts on
-   leaving the level select; dropped on the boot, scores, name entry, credits and both settings windows (the OS X build
-   reads it as "q" on three of them); a macOS quit request is remembered until the menu (A5 b); the window's close
-   button acts as Command-Q; a log-out is answered "not now" (S8a items 3, 5, 6).
+8. **Command-Q:** ignored in play (Q4), and one pressed in play is dropped at a later pause, never acted on there;
+   quits at once from a game's Caps Lock pause (A5 a, S8b). A quit from the pause saves the settings and the
+   high-score table as it stood: the game in progress earns no high score and opens no new sector (the quit flag
+   skips the table gates, as the OS X build does; Ben may overturn). Does nothing in a demo (a film cannot be paused).
+   Quits at the menu and acts on leaving the level select; dropped on the boot, scores, name entry, credits and both
+   settings windows (the OS X build reads it as "q" on three of them); a macOS quit request is remembered until the
+   menu (A5 b), except during a Caps Lock pause, where it quits at once; the window's close button acts as Command-Q;
+   a log-out is answered "not now" (S8a items 3, 5, 6).
+8a. **The level select's own Caps Lock pause also takes Command-Q at once** (S8b fix round; the seat's call, so both
+   pauses act alike under A5). Before, a Command-Q there waited until Caps Lock was released.
 9. **The pad is switched off while the controls window is up**, so a pad press cannot be bound as a key (S8a).
 10. **The erase question is asked by the menu's SCORES click (Option, mouse only),** not by the scores screen (S4), built
     at S8a (Ben's A1 a).
 11. **"Set Gamepad Controls…" stays hidden** (ruling 17) though the OS X build always shows it (S0 D5, S6).
 12. **Leaving the app only holds the game still;** the OS X build's pause screen on suspend is not built (S8a Left 2).
+    Nor is the OS X build's cursor shown during a game's Caps Lock pause (osx-build D12; S0 handoff item 8).
 13. **Test ladder 477 → 491:** +1 at S1a (`testElementDrawOnce`, a draw-once three closed screens needed), then
     S8a's sixteen new tests for Ben's rulings and the app (+7 CR, +9 AW against the plan's +3), so S8a closed at 483
     and the eight goldens end the phase at 491 (S1a, S8a handoffs).
-14. **Older tests outside a section's file list** had only their set-up helpers changed (boot passes, level-select
-    passes), never an expectation or a name, under Ben's A2 and the Coordinator's A4 (S2, S3a, S3b, S4, S5, S6).
+14. **Older tests outside a section's file list** were changed under Ben's A2 and the Coordinator's A4, each change
+    recorded in its section's handoff. S6 changed set-up helpers only (boot passes). The others changed what some
+    older tests expect: S2 removed the credits placeholder check and made the skeleton's quit cases count the real
+    sequence; S4 removed the Scores and NameEntry placeholder checks; S3a and S3b moved the cursor check and the music
+    reference, loosened one return-pass count (the exact count pinned elsewhere) and re-pinned numbers that moved with
+    the extra passes; S5 re-specified five tests' expectations under their own names (an empty recording, Films as a
+    stub). Departure 1's replaced test is the one rename this list knows of.
+15. **The start-up order is logos first, then the loading screen** (the publisher's logo, the developer's, then the
+    loading lines), as built and as the card says. The plan's gate-4 card and the S8a handoff had the loading screen
+    first, the wrong way round (corrected in the S8b card review).

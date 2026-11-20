@@ -195,7 +195,8 @@ Settled history lives in docs/STATE-history.md.
 - **Open from Phase 4** (all on the card's "Known gaps and faults"): one narrow known fault (an app switch during the
   erase question, then Quit, leaves the suspended flags set); the original's pause screen on leaving the app not
   built (a macOS quit during play waits for the player's return); the OS X build's Preferences… menu item and Edit
-  menu not built; the pressed 1 / 2 PLAYER button lit a pass too long on the way back; the menu loading `back` into a
+  menu not built; the cursor not shown during a game's Caps Lock pause (the OS X build shows it, osx-build D12); the
+  pressed 1 / 2 PLAYER button lit a pass too long on the way back; the menu loading `back` into a
   level-map-sized buffer (unchecked against the listing); input on the pass where a screen that draws nothing
   finishes; small ones (a key with no character sent as 0, the background pump's bound, the logo sound on a quit
   during the boot, no test for an unreadable settings file or a sector chosen after a Quit at the level select);
@@ -205,9 +206,8 @@ Settled history lives in docs/STATE-history.md.
   closed 2026-11-20); Ben's ear/eye items (on the gate cards). Not proved by any test: winning sector 12's end fight by
   destroying the Beamer (the sweep outlasts it on the controller's timer, as the data allows); the feel of sectors
   5–12 (no film covers them). A game started above sector 1 has no finale (the original's rule). Small follow-ups:
-  four private film lookups remain inside the core test bundle; the app's argument parser has no test target; the
-  DEBUG-only `-debugCapsLock` swallows a following flag; the app's two data alerts do not use the shared refusal
-  helper; a failed `--frames` write can hide a film's result line; `HeadlessRunner` traps on an end no rule
+  four private film lookups remain inside the core test bundle; the app's argument parser has no test target; a
+  failed `--frames` write can hide a film's result line; `HeadlessRunner` traps on an end no rule
   explains; stale comments (`ScrollState.step` "Phase 2", `Removal.swift:59`); `MotionBlurPool.emit` copies +0x90.
   Not independently confirmed: sound actually reaching the speakers (an offline probe of the same audio graph
   passed); frame checks under translucent or scaled draws.
@@ -232,7 +232,8 @@ Settled history lives in docs/STATE-history.md.
   - **S7** the controls window and the controller layout; 467 — `docs/handoff-deimos-phase4-s7.md`.
   - **S8a** the app wired to the front end; `-players` / `-sector` deleted; the erase question; unit names on the
     first launch only; Command-Q ignored in a game; `-mute`; 483 — `docs/handoff-deimos-phase4-s8a.md`.
-  - **S8b** (2026-11-21) Command-Q quits from the pause (Ben's A5); eight front-end goldens; the gate-4 card; staged;
+  - **S8b** (2026-11-21) Command-Q quits from a game's pause (Ben's A5) and from the level select's (the seat's);
+    eight front-end goldens; the gate-4 card (one fix round); staged;
     {{G2}} — `docs/handoff-deimos-phase4-s8b.md`.
 
 ## Cythera — 2026-11-15 (wave 1 session A closed: C8 + C9 merged; session B next)

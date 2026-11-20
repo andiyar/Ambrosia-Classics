@@ -6,7 +6,7 @@ yet: their cards are kept further down, trimmed only where the front end made th
 
 # Gate 4 — cold start → game → scores → quit
 
-Phase 4 puts the original's screens around the game: the start-up with its loading screen and two logos, the main
+Phase 4 puts the original's screens around the game: the start-up with its two logos and loading screen, the main
 menu, the level select, the high scores and name entry, the demos and your last game's replay, the credits, the
 settings window and the controls window, the controller, and quitting with everything saved. Until now the app opened
 straight into a game; now it starts as 1.0.6 does. Nothing in this build is a stand-in any more: the Phase 3
@@ -22,13 +22,18 @@ place, full screen misbehaving, a screen that hangs. Note what you saw and where
 Each step: what you should see or hear, then what "wrong" would look like.
 
 1. **Starting up.** Double-click the app.
-   - **The very first launch** (no settings file yet): the settings window comes first, with no Cancel button; click
-     Save. Then the publisher's logo with its sound (it stays until the sound ends), the developer's logo as the menu
-     music starts, then the loading screen, where the names of several hundred units flash past, then the menu.
-   - **Every later launch:** the same, without the settings window, and the loading screen shows four lines (images,
-     sounds, weapons, players), each ending "Done", so it starts sooner.
-   - Hold **Option** while it opens: the settings window comes first. Hold **Command**: the original's quiet start,
-     with no logo sound and no menu music at first.
+   - **The very first launch** (no settings file yet) **opens full screen**: a new settings file has Full Screen
+     ticked, as the original's did. The settings window comes first, with its Cancel button greyed out; click Save.
+     Then the publisher's logo with its sound (it stays until the sound ends), the developer's logo as the menu music
+     starts, then the loading screen, where the names of several hundred units flash past, then the menu.
+   - **To play in a window instead:** press Control-Command-F to leave full screen now. To open in a window every
+     time, untick "Full Screen" in the settings window (PREFERENCES on the menu) and Save; that takes effect from the
+     next launch.
+   - **Every later launch:** the same, without the settings window. The loading screen shows four lines (images,
+     sounds, weapons, players); in each, that kind's names flash past before it reads "Done". The unit names, the long
+     part, are left out, so it starts sooner.
+   - Hold **Option** while it opens: the settings window comes first, again with Cancel greyed out. Hold **Command**:
+     the original's quiet start, with no logo sound and no menu music at first.
    - Wrong: a game starting by itself; silence; a logo cut short; the publisher's logo never going away; unit names on
      a later launch.
 2. **The menu.** Buttons light up and click under the mouse: 1 PLAYER, 2 PLAYER, PREFERENCES, SCORES, DEMOS, QUIT.
@@ -41,8 +46,13 @@ Each step: what you should see or hear, then what "wrong" would look like.
    | P | PREFERENCES |
    | H or S | SCORES |
    | D | DEMOS |
-   | F | replay your last game (click, no flash) |
+   | F | replay your last game (the click sound; it has no button to flash) |
    | Q | QUIT |
+
+   The menu's two volume keys are not − and =. They are the typed letters ù (quieter) and ä (louder); on a US
+   keyboard that is Option-` then U, and Option-U then A (not yet tried on a real keyboard). They change the stored
+   sound volume by a tenth, with no click and no flash, and, like the game's own volume keys, you should hear no
+   difference. Which keys made those letters on a 2004 Mac is not known.
 
    The bottom line changes from the copyright line to "THIS COPY IS REGISTERED TO AMBROSIA CLASSICS" after four
    seconds; a click or a key starts that clock again. The website line lights up and does nothing. Wrong: anything
@@ -51,16 +61,22 @@ Each step: what you should see or hear, then what "wrong" would look like.
    wrapping 12 to 1. Left and right move with a sound. START under a sector you have reached, NO ACCESS under one you
    have not. The fire or select keys, or a click on the middle preview, accept it (Return does not): a green flash and
    zoom, a fade to black, the game. On a NO ACCESS sector: a red flash and "Sector Not Reached". Esc goes back to the
-   menu. Caps Lock pauses. Wrong: no outline under the mouse; START on a sector you never reached; Return starting a
-   game.
+   menu. Caps Lock pauses; paused, Command-Q quits at once. Wrong: no outline under the mouse; START on a sector you
+   never reached; Return starting a game.
    - On a fresh install only sector 1 is open. The level select opens sectors up to one below the best one you
-     reached in a game **begun at sector 1** (all twelve after the finale). The console's accuracy and funds cheats
-     mark a game as cheated, and a cheated game opens nothing and makes no high score.
+     reached in a game **begun at sector 1** (all twelve after the finale). **Any console cheat** (life, shields,
+     score, funds, mult or accuracy) marks that game as cheated, and a cheated game opens no sectors and makes no high
+     score.
 4. **Coming back.** After game over, Esc or the finale: black, the background, the high-score table if you earned a
-   place, then the menu fades back in with its music. Type your name (up to twenty characters; a blinking
-   cursor). An empty name becomes "Jar Jar Must Die", a joke from the original. In a two-player game where
+   place, then the menu fades back in with its music. Type your name (a blinking cursor; the longest name is in the
+   table below). An empty name becomes "Jar Jar Must Die", a joke from the original. In a two-player game where
    both place, player 1 types first, then player 2. A game begun above sector 1 gives no high score. Wrong: the menu
    coming back silent; your score missing from the table; a name you typed changed.
+
+   | Name entry | Characters |
+   |---|---|
+   | the longest name you can type | 20 |
+   | the original's longest joke name (decision 25) | 23 |
 5. **Demos and your last game.** DEMOS (or D) plays the four demo films in turn, one per press, 1 to 4 and round
    again; the menu music plays on underneath. A click or Esc ends a film; other keys do nothing; Caps Lock does not
    pause it. F replays your last game, even after you quit and reopen. Wrong: a demo starting by itself; a key other
@@ -73,11 +89,15 @@ Each step: what you should see or hear, then what "wrong" would look like.
    key boxes; click a box and press the key you want. Save keeps it; Cancel forgets it. Try changing a key for each
    player and play with it. Wrong: a box taking a key that the other player already uses (it should beep and refuse);
    a key change that does not stick.
-8. **A controller.** See the "Controller" part below and `Deimos/GAMEPAD.md`.
+8. **A controller.** See the "Controller" part below and the controller guide, `Deimos Rising — GAMEPAD.md`, beside
+   the app on your Desktop.
 9. **Quitting, and opening again.**
    - On the menu: QUIT, Q, Command-Q, the app menu's Quit or the window's close button. Each saves and quits.
    - In the middle of a game: Command-Q does nothing (your answer: as the original). Pause with Caps Lock, then
-     Command-Q quits at once, saving, without going through the high scores.
+     Command-Q quits at once. It saves your settings and the high-score table as it stood, but **the game you were
+     in the middle of earns no high score and opens no new sector**. That is what the OS X original does; say if you
+     want it otherwise.
+   - Paused on the level select, Command-Q also quits at once.
    - Open the game again: your high scores, best sector, both players' keys, the volume and the settings are still
      there, and F still replays your last game.
    - Wrong: anything forgotten after a quit; a quit from the pause going through the high-score screen.
@@ -95,13 +115,13 @@ Each step: what you should see or hear, then what "wrong" would look like.
 | Command-Q in the middle of a game | "Ignore it, as the original" (this overturned the plan's "quit at once") | In play nothing happens; on the menu and the level select it quits (see the last two rows for the pause and for macOS's own quit) |
 | The controller's buttons; one controller or two; the original's gamepad windows; 2 PLAYER from the pad | "yes to the design. we may need to work on button mapping" | Bottom = fire air, left = fire ground, top and right = select; one controller, player 1; the original's gamepad windows not built; 2 PLAYER needs the keyboard or the mouse. The buttons sit in one small table, so a remap is a one-line change |
 | How the two settings windows look | "Classic grey Mac look" | Drawn by the game in grey, with plain sliders, centred on the game's 640×480 picture |
-| Loading screen: every unit name, or only the lines? | "Every name, as the original" — then replaced by your later answer (two rows down) | See below |
+| Loading screen: every unit name, or only the lines? | "Every name, as the original" — then replaced by your later answer (four rows down) | See below |
 | The "erase all scores?" question and the two alerts for missing or damaged game data | "Normal macOS alert" | All three are normal macOS alerts |
 | Who builds the "erase high scores?" question | "The app-wiring section" | Built: hold Option and click SCORES (mouse only, left Option only; the H and S keys never ask). "Erase" resets the table and both players' names, then the scores show |
 | When should the `-players` and `-sector` launch switches go? | "Delete at app-wiring" | Deleted. Two players = 2 PLAYER; a later sector = the level select |
 | Unit names on every launch, or the first only? | "First launch only" | On the very first launch (no settings file yet) the names flash past; afterwards four lines and a quicker start |
-| Command-Q while the game is paused | "Quit from the pause" | Paused with Caps Lock, Command-Q quits at once, saving settings and scores, without the high-score screen. A Command-Q pressed during play is not remembered for a later pause. A film cannot be paused, so in a demo Command-Q does nothing |
-| macOS asking the game to quit (Dock, log out, shut down) on a screen that is not the menu | "Remember it, quit at the menu" | Remembered; the game quits, saving, as soon as the menu is next up |
+| Command-Q while the game is paused | "Quit from the pause" | Paused with Caps Lock, Command-Q quits at once. It saves your settings and the high-score table as it stood; the game you were in the middle of earns no high score and opens no new sector (as the OS X original; yours to overturn). A Command-Q pressed during play is not remembered for a later pause. A demo cannot be paused, so in a demo Command-Q does nothing. The level select's own Caps Lock pause also quits at once (decision 20) |
+| macOS asking the game to quit (Dock, log out, shut down) on a screen that is not the menu | "Remember it, quit at the menu" | Remembered; the game quits, saving, as soon as the menu is next up. One exception: during a Caps Lock pause it quits at once, as Command-Q does there |
 
 ## Decisions made for you — say if any is wrong
 
@@ -129,7 +149,8 @@ Each step: what you should see or hear, then what "wrong" would look like.
     is full screen; unticked, a 640×480 window. If full screen cannot be entered, the window still opens.
 
 **The menu**
-11. The volume keys on the menu work as in the game, with no click sound and no flash (read from both builds).
+11. The menu's volume keys are the original's: the letters ù and ä, not the game's − and = (see step 2). They make no
+    click sound and no flash (read from both builds).
 12. The QUIT button leaves at once; Q, Command-Q, the menu bar's Quit and macOS's own quit flash QUIT for a moment
     first.
 13. No hover sounds in the strip at the top of the screen where the menu bar sits, taken as the OS X menu bar's
@@ -148,7 +169,9 @@ Each step: what you should see or hear, then what "wrong" would look like.
     is never shown, as the original.
 20. Command-Q, the menu bar's Quit or macOS's quit on the level select are taken, but act only when you leave: Esc
     back to the menu quits; pausing with Caps Lock leaves as Esc does, then quits; choosing a sector still starts the
-    level, as the OS X build does.
+    level, as the OS X build does. **Paused on the level select, Command-Q quits at once**, as it does in a game's
+    pause; until this build it waited until you released Caps Lock. That is the seat's choice, so that both pauses
+    act alike under your answer.
 21. Console cheats typed on the level select act on an empty game of its own, not on your last game.
 22. A game begun above sector 1 has one life, no finale, saves no best sector and makes no high score: the
     original's rules.
@@ -158,12 +181,12 @@ Each step: what you should see or hear, then what "wrong" would look like.
 24. Two quirks of the original's table in a two-player game are copied: if player 2 places above player 1 in a
     different row, the row just below player 1's is lost and the next row is listed twice; if both scores fall
     between the same two rows, player 1 is listed first even when lower. A tie ranks below the older score.
-25. The original's joke names are kept, including the one 23 characters long that spills "00" into the next row and
-    sets player 2's remembered name to "00". Three rare cases of it differ: where the original would crash or spill
-    further, the replica does something defined; such a name reads back cut to twenty characters after a relaunch.
-26. Names take up to twenty characters. Accented letters count toward the 20 but are drawn invisibly, as the original's
-    character table. Only keys that change the name hide the cursor. A character the settings file cannot store is
-    saved as "?".
+25. The original's joke names are kept, including the over-long one (see the table in step 4) that spills "00" into
+    the next row and sets player 2's remembered name to "00". Three rare cases of it differ: where the original would
+    crash or spill further, the replica does something defined; after a relaunch such a name reads back cut to the
+    longest length you can type.
+26. Accented letters count toward a name's length but are drawn invisibly, as the original's character table. Only
+    keys that change the name hide the cursor. A character the settings file cannot store is saved as "?".
 27. The scores screen drops keys you typed after the one that left it; the original passed them to the next screen.
 28. On the scores, name entry and credits screens the OS X build reads Command-Q as a plain "q" (it closes the screen,
     or types a q in a name). The replica ignores it there.
@@ -183,16 +206,26 @@ Each step: what you should see or hear, then what "wrong" would look like.
     chosen in the middle of a game it does nothing.
 35. There are ten pages, not eleven. The plan expected a blank eleventh page; in both builds the last page (the
     testers) simply stays up as long as page nine.
-36. Each page can start a hair late (a sixtieth of a second at most; about a sixth of a second over the whole run).
+36. Each page can start a hair late:
+
+    | Late by | At most |
+    |---|---|
+    | one page | a sixtieth of a second |
+    | the whole run | about a sixth of a second |
 37. A click and N arriving together during a page change start a game, where the original would leave.
 
 **The settings window**
 38. Greyed items follow the OS X build: "Bypass System Volume" and the sound slider are greyed; Full Screen stays live.
-39. There is no Cancel on the first launch. Defaults resets the settings and both players' keys; Revert stays grey
+39. Cancel is greyed out, so cannot be used, when the settings window opens before the start-up: on the very first
+    launch and when you hold Option at launch. Defaults resets the settings and both players' keys; Revert stays grey
     until you change something; Cancel puts everything back, keys included.
 40. The music level is applied again when you let go of its slider, on Revert and on closing, not on Defaults (OS X).
-41. The two sliders run from nothing to full in a hundred steps: the original's slider definitions are missing from
-    the shipped file, and that range matches the volume keys.
+41. The two sliders' range is the replica's own: the original's slider definitions are missing from the shipped
+    file, so they use the same scale as the volume keys, which step by a tenth of it.
+
+    | Each slider | Steps from nothing to full |
+    |---|---|
+    | sound and music | 100 |
 42. "Set Gamepad Controls…" is hidden. The OS X build always shows it (it refused to start without its own gamepad
     layer); the replica's controller needs no setup window.
 43. "Set Controls…" opens the game's own controls window, as the OS X build, not Apple's panel.
@@ -200,8 +233,8 @@ Each step: what you should see or hear, then what "wrong" would look like.
     back when released far from the slider; the window redraws whole while a slider is dragged.
 
 **The controls window**
-45. The tab control's look is invented (no picture of it exists): tabs on the left, with the Platinum focus ring and
-    highlight colours.
+45. The tab control's look is invented (no picture of it exists): tabs on the left, with the focus ring and
+    highlight colours of "Platinum", the grey look of Mac OS 8 and 9.
 46. Clicking a box that already has the focus keeps it highlighted; the OS X build shows a text cursor there.
 47. A modifier key pressed on its own is remembered for one opening of the window; the OS X build remembers it for
     the whole run, so a modifier held while the window opens binds here and not there.
@@ -222,12 +255,17 @@ Each step: what you should see or hear, then what "wrong" would look like.
 
 **Quitting and switching apps**
 55. The window has a close button, which acts as Command-Q. The original's window had none.
-56. Every way of quitting saves the settings and scores once.
+56. Every way of quitting saves the settings and the high-score table once. A quit from a Caps Lock pause saves the
+    table as it stood: the game you were in the middle of earns no high score and opens no new sector, as the OS X
+    original.
 57. When macOS asks to log out or shut down, the game answers "not now" and quits by itself once the menu is up;
-    macOS may need you to ask again.
-58. Leaving the app holds a running game still until you come back. A quit asked of the game by macOS during play
+    macOS may need you to ask again. During a Caps Lock pause, a quit asked by macOS (the Dock, a log-out) quits at
+    once instead.
+58. In play, a Command-Q is ignored and forgotten: pausing afterwards does not act on it. In a demo Command-Q does
+    nothing, because a demo cannot be paused.
+59. Leaving the app holds a running game still until you come back. A quit asked of the game by macOS during play
     waits until you return (the original's pause screen on leaving is not built; see the gaps).
-59. Coming back from another app shows the held picture at once; the OS X build did not redraw straight away.
+60. Coming back from another app shows the held picture at once; the OS X build did not redraw straight away.
 
 Engineering choices with nothing to see: the front end lives in the game's core so Windows gets it too; the joins
 between the game's parts only grew; the app decodes the original's pictures and hands them in; the level select runs
@@ -244,22 +282,26 @@ kept invisible filler in a reset name.
 3. **Not built.** The OS X build's "Preferences…" item in the app menu, and its (greyed) Edit menu.
 4. **Fault.** After a click on 1 PLAYER or 2 PLAYER, the pressed button stays lit a step or two too long on the way
    back to the menu.
-5. **Fault, unchecked.** After a game the menu loads its background into a buffer still sized for the level map. No
-   crash was found; it has not been checked against the original.
-6. **Fault, unchecked.** Input that arrives on the very step a screen that draws nothing finishes goes to that screen,
-   not to the menu.
-7. **Fault, small.** A key with no character reaches the game as character 0.
+5. **Fault, unchecked.** After a game, the menu's background picture is loaded into a piece of memory still laid out
+   for the game's scrolling map, not for a menu screen. No crash or wrong picture was found; it has not been checked
+   against the original.
+6. **Fault, unchecked.** Some steps between screens draw nothing (a short wait, a hand-over). A key or click that
+   arrives at the very moment one of those ends goes to that step instead of reaching the menu.
+7. **Fault, small.** A key that types no character still reaches the game as a key press, carrying an empty
+   character.
 8. **Fault, possible.** Quitting while the game is in the background assumes macOS does not slow the game's clock
    there.
 9. **Fault.** A quit asked by macOS during the start-up can play the logo's sound in the background.
 10. **Not tested.** An unreadable settings file; choosing a sector after a Quit on the level select.
-11. **Faults, small, in the settings windows.** A press held over from an earlier moment ignores a new click queued
-    behind it; a click dragged off a button and released at once still counts; Return and Esc do not check whether
-    the button they press is greyed.
+11. **Faults, small, in the settings windows.** If a press is still being held from a moment before, a new click made
+    straight after it, before the window catches up, is ignored; a click dragged off a button and released at once
+    still counts; Return and Esc do not check whether the button they press is greyed.
 12. **Fault, small.** Switching apps while the menu's music fades out on Quit cuts that wait short.
 13. **Fault, hand-made files only.** An empty file named "Last Film[last].film" in the game's folder hides the shipped
     copy and then your last game goes missing.
 14. **Not built yet.** The whole-game comparison of the OS 9 and OS X builds (your "yes, after Phase 4").
+15. **Not built.** The OS X original shows the mouse pointer while a game is paused with Caps Lock. The replica keeps
+    it hidden.
 
 ## What only your eyes can prove
 
@@ -271,16 +313,22 @@ kept invisible filler in a reset name.
 - Clicks landing where you point, at any window size and in full screen; full screen at launch; the erase question's
   alert over full screen.
 - A real controller in your hand.
+- In the controls window, pressing a key and a modifier (Shift, Option, Command, Control) very close together: the
+  replica looks at the modifiers only after that moment's other key presses, where the OS X build looked between
+  them, so the wrong one could be bound.
+- Esc on a settings window that has a Cancel button: it should press Cancel; no test covers it.
 - A quit from the Dock or a log-out while the game is in the background.
 - The settings file against one the original wrote (none exists on this Mac or in the archive).
 - Anything where the OS X build differs from the OS 9 build beyond the front-end parts that were compared.
 
 ## Controller
 
-The full guide is `Deimos/GAMEPAD.md` in the repository (pairing, every button, a six-step check for you). In short:
+The full guide is copied beside the app on your Desktop as `Deimos Rising — GAMEPAD.md` (pairing, every button, a
+six-step check for you). In short:
 - The d-pad or left stick moves; bottom fires the air weapon, left the ground weapon, top or right selects.
 - **+** pauses (in play and on the level select); **−** is Esc (hold it a second in play).
-- One controller, player 1; outside play any face button is Return; it is switched off in the controls window.
+- One controller, player 1; outside play any face button is Return, and so is **+** on the menu and the screens
+  outside play (except the level select, where it pauses); it is switched off in the controls window.
 
 ## Hidden switches
 
@@ -289,9 +337,11 @@ The full guide is `Deimos/GAMEPAD.md` in the repository (pairing, every button, 
 | start with no sound at all | `open ~/Desktop/"Deimos Rising.app" --args -mute` |
 | play a demo film after the start-up, then the menu | `open ~/Desktop/"Deimos Rising.app" --args -film de01` (de01 to de04) |
 
-- `-mute` (or the environment variable `DEIMOS_MUTE`) opens no sound output and takes the original's own no-sound
-  path: no logo sound, a timed logo hold and fewer loading lines. It is not quite the start-up you would normally see.
-- A mistyped film name now shows an alert instead of quitting silently.
+- `-mute` opens no sound output and takes the original's own no-sound path: no logo sound, a timed logo hold, no
+  system beep, and the loading screen's sound line reads "Sound System Not Available" instead of listing the sounds
+  (the same number of lines). It is not quite the start-up you would normally see. (A Terminal setting,
+  `DEIMOS_MUTE=1`, does the same for anyone launching the game from a script.)
+- A mistyped film name shows an alert saying so; when you dismiss it, the app quits.
 - The settings file:
   `~/Library/Application Support/Ambrosia Classics/Deimos Rising/Deimos Rising Preferences`
 - Your last game:
@@ -373,7 +423,7 @@ Two questions for you, one line each:
 | `-` / `=` | the original's volume keys — on Mac OS X they do nothing you can hear (Part B line 9) |
 | Esc | leave the game: the high scores (if you placed), then the menu |
 | ⌃⌘F | full screen on and off |
-| ⌘Q | nothing in play; quits from the Caps Lock pause and from the menu |
+| ⌘Q | nothing in play; quits from the Caps Lock pause (that game then makes no high score) and from the menu |
 
 These are player 1's default keys; the controls window (PREFERENCES, then Set Controls…) changes them. Only the
 **left** ⌘ and ⌥ keys fire by default. The right-hand ⌘ and ⌥ are different keys to the game.
@@ -471,9 +521,9 @@ says.
 ## Part A — the gate-3 card: does the campaign play like Deimos
 
 Open `~/Desktop/Deimos Rising.app`; choose 1 PLAYER and start at Mariner Valley. The console's cheats are there if
-you want to get through quickly (`~`, then `supermunki`, then `life`, `shields` and the rest — but the accuracy and
-funds cheats stop the game opening later sectors in the level select). Each line: what you'll see or hear, and what
-would be wrong.
+you want to get through quickly (`~`, then `supermunki`, then `life`, `shields` and the rest) — but **any cheat
+marks that game as cheated: it opens no later sectors in the level select and makes no high score**. Each line: what
+you'll see or hear, and what would be wrong.
 1. **Between levels:** when the tallies finish, the music stops, a transition sound plays through a fade to black of
    about half a second, and the next sector fades in with its level notice and the level music. Wrong: a pause, a
    flash of the old level, sound cut off, or the game starting again at sector 1.
@@ -493,9 +543,11 @@ would be wrong.
    you: are those the keys you remember? Does player 2 still respond while player 1 holds Command?
 9. **Sectors 5–12:** new enemies and set pieces, the Photon Beam, and in sectors 7 and 12 a hospital that costs
    10,000 × your multiplier if you destroy it. No demo film covers these sectors: your eyes are the check. The level
-   select reaches a sector once you have got past it in a game begun at sector 1 (with one life above sector 1).
+   select reaches a sector once you have got past it in a game begun at sector 1 with no cheats (a game begun above
+   sector 1 has one life).
 10. **The finale** (sector 12, reached in a game begun at sector 1; a later start has no finale; the life and shield
-    cheats will carry you through the twelve sectors): the "all levels" notice flashes fifteen times with a sound
+    cheats will carry you through the twelve sectors, though that game then opens no sectors and makes no high
+    score): the "all levels" notice flashes fifteen times with a sound
     each; about ten seconds of explosions; four irises open twice with storms of coins and bonuses until about half
     a minute in; the tallies begin about forty seconds after the notice. If every one of the twelve levels was at
     100 % ground accuracy, a mission bonus follows: ten payments of 100,000. Then the transition sound, black, and the
