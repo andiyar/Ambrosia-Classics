@@ -1,0 +1,335 @@
+import XCTest
+@testable import DeimosCore
+import HectorResources
+
+/// Phase 4 S6 DG — the configuration window, DLOG/DITL 190 "Game - Preferences", as the OS X build runs it (X
+/// `FUN_10011240` 10011240..100117a0, refresh X `100117a0`; grounding C §2; `osx-build.md` D2–D5, ruling 5). The window
+/// is stepped pass by pass without a host, with the app fork read from the repo. Clicks are one-pass clicks (the
+/// mouse-down and the release in the same pass) unless a test holds the button. Every loop names its bound (G11).
+final class ConfigDialogTests: XCTestCase {
+    private func assets() throws -> DeimosAssets { try TestAssets.loaded.get() }
+
+    /// DLOG 190 (379 × 377) centred on the 640 × 480 picture: the content's top left.
+    private static let origin = MousePoint(h: (640 - 379) / 2, v: (480 - 377) / 2)
+    /// The window frame (dBoxProc: 6 pixels outside the content) — what the window saves and restores.
+    private static let frame = MacRect(top: 45, left: 124, bottom: 434, right: 515)
+    private static let screen = MacRect(top: 0, left: 0, bottom: 480, right: 640)
+    /// `FUN_100050f0`'s key sets (P1, P2).
+    private static let defaultKeys: [UInt16] = [0x7E, 0x7B, 0x7C, 0x7D, 0x37, 0x3A, 0x31,
+                                                0x5B, 0x56, 0x58, 0x57, 0x77, 0x75, 0x79]
+    private static let returnKey = KeyEvent(charCode: 0x0D, keyCode: 0x24)
+    private static let escKey = KeyEvent(charCode: 0x1B, keyCode: 0x35)
+
+    private struct Run {
+        var dialog: ConfigDialog
+        var state: FrontEndState
+        var first: ScreenStep<Bool>
+    }
+
+    private func open(firstLaunch: Bool = false, prefs: DeimosPrefs = .fresh) throws -> Run {
+        let a = try assets()
+        var state = try FrontEndState(assets: a, prefs: prefs, shellResources: try DialogFork.loaded.get())
+        var d = ConfigDialog(firstLaunch: firstLaunch)
+        let first = d.pass(keys: HeldKeys(), ticks: 100, returned: nil, state: &state)
+        XCTAssertNil(first.finished, "the window stays open")
+        return Run(dialog: d, state: state, first: first)
+    }
+
+    @discardableResult
+    private func pass(_ r: inout Run, _ keys: HeldKeys = HeldKeys(), returned: ScreenResult? = nil) -> ScreenStep<Bool> {
+        r.dialog.pass(keys: keys, ticks: 200, returned: returned, state: &r.state)
+    }
+
+    /// An item's rect in the picture.
+    private func global(_ r: Run, _ item: Int) -> MacRect {
+        guard let items = r.dialog.items else {
+            XCTFail("the window has no items")
+            return MacRect(top: 0, left: 0, bottom: 0, right: 0)
+        }
+        let l = items[item].rect
+        return MacRect(top: l.top + Self.origin.v, left: l.left + Self.origin.h,
+                       bottom: l.bottom + Self.origin.v, right: l.right + Self.origin.h)
+    }
+
+    private func centre(_ r: Run, _ item: Int) -> MousePoint {
+        let g = global(r, item)
+        return MousePoint(h: (g.left + g.right) / 2, v: (g.top + g.bottom) / 2)
+    }
+
+    /// A press and release at `p` in one pass.
+    @discardableResult
+    private func click(_ r: inout Run, at p: MousePoint) -> ScreenStep<Bool> {
+        pass(&r, HeldKeys(mouse: p, mouseButton: false, mouseDowns: [p]))
+    }
+
+    @discardableResult
+    private func click(_ r: inout Run, _ item: Int) -> ScreenStep<Bool> { click(&r, at: centre(r, item)) }
+
+    @discardableResult
+    private func key(_ r: inout Run, _ k: KeyEvent, command: Bool = false) -> ScreenStep<Bool> {
+        pass(&r, HeldKeys(held: command ? [0x37] : [], keyEvents: [k]))
+    }
+
+    /// The COST rects drawn by `ops` that lie inside `rect`, with their colours.
+    private func fills(_ ops: [RenderOp], inside rect: MacRect) -> [UInt16] {
+        ops.compactMap { op -> UInt16? in
+            guard case let .draw(c) = op, c.face == FourCC("COST")!, let r = c.costRect else { return nil }
+            guard r.left >= rect.left, r.right <= rect.right, r.top >= rect.top, r.bottom <= rect.bottom else { return nil }
+            return c.costColour
+        }
+    }
+
+    // MARK: - The tests
+
+    /// Items 8, 9 and 17 toggle byte prefs 4, 5 and 8 in memory at once (X 10011660, 100116a4, 100116e8: `cntlzw` = not,
+    /// `FUN_10004ab0`, `SetControlValue`); a second click toggles back. Item 10 (byte 7) is greyed in X and a click on it
+    /// does nothing. The window draws at its first pass (the screen under it saved first, the window's rect blitted
+    /// last), redraws only when its picture changes, and Save (Return, the default item) keeps the edits.
+    func testConfigItemToggles() throws {
+        var r = try open()
+        let ops = r.first.output.ops
+        XCTAssertEqual(ops.first, .copy(from: .back, to: .terrain, src: Self.frame, dst: Self.frame, interlaced: false),
+                       "the screen under the window is saved first")
+        XCTAssertEqual(ops.last, .screenBlit(src: Self.frame, dst: Self.frame))
+        XCTAssertGreaterThan(ops.count, 200, "the whole window is drawn")
+        for op in ops.dropFirst().dropLast() {
+            guard case let .draw(c) = op else { XCTFail("only draws between the save and the blit: \(op)"); break }
+            XCTAssertEqual(c.face, FourCC("COST")!)
+            XCTAssertEqual(c.alpha, 0)
+            XCTAssertTrue(c.drawNow)
+            XCTAssertEqual(c.clip, Self.screen, "the full-screen clip on every command")
+        }
+        XCTAssertEqual(pass(&r).output, PassOutput(), "nothing changed: nothing drawn")
+        XCTAssertEqual(r.dialog.value(8), 1, "Full Screen shows byte 4 (fresh 1)")
+
+        for (item, byte) in [(8, 4), (9, 5), (17, 8)] {
+            let before = r.state.prefs.bytePrefs[byte]
+            let s = click(&r, item)
+            XCTAssertNil(s.finished)
+            XCTAssertEqual(r.state.prefs.bytePrefs[byte], before == 0 ? 1 : 0, "item \(item) toggles byte \(byte)")
+            XCTAssertEqual(r.dialog.value(item), Int(r.state.prefs.bytePrefs[byte]), "item \(item) shows it")
+            XCTAssertTrue(s.output.ops.contains(.screenBlit(src: Self.frame, dst: Self.frame)), "redrawn")
+            click(&r, item)
+            XCTAssertEqual(r.state.prefs.bytePrefs[byte], before, "item \(item) toggles back")
+        }
+        click(&r, 8)
+        let byte7 = r.state.prefs.bytePrefs[7]
+        XCTAssertEqual(click(&r, 10).output, PassOutput(), "item 10 is greyed in X: no change, nothing drawn")
+        XCTAssertEqual(r.state.prefs.bytePrefs[7], byte7)
+
+        let save = key(&r, Self.returnKey)
+        XCTAssertEqual(save.finished, true, "Return = Save")
+        XCTAssertEqual(r.state.prefs.bytePrefs[4], 0, "the edit is kept")
+        XCTAssertEqual(Array(save.output.ops.suffix(3)), [
+            .copy(from: .terrain, to: .back, src: Self.frame, dst: Self.frame, interlaced: false),
+            .loadImage(image: FourCC("back")!, into: .terrain, dst: Self.screen),
+            .screenBlit(src: Self.frame, dst: Self.frame),
+        ], "closing restores the screen under the window and repaints it")
+    }
+
+    /// Defaults (item 3) = `FUN_10004f20(0)` → `FUN_100050f0` (X 10004f80 → 10005150): byte 4 = 1; bytes 5, 6, 7, 8 = 0;
+    /// ints 0, 1, 2 = 50, 100, 50; both key sets. Bytes 0–3, 9, 10, 11 and int 3 are untouched.
+    func testDefaultsResetsKeysNotBytes9to11() throws {
+        var prefs = DeimosPrefs.fresh
+        for b in 0...11 { prefs.bytePrefs[b] = UInt8(b == 4 ? 0 : 7) }
+        prefs.intPrefs = [10, 20, 30, 9]
+        prefs.keyTable = (0..<14).map { UInt16(0x20 + $0) }
+        var r = try open(prefs: prefs)
+        click(&r, 3)
+        let p = r.state.prefs
+        XCTAssertEqual(Array(p.bytePrefs[4...8]), [1, 0, 0, 0, 0], "bytes 4–8")
+        XCTAssertEqual(Array(p.intPrefs[0...2]), [50, 100, 50], "ints 0–2")
+        XCTAssertEqual(p.keyTable, Self.defaultKeys, "both key sets")
+        XCTAssertEqual(Array(p.bytePrefs[0...3]), [7, 7, 7, 7], "bytes 0–3 untouched")
+        XCTAssertEqual(Array(p.bytePrefs[9...11]), [7, 7, 7], "bytes 9–11 untouched (FPS counter, limiter, cheats)")
+        XCTAssertEqual(p.intPrefs[3], 9, "int 3 (highest sector) untouched")
+        XCTAssertEqual(r.dialog.value(8), 1, "the refresh shows the defaults")
+        XCTAssertEqual(r.dialog.value(15), 100)
+        XCTAssertEqual(MacRoman.decode(r.dialog.label(16)), "100%")
+        XCTAssertTrue(r.dialog.isActive(4), "a change: Revert comes alive")
+    }
+
+    /// Cancel restores the 0x34f0-byte snapshot taken at open — the key sets too — and returns false (X 1001173c..
+    /// 10011750); so does Esc (the cancel item, `SetDialogCancelItem(2)` when not a first launch, X 10011310..10011320).
+    func testCancelRestoresSnapshotIncludingKeys() throws {
+        var prefs = DeimosPrefs.fresh
+        prefs.keyTable[0] = 0x0D
+        prefs.keyTable[13] = 0x22
+        prefs.bytePrefs[5] = 1
+        for useEsc in [false, true] {
+            var r = try open(prefs: prefs)
+            click(&r, 9)
+            click(&r, 17)
+            click(&r, 3)                                                    // Defaults: the keys change
+            XCTAssertNotEqual(r.state.prefs, prefs, "edited in place")
+            XCTAssertEqual(r.state.prefs.keyTable, Self.defaultKeys)
+            let s = useEsc ? key(&r, Self.escKey) : click(&r, 2)
+            XCTAssertEqual(s.finished, false, useEsc ? "Esc = Cancel" : "Cancel")
+            XCTAssertEqual(r.state.prefs, prefs, "the snapshot restored, keys included")
+            XCTAssertEqual(s.output.ops.last, .screenBlit(src: Self.frame, dst: Self.frame))
+        }
+        var r = try open(prefs: prefs)
+        click(&r, 9)
+        XCTAssertEqual(key(&r, KeyEvent(charCode: 0x2E, keyCode: 0x2F), command: true).finished, false, "⌘. = Cancel")
+        XCTAssertEqual(r.state.prefs, prefs)
+    }
+
+    /// Revert (item 4) is greyed at open (X 10011430..10011438) and comes alive once anything changed (X 10011450..
+    /// 1001147c, before each ModalDialog); it restores the snapshot, refreshes, greys itself again and clears the flag
+    /// (X 100114d0..10011508).
+    func testRevertGreysUntilChange() throws {
+        var r = try open()
+        XCTAssertFalse(r.dialog.isActive(4))
+        XCTAssertEqual(click(&r, 4).output, PassOutput(), "greyed: a click does nothing")
+        click(&r, 9)
+        XCTAssertEqual(r.state.prefs.bytePrefs[5], 1)
+        XCTAssertTrue(r.dialog.isActive(4), "alive after a change")
+        let s = click(&r, 4)
+        XCTAssertNil(s.finished)
+        XCTAssertEqual(r.state.prefs, .fresh, "the snapshot restored")
+        XCTAssertEqual(r.dialog.value(9), 0, "refreshed")
+        XCTAssertFalse(r.dialog.isActive(4), "greyed again")
+        XCTAssertFalse(r.dialog.changed)
+        click(&r, 4)
+        XCTAssertEqual(r.state.prefs, .fresh)
+        click(&r, 17)
+        XCTAssertTrue(r.dialog.isActive(4), "alive again after the next change")
+    }
+
+    /// A first launch (the boot's call) has no cancel item and greys Cancel (X 10011310..10011320, 10011418..10011428):
+    /// a click on Cancel, Esc and ⌘. do nothing; Save still closes. From the menu Cancel is live.
+    func testFirstLaunchHasNoCancel() throws {
+        var r = try open(firstLaunch: true)
+        XCTAssertFalse(r.dialog.isActive(2), "Cancel greyed")
+        XCTAssertNil(r.dialog.cancelItem)
+        click(&r, 9)
+        XCTAssertNil(click(&r, 2).finished, "a click on the greyed Cancel does nothing")
+        XCTAssertNil(key(&r, Self.escKey).finished, "no cancel item: Esc does nothing")
+        XCTAssertNil(key(&r, KeyEvent(charCode: 0x2E, keyCode: 0x2F), command: true).finished, "nor ⌘.")
+        XCTAssertEqual(r.state.prefs.bytePrefs[5], 1)
+        XCTAssertEqual(click(&r, 1).finished, true, "Save closes")
+        XCTAssertEqual(r.state.prefs.bytePrefs[5], 1)
+
+        let menu = try open(firstLaunch: false)
+        XCTAssertTrue(menu.dialog.isActive(2))
+        XCTAssertEqual(menu.dialog.cancelItem, 2)
+    }
+
+    /// X greys items 10, 12, 11 and 13 at open (X 10011348..10011380 — not L's item 8), and the refresh makes the sound
+    /// slider (12) live only when byte 7 is already 1 (X 10011904..10011934). Item 19 is hidden (plan ruling 17). Greyed
+    /// text is drawn in grey, live text in black; nothing is drawn in the hidden item's rect.
+    func testGreyingFollowsOSX() throws {
+        let r = try open()
+        for item in [10, 11, 12, 13, 4] { XCTAssertFalse(r.dialog.isActive(item), "item \(item) greyed") }
+        for item in [1, 2, 3, 8, 9, 14, 15, 16, 17, 18, 20] { XCTAssertTrue(r.dialog.isActive(item), "item \(item) live") }
+        XCTAssertTrue(r.dialog.isHidden(19), "Set Gamepad Controls… hidden")
+        XCTAssertFalse(r.dialog.isHidden(8))
+
+        let ops = r.first.output.ops
+        let sound = fills(ops, inside: global(r, 11)), music = fills(ops, inside: global(r, 14))
+        XCTAssertFalse(sound.isEmpty)
+        XCTAssertEqual(Set(sound), [DialogDraw.Colour.greyText], "Sound Volume: in grey")
+        XCTAssertFalse(music.isEmpty)
+        XCTAssertEqual(Set(music), [DialogDraw.Colour.text], "Music Volume: in black")
+        XCTAssertEqual(fills(ops, inside: global(r, 19)), [], "nothing in the hidden item")
+
+        var prefs = DeimosPrefs.fresh
+        prefs.bytePrefs[7] = 1
+        let bypass = try open(prefs: prefs)
+        XCTAssertTrue(bypass.dialog.isActive(12), "byte 7 already 1: the sound slider is live")
+        for item in [10, 11, 13] { XCTAssertFalse(bypass.dialog.isActive(item), "item \(item) still greyed") }
+        XCTAssertEqual(bypass.dialog.value(10), 1)
+    }
+
+    /// The two volume sliders (items 12 and 15; CNTL 2000/2001 absent, question 6: plain sliders, 0…100): the thumb
+    /// follows the mouse with a live "%i%%" label and pins at both ends; the pref (int 1 for item 15, int 0 for item
+    /// 12) is set only on release, with `SysBeep(1)` (X 10011588..100115ec). A press on the track pages by 10, pinned.
+    /// The greyed sound slider ignores a press.
+    func testVolumeSliderPins() throws {
+        var r = try open()
+        let track = global(r, 15)
+        let thumb = DialogDraw.sliderThumb(track, value: 100, min: 0, max: 100)
+        let grab = MousePoint(h: (thumb.left + thumb.right) / 2, v: (thumb.top + thumb.bottom) / 2)
+        pass(&r, HeldKeys(mouse: grab, mouseButton: true, mouseDowns: [grab]))
+        let far = pass(&r, HeldKeys(mouse: MousePoint(h: 0, v: grab.v + 40), mouseButton: true))
+        XCTAssertEqual(r.dialog.value(15), 0, "pinned at the minimum")
+        XCTAssertEqual(MacRoman.decode(r.dialog.label(16)), "0%", "the live label")
+        XCTAssertEqual(r.state.prefs.intPrefs[1], 100, "not set while held")
+        XCTAssertFalse(far.output.ops.isEmpty, "redrawn while dragging")
+        let up = pass(&r, HeldKeys(mouse: MousePoint(h: 0, v: grab.v), mouseButton: false))
+        XCTAssertEqual(r.state.prefs.intPrefs[1], 0, "set on release")
+        XCTAssertEqual(up.output.requests, [.beep])
+
+        let low = DialogDraw.sliderThumb(track, value: 0, min: 0, max: 100)
+        let grab2 = MousePoint(h: (low.left + low.right) / 2, v: grab.v)
+        pass(&r, HeldKeys(mouse: grab2, mouseButton: true, mouseDowns: [grab2]))
+        pass(&r, HeldKeys(mouse: MousePoint(h: 639, v: grab.v), mouseButton: true))
+        XCTAssertEqual(r.dialog.value(15), 100, "pinned at the maximum")
+        XCTAssertEqual(MacRoman.decode(r.dialog.label(16)), "100%")
+        pass(&r, HeldKeys(mouse: MousePoint(h: 639, v: grab.v), mouseButton: false))
+        XCTAssertEqual(r.state.prefs.intPrefs[1], 100)
+
+        // A press on the track left of the thumb, held: −10 a pass, pinned at 0 (bound: 15 passes).
+        let page = MousePoint(h: track.left + 2, v: grab.v)
+        pass(&r, HeldKeys(mouse: page, mouseButton: true, mouseDowns: [page]))
+        XCTAssertEqual(r.dialog.value(15), 90, "one page")
+        for _ in 0..<15 { pass(&r, HeldKeys(mouse: page, mouseButton: true)) }
+        XCTAssertEqual(r.dialog.value(15), 0, "pinned at 0")
+        let rel = pass(&r, HeldKeys(mouse: page, mouseButton: false))
+        XCTAssertEqual(r.state.prefs.intPrefs[1], 0)
+        XCTAssertEqual(rel.output.requests, [.beep])
+
+        // The sound slider is greyed (byte 7 = 0): a press does nothing.
+        let sound = centre(r, 12)
+        XCTAssertEqual(pass(&r, HeldKeys(mouse: sound, mouseButton: false, mouseDowns: [sound])).output, PassOutput())
+        XCTAssertEqual(r.state.prefs.intPrefs[0], 50)
+
+        // With byte 7 = 1 it drives int 0.
+        var prefs = DeimosPrefs.fresh
+        prefs.bytePrefs[7] = 1
+        var b = try open(prefs: prefs)
+        let s = global(b, 12)
+        let st = DialogDraw.sliderThumb(s, value: 50, min: 0, max: 100)
+        let sg = MousePoint(h: (st.left + st.right) / 2, v: (st.top + st.bottom) / 2)
+        pass(&b, HeldKeys(mouse: sg, mouseButton: true, mouseDowns: [sg]))
+        pass(&b, HeldKeys(mouse: MousePoint(h: 639, v: sg.v), mouseButton: false))
+        XCTAssertEqual(b.state.prefs.intPrefs[0], 100)
+        XCTAssertEqual(MacRoman.decode(b.dialog.label(13)), "100%")
+    }
+
+    /// The boot opens the window, always as a first launch (X 10000214 `li r3,0x1`), when byte pref 2 is 0 or Option is
+    /// held, and not otherwise; when it returns, byte 2 = 1. Without the dialog resources the window finishes at once
+    /// with false (the original asserts on a nil `GetNewDialog`, X 100112cc..100112dc; the replica does not trap).
+    func testBootDialogRuleByte2AndOption() throws {
+        let a = try assets()
+        let fork = try DialogFork.loaded.get()
+        for (pref2, option, opens) in [(UInt8(0), false, true), (1, true, true), (0, true, true), (1, false, false)] {
+            let label = "byte 2 = \(pref2), Option \(option)"
+            var prefs = DeimosPrefs.fresh
+            prefs.bytePrefs[2] = pref2
+            var fe = try FrontEnd(assets: a, prefs: prefs, launch: LaunchModifiers(option: option), shellResources: fork)
+            _ = fe.pass(keys: HeldKeys(), ticks: 1_000)
+            guard opens else {
+                XCTAssertEqual(fe.screens, [.boot], "\(label): no window")
+                continue
+            }
+            XCTAssertEqual(fe.screens, [.boot, .configDialog], "\(label): the window is up")
+            _ = fe.pass(keys: HeldKeys(keyEvents: [Self.escKey]), ticks: 1_001)
+            XCTAssertEqual(fe.screens, [.boot, .configDialog], "\(label): a first launch — Esc does nothing")
+            _ = fe.pass(keys: HeldKeys(keyEvents: [Self.returnKey]), ticks: 1_002)
+            XCTAssertEqual(fe.screens, [.boot], "\(label): Save closes it")
+            _ = fe.pass(keys: HeldKeys(), ticks: 1_003)
+            XCTAssertEqual(fe.state.prefs.bytePrefs[2], 1, "\(label): byte 2 ← 1")
+        }
+
+        var prefs = DeimosPrefs.fresh
+        prefs.bytePrefs[2] = 0
+        var bare = try FrontEnd(assets: a, prefs: prefs)
+        _ = bare.pass(keys: HeldKeys(), ticks: 1_000)
+        XCTAssertEqual(bare.screens, [.boot], "no dialog resources: the window finishes at once")
+        XCTAssertEqual(bare.state.prefs.bytePrefs[2], 1, "and the boot carries on")
+        var d = ConfigDialog(firstLaunch: true)
+        var st = try FrontEndState(assets: a, prefs: .fresh)
+        XCTAssertEqual(d.pass(keys: HeldKeys(), ticks: 0, returned: nil, state: &st).finished, false)
+    }
+}
