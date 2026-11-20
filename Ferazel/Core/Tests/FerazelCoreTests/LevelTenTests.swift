@@ -38,6 +38,15 @@ final class LevelTenTests: XCTestCase {
         rig.newGame(level: 10)
         XCTAssertEqual(rig.plays, [4])
         XCTAssertEqual(rig.flow.levelRun?.music.currentTrack, 4)
+        // Wave 6A.2 fix round (D55, item 2): three header switches at work at level 10's own values, which are 0 here
+        // (the plan's "80 on both" / 150 / −512 are level 11's): ice 0x2710 0 → `0694` 0x100·800 >> 8 = 800, `+0x112` 0;
+        // the damaging surface 0x270e 0 → the default 0x70 (no level 1–5 holds 0 there); the current 0x2714 0 → every
+        // mote over water 200 stands still (vx 0, shape 1; 205's shape 4).
+        XCTAssertEqual([h.iceSlipperiness, h.landingDamage, h.waterCurrent], [0, 0, 0], "0x2710 / 0x270e / 0x2714")
+        let b = try TenEleven.headerBehaviour(r, level: 10)
+        XCTAssertEqual([b.ice, b.slip, b.damage], [800, 0, 0x70])
+        XCTAssertFalse(b.motes.isEmpty, "motes emitted")
+        XCTAssertEqual(b.motes.filter { $0[1] != ($0[0] == -215 ? 4 : 1) || $0[2] != 0 }, [], "no current")
 
         try traceLevel10(r, L)
     }
@@ -534,6 +543,43 @@ enum TenEleven {
     }
 
     static func resources() throws -> FerazelResources { try FerazelData.open(try FerazelData.dataDirectory()) }
+
+    /// Wave 6A.2 fix round (D55, item 2): three header switches' behaviour on a fresh session of `level`, at the level's
+    /// own header values. Ice: `Player.surfaceMaterial` with material 3 (row 28) → (`0694`, the player's `+0x112`).
+    /// The damaging surface: the same row with material 2 → the HP the player loses (hdr 0x270e, 0 → 0x70). The
+    /// current: `WaterEffects.run` (its env from the header) 40 times at a scroll point showing the first water cell of
+    /// BG kind 200 / 205 in reading order, the pool emptied before each → every mote's [kind, shape, vx].
+    static func headerBehaviour(_ r: FerazelResources, level: Int) throws
+        -> (ice: Int, slip: Int, damage: Int, motes: [[Int]]) {
+        let s = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: level)
+        let w = s.world
+        let pid = try XCTUnwrap(w.playerID)
+        w.active.update(id: pid) { $0.material = 3 }
+        Player.surfaceMaterial(w, id: pid)
+        let ice = Int(w.player.ice), slip = Int(try XCTUnwrap(w.active.record(id: pid)).slip)
+        w.active.update(id: pid) { $0.material = 2; $0.invulnerable = 0 }
+        let hp0 = Int(try XCTUnwrap(w.active.record(id: pid)).hp)
+        Player.surfaceMaterial(w, id: pid)
+        let damage = hp0 - Int(try XCTUnwrap(w.active.record(id: pid)).hp)
+        let L = w.level
+        var cell: (col: Int, row: Int)?
+        search: for row in 0..<Int(L.header.gridHeight) {
+            for col in 0..<Int(L.header.gridWidth) {
+                let b = L.bgTile(col: col, row: row)
+                if b >= 0, [200, 205].contains(L.bgKind(tile: b)) { cell = (col, row); break search }
+            }
+        }
+        let c = try XCTUnwrap(cell, "level \(level): a water cell of BG kind 200 / 205")
+        var we = WaterEffects()
+        var motes: [[Int]] = []
+        for _ in 0..<40 {
+            w.particles = ParticlePool()
+            _ = we.run(world: w, h: max(0, (c.col - 10) << 5), v: max(0, (c.row - 7) << 5), effects: 1)
+            motes += w.particles.records.filter { $0.alive && ($0.kind == -210 || $0.kind == -215) }
+                .map { [Int($0.kind), Int($0.shape), Int($0.vx)] }
+        }
+        return (ice, slip, damage, motes)
+    }
 
     /// The level's census: active records, their types, the records `SetupFaces.setup` refuses (by type), the records
     /// the level spawn creates, and `SpriteWorld.refusedSpawns` after 120 frames of a fresh session.

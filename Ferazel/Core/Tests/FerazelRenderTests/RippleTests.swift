@@ -425,6 +425,54 @@ final class RippleTests: XCTestCase {
             let faces = we.run(world: world, h: 0, v: 0, effects: 1)
             XCTAssertEqual(faces.contains { $0.cellX == B.col && $0.cellY == B.row }, !on, "8825 via the header, flag \(flag)")
         }
+        // Wave 6A.2 fix round (D55, item 2): level 11's own header (0x26c6 = 1, not patched) — the light renderer's
+        // redraw of a real water cell of the level (`.PlainWrapFGTile` M l. 9618) takes the water arm: the FG face
+        // through table w (and a blend with the water table), not the plain face with the FG-water face over it (and
+        // the dry blend); on the pattern tile (t = 95, M l. 9635) the pattern through table w, not plain. The cells: the
+        // first in reading order with a water BG (kind 200…209) on which the two arms differ — one with an FG tile below
+        // 95, one with the pattern tile.
+        let real = TileGridRenderer(level: base, sets: sets, fixed: fixed, tables: tables, clearFace: clear,
+                                    drawnH: 0, drawnV: 0, effects: 3)
+        func arms(_ c: Cell) throws -> (on: [UInt8], off: [UInt8], scroll: TileBlitters.Scroll)? {
+            guard (0...0x5f).contains(c.t), (0...0x5f).contains(c.b),
+                  (200...209).contains(base.bgKind(tile: c.b)) else { return nil }
+            let tw = tables.water[base.bgKind(tile: c.b) - 200]
+            let at = TileBlitters.Scroll(h: c.col << 5, v: c.row << 5)
+            func paint(_ ops: [(EncodedFace, TileBlitters.Op)]) -> [UInt8] {
+                var port = [UInt8](repeating: 0, count: FramePorts.width * FramePorts.height)
+                for (f, op) in ops { TileBlitters.wrapDraw(f, op, into: &port, x: c.col << 5, y: c.row << 5, scroll: at) }
+                return cellBytes(port, c)
+            }
+            let pat = TileGridRenderer.patternTile(col: c.col, row: c.row, periodSix: base.header.patternPeriodSix != 0)
+            let on: [UInt8], off: [UInt8]
+            if c.t < 0x5f {
+                let k = base.fgKind(tile: c.t) % 100
+                let blend: (Bool) -> [(EncodedFace, TileBlitters.Op)] = { wet in
+                    k >= 0 && k < 0x5f ? [(real.blend.faces[k], real.blendOp(pattern: pat, water: wet ? tw : nil))] : []
+                }
+                on = paint([(fg[c.t], .table(tw))] + blend(true))
+                off = paint([(fg[c.t], .copy), (fgWater[c.t], .table(tw))] + blend(false))
+            } else {
+                on = paint([(sets.pattern.faces[pat], .table(tw))])
+                off = paint([(sets.pattern.faces[pat], .copy)])
+            }
+            return on == off ? nil : (on, off, at)
+        }
+        var found: [Bool: (cell: Cell, on: [UInt8], off: [UInt8], scroll: TileBlitters.Scroll)] = [:]
+        search: for row in 0..<Int(base.header.gridHeight) {
+            for col in 0..<Int(base.header.gridWidth) {
+                let c = Cell(col: col, row: row, t: base.fgTile(col: col, row: row), b: base.bgTile(col: col, row: row))
+                if found[c.t < 0x5f] == nil, let a = try arms(c) { found[c.t < 0x5f] = (c, a.on, a.off, a.scroll) }
+                if found.count == 2 { break search }
+            }
+        }
+        for tile in [true, false] {
+            let wet = try XCTUnwrap(found[tile], "level 11: a water cell, FG below 95 \(tile), whose two arms differ")
+            var live = FramePorts()
+            try real.plainWrapFGTile(col: wet.cell.col, row: wet.cell.row, scroll: wet.scroll, ports: &live)
+            XCTAssertEqual(cellBytes(live.tiles, wet.cell), wet.on, "level 11's header: the water arm (\(wet.cell))")
+            XCTAssertNotEqual(cellBytes(live.tiles, wet.cell), wet.off, "not the plain arm (\(wet.cell))")
+        }
         // Each site's two arms draw different cells here (so each assert above tells the arms apart).
         XCTAssertEqual(seen.keys.sorted(), ["27043", "27043 plain", "9618", "9635", "9728", "9957", "9982"])
         for (site, cells) in seen.sorted(by: { $0.key < $1.key }) {

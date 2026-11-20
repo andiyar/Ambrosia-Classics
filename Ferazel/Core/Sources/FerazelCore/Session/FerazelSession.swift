@@ -388,8 +388,8 @@ public final class FerazelSession {
     /// `+0x88` 0, layer 0x7fff, the digit Handle `.anon_10060c78` (`.StandardSpriteHandles` + `.StandardSpriteCleanup`
     /// of a faceless sprite: `.inert` here). The digits are inserted before the 0x4c4 itself (its Setup runs first).
     /// `.UpdateDigits @ 10060d04` (the 0x4c4 arm of `.HandleEffectSprite`) leaves every face 0 while `iRam100a5110`
-    /// < −0x1d — always on levels 1–4 (`EffectSprite.handle`'s default arm: the faces stay nil). // later: Phase 6
-    /// (the 2907 timer, level 40). No `FastRand`.
+    /// < −0x1d — always on every built level (`EffectSprite.handle`'s default arm: no faces). // later: Phase 6
+    /// (the 2907 timer, placed on level 40 only). No `FastRand`.
     static func spawnCountdown(_ w: SpriteWorld, x: Int, y: Int) -> Int? {
         w.newSprite(type: countdownType, x: x, y: y, layer: 800, handler: .effect) { s in
             EffectSprite.setup(&s)
@@ -567,7 +567,7 @@ public final class FerazelSession {
             // `.MTHandlePxSprites` runs it again after the next `.FindUpperLeftCorner` (`findUpperLeftCorner`).
             PxSprites.handle(world: world, id: id, h: camera.scrollH, v: camera.scrollV)
         case .inert:
-            break                                       // the four bosses not placed on levels 1–5 // later: Phase 6
+            break                                       // the four bosses (levels 18, 25, 55, 67) // later: Phase 6
         case .enemyShot:
             // `.HandleEnemyShotSprite @ 1005bffc` (ES, `EnemyShot.handle`): its Kills' Effects take `lightTable` and
             // prefs+6; the Chief boulder's hot rect reads the face bounds.

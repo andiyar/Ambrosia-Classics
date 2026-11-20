@@ -128,7 +128,7 @@ Sources: the world file's `Mlvl` / `Mcnv`; `docs/ferazel/gap-ledger/placements-a
    `HitPlayerSprite`) was matched against the p1…p4 values placed on levels 10–70. The hits are the ones this file
    already counts — the cannon p1 ≠ 0 (and its 105 / 106 shot steering, `BackgroundSprite.swift:498`, which only
    such cannons reach) and the ball / mace modes 1–2 — plus these graves. Checked and empty on 10–70: the passage
-   p2 ≠ 0 darkness override (`HitPlayerSprite.swift:970`; every passage has p2 0 — the passage p3 1 on level 21 is
+   p2 ≠ 0 darkness override (`HitPlayerSprite.swift:1002`; every passage has p2 0 — the passage p3 1 on level 21 is
    built, `BackgroundSprite.swift:387`), the Bat path modes 10 / 11, plant types past the 30-face cache and tunnel
    types past the 6-face one (`BackgroundSprite.swift:142`). The other values new on 10–70 reach arms with no
    parameter-conditioned refusal or `// later:` (platform modes 6 / 7 / 8 / 0x33 / 0x34 and exit p2 were read and are

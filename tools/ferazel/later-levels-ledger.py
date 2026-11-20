@@ -426,7 +426,7 @@ def _port_arm(t, cls, ps, n1):
         return (BUILT_S, anchor(SF, enemy[cls][0]), f'{cls} ({enemy[cls][1]})')
     if cls in ('Chief', 'Wizard', 'Demon', 'Xichra'):
         return (REFUSED, anchor(SF, r'case \.warrior:', r'throw Error\.notTranscribed'),
-                f'boss class not transcribed (`.inert`; {anchor("FerazelCore/Session/FerazelSession.swift", r"the four bosses not placed on levels 1–5")})')
+                f'boss class not transcribed (`.inert`; {anchor("FerazelCore/Session/FerazelSession.swift", r"the four bosses \(levels 18, 25, 55, 67\)")})')
     return (REFUSED, anchor(SF, r'case \.warrior:', r'throw Error\.notTranscribed'), 'class not transcribed')
 
 

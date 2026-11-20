@@ -43,6 +43,44 @@ final class LevelElevenTests: XCTestCase {
         let player = try XCTUnwrap(session.world.playerID.flatMap { session.world.active.record(id: $0) })
         XCTAssertTrue(player.mirrored, "the player starts facing left")
         XCTAssertEqual(session.world.player.facing, 1)
+        // Wave 6A.2 fix round (D55.2): Continue's facing on this start-left level (`.ContinueGame` M l. 6919–6920,
+        // `ContinueGame.swift`). A save that is not a checkpoint (save+6 = 0) takes G+0x16 from the header byte 0x26c8
+        // (1, left) though its G holds 0; a checkpoint save (save+6 = 1) keeps its G's 0 (right) though the header says
+        // left. The non-checkpoint block carries no snapshot of the level (`hasSnapshot[11]` 0).
+        let stamp = try WorldFile.load(from: r).stamp
+        for checkpoint: UInt8 in [0, 1] {
+            var g = GameGlobals.initGameGlobals(previous: nil)
+            g.startFacing = 0
+            var save = SaveBlock()
+            save.savePointSave(level: 11, x: h.startX, y: h.startY, stamp: stamp, date: 0, globals: &g,
+                               records: L.placements)
+            save.isCheckpoint = checkpoint
+            if checkpoint == 0 { save.globals.hasSnapshot[11] = 0 }
+            XCTAssertEqual(save.globals.startFacing, 0)
+            let cont = TenElevenRig(r, start: 1)
+            cont.files.block = save
+            cont.drive { $0.state == .mainMenu }
+            cont.drive({ _ in [0x0f] }) { _ in true }                      // R: Continue
+            cont.drive { _ in cont.askedFile }
+            cont.flow.fileDone(.chosen(SavedGameRef(url: URL(fileURLWithPath: "/nonexistent/eleven"),
+                                                    displayName: "eleven")))
+            cont.drive { f in f.levelRun?.levelNumber == 11 && (f.levelRun?.iterations ?? 0) >= 1 }
+            XCTAssertEqual(cont.asked, [], "save+6 = \(checkpoint)")
+            let cs = try XCTUnwrap(cont.flow.levelRun?.session)
+            let left = checkpoint == 0
+            XCTAssertEqual(cs.globals.startFacing, left ? 1 : 0, "save+6 = \(checkpoint): G+0x16")
+            let cp = try XCTUnwrap(cs.world.playerID.flatMap { cs.world.active.record(id: $0) })
+            XCTAssertEqual([cp.mirrored, cs.world.player.facing == 1], [left, left], "save+6 = \(checkpoint): the player")
+        }
+        // Wave 6A.2 fix round (D55, item 2): the header switches above at work, at level 11's own values — ice 0x2710 80
+        // → `0694` (0x100 − 80)·800 >> 8 = 550 and `+0x112` 80 >> 4 = 5; the damaging surface 0x270e → HP −150; the
+        // current 0x2714 −512 → every mote over water 200 / 205 drifts at vx −512 − (R(256) − 128), −639…−384 (shape 7;
+        // 205's shape 4).
+        let b = try TenEleven.headerBehaviour(r, level: 11)
+        XCTAssertEqual([b.ice, b.slip, b.damage], [550, 5, 150])
+        XCTAssertFalse(b.motes.isEmpty, "motes emitted")
+        XCTAssertEqual(b.motes.filter { $0[1] != ($0[0] == -215 ? 4 : 7) }, [], "the motes' shapes")
+        XCTAssertEqual(b.motes.filter { !(-639 ... -384).contains($0[2]) }, [], "the current drives every mote")
 
         try traceLevel11(r, L)
     }

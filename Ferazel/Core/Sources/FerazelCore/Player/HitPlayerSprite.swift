@@ -123,8 +123,8 @@ extension HitPlayerSprite {
     ///   = 0` and the no-cling timer `PTR_DAT_100a05f0 = 3` on every contact; then, only while the player's `+0x116` is
     ///   0, `.HurtPlayer(player, spike, 0x70, blood 1, invul 0x3c, coins 0)` and `+0x116 = 0x1e` — whether or not the
     ///   hurt landed; return. (The spike's rect is empty unless it is out — `BackgroundSprite.spike`.)
-    /// - // later: 0xbf4 and the other Background arms (Phase 6; none placed on levels 1–4). Cannons, springs and
-    ///   tunnels have no arm here: their hit callback `.HitBackgroundSprite` runs in both passes.
+    /// - // later: 0xbf4 and the other Background arms (Phase 6; none placed on a built level, `BuiltLevels.list` —
+    ///   0xbf4 first on level 20). Cannons, springs, tunnels: no arm here (`.HitBackgroundSprite` runs in both passes).
     /// The level exit (PICT-less Background type 3249).
     public static let levelExit: Int16 = 0xcb1
 
@@ -999,7 +999,7 @@ extension HitPlayerSprite {
         guard w.player.doorTransit == 0x16,
               let p = w.active.record(id: pID), let o = w.active.record(id: oID) else { return }
         w.player.lookAhead = 0
-        // later: Phase 6 — p2 ≠ 0 (every passage on levels 1–4 has p2 0): −1 → `G+0x20 = 0`,
+        // later: Phase 6 — p2 ≠ 0 (no passage on any level has one; later-levels ledger): −1 → `G+0x20 = 0`,
         // hdr 0x2706 = `G+0x22`; 10 → 0; else hdr 0x2706 = p2, `G+0x20 = 1`.
         let h = { (v: Int) in Int(Int16(truncatingIfNeeded: v)) }
         let dx = h(p.x - o.x), dy = h(p.y - o.y)
