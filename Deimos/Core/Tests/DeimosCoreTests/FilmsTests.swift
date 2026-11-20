@@ -32,61 +32,91 @@ final class FilmsTests: XCTestCase {
         return sr
     }
 
+    /// One menu key through the real front end (boot → menu, S2; start/return, S3a): the key typed on the menu,
+    /// passes until start/return has started its game (bound 20), Esc held until that game ends (bound 400), passes
+    /// until the menu is the top screen again (bound 10), then the menu's own return step. Returns the game's start.
+    private func fromMenu(_ fe: inout FrontEnd, _ charCode: UInt8, ticks: inout UInt32,
+                          _ label: String) throws -> SessionStart {
+        XCTAssertEqual(fe.screens, [.mainMenu], "\(label): the menu is up")
+        let started = fe.state.gamesStarted
+        _ = fe.pass(keys: HeldKeys(keyEvents: [KeyEvent(charCode: charCode, keyCode: 0)]), ticks: ticks)
+        ticks &+= 2
+        for _ in 0..<20 where fe.state.gamesStarted == started {
+            _ = fe.pass(keys: HeldKeys(), ticks: ticks)
+            ticks &+= 2
+        }
+        XCTAssertEqual(fe.state.gamesStarted, started + 1, "\(label): bound: no game within 20 passes")
+        let start = try XCTUnwrap(fe.session?.start, label)
+        for _ in 0..<400 where fe.session?.running ?? false {
+            _ = fe.pass(keys: HeldKeys(held: [FrameKeys.escKey]), ticks: ticks)
+            ticks &+= 2
+        }
+        XCTAssertEqual(fe.session?.running, false, "\(label): bound: the game did not end within 400 passes")
+        for _ in 0..<10 where fe.screens != [.mainMenu] {
+            _ = fe.pass(keys: HeldKeys(), ticks: ticks)
+            ticks &+= 2
+        }
+        XCTAssertEqual(fe.screens, [.mainMenu], "\(label): bound: not back on the menu within 10 passes")
+        _ = fe.pass(keys: HeldKeys(), ticks: ticks)
+        ticks &+= 2
+        return start
+    }
+
     /// DEMOS / `D` play de01 (le07), de02 (le06), de03 (le02), de04 (le08), then de01 again — Game.pak's zip order,
     /// the only `film` names holding "Demo" (Local's `Last Film` does not). Position = G+0x24, then +1; none at that
-    /// position → 0, the first, 1. A normal game between two demos leaves the counter alone (the session reset
-    /// `10005500..1000555c` does not store G+0x24).
+    /// position → 0, the first, 1. All through the real front end from the menu: `D` twice, a normal game (`1`, then
+    /// Esc) that leaves the counter alone (the session reset `10005500..1000555c` does not store G+0x24, and nothing
+    /// on start/return's way out or back touches it), `D`, `F` (that game's recording, held in memory; the counter
+    /// stands), then `D` twice more to the wrap.
     func testDemoCycleOrderAndWrap() throws {
         let a = try assets()
-        var s = try FrontEndState(assets: a, prefs: .fresh)
-        XCTAssertEqual(s.demoCounter, 0, "the first demo after launch is de01")
-        let order = ["de01", "de02", "de03", "de04", "de01"]
-        let levels = ["le07", "le06", "le02", "le08", "le07"]
-        let counters = [1, 2, 3, 4, 1]
-        for (i, id) in order.enumerated() {
-            let sr = try Self.play(.demo, &s)
-            XCTAssertEqual(sr.mode, .demo, "demo \(i)")
-            XCTAssertEqual(sr.players, 1, "demo \(i)")
-            let film = try XCTUnwrap(sr.film, "demo \(i): a film was chosen")
+        var fe = try FrontEnd(assets: a, prefs: .fresh)
+        var ticks: UInt32 = 5_000
+        _ = fe.pass(keys: HeldKeys(), ticks: ticks)
+        ticks &+= 2
+        XCTAssertEqual(fe.state.demoCounter, 0, "the first demo after launch is de01")
+        let D: UInt8 = 0x44, F: UInt8 = 0x46, one: UInt8 = 0x31
+
+        func demo(_ i: Int, _ id: String, _ level: String, counter: Int) throws {
+            let start = try fromMenu(&fe, D, ticks: &ticks, "demo \(i)")
+            let film = try XCTUnwrap(start.film, "demo \(i): a film was played")
             XCTAssertEqual(film, try Self.shipped(id), "demo \(i) is \(id)")
-            XCTAssertEqual(film.level, FourCC(levels[i]), "demo \(i)'s level")
-            XCTAssertEqual(s.demoCounter, counters[i], "the counter after demo \(i)")
-
-            if i == 1 {
-                // A normal game between two demos (one player, sector 1, ended by Esc): the counter stands.
-                try s.startGame(SessionStart(sector: 1, players: 1, film: nil), ticks: 300)
-                let bound = 400
-                var passes = 0
-                while s.gameRunning {
-                    if passes >= bound { return XCTFail("bound \(bound) game passes reached") }
-                    let held: Set<UInt16> = passes >= 200 ? [FrameKeys.escKey] : []
-                    _ = s.gamePass(keys: HeldKeys(held: held), ticks: 300 + UInt32(passes))
-                    passes += 1
-                }
-                XCTAssertEqual(s.game?.session.result?.end, .escape)
-                XCTAssertEqual(s.game?.session.result?.isFilm, false)
-                XCTAssertEqual(s.demoCounter, 2, "a game does not reset the demo counter")
-            }
+            XCTAssertEqual(film.level, FourCC(level), "demo \(i)'s level")
+            XCTAssertEqual(fe.session?.result?.isFilm, true, "demo \(i)")
+            XCTAssertEqual(fe.state.demoCounter, counter, "the counter after demo \(i)")
         }
+        try demo(0, "de01", "le07", counter: 1)
+        try demo(1, "de02", "le06", counter: 2)
 
-        // `F` after that game plays its recording, held in memory (the game's seed is its first pass's TickCount),
-        // and leaves the counter.
-        XCTAssertFalse(s.lastFilm.isEmpty, "the normal game recorded a Last Film")
-        let last = try Self.play(.lastFilm, &s)
-        XCTAssertEqual(last.mode, .lastFilm)
-        XCTAssertEqual(last.players, 1)
-        let replay = try XCTUnwrap(last.film)
-        XCTAssertEqual(replay, try Film(data: Data(s.lastFilm)))
-        XCTAssertEqual(replay.seed, 300)
-        XCTAssertEqual(replay.level, FourCC("le07"))
-        XCTAssertEqual(s.demoCounter, 1)
-        // With no game recorded yet, `F` plays the index's `last` (the shipped copy of de01).
+        // A normal game between two demos (1 PLAYER: level select, sector 1, ended by Esc): the counter stands.
+        let game = try fromMenu(&fe, one, ticks: &ticks, "the game")
+        XCTAssertNil(game.film)
+        XCTAssertEqual(fe.session?.result?.end, .escape)
+        XCTAssertEqual(fe.session?.result?.isFilm, false)
+        XCTAssertEqual(fe.state.demoCounter, 2, "a game does not reset the demo counter")
+        XCTAssertFalse(fe.state.lastFilm.isEmpty, "the normal game recorded a Last Film")
+        let recorded = try Film(data: Data(fe.state.lastFilm))
+
+        try demo(2, "de03", "le02", counter: 3)
+
+        // `F` plays that game's recording, held in memory, and leaves the counter.
+        let last = try fromMenu(&fe, F, ticks: &ticks, "F")
+        XCTAssertEqual(last.film, recorded)
+        XCTAssertEqual(last.film?.level, FourCC("le07"))
+        XCTAssertEqual(fe.session?.result?.isFilm, true)
+        XCTAssertEqual(fe.state.demoCounter, 3)
+
+        try demo(3, "de04", "le08", counter: 4)
+        try demo(4, "de01", "le07", counter: 1)
+
+        // The films screen alone: with no game recorded yet, `F` plays the index's `last` (the shipped copy of de01);
+        // a recording that does not decode hands start/return no film (its result is then the load failure).
         var fresh = try FrontEndState(assets: a, prefs: .fresh)
+        XCTAssertEqual(try Self.play(.lastFilm, &fresh).mode, .lastFilm)
         XCTAssertEqual(try Self.play(.lastFilm, &fresh).film, try Self.shipped("last"))
         XCTAssertEqual(fresh.demoCounter, 0)
-        // A recording that does not decode: start/return is handed no film (its result is then the load failure).
-        s.lastFilm = [1, 2, 3]
-        XCTAssertNil(try Self.play(.lastFilm, &s).film)
+        fresh.lastFilm = [1, 2, 3]
+        XCTAssertNil(try Self.play(.lastFilm, &fresh).film)
     }
 
     /// The mouse button, held at a film pass, ends the film in that pass (`10005a24..10005a30` → `10005a48`): the
@@ -123,21 +153,26 @@ final class FilmsTests: XCTestCase {
         XCTAssertTrue(game.running)
     }
 
-    /// No key but Esc ends a film: every other key code held, typed characters, key events and mouse-down events
-    /// queued with the button up (the session reads `Button()`'s live state only), pass after pass — the film runs
-    /// on. Bound: 400 passes (de01 runs 4,809 recorded ticks).
+    /// No key but Esc ends a film: every other key code held, Caps Lock down, typed characters, key events and
+    /// mouse-down events queued with the button up (the session reads `Button()`'s live state only), pass after
+    /// pass — the film runs on, and never pauses (B §3: the Caps Lock pause is refused in a film, `10030408..1003041c`:
+    /// no pause wait, no music pause, no halt). Bound: 400 passes (de01 runs 4,809 recorded ticks).
     func testKeysDoNotEndFilm() throws {
         var s = try DeimosSession(assets: assets(), prefs: .fresh,
                                   start: SessionStart(sector: 1, players: 1, film: Self.shipped("de01")), seed: 0)
         var every = Set<UInt16>(0..<0x80)
         every.remove(FrameKeys.escKey)
-        let keys = HeldKeys(held: every, typed: [0x61, 0x1b, 0x0d], mouse: MousePoint(h: 320, v: 240),
-                            mouseButton: false, mouseDowns: [MousePoint(h: 320, v: 240)],
+        let keys = HeldKeys(held: every, capsLock: true, typed: [0x61, 0x1b, 0x0d],
+                            mouse: MousePoint(h: 320, v: 240), mouseButton: false, mouseDowns: [MousePoint(h: 320, v: 240)],
                             keyEvents: [KeyEvent(charCode: 0x61, keyCode: 0x00)])
         let bound = 400
         for p in 0..<bound {
             let out = s.pass(keys: keys, ticks: UInt32(p))
             XCTAssertFalse(out.sessionEnded, "pass \(p): a key other than Esc ended the film")
+            XCTAssertFalse(out.ops.contains { if case .pauseWait = $0 { true } else { false } },
+                           "pass \(p): Caps Lock paused the film")
+            XCTAssertFalse(out.music.contains(.pause), "pass \(p): Caps Lock paused the music")
+            XCTAssertNil(out.haltEffectsAt, "pass \(p): no halt")
             if out.sessionEnded { break }
         }
         XCTAssertTrue(s.running)

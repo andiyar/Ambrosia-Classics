@@ -244,11 +244,10 @@ public struct DeimosSession: Sendable {
     ///    `FUN_10046ae0` (`10007094`) → `FUN_100298c0` P1, P2 incl. the coin-tally text (`100070a8..100070c0`) → the
     ///    accuracy tally text `FUN_10007d60` (`100070c4`) → the notice `FUN_100184b0` (`100070c8`) → the score bar
     ///    `FUN_10031ae0` (`100070f0`), its screen blits off when not appeared (`100070d0..10007108`).
-    /// 4. A film (`10005a1c..10005aa0`): `FUN_10048e60` (`Button()`, the mouse button's live state: `HeldKeys
-    ///    .mouseButton`) or `FUN_10009750` (P1's cursor > frames) → `FUN_100064c0` (G+0x08 = 0, nothing else) and no
-    ///    banner (`10005a48 → 10005aa4`); else the
-    ///    REPLAY banner (`10005a50..10005a9c`: format 0x26, GameString 9, +0x10c = 15, +0x10d = 1, +0x110 = 0,
-    ///    `FUN_1000d380(rec, 0)`).
+    /// 4. A film (`10005a1c..10005aa0`): `FUN_10048e60` (`Button()`, the mouse button's live state:
+    ///    `HeldKeys.mouseButton`) or `FUN_10009750` (P1's cursor > frames) → `FUN_100064c0` (G+0x08 = 0, nothing
+    ///    else) and no banner (`10005a48 → 10005aa4`); else the REPLAY banner (`10005a50..10005a9c`: format 0x26,
+    ///    GameString 9, +0x10c = 15, +0x10d = 1, +0x110 = 0, `FUN_1000d380(rec, 0)`).
     /// 5. End frame `FUN_10030570(ctrl, 1, appeared)` (`10005ab0`) → `FUN_10030bc0` (`10030bec..10030dc4`): messages
     ///    `FUN_1002dea0` (`10030bec`) → the FPS counter (byte pref 9, `10030bf4..10030c90`) → the console
     ///    `FUN_1002d410` (`10030c98`) → `FUN_10018b20(0)` layers 0–1 (`10030ca4`) → the terrain blit `FUN_10010120`
