@@ -83,7 +83,13 @@ final class FilmsTests: XCTestCase {
         let a = try assets()
         var fe = try FrontEnd(assets: a, prefs: .fresh)
         var ticks: UInt32 = 5_000
-        _ = fe.pass(keys: HeldKeys(), ticks: ticks)
+        // Set-up only (Phase 4 S6): the real boot takes several passes to reach the menu; all at the same tick.
+        var bootPasses = 0
+        repeat {
+            _ = fe.pass(keys: HeldKeys(), ticks: ticks)
+            bootPasses += 1
+        } while fe.screens != [.mainMenu] && bootPasses < 10
+        XCTAssertEqual(fe.screens, [.mainMenu], "bound: the menu is up within 10 passes")
         ticks &+= 2
         XCTAssertEqual(fe.state.demoCounter, 0, "the first demo after launch is de01")
         let D: UInt8 = 0x44, F: UInt8 = 0x46, one: UInt8 = 0x31

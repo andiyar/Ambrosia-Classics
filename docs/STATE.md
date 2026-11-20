@@ -204,6 +204,11 @@ Settled history lives in docs/STATE-history.md.
   demos for the app's life, `F` replays the last game, and a mouse click or Esc ends a film. Nothing a player would
   notice until S8a wires the mouse, keys and the Last Film folder. `Deimos/Core` is **433 / 0 / 0**; replay 4 / 0;
   campaign 3 / 0; Debug and Release build.
+  **S6 closed 2026-11-20** (`docs/handoff-deimos-phase4-s6.md`): the boot is the original's — loading screen with
+  its lines, publisher logo held for its sound, developer logo with the menu music, fades, the quiet launch — and
+  the settings window (DITL 190) is drawn by the game in Apple's Geneva 9, with shared drawn-control code for S7's
+  controls window. `Deimos/Core` **454 / 0 / 0** with S5 and S3b merged in. Nothing visible in the app until S8a
+  wires it. **S7 may start.**
   **S3b closed 2026-11-20** (`docs/handoff-deimos-phase4-s3b.md`): the level select is the original's — three
   previews, START / NO ACCESS, the hover outline, moving, the accept and refusal flashes, Esc, the pause. Nothing a
   player would notice until S8a. The listing showed the right-hand preview DOES draw its hover outline (plan ruling 15

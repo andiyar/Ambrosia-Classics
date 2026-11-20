@@ -167,6 +167,25 @@ targets:
         INFOPLIST_FILE: Deimos/App/Info.plist
         GENERATE_INFOPLIST_FILE: NO
         ENABLE_APP_SANDBOX: NO
+    postBuildScripts:
+      # The app's own resource fork as committed (the developer logo PICT 1000, the dialogs' DLOG/DITL/STR#/tab#,
+      # the controls window's PICTs; Phase 4 S6 BT, ruling 9) into Contents/Resources/Deimos/ beside the staged
+      # Data folder, before signing; the shell reads it and hands it to Core (`FrontEndState.shellResources`, S8a).
+      - name: Copy Deimos Rising.rsrc
+        inputFiles:
+          - "$(SRCROOT)/Resources/Deimos/Deimos Rising.rsrc"
+        outputFiles:
+          - "$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Deimos/Deimos Rising.rsrc"
+        script: |
+          set -euo pipefail
+          SRC="$SRCROOT/Resources/Deimos/Deimos Rising.rsrc"
+          DEST="$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Deimos"
+          if [ ! -f "$SRC" ]; then
+            echo "error: Deimos: no app resource fork at $SRC" >&2
+            exit 1
+          fi
+          mkdir -p "$DEST"
+          cp "$SRC" "$DEST/Deimos Rising.rsrc"
   # Ferazel's Wand (plan 2026-10-06-ferazel-phase1 S5/S6, A1): the original 1.0.3 data is staged into
   # Contents/Resources/Ferazel by tools/stage-ferazel.sh (A2); the icon is the original icl8 128 scaled x16 (AppIcon.icon).
   Ferazel:

@@ -2,7 +2,9 @@
 # Stage Deimos Rising for Ben (CLAUDE.md "Staged builds"; plan 2026-10-06-deimos-phase1 A2, S8): build Release,
 # copy the ORIGINAL 1.0.6 Data folder (Paks + Local, committed under Resources/Deimos/Data — D24) into the built app
 # at Contents/Resources/Deimos/Data unchanged, strip quarantine/xattrs, ad-hoc re-sign, and place
-# out/Deimos/Deimos Rising.app + out/Deimos/WHAT-TO-EXPECT.md. out/, .build/ and *.xcodeproj are git-ignored.
+# out/Deimos/Deimos Rising.app + out/Deimos/WHAT-TO-EXPECT.md. The app's own resource fork (Resources/Deimos/
+# Deimos Rising.rsrc: the developer logo, the dialogs) is copied by the build itself (project.yml, Phase 4 S6 BT) to
+# Contents/Resources/Deimos/Deimos Rising.rsrc; this script checks it is there. out/, .build/ and *.xcodeproj are git-ignored.
 # DEIMOS_DATA overrides the data folder. Both are also ditto'd to ~/Desktop (hidden worktrees are unopenable from
 # Finder); DEIMOS_STAGE_NO_DESKTOP=1 skips that (implementer test runs — the orchestrator stages for Ben).
 set -euo pipefail
@@ -36,6 +38,11 @@ rm -rf "$OUT"
 mkdir -p "$OUT"
 ditto "$APP" "$OUT/$NAME"
 DEST="$OUT/$NAME/Contents/Resources/Deimos/Data"
+RSRC="$OUT/$NAME/Contents/Resources/Deimos/Deimos Rising.rsrc"
+if ! cmp -s "$RSRC" "$ROOT/Resources/Deimos/Deimos Rising.rsrc"; then
+    echo "stage-deimos: the built app lacks Contents/Resources/Deimos/Deimos Rising.rsrc (or it differs)" >&2
+    exit 1
+fi
 mkdir -p "$DEST"
 # The original Data folder as-is; the git-ignored HID.bundle and Finder Icon\r files are not game data.
 rsync -a --exclude '.DS_Store' --exclude 'HID.bundle' --exclude $'Icon\r' "$DATA/" "$DEST/"
