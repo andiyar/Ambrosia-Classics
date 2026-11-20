@@ -389,13 +389,15 @@ final class MainMenuTests: XCTestCase {
         XCTAssertEqual(right.output.sounds, [])
 
         // The entry's FlushEvents (FUN_10048e30, mask 0xffff): a key and a click that reached the pump before the
-        // menu came up are dropped, so the first pass after it acts on neither; a suspend stays queued (FlushEvents
-        // leaves the OS events), and is dispatched on that pass (t0 = now).
+        // menu came up are dropped, so the first pass after it acts on neither; a menu-bar About is a mouse-down in X
+        // (osx-build D23) and goes with them, opening no credits; a suspend stays queued (FlushEvents leaves the OS
+        // events), and is dispatched on that pass (t0 = now).
         var early = try FrontEndState(assets: a, prefs: .fresh, soundAvailable: true)
         early.suspended = true                                          // (as the frame applied the event)
         var flushed = MainMenu()
         _ = flushed.pass(keys: HeldKeys(mouse: Self.nowhere, mouseDowns: [Self.button(2)],
-                                        keyEvents: [KeyEvent(charCode: 0x31, keyCode: 0)], events: [.suspend]),
+                                        keyEvents: [KeyEvent(charCode: 0x31, keyCode: 0)],
+                                        events: [.aboutChosen, .suspend]),
                          ticks: 1_000, returned: nil, state: &early)
         for t in UInt32(1_001)...1_002 {
             let after = flushed.pass(keys: HeldKeys(mouse: Self.nowhere), ticks: t, returned: nil, state: &early)

@@ -172,7 +172,10 @@ public struct MainMenu: Sendable {
         for (i, frame) in [0, 1, 2, 4, 5, 6].enumerated() {
             buttons.append(Button(id: i + 1, kind: .sprite, text: [], normal: mebu, lit: mebh, frame: frame))
         }
-        let web = (try? a.interfaceStrings())?.lines.first ?? []
+        let web: [UInt8]                                                // FUN_10023380: the original stops on a failed load
+        do { web = try a.interfaceStrings().lines.first ?? [] } catch { // the shipped data always holds this string list
+            preconditionFailure("MainMenu: the interface string list does not load (\(error))")
+        }
         buttons.append(Button(id: 8, kind: .web, text: web, normal: .none, lit: .none, frame: 0))
         buttons.append(Button(id: 9, kind: .copyright, text: Self.bytes(Self.copyright), normal: .none, lit: .none,
                               frame: 0))
@@ -564,10 +567,14 @@ public struct MainMenu: Sendable {
         queue += keys.mouseDowns.map(Event.click)
     }
 
-    /// `FlushEvents(0xffff, 0)` (`FUN_10048e30`): the keys and mouse-downs go; the shell's events stay queued, as
-    /// FlushEvents leaves suspend, resume and Apple Events in the queue.
+    /// `FlushEvents(0xffff, 0)` (`FUN_10048e30`): the keys and mouse-downs go, and a menu-bar About with them — in X
+    /// a menu-bar choice arrives as an ordinary mouse-down (osx-build D23; `Credits` reads it the same way). The
+    /// shell's other events stay queued, as FlushEvents leaves suspend, resume and Apple Events (the system's Quit
+    /// request) in the queue.
     private mutating func flushEvents() {
-        queue.removeAll { if case .shell = $0 { return false } else { return true } }
+        queue.removeAll {
+            if case let .shell(e) = $0 { return e == .aboutChosen } else { return true }
+        }
     }
 
     private func sound(_ i: Int, _ state: FrontEndState) -> SoundCue {
