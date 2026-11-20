@@ -44,6 +44,12 @@ Recommendation: a — it keeps the chain moving with no one at the keyboard; the
 Blocks: the next two tasks (the plants and the rain) cannot start until this check has run by day.
 Update 2026-11-21 (run 58, at night): the cross-check's fix round is done and merged, so this check is now the very
 next step — nothing else is left that a night-time or ten-minute-limited session can do.
+Update 2026-11-21 (run 59, 07:57): **this now blocks everything — the build is stopped on this one answer.** Your
+"it's fine, go" at 07:56 lifted the wait for 09:00 but does not answer this, and the two check scripts refuse to run
+before 09:00 on their own (no override), so run 59 changed nothing. A letter is enough: **a** (let the session start
+that one script detached and watch its log), **b** (the Coordinator runs it) or **c** (you run it once after 09:00:
+`cd ~/Developer/Ambrosia-Classics && tools/windows/proof-b-ferazel.sh`, and paste the last line here).
+Blocks: everything.
 Answer:
 
 ### Q19 — 2026-11-11 — Phase 6A plan (to the Goblin Chief): three small choices, for your later read

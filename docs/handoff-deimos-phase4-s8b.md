@@ -20,7 +20,7 @@ the controller guide (`Deimos Rising — GAMEPAD.md`) beside it.
 |---|---|
 | `8d52eeb` | QP — Command-Q quits from a game's Caps Lock pause (a film cannot be paused); one pressed in play is dropped at the pause's flush and never remembered; the level select's pause leaves a Command-Q to the level select (`FrontEnd.swift`, `DeimosDriver.swift`, `DriverTests`, `FrontEndSkeletonTests`) |
 | `e4c758b` | GD — eight front-end frame goldens in `Deimos/Core/Tests/DeimosRenderTests/FrontEndGoldenTests.swift` (below) |
-| this commit | the gate-4 card (`Deimos/WHAT-TO-EXPECT.md`), `docs/STATE.md`, `docs/DECISIONS.md` D57, this handoff |
+| this commit | the gate-4 card (`Deimos/WHAT-TO-EXPECT.md`), `docs/STATE.md`, `docs/DECISIONS.md` D58, this handoff |
 
 **The goldens** (each the replica's own frame hashed, backed by pixel checks read from the source images; they catch
 change, not error — no picture of the original's screens exists):
@@ -67,7 +67,7 @@ sector; every place now says so. Smaller fixes: the menu's volume keys are the l
 is greyed when the settings window opens on Option at launch too; the missing pause cursor added to the gaps; the
 later-launch and muted loading lines described truthfully; a mistyped `-film` quits after its alert; plain words for
 the technical faults. The review confirmed the card's start-up order (the two logos, then the loading screen); the
-plan's card and the S8a handoff had it the wrong way round (D57 departure 15).
+plan's card and the S8a handoff had it the wrong way round (D58 departure 15).
 
 ## The cross-check
 **Reduced, and Ben should know it.** The plan asks for one Fable cross-check over the whole phase's diff and the card. The seat started this section at 154k of its 300k cap (the reading list alone), so what it did itself was: re-run every gate from the branch tip (table above); audit this section's diff file by file (twelve files, all in the section's list plus the three the Command-Q change needed); look at the menu frame; read the card's outline. The card was checked line by line against the code by an Opus leg instead (it found one false claim and five missing items, all fixed). **Not done: a Fable read of the whole phase's diff.** Each earlier section had its own cross-check or two review legs. A fresh session can run the whole-phase read if Ben wants it before or after his gate.

@@ -21,16 +21,17 @@ Settled history lives in docs/STATE-history.md.
   tests and comments only, merged at 66875a3; D56) are done.
 - **Proof B is one whole run of 13 minutes or more and cannot be split** — a seat whose commands are cut off at ten
   minutes, with background work off, cannot run it. Q20 asks Ben how it should run; until he answers, such a seat
-  stops at that step and says so.
+  stops at that step and says so. **Run 59 (2026-11-21, 07:56 → 07:58) stopped there and changed nothing; the build
+  is BLOCKED on Q20** (D57). Both check scripts also refuse before 09:00 by the clock, with no override.
 - **Windows test build 5 is with Andrew** (Ben asked, 2026-11-18): GitHub pre-release `ferazel-windows-test-5`, staged
   from 02717f8 (levels past 5 closed). His report is the Windows half of Q18; Ben's Mac verdict is still open. The zip
   and its checksum are in `releases/ferazel-windows-test-5/`.
 - **Staged builds on the Desktop are old** (game code as e9183ce, run 50): they still show the stand-in Warrior and no
   level past 5. The next stage is the 6A phase end unless Ben asks for one.
-- **Next:** run 59 = the two owed launch checks, then 6A-BG1c (plants, Core → 725) and 6A-RN ⚑ (rain, thunder, the
+- **Next:** run 60, once Q20 is answered, and started at 09:00 or later = the two owed launch checks, then 6A-BG1c (plants, Core → 725) and 6A-RN ⚑ (rain, thunder, the
   side push, Core → 737, WinKit → 85); 6A-L15 (level 15 opens, with the full sweep) follows, alone if the context is
-  spent. None of it waits for Ben's verdict on Phase 5. **Run 59 must be awake by day, and needs Q20 answered or a
-  session whose commands may run longer than ten minutes.**
+  spent. None of it waits for Ben's verdict on Phase 5. **Run 60 must start between 09:00 and about 18:00, and needs
+  Q20 answered or a session whose commands may run longer than ten minutes.**
 - **The plan:** `docs/superpowers/plans/2026-11-04-ferazel-remainder.md` (self-contained); the design:
   `docs/superpowers/specs/2026-11-04-ferazel-remainder-design.md`.
 - **Ben's gates:** Phase 1 passed; Phases 2 and 3 passed with notes; Phase 4 passed (Fireball note) and the Windows
@@ -69,8 +70,8 @@ Settled history lives in docs/STATE-history.md.
   Windows level references — the black first frame `742a0703fa4da325` on both, level 10 steps 885 `e8f72bddcaf3b7a1`
   (strip) and 959 `17aa796b2ef29b5` (faded in), level 11 steps 629 `f8032383209e56e0` (ripple) and 689
   `d02281f5e0d7cdca` (faded in); the full list is in the plan's "Goldens" paragraph.
-- **Waiting on Ben (QUESTIONS.md "Open"; none answered at run 58's start):** **Q20 (how to run the 13-minute
-  Windows test run when a session's commands are cut off at ten — it holds up the next tasks)**, **Q18 (the Phase 5
+- **Waiting on Ben (QUESTIONS.md "Open"; none answered at run 59's start):** **Q20 (how to run the 13-minute
+  Windows test run when a session's commands are cut off at ten — it now blocks everything)**, **Q18 (the Phase 5
   gate)**, Q19 (three small choices in the 6A plan), Q17, Q16 (defaults stand), Q15's follow-ups, Q13.
 - **Worktrees:** run 58's `blissful-gauss-7cdcd9`, run 57's `strange-hopper-b151f9` and run 56's `vibrant-easley-9d49bf` were removed at their closes. `compassionate-leavitt-7ca958` is run 53's (merged; it was run 49's before). `gallant-brahmagupta-56ed81`
   (run 52), `eager-fermat-db9ed9` (run 51), `hungry-bun-395f55` (run 50; `out/` holds the latest stages), `nifty-mendel-0ad40e` (run 48),
@@ -186,7 +187,7 @@ Settled history lives in docs/STATE-history.md.
   wants changed; (3) gate 3, "does the campaign play like Deimos", with its four named questions (flip pitch; sector
   12 ending with the Beamer alive; own overload while invulnerable; player 2's keys); (4) gate 2, "does level 1 play
   like Deimos". His notes from any gate become a fix wave first.
-- **Where things are:** the plan `docs/superpowers/plans/2026-11-20-deimos-phase4.md` (D52; as executed: D57); the
+- **Where things are:** the plan `docs/superpowers/plans/2026-11-20-deimos-phase4.md` (D52; as executed: D58); the
   section handoffs `docs/handoff-deimos-phase4-*.md` (history below); Ben's answers in
   `~/.claude/coordinator-notes/deimos-phase4-mailbox.md`; the OS X build compared with the OS 9 one in
   `docs/deimos/osx-build.md`; the controller guide `Deimos/GAMEPAD.md`.
