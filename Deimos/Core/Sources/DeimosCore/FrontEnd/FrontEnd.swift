@@ -98,6 +98,10 @@ public struct FrontEndState: Sendable {
     /// holds only the data files). Empty by default; a screen that needs a resource reads it from here and parses
     /// it itself.
     public let shellResources: [ShellResourceKey: [UInt8]]
+    /// This is the first launch: no settings file existed when the app started (Ben 2026-11-20; the host reads it from
+    /// its settings store, `PrefsStore.fileExisted`). It stands in for the original's missing units cache
+    /// (`FUN_1003cf10` → `FUN_100420f0`): only a first launch lists the unit names on the loading screen (`Boot`).
+    public let firstLaunch: Bool
     /// The last recorded film's bytes (the Last Film image, B §4a), empty until a game records one (S5). Written by
     /// the front end on the pass that ends a non-film game with a recording (plan ruling 7: saved at the end of every
     /// non-film game — that pass also carries `ShellRequest.saveLastFilm` — and replayed from here within one run).
@@ -131,13 +135,15 @@ public struct FrontEndState: Sendable {
     public var registeredName: String { Self.registeredName }
 
     public init(assets: DeimosAssets, prefs: DeimosPrefs, launch: LaunchModifiers = LaunchModifiers(),
-                soundAvailable: Bool = true, shellResources: [ShellResourceKey: [UInt8]] = [:]) throws {
+                soundAvailable: Bool = true, shellResources: [ShellResourceKey: [UInt8]] = [:],
+                firstLaunch: Bool = true) throws {
         self.assets = assets
         text = try TextLayout(assets: assets)
         self.prefs = prefs
         self.launch = launch
         self.soundAvailable = soundAvailable
         self.shellResources = shellResources
+        self.firstLaunch = firstLaunch
     }
 
     /// A game is in progress (started and not yet ended).
@@ -434,12 +440,13 @@ public struct FrontEnd: Sendable {
     private let menuFilm: Film?
 
     /// The boot entry: boot (`FUN_100000e0`), then the main menu, with `film` played as soon as the menu is up, as a
-    /// demo is (ruling 10's `-film`). `shellResources`: the app's own resource-fork data (`FrontEndState`).
+    /// demo is (ruling 10's `-film`). `shellResources`: the app's own resource-fork data; `firstLaunch`: no settings
+    /// file existed at launch (`FrontEndState`).
     public init(assets: DeimosAssets, prefs: DeimosPrefs, launch: LaunchModifiers = LaunchModifiers(),
                 soundAvailable: Bool = true, film: Film? = nil,
-                shellResources: [ShellResourceKey: [UInt8]] = [:]) throws {
+                shellResources: [ShellResourceKey: [UInt8]] = [:], firstLaunch: Bool = true) throws {
         state = try FrontEndState(assets: assets, prefs: prefs, launch: launch, soundAvailable: soundAvailable,
-                                  shellResources: shellResources)
+                                  shellResources: shellResources, firstLaunch: firstLaunch)
         directStart = nil
         root = .boot
         stack = [.boot(Boot())]
@@ -449,9 +456,10 @@ public struct FrontEnd: Sendable {
     /// The direct start (ruling 10): `start`'s game — validated here, built at the first pass with its TickCount —
     /// and a new one at `start` each time one ends.
     public init(direct start: SessionStart, assets: DeimosAssets, prefs: DeimosPrefs,
-                soundAvailable: Bool = true, shellResources: [ShellResourceKey: [UInt8]] = [:]) throws {
+                soundAvailable: Bool = true, shellResources: [ShellResourceKey: [UInt8]] = [:],
+                firstLaunch: Bool = true) throws {
         state = try FrontEndState(assets: assets, prefs: prefs, soundAvailable: soundAvailable,
-                                  shellResources: shellResources)
+                                  shellResources: shellResources, firstLaunch: firstLaunch)
         try state.startProvisionalGame(start)
         directStart = start
         root = .direct

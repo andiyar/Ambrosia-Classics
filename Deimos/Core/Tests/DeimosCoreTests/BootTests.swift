@@ -313,4 +313,55 @@ final class BootTests: XCTestCase {
         XCTAssertEqual(Array(ops.suffix(from: lines.count)), out, "the loading lines end with their fade-out")
         XCTAssertEqual(r.boot.lines.count, 0, "the list is freed (FUN_100253d0)")
     }
+
+    /// A later launch (Ben 2026-11-20: the unit names flash past on the first launch only, when no settings file
+    /// exists yet): the original's units loader `FUN_1003cf10` (X `1003d3d4..1003d3f8`) reads its units cache
+    /// (`FUN_100420f0`, X `100424e0`) and, when it loads, never calls `FUN_1003d0a0(1)` — no "Unpacking Unit:  " line,
+    /// no unit names, no "Done". The other four loaders write as at a first launch, in the same order: four lines,
+    /// 44 screen updates with sound (8 images + 21 sounds + 5 weapons + 2 players, each list with its head and its
+    /// "Done"), 24 without (the sound line's three calls); then the four finished lines fade out. The boot still
+    /// returns on its sixth pass, and through the front end the menu is up on the sixth pass either way.
+    func testLaterLaunchSkipsUnitNames() throws {
+        let a = try assets()
+        var prefs = DeimosPrefs.fresh
+        prefs.bytePrefs[2] = 1
+        for sound in [true, false] {
+            var r = Run(state: try FrontEndState(assets: a, prefs: prefs, soundAvailable: sound, firstLaunch: false))
+            XCTAssertFalse(r.state.firstLaunch)
+            let steps = boot(&r)
+            XCTAssertEqual(steps.count, 6, "sound \(sound)")
+            guard steps.count == 6 else { continue }
+            XCTAssertNotNil(steps[5].finished, "sound \(sound): the return on the sixth pass")
+            let ops = loading(steps[4])
+            let calls = script(a, sound: sound).filter { !$0.text.hasPrefix("Unpacking Unit:") }
+            XCTAssertEqual(calls.count, sound ? 44 : 24, "sound \(sound)")
+            XCTAssertEqual(calls.filter(\.newLine).map(\.text),
+                           ["Loading Permanent Image:  ", "Loading Permanent Sound:  ", "Loading Weapon:  ",
+                            "Loading Player:  "], "sound \(sound): four lines, in order")
+            XCTAssertEqual(ops.filter { $0 == .present(.fullScreen) }.count, sound ? 44 : 24,
+                           "sound \(sound): one screen update per call")
+            let lines = expected(a, r.state.text, calls)
+            XCTAssertEqual(Array(ops.prefix(lines.count)), lines, "sound \(sound)")
+            let done = [Self.doneLines[0], Self.doneLines[1], Self.doneLines[3], Self.doneLines[4]]
+            let final = ElementList(done.enumerated().map { .text(Self.record(a, $0.offset, $0.element)) })
+            XCTAssertEqual(Array(ops.suffix(from: lines.count)),
+                           final.fadeOut(rate: ElementList.fadeRate(floats: a.floats), text: r.state.text, assets: a),
+                           "sound \(sound): the four finished lines fade out")
+        }
+
+        // Through the front end (fresh prefs: the configuration window inside the first pass): the menu is up on
+        // the sixth pass, at a first launch and at a later one. Bound: 10 passes.
+        for first in [true, false] {
+            var fe = try FrontEnd(assets: a, prefs: .fresh, firstLaunch: first)
+            XCTAssertEqual(fe.state.firstLaunch, first)
+            var n = 0
+            for _ in 0..<10 where fe.screens.last != .mainMenu {
+                _ = fe.pass(keys: HeldKeys(), ticks: Self.t0)
+                n += 1
+            }
+            XCTAssertEqual(fe.screens, [.mainMenu], "first launch \(first): bound 10 passes")
+            XCTAssertEqual(n, 6, "first launch \(first): the menu's pass")
+        }
+        XCTAssertTrue(try FrontEndState(assets: a, prefs: .fresh).firstLaunch, "the default is a first launch")
+    }
 }

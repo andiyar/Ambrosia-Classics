@@ -20,6 +20,13 @@ public final class PrefsStore: SettingsStore {
 
     /// The record last read or written (nil before the first load or save).
     private let record = Mutex<PrefsFile?>(nil)
+    private let existed = Mutex(false)
+
+    /// Whether the settings file was there when `load()` last ran, before it wrote the fresh record (false before any
+    /// load). Read after `load()`: false means a first launch, which the app hands to the front end
+    /// (`FrontEndState.firstLaunch`: the loading screen lists the unit names). A file that is there but unreadable
+    /// or of another version counts as there.
+    public var fileExisted: Bool { existed.withLock { $0 } }
 
     public init(folder: URL) {
         self.folder = folder
@@ -28,6 +35,7 @@ public final class PrefsStore: SettingsStore {
     public func load() throws -> DeimosPrefs {
         record.withLock { kept -> DeimosPrefs in
             let exists = FileManager.default.fileExists(atPath: fileURL.path)
+            existed.withLock { $0 = exists }
             let data = try? Data(contentsOf: fileURL)
             if let data, let file = PrefsFile(fileBytes: [UInt8](data)) {
                 kept = file
