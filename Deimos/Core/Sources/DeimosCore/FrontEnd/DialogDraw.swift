@@ -453,13 +453,20 @@ public enum DialogDraw {
         return MacRect(top: top, left: cx - thumbHalf, bottom: top + thumbHeight, right: cx + thumbHalf + 1)
     }
 
-    /// The value whose thumb centre is nearest to `x`, pinned to min…max.
+    /// The value whose thumb centre (as `sliderThumb` places it) is nearest to `x`, pinned to min…max: its inverse, so
+    /// value → thumb centre → value round-trips for every value whenever the track has at least a pixel per value
+    /// (the volume sliders: 129 pixels for 0…100). Halfway between two centres takes the higher value.
     public static func sliderValue(_ r: MacRect, x: Int32, min lo: Int, max hi: Int) -> Int {
-        let span = Int64(r.right - r.left - 2 * thumbHalf - 1)
-        guard span > 0 else { return lo }
-        let d = Int64(x - (r.left + thumbHalf)), range = Int64(hi - lo)
-        let v = (d * range * 2 + span) / (span * 2)                 // rounded to nearest (d ≥ 0)
-        return d < 0 ? lo : Swift.min(Swift.max(lo + Int(v), lo), hi)
+        let span = Int64(r.right - r.left - 2 * thumbHalf - 1), range = Int64(hi - lo)
+        guard span > 0, range > 0 else { return lo }
+        let d = Int64(x - (r.left + thumbHalf))
+        guard d > 0 else { return lo }
+        guard d < span else { return hi }
+        // centre(v) = ⌊span · v / range⌋. The least v whose centre is at or right of d is ⌈d · range / span⌉; the
+        // nearest centre is its or the one before it.
+        let above = (d * range + span - 1) / span, below = above - 1
+        let v = d - span * below / range < span * above / range - d ? below : above
+        return lo + Int(v)
     }
 
     // MARK: - Geometry, hit-testing, tracking
@@ -555,6 +562,17 @@ public enum DialogDraw {
 ///   polled once in the turn that starts it.
 /// - Bounded: each turn polls the press once (and ends the pass's input while it is held) or consumes one event; at
 ///   most the queue + 2 turns a pass (`turnsLeft`, set by `begin`).
+/// - Two clicks in one pass: the seam gives each mouse-down's place but not the release's, and only the pass's last
+///   mouse position and button state. A press with another mouse-down queued behind it has come up, so it is judged
+///   at its own place (a click dragged off its control before release in the same pass still hits it — the limit).
+///   The screen's own items (below) are polled with the pass's mouse and button, so the same limit is the screen's.
+///
+/// **The queue.** Only `close()` and `flush()` empty it; anything else waits for a later turn or pass. In the
+/// original the event queue is the system's, so events still waiting when a nested window is called go to that
+/// window's `ModalDialog`; here they would stay in this runner and reach the parent after the nested window returns.
+/// A screen that calls a nested window flushes first (`flush()` before returning `.call`) — the configuration window
+/// does before the controls window. A window whose original calls `FlushEvents` (S7's controls window, when it
+/// refuses a key) calls `flush()` at that point.
 ///
 /// **Extension point — item kinds the runner does not know** (the configuration window's sliders; S7's edit-text
 /// field, focus ring, tab control and picture). Put the item's number in `ownItems`: a click on it comes back as
@@ -715,7 +733,11 @@ public struct ModalDialogRunner: Sendable {
                     return .ownPress(item: n, at: p)
                 }
                 var press = DialogDraw.Press(item: n, rect: rect(n) ?? content, at: p)
-                guard let inside = press.poll(mouse: keys.mouse, down: keys.mouseButton) else {
+                // A mouse-down queued behind this one means its button came up first: judge it at its own place (the
+                // seam gives each mouse-down's place, not the release's), not at the pass's last mouse position.
+                let released = queue.contains { if case .click = $0 { true } else { false } }
+                guard let inside = released ? press.poll(mouse: p, down: false)
+                                            : press.poll(mouse: keys.mouse, down: keys.mouseButton) else {
                     tracking = .press(press)
                     return stop()
                 }
@@ -749,6 +771,12 @@ public struct ModalDialogRunner: Sendable {
     /// The screen's own press is over (the button came up).
     public mutating func endOwnPress() {
         if case .own? = tracking { tracking = nil }
+    }
+
+    /// `FlushEvents`: the queued input is dropped; the window stays open and a press being followed is kept (its
+    /// button is still down: the original's `FlushEvents` empties the event queue, not the mouse state).
+    public mutating func flush() {
+        queue = []
     }
 
     /// The window is closing: no press, no queued input.

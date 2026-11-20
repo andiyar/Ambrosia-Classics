@@ -115,6 +115,26 @@ final class ConfigDialogTests: XCTestCase {
             click(&r, item)
             XCTAssertEqual(r.state.prefs.bytePrefs[byte], before, "item \(item) toggles back")
         }
+        // Two clicks in one pass: a mouse-down queued behind the first means its button came up, so the first is judged
+        // at its own place, not at the pass's last mouse position (the second click's).
+        let (c8, c9) = (centre(r, 8), centre(r, 9))
+        let (b4, b5) = (r.state.prefs.bytePrefs[4], r.state.prefs.bytePrefs[5])
+        pass(&r, HeldKeys(mouse: c9, mouseButton: false, mouseDowns: [c8, c9]))
+        XCTAssertEqual(r.state.prefs.bytePrefs[4], b4 == 0 ? 1 : 0, "the first of two clicks in one pass is not lost")
+        XCTAssertEqual(r.state.prefs.bytePrefs[5], b5 == 0 ? 1 : 0, "and the second lands")
+        pass(&r, HeldKeys(mouse: c9, mouseButton: true, mouseDowns: [c8, c9]))
+        XCTAssertEqual(r.state.prefs.bytePrefs[4], b4, "the first click lands while the second is still held")
+        XCTAssertEqual(r.state.prefs.bytePrefs[5], b5 == 0 ? 1 : 0, "the held one waits for its release")
+        pass(&r, HeldKeys(mouse: c9, mouseButton: false))
+        XCTAssertEqual(r.state.prefs.bytePrefs[5], b5, "released over it: hit")
+
+        // Set Controls… with a click queued behind it in the same pass: the queue is flushed before the controls window
+        // is called (in the original those events went to the nested window, never back to this one).
+        let calls = pass(&r, HeldKeys(mouse: c9, mouseButton: false, mouseDowns: [centre(r, 18), c9]))
+        XCTAssertEqual(calls.callee, .controlsDialog, "Set Controls… calls the controls window")
+        pass(&r, returned: .controlsDialog(false))
+        XCTAssertEqual(r.state.prefs.bytePrefs[5], b5, "the click queued behind it was flushed, not replayed here")
+
         click(&r, 8)
         let byte7 = r.state.prefs.bytePrefs[7]
         XCTAssertEqual(click(&r, 10).output, PassOutput(), "item 10 is greyed in X: no change, nothing drawn")
@@ -201,6 +221,12 @@ final class ConfigDialogTests: XCTestCase {
         XCTAssertFalse(r.dialog.changed)
         click(&r, 4)
         XCTAssertEqual(r.state.prefs, .fresh)
+        // A change and a Revert click in the same pass: Revert comes alive as soon as the change is made (X enables it
+        // before each ModalDialog, i.e. before the next event), so the queued click reverts it.
+        let both = pass(&r, HeldKeys(mouse: centre(r, 4), mouseButton: false, mouseDowns: [centre(r, 9), centre(r, 4)]))
+        XCTAssertEqual(both.output.music, [.level(100)], "Revert ran in the same pass as the change")
+        XCTAssertEqual(r.state.prefs, .fresh, "the toggle, then Revert in the same pass: reverted")
+        XCTAssertFalse(r.dialog.isActive(4), "and greyed again")
         click(&r, 17)
         XCTAssertTrue(r.dialog.isActive(4), "alive again after the next change")
     }
@@ -236,6 +262,10 @@ final class ConfigDialogTests: XCTestCase {
         let ret = HeldKeys(keyEvents: [Self.returnKey])
         runner.begin(keys: ret)
         XCTAssertEqual(runner.next(keys: ret, &out), .key(Self.returnKey, command: false), "Return to the screen first")
+        runner.begin(keys: held)
+        XCTAssertEqual(runner.next(keys: held, &out), .key(tab, command: false))
+        runner.flush()                                                  // FlushEvents: the rest is dropped
+        XCTAssertNil(runner.next(keys: held, &out), "flushed: nothing left in the queue")
         XCTAssertEqual(runner.standardKey(Self.returnKey, command: false), 1, "its standard meaning: the default item")
         XCTAssertNil(runner.standardKey(tab, command: false))
         let before = r.state.prefs
@@ -337,6 +367,25 @@ final class ConfigDialogTests: XCTestCase {
         XCTAssertEqual(soundUp.output.music, [.level(100)],
                        "the routine re-applies the music level (int 1); the sound level has no gain stage on OS X (D31)")
         XCTAssertEqual(MacRoman.decode(b.dialog.label(13)), "100%")
+
+        // A press on the thumb released without moving leaves the value exactly as it was, for every value: the
+        // thumb follows the mouse's offset from where it was grabbed, and value → thumb → value round-trips
+        // (bound: 101 values).
+        for v in 0...100 {
+            let t = DialogDraw.sliderThumb(track, value: v, min: 0, max: 100)
+            let c = MousePoint(h: (t.left + t.right) / 2, v: (t.top + t.bottom) / 2)
+            XCTAssertEqual(DialogDraw.sliderValue(track, x: c.h, min: 0, max: 100), v, "value \(v) round-trips")
+            var p = DeimosPrefs.fresh
+            p.intPrefs[1] = Int32(v)
+            var q = try open(prefs: p)
+            click(&q, at: c)
+            XCTAssertEqual(q.dialog.value(15), v, "a thumb click at \(v) leaves it")
+            XCTAssertEqual(q.state.prefs.intPrefs[1], Int32(v))
+            pass(&q, HeldKeys(mouse: c, mouseButton: true, mouseDowns: [c]))
+            pass(&q, HeldKeys(mouse: c, mouseButton: false))
+            XCTAssertEqual(q.dialog.value(15), v, "a held thumb press at \(v) released unmoved leaves it")
+            XCTAssertEqual(MacRoman.decode(q.dialog.label(16)), "\(v)%")
+        }
     }
 
     /// The boot opens the window, always as a first launch (X 10000214 `li r3,0x1`), when byte pref 2 is 0 or Option is

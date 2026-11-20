@@ -22,7 +22,8 @@ import Foundation
 ///   item: 3 Defaults (`FUN_10004f80(0)` = `FUN_10004f20(0)` → `10005150`: bytes 4–8, ints 0–2, both key sets), refresh,
 ///   changed; 4 Revert (the snapshot copied back, the volume re-applied, refresh, 4 greyed, unchanged); 8, 9, 17 toggle
 ///   bytes 4, 5, 8; 10 toggles byte 7 and sets item 12's activity; 12, 15 set int 0, 1 from the control, re-apply the
-///   volume, `SysBeep(1)`; 18 the controls window (changed only when it returns Save, D4); until item 1 or 2. Item 2
+///   volume, `SysBeep(1)`; 18 the controls window (changed only when it returns Save, D4; the input still queued here
+///   is flushed first — in the original it went to that window); until item 1 or 2. Item 2
 ///   copies the snapshot back (keys included); then, Save or Cancel, the volume is re-applied (10011758). Nothing
 ///   reaches the disk (C §1b: at quit only).
 /// - **The volume** (X `10048c20`, at Revert, a slider's release and the close): its sound half is skipped on OS X,
@@ -51,8 +52,9 @@ public struct ConfigDialog: Sendable {
 
     /// What a press on a slider is following (the sliders are the screen's own items: CNTL 2000/2001).
     enum Slide: Equatable, Sendable {
-        /// The thumb, grabbed `grab` pixels right of its centre.
-        case thumb(item: Int, grab: Int32)
+        /// The thumb, grabbed at `x` while the value was `from`: it follows the mouse's offset from there, so a press
+        /// released where it began leaves the value as it was.
+        case thumb(item: Int, from: Int, x: Int32)
         /// The track beside the thumb: −10 or +10 a pass while the mouse stays on that side.
         case page(item: Int, step: Int)
     }
@@ -129,10 +131,11 @@ public struct ConfigDialog: Sendable {
         }
         runner.begin(keys: keys)
         for _ in 0...runner.turnsLeft {                                 // each `next` uses at least one turn
+            if changed { runner.inactive.remove(Self.revert) }          // 10011450..1001147c: before each ModalDialog
             guard let action = runner.next(keys: keys, &out) else { break }
             if let step = act(action, keys: keys, state: &state, &out) { return step }
         }
-        if changed { runner.inactive.remove(Self.revert) }              // 10011450..1001147c
+        if changed { runner.inactive.remove(Self.revert) }              // the last event's change, for the redraw
         redraw(&out)
         return .stay(out)
     }
@@ -184,7 +187,7 @@ public struct ConfigDialog: Sendable {
             }
             let thumb = DialogDraw.sliderThumb(rect, value: value(n), min: Self.sliderMin, max: Self.sliderMax)
             if DialogDraw.contains(thumb, p) {
-                slide = .thumb(item: n, grab: p.h - (thumb.left + thumb.right) / 2)
+                slide = .thumb(item: n, from: value(n), x: p.h)
                 return followSlide(keys: keys, state: &state, &out)
             }
             let step = p.h < thumb.left ? -Self.pageStep : Self.pageStep
@@ -202,9 +205,12 @@ public struct ConfigDialog: Sendable {
     private mutating func followSlide(keys: HeldKeys, state: inout FrontEndState,
                                       _ out: inout PassOutput) -> ScreenStep<Result>? {
         switch slide {
-        case let .thumb(n, grab)?:
+        case let .thumb(n, from, x)?:
             if let m = keys.mouse, let rect = runner.rect(n) {
-                setSlider(n, DialogDraw.sliderValue(rect, x: m.h - grab, min: Self.sliderMin, max: Self.sliderMax))
+                let t = DialogDraw.sliderThumb(rect, value: from, min: Self.sliderMin, max: Self.sliderMax)
+                let centre = (t.left + t.right) / 2 + (m.h - x)
+                setSlider(n, m.h == x ? from
+                                      : DialogDraw.sliderValue(rect, x: centre, min: Self.sliderMin, max: Self.sliderMax))
             }
             guard !keys.mouseButton else { return nil }
             endSlide()
@@ -286,6 +292,9 @@ public struct ConfigDialog: Sendable {
             changed = true
         case Self.setControls:                                          // 100115f0..10011624 (D4)
             if changed { runner.inactive.remove(Self.revert) }
+            // Input still queued went to the controls window's ModalDialog in the original (the system's queue), never
+            // back to this window: the replica cannot hand it on, so it is dropped rather than replayed here later.
+            runner.flush()
             redraw(&out)
             return .call(.controlsDialog(ControlsDialog()), out)
         default:
