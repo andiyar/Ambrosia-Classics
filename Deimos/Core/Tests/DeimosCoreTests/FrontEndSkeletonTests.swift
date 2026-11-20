@@ -40,8 +40,10 @@ final class FrontEndSkeletonTests: XCTestCase {
     private static let typeOne = HeldKeys(keyEvents: [KeyEvent(charCode: 0x31, keyCode: 0x12)])
 
     /// The real menu (S2 MM) is up and waits for the player. A pass with `1` typed flashes 1 PLAYER and calls
-    /// start/return; the flash drew, so the chain stops there. The next pass (input `startKeys`) runs start/return,
-    /// whose level select returns sector 1 at once, and starts the game. Returns that game-starting pass's output.
+    /// start/return; the flash drew, so the chain stops there. Start/return's start sequence (S3a SR,
+    /// `StartReturnTests.testStartSequence`) then takes two passes — the cursor hidden and the element fade-out, then
+    /// the fade to black — and the third (input `startKeys`) runs its level select, which returns sector 1 at once,
+    /// and starts the game. Returns that game-starting pass's output.
     @discardableResult
     private func startFromMenu(_ fe: inout FrontEnd, ticks: inout UInt32, startKeys: HeldKeys = HeldKeys(),
                                _ label: String) -> PassOutput {
@@ -52,6 +54,13 @@ final class FrontEndSkeletonTests: XCTestCase {
         XCTAssertTrue(flash.ops.contains(.hostWait(.ticks(10))), "\(label): 1 flashes 1 PLAYER")
         XCTAssertEqual(fe.screens, [.mainMenu, .startReturn], "\(label): 1 calls start/return")
         XCTAssertEqual(fe.state.gamesStarted, started, "\(label): the flash drew, so the chain stopped there")
+        for n in 0..<2 {
+            let out = fe.pass(keys: HeldKeys(), ticks: ticks)
+            ticks &+= 2
+            XCTAssertEqual(out.requests, n == 0 ? [.hideCursor] : [],
+                           "\(label): the start sequence hides the cursor on its first pass")
+            XCTAssertEqual(fe.state.gamesStarted, started, "\(label): the start sequence's pass \(n + 1)")
+        }
         let out = fe.pass(keys: startKeys, ticks: ticks)
         ticks &+= 2
         XCTAssertEqual(fe.screens, [.mainMenu, .startReturn], "\(label): the level select returned")
@@ -60,14 +69,33 @@ final class FrontEndSkeletonTests: XCTestCase {
         return out
     }
 
+    /// After a game that made no table, start/return's return sequence (S3a SR,
+    /// `StartReturnTests.testReturnAfterGameOverSequence`): passes until the menu is the top screen again (bound: 4),
+    /// then the menu's own return step — a pass of its own, since start/return's last pass draws — which outputs
+    /// nothing. Returns start/return's last pass.
+    @discardableResult
+    private func backToMenu(_ fe: inout FrontEnd, ticks: inout UInt32, _ label: String) -> PassOutput {
+        var last = PassOutput()
+        for _ in 0..<4 where fe.screens != [.mainMenu] {
+            last = fe.pass(keys: HeldKeys(), ticks: ticks)
+            ticks &+= 2
+        }
+        XCTAssertEqual(fe.screens, [.mainMenu], "\(label): bound: not back on the menu within 4 passes")
+        XCTAssertEqual(fe.pass(keys: HeldKeys(), ticks: ticks), PassOutput(), "\(label): the menu's return step")
+        ticks &+= 2
+        return last
+    }
+
     /// The boot entry's first pass walks boot → main menu, whose entry draws, so the chain stops with the menu up and
     /// waiting (that pass's queued input reached only the boot). The player types `1`: the menu flashes 1 PLAYER and
-    /// calls start/return; the next pass walks start/return → level select (sector 1) → a running game (no stub
-    /// draws, so the steps chain); the game's first pass is the bare session's, seeded with that pass's ticks (its
-    /// frame controller's FPS clock too), and carries the cursor hide. That pass's queued input — typed, a key event,
+    /// calls start/return, whose start sequence hides the cursor and fades out on its first pass and fades to black
+    /// on its second (S3a SR); its third pass walks start/return → level select (sector 1) → a running game (no stub
+    /// draws, so the steps chain); the game's first pass is the bare session's with the music already playing (after
+    /// start/return's stop and `ammu`), seeded with that pass's ticks (its frame controller's FPS clock too). That
+    /// pass's queued input — typed, a key event,
     /// a mouse-down, a shell event — reaches only its first step (start/return): the game, reached by chained steps,
-    /// is handed the held state alone. When the game ends, start/return hands its result back and shows the cursor,
-    /// and the menu waits again; `1` starts the next game. Every other stub returns at once with its
+    /// is handed the held state alone. When the game ends, start/return runs its return sequence, hands its result
+    /// back and shows the cursor, and the menu waits again; `1` starts the next game. Every other stub returns at once with its
     /// declared value and an empty output. The shell's resources reach the shared state; a game with an empty
     /// recording, or a film session, leaves the Last Film alone. Bound: 3,000 passes.
     func testStubScreensPassThrough() throws {
@@ -88,20 +116,23 @@ final class FrontEndSkeletonTests: XCTestCase {
         XCTAssertNil(fe.session, "the menu waits for the player")
         XCTAssertEqual(fe.state.gamesStarted, 0)
 
-        // The player types 1: the menu flashes 1 PLAYER and calls start/return; the next pass starts sector 1.
+        // The player types 1: the menu flashes 1 PLAYER and calls start/return; its third pass starts sector 1.
         var ticks = t0 &+ 2
-        let t1 = t0 &+ 4                                              // the game-starting pass
+        let t1 = t0 &+ 8                                              // the game-starting pass
         let first = startFromMenu(&fe, ticks: &ticks, startKeys: queued, "the first game")
         let s = try XCTUnwrap(fe.session)
         XCTAssertEqual(s.sector, 1)
         XCTAssertEqual(s.players.filter(\.inGame).count, 1)
         XCTAssertNil(s.start.film)
         XCTAssertEqual(fe.state.gamesStarted, 1)
-        var bare = try DeimosSession(assets: a, prefs: .fresh, start: Self.one, seed: t1, ticks: t1)
+        let afterSelect = SessionStart(sector: 1, players: 1, film: nil, musicAlreadyPlaying: true)
+        XCTAssertEqual(s.start, afterSelect)
+        var bare = try DeimosSession(assets: a, prefs: .fresh, start: afterSelect, seed: t1, ticks: t1)
         let reference = bare.pass(keys: HeldKeys(), ticks: t1)
         XCTAssertEqual(first.ops, reference.ops, "the game's first pass is the bare session's (seed = its ticks)")
-        XCTAssertEqual(first.music, reference.music)
-        XCTAssertEqual(first.requests, [.hideCursor], "the front end hides the cursor on the pass that starts a game")
+        XCTAssertEqual(first.music, [.stop, .play(FourCC("ammu")!, loop: true)] + reference.music,
+                       "start/return's music stop and ammu, then the game's")
+        XCTAssertEqual(first.requests, [], "the cursor was hidden on the start sequence's first pass (startFromMenu)")
         XCTAssertEqual(fe.session?.rng, bare.rng)
         XCTAssertEqual(fe.session?.controller, bare.controller,
                        "its frame controller's FPS clock starts at that pass's ticks (FUN_100305e0)")
@@ -115,13 +146,12 @@ final class FrontEndSkeletonTests: XCTestCase {
         XCTAssertEqual(fe.session?.result?.end, .escape)
         XCTAssertEqual(fe.state.lastFilm, [], "an empty recording changes nothing")
         XCTAssertFalse(escOuts.contains { $0.requests.contains { if case .saveLastFilm = $0 { true } else { false } } })
-        let back = fe.pass(keys: HeldKeys(), ticks: ticks)
-        ticks &+= 2
+        let back = backToMenu(&fe, ticks: &ticks, "the first game")
         XCTAssertEqual(back.requests, [.showCursor], "start/return shows the cursor; the menu is up again")
         XCTAssertEqual(fe.screens, [.mainMenu])
         XCTAssertEqual(fe.state.gamesStarted, 1, "the menu starts no game by itself")
         let again = startFromMenu(&fe, ticks: &ticks, "the second game")
-        XCTAssertEqual(again.requests, [.hideCursor], "the next game hides the cursor")
+        XCTAssertEqual(again.requests, [], "the next game hid the cursor on its start sequence's first pass")
         XCTAssertEqual(fe.state.gamesStarted, 2)
         XCTAssertEqual(fe.screens, [.mainMenu, .startReturn])
         XCTAssertTrue(fe.session?.running ?? false)
@@ -148,10 +178,14 @@ final class FrontEndSkeletonTests: XCTestCase {
         check(controls.pass(keys: HeldKeys(), ticks: 0, returned: nil, state: &state), false, "controls window")
         XCTAssertEqual(state.prefs, fe.state.prefs, "no stub touches the prefs")
 
-        // Start/return in play mode calls the level select first; the menu with the quit flag set runs its quit
+        // Start/return in play mode calls the level select first, on the third pass of its start sequence (S3a SR);
+        // the menu with the quit flag set runs its quit
         // sequence (MainMenuTests.testMenuQuitSequence) and returns, calling no screen, in exactly 5 passes: the entry,
         // the QUIT flash, the rest of that turn, the fade-out, then the free and the music stop. Bound: 10 passes.
         var play = StartReturn(mode: .play, players: 2)
+        for n in 0..<2 {
+            XCTAssertNil(play.pass(keys: HeldKeys(), ticks: 0, returned: nil, state: &state).callee, "start pass \(n + 1)")
+        }
         let call = play.pass(keys: HeldKeys(), ticks: 0, returned: nil, state: &state)
         XCTAssertEqual(call.callee, .levelSelect)
         var menu = MainMenu()
@@ -231,8 +265,7 @@ final class FrontEndSkeletonTests: XCTestCase {
         XCTAssertTrue(boot.state.quit)
         guard passes(&boot, keys: HeldKeys(held: [Self.escKey]), ticks: &ticks, bound: 1_000,
                      until: { _, out in out.sessionEnded }) != nil else { return }
-        let back = boot.pass(keys: HeldKeys(), ticks: ticks)
-        ticks &+= 2
+        let back = backToMenu(&boot, ticks: &ticks, "boot entry")
         XCTAssertEqual(back.requests, [.showCursor], "back to the menu (start/return shows the cursor)")
         // The menu, its quit flag set, runs its quit sequence (MainMenuTests.testMenuQuitSequence) and leaves; then
         // the shutdown.
@@ -304,11 +337,12 @@ final class FrontEndSkeletonTests: XCTestCase {
             XCTAssertEqual(fe.state.prefs.bytePrefs[5], 1, "\(entry): carried on the ending pass: F6")
             XCTAssertEqual(fe.state.prefs.intPrefs[0], 40, "\(entry): carried: the volume")
             XCTAssertEqual(fe.livePrefs, fe.state.prefs)
-            _ = fe.pass(keys: HeldKeys(), ticks: ticks)
             if entry == "boot" {
-                ticks &+= 2
+                backToMenu(&fe, ticks: &ticks, entry)
                 XCTAssertEqual(fe.state.gamesStarted, 1, "\(entry): back on the menu, which waits")
                 startFromMenu(&fe, ticks: &ticks, entry)
+            } else {
+                _ = fe.pass(keys: HeldKeys(), ticks: ticks)
             }
             XCTAssertEqual(fe.state.gamesStarted, 2, entry)
             XCTAssertTrue(fe.session?.restoreInterlace ?? false, "\(entry): the next level start saw pref 5 set")
@@ -323,6 +357,8 @@ final class FrontEndSkeletonTests: XCTestCase {
             }) else { return }
             if entry == "boot" {
                 XCTAssertEqual(fe.state.gamesStarted, 2, "\(entry): the menu starts no game by itself")
+                XCTAssertEqual(fe.pass(keys: HeldKeys(), ticks: ticks), PassOutput(), "\(entry): the menu's return step")
+                ticks &+= 2
                 overOuts.append(startFromMenu(&fe, ticks: &ticks, entry))
                 XCTAssertEqual(fe.state.gamesStarted, 3, entry)
             }
