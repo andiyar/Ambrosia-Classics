@@ -194,7 +194,8 @@ final class DeimosSessionTests: XCTestCase {
         for _ in 0..<10 { XCTAssertEqual(fe.pass(keys: HeldKeys(), ticks: 0x469c2).requests, []) }
         let end = fe.pass(keys: HeldKeys(held: [0x35]), ticks: 0x469c2)
         XCTAssertTrue(end.sessionEnded)
-        XCTAssertEqual(end.requests, [])
+        XCTAssertEqual(end.requests, [.saveLastFilm(try XCTUnwrap(fe.session?.result).recordedFilm)],
+                       "the Last Film save (S5), no cursor request")
         XCTAssertEqual(fe.pass(keys: HeldKeys(), ticks: 0x469c4).requests, [.hideCursor], "the next game's first pass")
     }
 

@@ -156,7 +156,7 @@ final class FilmPlaybackTests: XCTestCase {
         XCTAssertEqual(s.pass(keys: HeldKeys(), ticks: 0), PassOutput(sessionEnded: true))
 
         // Held keys other than Esc neither end a film nor reach it: `FUN_10048e60` is the mouse button only
-        // (`10048e6c`); the film ends on film finished (`10005a38`), the mouse button (not modelled), Esc through the
+        // (`10048e6c`); the film ends on film finished (`10005a38`), the mouse button (FilmsTests), Esc through the
         // begin frame (`10005904` → `FUN_100307c0` key 0x35), level complete or game over. The same film with P1's
         // keys, P2's and plain letters held in turn runs pass for pass as the key-less film above, ending on the same
         // pass. Bound: frames + 200 passes.

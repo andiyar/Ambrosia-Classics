@@ -12,7 +12,7 @@ import HectorResources
 /// 2. `FUN_1002a150(p, now, gate)` life-state step `10029048` (`PlayerLife`);
 /// 3. `FUN_1002a3a0(p, film, playback)` input `1002905c` — state 4 only: the 7 bytes cleared, then the film's next
 ///    byte (`FUN_100097a0`, playback) or the ISp read + the recorder `FUN_10009830` (`1002a414..1002a42c`: the
-///    score at the write — the "Last Film" recorder is not modelled; the replay stores the score at the read);
+///    score at the write — `GameState.recorder`, Phase 4 S5; the replay stores the score at the read);
 /// 4. `FUN_10012840` scale ramp `10029068`; 5. `FUN_10026ee0` overload tick `10029078`; 6. `FUN_10012750` ramps
 ///    `10029080`; 7. `+0xc5` = 0 when `+0x68 == +0x6c` (`10029088..100290a8`, `fcmpu`); 8. `FUN_10012940`
 ///    `100290b0`, `FUN_10012c10` hit-glow tick `100290bc`;
@@ -76,7 +76,10 @@ extension GameState {
     /// byte at the cursor unpacked bit 0 left, 1 right, 2 up, 3 down, 4 fire ground, 5 fire air, 6 select
     /// (`100097cc..10009818`), and through `FilmCursor.next(player:score:)` the player's decoded score
     /// (`+0xb0 − 0x5532a3e`, the value the recorder stored at `1002a414..1002a42c`) is recorded at that read
-    /// (plan G4.1); no read past the recording leaves the bytes cleared. Otherwise the keys (the ISp read).
+    /// (plan G4.1); no read past the recording leaves the bytes cleared. Otherwise the keys (the ISp read, none while
+    /// the console is open), then the recorder `FUN_10009830(film, +0xcc, +0x1fc, score)` (`1002a414..1002a42c`):
+    /// the keys, the decoded score `+0xb0 − 0x5532a3e` at this read (P2's after P1's update) and G+0x18 (Phase 4 S5;
+    /// a film session has no recorder and never takes this branch).
     mutating func readPlayerInput(_ i: Int, keys: PlayerInput) {
         guard players[i].lifeState == 4 else { return }                      // 1002a3c4..1002a3cc
         players[i].input = []                                                // 1002a3d0..1002a3d8
@@ -87,6 +90,10 @@ extension GameState {
             players[i].input = PlayerInput(rawValue: byte & 0x7f)
         } else {
             players[i].input = keys                                          // 1002a40c FUN_1004ab50
+            let p = Int(players[i].index)                                    // 1002a41c lbz r4,0xcc(r29)
+            if recorder != nil, p == 0 || p == 1 {                           // 1002a414..1002a42c FUN_10009830
+                recorder!.record(player: p, input: keys, score: players[i].score, level: flags.level)
+            }
         }
     }
 

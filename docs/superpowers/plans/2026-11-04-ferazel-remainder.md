@@ -1864,6 +1864,27 @@ ids; its `--check` reads this table):
 - **Tests (3)** (the conversations and cards run standalone from the data files; no level opened):
   `testLevels10To22ConversationsRunToEnd` · `testChapterCard2FrameGolden` · `testChapterCard5FrameGolden`.
 - **Gate:** Gate-F (G2 716). **Commit:** `Ferazel: the conversations and chapter cards of levels 10–22 proven; 3 tests`.
+- **As executed — 6A-MC (run 55):** task b999329 (3 tests: `LaterConversationTests` 1, `ScreenTests` 2), review fix
+  round 988a1e1. **No source file changed** — the interpreter and `ChapterScreenRun` were right; no ledger change.
+  Goldens (new, measured; each the screen after the card's first tick through the shared `ScreenRenderer`): chapter
+  card 2 (level 10, PICT 4620 under clut 282; the picture is 608 wide, stretched to 640 as the dump's 640 × 480
+  rectangle does) `f33072b0df2cab4d`; chapter card 5 (level 22, PICT 4650 under clut 285, 640 wide)
+  `517ec825dbca68cc`. Both come out the same under the ruled colour model and the shipped one (exact nearest, either
+  tie-break). The ids come out of the built code (the chapter from the level header, then the run's picture and clut).
+  The data agrees with LL §5 and the dump (M l. 5038–5089): conditions 4, 5 and actions 1, 2, 4, 5, 9, 10, nothing
+  else; every non-empty line of 206, 221 and 300 is reached and every condition taken both ways. World flag 4 is set
+  by hand to reach Nimbo's gift line: in the game only Mcnv 209 line 7 sets it (Ferazel's line in the Hooded Figure's
+  conversation, level 62); flag 1 is level 2's record 228 (type 1058, p1 1). The longest conversation run is 1,885
+  ticks (the 40000 limit is a hang guard). Reviews: leg 1 MERGEABLE (7 minors), leg 2 MERGEABLE — 79 mutations, 54
+  caught, 9 harmless, 16 slipped (2 are the card's fade-in and wait, caught by `StageScreenTests`; 14 in scope); the
+  fix round folded leg 2's asserts into the three named tests (who is drawn for each line, speaker names and erases,
+  the action 10 save write and action 9 on non-zero records, sound 501 and the item-stat redraw, the menu's highlight
+  and up key, a copy that skips white) — 13 caught, the last (the typer skipping letters) is `ConversationTests`'.
+  Nothing existing moved. Seat's G2 at 988a1e1: **716** (551 rules + 165 render), 0 failed, the two opt-in skips;
+  G5, GW1 0 / 2, GW3 0 / 1, GW4 the implementer's; GW2 not re-run (tests only, nothing Shared or Windows changed).
+  Carries: the spawn of the record action 10 arms (283) on a revisit is untested here — it is `LevelRun`'s, the
+  level-21 task looks; "loaded" for a portrait means the draw op and the resource present, nothing decodes the
+  picture in this test; three decoders of a picture's frame exist (one in source, one in each test target).
 
 #### 6A-L10L11 — ⚑ MAJOR — levels 10 "Unemployed In Greenland" and 11 "River of Fears" enterable (→ 722)
 - **Files:** `Sources/FerazelCore/Front/BuiltLevels.swift` (`[1, 2, 3, 4, 5, 10, 11]`), `Sources/FerazelCore/Front/LevelRun.swift`

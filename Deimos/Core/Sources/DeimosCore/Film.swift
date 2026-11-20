@@ -76,4 +76,13 @@ public struct Film: Sendable, Equatable {
         self.players = players
         trailingBytesAreZero = zero
     }
+
+    /// Writes `value` big-endian at `offset` of a film image (the `stw`s of `FUN_10009390`, `FUN_10009710` and
+    /// `FUN_10009830` — Phase 4 S5).
+    static func store(_ value: UInt32, at offset: Int, in image: inout [UInt8]) {
+        image[offset] = UInt8(value >> 24)
+        image[offset + 1] = UInt8(value >> 16 & 0xff)
+        image[offset + 2] = UInt8(value >> 8 & 0xff)
+        image[offset + 3] = UInt8(value & 0xff)
+    }
 }

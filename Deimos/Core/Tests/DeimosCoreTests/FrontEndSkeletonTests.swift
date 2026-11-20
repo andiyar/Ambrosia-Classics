@@ -156,8 +156,10 @@ final class FrontEndSkeletonTests: XCTestCase {
         guard let escOuts = passes(&fe, keys: HeldKeys(held: [Self.escKey]), ticks: &ticks, bound: 1_000,
                                    until: { _, out in out.sessionEnded }) else { return }
         XCTAssertEqual(fe.session?.result?.end, .escape)
-        XCTAssertEqual(fe.state.lastFilm, [], "an empty recording changes nothing")
-        XCTAssertFalse(escOuts.contains { $0.requests.contains { if case .saveLastFilm = $0 { true } else { false } } })
+        let recorded = try XCTUnwrap(fe.session?.result).recordedFilm
+        XCTAssertEqual(fe.state.lastFilm, recorded, "the recording (S5) is kept as the Last Film")
+        XCTAssertEqual(escOuts.flatMap { $0.requests.filter { if case .saveLastFilm = $0 { true } else { false } } },
+                       [.saveLastFilm(recorded)])
         let back = backToMenu(&fe, ticks: &ticks, "the first game")
         XCTAssertEqual(back.requests, [.showCursor], "start/return shows the cursor; the menu is up again")
         XCTAssertEqual(fe.screens, [.mainMenu])
@@ -179,10 +181,7 @@ final class FrontEndSkeletonTests: XCTestCase {
         check(levelSelect.pass(keys: HeldKeys(), ticks: 0, returned: nil, state: &state), 1, "level select")
         // Scores and name entry are built (Phase 4 S4 HS): ScoresScreenTests, NameEntryTests.
         // (The credits are no longer a stub — S2 CR: CreditsTests owns them.)
-        for kind in [Films.Kind.demo, .lastFilm] {
-            var films = Films(kind: kind)
-            check(films.pass(keys: HeldKeys(), ticks: 0, returned: nil, state: &state), ScreenDone(), "films \(kind)")
-        }
+        // Films is built (Phase 4 S5 DM): FilmsTests.
         var config = ConfigDialog(firstLaunch: true)
         check(config.pass(keys: HeldKeys(), ticks: 0, returned: nil, state: &state), false, "configuration window")
         var controls = ControlsDialog()
