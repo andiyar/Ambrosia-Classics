@@ -53,16 +53,19 @@ final class PadLayoutTests: XCTestCase {
         XCTAssertNil(short.bindings[.right])
         XCTAssertNil(short.bindings[.south])
         // The level select reads P1's set too: left / right = slots 1 / 2, any face = its slot (4–6 all accept),
-        // − = Esc at once; nothing else.
+        // − = Esc at once, + = the Caps Lock latch (the original pauses there); nothing else. Its keys are bound as a
+        // 0-second hold — the same key at once, but a binding unlike play's (and the screens'), so a button held
+        // across the change is dropped.
+        func now(_ code: UInt16) -> ShellPadBinding { .keyAfterHold(code, seconds: 0) }
         let select: [ShellPadButton: ShellPadBinding] = [
-            .left: .key(0x7B), .right: .key(0x7C),
-            .south: .key(0x37), .west: .key(0x3A), .north: .key(0x31), .east: .key(0x31),
-            .back: .key(esc),
+            .left: now(0x7B), .right: now(0x7C),
+            .south: now(0x37), .west: now(0x3A), .north: now(0x31), .east: now(0x31),
+            .start: .capsLockToggle, .back: now(esc),
         ]
         XCTAssertEqual(DeimosPadLayout.mapping(keySet: fresh, context: .levelSelect).bindings, select)
         let ls = DeimosPadLayout.mapping(keySet: KeyTable(codes: codes), context: .levelSelect)
         XCTAssertEqual([ls.bindings[.left], ls.bindings[.right], ls.bindings[.south]],
-                       [.key(0x00), .key(0x02), .key(0x26)], "the live set")
+                       [now(0x00), now(0x02), now(0x26)], "the live set")
     }
 
     func testOutOfPlayArrowsReturnEsc() {
@@ -79,8 +82,10 @@ final class PadLayoutTests: XCTestCase {
             XCTAssertEqual(DeimosPadLayout.mapping(keySet: fresh, context: context).bindings, other, "\(context)")
             XCTAssertEqual(DeimosPadLayout.mapping(keySet: remapped, context: context).bindings, other, "\(context)")
         }
-        // A demo film: no key ends a film (D45 ruling 1) but − is Esc at once (ruling 17); nothing else.
-        XCTAssertEqual(DeimosPadLayout.mapping(keySet: fresh, context: .demo).bindings, [.back: .key(esc)])
+        // A demo film: no key ends a film (D45 ruling 1) but − is Esc at once (ruling 17), bound as a 0-second hold
+        // so a − held in from the menu screens is dropped; nothing else.
+        XCTAssertEqual(DeimosPadLayout.mapping(keySet: fresh, context: .demo).bindings,
+                       [.back: .keyAfterHold(esc, seconds: 0)])
         // Paused: only + (the latch); shoulders, triggers and thumbs are never bound.
         XCTAssertEqual(DeimosPadLayout.mapping(keySet: fresh, context: .paused).bindings, [.start: .capsLockToggle])
         let unmapped: [ShellPadButton] = [.leftShoulder, .rightShoulder, .leftTrigger, .rightTrigger, .leftThumb,
@@ -115,9 +120,14 @@ final class PadLayoutTests: XCTestCase {
         XCTAssertEqual(plus.capsLock, false)
         XCTAssertEqual(plus.pressed, [ret])
         _ = run(&tr, [], menu, at: [1.4])
+        // The level select: + pauses there as Caps Lock does in the original (grounding A §5.3) — the latch, no key.
+        // While it is on the shell polls with `.paused`; a second + turns it off, back at the level select.
         let ls = DeimosPadLayout.mapping(keySet: keys, context: .levelSelect)
         let atSelect = run(&tr, [.start], ls, at: [1.5])[0]
-        XCTAssertEqual([atSelect.capsLock, atSelect.held.isEmpty], [false, true])
+        XCTAssertEqual([atSelect.capsLock, atSelect.held.isEmpty], [true, true])
+        XCTAssertEqual(run(&tr, [], paused, at: [1.6]).map(\.capsLock), [true])
+        XCTAssertEqual(run(&tr, [.start], paused, at: [1.7]).map(\.capsLock), [false])
+        XCTAssertEqual(run(&tr, [], ls, at: [1.8]).map(\.capsLock), [false])
     }
 
     func testMinusHoldInPlayAtOnceElsewhere() {
@@ -151,7 +161,8 @@ final class PadLayoutTests: XCTestCase {
 
     func testHeldButtonAcrossContextChangeDoesNotFire() {
         // The kit's translator (HectorKit D16) ignores a button already down when its binding changes, until it is
-        // released; these pin that through the Deimos contexts.
+        // released; these pin that through the Deimos contexts, including the ones whose buttons press the same key
+        // (the level select and play share P1's set; it binds them as a 0-second hold so the binding differs).
         let keys = KeyTable(prefs: .fresh)
         func layout(_ c: DeimosPadLayout.Context) -> ShellPadMapping { DeimosPadLayout.mapping(keySet: keys, context: c) }
         // The main menu's Return (south) still down as play begins: no fire air until it is released and pressed.
@@ -173,6 +184,27 @@ final class PadLayoutTests: XCTestCase {
         let after = run(&tr, [.back], layout(.screens), at: [4.2, 4.3])
         XCTAssertEqual(after.map(\.held), [[], []])
         XCTAssertEqual(after.map(\.released), [[esc], []])
+        // The level select's keys into play — the same keys (P1's set), a different binding: a face that fired
+        // there (fire air at once) and a held ← do not fire air or move the ship on play's first frames.
+        var s = ShellPadTranslator()
+        _ = run(&s, [], layout(.levelSelect), at: [0])
+        XCTAssertEqual(run(&s, [.south, .left], layout(.levelSelect), at: [0.1])[0].held, [0x37, 0x7B])
+        let play = run(&s, [.south, .left], layout(.playing), at: [0.2, 0.3, 2.0])
+        XCTAssertEqual(play.map(\.held), [[], [], []])
+        XCTAssertEqual(play.map(\.released), [[0x37, 0x7B], [], []])
+        _ = run(&s, [.left], layout(.playing), at: [2.1])
+        XCTAssertEqual(run(&s, [.south, .left], layout(.playing), at: [2.2]).map(\.pressed), [[0x37]],
+                       "south pressed again fires; left, never released, still does nothing")
+        // The other way: fire held from play onto the level select does not accept a sector there.
+        _ = run(&s, [.south], layout(.playing), at: [2.3])
+        XCTAssertEqual(run(&s, [.south], layout(.levelSelect), at: [2.4, 2.5]).map(\.held), [[], []])
+        // − pressed on the main menu (Esc there) and still down as the level select or a demo starts: no Esc there.
+        for next in [DeimosPadLayout.Context.levelSelect, .demo] {
+            var m = ShellPadTranslator()
+            _ = run(&m, [], layout(.mainMenu), at: [0])
+            XCTAssertEqual(run(&m, [.back], layout(.mainMenu), at: [0.1])[0].pressed, [esc])
+            XCTAssertEqual(run(&m, [.back], layout(next), at: [0.2, 0.3]).map(\.held), [[], []], "\(next)")
+        }
         // A face held through a demo's end: no Return on the main menu.
         var d = ShellPadTranslator()
         _ = run(&d, [], layout(.demo), at: [0])
