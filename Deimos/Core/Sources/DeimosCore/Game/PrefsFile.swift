@@ -141,7 +141,11 @@ public struct PrefsFile: Equatable, Sendable {
 
     private mutating func setName(_ s: String, at offset: Int, width: Int) {
         guard name(at: offset, width: width) != s else { return }
-        let bytes = (MacRoman.encode(s, lossy: true) ?? []).prefix { $0 != 0 }.prefix(width - 1)
+        // Lossy Mac Roman: an unrepresentable character becomes one '?'. The encoder refuses a whole string in one
+        // case (Foundation's composed-plus-mark quirk); then encode character by character under the same rule.
+        let encoded = MacRoman.encode(s, lossy: true)
+            ?? s.flatMap { MacRoman.encode(String($0), lossy: true) ?? [0x3F] }
+        let bytes = encoded.prefix { $0 != 0 }.prefix(width - 1)
         for i in 0..<width { image[offset + i] = 0 }
         image.replaceSubrange(offset..<offset + bytes.count, with: bytes)
     }

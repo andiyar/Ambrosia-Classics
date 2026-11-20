@@ -26,24 +26,30 @@ public final class PrefsStore: SettingsStore {
     }
 
     public func load() throws -> DeimosPrefs {
-        if let data = try? Data(contentsOf: fileURL), let file = PrefsFile(fileBytes: [UInt8](data)) {
-            record.withLock { $0 = file }
-            return file.prefs
+        record.withLock { kept -> DeimosPrefs in
+            let exists = FileManager.default.fileExists(atPath: fileURL.path)
+            let data = try? Data(contentsOf: fileURL)
+            if let data, let file = PrefsFile(fileBytes: [UInt8](data)) {
+                kept = file
+                return file.prefs
+            }
+            let fresh = PrefsFile.fresh
+            kept = fresh
+            // A file that is there but cannot be read is left alone: the original's open fails (L 10048a00) and its
+            // fresh write's open fails the same way. Only a missing or wrong-version file is replaced.
+            if !exists || data != nil { try? write(fresh) }
+            return fresh.prefs
         }
-        let fresh = PrefsFile.fresh
-        record.withLock { $0 = fresh }
-        try? write(fresh)
-        return fresh.prefs
     }
 
     public func save(_ prefs: DeimosPrefs) throws {
-        let file = record.withLock { kept -> PrefsFile in
+        // The write happens under the lock, so concurrent saves reach the disk in the order they took it.
+        try record.withLock { kept in
             var file = kept ?? .fresh
             file.apply(prefs)
             kept = file
-            return file
+            try write(file)
         }
-        try write(file)
     }
 
     private func write(_ file: PrefsFile) throws {

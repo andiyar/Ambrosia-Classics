@@ -47,6 +47,16 @@ final class PrefsStoreTests: XCTestCase {
         let loaded = try PrefsStore(folder: folder).load()
         XCTAssertEqual(loaded.highScoreNames, DeimosPrefs.fresh.highScoreNames)
         XCTAssertEqual(try onDisk(), short)
+
+        // A file that exists but cannot be read (no read permission): the original's open fails (L 10048a00) and
+        // leaves it — fresh prefs in memory, the file NOT written over.
+        let kept = [UInt8](repeating: 0x66, count: 64)
+        try putOnDisk(kept)
+        try FileManager.default.setAttributes([.posixPermissions: 0o200], ofItemAtPath: fileURL.path)
+        defer { try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: fileURL.path) }
+        XCTAssertEqual(try PrefsStore(folder: folder).load(), DeimosPrefs.fresh)
+        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: fileURL.path)
+        XCTAssertEqual(try onDisk(), kept)
     }
 
     func testStoreRoundTripOnDisk() throws {

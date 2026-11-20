@@ -1,4 +1,5 @@
 import XCTest
+import HectorResources
 @testable import DeimosCore
 
 /// The settings file (Phase 4 S4 PF; grounding C §1a/§1b, §6a item 3): the 0x34f0-byte record as the original reads
@@ -74,6 +75,7 @@ final class PrefsFileTests: XCTestCase {
         poked[0x10f8 + 6] = 0x33                                   // after "Mars"'s NUL (raw both ways)
         poked[0x1233 + 10] = 0x44                                  // after "Player 1"'s NUL
         putBE(0x1234_5678, &poked, 0x129c + 4 * 7)                 // a dead int
+        putBE(0x0001_007E, &poked, 0x14b8)                         // P1 key 0 with high bits: reads as 0x7E
         let pokedRead = try XCTUnwrap(PrefsFile(fileBytes: poked))
         XCTAssertEqual(pokedRead.fileBytes, poked)
         var pokedPrefs = DeimosPrefs.fresh
@@ -104,6 +106,25 @@ final class PrefsFileTests: XCTestCase {
         }
         XCTAssertEqual(be(out, 0x78), 0xDEAD_BEEF)
         XCTAssertEqual(be(out, 0x129c + 4 * 7), 0x1234_5678)
+        XCTAssertEqual(be(out, 0x14b8), 0x0001_007E)               // an unchanged key keeps its high bits
+        XCTAssertEqual(be(same.fileBytes, 0x14b8), 0x0001_007E)
+
+        // A changed name is cut to its field less the NUL: 20 characters (31 for a sector name), the rest zero.
+        var long = pokedRead
+        var longPrefs = long.prefs
+        longPrefs.highScoreNames[4] = String(repeating: "Z", count: 25)
+        longPrefs.highScoreSectorNames[0] = String(repeating: "S", count: 40)
+        long.apply(longPrefs)
+        XCTAssertEqual(Array(long.image[0x10f8 + 84..<0x10f8 + 105]), [UInt8](repeating: 0x5A, count: 20) + [0])
+        XCTAssertEqual(Array(long.image[0x12d8..<0x12f8]), [UInt8](repeating: 0x53, count: 31) + [0])
+        XCTAssertEqual(long.prefs.highScoreNames[4], String(repeating: "Z", count: 20))
+        XCTAssertEqual(long.prefs.highScoreNames[5], "Sam")       // the next field untouched
+        // A name the Mac Roman encoder refuses whole (Foundation's composed-plus-mark quirk) is written character by
+        // character, an unrepresentable character as one '?' — the same rule as the lossy encoder's.
+        XCTAssertNil(MacRoman.encode("Abe\u{301}\u{301}", lossy: true))
+        longPrefs.highScoreNames[6] = "Abe\u{301}\u{301}"
+        long.apply(longPrefs)
+        XCTAssertEqual(Array(long.image[0x10f8 + 126..<0x10f8 + 130]), [0x41, 0x62, 0x3F, 0x00])
         XCTAssertEqual(try XCTUnwrap(PrefsFile(fileBytes: out)).prefs, prefs)
     }
 
@@ -153,18 +174,19 @@ final class PrefsFileTests: XCTestCase {
         XCTAssertEqual(try XCTUnwrap(PrefsFile(fileBytes: out)).prefs.highScoreNames[1], "A")
 
         // strlen is C's: a name with no NUL in its 21 bytes runs on into the next field. On disk name 2 = 21
-        // scrambled 'x' (no NUL), name 3 = scrambled "El B" + NUL. Reading: pass 2's strlen is 25, so it unscrambles
-        // the x's AND "El B"; pass 3's strlen("El B") = 4 scrambles "El B" again — in memory name 3 stays scrambled.
+        // scrambled 'q' (no NUL; 'q' 0x71 scrambles to 0xE8 — 'x' would scramble to itself), name 3 = scrambled
+        // "El B" + NUL. Reading: pass 2's strlen is 25, so it unscrambles the q's AND "El B"; pass 3's strlen("El B") = 4 scrambles "El B" again — in memory name 3 stays scrambled.
         // Writing runs the same two passes and restores the disk bytes exactly.
         var spill = PrefsFile.fresh.fileBytes
         let n2 = 0x10f8 + 42, n3 = 0x10f8 + 63
-        for i in 0..<21 { spill[n2 + i] = scrambled(0x78) }
+        for i in 0..<21 { spill[n2 + i] = scrambled(0x71) }
         let elB = ascii("El B").map(scrambled)
         XCTAssertEqual(Array(spill[n3..<n3 + 5]), elB + [0])       // the fresh file already holds it there
+        XCTAssertEqual(scrambled(0x71), 0xE8)
         let spillRead = try XCTUnwrap(PrefsFile(fileBytes: spill))
-        XCTAssertEqual(Array(spillRead.image[n2..<n3]), [UInt8](repeating: 0x78, count: 21))
+        XCTAssertEqual(Array(spillRead.image[n2..<n3]), [UInt8](repeating: 0x71, count: 21))
         XCTAssertEqual(Array(spillRead.image[n3..<n3 + 5]), elB + [0])
-        XCTAssertEqual(spillRead.prefs.highScoreNames[2], String(repeating: "x", count: 21))   // field-capped view
+        XCTAssertEqual(spillRead.prefs.highScoreNames[2], String(repeating: "q", count: 21))   // field-capped view
         XCTAssertEqual(spillRead.fileBytes, spill)
     }
 
