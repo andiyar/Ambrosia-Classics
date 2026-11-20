@@ -180,17 +180,22 @@ final class DeimosSessionTests: XCTestCase {
         XCTAssertFalse(after.ticked)
     }
 
-    /// The cursor: the front end hides it just before the game (`FUN_100234d0` step 2, `10023550 bl FUN_1000b6e0`
-    /// → `HideCursor`); `FUN_100051a0` itself never touches it. The session's first pass carries `.hideCursor`; no
-    /// later pass carries a request — not even the Esc pass (the front end's `InitCursor` after the game,
-    /// `100238b4` / `10023ad0`, belongs to the menu, which Phase 1 replaces with an immediate new session).
+    /// The cursor (Phase 4 S1b, grounding D S17): the front end hides it just before the game (`FUN_100234d0` step 2,
+    /// `10023550 bl FUN_1000b6e0` → `HideCursor`); `FUN_100051a0` itself never touches it, so no session pass carries
+    /// a request. The front end's pass that starts a game carries `.hideCursor` — here the direct start's — and no
+    /// later pass of that game does, not even the Esc pass; the direct start's next game hides it again (it shows
+    /// nothing between: the `InitCursor` after a game, `100238b4` / `10023ad0`, is start/return's on the way back to
+    /// a menu).
     func testCursorHiddenAtSessionStart() throws {
         var s = try session()
-        XCTAssertEqual(s.pass(keys: HeldKeys()).requests, [.hideCursor])
-        for _ in 0..<10 { XCTAssertEqual(s.pass(keys: HeldKeys()).requests, []) }
-        let end = s.pass(keys: HeldKeys(held: [0x35]))
+        for _ in 0..<11 { XCTAssertEqual(s.pass(keys: HeldKeys()).requests, [], "the session never touches the cursor") }
+        var fe = try FrontEnd(direct: SessionStart(sector: 1, players: 1, film: nil), assets: assets(), prefs: .fresh)
+        XCTAssertEqual(fe.pass(keys: HeldKeys(), ticks: 0x469c2).requests, [.hideCursor])
+        for _ in 0..<10 { XCTAssertEqual(fe.pass(keys: HeldKeys(), ticks: 0x469c2).requests, []) }
+        let end = fe.pass(keys: HeldKeys(held: [0x35]), ticks: 0x469c2)
         XCTAssertTrue(end.sessionEnded)
         XCTAssertEqual(end.requests, [])
+        XCTAssertEqual(fe.pass(keys: HeldKeys(), ticks: 0x469c4).requests, [.hideCursor], "the next game's first pass")
     }
 
     /// Same seed + key script → identical outputs; another seed changes the outputs by the first spawn after the

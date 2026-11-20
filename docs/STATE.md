@@ -160,7 +160,12 @@ Settled history lives in docs/STATE-history.md.
   front end (mouse, key and menu events in; waits, a session result, new shell requests and two draw steps out) and the
   shared element list with its fades is built; nothing a player would notice yet. `Deimos/Core` is now **385 / 0 / 0**
   (one above the plan's 384: a draw-once test; the phase now ends at 478); replay 4 / 0 unchanged. The element fades
-  follow the OS X build (16 passes). **Next: S1b**, the front end's frame.
+  follow the OS X build (16 passes).
+  **S1b closed 2026-11-20** (`docs/handoff-deimos-phase4-s1b.md`): the game now runs inside a new front end with an
+  empty placeholder for every screen (boot, menu, level select, scores, name entry, credits, films, the two settings
+  windows); the app behaves exactly as before. `Deimos/Core` is **392 / 0 / 0**; replay 4 / 0 and the campaign sweep
+  3 / 0 unchanged; Debug and Release build. Each screen's entry is frozen and listed in the handoff.
+  **Next: S2 (menu, credits) and S4 (settings file, scores, name entry)**, started by the Coordinator.
 - **Data:** `Resources/Deimos/` in git; `deimos-census` 872 entries, 0 failures.
 - **Open:** RE bank `docs/deimos/INDEX.md` #13, #59 residue, #63 and 134 cross-file label mismatches (#64 closed 2026-11-20); Ben's
   ear/eye items (on the gate card). Not modelled until Phase 4: the mouse button ending a film; the quit flag

@@ -11,7 +11,8 @@ public struct FrameController: Equatable, Sendable {
     public var paused = false
     /// +0x01 film playback (no pause allowed).
     public var filmPlayback = false
-    /// +0x02 quit chosen on the pause screen — always false in 1.0.6 (timing-frame §1 ⚑ C9).
+    /// +0x02 quit chosen on the pause screen: set when the pause's wait lets go on the quit flag (X 10030cb8;
+    /// `DeimosSession.quitDuringPause`, Phase 4 S1b) — never otherwise (timing-frame §1 ⚑ C9).
     public var quitChosen = false
     /// +0x03 auto-interlace allowed.
     public var autoInterlaceAllowed = false
