@@ -773,7 +773,7 @@ final class MainMenuTests: XCTestCase {
 
     // MARK: - The erase question
 
-    /// The SCORES button clicked with Option (key 0x3A) down (`front-end.md` §2.7 row 4; L `10022d8c..` dump
+    /// The SCORES button clicked with Option (key 0x3A) down (`front-end.md` §2.7 row 4; L `10022d9c..` dump
     /// `FUN_100229a0` case 4: `FUN_10049150(0x3a)` → `FUN_10023da0`, `FUN_100498e0(inte 24–27)`, Erase →
     /// `FUN_10004ae0`, `FUN_10023e10`, then `FUN_10024e70`). The release pass: the clock restarts, the suspend handler
     /// (b7 set, the music paused), the question put to the shell and its wait — no screen called yet. The pass after
@@ -848,5 +848,14 @@ final class MainMenuTests: XCTestCase {
         XCTAssertFalse(step.output.requests.contains { if case .ask = $0 { true } else { false } })
         XCTAssertEqual(step.output.music, [])
         XCTAssertFalse(s.suspended)
+
+        // The right-hand Option key (0x3D) is not the key the click path tests (`FUN_10049150(0x3a)`): no question.
+        var (rightMenu, r, _) = try entered(a)
+        let right = rightMenu.pass(keys: HeldKeys(held: [0x3d], mouse: scores, mouseDowns: [scores]), ticks: 1_001,
+                                   returned: nil, state: &r)
+        XCTAssertEqual(right.callee, .scores, "a click with the right Option key")
+        XCTAssertFalse(right.output.requests.contains { if case .ask = $0 { true } else { false } }, "right Option")
+        XCTAssertEqual(right.output.music, [], "right Option: no suspend")
+        XCTAssertFalse(r.suspended, "right Option")
     }
 }

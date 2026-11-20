@@ -373,7 +373,8 @@ final class FrontEndSkeletonTests: XCTestCase {
     /// quit flag's setters are reached only from the menu loop's event pump, and no pump runs in play; Ben
     /// 2026-11-20): the quit flag stays clear, nothing is held, the game is not handed it and plays on; its end
     /// returns to the menu, which stays up. The same during the boot (the loading lines' X pump acts on suspend and
-    /// resume only, D17; the menu's entry clears b8, X `10022be8`). The pause's wait is the host's
+    /// resume only, D17): the Quit is dropped there, and that drop is what keeps the menu up — the menu's entry does
+    /// not clear b8 (it keeps it, `MainMenu`). The pause's wait is the host's
     /// (`DriverTests.testQuitInsideCapsLockWait`). Bound: 1,000 passes per wait; 30 menu passes.
     func testQuitChosenIgnoredInGame() throws {
         let a = try assets()

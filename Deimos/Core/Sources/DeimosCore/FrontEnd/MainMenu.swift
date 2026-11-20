@@ -289,8 +289,7 @@ public struct MainMenu: Sendable {
             return .stay(out)
         case .shell(.quitRequested):                                    // code 8: resume if suspended; b8 (the frame)
             if state.suspended {
-                // Known limit (S8a): the driver's own suspended flag stays set, so its next suspend() is skipped and
-                // its next resume() resumes the music once more.
+                // One byte: the driver's own suspended flag follows this clear after the pass (S8a).
                 state.suspended = false
                 lastSuspended = false                                   // the edge: this resume is done here
                 resumeWork(state: &state, &out)
@@ -366,7 +365,7 @@ public struct MainMenu: Sendable {
     }
 
     /// The button actions (`front-end.md` §2.7). `option`: key 0x3A down when a click's tracking ended (only the
-    /// click path tests it, `10022d8c` `FUN_10049150(0x3a)`).
+    /// click path tests it, `10022d9c` `FUN_10049150(0x3a)`).
     private mutating func action(_ id: Int, fromKey: Bool, option: Bool = false, state: inout FrontEndState,
                                  _ out: inout PassOutput) -> ScreenStep<Result> {
         let done: After = fromKey ? .key : .click
@@ -394,7 +393,7 @@ public struct MainMenu: Sendable {
         return call(.scores(Scores()), after: .scores(key: fromKey), &out)
     }
 
-    /// SCORES clicked with Option down (`10022d8c..10022dc4`): the suspend handler `FUN_10023da0` — when b7 is clear:
+    /// SCORES clicked with Option down (`10022d9c..10022dc4`): the suspend handler `FUN_10023da0` — when b7 is clear:
     /// b7 = 1 and the music paused (`FUN_10048220(1)`; the display's suspend is the shell's, around its alert) — then
     /// the question (`FUN_100498e0(inte 24, 25, 26, 27)`, `HighScoreTable.eraseQuestion`) and its wait. The rest runs
     /// on the pass the answer arrives (`answered`).

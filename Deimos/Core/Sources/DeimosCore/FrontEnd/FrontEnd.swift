@@ -505,9 +505,11 @@ public struct FrontEnd: Sendable {
     /// The pause screen's wait let go on the quit flag (grounding B §5 `10022f8c`, `10022fa8`; X `10023374`, the
     /// paused-frame hook `10030cb8`): the flag is set (a Quit request the host found queued during the wait sets it
     /// here, as X's pump inside the pause does) and the game's frame controller is told, so its next pass ends it.
+    /// The request taken is either the one held here (`quitRequestPending`, cleared) or one still in the host's queue,
+    /// which the host drops as it lets the wait go (`DeimosDriver`), so it never reaches a later pass.
     public mutating func quitDuringPause() {
         state.quit = true
-        quitRequestPending = false                                    // the held request is the one taken here
+        quitRequestPending = false                                    // a held request is taken here
         state.game?.session.quitDuringPause()
     }
 

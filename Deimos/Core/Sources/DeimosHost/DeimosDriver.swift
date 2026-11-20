@@ -88,8 +88,9 @@ public struct DriverOutput: Equatable, Sendable {
 ///   `10022fb4`), and `FrontEnd.quitDuringPause` sets the flag and the frame controller's +2 (X `10030cb8`): the next
 ///   pass's begin frame reports quit and the game ends. A queued Quit that finds the app suspended runs the resume
 ///   handler first (`osx-build.md` D10: X `10023374`, resume if suspended, then the flag) — `resume()`: not
-///   suspended any more, and no music resume, since the pause holds the music. The present and the pause flag's
-///   clear run as on a normal exit (`10022fc0..10023010`).
+///   suspended any more, and no music resume, since the pause holds the music. The queued request is taken off the
+///   queue there (the pause's pump consumed it), so the next pass does not hand it on to be held again. The present
+///   and the pause flag's clear run as on a normal exit (`10022fc0..10023010`).
 /// - **`.hostWait(wait)`** (Phase 4, plan S1a; `HostWait`) — held like a fade: t0 = `TickCount` of the `idle` that
 ///   reaches it; the op stream stays there, and no pass begins, until the wait is over — `.ticks(n)`: `TickCount ≥
 ///   t0 + n` (unsigned, wrapping); `.voiceEnd(id)`: `audio?.isPlaying(id)` false (`FUN_100476e0`; no sink = no mixer =
@@ -236,8 +237,11 @@ public struct DeimosDriver {
     /// (`FUN_10048220(1)`). [Its window and cursor calls are the app's.] The original has one suspended byte: the
     /// front end's shared state (`FrontEndState.suspended`) is kept in step with the driver's here and in `resume()`,
     /// so the screens can trust it whichever way the suspension arrives (the call, its shell event, or the resume
-    /// a Quit runs inside the pause's wait).
+    /// a Quit runs inside the pause's wait). The original's one byte: a shared flag already set while the driver's is
+    /// clear is a suspension the front end ran itself (the menu's erase question, `FUN_10023da0` before the alert) —
+    /// the byte is set, so the handler does nothing (`10023db4..10023dbc`), and the music it paused stays paused.
     public mutating func suspend() {
+        if frontEnd.state.suspended && !suspended { return }                         // 10023db4..10023dbc: b7 set
         frontEnd.state.suspended = true                                              // the one flag, shared
         guard !suspended else { return }                                             // 10023db4..10023dbc
         suspended = true                                                             // 10023dc0..10023dc4
@@ -245,10 +249,11 @@ public struct DeimosDriver {
     }
 
     /// The app's resume handler (`10023e10`): suspended = 0 (`10023e34`); the music resume (`FUN_10048220(0)`) unless
-    /// a pause holds the music (r2−0x617b, `10023e7c..10023e8c`).
+    /// a pause holds the music (r2−0x617b, `10023e7c..10023e8c`). A resume with the driver's own flag clear does
+    /// nothing — not even the shared flag, which a suspension the front end ran itself still holds (`suspend()`).
     public mutating func resume() {
-        frontEnd.state.suspended = false                                             // the one flag, shared
         guard suspended else { return }
+        frontEnd.state.suspended = false                                             // the one flag, shared
         suspended = false                                                            // 10023e34
         if !pauseHoldsMusic {                                                        // 10023e7c..10023e84
             audio?.apply(sounds: [], music: [.resume], haltEffectsAt: nil)           // 10023e88..10023e8c
@@ -347,6 +352,7 @@ public struct DeimosDriver {
                     let quitQueued = frontEnd.quitRequestPending || shellEventQueue.contains(where: Self.isQuit)
                     if frontEnd.state.quit || quitQueued {                    // 10022f8c b8; X 10023214
                         if quitQueued && suspended { resume() }               // D10: X 10023374 resumes first
+                        shellEventQueue.removeAll(where: Self.isQuit)         // the pause's pump took it
                         waitReleased = true
                         musicAfterWait = []                                   // 10022fb0: no resume (10022fb4)
                         frontEnd.quitDuringPause()                            // b8; X 10030cb8 the controller's +2
@@ -408,6 +414,9 @@ public struct DeimosDriver {
         shellEventQueue = []
         lastPassKeys = sampled
         let pass = frontEnd.pass(keys: sampled, ticks: ticks)
+        if suspended && !frontEnd.state.suspended {                   // the front end ran the resume (the menu's Quit
+            suspended = false                                         // while suspended, code 8): one byte, so the
+        }                                                             // driver's own flag follows it
         if frontEnd.state.gamesStarted != gamesSeen {                 // a new game: a fresh frame controller
             gamesSeen = frontEnd.state.gamesStarted
             lastPresent = 0                                           // FUN_10030190 zeroes +0x1c
