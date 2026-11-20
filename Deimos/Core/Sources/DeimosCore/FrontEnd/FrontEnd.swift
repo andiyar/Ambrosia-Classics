@@ -78,8 +78,9 @@ public struct FrontEndState: Sendable {
     /// b6: the menu restarts or resumes its music on its next pass (A §2.2, B §1b step 12).
     public var menuMusic = false
     /// b8 (`DAT_100e01b8`, r2−0x6178): quit chosen (Q, File ▸ Quit, a Quit request). Set by the front end itself
-    /// when `ShellEvent.quitChosen` / `.quitRequested` reaches a pass (and by the pause's quit, `FrontEnd
-    /// .quitDuringPause`); never cleared by the frame (the menu clears it after its QUIT flash, `10022ad4`).
+    /// when `ShellEvent.quitChosen` / `.quitRequested` reaches the menu or the level select, or a held request
+    /// reaches the menu (`FrontEnd.shellEvents`), and by the pause's quit (`FrontEnd.quitDuringPause`); never cleared
+    /// by the frame (the menu clears it after its QUIT flash, `10022ad4`).
     public var quit = false
     /// b9: leave the main menu (A §2.3).
     public var leave = false
@@ -98,6 +99,10 @@ public struct FrontEndState: Sendable {
     /// holds only the data files). Empty by default; a screen that needs a resource reads it from here and parses
     /// it itself.
     public let shellResources: [ShellResourceKey: [UInt8]]
+    /// This is the first launch: no settings file existed when the app started (Ben 2026-11-20; the host reads it from
+    /// its settings store, `PrefsStore.fileExisted`). It stands in for the original's missing units cache
+    /// (`FUN_1003cf10` → `FUN_100420f0`): only a first launch lists the unit names on the loading screen (`Boot`).
+    public let firstLaunch: Bool
     /// The last recorded film's bytes (the Last Film image, B §4a), empty until a game records one (S5). Written by
     /// the front end on the pass that ends a non-film game with a recording (plan ruling 7: saved at the end of every
     /// non-film game — that pass also carries `ShellRequest.saveLastFilm` — and replayed from here within one run).
@@ -131,13 +136,15 @@ public struct FrontEndState: Sendable {
     public var registeredName: String { Self.registeredName }
 
     public init(assets: DeimosAssets, prefs: DeimosPrefs, launch: LaunchModifiers = LaunchModifiers(),
-                soundAvailable: Bool = true, shellResources: [ShellResourceKey: [UInt8]] = [:]) throws {
+                soundAvailable: Bool = true, shellResources: [ShellResourceKey: [UInt8]] = [:],
+                firstLaunch: Bool = true) throws {
         self.assets = assets
         text = try TextLayout(assets: assets)
         self.prefs = prefs
         self.launch = launch
         self.soundAvailable = soundAvailable
         self.shellResources = shellResources
+        self.firstLaunch = firstLaunch
     }
 
     /// A game is in progress (started and not yet ended).
@@ -402,8 +409,9 @@ public struct ScreenStep<Value> {
 ///   lands (S2), and the tests keep it for good (G12). Today the app's `-film` runs on the direct start too (the film
 ///   as the start, a new run of it each time it ends); S8a changes that (ruling 10): `-film` then takes the boot
 ///   entry, plays the film after the boot and returns to the menu, as a demo does.
-/// - **One pass.** Shell events are read first: Quit chosen or requested sets the quit flag (it does not end a game
-///   in play), suspend / resume set `suspended`. Then the top screen runs. A step that calls or returns runs on into
+/// - **One pass.** Shell events are read first (`shellEvents`): at the menu or the level select a Quit chosen or
+///   requested sets the quit flag; elsewhere a Quit chosen is dropped and a Quit requested is held for the menu (a
+///   Quit never ends a game in play); suspend / resume set `suspended`. Then the top screen runs. A step that calls or returns runs on into
 ///   the next screen in the same pass as long as it drew nothing (no ops) and did not end a game, merging the
 ///   outputs in order, up to `maxChainedSteps` (a screen loop traps, G11). The queued input (typed characters, key
 ///   events, mouse-downs, shell events) goes to the pass's first step only — a chained step sees the held state.
@@ -434,12 +442,13 @@ public struct FrontEnd: Sendable {
     private let menuFilm: Film?
 
     /// The boot entry: boot (`FUN_100000e0`), then the main menu, with `film` played as soon as the menu is up, as a
-    /// demo is (ruling 10's `-film`). `shellResources`: the app's own resource-fork data (`FrontEndState`).
+    /// demo is (ruling 10's `-film`). `shellResources`: the app's own resource-fork data; `firstLaunch`: no settings
+    /// file existed at launch (`FrontEndState`).
     public init(assets: DeimosAssets, prefs: DeimosPrefs, launch: LaunchModifiers = LaunchModifiers(),
                 soundAvailable: Bool = true, film: Film? = nil,
-                shellResources: [ShellResourceKey: [UInt8]] = [:]) throws {
+                shellResources: [ShellResourceKey: [UInt8]] = [:], firstLaunch: Bool = true) throws {
         state = try FrontEndState(assets: assets, prefs: prefs, launch: launch, soundAvailable: soundAvailable,
-                                  shellResources: shellResources)
+                                  shellResources: shellResources, firstLaunch: firstLaunch)
         directStart = nil
         root = .boot
         stack = [.boot(Boot())]
@@ -449,9 +458,10 @@ public struct FrontEnd: Sendable {
     /// The direct start (ruling 10): `start`'s game — validated here, built at the first pass with its TickCount —
     /// and a new one at `start` each time one ends.
     public init(direct start: SessionStart, assets: DeimosAssets, prefs: DeimosPrefs,
-                soundAvailable: Bool = true, shellResources: [ShellResourceKey: [UInt8]] = [:]) throws {
+                soundAvailable: Bool = true, shellResources: [ShellResourceKey: [UInt8]] = [:],
+                firstLaunch: Bool = true) throws {
         state = try FrontEndState(assets: assets, prefs: prefs, soundAvailable: soundAvailable,
-                                  shellResources: shellResources)
+                                  shellResources: shellResources, firstLaunch: firstLaunch)
         try state.startProvisionalGame(start)
         directStart = start
         root = .direct
@@ -464,6 +474,17 @@ public struct FrontEnd: Sendable {
 
     /// The shell has been asked to quit; every later pass is empty.
     public var isFinished: Bool { root == .finished }
+
+    /// The level select is the screen on top and its own pause is up (its frame controller's Caps Lock pause) —
+    /// read-only, for the shell's gamepad context (Phase 4 S8a; `DeimosPadLayout`, the S7 handoff).
+    public var levelSelectPaused: Bool {
+        guard case let .levelSelect(s)? = stack.last else { return false }
+        return s.controller.paused
+    }
+
+    /// A system Quit request (`ShellEvent.quitRequested`) is held for the menu: it reached a screen whose original
+    /// loop reads no Apple event (see `pass`). The pause's wait lets go on it as on a queued one (`DeimosDriver`).
+    public private(set) var quitRequestPending = false
 
     /// The current game's session (or the last game's, once it has ended, until the next replaces it); nil before
     /// the first game. Set: tests poke the running game (standing rule 7).
@@ -491,21 +512,18 @@ public struct FrontEnd: Sendable {
     /// The pause screen's wait let go on the quit flag (grounding B §5 `10022f8c`, `10022fa8`; X `10023374`, the
     /// paused-frame hook `10030cb8`): the flag is set (a Quit request the host found queued during the wait sets it
     /// here, as X's pump inside the pause does) and the game's frame controller is told, so its next pass ends it.
+    /// The request taken is either the one held here (`quitRequestPending`, cleared) or one still in the host's queue,
+    /// which the host drops as it lets the wait go (`DeimosDriver`), so it never reaches a later pass.
     public mutating func quitDuringPause() {
         state.quit = true
+        quitRequestPending = false                                    // a held request is taken here
         state.game?.session.quitDuringPause()
     }
 
     /// One pass of the front end (see the type's comment).
     public mutating func pass(keys: HeldKeys, ticks: UInt32) -> PassOutput {
-        for event in keys.events {
-            switch event {
-            case .quitChosen, .quitRequested: state.quit = true
-            case .suspend: state.suspended = true
-            case .resume: state.suspended = false
-            case .aboutChosen, .answer: break
-            }
-        }
+        var keys = keys
+        keys.events = shellEvents(keys.events)
         var out = PassOutput()
         var stepKeys = keys
         for _ in 0..<Self.maxChainedSteps {
@@ -544,11 +562,57 @@ public struct FrontEnd: Sendable {
         preconditionFailure("FrontEnd.pass: \(Self.maxChainedSteps) screen steps chained without drawing — a loop")
     }
 
+    /// The shell's events, read before any step (grounding B §5, `osx-build.md` D10, D17, D24; Phase 4 S8a CR, Ben
+    /// 2026-11-20): what the pass's first step is handed. The quit flag b8 is set only where the original runs an
+    /// event pump that reaches it — the main menu (`FUN_10048f30`, X `1004a270`) and the level select (X `1002ec5c` →
+    /// X `10023300`, whose Quit case sets b8, X `10023374`; the level select never reads it, so it acts when the menu
+    /// is back or at the next pause). In X the menu-bar or ⌘Q Quit is the application menu's Quit, a Quit Apple
+    /// event, so both events act the same there. Everywhere else — the boot, a game or a film, the pause, name entry,
+    /// the scores, the credits, the two settings windows:
+    /// - `.quitChosen` is dropped (no pump turns the keystroke into a command: in play nothing reads events, the
+    ///   settings windows run `ModalDialog` with no filter, the screens' reader `FUN_10048c90` takes keys raw);
+    /// - `.quitRequested` is held (`quitRequestPending`) and handed to the menu as its own event on the first pass
+    ///   the menu (or the direct start's loop, its stand-in) is the top screen — the Apple event left queued, since
+    ///   `FlushEvents` leaves high-level events — so the menu's pump resumes a suspended app first, then sets b8.
+    /// Suspend and resume set `suspended` wherever they arrive.
+    private mutating func shellEvents(_ events: [ShellEvent]) -> [ShellEvent] {
+        let top = stack.last?.kind
+        let pumps = top == .mainMenu || top == .levelSelect
+        var handed: [ShellEvent] = []
+        if pumps && quitRequestPending {
+            quitRequestPending = false
+            state.quit = true
+            handed.append(.quitRequested)
+        }
+        for event in events {
+            switch event {
+            case .quitChosen:
+                guard pumps else { continue }
+                state.quit = true
+            case .quitRequested:
+                guard pumps else {
+                    quitRequestPending = true
+                    continue
+                }
+                state.quit = true
+            case .suspend: state.suspended = true
+            case .resume: state.suspended = false
+            case .aboutChosen, .answer: break
+            }
+            handed.append(event)
+        }
+        return handed
+    }
+
     /// The bottom of the stack (`FUN_100000a0` for the boot entry; the direct start's loop).
     private mutating func rootStep() -> (PassOutput, stop: Bool) {
         pending = nil
         switch root {
         case .direct:
+            if quitRequestPending {                                   // the menu's stand-in takes a held request
+                quitRequestPending = false
+                state.quit = true
+            }
             if state.quit {
                 root = .finished
                 return (PassOutput(requests: [.quit]), true)

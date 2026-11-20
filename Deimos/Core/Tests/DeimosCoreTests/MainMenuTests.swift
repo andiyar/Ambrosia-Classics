@@ -770,4 +770,92 @@ final class MainMenuTests: XCTestCase {
             }
         }
     }
+
+    // MARK: - The erase question
+
+    /// The SCORES button clicked with Option (key 0x3A) down (`front-end.md` §2.7 row 4; L `10022d9c..` dump
+    /// `FUN_100229a0` case 4: `FUN_10049150(0x3a)` → `FUN_10023da0`, `FUN_100498e0(inte 24–27)`, Erase →
+    /// `FUN_10004ae0`, `FUN_10023e10`, then `FUN_10024e70`). The release pass: the clock restarts, the suspend handler
+    /// (b7 set, the music paused), the question put to the shell and its wait — no screen called yet. The pass after
+    /// the answer: the erase applied (Erase = the first button: the default table and both player names; Cancel:
+    /// nothing), the resume handler (b7 clear, the cursor, b6, the music resumed: b5 is clear at the menu), then the
+    /// SCORES action as a plain click runs it (present, the element fade-out, the scores screen). Bound: 2 answers.
+    func testScoresClickWithOptionAsksErase() throws {
+        let a = try assets()
+        let scores = Self.button(4)
+        let question = HighScoreTable.eraseQuestion(a)
+        XCTAssertEqual(question.firstButton, "Erase")
+        for answer in [QuestionButton.first, .second] {
+            var (menu, s, _) = try entered(a)
+            s.prefs.highScores[0] = 999_999
+            s.prefs.highScoreNames[0] = "Ben"
+            s.prefs.playerNames[0] = "Ann"
+            let before = s.prefs
+            let label = "\(answer)"
+
+            let ask = menu.pass(keys: HeldKeys(held: [0x3a], mouse: scores, mouseDowns: [scores]), ticks: 1_001,
+                                returned: nil, state: &s)
+            XCTAssertNil(ask.callee, "\(label): the scores screen waits for the answer")
+            XCTAssertEqual(ask.output.sounds, [Self.mbro(a), Self.incl(a)], "\(label): the rollover, then the click")
+            XCTAssertEqual(ask.output.requests, [.ask(question)], label)
+            XCTAssertEqual(ask.output.ops.last, .hostWait(.answer), "\(label): the question's wait ends the pass")
+            XCTAssertEqual(ask.output.music, [.pause], "\(label): FUN_10023da0 pauses the music")
+            XCTAssertTrue(s.suspended, "\(label): b7 set")
+            XCTAssertEqual(s.copyrightClock, 1_001, "\(label): the clock restarts before the action (10022d50)")
+            XCTAssertEqual(s.prefs, before, "\(label): nothing erased before the answer")
+
+            let rate = ElementList.fadeRate(floats: a.floats)
+            let fadeOut = [RenderOp.present(.fullScreen)] + s.menuElements.fadeOut(rate: rate, text: s.text, assets: a)
+            let open = menu.pass(keys: HeldKeys(events: [.answer(answer)]), ticks: 1_100, returned: nil, state: &s)
+            XCTAssertEqual(open.callee, .scores, "\(label): then the SCORES action")
+            XCTAssertEqual(open.output.ops, fadeOut, "\(label): FUN_10024e70's present and fade-out")
+            XCTAssertEqual(open.output.requests, [.showCursor], "\(label): FUN_10023e10's cursor")
+            XCTAssertEqual(open.output.music, [.resume], "\(label): FUN_10048220(0)")
+            XCTAssertFalse(s.suspended, "\(label): b7 clear")
+            XCTAssertTrue(s.menuMusic, "\(label): b6")
+            XCTAssertEqual(s.prefs, answer == .first ? HighScoreTable.erase(before) : before, label)
+            if answer == .first {
+                XCTAssertEqual(s.prefs.playerNames, DeimosPrefs.fresh.playerNames, "the player names reset")
+                XCTAssertEqual(s.prefs.highScores, DeimosPrefs.fresh.highScores)
+            }
+
+            // The scores screen returns: the wrapper's tail, as after a plain click.
+            let back = menu.pass(keys: HeldKeys(), ticks: 1_200, returned: .scores(.leave), state: &s)
+            XCTAssertNil(back.callee, label)
+            XCTAssertEqual(tickWaits(back.output.ops, 1), 15, "\(label): the tail's fade-in")
+        }
+    }
+
+    /// The erase question is the mouse path's alone (`front-end.md` §2.7: the `H` / `S` keys open the scores with no
+    /// Option test, `FUN_10023b00` → `FUN_10024e70`): `H`, `h`, `S` and `s` typed with Option held, and a SCORES click
+    /// without Option, open the scores screen at once and never ask.
+    func testScoresKeyWithOptionDoesNotAsk() throws {
+        let a = try assets()
+        for c: UInt8 in [0x48, 0x68, 0x53, 0x73] {
+            var (menu, s, _) = try entered(a)
+            let step = menu.pass(keys: HeldKeys(held: [0x3a], keyEvents: [KeyEvent(charCode: c, keyCode: 0)]),
+                                 ticks: 1_001, returned: nil, state: &s)
+            XCTAssertEqual(step.callee, .scores, "key \(c)")
+            XCTAssertFalse(step.output.requests.contains { if case .ask = $0 { true } else { false } }, "key \(c)")
+            XCTAssertFalse(step.output.ops.contains(.hostWait(.answer)), "key \(c)")
+            XCTAssertEqual(step.output.music, [], "key \(c): no suspend")
+            XCTAssertFalse(s.suspended, "key \(c)")
+        }
+        var (menu, s, _) = try entered(a)
+        let scores = Self.button(4)
+        let step = menu.pass(keys: HeldKeys(mouse: scores, mouseDowns: [scores]), ticks: 1_001, returned: nil, state: &s)
+        XCTAssertEqual(step.callee, .scores, "a click without Option")
+        XCTAssertFalse(step.output.requests.contains { if case .ask = $0 { true } else { false } })
+        XCTAssertEqual(step.output.music, [])
+        XCTAssertFalse(s.suspended)
+
+        // The right-hand Option key (0x3D) is not the key the click path tests (`FUN_10049150(0x3a)`): no question.
+        var (rightMenu, r, _) = try entered(a)
+        let right = rightMenu.pass(keys: HeldKeys(held: [0x3d], mouse: scores, mouseDowns: [scores]), ticks: 1_001,
+                                   returned: nil, state: &r)
+        XCTAssertEqual(right.callee, .scores, "a click with the right Option key")
+        XCTAssertFalse(right.output.requests.contains { if case .ask = $0 { true } else { false } }, "right Option")
+        XCTAssertEqual(right.output.music, [], "right Option: no suspend")
+        XCTAssertFalse(r.suspended, "right Option")
+    }
 }

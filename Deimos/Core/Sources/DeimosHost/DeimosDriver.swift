@@ -57,7 +57,9 @@ public struct DriverOutput: Equatable, Sendable {
 /// - **Cursor** — the front end's pass that starts a game carries `.hideCursor`, a return to a menu `.showCursor`;
 ///   `requests` passes them on, with every other shell request (`.quit` included).
 /// - **Stores** — a pass's `ShellRequest.saveLastFilm(bytes)` also goes to the Last Film store; `shutdown()` hands
-///   the live prefs to the settings store.
+///   the live prefs to the settings store, and a pass that carries `ShellRequest.quit` runs it as it begins (the
+///   shutdown `FUN_10000630` → `FUN_100045f0` writes the prefs before the app ends, question 4: every quit saves), so
+///   the app only has to terminate.
 /// - **Keys** (H2) — a pass's `typed` characters are every key-down handed to `idle` since the previous pass began
 ///   (the OS event queue `GetOSEvent` drains), in order; a game end flushes them, and so does the pause screen as
 ///   its wait begins (`10022f1c`); the front end flushes them again as a game starts (`FUN_10030210`). The pass gets
@@ -81,14 +83,16 @@ public struct DriverOutput: Equatable, Sendable {
 ///   driver sends the cues through `.pause` when the pass begins, the resume when the wait ends (`10022fb4`), and
 ///   the session end's halt + stop (`10005ad8`, `10005ae4`) — a second apply, halt index 0 — when the pass's ops are
 ///   done, before the front end's next pass. **Quit inside the wait** (Phase 4 S1b; grounding B §5 `10022f8c`, D S14;
-///   X `10023214` / `10023374`, `10023228..10023244`): with the front end's quit flag b8 set, or a Quit request
-///   (`ShellEvent.quitChosen` / `.quitRequested`) queued — X's pump inside the pause sets b8 — the wait lets go at
+///   X `10023214` / `10023374`, `10023228..10023244`): with the front end's quit flag b8 set, or the system's Quit
+///   request (`ShellEvent.quitRequested`) queued or held by the front end (`FrontEnd.quitRequestPending`) — X's pump
+///   inside the pause sets b8; ⌘Q / the menu-bar Quit (`.quitChosen`) is ignored in a game, S8a CR — the wait lets go at
 ///   once, suspended or not and before Caps Lock is tested, WITHOUT the music resume (`10022fb0` skips
 ///   `10022fb4`), and `FrontEnd.quitDuringPause` sets the flag and the frame controller's +2 (X `10030cb8`): the next
 ///   pass's begin frame reports quit and the game ends. A queued Quit that finds the app suspended runs the resume
 ///   handler first (`osx-build.md` D10: X `10023374`, resume if suspended, then the flag) — `resume()`: not
-///   suspended any more, and no music resume, since the pause holds the music. The present and the pause flag's
-///   clear run as on a normal exit (`10022fc0..10023010`).
+///   suspended any more, and no music resume, since the pause holds the music. The queued request is taken off the
+///   queue there (the pause's pump consumed it), so the next pass does not hand it on to be held again. The present
+///   and the pause flag's clear run as on a normal exit (`10022fc0..10023010`).
 /// - **`.hostWait(wait)`** (Phase 4, plan S1a; `HostWait`) — held like a fade: t0 = `TickCount` of the `idle` that
 ///   reaches it; the op stream stays there, and no pass begins, until the wait is over — `.ticks(n)`: `TickCount ≥
 ///   t0 + n` (unsigned, wrapping); `.voiceEnd(id)`: `audio?.isPlaying(id)` false (`FUN_100476e0`; no sink = no mixer =
@@ -101,12 +105,20 @@ public struct DriverOutput: Equatable, Sendable {
 ///   never dropped, except that the original's `FlushEvents` (a game end, the pause wait's begin, a transition fade's
 ///   end) empties the OS event queue — `typed`, `keyEvents`, `mouseDowns` — and keeps the shell's own `events`. The
 ///   held state (`held`, `capsLock`, `mouse`, `mouseButton`) is the `idle`'s in which the pass begins. A
-///   `ShellEvent.suspend` / `.resume` only rides to the pass: the app still calls `suspend()` / `resume()`.
+///   `ShellEvent.suspend` / `.resume` only rides to the pass: the app still calls `suspend()` / `resume()`. The one
+///   other drop: when a pause's wait lets go on a queued Quit while suspended, the resume it runs first (D10) ends
+///   the suspension, so the suspend / resume events queued before it are dropped — a stale `.suspend` would set the
+///   front end's flag again with the driver's clear, and the menu would never flash the Quit.
 /// - **Suspend / resume** (H2; the app's suspend and resume handlers, `10023db4..10023dcc` and `10023e34..10023e8c`)
 ///   — `suspend()` pauses the music (`FUN_10048220(1)`) once; `resume()` resumes it (`FUN_10048220(0)`) unless the
 ///   pause flag r2−0x617b is set (`10023e7c`): set while a pause holds the music — here from the paused pass's
 ///   begin (where its music pause was sent) to the wait's present (`10022f18` / `10023010`). Across a suspend /
 ///   resume during the wait the music therefore stays paused.
+/// - **Leaving the app pauses the game** (`osx-build.md` D11, the driver's part; Phase 4 S8a AW): while suspended, a
+///   running game (a film too) begins no pass — the pass in hand runs out its ops (a pause's wait still lets go on a
+///   Quit, D10, whose resume ends the hold), then the driver waits for `resume()`; the input handed meanwhile stays
+///   queued for the first pass after it. Not built here: the pause screen D11 opens on the OS event (its effects
+///   halt, Paused sound, picture and shown cursor) — the frame controller's paused-frame hook, in Core.
 public struct DeimosDriver {
     /// The driver's one client: the screens, the games, the state they share.
     public private(set) var frontEnd: FrontEnd
@@ -187,6 +199,8 @@ public struct DeimosDriver {
     private(set) var lastPassKeys = HeldKeys()
     /// The app is suspended (r2−0x6179, set by the suspend handler `10023dc4`, cleared by the resume `10023e34`).
     public private(set) var suspended = false
+    /// `shutdown()` has run (the settings were handed to the store at quit) — the app's last-chance save checks it.
+    public private(set) var settingsSaved = false
     /// The pause flag r2−0x617b: a pause holds the music (from the paused pass's begin to the wait's present).
     private var pauseHoldsMusic = false
     /// The current pass's `.pauseWait` has been reached (its FlushEvents ran) / has seen Caps Lock up.
@@ -225,9 +239,10 @@ public struct DeimosDriver {
     /// The app is quitting (`FUN_10000630` → `FUN_100045f0`): the live prefs — the running game's, if one runs — go to
     /// the settings store (a failure to write is the store's to report; the prefs are returned regardless).
     @discardableResult
-    public func shutdown() -> DeimosPrefs {
+    public mutating func shutdown() -> DeimosPrefs {
         let prefs = frontEnd.livePrefs
         try? settingsStore.save(prefs)
+        settingsSaved = true
         return prefs
     }
 
@@ -235,8 +250,11 @@ public struct DeimosDriver {
     /// (`FUN_10048220(1)`). [Its window and cursor calls are the app's.] The original has one suspended byte: the
     /// front end's shared state (`FrontEndState.suspended`) is kept in step with the driver's here and in `resume()`,
     /// so the screens can trust it whichever way the suspension arrives (the call, its shell event, or the resume
-    /// a Quit runs inside the pause's wait).
+    /// a Quit runs inside the pause's wait). The original's one byte: a shared flag already set while the driver's is
+    /// clear is a suspension the front end ran itself (the menu's erase question, `FUN_10023da0` before the alert) —
+    /// the byte is set, so the handler does nothing (`10023db4..10023dbc`), and the music it paused stays paused.
     public mutating func suspend() {
+        if frontEnd.state.suspended && !suspended { return }                         // 10023db4..10023dbc: b7 set
         frontEnd.state.suspended = true                                              // the one flag, shared
         guard !suspended else { return }                                             // 10023db4..10023dbc
         suspended = true                                                             // 10023dc0..10023dc4
@@ -244,15 +262,19 @@ public struct DeimosDriver {
     }
 
     /// The app's resume handler (`10023e10`): suspended = 0 (`10023e34`); the music resume (`FUN_10048220(0)`) unless
-    /// a pause holds the music (r2−0x617b, `10023e7c..10023e8c`).
+    /// a pause holds the music (r2−0x617b, `10023e7c..10023e8c`). A resume with the driver's own flag clear does
+    /// nothing — not even the shared flag, which a suspension the front end ran itself still holds (`suspend()`).
     public mutating func resume() {
-        frontEnd.state.suspended = false                                             // the one flag, shared
         guard suspended else { return }
+        frontEnd.state.suspended = false                                             // the one flag, shared
         suspended = false                                                            // 10023e34
         if !pauseHoldsMusic {                                                        // 10023e7c..10023e84
             audio?.apply(sounds: [], music: [.resume], haltEffectsAt: nil)           // 10023e88..10023e8c
         }
     }
+
+    /// A running game is held between passes while the app is suspended (D11; see the type's comment).
+    public var gameHeldWhileSuspended: Bool { suspended && frontEnd.state.gameRunning }
 
     /// The 640×480 window content.
     public var screen: Pixmap555 { renderer.screen }
@@ -311,6 +333,7 @@ public struct DeimosDriver {
                     }
                     passBegun = false
                 }
+                if gameHeldWhileSuspended { return out }                      // D11: the game waits for the resume
                 beginPass(keys: keys, ticks: now, &out)
                 continue
             }
@@ -343,9 +366,13 @@ public struct DeimosDriver {
                     flushOSEvents()                                           // 10022f1c FlushEvents
                 }
                 if !waitReleased {
-                    let quitQueued = shellEventQueue.contains(where: Self.isQuit)
+                    let quitQueued = frontEnd.quitRequestPending || shellEventQueue.contains(where: Self.isQuit)
                     if frontEnd.state.quit || quitQueued {                    // 10022f8c b8; X 10023214
-                        if quitQueued && suspended { resume() }               // D10: X 10023374 resumes first
+                        if quitQueued && suspended {                          // D10: X 10023374 resumes first —
+                            resume()                                          // so every suspend / resume queued
+                            shellEventQueue.removeAll(where: Self.isSuspension)   // before it is over: dropped
+                        }
+                        shellEventQueue.removeAll(where: Self.isQuit)         // the pause's pump took it
                         waitReleased = true
                         musicAfterWait = []                                   // 10022fb0: no resume (10022fb4)
                         frontEnd.quitDuringPause()                            // b8; X 10030cb8 the controller's +2
@@ -407,6 +434,9 @@ public struct DeimosDriver {
         shellEventQueue = []
         lastPassKeys = sampled
         let pass = frontEnd.pass(keys: sampled, ticks: ticks)
+        if suspended && !frontEnd.state.suspended {                   // the front end ran the resume (the menu's Quit
+            suspended = false                                         // while suspended, code 8): one byte, so the
+        }                                                             // driver's own flag follows it
         if frontEnd.state.gamesStarted != gamesSeen {                 // a new game: a fresh frame controller
             gamesSeen = frontEnd.state.gamesStarted
             lastPresent = 0                                           // FUN_10030190 zeroes +0x1c
@@ -415,6 +445,7 @@ public struct DeimosDriver {
         for case let .saveLastFilm(film) in pass.requests {
             try? lastFilmStore.save(film)
         }
+        if pass.requests.contains(.quit) { shutdown() }               // FUN_10000630 → FUN_100045f0
         passBegun = true
         sessionEndMusic = nil
         out.requests += pass.requests
@@ -557,7 +588,12 @@ public struct DeimosDriver {
     }
 
     /// A Quit from the shell (File ▸ Quit, the system's Quit request).
-    private static func isQuit(_ event: ShellEvent) -> Bool { event == .quitChosen || event == .quitRequested }
+    /// The Quit that lets the pause's wait go: the system's request only — ⌘Q / the menu-bar Quit is ignored in a game
+    /// (Phase 4 S8a CR; `FrontEnd.shellEvents`).
+    private static func isQuit(_ event: ShellEvent) -> Bool { event == .quitRequested }
+
+    /// The app's suspend / resume events (`ShellEvent.suspend` / `.resume`).
+    private static func isSuspension(_ event: ShellEvent) -> Bool { event == .suspend || event == .resume }
 
     /// Mac virtual key code of Esc (`FUN_100307c0`).
     static let escKey: UInt16 = 0x35
