@@ -186,7 +186,19 @@ Settled history lives in docs/STATE-history.md.
   empty placeholder for every screen (boot, menu, level select, scores, name entry, credits, films, the two settings
   windows); the app behaves exactly as before. `Deimos/Core` is **392 / 0 / 0**; replay 4 / 0 and the campaign sweep
   3 / 0 unchanged; Debug and Release build. Each screen's entry is frozen and listed in the handoff.
-  **Next: S2 (menu, credits) and S4 (settings file, scores, name entry)**, started by the Coordinator.
+  **S4 closed 2026-11-20** (`docs/handoff-deimos-phase4-s4.md`): the settings file (read and written byte for byte as
+  the original), the high-score table, name entry and the scores screen are built but not yet reachable from the menu
+  (S2/S3a wire them). `Deimos/Core` is **406 / 0 / 0** with S4 alone (S2's tests add on top); replay 4 / 0; Debug and
+  Release build. The erase-scores question moved to the menu's SCORES action (seat ruling, in the handoff).
+  **S2 closed 2026-11-20** (`docs/handoff-deimos-phase4-s2.md`): the main menu and the credits screen are the
+  original's, proved by tests (`Deimos/Core` **416 / 0 / 0** with S2 and S4 both in); the app still opens straight into a game
+  until S8a connects mouse and keys to the front end. Found: the credits have ten pages, no blank eleventh (ruling 15).
+  **Next: S3a (starting a game and coming back) and S5 (Last Film, demos)**, started by the Coordinator.
+  **S3a closed 2026-11-20** (`docs/handoff-deimos-phase4-s3a.md`): choosing a game on the menu now runs the original's
+  start (fades, transition sound, level-select music, the level select — still a placeholder) and a game's end runs
+  the original's way back (fades, high-score entry when a score places, the menu and its music). Nothing a player
+  would notice until S8a. `Deimos/Core` is **423 / 0 / 0**; replay 4 / 0; Debug and Release build. Left for S8a,
+  waiting on Ben: deleting `-players` / `-sector`, and the menu's "erase high scores?" question.
 - **Data:** `Resources/Deimos/` in git; `deimos-census` 872 entries, 0 failures.
 - **Open:** RE bank `docs/deimos/INDEX.md` #13, #59 residue, #63 and 134 cross-file label mismatches (#64 closed 2026-11-20); Ben's
   ear/eye items (on the gate card). Not modelled until Phase 4: the mouse button ending a film; the quit flag
