@@ -199,10 +199,15 @@ Settled history lives in docs/STATE-history.md.
   the original's way back (fades, high-score entry when a score places, the menu and its music). Nothing a player
   would notice until S8a. `Deimos/Core` is **423 / 0 / 0**; replay 4 / 0; Debug and Release build. Left for S8a,
   waiting on Ben: deleting `-players` / `-sector`, and the menu's "erase high scores?" question.
+  **S5 closed 2026-11-20** (`docs/handoff-deimos-phase4-s5.md`): every game you play is now recorded the original's
+  way and kept as the Last Film (byte-exact: re-recording demo 1's keys gives demo 1's file); DEMOS / `D` cycle the four
+  demos for the app's life, `F` replays the last game, and a mouse click or Esc ends a film. Nothing a player would
+  notice until S8a wires the mouse, keys and the Last Film folder. `Deimos/Core` is **433 / 0 / 0**; replay 4 / 0;
+  campaign 3 / 0; Debug and Release build.
 - **Data:** `Resources/Deimos/` in git; `deimos-census` 872 entries, 0 failures.
 - **Open:** RE bank `docs/deimos/INDEX.md` #13, #59 residue, #63 and 134 cross-file label mismatches (#64 closed 2026-11-20); Ben's
-  ear/eye items (on the gate card). Not modelled until Phase 4: the mouse button ending a film; the quit flag
-  inside the Caps Lock wait; a film that ends restarts the same film (the original returned to its menu). Not
+  ear/eye items (on the gate card). Not modelled until Phase 4: the quit flag inside the Caps Lock wait (the mouse ending a film and
+  a film returning to the menu landed in S5 / S3a; the app passes no mouse button until S8a). Not
   proved by any test: winning sector 12's end fight by destroying the Beamer (the sweep outlasts it on the
   controller's timer, as the data allows); the feel of sectors 5–12 (no film covers them). A game started with
   `-sector N` has no finale (the original's rule). A bad launch value quits silently in a Release build. Small follow-ups: four
