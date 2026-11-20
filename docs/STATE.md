@@ -166,6 +166,9 @@ Settled history lives in docs/STATE-history.md.
   windows); the app behaves exactly as before. `Deimos/Core` is **392 / 0 / 0**; replay 4 / 0 and the campaign sweep
   3 / 0 unchanged; Debug and Release build. Each screen's entry is frozen and listed in the handoff.
   **Next: S2 (menu, credits) and S4 (settings file, scores, name entry)**, started by the Coordinator.
+  **S2 closed 2026-11-20** (`docs/handoff-deimos-phase4-s2.md`): the main menu and the credits screen are the
+  original's, proved by tests (`Deimos/Core` **402 / 0 / 0** when S2 merged); the app still opens straight into a game
+  until S8a connects mouse and keys to the front end. Found: the credits have ten pages, no blank eleventh (ruling 15).
 - **Data:** `Resources/Deimos/` in git; `deimos-census` 872 entries, 0 failures.
 - **Open:** RE bank `docs/deimos/INDEX.md` #13, #59 residue, #63 and 134 cross-file label mismatches (#64 closed 2026-11-20); Ben's
   ear/eye items (on the gate card). Not modelled until Phase 4: the mouse button ending a film; the quit flag
