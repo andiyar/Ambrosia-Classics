@@ -2537,3 +2537,22 @@ The seat's rulings (Fable 5.2, under the Coordinator). Per-task detail is under 
 8. **The weekly usage limit passed 85% during the run** (Fable 87% then 89%, all models 87% at the close; resets
    2026-11-23). Told to Ben in the close.
 
+## D54 — Ferazel's Wand: run 56's rulings (6A-L10L11 — levels 10 and 11 open; 2026-11-21)
+
+1. **The draw-mode audit test may change beyond line re-anchors when a new level breaks an assumption that only held
+   for levels 1–5.** Two cases, both ruled in: its probe face leaves tree sheets out of the rotation and scale probes
+   (trees are never rotated or scaled, D51.4), and its strip assert admits picture 265 on level 10 (6A-S8). Levels
+   1–5's rows and values are untouched. The first cut skipped trees in every mirrored probe; review narrowed it.
+2. **A Windows level reference pins three frames, not one.** The first presented level frame is all black on both
+   levels (the fade-in's first frame), so its hash cannot catch a drawing fault; it stays pinned (the plan's wording)
+   beside the first fully faded-in frame and the first frame that provably shows the level's feature — proven inside
+   the test by a twin game with the feature off (the strip sprites removed; the ripple's header byte zeroed). A frame
+   chosen only by camera position or table values is not proof (level 11's first choice was identical to its twin).
+3. **Dump over card:** swarm members hold no link to their parent; the idle-children test pins the parent's member
+   block and the members' two centre words, and counts the parent as an enemy.
+4. **Comment-only edits outside the card's fence** (`RippleTests.swift`, the example line of
+   `tools/ferazel-built-levels.sh`) were taken in the fix round because the list widening made them false.
+5. **A wave end caught by the night rule closes its run without the two launch checks**, as the plan's "Wave end"
+   line already says: run 56 merged the level task with its whole headless gate at 00:37 and handed Proof B, the Mac
+   SDL smoke and the wave's Fable cross-check to run 57, first, by day.
+

@@ -234,7 +234,13 @@ with underscores, so a grep for the hash misses the test copy; also the two hash
 moves one edits all of them until A5 makes the script read the test file. FE0 and the map first frame hold for the
 whole remainder. **Wave 6A.1 (run 52):** level 5's `BootFacesTests` pins are init 46 / `0xb039da66a884cb8a`, f30 58 /
 `0x1142f7a252aecfcd`, f120 58 / `0x9806297cea4531f2` (6A-W1 moved f30 and f120 for the three crates); the Warrior's
-scripted fight pins HP 0 at game frame 4966 and the Kill at 5051 (`BossKillLevelRunTests`).
+scripted fight pins HP 0 at game frame 4966 and the Kill at 5051 (`BossKillLevelRunTests`). **Wave 6A.2 (runs 52–56):** level 21's fixture
+first frame `fb80e30a68e4efb7`; level 10's strip `e471fa3eeca627d3` (tick 1612) and `e8fc9d1805afb1d5` (tick 1658); the
+wind and cannon traces `20b0a649c605b4d0`, `a94f59ac15d64d04`, `2970c03ffb33c302` (their feature goldens retired at
+6A-L10L11); the tree `d7ba88433f138e72`; the ripple `c92fbe9fb87250c3`; chapter cards 2 and 5 `f33072b0df2cab4d`,
+`517ec825dbca68cc`; level 10's first frame `e76116216b6d605`, level 11's `5d78b001424a6898`; the Windows level
+references in `WinLevelReferenceTests` (black first frame `742a0703fa4da325`; level 10 steps 885 `e8f72bddcaf3b7a1` and
+959 `17aa796b2ef29b5`; level 11 steps 629 `f8032383209e56e0` and 689 `d02281f5e0d7cdca`).
 
 **What the machine does NOT prove:** the feel of every enemy's AI at 30 steps a second; the colours of the tint tables
 (through the replica's colour search, LOW); the underwater tint's strength on screen (gamma, MED); the OmniPx
@@ -1932,6 +1938,48 @@ ids; its `--check` reads this table):
   it opens run 57 if the context is spent). **Commit:** `Levels 10 and 11 enterable: the strip,
   wind, cannons, trees, the river; BuiltLevels [1…5, 10, 11]; 8 tests (2 feature goldens retired), 2 Windows references`.
 
+- **As executed — 6A-L10L11 (run 56, 2026-11-20 → 21):** task 92e3128 (8 tests: `LevelTenTests` 2, `LevelElevenTests` 3,
+  `LevelFrameGoldenTests` 2, `BuiltLevelsTests` 1; the wind and rotating-cannon feature goldens deleted, their traces
+  kept; WinKit `WinLevelReferenceTests` 2), ledger bc4ba4b, review fix round ae3a20e (tests, comments and the ledger
+  only). `LevelRun.swift` needed nothing; `BuiltLevels.list` = `[1, 2, 3, 4, 5, 10, 11]`. Legs: spec MERGEABLE AFTER
+  FIXES (no must-fix), quality MERGEABLE AFTER FIXES — 68 planted bugs, 44 caught, 2 harmless, 17 in-scope slips all
+  closed by the fix round, 5 out-of-scope slips carried (STATE "From run 56"); no slip exposed a fault in game code.
+  - **New pins (measured):** level 10 first frame (Mac) `e76116216b6d605` at tick 1612; level 11 first frame (Mac)
+    `5d78b001424a6898` at tick 143; cache-mark bars level 10 [38, 145, 290, 38], level 11 [50, 191, 382, 50];
+    `BootFacesTests` rows level 10 385 / 398 / 398, level 11 434 / 479 / 479; the swarm members' position hash at idle
+    frame 60 `f61c08a2d6d9bfa2`. **Windows references:** the first presented level frame of both levels is all black
+    (the fade-in's first frame), hash `742a0703fa4da325` on both (kept: the plan's wording); the first fully faded-in
+    frame — level 10 flow step 959 `17aa796b2ef29b5`, level 11 step 689 `d02281f5e0d7cdca`; level 10 held to its first
+    strip frame, step 885 `e8f72bddcaf3b7a1` (a twin game without the 9 strip sprites differs there); level 11 held to
+    its first rippled frame, step 629 `f8032383209e56e0` (a twin with header `0x26ca` forced to 0 differs in 9,131
+    bytes; the first-chosen step 615 was byte-identical to the twin and is no longer called a ripple frame).
+  - **List-pinned values re-derived:** level 5's exit p1 1 now enters level 10; the not-built walk runs 5 → 10 → 11 and
+    ends at node 18 ("Level 18 is not built yet (Phase 6)."); the Continue test's not-built save moved from level 10 to
+    18. Exits measured: level 10 p1 1 → level 11, p1 2 → node 15; level 11 p1 1 → node 18. `-FerazelLevel 10` shows
+    chapter card 2 (PICT 4620); level 11 shows none. Nothing else moved (levels 1–5, every fixture picture, both
+    chapter cards, the three smoke references).
+  - **Parameter trace:** about 25 new values, none reaching an unbuilt arm; each value, its dump lines and its assert
+    are in 92e3128's body; the fix round made the teleporter, catapult, gate, passage and switch-block asserts call the
+    arm itself and added the default-arm pins (all-zero geysers, spikes, the raft's push mass, item 3217's gravity),
+    the bat 1851's p1 < 0 arm, the spear guard 1705's 0.7 friction (M l. 57818) and level 11's player facing left.
+  - **Dump over card:** the swarm members' "+0x1d4 links to the parent" do not exist (M l. 68158–68206: members live in
+    the parent's member block at +0x9c with the parent's centre in +0x14c / +0x150); `testLevels10And11IdleChildLinks`
+    pins that, an active parent idled and woken, level 11's swarms, and the enemy count (D54.3).
+  - **Outside the card's fence, by the seat's ruling (D54.1, D54.2):** `DrawModeAuditTests.swift` beyond re-anchors —
+    trees left out of the rotation and scale probes only, and the strip assert admits picture 265 on level 10; comment
+    fixes in `RippleTests.swift` and `tools/ferazel-built-levels.sh` (what the script prints is unchanged).
+  - **Gates at ae3a20e (the seat's own runs, foreground, in parts):** G2 **722** = 557 rules + 165 render, 0 failed,
+    the two opt-in skips by name — the render half took 1,218 s (20 min: A–C 240, D–E 424, F–L 417, M–Z 137), the rules
+    half 97 s; GW2 **84**, 0 failed, the two opt-in skips (1,194 s in four parts); G3 `Totals: items 1,108 decoded,
+    failures 0`; G5 on the merged branch; GW1 / GW3 / GW4 the implementer's. **Full GE, 7 levels, 4 workers:** sweep
+    core 6,324 visits rows 0 in 1,192 s, windows 6,324 rows 0 in 1,409 s (43 min both shells, run a level group a
+    command; ~0.19–0.22 s a visit, twice the old estimate); bot core `levels 7, seeds 4, steps 151200, deaths 23, exits
+    201, conversations 22, saves 1, failures 0 in 73 s`, windows the same counts `in 86 s`. These replace the budget
+    paragraph's estimates: at this rate 12 levels sweep in about 80 min both shells and the bot in about 5.
+  - **Wave 6A.2 end — owed:** GWB (719 / 0 / 3 / 0 of 722) and GW4R fell under the night rule (the checks finished at
+    00:37) and are the first act of run 57, by day; the Fable cross-check of FX … L10L11 (`520590c^..` main) opens
+    run 57 after them (the seat's context was spent).
+
 #### 6A-BG1c — minor — plants (→ 725)
 - **Files:** `Sources/FerazelCore/Sprites/SetupFaces.swift` (`:401` the arm, built; the Setup-face table rows; `:715`),
   `Sources/FerazelCore/Front/LevelRun.swift` (singles #161–#172 marked on CF's list), `Tests/FerazelCoreTests/PlantTests.swift`
@@ -2387,7 +2435,7 @@ bot plays 4 seeds × 3 minutes a level = 21,600 steps a level (108,000 on 1–5,
 | after | levels | sweep visits a path | bot steps a path | sweep time, both paths | worker peak (sweep) |
 |---|---:|---:|---:|---|---|
 | Phase 5 (measured) | 5 | 3,488 | 108,000 | ~12 min on 1–4 (3,360 visits, measured at 6a70bce); 1–5 not recorded | Core ~130–140 MB; Windows ~295 MB after the leak fix (one worker, levels 1 / 4 / 5) — measured 2026-11-10 |
-| 6A-L10L11 | 7 | 6,324 | 151,200 | ~23 min **(est.)** | ≤ 600 MB **(est.)** |
+| 6A-L10L11 (measured, run 56) | 7 | 6,324 | 151,200 | 43 min (core 1,192 s + windows 1,409 s); the bot 73 s + 86 s | not measured |
 | 6A-L15 | 8 | 7,056 | 172,800 | ~25 min (est.) | ≤ 600 MB (est.) |
 | 6A-L18 | 9 | 7,192 | 194,400 | ~26 min (est.) | ≤ 600 MB (est.) |
 | 6A-L20 | 10 | 8,524 | 216,000 | ~31 min (est.) | ≤ 700 MB (est.: 164 clouds) |

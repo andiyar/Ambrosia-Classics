@@ -4,6 +4,17 @@
 > only). Nothing current reads this file; the live state is `docs/STATE.md`. Each later close that settles something
 > adds a dated section at the top, newest first. The two snapshots below are verbatim (headings demoted only).
 
+## Settled at Ferazel run 56's close (2026-11-21)
+
+- **The run 55 Ferazel block** (main 988a1e1 for Ferazel): the conversations and chapter cards proven, Core 716,
+  WinKit 82, no level past 5 open, 6A-L10L11 heading run 56 "best started after the weekly limit resets". A first
+  start of run 56 stopped itself at 97% of the weekly limit with nothing changed; the second start (the limit read 5%)
+  replaced the block: levels 10 and 11 are open, Core 722, WinKit 84, the first full sweep and bot over seven levels
+  clean on both shells. The story is in `docs/handoff-2026-11-21-ferazel-run56.md`, the record under the card in the
+  plan, the rulings in D54.
+- **Retired pictures:** level 10's wind feature picture `c9ad94cdb8b2d287` and rotating-cannon feature picture
+  `1f159e3178d4733` (the real level-10 first frame and the kept traces cover them).
+
 ## Settled at Ferazel run 55's close (2026-11-20)
 
 - **The run 54 Ferazel block** (main 158d668): the ripple, the Box scenery and the teleporters / furniture / characters
