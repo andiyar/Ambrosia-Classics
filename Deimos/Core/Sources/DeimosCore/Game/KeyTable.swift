@@ -11,7 +11,8 @@ import Foundation
 /// 2 → right, 3 → down, 4 → fire air, 5 → fire ground, 6 → select (X 1004ce18..1004cf08). The guide's defaults
 /// agree (design §7.3): slot 4 ⌘ = fire air, slot 5 ⌥ = fire ground, slot 6 Space = select. Pinned by
 /// `ControlsDialogTests.testDITL191Parse`. The controls window (DITL 191) edits the same slots, field 5, 7, …, 17 →
-/// slot 0–6 (X jump table 0x100f57dc).
+/// slot 0–6 (X jump table 0x100f57dc). The game controller presses P1's slots (`DeimosPadLayout`, Phase 4 GP), so
+/// remapping a key here remaps its button.
 public struct KeyTable: Equatable, Sendable {
     /// The 14 codes, P1's seven then P2's (stored as 4-byte ints on disk — Phase 4).
     public var codes: [UInt16]
