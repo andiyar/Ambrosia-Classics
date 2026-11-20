@@ -156,6 +156,11 @@ Settled history lives in docs/STATE-history.md.
   `ghidra/regen-deimos-osx.sh`), its front end is compared with the OS 9 one in `docs/deimos/osx-build.md` (14 differences
   change what Phase 4 builds; rulings 12 and 17 and the fade timings in grounding A §5.2 / B §1a are wrong for X), and the bank
   corrections are in (INDEX #14 and #62 closed). No Swift or test changed.
+  **S1a closed 2026-11-20** (`docs/handoff-deimos-phase4-s1a.md`): the joins between the game's parts are widened for the
+  front end (mouse, key and menu events in; waits, a session result, new shell requests and two draw steps out) and the
+  shared element list with its fades is built; nothing a player would notice yet. `Deimos/Core` is now **385 / 0 / 0**
+  (one above the plan's 384: a draw-once test; the phase now ends at 478); replay 4 / 0 unchanged. The element fades
+  follow the OS X build (16 passes). **Next: S1b**, the front end's frame.
 - **Data:** `Resources/Deimos/` in git; `deimos-census` 872 entries, 0 failures.
 - **Open:** RE bank `docs/deimos/INDEX.md` #13, #59 residue, #63 and 134 cross-file label mismatches (#64 closed 2026-11-20); Ben's
   ear/eye items (on the gate card). Not modelled until Phase 4: the mouse button ending a film; the quit flag

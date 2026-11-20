@@ -228,6 +228,10 @@ only for a new op, stop-with-fade and "voice ended"; every file with an exhausti
     (1 … 32), one-element fade; text alpha = max(level, own), sprite alpha = level; an empty list fades in 0 passes.
   - **Tests (5):** `testElementFades` · `testElementBounds` · `testElementHitRects` · `testOneElementFade` ·
     `testEmptyListFadesInZeroPasses`. **Gate:** G2 = **384 / 0**.
+  - **As built (S1a close, 2026-11-20; `docs/handoff-deimos-phase4-s1a.md`):** the fades follow X under ruling 5 —
+    **16 passes** (in 30, 28 … 0; out 2, 4 … 32; `osx-build.md` D1), not the 32 above. A sixth test,
+    `testElementDrawOnce`, pins a draw-once the later screens need, so S1a closed at **385** and the phase ends at
+    **478**. SK-a also added a beep request, the scaled copy, a music-fade wait and key codes (the handoff lists all).
 
 ## S1b — the front end's frame — Seat: Fable
 
