@@ -1,7 +1,7 @@
 # Handoff — Deimos Rising Phase 4, section S2: main menu, credits (closed 2026-11-20)
 
 Seat: Claude Fable 5.2. Helpers: Opus 5.5 (`fk-implementer`, `fk-reviewer`), foreground. Section S2 of
-`docs/superpowers/plans/2026-11-20-deimos-phase4.md` is done and on main. **S3a may start once S4 is also on main.**
+`docs/superpowers/plans/2026-11-20-deimos-phase4.md` is done and on main. S4 is on main too, so **S3a may start.**
 
 ## What a player would notice
 Nothing yet. The app still opens straight into a game (see departure 1). Underneath, the main menu and the credits
@@ -26,16 +26,18 @@ path is now pinned by a named test.
 
 | Gate | Result |
 |---|---|
-| G2 `Deimos/Core` without the replay and campaign bundles | **402 / 0 / 0** (392 + 8 + 2) |
+| G2 `Deimos/Core` without the replay and campaign bundles | **416 / 0 / 0** with S4 merged in (392 + 14 of S4 + 8 + 2); 402 / 0 / 0 before S4 arrived |
 | G4 `DeimosReplayTests`; `deimos-replay --all` | **4 / 0**; four PASS lines, exit 0 |
 | G5 Deimos Debug and Release | both `** BUILD SUCCEEDED **` (Aki and BubbleTroubleX not built: no `project.yml` or kit change) |
 | G12 the direct start matches a bare session | passes (inside G2) |
 | G3 census, G6 scope, G7 layering, G10 clean tree | empty diff; five files (see departure 2); prints nothing; clean |
 | G1, G8 | not run (no kit change; G8 is for S1b, S5 and S8b) |
 
-Main was merged in first (Ferazel-only commits since the section began; nothing of Deimos moved).
+Main was merged in twice: first Ferazel-only commits, then S4 (which landed while S2 was closing). Every gate above
+was re-measured after the second merge. Two conflicts, both expected: `STATE.md` and the placeholder list in
+`FrontEndSkeletonTests.swift` (S4 removed Scores and NameEntry, S2 removed Credits; both removals kept).
 
-**G2 base for the next sections: 402** (392 + 8 menu + 2 credits). The phase's end figure does not move.
+**G2 base for the next sections: 416.** The phase's end figure does not move.
 
 ## What was read from the original (the three open facts of grounding A §9a, and one correction)
 
@@ -76,6 +78,14 @@ Main was merged in first (Ferazel-only commits since the section began; nothing 
 7. **Each credits page can start up to one tick late** (about 10 ticks over the run): the frame reads the clock at
    the start of a pass, never at the end of a fade.
 
+## Left for S3a: the "erase high scores?" question
+
+S4 moved this question out of the scores screen and into the menu's SCORES action (its handoff, "The seat's ruling"),
+and landed after S2's menu was built and reviewed. **The menu does not ask it yet.** S3a adds it to the SCORES click in
+`MainMenu.swift` (Option held, mouse only, never the `H`/`S` keys): suspend, ask with
+`HighScoreTable.eraseQuestion(_:)`, apply `HighScoreTable.erase(_:answer:)`, resume, then the SCORES action as it is
+today. It is a mouse-only path, so nothing reachable today is wrong without it.
+
 ## How the two screens sit in the frame (for S3a, S5, S6, S8a)
 
 - **The menu owns the fades around every screen it calls.** Before a call it fades `state.menuElements` out; after
@@ -104,7 +114,6 @@ Main was merged in first (Ferazel-only commits since the section began; nothing 
   most one per pass.
 - The order of queued events across kinds (About, then keys, then clicks) is fixed by the input seam, not by arrival:
   a click followed by `N` during a credits page change starts a game where the original would leave.
-- Option-click on SCORES (erase all scores) is S4's.
 - Credits' page-number reader handles hex, octal, negative and missing numbers as the original's `sscanf` does;
   the shipped data never uses them, so those branches have no test.
 

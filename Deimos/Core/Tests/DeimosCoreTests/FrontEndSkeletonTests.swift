@@ -136,10 +136,7 @@ final class FrontEndSkeletonTests: XCTestCase {
         check(boot.pass(keys: HeldKeys(), ticks: 0, returned: nil, state: &state), ScreenDone(), "boot")
         var levelSelect = LevelSelect()
         check(levelSelect.pass(keys: HeldKeys(), ticks: 0, returned: nil, state: &state), 1, "level select")
-        var scores = Scores()
-        check(scores.pass(keys: HeldKeys(), ticks: 0, returned: nil, state: &state), .leave, "scores")
-        var nameEntry = NameEntry(player: 0, slot: 3, prefs: .fresh)
-        check(nameEntry.pass(keys: HeldKeys(), ticks: 0, returned: nil, state: &state), .fresh, "name entry")
+        // Scores and name entry are built (Phase 4 S4 HS): ScoresScreenTests, NameEntryTests.
         // (The credits are no longer a stub — S2 CR: CreditsTests owns them.)
         for kind in [Films.Kind.demo, .lastFilm] {
             var films = Films(kind: kind)
