@@ -204,6 +204,11 @@ Settled history lives in docs/STATE-history.md.
   demos for the app's life, `F` replays the last game, and a mouse click or Esc ends a film. Nothing a player would
   notice until S8a wires the mouse, keys and the Last Film folder. `Deimos/Core` is **433 / 0 / 0**; replay 4 / 0;
   campaign 3 / 0; Debug and Release build.
+  **S3b closed 2026-11-20** (`docs/handoff-deimos-phase4-s3b.md`): the level select is the original's — three
+  previews, START / NO ACCESS, the hover outline, moving, the accept and refusal flashes, Esc, the pause. Nothing a
+  player would notice until S8a. The listing showed the right-hand preview DOES draw its hover outline (plan ruling 15
+  and grounding A risk 7 were wrong; correction listed for the gate-4 card). `Deimos/Core` is **441 / 0 / 0**;
+  replay 4 / 0; Debug and Release build.
 - **Data:** `Resources/Deimos/` in git; `deimos-census` 872 entries, 0 failures.
 - **Open:** RE bank `docs/deimos/INDEX.md` #13, #59 residue, #63 and 134 cross-file label mismatches (#64 closed 2026-11-20); Ben's
   ear/eye items (on the gate card). Not modelled until Phase 4: the quit flag inside the Caps Lock wait (the mouse ending a film and

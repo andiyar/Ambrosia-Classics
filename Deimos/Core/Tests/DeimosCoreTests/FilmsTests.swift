@@ -32,20 +32,31 @@ final class FilmsTests: XCTestCase {
         return sr
     }
 
-    /// One menu key through the real front end (boot → menu, S2; start/return, S3a): the key typed on the menu,
-    /// passes until start/return has started its game (bound 20), Esc held until that game ends (bound 400), passes
-    /// until the menu is the top screen again (bound 10), then the menu's own return step. Returns the game's start.
+    /// The passes from the menu key to the game's first pass: start/return's start sequence (3), and in play mode the
+    /// level select's entry, select, accept flash and hand-back (about 18 more).
+    private static let maxStartPasses = 60
+
+    /// One menu key through the real front end (boot → menu, S2; start/return, S3a; the level select, S3b): the key
+    /// typed on the menu, passes until start/return has started its game — player 1's select key held on the level
+    /// select's first live frame, when there is one (bound `maxStartPasses`) — Esc held until that game ends (bound
+    /// 400), passes until the menu is the top screen again (bound 10), then the menu's own return step. Returns the
+    /// game's start.
     private func fromMenu(_ fe: inout FrontEnd, _ charCode: UInt8, ticks: inout UInt32,
                           _ label: String) throws -> SessionStart {
         XCTAssertEqual(fe.screens, [.mainMenu], "\(label): the menu is up")
         let started = fe.state.gamesStarted
         _ = fe.pass(keys: HeldKeys(keyEvents: [KeyEvent(charCode: charCode, keyCode: 0)]), ticks: ticks)
         ticks &+= 2
-        for _ in 0..<20 where fe.state.gamesStarted == started {
-            _ = fe.pass(keys: HeldKeys(), ticks: ticks)
+        let select = HeldKeys(held: [KeyTable(prefs: fe.state.prefs).codes[6]])   // Space
+        var pressed = false
+        for _ in 0..<Self.maxStartPasses where fe.state.gamesStarted == started {
+            let live = fe.screens.last == .levelSelect && !pressed
+            if live { pressed = true }
+            _ = fe.pass(keys: live ? select : HeldKeys(), ticks: ticks)
             ticks &+= 2
         }
-        XCTAssertEqual(fe.state.gamesStarted, started + 1, "\(label): bound: no game within 20 passes")
+        XCTAssertEqual(fe.state.gamesStarted, started + 1,
+                       "\(label): bound: no game within \(Self.maxStartPasses) passes")
         let start = try XCTUnwrap(fe.session?.start, label)
         for _ in 0..<400 where fe.session?.running ?? false {
             _ = fe.pass(keys: HeldKeys(held: [FrameKeys.escKey]), ticks: ticks)
