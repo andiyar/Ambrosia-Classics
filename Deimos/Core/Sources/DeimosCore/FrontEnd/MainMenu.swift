@@ -32,9 +32,13 @@ import HectorResources
 ///   FlushEvents or event loop would have taken them; the shell's events stay.
 /// - **Click tracking** (`FUN_10024a50`): the StillDown loop runs one turn per pass while `mouseButton` holds.
 ///
-/// Not built here (not this card's): the Option-click erase question on SCORES (`front-end.md` §2.7 — the table
-/// erase is S4's), the website dialog (question 3: the web line lights up and a click does nothing), the
-/// Command-key menu-title flash (`10049080`: the shell's menu bar flashes its own title; Core gets the command).
+/// - **The erase question** (Phase 4 S8a CR; `front-end.md` §2.7 row 4): a SCORES click released with Option (key
+///   0x3A) down suspends, asks through the question wait, applies the answer, resumes, then runs the SCORES action
+///   (`askErase`, `answered`). The `H` / `S` keys never ask.
+///
+/// Not built here (not this card's): the website dialog (question 3: the web line lights up and a click does
+/// nothing), the Command-key menu-title flash (`10049080`: the shell's menu bar flashes its own title; Core gets the
+/// command).
 public struct MainMenu: Sendable {
     public typealias Result = ScreenDone
 
@@ -52,6 +56,8 @@ public struct MainMenu: Sendable {
     static let screen = MacRect(top: 0, left: 0, bottom: 480, right: 640)
     /// The left and right Command keys (`cmdKey` in the event's modifiers: either one).
     static let commandKeys: Set<UInt16> = [0x37, 0x36]
+    /// The Option key the SCORES click tests (`FUN_10049150(0x3a)`: the key map's 0x3A, the left Option key only).
+    static let optionKey: UInt16 = 0x3a
 
     /// One button record (`FUN_10024430`, 0x124 bytes): id `+0x000`, text `+0x001`, hit rect `+0x104…+0x110`,
     /// sprites `+0x114` / `+0x118`, frame `+0x11c`, lit `+0x120`, dirty `+0x121`, type `+0x122`.
@@ -98,6 +104,8 @@ public struct MainMenu: Sendable {
         /// The QUIT flash ran (its wait ends the pass): the rest of that turn runs next.
         case afterQuitFlash
         case tracking(id: Int, rect: MacRect)
+        /// The SCORES click's erase question is up (its answer wait ended the pass): the answer, then the action.
+        case erasing
         case waiting(After)
         /// The fade-out has run: free, stop the music, return.
         case leaving
@@ -140,6 +148,9 @@ public struct MainMenu: Sendable {
             // screen), unless the return's own FlushEvents (the SCORES / About tail) or the next call drops it.
             enqueue(keys)
             return back(after, returned: returned, ticks: ticks, state: &state, &out)
+        case .erasing:
+            enqueue(keys)
+            return answered(keys: keys, state: &state, &out)
         case .idle, .afterQuitFlash, .tracking:
             break
         }
@@ -320,7 +331,7 @@ public struct MainMenu: Sendable {
         phase = .idle
         guard Self.inside(keys.mouse, rect) else { return .stay(out) }
         state.copyrightClock = ticks                                    // 10022d50
-        return action(id, fromKey: false, state: &state, &out)
+        return action(id, fromKey: false, option: keys.held.contains(Self.optionKey), state: &state, &out)
     }
 
     /// `FUN_10023b00(char)` (`front-end.md` §2.8; L `10023b10..10023d7c`, X `10023ef0..10024170`), then t0 = now
@@ -354,17 +365,18 @@ public struct MainMenu: Sendable {
         return .stay(out)
     }
 
-    /// The button actions (`front-end.md` §2.7).
-    private mutating func action(_ id: Int, fromKey: Bool, state: inout FrontEndState,
+    /// The button actions (`front-end.md` §2.7). `option`: key 0x3A down when a click's tracking ended (only the
+    /// click path tests it, `10022d8c` `FUN_10049150(0x3a)`).
+    private mutating func action(_ id: Int, fromKey: Bool, option: Bool = false, state: inout FrontEndState,
                                  _ out: inout PassOutput) -> ScreenStep<Result> {
         let done: After = fromKey ? .key : .click
         switch id {
         case 1: return call(.startReturn(StartReturn(mode: .play, players: 1)), after: done, &out)   // FUN_10024d80
         case 2: return call(.startReturn(StartReturn(mode: .play, players: 2)), after: done, &out)   // FUN_10024db0
         case 3: return call(.configDialog(ConfigDialog(firstLaunch: false)), after: .prefs(key: fromKey), &out)
-        case 4:                                                         // FUN_10024e70
-            wrapperHead(state: &state, &out)
-            return call(.scores(Scores()), after: .scores(key: fromKey), &out)
+        case 4:
+            if option && !fromKey { return askErase(state: &state, &out) }
+            return scoresAction(fromKey: fromKey, state: &state, &out)
         case 5: return call(.films(Films(kind: .demo)), after: done, &out)                          // FUN_10024de0
         case 6: state.leave = true                                      // QUIT: b9
         case 9:                                                         // FUN_10025060: About
@@ -373,6 +385,51 @@ public struct MainMenu: Sendable {
         default: break                                                  // 0 logo; 8 the web line (question 3)
         }
         return .stay(out)
+    }
+
+    /// `FUN_10024e70`: present, the element fade-out, the scores screen.
+    private mutating func scoresAction(fromKey: Bool, state: inout FrontEndState,
+                                       _ out: inout PassOutput) -> ScreenStep<Result> {
+        wrapperHead(state: &state, &out)
+        return call(.scores(Scores()), after: .scores(key: fromKey), &out)
+    }
+
+    /// SCORES clicked with Option down (`10022d8c..10022dc4`): the suspend handler `FUN_10023da0` — when b7 is clear:
+    /// b7 = 1 and the music paused (`FUN_10048220(1)`; the display's suspend is the shell's, around its alert) — then
+    /// the question (`FUN_100498e0(inte 24, 25, 26, 27)`, `HighScoreTable.eraseQuestion`) and its wait. The rest runs
+    /// on the pass the answer arrives (`answered`).
+    private mutating func askErase(state: inout FrontEndState, _ out: inout PassOutput) -> ScreenStep<Result> {
+        if !state.suspended {
+            state.suspended = true
+            out.music.append(.pause)
+        }
+        out.requests.append(.ask(HighScoreTable.eraseQuestion(state.assets)))
+        out.ops.append(.hostWait(.answer))
+        phase = .erasing
+        return .stay(out)
+    }
+
+    /// The erase question answered: Erase → `FUN_10004ae0` (`HighScoreTable.erase(_:answer:)`); the resume handler
+    /// `FUN_10023e10` (X `10024200`: b7 = 0, the cursor, no present (D15), b6 = 1, the music resumed — b5 is clear at
+    /// the menu); then `FUN_10024e70` as a plain click runs it. A pass without the answer (the host holds the wait
+    /// until one is queued) waits again.
+    private mutating func answered(keys: HeldKeys, state: inout FrontEndState,
+                                   _ out: inout PassOutput) -> ScreenStep<Result> {
+        guard let answer = keys.events.lazy.compactMap({ e -> QuestionButton? in
+            if case let .answer(b) = e { return b } else { return nil }
+        }).first else {
+            out.ops.append(.hostWait(.answer))
+            return .stay(out)
+        }
+        if let i = queue.firstIndex(of: .shell(.answer(answer))) { queue.remove(at: i) }   // the alert's own
+        state.prefs = HighScoreTable.erase(state.prefs, answer: answer)
+        state.suspended = false
+        lastSuspended = false                                           // the edge: this resume is done here
+        out.requests.append(.showCursor)                                // FUN_1000b780 InitCursor
+        state.menuMusic = true                                          // b6
+        out.music.append(.resume)                                       // FUN_10048220(0)
+        phase = .idle
+        return scoresAction(fromKey: false, state: &state, &out)
     }
 
     /// A called screen has returned.
