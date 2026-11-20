@@ -1,6 +1,6 @@
-STATUS: CONTINUE
+STATUS: BLOCKED — Q20 in docs/QUESTIONS.md (how the 13-minute Windows test run may run); see D57
 
-# NEXT — Ferazel's Wand, run 59: the wave 6A.2 end (two launch checks, by day), then 6A-BG1c and 6A-RN ⚑
+# NEXT — Ferazel's Wand, run 60: the wave 6A.2 end (two launch checks, by day), then 6A-BG1c and 6A-RN ⚑
 
 You are the seat for **Ferazel's Wand** in Ambrosia Classics, repo `/Users/andiyar/Developer/Ambrosia-Classics`
 (`$REPO`). Method: `~/Developer/Toolkits/fable-kit/orchestrator.md`. This is a build run. In your first message say
@@ -20,26 +20,30 @@ verification model", "Invariants and hazards" and "Shared architecture" themselv
 3. `docs/QUESTIONS.md` "Open" — act first on any new text under an `Answer:` (Q18 is Ben's Phase 5 gate: notes become
    tasks at the head of the order; a fail stops the build and becomes a fix wave. Q19: his choices on the 6A plan;
    **Q20: how Proof B runs when one command is cut off at ten minutes**) and record it in `docs/DECISIONS.md`.
-4. `docs/DECISIONS.md` D56, D55, D54, D53 and D51 (D46–D49 only where a card cites them) and
-   `docs/handoff-2026-11-21-ferazel-run58.md`.
+4. `docs/DECISIONS.md` D57, D56, D55, D54, D53 and D51 (D46–D49 only where a card cites them) and
+   `docs/handoff-2026-11-21-ferazel-run59.md`.
 
 ## Before anything else — three checks, each can end the run at once
 - **The hour** (`date`). Both owed items launch a build: 09:00–21:00 only (D42). No task (BG1c, RN) may start until
   both are done (the plan's "Wave end" line). **At night there is nothing this run may do: change nothing, write a
-  two-line handoff saying so, and close.** Runs 57 and 58 both started at night and used up the headless work.
+  two-line handoff saying so, and close.** Runs 57 and 58 used up the headless work. **Both scripts refuse by the
+  clock outside 09..20 and have no override** — a "go" from Ben before 09:00 cannot make them run, and the seat never
+  edits or goes around that guard (D57.2). Run 59 started at 07:56 on Ben's word and could launch nothing.
 - **Whether one command can run longer than ten minutes.** Proof B is ONE whole run of about 13 minutes or more
   (`tools/windows/proof-b-ferazel.sh`, no argument; its `--class` form is only for finding a crash) and cannot be
   split. Read Q20's `Answer:` first — it says how to run it. With no answer, background work off and a foreground
-  command cut off at ten minutes, you cannot run it: close with
-  `STOPPED … — Proof B needs one command longer than ten minutes (Q20)`. You may still do item 2 (the smoke) first.
+  command cut off at ten minutes, you cannot run it (run 59 stopped here; D57): close with
+  `STOPPED … — Proof B needs one command longer than ten minutes (Q20)`. You may still do item 2 (the smoke) first
+  if the hour allows it. If the answer is (c) and Ben has pasted the script's last line, check it reads
+  `719 passed / 0 failed / 3 skipped / 0 crashed (of 722)` and that main's game code has not moved since, and record it.
 - **The weekly usage limit** (`get_usage`). Above about 70%, do not start a ⚑ task: do the owed items and the small
   task only, or stop with nothing changed, and say so.
 - **Your own context.** Read the meter before the first dispatch. Run 58 began at 117k and was at 150k after a whole
   fix round (four helper reports).
 
 ## Reconcile first
-- `git -C "$REPO" worktree list`, `git -C "$REPO" log --oneline -8 main`: main at or past run 58's close (tests and
-  comments only since ae3a20e: 66875a3). Other sessions (Deimos, Castles) also merge to local main: merge main into
+- `git -C "$REPO" worktree list`, `git -C "$REPO" log --oneline -8 main`: main at or past run 59's close (records only
+  since run 58; tests and comments only since ae3a20e: 66875a3). Other sessions (Deimos, Castles) also merge to local main: merge main into
   your branch before each `--ff-only`.
 - G1 HectorKit per the plan's gate table (main ef2c341, clean, at run 58).
 - G2 is not owed at the start (run 58's own, at 66875a3: **722**, 0 failed, the two opt-in skips by name). At each
@@ -69,7 +73,7 @@ The wave's Fable cross-check (run 57, D55) and its fix round (run 58, D56) are d
 
 - Both are feature tasks (**Gate-F**): no full sweep or bot (those follow a level task). BG1c before RN (RN's fixture
   needs the plants built); never at once.
-- **6A-L15** (level 15 opens; Core 740, WinKit 86; a level task with the full sweep and bot, Gate-L) is run 60's unless
+- **6A-L15** (level 15 opens; Core 740, WinKit 86; a level task with the full sweep and bot, Gate-L) is run 61's unless
   your context after RN is under about 200k and it is still early in the day — a level task is never split from its
   gate or started when it cannot finish.
 - **The level fixture is built**: its interface is in the plan's "As executed — 6A-FX". Render tests open through
@@ -114,11 +118,11 @@ The wave's Fable cross-check (run 57, D55) and its fix round (run 58, D56) are d
 ## Close (in this order)
 1. Merge to local main `--ff-only` by SHA.
 2. "As executed" under each card; the plan's "Goldens" paragraph gains new values; rulings in `docs/DECISIONS.md`
-   under the next free number (D57).
+   under the next free number (D58).
 3. `docs/STATE.md`: replace the Ferazel block with today's state only; settled bits to the top of
    `docs/STATE-history.md`. One line in `docs/LOOP-LOG.md`. A short handoff with the real start and end times from
    `date`. One memory note + index line.
-4. Rebuild this file from nothing for the next run (run 60: what is left of the owed items and of BG1c / RN, then
+4. Rebuild this file from nothing for the next run (run 61: what is left of the owed items and of BG1c / RN, then
    6A-L15 with its full sweep and bot, per the plan's "Execution order").
 5. Push main, then start the next attended session (`start_session`, fresh context, brief "read docs/NEXT.md and run
    it") — unless a Coordinator started you (then it starts the next one), or a question only Ben can answer blocks the

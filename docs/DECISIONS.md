@@ -2590,3 +2590,20 @@ The seat's rulings (Fable 5.2, under the Coordinator). Per-task detail is under 
 5. **A run that starts at night with Q20 unanswered closes after the headless work as CLOSED, not STOPPED**: the hour
    alone forbids the two launch checks, and the Coordinator's "done" is "what the chip allows at this hour is merged".
    The checks stay owed and still come before any task.
+
+## D57 — Ferazel's Wand: run 59's rulings (stopped at the Windows test run; nothing changed; 2026-11-21)
+
+1. **Ben's words, 07:56 on 2026-11-21, to the Coordinator**, after it told him it was holding the next start until
+   09:00 for the launch-hours rule: "hoested by my own petartd. it's fine, go." Read as: the wait for 09:00 is lifted
+   for run 59. It is not read as an answer to Q20 (it does not mention the ten-minute cut-off or a detached run).
+2. **His word could not be acted on before 09:00 anyway: both launch scripts refuse by the clock, with no override.**
+   `tools/windows/proof-b-ferazel.sh` and `tools/windows/smoke-ferazel-win.sh` exit 64 unless the hour is 09..20
+   (measured at 07:58: the smoke's `--check-guard` refused, "hour 07"). The seat did not edit or go around the guard:
+   it is the D42 rule in code, and changing it is Ben's call. A start before 09:00 can launch nothing, whatever was
+   said; the Coordinator should start a launch run at 09:00 or later.
+3. **Q20 now blocks everything.** With background work off and one command cut off at ten minutes, the 13-minute
+   Windows test run cannot run in a Coordinator-started session, and no task may start before it. Running it detached
+   (`nohup`) is Q20's option (a) and waits for Ben's yes: the seat does not take it by default, because it goes around
+   the Coordinator's "foreground only" rule. `docs/NEXT.md` is `STATUS: BLOCKED` until Q20 has an answer.
+4. **The run closed at once rather than waiting an hour for the smoke alone**, so the one question reaches Ben while
+   he is at the keyboard. Both checks stay owed, in the same order.
