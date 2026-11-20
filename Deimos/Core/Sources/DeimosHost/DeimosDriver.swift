@@ -85,8 +85,10 @@ public struct DriverOutput: Equatable, Sendable {
 ///   (`ShellEvent.quitChosen` / `.quitRequested`) queued — X's pump inside the pause sets b8 — the wait lets go at
 ///   once, suspended or not and before Caps Lock is tested, WITHOUT the music resume (`10022fb0` skips
 ///   `10022fb4`), and `FrontEnd.quitDuringPause` sets the flag and the frame controller's +2 (X `10030cb8`): the next
-///   pass's begin frame reports quit and the game ends. The present and the pause flag's clear run as on a normal
-///   exit (`10022fc0..10023010`).
+///   pass's begin frame reports quit and the game ends. A queued Quit that finds the app suspended runs the resume
+///   handler first (`osx-build.md` D10: X `10023374`, resume if suspended, then the flag) — `resume()`: not
+///   suspended any more, and no music resume, since the pause holds the music. The present and the pause flag's
+///   clear run as on a normal exit (`10022fc0..10023010`).
 /// - **`.hostWait(wait)`** (Phase 4, plan S1a; `HostWait`) — held like a fade: t0 = `TickCount` of the `idle` that
 ///   reaches it; the op stream stays there, and no pass begins, until the wait is over — `.ticks(n)`: `TickCount ≥
 ///   t0 + n` (unsigned, wrapping); `.voiceEnd(id)`: `audio?.isPlaying(id)` false (`FUN_100476e0`; no sink = no mixer =
@@ -96,7 +98,7 @@ public struct DriverOutput: Equatable, Sendable {
 ///   — asked, like the voice, only to end the wait. The waits present nothing.
 /// - **Input queue** (Phase 4) — like `typed`, a pass's `keyEvents`, `mouseDowns` and `events` are everything handed
 ///   to `idle` since the previous pass began, in order: queued across every wait (limiter, fade, pause, host wait),
-///   never dropped, except that the original's `FlushEvents` (a restart, the pause wait's begin, a transition fade's
+///   never dropped, except that the original's `FlushEvents` (a game end, the pause wait's begin, a transition fade's
 ///   end) empties the OS event queue — `typed`, `keyEvents`, `mouseDowns` — and keeps the shell's own `events`. The
 ///   held state (`held`, `capsLock`, `mouse`, `mouseButton`) is the `idle`'s in which the pass begins. A
 ///   `ShellEvent.suspend` / `.resume` only rides to the pass: the app still calls `suspend()` / `resume()`.
@@ -334,7 +336,9 @@ public struct DeimosDriver {
                     flushOSEvents()                                           // 10022f1c FlushEvents
                 }
                 if !waitReleased {
-                    if frontEnd.state.quit || shellEventQueue.contains(where: Self.isQuit) {   // 10022f8c b8; X 10023214
+                    let quitQueued = shellEventQueue.contains(where: Self.isQuit)
+                    if frontEnd.state.quit || quitQueued {                    // 10022f8c b8; X 10023214
+                        if quitQueued && suspended { resume() }               // D10: X 10023374 resumes first
                         waitReleased = true
                         musicAfterWait = []                                   // 10022fb0: no resume (10022fb4)
                         frontEnd.quitDuringPause()                            // b8; X 10030cb8 the controller's +2

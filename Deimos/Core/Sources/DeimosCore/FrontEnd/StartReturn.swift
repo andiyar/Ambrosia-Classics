@@ -7,7 +7,11 @@ import Foundation
 /// a film mode carries the film its caller chose (the films screen, S5) or nil when none loads (the result is then
 /// `SessionResult.filmLoadFailed`). `init(direct:)` — the direct start (ruling 10): no level select, no fades, no
 /// cursor shown on the way back; it is G12's path and stays as it is. **Returns** the game's `SessionResult`, or nil
-/// when no game ran (the level select was cancelled).
+/// when no game ran (the level select was cancelled). The level select hands back only the sector, so the game's
+/// "music already playing" (`SessionStart.musicAlreadyPlaying`) is start/return's to set as it builds the start
+/// after a level select. The menu's element list and its lit button are in `FrontEndState` (`menuElements`,
+/// `menuLit`): the menu fills them, start/return fades them out and back in. As every screen: a pass's queued input
+/// (shell events included) reaches it only when it is that pass's first step (`FrontEndScreen`).
 ///
 /// **The stub.** Play mode calls the level select (its stub returns sector 1) and plays that sector; a film mode
 /// plays the film; the direct start plays its start. The game is the front end's (`FrontEndState.startGame` /

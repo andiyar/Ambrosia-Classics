@@ -46,6 +46,18 @@ public struct LaunchModifiers: Equatable, Sendable {
     }
 }
 
+/// One resource of the app's own resource fork (`Deimos Rising.rsrc`: DITL 190 / 191, STR# 130, DLOG, `tab#` …),
+/// by type and id — the key of `FrontEndState.shellResources`.
+public struct ShellResourceKey: Hashable, Sendable {
+    public var type: FourCC
+    public var id: Int16
+
+    public init(_ type: FourCC, _ id: Int16) {
+        self.type = type
+        self.id = id
+    }
+}
+
 /// The value a screen returns when it returns nothing (boot, the main menu, the films).
 public struct Done: Equatable, Sendable {
     public init() {}
@@ -81,8 +93,22 @@ public struct FrontEndState: Sendable {
     public var suspended = false
     /// The modifiers held at launch.
     public let launch: LaunchModifiers
-    /// The last recorded film's bytes (the Last Film image, B §4a), empty until a game records one (S5).
+    /// The app's own resource-fork data, handed in by the shell at launch and read-only here: raw bytes by resource
+    /// type and id (the configuration and controls windows' DITL 190 / 191, STR# 130 and the like — `DeimosAssets`
+    /// holds only the data files). Empty by default; a screen that needs a resource reads it from here and parses
+    /// it itself.
+    public let shellResources: [ShellResourceKey: [UInt8]]
+    /// The last recorded film's bytes (the Last Film image, B §4a), empty until a game records one (S5). Written by
+    /// the front end on the pass that ends a non-film game with a recording (plan ruling 7: saved at the end of every
+    /// non-film game — that pass also carries `ShellRequest.saveLastFilm` — and replayed from here within one run).
     public var lastFilm: [UInt8] = []
+    /// The main menu's element list — the original's one global list (G_Interface, `FUN_10000ce0` / `FUN_100009e0`),
+    /// shared by the screens that draw it. The menu (S2) fills it as it builds its screen; start/return (S3a) fades it
+    /// out as a game starts and fades it in / redraws it on the way back. Empty until the menu builds it.
+    public var menuElements = ElementList()
+    /// The menu's lit button: an index into `menuElements.elements`, nil when none is lit. The menu (S2) sets it;
+    /// start/return (S3a) reads it to redraw the list as the menu left it.
+    public var menuLit: Int?
     /// A music stream exists (`FUN_100481e0`: playing or paused) — the menu's b6 rule (resume it, or `inmu` from the
     /// start). Kept by the front end from the music cues of every pass in order: a play makes one, a stop or a
     /// stop-with-fade ends it; pause, resume and the level leave it.
@@ -96,18 +122,22 @@ public struct FrontEndState: Sendable {
     /// Games started (each first pass of a game) — the host resets its limiter stamp when it moves (the new frame
     /// controller, `FUN_10030190`, zeroes +0x1c).
     public internal(set) var gamesStarted = 0
+    /// Tests (`@testable`): stands in for the recorder (S5) — when set, every game that ends is taken to have
+    /// recorded these bytes (`SessionResult.recordedFilm`, empty until then).
+    var recordedFilmForTests: [UInt8]?
 
     /// "THIS COPY IS REGISTERED TO …" (pgsl 35, A §2.2): one constant until Ben names it (question 2).
     public static let registeredName = "AMBROSIA CLASSICS"
     public var registeredName: String { Self.registeredName }
 
     public init(assets: DeimosAssets, prefs: DeimosPrefs, launch: LaunchModifiers = LaunchModifiers(),
-                soundAvailable: Bool = true) throws {
+                soundAvailable: Bool = true, shellResources: [ShellResourceKey: [UInt8]] = [:]) throws {
         self.assets = assets
         text = try TextLayout(assets: assets)
         self.prefs = prefs
         self.launch = launch
         self.soundAvailable = soundAvailable
+        self.shellResources = shellResources
     }
 
     /// A game is in progress (started and not yet ended).
@@ -134,7 +164,10 @@ public struct FrontEndState: Sendable {
     /// One pass of the current game (`DeimosSession.pass`). Its first pass: the provisional game rebuilt with
     /// `ticks` (if it cannot be, the provisional one plays), `gamesStarted` + 1, and the session start's FlushEvents
     /// (`FUN_10030210`): the OS queue — typed, key events, mouse-downs — never reaches the game; the shell's events
-    /// do (the front end has already read them). The pass that ends the game hands its prefs back to the live prefs.
+    /// do (the front end has already read them). The pass that ends the game hands its prefs back to the live prefs,
+    /// and — a game that is not a film, ended with a recording (`SessionResult.recordedFilm`) — keeps that recording
+    /// as the Last Film (`lastFilm`) and carries `ShellRequest.saveLastFilm` with it (plan ruling 7; B §4b). A film,
+    /// or an empty recording, changes nothing.
     public mutating func gamePass(keys: HeldKeys, ticks: UInt32) -> PassOutput {
         guard var run = game else { preconditionFailure("FrontEndState.gamePass: no game was started") }
         game = nil                                                    // one owner while the pass mutates it
@@ -152,10 +185,17 @@ public struct FrontEndState: Sendable {
             keys.keyEvents = []
             keys.mouseDowns = []
         }
-        let out = run.session.pass(keys: keys, ticks: ticks)
+        var out = run.session.pass(keys: keys, ticks: ticks)
         if out.sessionEnded && !run.prefsReturned {
             run.prefsReturned = true
             prefs = run.session.prefs                                 // the game's prefs, live again
+            if var result = run.session.result {
+                if let stand = recordedFilmForTests { result.recordedFilm = stand }
+                if !result.isFilm && !result.recordedFilm.isEmpty {   // the Last Film, at every non-film game's end
+                    lastFilm = result.recordedFilm
+                    out.requests.append(.saveLastFilm(result.recordedFilm))
+                }
+            }
         }
         game = run
         return out
@@ -186,8 +226,15 @@ public struct GameRun: Sendable {
 ///
 /// A screen's frozen entry signature (ruling 3) is its initialiser, its `Result` (what it returns to its caller) and
 /// `pass(keys:ticks:returned:state:) -> ScreenStep<Result>`. Later sections fill in the body and add stored state to
-/// their own struct only. Keep large mutable buffers out of a screen's struct (or in `FrontEndState`): the front end
-/// takes the screen out of its enum to run it, and a payload still shared then would copy on write.
+/// their own struct only. A screen may own large buffers (the level select's bare `GameState`): the front end moves
+/// it off the stack and out of its enum case for its pass and puts it back after, so it is never copied.
+///
+/// **Input in a chained pass.** A pass's queued input — typed characters, key events, mouse-downs AND the shell's
+/// events (`HeldKeys.events`: Quit, suspend / resume, answers, About) — reaches only the FIRST step of that pass. A
+/// screen reached in the same pass by a call or a return (a chained step) sees the held state (`held`, `capsLock`,
+/// `mouse`, `mouseButton`) with empty queues. The front end itself reads the shell's events before any step (the
+/// quit flag, `suspended`), so those two are in `FrontEndState` for every step; any other queued input of that pass
+/// went to its first step and never reaches the chained one.
 public enum FrontEndScreen: Sendable {
     case boot(Boot)
     case mainMenu(MainMenu)
@@ -223,10 +270,11 @@ public enum FrontEndScreen: Sendable {
     /// What a callee handed back, as its caller receives it.
     typealias Next = ScreenStep<ScreenResult>.Next
 
-    /// One pass of this screen, its result wrapped for the stack.
+    /// One pass of this screen, its result wrapped for the stack. The screen is moved out of `self` (`consume`) for
+    /// its pass and put back after it, so it has one owner while it runs — its buffers are never copied.
     mutating func pass(keys: HeldKeys, ticks: UInt32, returned: ScreenResult?,
                        state: inout FrontEndState) -> (PassOutput, Next) {
-        switch self {
+        switch consume self {
         case var .boot(s):
             let step = s.pass(keys: keys, ticks: ticks, returned: returned, state: &state)
             self = .boot(s)
@@ -377,10 +425,12 @@ public struct FrontEnd: Sendable {
     private let menuFilm: Film?
 
     /// The boot entry: boot (`FUN_100000e0`), then the main menu, with `film` played as soon as the menu is up, as a
-    /// demo is (ruling 10's `-film`).
+    /// demo is (ruling 10's `-film`). `shellResources`: the app's own resource-fork data (`FrontEndState`).
     public init(assets: DeimosAssets, prefs: DeimosPrefs, launch: LaunchModifiers = LaunchModifiers(),
-                soundAvailable: Bool = true, film: Film? = nil) throws {
-        state = try FrontEndState(assets: assets, prefs: prefs, launch: launch, soundAvailable: soundAvailable)
+                soundAvailable: Bool = true, film: Film? = nil,
+                shellResources: [ShellResourceKey: [UInt8]] = [:]) throws {
+        state = try FrontEndState(assets: assets, prefs: prefs, launch: launch, soundAvailable: soundAvailable,
+                                  shellResources: shellResources)
         directStart = nil
         root = .boot
         stack = [.boot(Boot())]
@@ -390,8 +440,9 @@ public struct FrontEnd: Sendable {
     /// The direct start (ruling 10): `start`'s game — validated here, built at the first pass with its TickCount —
     /// and a new one at `start` each time one ends.
     public init(direct start: SessionStart, assets: DeimosAssets, prefs: DeimosPrefs,
-                soundAvailable: Bool = true) throws {
-        state = try FrontEndState(assets: assets, prefs: prefs, soundAvailable: soundAvailable)
+                soundAvailable: Bool = true, shellResources: [ShellResourceKey: [UInt8]] = [:]) throws {
+        state = try FrontEndState(assets: assets, prefs: prefs, soundAvailable: soundAvailable,
+                                  shellResources: shellResources)
         try state.startProvisionalGame(start)
         directStart = start
         root = .direct

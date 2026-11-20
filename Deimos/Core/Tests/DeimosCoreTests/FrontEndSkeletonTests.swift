@@ -40,10 +40,15 @@ final class FrontEndSkeletonTests: XCTestCase {
     /// first pass (no stub draws, so the steps chain); the game's first pass is the bare session's, seeded with that
     /// pass's ticks, and carries the cursor hide. When the game ends, start/return hands its result back and shows the
     /// cursor, and the menu stub starts the next game in the same pass. Every other stub returns at once with its
-    /// declared value and an empty output. Bound: 3,000 passes.
+    /// declared value and an empty output. The shell's resources reach the shared state; a game with an empty
+    /// recording, or a film session, leaves the Last Film alone. Bound: 3,000 passes.
     func testStubScreensPassThrough() throws {
         let a = try assets()
-        var fe = try FrontEnd(assets: a, prefs: .fresh)
+        let dialog = ShellResourceKey(FourCC("DITL")!, 190)
+        var fe = try FrontEnd(assets: a, prefs: .fresh, shellResources: [dialog: [0x00, 0x13]])
+        XCTAssertEqual(fe.state.shellResources, [dialog: [0x00, 0x13]], "the shell's resources reach the state")
+        XCTAssertEqual(fe.state.menuElements, ElementList(), "the menu's list is empty until the menu builds it")
+        XCTAssertNil(fe.state.menuLit)
         XCTAssertEqual(fe.screens, [.boot])
         XCTAssertNil(fe.session, "no game before the first pass")
         let t0: UInt32 = 5_000
@@ -64,9 +69,11 @@ final class FrontEndSkeletonTests: XCTestCase {
         // Esc ends the game; the next pass returns its result to the menu, which starts another.
         var ticks = t0 &+ 2
         run(&fe, 100, ticks: &ticks)
-        guard passes(&fe, keys: HeldKeys(held: [Self.escKey]), ticks: &ticks, bound: 1_000,
-                     until: { _, out in out.sessionEnded }) != nil else { return }
+        guard let escOuts = passes(&fe, keys: HeldKeys(held: [Self.escKey]), ticks: &ticks, bound: 1_000,
+                                   until: { _, out in out.sessionEnded }) else { return }
         XCTAssertEqual(fe.session?.result?.end, .escape)
+        XCTAssertEqual(fe.state.lastFilm, [], "an empty recording changes nothing")
+        XCTAssertFalse(escOuts.contains { $0.requests.contains { if case .saveLastFilm = $0 { true } else { false } } })
         let back = fe.pass(keys: HeldKeys(), ticks: ticks)
         XCTAssertEqual(back.requests, [.showCursor, .hideCursor], "start/return shows the cursor; the next game hides it")
         XCTAssertEqual(fe.state.gamesStarted, 2)
@@ -106,6 +113,23 @@ final class FrontEndSkeletonTests: XCTestCase {
         var menu = MainMenu()
         state.quit = true
         check(menu.pass(keys: HeldKeys(), ticks: 0, returned: nil, state: &state), Done(), "main menu, quit set")
+
+        // A film session (start/return in demo mode, de01) that ends with a recording leaves the Last Film alone.
+        let index = try RealData.index()
+        let film = try Film(data: index.data(for: XCTUnwrap(index.record(type: FourCC("film")!, id: FourCC("de01")!))))
+        var demo = StartReturn(mode: .demo, players: 1, film: film)
+        state.lastFilm = [0x01]
+        state.recordedFilmForTests = [0x02]
+        var demoEnded = false
+        for _ in 0..<1_000 {
+            let step = demo.pass(keys: HeldKeys(held: [Self.escKey]), ticks: ticks, returned: nil, state: &state)
+            ticks &+= 2
+            XCTAssertFalse(step.output.requests.contains { if case .saveLastFilm = $0 { true } else { false } })
+            if step.output.sessionEnded { demoEnded = true; break }
+        }
+        XCTAssertTrue(demoEnded, "bound: 1,000 passes")
+        XCTAssertEqual(state.game?.session.result?.isFilm, true)
+        XCTAssertEqual(state.lastFilm, [0x01], "a film session leaves the Last Film alone")
     }
 
     /// A Quit (menu command or the system's request) reaching a pass sets the front end's quit flag; it does not end
@@ -160,7 +184,9 @@ final class FrontEndSkeletonTests: XCTestCase {
     /// The front end owns the live prefs (grounding B §6; ◇ stand-in 6 retired): a game starts from them and hands
     /// its own back on the pass that ends it — F6 (byte pref 5) and `-` (int pref 0, 50 → 40) survive an Esc and a
     /// game over into the next games, by the direct start and by the boot entry. `livePrefs` (what the shutdown
-    /// saves) is the running game's while one runs. Bound: 6,000 passes per wait.
+    /// saves) is the running game's while one runs. Each game's recorded film (a test stand-in until S5's recorder)
+    /// becomes the Last Film in memory and is handed to the shell on the pass that ends it (plan ruling 7).
+    /// Bound: 6,000 passes per wait.
     func testPrefsCarriedThroughSessions() throws {
         let a = try assets()
         var ticks: UInt32 = 20_000
@@ -174,8 +200,18 @@ final class FrontEndSkeletonTests: XCTestCase {
             XCTAssertEqual(fe.state.prefs.intPrefs[0], 50, "\(entry): the game hands its prefs back when it ends")
             XCTAssertEqual(fe.livePrefs.intPrefs[0], 40, "\(entry): the live prefs are the running game's")
 
-            guard passes(&fe, keys: HeldKeys(held: [Self.escKey]), ticks: &ticks, bound: 1_000,
-                         until: { _, out in out.sessionEnded }) != nil else { return }
+            // The Last Film (plan ruling 7): a non-film game that ends with a recording keeps it in memory and asks
+            // the shell to save it, on its ending pass. (The recorder lands in S5: the test stands in for it.)
+            let firstFilm: [UInt8] = [0xF1, 0x1A, 0x01]
+            fe.state.recordedFilmForTests = firstFilm
+            XCTAssertEqual(fe.state.lastFilm, [], entry)
+            guard let escOuts = passes(&fe, keys: HeldKeys(held: [Self.escKey]), ticks: &ticks, bound: 1_000,
+                                       until: { _, out in out.sessionEnded }) else { return }
+            XCTAssertEqual(fe.state.lastFilm, firstFilm, "\(entry): the Last Film, in memory")
+            XCTAssertEqual(escOuts.last?.requests.filter { $0 == .saveLastFilm(firstFilm) }.count, 1,
+                           "\(entry): saved on the ending pass")
+            XCTAssertEqual(escOuts.dropLast().flatMap(\.requests)
+                .filter { if case .saveLastFilm = $0 { true } else { false } }, [], "\(entry): only then")
             XCTAssertEqual(fe.state.prefs.bytePrefs[5], 1, "\(entry): carried on the ending pass: F6")
             XCTAssertEqual(fe.state.prefs.intPrefs[0], 40, "\(entry): carried: the volume")
             XCTAssertEqual(fe.livePrefs, fe.state.prefs)
@@ -185,8 +221,13 @@ final class FrontEndSkeletonTests: XCTestCase {
             XCTAssertEqual(fe.session?.prefs.intPrefs[0], 40, entry)
 
             // No input: the pilot dies; game over ends the second game, and the third starts from its prefs.
-            guard passes(&fe, ticks: &ticks, bound: 6_000, until: { fe, _ in fe.state.gamesStarted == 3 }) != nil
-            else { return }
+            let secondFilm: [UInt8] = [0xF1, 0x1A, 0x02]
+            fe.state.recordedFilmForTests = secondFilm
+            guard let overOuts = passes(&fe, ticks: &ticks, bound: 6_000,
+                                        until: { fe, _ in fe.state.gamesStarted == 3 }) else { return }
+            XCTAssertEqual(fe.state.lastFilm, secondFilm, "\(entry): the game over's recording replaces it")
+            XCTAssertEqual(overOuts.flatMap(\.requests).filter { if case .saveLastFilm = $0 { true } else { false } },
+                           [.saveLastFilm(secondFilm)], "\(entry): one save, at the game over")
             XCTAssertEqual(fe.state.prefs.bytePrefs[5], 1, "\(entry): carried again (restored at the appear)")
             XCTAssertEqual(fe.state.prefs.intPrefs[0], 40, entry)
             XCTAssertEqual(fe.session?.prefs.intPrefs[0], 40, entry)

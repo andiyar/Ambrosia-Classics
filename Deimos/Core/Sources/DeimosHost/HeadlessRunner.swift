@@ -15,7 +15,8 @@ public struct ReplayResult: Equatable, Sendable {
         /// `FUN_10007170` → `FUN_100064d0` after the last sector: the next level is `none` and the session ends
         /// (`10006620..100066c8`; plan LT). A transition to the next sector is not an end.
         case campaignEnd
-        /// The begin frame's quit (`1000591c`, `FUN_100064c0`: Esc, or +0x02 — never set in 1.0.6), read from the
+        /// The begin frame's quit (`1000591c`, `FUN_100064c0`: Esc, or the frame controller's +0x02 — set only by a
+        /// Quit that lets the pause's Caps Lock wait go, `FrontEnd.quitDuringPause`, X `10030cb8`), read from the
         /// session's result (`SessionResult.End.escape`). The runner hands every pass empty keys, so its runs do not
         /// reach it today; it names the end instead of trapping. Phase 4 (plan S1a).
         case quit
@@ -109,8 +110,9 @@ public struct HeadlessRunner {
     ///    and the level start finds level `none` (`10006620..100066c8`) → the campaign end — a transition to the next
     ///    sector keeps the session running, so it never reaches here (plan LT);
     /// 3. the film branch after the tick (`10005a24..10005a48`): a film whose P1 cursor passed the recording.
-    /// The only other clear is the begin frame's quit (`1000591c`: Esc, or +0x02, which 1.0.6 never sets), first in
-    /// the pass's order: `.quit` when the session's result says so (Phase 4). The runner's keys are empty, so its own
+    /// The only other clear is the begin frame's quit (`1000591c`: Esc, or +0x02, set only by a Quit inside the
+    /// pause's Caps Lock wait, `FrontEnd.quitDuringPause`), first in the pass's order: `.quit` when the session's
+    /// result says so (Phase 4). The runner's keys are empty, so its own
     /// runs never reach it — an end none of these explains is unreachable, and traps.
     static func reason(_ s: DeimosSession, levelEndingBefore: Bool) -> ReplayResult.EndReason {
         if s.result?.end == .escape { return .quit }

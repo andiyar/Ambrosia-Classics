@@ -28,10 +28,15 @@ final class DriverTests: XCTestCase {
 
     /// A driver on the front end's direct start (Phase 4 S1b, ruling 10): the game at `start`, a new one at the same
     /// start when it ends — what the app runs until the menu lands.
+    /// `recordedFilm`: the test's stand-in for S5's recorder (every game ends with that recording).
     private func directDriver(_ start: SessionStart, prefs: DeimosPrefs = .fresh, audio: (any DeimosAudioSink)? = nil,
-                              settings: any SettingsStore = NoSettingsStore()) throws -> DeimosDriver {
-        DeimosDriver(frontEnd: try FrontEnd(direct: start, assets: try ShippedAssets.get(), prefs: prefs),
-                         rate: .classic, audio: audio, settingsStore: settings)
+                              settings: any SettingsStore = NoSettingsStore(),
+                              lastFilm: any LastFilmStore = NoLastFilmStore(),
+                              recordedFilm: [UInt8]? = nil) throws -> DeimosDriver {
+        var frontEnd = try FrontEnd(direct: start, assets: try ShippedAssets.get(), prefs: prefs)
+        frontEnd.state.recordedFilmForTests = recordedFilm
+        return DeimosDriver(frontEnd: frontEnd, rate: .classic, audio: audio, settingsStore: settings,
+                            lastFilmStore: lastFilm)
     }
 
     private func makeDriver(audio: (any DeimosAudioSink)? = nil, sector: Int = 1) throws -> DeimosDriver {
@@ -559,10 +564,14 @@ final class DriverTests: XCTestCase {
     /// then Esc → the carried prefs; the new level start sees pref 5 set (suspended until its appear, `1000693c`).
     /// ◇ Stand-in 2: game over (no input: the pilot dies; running clears at gameOverStart + 111) restarts the same
     /// way, carrying the prefs again. Plan ruling 1: launched at sector 7 (`-sector 7`), both restarts start at 7.
+    /// Each ended game's recording (a stand-in for S5's recorder) reaches the Last Film store (plan ruling 7).
     /// Bound: fake clock 300 s.
     func testPrefsSurviveRestart() throws {
         let store = RecordingSettingsStore()
-        var driver = try directDriver(SessionStart(sector: 7, players: 1, film: nil), settings: store)
+        let films = RecordingLastFilmStore()
+        let recording: [UInt8] = [0xF1, 0x1A, 0x07]
+        var driver = try directDriver(SessionStart(sector: 7, players: 1, film: nil), settings: store, lastFilm: films,
+                                      recordedFilm: recording)
         var clock = FakeClock(rate: .classic)
         func idle(_ keys: HeldKeys) -> Bool {
             _ = driver.idle(seconds: clock.seconds, keys: keys)
@@ -579,7 +588,10 @@ final class DriverTests: XCTestCase {
         XCTAssertEqual(driver.session.prefs.bytePrefs[5], 1)
         XCTAssertEqual(driver.session.prefs.intPrefs[0], 40)
 
+        XCTAssertEqual(films.saved, [], "no game has ended")
         while driver.restarts == 0 { guard idle(HeldKeys(held: [Self.escKey])) else { return XCTFail("no restart") } }
+        XCTAssertEqual(films.saved, [recording], "the ending pass's Last Film went to the store")
+        XCTAssertEqual(driver.frontEnd.state.lastFilm, recording)
         XCTAssertEqual(driver.prefs.bytePrefs[5], 1, "carried: F6")
         XCTAssertEqual(driver.prefs.intPrefs[0], 40, "carried: the volume")
         XCTAssertEqual(driver.session.sector, 7, "Esc restarts at the launch's sector")
@@ -592,6 +604,7 @@ final class DriverTests: XCTestCase {
         }
         XCTAssertTrue(gameOver, "the second session ended on game over")
         XCTAssertEqual(driver.restarts, 2)
+        XCTAssertEqual(films.saved, [recording, recording], "and at the game over")
         XCTAssertEqual(driver.session.sector, 7, "game over restarts at the launch's sector")
         XCTAssertEqual(driver.prefs.bytePrefs[5], 1, "carried again (restored at the appear)")
         XCTAssertEqual(driver.prefs.intPrefs[0], 40)
@@ -1074,7 +1087,8 @@ final class DriverTests: XCTestCase {
     /// end's quit flag, and sets the frame controller's +2, so the next pass's begin frame reports quit and the game
     /// ends (its halt and stop, not a film). Caps Lock is still down, so that pass pauses again; its wait sees the
     /// flag and lets go at once too, again without the resume. Then the direct start asks the shell to quit and
-    /// starts no new game. Fake-clock cap 120 s.
+    /// starts no new game. With the app suspended inside the wait, the Quit runs the resume handler first (D10).
+    /// Fake-clock cap 120 s per driver.
     func testQuitInsideCapsLockWait() throws {
         let sink = RecordingSink()
         var driver = try makeDriver(audio: sink)
@@ -1117,6 +1131,34 @@ final class DriverTests: XCTestCase {
         for _ in 0..<20 { guard idle(Self.capsUp) else { return XCTFail("cap") } }
         XCTAssertEqual(sink.applies.count, applies + after.count, "nothing more reaches the sink")
         XCTAssertEqual(requests.filter { $0 == .quit }.count, 1)
+
+        // Suspended inside the wait (D10: the Quit AppleEvent runs the resume handler first, X 10024200, then sets
+        // the flag): the app is no longer suspended, the music stays paused (the pause holds it, 10023e7c), and the
+        // wait lets go as above.
+        let sink2 = RecordingSink()
+        var held = try makeDriver(audio: sink2)
+        var clock2 = FakeClock(rate: .classic)
+        func idle2(_ keys: HeldKeys) -> Bool {
+            _ = held.idle(seconds: clock2.seconds, keys: keys)
+            clock2.seconds += Self.poll
+            return clock2.seconds <= 120
+        }
+        while held.presentCount < 20 { guard idle2(Self.capsUp) else { return XCTFail("no presents (2)") } }
+        let before2 = held.passCount
+        while held.passCount == before2 { guard idle2(caps) else { return XCTFail("no pass with Caps Lock (2)") } }
+        let pause2 = held.passCount
+        held.suspend()
+        for _ in 0..<10 { guard idle2(caps) else { return XCTFail("cap (2)") } }
+        XCTAssertEqual(held.passCount, pause2, "the wait holds while suspended")
+        XCTAssertTrue(held.suspended)
+        let applies2 = sink2.applies.count
+        guard idle2(HeldKeys(capsLock: true, events: [.quitRequested])) else { return XCTFail("cap (2)") }
+        XCTAssertFalse(held.suspended, "the resume handler ran first")
+        XCTAssertTrue(held.frontEnd.state.quit, "then the quit flag")
+        XCTAssertEqual(held.passCount, pause2 + 1, "the wait let go")
+        XCTAssertFalse(held.session.running, "the game ended")
+        XCTAssertFalse(sink2.applies.dropFirst(applies2).flatMap(\.music).contains(.resume),
+                       "no music resume: the pause holds the music")
     }
 }
 
@@ -1125,6 +1167,13 @@ final class RecordingSettingsStore: SettingsStore, @unchecked Sendable {
     private(set) var saved: [DeimosPrefs] = []
     func load() throws -> DeimosPrefs { .fresh }
     func save(_ prefs: DeimosPrefs) throws { saved.append(prefs) }
+}
+
+/// A Last Film store that records every save (single-threaded tests).
+final class RecordingLastFilmStore: LastFilmStore, @unchecked Sendable {
+    private(set) var saved: [[UInt8]] = []
+    func save(_ film: [UInt8]) throws { saved.append(film) }
+    func load() throws -> [UInt8]? { saved.last }
 }
 
 /// A sink whose effects "sound" while their ids are in `playing` (single-threaded tests).
