@@ -33,8 +33,8 @@ Return, and **−** presses Esc. The shoulder buttons and triggers do nothing.
 
 ## Remapping
 
-In play the controller presses player 1's keys as set in **Preferences ▸ Set Controls…**: change a key there and the
-button follows it. Pause stays on **+** and leave on **−**.
+In play the controller presses player 1's keys as set in the game's controls window — the **PREFERENCES** button on
+the main menu, then **Set Controls…**: change a key there and the button follows it. Pause stays on **+** and leave on **−**.
 
 ## Things to know
 
@@ -64,4 +64,4 @@ button follows it. Pause stays on **+** and leave on **−**.
    the next air weapon (from sector 2 on).
 4. **+** pauses; **+** again un-pauses.
 5. Tap **−** → nothing; hold it a second → the game ends, as Esc does.
-6. Open Preferences ▸ Set Controls…: the controller does nothing there.
+6. On the main menu click **PREFERENCES**, then **Set Controls…**: the controller does nothing there.
