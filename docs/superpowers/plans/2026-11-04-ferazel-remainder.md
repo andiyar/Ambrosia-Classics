@@ -1756,6 +1756,48 @@ ids; its `--check` reads this table):
   level, spawned by nothing — ENG §5) · `testTableUnplaced` (0xb71 on no level — ENG §5) — from the 24 level files.
 - **Gate:** Gate-F (G2 709). **Commit:** `FerazelCore: Box scenery of levels 10–22 and the graves' mirrored hot rect;
   6 tests`.
+- **As executed — 6A-BX1a (run 54):** task b944bf5 (6 tests, all in `BoxSceneryTests`), ledger a76c0d4, review fix
+  round f0c6bed (asserts inside the six named tests, one comment, the audit's anchors) and its ledger e8828ac.
+  Ferazel/Core 703 → 709; the fix round added no test (D51.2). **What was built:** the 19 scenery types now set up —
+  50 records (level 10: 14, 11: 26, 15: 3, 21: 7; none on 18, 20 or 22), each with its face in the Setup-face table
+  and its picture-cache single marked at LL §6's position (the outcrops under flag 1). **The graves of level 21** are
+  placed mirrored, so their hot rect is now flipped by the face width as the original does: 2834 2…28 → 12…38 (face
+  40), 2836 0…31 → 3…34 (face 34), 2833 5…59 unchanged (face 64, the rect is symmetric). Contact follows the flip:
+  the player meets 2834 at its x + 28 and 2836 at x + 31 from the mirrored side, and not at 12 / 3 from the other
+  side (one pixel further in, he does); 2833 is met alike on both sides. 2833 / 2834 open conversations 260 / 261 on
+  contact; 2836 (p1 1) opens none but still sets the 90-frame cooldown and writes the record's p4 = 1. **The width
+  table:** `BoxSprite.decorationFaceWidths` holds the six decorations with a non-empty rect (74, 54, 64, 40, 36, 34)
+  — Core's Setup cannot see picture widths (it has no face records), so the widths are written down and a test pins
+  them against the game's own width reader (`FerazelSession.frameRect`) and, since the fix round, ties the table's
+  keys to the decorations whose Setup gives a rect. **Recorded deviation (open carry):** the original mirrors every
+  decoration placed with p1 ≠ 0, so an empty rect becomes (0, w, 0, w) and the Box centre lands at x + w; the port
+  keeps (0, 0, 0, 0) and the centre at x. Nothing reads the rect or the centre of an empty-rect decoration (both
+  review legs searched every reader: dynamic light, wind, occluder clip, collide dispatch and every contact reader,
+  Smite, idle on / off, the save block), and matching the original would move two level 1–5 state pins
+  (`BoxRopeTests`' level-1 2842 rect, `BootFacesTests`' hot-rect hash), so the skip stays; the comment at the flip
+  says so. **Correction to this card:** "every decoration on levels 1–5 has the empty rect" is wrong — 2832 has a
+  non-empty rect on level 3 (record 144; also level 10 record 257, level 21 record 157), unmirrored; the true
+  sentence is "every *mirrored* decoration". **The fixture:** level 21 with 23 records left out by type, the list
+  written literally (1061 × 14, 2921 × 2, 2962, 1490, 1491 × 3, 1492, 1493). **The ledger** now counts the
+  records the port refuses as level 10: 0, 11: 1, 15: 22, 21: 23. **Deviations:** the ledger script changed in the
+  task commit (its flip arm now reads "built", anchored on the call and the width table); `DrawModeAuditTests`
+  re-anchored (in the task and again in the fix round). **Reviews:** leg 1 (spec) MERGEABLE, 0 / 0 / 4 minor —
+  record counts, grave rects, widths, mirror condition and the talk arm reproduced independently; leg 2 (quality)
+  MERGEABLE AFTER FIXES, 0 / 1 / 7; 90 mutations planted: 84 caught, 1 equivalent, 5 survived. **Fix round:** the
+  comment at the flip made truthful (above); leg 2's asserts went into `testBoxSceneryFacesSetUp` (outcrops and
+  mushrooms one-way; the empty-rect pin labelled as the port's value), `testGraveHotRectFlip` (p1 −1 mirrors too)
+  and `testGraveTalkersOpenConversations` (the cooldown alone, p1 0, p1 100 / 101); `testGraveHotRectFlip` also
+  checks the width as right − left and that the width table's keys equal the decorations with a rect; the ledger's
+  hand-written prose (§1 finding 6, §8(a)) now says the flip is built. The 5 survivors now fail (three re-checked by
+  hand here: mirroring on p1 > 0, a conversation at p1 ≥ 100, a width dropped from the table), so 89 caught, 1
+  equivalent, 0 survived. No pinned value moved: levels 1–5, level 21's fixture, level 10's strip, wind, cannons and
+  tree, level 11's ripple are all as they were. Gates (fix round, comment-only Sources): G5 succeeded, GW4 `Build
+  complete!`, G7 / G7b / G8 / G10 empty; ledger `--check` OK. **Carries left:** the empty-rect deviation above; the
+  five records of these types on levels 50 and 70 (2808 and 2857 on 50, 2831 × 3 on 70, all p1 0) now set up but
+  are outside this card's levels and no test covers them; the outcrops' Setup-face row names CLUT
+  202, which the face lookup always replaces with the level's own CLUT (harmless, as for the trees; the flag 1 is
+  pinned by the cache marks); a few asserts restate the code (the CLUT through the screen-CLUT function, the face
+  source and reference) — the cache positions, record counts, rect literals and widths do the pinning.
 
 #### 6A-BX1b — minor — Box faces and talkers: teleporters, furniture, NPCs (→ 713)
 - **Files:** `Sources/FerazelCore/Sprites/SetupFaces.swift` (`:512` — no face arm for 1060 / 1061; `:505` furniture,
