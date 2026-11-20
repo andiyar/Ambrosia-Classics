@@ -41,6 +41,9 @@ public struct GameState: Sendable {
     public var cues = CueBuffer()
     /// The film being played back (`SessionStart.film`), nil when not a film session.
     public var film: FilmCursor? = nil
+    /// The Last Film recorder (`FUN_10009390` + `FUN_10009710`): made by the session's set-up when not a film, nil
+    /// otherwise; the player update's live input branch writes it (`1002a42c FUN_10009830`). Phase 4 (plan S5).
+    public var recorder: FilmRecorder? = nil
     /// The per-tick replay trace when one is recorded (H2), else nil.
     public var trace: TickTrace? = nil
     /// The level's media mask (C18a loads it at level start; C11b looks water up in it).

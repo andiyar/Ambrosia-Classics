@@ -80,8 +80,10 @@ final class FrontEndSkeletonTests: XCTestCase {
         guard let escOuts = passes(&fe, keys: HeldKeys(held: [Self.escKey]), ticks: &ticks, bound: 1_000,
                                    until: { _, out in out.sessionEnded }) else { return }
         XCTAssertEqual(fe.session?.result?.end, .escape)
-        XCTAssertEqual(fe.state.lastFilm, [], "an empty recording changes nothing")
-        XCTAssertFalse(escOuts.contains { $0.requests.contains { if case .saveLastFilm = $0 { true } else { false } } })
+        let recorded = try XCTUnwrap(fe.session?.result).recordedFilm
+        XCTAssertEqual(fe.state.lastFilm, recorded, "the recording (S5) is kept as the Last Film")
+        XCTAssertEqual(escOuts.flatMap { $0.requests.filter { if case .saveLastFilm = $0 { true } else { false } } },
+                       [.saveLastFilm(recorded)])
         let back = fe.pass(keys: HeldKeys(), ticks: ticks)
         XCTAssertEqual(back.requests, [.showCursor, .hideCursor], "start/return shows the cursor; the next game hides it")
         XCTAssertEqual(fe.state.gamesStarted, 2)

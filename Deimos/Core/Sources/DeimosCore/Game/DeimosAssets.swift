@@ -48,6 +48,13 @@ public struct DeimosAssets: Sendable {
         try DeimosAssets(index: index)
     }
 
+    /// The `Data` folder's tag index with an optional second `Local` root (`TagIndex(dataDirectory:secondLocalRoot:)`
+    /// — the Last Film folder, plan ruling 7; nil = none), then `load(index:)`. Phase 4 (plan S5). The parameter has no
+    /// default so this never overlaps a shell's own `load(dataDirectory:)`.
+    public static func load(dataDirectory: URL, secondLocalRoot: URL?) throws -> DeimosAssets {
+        try DeimosAssets(index: TagIndex(dataDirectory: dataDirectory, secondLocalRoot: secondLocalRoot))
+    }
+
     private init(index: TagIndex) throws {
         func tag(_ type: String, _ id: String) throws -> Data {
             guard let r = index.record(type: FourCC(type)!, id: FourCC(id)!) else {
