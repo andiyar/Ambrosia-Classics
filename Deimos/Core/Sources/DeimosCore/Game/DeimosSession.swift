@@ -94,12 +94,6 @@ public struct DeimosSession: Sendable {
     public var levelInfo: LevelDefinition { game.levelInfo }
     /// The level start's ops, handed out by the first `pass`.
     private var pendingOps: [RenderOp] = []
-    /// The shell requests handed out by the first `pass`: `.hideCursor` — ◇ the front end's `HideCursor` just
-    /// before the game (`FUN_100234d0` step 2, `10023550 bl FUN_1000b6e0`; front-end.md §3). `FUN_100051a0` itself
-    /// never touches the cursor; the session stands in for the front end's start-game path until Phase 4. The
-    /// matching `InitCursor` after the game (`100238b4` / `10023ad0`) belongs to the menu, which the ◇ restart
-    /// replaces with an immediate new session (which hides it again), so no pass emits `.showCursor`.
-    private var pendingRequests: [ShellRequest] = [.hideCursor]
     /// The prefs' key table (`KeyTable`), built once — `setBytePref` never changes it.
     private let keyTable: KeyTable
     private let scoreBarDraw: ScoreBarDraw
@@ -279,14 +273,14 @@ public struct DeimosSession: Sendable {
     /// without a host, the pass's `music` alone still carries them in one list. A film never pauses
     /// (`10030408..1003041c`), and still skips the halt and the stop (`10005ad0`).
     ///
-    /// The first pass also returns the level start's ops (before its own) and `.hideCursor`. Once the session has
-    /// ended, `pass` returns an empty output with `sessionEnded` set. `ticks` = `TickCount()` (the FPS monitor's clock).
+    /// The first pass also returns the level start's ops (before its own). No pass makes a shell request:
+    /// `FUN_100051a0` never touches the cursor — the front end hides it before the game (`FUN_100234d0` step 2,
+    /// `10023550`) and shows it after (Phase 4 S1b, grounding D S17). Once the session has ended, `pass` returns an
+    /// empty output with `sessionEnded` set. `ticks` = `TickCount()` (the FPS monitor's clock).
     public mutating func pass(keys: HeldKeys, ticks: UInt32) -> PassOutput {
         guard game.flags.running else { return PassOutput(sessionEnded: true) }
         var ops = pendingOps
         pendingOps = []
-        let requests = pendingRequests
-        pendingRequests = []
         let film = game.flags.filmPlaying
 
         // 1. Begin frame.
@@ -361,7 +355,7 @@ public struct DeimosSession: Sendable {
             }
             result = makeResult(end: end)
         }
-        return PassOutput(ops: ops, sounds: cues.sounds, music: cues.music, requests: requests, ticked: begin.tick,
+        return PassOutput(ops: ops, sounds: cues.sounds, music: cues.music, ticked: begin.tick,
                           sessionEnded: !game.flags.running, haltEffectsAt: cues.haltEffectsAt,
                           fadeToBlackAt: fadeMark, result: result)
     }
@@ -422,6 +416,16 @@ public struct DeimosSession: Sendable {
     /// (frames = the max rate, shown, deficient windows 0) is as the pass left it; nothing between depends on it.
     public mutating func transitionFadeEnded(ticks: UInt32) {
         controller.fpsWindowStart = ticks
+    }
+
+    /// The pause's wait let go on the quit flag b8 (Phase 4 S1b; grounding B §5 `10022f8c..10022fa8`, D S14; X
+    /// `10023228..10023244`): it returns "quit", skipping the music resume (`10022fb0` branches past `10022fb4`), and
+    /// the paused-frame hook sets the frame controller's +2 (X `10030cb8`), so the next pass's begin frame reports
+    /// quit and the session ends (`1000591c`). The resume the pause left for the next pass (`PauseScreen
+    /// .musicAfterWait`, the only music queued between passes) is dropped. Called by the host, between passes.
+    public mutating func quitDuringPause() {
+        controller.quitChosen = true                                 // X 10030cb8 (+0x02)
+        game.cues.music.removeAll { $0 == .resume }                  // 10022fb0: no FUN_10048220(0)
     }
 
     /// 3. The draw world `FUN_10007070`.

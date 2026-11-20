@@ -213,8 +213,9 @@ public enum FrameKeys {
         game.cues.sounds.append(SoundPlay.perm(game.assets.sounds[8], priority: 0x32, volume: 100,
                                                allowMultiple: true))  // 10022f2c..10022f44
         game.cues.music.append(.pause)                                // 10022f4c..10022f50
-        // … the host waits for Caps Lock up (`.pauseWait`); quit (b8) is never set during play (INDEX #48);
-        // the resume after the wait (10022fb4..10022fb8) is `musicAfterWait` …
+        // … the host waits for Caps Lock up (`.pauseWait`), or for the quit flag b8 (10022f8c: then no resume, and
+        // the controller's +2 — `DeimosSession.quitDuringPause`, Phase 4 S1b); the resume after the wait
+        // (10022fb4..10022fb8) is `musicAfterWait` …
         game.notice.post(nil, now: game.flags.gameTime)               // 100308c0..100308d0
         c.paused = false                                              // 100308d8..100308dc
         return PauseScreen(present: c.gameScreenLayout ? .gameScreen : .fullScreen)   // 10022fd4..10023004 (+4 = 1 / 0)

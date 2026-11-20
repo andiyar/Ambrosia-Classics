@@ -17,13 +17,14 @@ public struct DriverOutput: Equatable, Sendable {
     }
 }
 
-/// Runs `DeimosSession` passes on a `DeimosRenderer` against the host's clock (plan H1). The original runs its game
-/// loop flat out and busy-waits on `TickCount` in two places; the replica turns each wait into a yield, so the driver
-/// is a resumable state machine — no threads, no sleeping. The app calls `idle` often (every 1/240 s); each call runs
-/// ops until one must wait and returns.
+/// Runs the front end's passes (`FrontEnd`, Phase 4 plan S1b — its only client; the games are the front end's) on a
+/// `DeimosRenderer` against the host's clock (plan H1). The original runs its loops flat out and busy-waits on
+/// `TickCount`; the replica turns each wait into a yield, so the driver is a resumable state machine — no threads,
+/// no sleeping. The app calls `idle` often (every 1/240 s); each call runs ops until one must wait and returns.
 ///
-/// - **Passes.** A pass (`DeimosSession.pass`) begins only after the previous pass's ops have all run; its keys are
-///   the ones handed to the `idle` call in which it begins (the begin-frame input read, `1003052c..10030544`).
+/// - **Passes.** A pass (`FrontEnd.pass`: a screen's, or the game's `DeimosSession.pass`) begins only after the
+///   previous pass's ops have all run; its keys are the ones handed to the `idle` call in which it begins (the
+///   begin-frame input read, `1003052c..10030544`).
 /// - **`.limit`** — the FPS limiter (`FUN_10030bc0` `10030ce4..10030d30`, timing-frame §2.3): continue only when
 ///   `TickCount ≥ lastPresent + FPS_Delay` (PermFloat 33 = 2; `lwz +0x1c; add` at `10030d08..10030d14`, then
 ///   `cmplw; blt` at `10030d20..10030d24` — unsigned, the sum wrapping), then `lastPresent = TickCount` (a second read,
@@ -31,31 +32,36 @@ public struct DriverOutput: Equatable, Sendable {
 ///   (`FUN_10030190`). The session emits the op only when byte pref 10 is set. The wrap is replicated: with the stamp
 ///   at 0xFFFFFFFE / 0xFFFFFFFF the target wraps to 0 / 1 and the wait never blocks until the tick count wraps too
 ///   (the original runs flat out for those ≤ 2 ticks).
-/// - **Bounded work per `idle`** — at most one limiter release per session, at most one present and at most one
-///   restart per call; at any of those bounds the call returns and the next call resumes. In steady play the
-///   limiter alone is the yield (one release, one present per call), so the bounds bind only where the original
-///   would not have waited: the tick wrap above, and a restart whose new session would quit at once.
+/// - **Bounded work per `idle`** — at most one limiter release per game, at most one present and at most one game
+///   end per call; at any of those bounds the call returns and the next call resumes. In steady play the limiter
+///   alone is the yield (one release, one present per call), so the bounds bind only where the original would not
+///   have waited: the tick wrap above, and a new game that would quit at once.
 /// - **`.fade(kind, present)`** — the blocking fades (`FUN_1000ba70` / `FUN_1000b9a0`): `fadeBegin`; `t0 = TickCount`
 ///   (`1000bac4`); for each level: `fadeStep` (the step's present), then wait until `TickCount ≥ t0 + 1` (unsigned,
 ///   `1000bb50..1000bb64`), `t0 = TickCount` (`1000bb68..1000bb78`); then `fadeEnd`.
 /// - **No catch-up** (timing-frame §4): the waits are the only pacing and both are "≥ a target", so a stall lets
 ///   exactly one late pass through; the next target is measured from its stamp.
-/// - **Session end** — ◇ stand-ins 2–3: Esc, game over, a film's level complete and (plan LT) the campaign end after
-///   the last sector end the session (the pass that ends it still runs to its end and carries `sessionEnded`; a
-///   level transition to the next sector does not); then a new session at the LAUNCH's sector (`start.sector` — 1
-///   unless the app's ◇ `-sector N` gave another; never the sector the ended session had reached, plan AP ruling 1),
-///   with `start`'s player count, and seed = the current
-///   `TickCount` (the original's `srand(TickCount())`, `100057c8`) — the stand-in for the return to the main menu
-///   (Phase 4). ◇ Stand-in 6: the new session starts from the ENDED session's prefs (F6, the FPS monitor,
-///   `supermunki`, the volume — in memory only), which `prefs` then holds. The renderer's buffers persist across
-///   it. ◇ The Esc that ended the session is latched: the new session's passes see Esc as up until ANY `idle` call
-///   sees it released (the original's end-of-session `FlushEvents` and the main menu, which has no Esc action —
-///   front-end.md §2 — mean a new game needs a fresh press).
-/// - **Cursor** — the session's first pass carries `.hideCursor` (see `DeimosSession.pass`); `requests` passes it on.
+/// - **Game end** — Esc, game over, a film's end and (plan LT) the campaign end after the last sector end a game
+///   (the pass that ends it still runs to its end and carries `sessionEnded`; a level transition to the next sector
+///   does not). Once that pass's ops are done, in the same `idle` and at most once per call: the game end's halt and
+///   stop (below), the end-of-session `FlushEvents` (`FUN_100302b0`, `10005af0`), and the Esc latch — the Esc that
+///   ended the game reads as up until ANY `idle` call sees it released (the original's flush, and a menu with no Esc
+///   action, front-end.md §2, mean a new game needs a fresh press); then the front end's next pass begins. What
+///   follows a game is the front end's: the direct start (ruling 10, what the app runs until the menu lands) starts
+///   the next game at once — at the direct start's own start (never the sector the ended game had reached, plan AP
+///   ruling 1), seed and FPS clock = the `TickCount` of that pass (`srand(TickCount())`, `100057c8`; `FUN_100305e0`),
+///   from the live prefs the ended game handed back (F6, the FPS monitor, `supermunki`, the volume), reusing the
+///   loaded level set — or, with the quit flag set, asks the shell to quit. The renderer's buffers persist across it.
+///   **A new game** (`FrontEndState.gamesStarted` moves on the pass that starts it): its frame controller is fresh
+///   (`FUN_10030190`), so the limiter stamp is 0 and its first limiter may release in the same `idle`.
+/// - **Cursor** — the front end's pass that starts a game carries `.hideCursor`, a return to a menu `.showCursor`;
+///   `requests` passes them on, with every other shell request (`.quit` included).
+/// - **Stores** — a pass's `ShellRequest.saveLastFilm(bytes)` also goes to the Last Film store; `shutdown()` hands
+///   the live prefs to the settings store.
 /// - **Keys** (H2) — a pass's `typed` characters are every key-down handed to `idle` since the previous pass began
-///   (the OS event queue `GetOSEvent` drains), in order; a restart flushes them (`FUN_10030210` FlushEvents), and so
-///   does the pause screen as its wait begins (`10022f1c`). The pass gets `ticks` = the `TickCount` of the `idle`
-///   in which it begins (the FPS monitor's clock), and so does a new session's controller (`FUN_100305e0`).
+///   (the OS event queue `GetOSEvent` drains), in order; a game end flushes them, and so does the pause screen as
+///   its wait begins (`10022f1c`); the front end flushes them again as a game starts (`FUN_10030210`). The pass gets
+///   `ticks` = the `TickCount` of the `idle` in which it begins (the FPS monitor's clock).
 /// - **Audio** (H2) — each pass's `sounds` / `music` / `haltEffectsAt` go to `audio` (`DeimosAudioSink.apply`) when
 ///   the pass begins (the original issues them inside the tick — at most one frame early, inaudible); a pass with
 ///   no cues sends nothing. **A level transition** (plan LT; `PassOutput.fadeToBlackAt`): the cues before the mark
@@ -74,7 +80,13 @@ public struct DriverOutput: Equatable, Sendable {
 ///   pass** (`PassOutput` holds one halt): the session puts `[… .pause, .resume, .stop]` with the pause's halt; the
 ///   driver sends the cues through `.pause` when the pass begins, the resume when the wait ends (`10022fb4`), and
 ///   the session end's halt + stop (`10005ad8`, `10005ae4`) — a second apply, halt index 0 — when the pass's ops are
-///   done, before the restart.
+///   done, before the front end's next pass. **Quit inside the wait** (Phase 4 S1b; grounding B §5 `10022f8c`, D S14;
+///   X `10023214` / `10023374`, `10023228..10023244`): with the front end's quit flag b8 set, or a Quit request
+///   (`ShellEvent.quitChosen` / `.quitRequested`) queued — X's pump inside the pause sets b8 — the wait lets go at
+///   once, suspended or not and before Caps Lock is tested, WITHOUT the music resume (`10022fb0` skips
+///   `10022fb4`), and `FrontEnd.quitDuringPause` sets the flag and the frame controller's +2 (X `10030cb8`): the next
+///   pass's begin frame reports quit and the game ends. The present and the pause flag's clear run as on a normal
+///   exit (`10022fc0..10023010`).
 /// - **`.hostWait(wait)`** (Phase 4, plan S1a; `HostWait`) — held like a fade: t0 = `TickCount` of the `idle` that
 ///   reaches it; the op stream stays there, and no pass begins, until the wait is over — `.ticks(n)`: `TickCount ≥
 ///   t0 + n` (unsigned, wrapping); `.voiceEnd(id)`: `audio?.isPlaying(id)` false (`FUN_100476e0`; no sink = no mixer =
@@ -94,30 +106,45 @@ public struct DriverOutput: Equatable, Sendable {
 ///   begin (where its music pause was sent) to the wait's present (`10022f18` / `10023010`). Across a suspend /
 ///   resume during the wait the music therefore stays paused.
 public struct DeimosDriver {
-    public let assets: DeimosAssets
-    /// The prefs the current session started from: `init`'s, then — after a ◇ restart — the ended session's
-    /// (stand-in 6).
-    public private(set) var prefs: DeimosPrefs
+    /// The driver's one client: the screens, the games, the state they share.
+    public private(set) var frontEnd: FrontEnd
     /// The game's audio (nil = silent: no engine, like `FUN_10047160`'s "Sound not available" path).
     public let audio: (any DeimosAudioSink)?
     public let rate: TickRate
-    public let start: SessionStart
     let renderer: DeimosRenderer
-    /// The current session — internal, so settable from tests (`@testable import`) to poke its game state (plan LT;
-    /// `internal(set)` on an internal property is redundant and warns).
-    var session: DeimosSession
+    /// Where the settings and Last Film go (do-nothing stores by default).
+    let settingsStore: any SettingsStore
+    let lastFilmStore: any LastFilmStore
+
+    public var assets: DeimosAssets { frontEnd.state.assets }
+    /// The live prefs (`FrontEndState.prefs`): `init`'s, then each ended game's.
+    public var prefs: DeimosPrefs { frontEnd.state.prefs }
+    /// The direct start's game (nil for the boot entry).
+    public var start: SessionStart? { frontEnd.directStart }
+    /// The current game's session (the last game's once it has ended, until the next replaces it) — forwarded from
+    /// the front end (standing rule 7); internal, so settable from tests (`@testable import`) to poke its game state
+    /// (plan LT). Valid once a game has been built (the direct start builds one in `init`).
+    var session: DeimosSession {
+        get {
+            guard let session = frontEnd.session else { preconditionFailure("DeimosDriver.session: no game yet") }
+            return session
+        }
+        set { frontEnd.session = newValue }
+    }
 
     /// The frame controller's limiter stamp (+0x1c): `TickCount` at the last limiter release.
     private(set) var lastPresent: UInt32 = 0
-    /// Passes begun, `.present` ops run and Esc restarts — over the driver's life (inspection).
+    /// Passes begun, `.present` ops run and game ends handled — over the driver's life (inspection).
     private(set) var passCount = 0
     private(set) var presentCount = 0
     private(set) var restarts = 0
+    /// Tests (G12): set to record a row per ticked pass of a game (nil = off).
+    var trace: ReplayTrace?
 
     /// `FPS_Delay` (PermFloat 33, `fctiwz`, `10030cf8..10030d00`).
     private let fpsDelay: UInt32
-    /// The first session is seeded at the first `idle` (the clock is unknown before it).
-    private var seeded = false
+    /// `FrontEndState.gamesStarted` as last seen (a change = a new game, a fresh frame controller).
+    private var gamesSeen = 0
 
     /// The current pass's ops and the next one to run.
     private var ops: [RenderOp] = []
@@ -126,7 +153,7 @@ public struct DeimosDriver {
     private var passBegun = false
     /// The current pass carried `sessionEnded`.
     private var endAfterPass = false
-    /// The Esc that ended the last session is still held (◇ latch, see the type's comment).
+    /// The Esc that ended the last game is still held (the latch, see the type's comment).
     private var escLatched = false
     /// Per-`idle` bounds (see the type's comment).
     private var releasedThisCall = false
@@ -169,18 +196,35 @@ public struct DeimosDriver {
     /// ends; `pauses` = they carry the pass's music pause (the pause flag is set as they are sent).
     private var cuesAfterFade: (sounds: [SoundCue], music: [MusicCue], halt: Int?, pauses: Bool)?
 
-    /// Builds the first session (seed 0 until the first `idle` reseeds it with the clock — the session's set-up
-    /// validates `start` here).
-    public init(assets: DeimosAssets, prefs: DeimosPrefs, rate: TickRate = .classic, start: SessionStart,
-                audio: (any DeimosAudioSink)? = nil) throws {
+    /// Drives `frontEnd` (its boot entry or its direct start).
+    public init(frontEnd: FrontEnd, rate: TickRate = .classic, audio: (any DeimosAudioSink)? = nil,
+                settingsStore: any SettingsStore = NoSettingsStore(),
+                lastFilmStore: any LastFilmStore = NoLastFilmStore()) {
+        self.frontEnd = frontEnd
         self.audio = audio
-        self.assets = assets
-        self.prefs = prefs
         self.rate = rate
-        self.start = start
-        renderer = DeimosRenderer(assets: assets)
-        session = try DeimosSession(assets: assets, prefs: prefs, start: start, seed: 0)
-        fpsDelay = UInt32(assets.floats[33].rounded(.towardZero))
+        self.settingsStore = settingsStore
+        self.lastFilmStore = lastFilmStore
+        renderer = DeimosRenderer(assets: frontEnd.state.assets)
+        fpsDelay = UInt32(frontEnd.state.assets.floats[33].rounded(.towardZero))
+    }
+
+    /// The front end's direct start at `start` (ruling 10) — validated here; the first game is built at the first
+    /// `idle` with its clock.
+    public init(assets: DeimosAssets, prefs: DeimosPrefs, rate: TickRate = .classic, start: SessionStart,
+                audio: (any DeimosAudioSink)? = nil, settingsStore: any SettingsStore = NoSettingsStore(),
+                lastFilmStore: any LastFilmStore = NoLastFilmStore()) throws {
+        self.init(frontEnd: try FrontEnd(direct: start, assets: assets, prefs: prefs, soundAvailable: audio != nil),
+                  rate: rate, audio: audio, settingsStore: settingsStore, lastFilmStore: lastFilmStore)
+    }
+
+    /// The app is quitting (`FUN_10000630` → `FUN_100045f0`): the live prefs — the running game's, if one runs — go to
+    /// the settings store (a failure to write is the store's to report; the prefs are returned regardless).
+    @discardableResult
+    public func shutdown() -> DeimosPrefs {
+        let prefs = frontEnd.livePrefs
+        try? settingsStore.save(prefs)
+        return prefs
     }
 
     /// The app's suspend handler (`10023db4..10023dcc`): once per suspension, suspended = 1 and the music pause
@@ -218,11 +262,7 @@ public struct DeimosDriver {
         keyEventQueue += keys.keyEvents
         mouseDownQueue += keys.mouseDowns
         shellEventQueue += keys.events
-        if escLatched && !keys.held.contains(DeimosDriver.escKey) { escLatched = false }   // ◇ any idle releases it
-        if !seeded {
-            seeded = true
-            newSession(seed: now)
-        }
+        if escLatched && !keys.held.contains(DeimosDriver.escKey) { escLatched = false }   // any idle releases it
         while true {
             // A fade between steps: wait for t0 + 1, then the next step (or the end).
             if var f = fade {
@@ -237,7 +277,7 @@ public struct DeimosDriver {
                 fade = nil
                 if f.kind == .toBlack, cuesAfterFade != nil {
                     flushOSEvents()                                                   // 10030328 FlushEvents
-                    session.transitionFadeEnded(ticks: now)                           // 10030314 FUN_100305e0
+                    frontEnd.transitionFadeEnded(ticks: now)                          // 10030314 FUN_100305e0
                     sendCuesAfterFade()
                 }
             }
@@ -254,8 +294,7 @@ public struct DeimosDriver {
                         if let music = sessionEndMusic {                       // 10005ad8 halt, 10005ae4 stop
                             audio?.apply(sounds: [], music: music, haltEffectsAt: 0)
                         }
-                        prefs = session.prefs                                  // ◇ stand-in 6
-                        newSession(seed: now)                          // ◇ the launch's sector (plan AP)
+                        gameEnded()
                         escLatched = true   // a press in the ended pass's tail too: Esc is read only at begin (10005904)
                     } else if !passLimited {
                         passBegun = false
@@ -295,11 +334,17 @@ public struct DeimosDriver {
                     flushOSEvents()                                           // 10022f1c FlushEvents
                 }
                 if !waitReleased {
-                    guard !suspended, !keys.capsLock else { return out }      // 10022f68..10022fa4
-                    waitReleased = true
-                    if !musicAfterWait.isEmpty {                              // 10022fb4 (pause + session end)
-                        audio?.apply(sounds: [], music: musicAfterWait, haltEffectsAt: nil)
-                        musicAfterWait = []
+                    if frontEnd.state.quit || shellEventQueue.contains(where: Self.isQuit) {   // 10022f8c b8; X 10023214
+                        waitReleased = true
+                        musicAfterWait = []                                   // 10022fb0: no resume (10022fb4)
+                        frontEnd.quitDuringPause()                            // b8; X 10030cb8 the controller's +2
+                    } else {
+                        guard !suspended, !keys.capsLock else { return out }  // 10022f68..10022fa4
+                        waitReleased = true
+                        if !musicAfterWait.isEmpty {                          // 10022fb4 (pause + session end)
+                            audio?.apply(sounds: [], music: musicAfterWait, haltEffectsAt: nil)
+                            musicAfterWait = []
+                        }
                     }
                 }
                 guard !presentedThisCall else { return out }
@@ -327,9 +372,10 @@ public struct DeimosDriver {
         }
     }
 
-    /// Begin a pass: sample `keys` (a latched Esc reads as up) with the queued typed characters, run it at
-    /// `ticks`, route its cues, take its ops. A session that has already ended (an empty `sessionEnded` output) is a
-    /// finished pass with no ops: the loop restarts it, within the per-call bound.
+    /// Begin a pass: sample `keys` (a latched Esc reads as up) with the queued input, run the front end's pass at
+    /// `ticks`, note a new game, route its cues, save a Last Film it hands out, take its ops. An empty `sessionEnded`
+    /// output (a game that could not be built) is a finished pass with no ops: the loop ends it again, within the
+    /// per-call bound, and the front end tries again on its next pass.
     private mutating func beginPass(keys: HeldKeys, ticks: UInt32, _ out: inout DriverOutput) {
         var sampled = keys
         if escLatched {
@@ -348,7 +394,15 @@ public struct DeimosDriver {
         mouseDownQueue = []
         shellEventQueue = []
         lastPassKeys = sampled
-        let pass = session.pass(keys: sampled, ticks: ticks)
+        let pass = frontEnd.pass(keys: sampled, ticks: ticks)
+        if frontEnd.state.gamesStarted != gamesSeen {                 // a new game: a fresh frame controller
+            gamesSeen = frontEnd.state.gamesStarted
+            lastPresent = 0                                           // FUN_10030190 zeroes +0x1c
+            releasedThisCall = false
+        }
+        for case let .saveLastFilm(film) in pass.requests {
+            try? lastFilmStore.save(film)
+        }
         passBegun = true
         sessionEndMusic = nil
         if pass.sessionEnded && pass.ops.isEmpty {
@@ -360,6 +414,7 @@ public struct DeimosDriver {
         }
         passCount += 1
         out.requests += pass.requests
+        if pass.ticked, trace != nil, let game = frontEnd.session { trace?.record(game) }
         ops = pass.ops
         next = 0
         endAfterPass = pass.sessionEnded
@@ -432,26 +487,16 @@ public struct DeimosDriver {
         kind == .fromBlack ? DisplayBuffers.fromBlackLevels : DisplayBuffers.toBlackLevels
     }
 
-    /// A fresh session (`srand(seed)`) from the launch's `start` — its sector, player count and film, which `init`
-    /// validated — with a fresh frame controller (limiter stamp 0). The new session reuses the current one's loaded
-    /// level set (immutable, shared), so a restart inside `idle` decodes no masks.
-    /// If the session cannot be built all the same, the current one is kept: at the first `idle`, `init`'s seed-0
-    /// session; after a session end, the ENDED session — its next pass is empty and ends it again, so the driver
-    /// tries the restart once more on each later `idle` call. Nothing else recovers.
-    private mutating func newSession(seed: UInt32) {
-        if let made = try? DeimosSession(assets: assets, prefs: prefs, start: start, seed: seed, ticks: seed,
-                                         levels: session.game.levels) {
-            session = made
-        }
-        lastPresent = 0
+    /// A game has ended and its last pass's ops are done: the end-of-session FlushEvents (`FUN_100302b0`,
+    /// `10005af0`) and the pass state cleared, before the front end's next pass.
+    private mutating func gameEnded() {
         ops = []
         next = 0
         passBegun = false
         endAfterPass = false
         passLimited = false
         fade = nil
-        releasedThisCall = false
-        flushOSEvents()                                                       // FUN_10030210 FlushEvents
+        flushOSEvents()                                                       // FUN_100302b0 FlushEvents
         hostWaiting = nil
         pauseHoldsMusic = false
         waitEntered = false
@@ -462,7 +507,7 @@ public struct DeimosDriver {
     }
 
     /// Tests (`@testable`): splice `inserted` into the current pass at the next op to run — the driver runs them as
-    /// the pass's own (no session emits a host wait before the front end lands).
+    /// the pass's own (no screen emits a host wait before the screens land).
     mutating func insertOps(_ inserted: [RenderOp]) {
         ops.insert(contentsOf: inserted, at: next)
     }
@@ -497,6 +542,9 @@ public struct DeimosDriver {
         keyEventQueue = []
         mouseDownQueue = []
     }
+
+    /// A Quit from the shell (File ▸ Quit, the system's Quit request).
+    private static func isQuit(_ event: ShellEvent) -> Bool { event == .quitChosen || event == .quitRequested }
 
     /// Mac virtual key code of Esc (`FUN_100307c0`).
     static let escKey: UInt16 = 0x35
