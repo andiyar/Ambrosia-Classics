@@ -510,9 +510,10 @@ public struct FrontEnd: Sendable {
     }
 
     /// The pause screen's wait let go on the quit flag (grounding B §5 `10022f8c`, `10022fa8`; X `10023374`, the
-    /// paused-frame hook `10030cb8`): the flag is set (a Quit request the host found queued during the wait sets it
-    /// here, as X's pump inside the pause does) and the game's frame controller is told, so its next pass ends it.
-    /// The request taken is either the one held here (`quitRequestPending`, cleared) or one still in the host's queue,
+    /// paused-frame hook `10030cb8`): the flag is set (a Quit the host found queued during the wait — the system's
+    /// request, or ⌘Q / the menu-bar Quit in a game's or a film's pause, Ben's ruling 2026-11-21 — sets it here, as
+    /// X's pump inside the pause does) and the game's frame controller is told, so its next pass ends it.
+    /// The Quit taken is either the request held here (`quitRequestPending`, cleared) or one still in the host's queue,
     /// which the host drops as it lets the wait go (`DeimosDriver`), so it never reaches a later pass.
     public mutating func quitDuringPause() {
         state.quit = true
@@ -567,10 +568,13 @@ public struct FrontEnd: Sendable {
     /// event pump that reaches it — the main menu (`FUN_10048f30`, X `1004a270`) and the level select (X `1002ec5c` →
     /// X `10023300`, whose Quit case sets b8, X `10023374`; the level select never reads it, so it acts when the menu
     /// is back or at the next pause). In X the menu-bar or ⌘Q Quit is the application menu's Quit, a Quit Apple
-    /// event, so both events act the same there. Everywhere else — the boot, a game or a film, the pause, name entry,
-    /// the scores, the credits, the two settings windows:
-    /// - `.quitChosen` is dropped (no pump turns the keystroke into a command: in play nothing reads events, the
-    ///   settings windows run `ModalDialog` with no filter, the screens' reader `FUN_10048c90` takes keys raw);
+    /// event, so both events act the same there. A game's or a film's Caps Lock pause runs X's pump too (X `10023214`):
+    /// there the host's wait takes either Quit and lets go (`DeimosDriver`, `quitDuringPause`; ⌘Q per Ben's ruling
+    /// 2026-11-21), so neither reaches a pass. Everywhere else — the boot, a game or a film in play, name entry, the
+    /// scores, the credits, the two settings windows:
+    /// - `.quitChosen` is dropped and not remembered (no pump turns the keystroke into a command: in play nothing reads
+    ///   events, the settings windows run `ModalDialog` with no filter, the screens' reader `FUN_10048c90` takes keys
+    ///   raw; a pause that follows does not act on it — the wait's FlushEvents);
     /// - `.quitRequested` is held (`quitRequestPending`) and handed to the menu as its own event on the first pass
     ///   the menu (or the direct start's loop, its stand-in) is the top screen — the Apple event left queued, since
     ///   `FlushEvents` leaves high-level events — so the menu's pump resumes a suspended app first, then sets b8.

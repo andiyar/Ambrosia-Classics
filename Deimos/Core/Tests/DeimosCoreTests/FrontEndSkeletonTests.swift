@@ -374,8 +374,10 @@ final class FrontEndSkeletonTests: XCTestCase {
     /// 2026-11-20): the quit flag stays clear, nothing is held, the game is not handed it and plays on; its end
     /// returns to the menu, which stays up. The same during the boot (the loading lines' X pump acts on suspend and
     /// resume only, D17): the Quit is dropped there, and that drop is what keeps the menu up — the menu's entry does
-    /// not clear b8 (it keeps it, `MainMenu`). The pause's wait is the host's
-    /// (`DriverTests.testQuitInsideCapsLockWait`). Bound: 1,000 passes per wait; 30 menu passes.
+    /// not clear b8 (it keeps it, `MainMenu`). In the game's Caps Lock pause ⌘Q now quits (Ben's ruling 2026-11-21) —
+    /// that is the host's wait, whose quit reaches the front end as `quitDuringPause`
+    /// (`DriverTests.testQuitInsideCapsLockWait`, with the ⌘Q from play not remembered by a later pause).
+    /// Bound: 1,000 passes per wait; 30 menu passes.
     func testQuitChosenIgnoredInGame() throws {
         let a = try assets()
         var ticks: UInt32 = 30_000
