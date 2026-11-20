@@ -1265,6 +1265,42 @@ final class DriverTests: XCTestCase {
         driver.suspend()
         XCTAssertEqual(sink.applies.dropFirst(before).map(\.music), [[.pause]], "a later suspend pauses the music")
     }
+
+    /// `osx-build.md` D11, the part the driver carries: a player who leaves the app in the middle of a game finds it
+    /// frozen, music paused, until they come back. While the app is suspended a running game begins no pass (the pass
+    /// in hand runs out its ops); nothing reaches the sink after the suspend's music pause, whatever the keys say (Esc
+    /// held all the while does not end the game). The resume sends the music resume and the game goes on. Not here:
+    /// the pause screen D11 opens (its effects halt, Paused sound, picture and cursor) — that is the game's frame
+    /// controller's, in Core. Fake-clock cap 120 s.
+    func testLeavingTheAppPausesTheGame() throws {
+        let sink = RecordingSink()
+        var driver = try makeDriver(audio: sink)
+        var clock = FakeClock(rate: .classic)
+        func idle(_ keys: HeldKeys) -> Bool {
+            _ = driver.idle(seconds: clock.seconds, keys: keys)
+            clock.seconds += Self.poll
+            return clock.seconds <= 120
+        }
+        while driver.presentCount < 20 { guard idle(Self.capsUp) else { return XCTFail("no presents") } }
+        XCTAssertTrue(driver.session.running)
+
+        driver.suspend()
+        XCTAssertEqual(sink.applies.last, RecordingSink.Apply(sounds: [], music: [.pause], halt: nil))
+        let applies = sink.applies.count
+        let esc = HeldKeys(held: [Self.escKey])
+        for _ in 0..<10 { guard idle(esc) else { return XCTFail("cap") } }   // the pass in hand runs out
+        let passes = driver.passCount
+        let away = clock.seconds + 3
+        while clock.seconds < away { guard idle(esc) else { return XCTFail("cap") } }
+        XCTAssertEqual(driver.passCount, passes, "no pass while the app is away")
+        XCTAssertEqual(driver.restarts, 0, "Esc held while away did not end the game")
+        XCTAssertEqual(sink.applies.count, applies, "nothing reaches the sink")
+
+        driver.resume()
+        XCTAssertEqual(sink.applies.last, RecordingSink.Apply(sounds: [], music: [.resume], halt: nil))
+        while driver.passCount < passes + 30 { guard idle(Self.capsUp) else { return XCTFail("the game never went on") } }
+        XCTAssertEqual(driver.restarts, 0, "the same game goes on")
+    }
 }
 
 /// A settings store that records every save (single-threaded tests).

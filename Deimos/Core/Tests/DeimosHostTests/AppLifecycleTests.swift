@@ -242,8 +242,9 @@ final class AppLifecycleTests: XCTestCase {
     /// live input (nothing held, the mouse button up, no position), and `BackgroundQuitPump` says when to stop. At the
     /// level select the request is taken (the quit flag) but nothing there reads it: the pump stops at once. At the
     /// menu it runs on to the shell's quit (the menu acts on the flag unseen: its quit flash clears it, then the fade
-    /// and the quit). In a game the front end holds it for the menu: the pump stops. With no request at all, the hard
-    /// bound stops it. Bound: 120 simulated s a stage; the pump itself is bounded by `BackgroundQuitPump.maxTurns`.
+    /// and the quit). In a game the driver holds the game for the resume (D11) and the request stays queued: the pump
+    /// stops, and after the return the game's first pass hands it to the front end, which holds it for the menu. With
+    /// no request at all, the hard bound stops it. Bound: 120 simulated s a stage; the pump itself is bounded by `BackgroundQuitPump.maxTurns`.
     func testBackgroundQuitPumpStops() throws {
         /// Pumps `rig` as the app does in the background — the request in the first turn, nothing live after — until
         /// the pump says stop; returns the turns it ran (nil: the pump outran its own bound, a failure).
@@ -282,7 +283,7 @@ final class AppLifecycleTests: XCTestCase {
         XCTAssertTrue(menu.driver.frontEnd.isFinished, "the menu quit unseen")
         XCTAssertEqual(menu.requests.filter { $0 == .quit }.count, 1, "the shell is asked to quit")
 
-        // A game: the front end holds the request for the menu — the pump stops, the game is not ended.
+        // A game: held for the resume, the request queued — the pump stops, the game is not ended.
         var game = Rig(try FrontEnd(assets: a, prefs: .fresh))
         guard game.run(bound: 120, until: Rig.menuSettled) else { return XCTFail("bound: no menu (3)") }
         game.idle(HeldKeys(keyEvents: [Self.typeOne]))
@@ -294,9 +295,15 @@ final class AppLifecycleTests: XCTestCase {
         game.driver.suspend()
         let gameTurns = try XCTUnwrap(pump(&game), "the pump never stopped in a game")
         XCTAssertLessThan(gameTurns, 60)
-        XCTAssertTrue(game.driver.frontEnd.quitRequestPending, "held for the menu")
+        XCTAssertTrue(game.driver.gameHeldWhileSuspended)
+        XCTAssertEqual(game.driver.shellEventQueue, [.quitRequested], "the request waits in the driver's queue")
         XCTAssertFalse(game.driver.frontEnd.state.quit)
         XCTAssertFalse(game.requests.contains(.quit))
+        game.driver.resume()
+        let passes = game.driver.passCount
+        guard game.run(bound: 10, until: { d, _ in d.passCount > passes }) else { return XCTFail("bound: no pass") }
+        XCTAssertTrue(game.driver.frontEnd.quitRequestPending, "after the return: held for the menu")
+        XCTAssertTrue(game.driver.frontEnd.state.gameRunning, "the game plays on")
 
         // No request taken or held anywhere: the hard bound.
         var idle = Rig(try FrontEnd(assets: a, prefs: .fresh))

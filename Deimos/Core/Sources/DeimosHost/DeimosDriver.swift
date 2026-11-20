@@ -111,6 +111,11 @@ public struct DriverOutput: Equatable, Sendable {
 ///   pause flag r2−0x617b is set (`10023e7c`): set while a pause holds the music — here from the paused pass's
 ///   begin (where its music pause was sent) to the wait's present (`10022f18` / `10023010`). Across a suspend /
 ///   resume during the wait the music therefore stays paused.
+/// - **Leaving the app pauses the game** (`osx-build.md` D11, the driver's part; Phase 4 S8a AW): while suspended, a
+///   running game (a film too) begins no pass — the pass in hand runs out its ops (a pause's wait still lets go on a
+///   Quit, D10, whose resume ends the hold), then the driver waits for `resume()`; the input handed meanwhile stays
+///   queued for the first pass after it. Not built here: the pause screen D11 opens on the OS event (its effects
+///   halt, Paused sound, picture and shown cursor) — the frame controller's paused-frame hook, in Core.
 public struct DeimosDriver {
     /// The driver's one client: the screens, the games, the state they share.
     public private(set) var frontEnd: FrontEnd
@@ -265,6 +270,9 @@ public struct DeimosDriver {
         }
     }
 
+    /// A running game is held between passes while the app is suspended (D11; see the type's comment).
+    public var gameHeldWhileSuspended: Bool { suspended && frontEnd.state.gameRunning }
+
     /// The 640×480 window content.
     public var screen: Pixmap555 { renderer.screen }
 
@@ -322,6 +330,7 @@ public struct DeimosDriver {
                     }
                     passBegun = false
                 }
+                if gameHeldWhileSuspended { return out }                      // D11: the game waits for the resume
                 beginPass(keys: keys, ticks: now, &out)
                 continue
             }

@@ -56,7 +56,9 @@ extension DeimosDriver {
 /// position, Caps Lock as last seen while active) — and asks this, after every pumped `idle`, whether to stop. It
 /// stops when:
 /// - the front end has finished (the shell was asked to quit);
-/// - the front end holds the request for the menu (`FrontEnd.quitRequestPending`: a game, the other screens);
+/// - the front end holds the request for the menu (`FrontEnd.quitRequestPending`: the screens other than the menu
+///   and the level select), or the driver holds a running game for the resume (`gameHeldWhileSuspended`, D11: the
+///   request waits in its queue, to be held for the menu by the game's first pass after the return);
 /// - the request was taken (the quit flag b8) by a screen that does not act on it unseen — the level select reads
 ///   the flag nowhere (D10), so it would run forever. The menu (its quit flash clears the flag, then its fade and the
 ///   shell's quit) and start/return (a game the pause let go on b8: the game's end, then the menu) do act on it, so
@@ -75,7 +77,9 @@ public struct BackgroundQuitPump {
     public mutating func shouldStop(after driver: DeimosDriver) -> Bool {
         turns += 1
         let fe = driver.frontEnd
-        if turns >= Self.maxTurns || fe.isFinished || fe.quitRequestPending { return true }
+        if turns >= Self.maxTurns || fe.isFinished || fe.quitRequestPending || driver.gameHeldWhileSuspended {
+            return true
+        }
         if fe.state.quit {
             switch fe.screens.last {
             case .mainMenu?, .startReturn?: return false
