@@ -169,16 +169,16 @@ Settled history lives in docs/STATE-history.md.
   cards follow, trimmed where the front end replaced their stand-ins. The app now boots to the original's menu
   (logos, loading screen, menu), with the level select, high scores and name entry, demos and Last Film (`F`), credits,
   the settings and controls windows drawn by the game, a controller, and quit-with-save. `-players` / `-sector` are
-  gone; `-film deNN` and `-mute` are hidden switches. First launch: {{LAUNCH}}.
+  gone; `-film deNN` and `-mute` are hidden switches. First launch: NOT DONE. The app has never been launched. The question (mailbox Q6: may the section launch it once, muted?) had no answer by the close, so its default applied: Ben launches it first.
 - **Numbers (S8b's seat, at the staged head):**
 
 | check | value |
 |---|---|
-| `Deimos/Core` (without the replay and campaign bundles) | {{G2}} (the phase's ladder ends at 491: S8a's 483 + eight goldens) |
-| `DeimosReplayTests`, and `deimos-replay --all` | {{G4}} |
-| `DeimosCampaignTests` (one test at a time) | {{G8}} |
-| HectorKit zero-skip | {{G1}} |
-| app builds | {{BUILDS}} |
+| `Deimos/Core` (without the replay and campaign bundles) | **491 / 0 / 0** (the phase's ladder ends at 491: S8a's 483 + eight goldens) |
+| `DeimosReplayTests`, and `deimos-replay --all` | 4 / 0; four PASS lines, exit 0 |
+| `DeimosCampaignTests` (one test at a time) | 3 / 0 (about 8 minutes for the longest) |
+| HectorKit zero-skip | executed 370, 0 failed, the 4 known Aki 1.1 data skips (kit main ef2c341, unchanged) |
+| app builds | Deimos Debug and Release, Aki, BubbleTroubleX: all BUILD SUCCEEDED |
 | census file; layering grep | unchanged; empty |
 
 - **Waiting on Ben:** (1) his first play of the staged app — the first launch of the front end ever, unless the line
@@ -234,7 +234,7 @@ Settled history lives in docs/STATE-history.md.
     first launch only; Command-Q ignored in a game; `-mute`; 483 — `docs/handoff-deimos-phase4-s8a.md`.
   - **S8b** (2026-11-21) Command-Q quits from a game's pause (Ben's A5) and from the level select's (the seat's);
     eight front-end goldens; the gate-4 card (one fix round); staged;
-    {{G2}} — `docs/handoff-deimos-phase4-s8b.md`.
+    **491 / 0 / 0** — `docs/handoff-deimos-phase4-s8b.md`.
 
 ## Cythera — 2026-11-15 (wave 1 session A closed: C8 + C9 merged; session B next)
 

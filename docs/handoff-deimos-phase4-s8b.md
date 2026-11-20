@@ -18,7 +18,7 @@ the controller guide (`Deimos Rising — GAMEPAD.md`) beside it.
 
 | Commit | What |
 |---|---|
-| `8d52eeb` | QP — Command-Q quits from a game's or a film's Caps Lock pause; one pressed in play is dropped at the pause's flush and never remembered; the level select's pause leaves a Command-Q to the level select (`FrontEnd.swift`, `DeimosDriver.swift`, `DriverTests`, `FrontEndSkeletonTests`) |
+| `8d52eeb` | QP — Command-Q quits from a game's Caps Lock pause (a film cannot be paused); one pressed in play is dropped at the pause's flush and never remembered; the level select's pause leaves a Command-Q to the level select (`FrontEnd.swift`, `DeimosDriver.swift`, `DriverTests`, `FrontEndSkeletonTests`) |
 | `e4c758b` | GD — eight front-end frame goldens in `Deimos/Core/Tests/DeimosRenderTests/FrontEndGoldenTests.swift` (below) |
 | this commit | the gate-4 card (`Deimos/WHAT-TO-EXPECT.md`), `docs/STATE.md`, `docs/DECISIONS.md` D57, this handoff |
 
@@ -43,17 +43,19 @@ stand-ins (`-players` / `-sector` gone, Esc and game over back to the menu, keys
 
 | Gate | Result |
 |---|---|
-| G1 HectorKit zero-skip | {{G1}} |
-| G2 `Deimos/Core` without replay and campaign tests | {{G2}} (base 483 + 8 goldens = 491 expected) |
+| G1 HectorKit zero-skip | executed 370, 0 failed, the 4 known Aki 1.1 data skips (kit main ef2c341, unchanged) |
+| G2 `Deimos/Core` without replay and campaign tests | **491 / 0 / 0** (base 483 + 8 goldens = 491 expected) |
 | G3 census | unchanged |
-| G4 replay tests; `deimos-replay` de01–de04 | {{G4}} |
-| G5 builds | {{BUILDS}} |
-| G8 campaign, one test at a time | {{G8}} |
-| G9 first launch (muted, daytime, Ben's say-so) | {{LAUNCH}} |
+| G4 replay tests; `deimos-replay` de01–de04 | 4 / 0; four PASS lines, exit 0 |
+| G5 builds | Deimos Debug and Release, Aki, BubbleTroubleX: all BUILD SUCCEEDED |
+| G8 campaign, one test at a time | 3 / 0 (about 8 minutes for the longest) |
+| G9 first launch (muted, daytime, Ben's say-so) | NOT DONE. The app has never been launched. The question (mailbox Q6: may the section launch it once, muted?) had no answer by the close, so its default applied: Ben launches it first |
 | G12 the direct start | passes (inside G2) |
 
 ## What review caught
-{{REVIEW}}
+- **Command-Q from the pause:** both review legs passed it but found three behaviours no test pinned (a Command-Q pressed before the pause must not fire at it; a system quit request waiting at that moment must still quit; resume-first when the app is in the background). The fix round pinned all three and proved each with a deliberately broken build. The quality leg also found the level select's own pause held a Command-Q until Caps Lock was let go; the seat ruled it quits at once there too, like the game's pause (on the card for Ben).
+- **The goldens:** every deliberate change to a screen was caught by its hash, but several of the "two pixel checks" only looked at background, and the name-entry frame showed a table the app can never show. The fix round rebuilt name entry through the real score insertion and put checks on drawn things (ship sprite, headings, the flash blend, the loading lines' text).
+- **The fix rounds themselves had no second review pass** (the seat was near its cap); the seat re-ran every gate at the tip instead.
 
 **The card review** (checked against the code) caught three wrong statements and a dozen smaller ones, all fixed in
 the card fix round. First, the card said only the accuracy and funds cheats counted as cheating and suggested the
@@ -68,10 +70,10 @@ the technical faults. The review confirmed the card's start-up order (the two lo
 plan's card and the S8a handoff had it the wrong way round (D57 departure 15).
 
 ## The cross-check
-{{CROSSCHECK}}
+**Reduced, and Ben should know it.** The plan asks for one Fable cross-check over the whole phase's diff and the card. The seat started this section at 154k of its 300k cap (the reading list alone), so what it did itself was: re-run every gate from the branch tip (table above); audit this section's diff file by file (twelve files, all in the section's list plus the three the Command-Q change needed); look at the menu frame; read the card's outline. The card was checked line by line against the code by an Opus leg instead (it found one false claim and five missing items, all fixed). **Not done: a Fable read of the whole phase's diff.** Each earlier section had its own cross-check or two review legs. A fresh session can run the whole-phase read if Ben wants it before or after his gate.
 
 ## Staged
-{{STAGED}}
+`~/Desktop/Deimos Rising.app`, with `Deimos Rising — WHAT-TO-EXPECT.md` and `Deimos Rising — GAMEPAD.md` beside it; the same three in `out/Deimos/` of the main checkout. Release build, ad-hoc signed, from the section's tip. Never launched.
 
 ## Left — precisely (carried from S8a; none blocks Ben's gate)
 1. **A narrow fault, known:** with the erase question up, switch to another app and back; the leaving and returning
@@ -97,7 +99,7 @@ plan's card and the S8a handoff had it the wrong way round (D57 departure 15).
    the level select.
 6. **Not provable without a launch:** clicks and their scaling, full screen at launch, the alert above full screen,
    a real pad, the background quit, the look of everything.
-7. {{LEFT}}
+7. New in S8b: (a) the whole-phase Fable cross-check (see above); (b) the first launch and whatever it shows; (c) `FrontEnd.levelSelectPaused` may never read true, because the paused flag is cleared before the wait, so the controller's "paused on the level select" layout may never apply (found by the fix leg, not fixed); (d) the menu's two volume keys are the characters ù and ä and change a stored value nothing applies to the sound, as read from the code (on the card); (e) the plan's gate-4 card and the S8a handoff had the start-up order wrong: the code shows the two logos first, then the loading screen.
 
 ## Worktree
-{{WORKTREE}}
+`.claude/worktrees/goofy-solomon-8176b0` (branch `claude/goofy-solomon-8176b0`), removed at the close; it held this section's commits (all on main) and a staged copy of the app under `out/` (copied to the main checkout first). Build products were in the session's scratch folder.
