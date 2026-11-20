@@ -16,6 +16,15 @@ final class LevelSelectTests: XCTestCase {
 
     /// Default P1 keys (fresh prefs): ← 0x7B, → 0x7C, Space (select) 0x31; Esc 0x35.
     private static let left: UInt16 = 0x7b, right: UInt16 = 0x7c, space: UInt16 = 0x31, esc: UInt16 = 0x35
+    private static let returnKey: UInt16 = 0x24
+    /// The accept flash's scale, steps 1–11, as `fadds` / `fsubs` of flli 44 (0.18f) leave it in float32 (1.18, 1.36,
+    /// 1.54, 1.72, 1.90, 2.0 (clamp), 1.82, 1.64, 1.46, 1.28, 1.10); steps 12–15 are 1.0.
+    private static let acceptScales: [UInt32] = [0x3f97_0a3e, 0x3fae_147c, 0x3fc5_1eba, 0x3fdc_28f8, 0x3ff3_3336,
+                                                 0x4000_0000, 0x3fe8_f5c2, 0x3fd1_eb84, 0x3fba_e146, 0x3fa3_d708,
+                                                 0x3f8c_ccca, 0x3f80_0000, 0x3f80_0000, 0x3f80_0000, 0x3f80_0000]
+    /// The fail flash's scale, steps 1–8, by flli 46 (0.25f): 1.25, 1.5, 1.75, 2.0, 1.75, 1.5, 1.25, 1.0.
+    private static let failScales: [UInt32] = [0x3fa0_0000, 0x3fc0_0000, 0x3fe0_0000, 0x4000_0000, 0x3fe0_0000,
+                                               0x3fc0_0000, 0x3fa0_0000, 0x3f80_0000]
     private static func held(_ k: UInt16...) -> HeldKeys { HeldKeys(held: Set(k)) }
 
     private func entered(highest: Int32 = 1, escHold: UInt8? = nil) throws -> (Run, ScreenStep<Int?>) {
@@ -47,6 +56,12 @@ final class LevelSelectTests: XCTestCase {
     private func washes(_ ops: [RenderOp]) -> [DrawCommand] {
         ops.compactMap { if case let .draw(c) = $0, c.face == FourCC("COST")!, c.drawNow,
                             c.clip == DrawCommand.template.clip { return c } else { return nil } }
+    }
+
+    /// The hover strips (drawn now, the back buffer's clip).
+    private func strips(_ ops: [RenderOp]) -> [DrawCommand] {
+        ops.compactMap { if case let .draw(c) = $0, c.face == FourCC("COST")!, c.drawNow,
+                            c.clip == MacRect(top: 0, left: 0, bottom: 480, right: 640) { return c } else { return nil } }
     }
 
     private func scaledCopies(_ ops: [RenderOp]) -> [MacRect] {
@@ -94,6 +109,8 @@ final class LevelSelectTests: XCTestCase {
         XCTAssertFalse(grid.isEmpty)
         XCTAssertEqual(Set(grid.map(\.clip)), Set(run.screen.previews.map(\.rect)))
         XCTAssertTrue(grid.allSatisfy { $0.layer == 15 && !$0.drawNow })
+        XCTAssertEqual(Set(grid.map(\.frame)), [0], "frame fctiwz(flli 84) = 0 (flli 85 is the hilited grid)")
+        XCTAssertNotEqual(EntityDraw.fctiwz(a.floats[85]), 0)
         // The end frame with no present, then the fade in (9 steps, full screen); ShowCursor.
         XCTAssertFalse(ops.contains(.present(.fullScreen)))
         XCTAssertEqual(ops.last, .fade(.fromBlack, .fullScreen))
@@ -163,12 +180,49 @@ final class LevelSelectTests: XCTestCase {
         let click = step(&run, HeldKeys(mouse: MousePoint(h: 100, v: 200), mouseButton: true))
         XCTAssertEqual(run.screen.previews[1].sector, 12)
         XCTAssertEqual(click.output.sounds, [cue(a, 11, 0x4b, multiple: false), cue(a, 13)], "mbro on entry, lsch")
+
+        // ← held 30 frames: one move (the left latch).
+        step(&run, HeldKeys())
+        moves = 0
+        for _ in 0..<30 where step(&run, Self.held(Self.left)).output.sounds.contains(cue(a, 13)) { moves += 1 }
+        XCTAssertEqual(moves, 1)
+        XCTAssertEqual(run.screen.previews[1].sector, 11)
+
+        // The mouse resting on START (no button): `mbro` once, on entry; START hovered — gasp 7 `mebh` at flli 100
+        // (1.1) — the arrows gasp 6 at 1.0. Bound: 10 frames.
+        (run, _) = try entered(highest: 1)
+        let onStart = HeldKeys(mouse: MousePoint(h: 320, v: 228))
+        var hoverSounds = 0
+        for f in 0..<10 {
+            let s = step(&run, onStart)
+            hoverSounds += s.output.sounds.filter { $0 == cue(a, 11, 0x4b, multiple: false) }.count
+            let b = buttons(s.output.ops, a)
+            XCTAssertEqual(b.map(\.face), [a.sprites[6], a.sprites[7], a.sprites[6]], "frame \(f)")
+            XCTAssertEqual(b.map(\.scale), [1, a.floats[100], 1], "frame \(f)")
+        }
+        XCTAssertEqual(a.floats[100], 1.1)
+        XCTAssertEqual(hoverSounds, 1)
+        XCTAssertEqual(run.screen.flash.mode, 0, "hovering alone accepts nothing")
+        // A press on START (the whole middle preview, reli 19) accepts: `lsse`, the accept flash.
+        let press = step(&run, HeldKeys(mouse: MousePoint(h: 250, v: 300), mouseButton: true))
+        XCTAssertEqual(press.output.sounds, [cue(a, 12)])
+        XCTAssertTrue(run.screen.accepted)
+        XCTAssertEqual(run.screen.flash.mode, 1)
     }
 
     func testAcceptFlash() throws {
         let a = try assets()
         var (run, _) = try entered(highest: 1)
         XCTAssertEqual(a.floats[44], 0.18); XCTAssertEqual(a.floats[45], 2.0)
+        // Return is not an accept (only P1's fire / select bytes 4–6, or a press on START). Bound: 10 frames.
+        for f in 0..<10 {
+            let r = step(&run, Self.held(Self.returnKey))
+            XCTAssertNil(r.finished, "Return frame \(f)")
+            XCTAssertFalse(r.output.sounds.contains(cue(a, 12)), "Return frame \(f): no lsse")
+            XCTAssertEqual(run.screen.flash, LevelSelect.Flash())
+            XCTAssertFalse(run.screen.accepted)
+        }
+        step(&run)
         let go = step(&run, Self.held(Self.space))
         XCTAssertEqual(go.output.sounds, [cue(a, 12)])
         XCTAssertEqual(run.screen.flash.mode, 1)
@@ -176,11 +230,12 @@ final class LevelSelectTests: XCTestCase {
         XCTAssertEqual(run.screen.flash.alpha, 16)
         XCTAssertEqual(run.screen.flash.colour, a.formats[27].coloriseColor)
         XCTAssertTrue(scaledCopies(go.output.ops).isEmpty, "the flash starts after this frame's step")
-        // Steps 1–15 drawn; the scale as fadds / fsubs leave it; zoom + wash only on steps 1–11.
-        var scale: Float = 1, growing = true
+        // Steps 1–15 drawn; the scale as fadds / fsubs leave it; zoom + wash only on steps 1–11. The mouse rests on
+        // the middle preview throughout: no hover strip while accepted (1002f834).
         let mid = run.screen.previews[1].rect
         for k in 1...20 {
-            let held = k == 3 ? Self.held(Self.left) : HeldKeys()     // input is not read while the flash runs
+            var held = k == 3 ? Self.held(Self.left) : HeldKeys()     // input is not read while the flash runs
+            held.mouse = MousePoint(h: 300, v: 200)
             let s = step(&run, held)
             if k == 16 {
                 XCTAssertEqual(s.finished, .some(1), "step 16: mode 0 → leave before drawing")
@@ -189,10 +244,9 @@ final class LevelSelectTests: XCTestCase {
                 return
             }
             XCTAssertNil(s.finished, "step \(k)")
-            if growing { scale = scale + a.floats[44]; if scale >= 2 { scale = 2; growing = false } }
-            else { scale = scale - a.floats[44]; if scale <= 1 { scale = 1 } }
             XCTAssertEqual(run.screen.flash.alpha, Int32(16 + k))
-            XCTAssertEqual(run.screen.flash.scale.bitPattern, scale.bitPattern, "step \(k)")
+            XCTAssertEqual(run.screen.flash.scale.bitPattern, Self.acceptScales[k - 1], "step \(k)")
+            XCTAssertTrue(strips(s.output.ops).isEmpty, "step \(k): no hover strip while accepted")
             XCTAssertTrue(s.output.ops.contains(.present(.fullScreen)))
             XCTAssertEqual(run.screen.previews[1].sector, 1)
             let w = washes(s.output.ops), z = scaledCopies(s.output.ops)
@@ -230,13 +284,15 @@ final class LevelSelectTests: XCTestCase {
         XCTAssertEqual(msg.format.coloriseDo, true)
         XCTAssertEqual(msg.text, run.screen.message.text)
         // Scale 1.25 … 2.0 (step 4) … 1.0 (step 8); mode 0 at step 16; the screen stays. Bound: 80 frames.
-        let expected: [Float] = [1.25, 1.5, 1.75, 2.0, 1.75, 1.5, 1.25, 1.0]
+        // Space stays held for steps 1–3: the accept latch lets it fail once, not every frame.
         var off: Int32?
         for k in 1...80 {
-            let s = step(&run)
+            let s = step(&run, k <= 3 ? Self.held(Self.space) : HeldKeys())
             XCTAssertNil(s.finished)
+            if k <= 3 { XCTAssertFalse(s.output.sounds.contains(cue(a, 14)), "step \(k): no second lsna") }
             XCTAssertTrue(s.output.ops.contains(.present(.fullScreen)))
-            if k <= 8 { XCTAssertEqual(run.screen.flash.scale, expected[k - 1], "step \(k)") }
+            if k <= 8 { XCTAssertEqual(run.screen.flash.scale.bitPattern, Self.failScales[k - 1], "step \(k)") }
+            if k <= 15 { XCTAssertEqual(run.screen.flash.alpha, Int32(16 + k), "step \(k)") }
             if k <= 7 { XCTAssertEqual(scaledCopies(s.output.ops).count, 1) }
             if k == 15 { XCTAssertEqual(run.screen.flash.mode, 2) }
             if k == 16 { XCTAssertEqual(run.screen.flash, LevelSelect.Flash()) }
@@ -255,6 +311,21 @@ final class LevelSelectTests: XCTestCase {
         step(&run, Self.held(Self.space))
         XCTAssertEqual(run.screen.flash.alpha, 16)
         XCTAssertTrue(run.screen.message.active)
+        // … even mid-flash: three steps on, a release and a press start it again from step 0.
+        for _ in 0..<3 { step(&run) }
+        XCTAssertEqual(run.screen.flash.alpha, 19)
+        let again = step(&run, Self.held(Self.space))
+        XCTAssertEqual(again.output.sounds, [cue(a, 14)])
+        XCTAssertEqual(run.screen.flash.mode, 2)
+        XCTAssertEqual(run.screen.flash.alpha, 16)
+        XCTAssertEqual(run.screen.flash.scale, 1)
+        XCTAssertTrue(run.screen.flash.growing)
+        // A move cancels a running flash (FUN_1002fc90).
+        step(&run)
+        XCTAssertEqual(run.screen.flash.alpha, 17)
+        step(&run, Self.held(Self.left))
+        XCTAssertEqual(run.screen.previews[1].sector, 1)
+        XCTAssertEqual(run.screen.flash, LevelSelect.Flash())
     }
 
     func testLevelSelectEsc() throws {
@@ -301,6 +372,16 @@ final class LevelSelectTests: XCTestCase {
         let after = step(&run)
         XCTAssertEqual(after.output.music.first, .resume)
         XCTAssertEqual(buttons(after.output.ops, a).map(\.x), [128, 320, 511])
+        // The notice's clock is the level select's frame count (one a tick frame): the cleared notice fades out
+        // (+4 a frame, flli 73) and is gone within 8 frames. Bound: 12 frames.
+        XCTAssertEqual(run.screen.frameCount, 3)
+        var gone: Int?
+        for f in 1...12 where gone == nil {
+            step(&run)
+            XCTAssertEqual(run.screen.frameCount, Int32(3 + f))
+            if run.screen.game?.notice.active == false { gone = f }
+        }
+        XCTAssertEqual(gone, 7, "alpha 4, 8 … 32 over the frames after the clear")
         // A Quit that let the wait go (the driver sets b8): the controller's +2, no resume, out as with Esc.
         var (quitRun, _) = try entered()
         step(&quitRun)

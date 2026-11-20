@@ -146,9 +146,11 @@ public struct LevelSelect: Sendable {
         flash = Flash()                                                              // 1002e344 FUN_1002fc90
         // FUN_10009d70: the save buffer re-made 640×480 — `.loadTerrain(lese)` below (lese is 640×480).
         accepted = false                                                             // 1002e39c
-        index = 0
-        rightLatch = false
-        frameCount = 0
+        index = 0                                                                    // 1002e3b0..1002e3b8: r31,
+        rightLatch = false                                                           // r30, r29 = iVar18, bVar3,
+        frameCount = 0                                                               // iVar17
+        acceptLatch = false                                                          // 1002e838 (bVar1)
+        leftLatch = false                                                            // 1002e83c (bVar2)
         g.notice.reset()                                                             // FUN_10018130
         let f = a.floats
         func fl(_ i: Int) -> Int32 { EntityDraw.fctiwz(f[i]) }
@@ -444,6 +446,8 @@ public struct LevelSelect: Sendable {
         }
         for t in textRequests(assets: a) { ops += state.text.draw(t).map { .draw($0) } }       // FUN_1000d380 × 2
         for (i, b) in buttons.enumerated() where !(i == 1 && paused) {
+            // The level select's template 0x100eaddc, the game's 0x100e63e4 and the grid's 0x100e3ad0 are byte-identical
+            // over their 0x4c bytes (data image) with the same static-init clip {0,0,480,416}: `.template` is exact.
             var c = DrawCommand.template                                             // 0x100eaddc
             c.clip = EntityDraw.backBufferBounds                                     // FUN_1000a530(back)
             c.face = b.face
