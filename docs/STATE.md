@@ -184,7 +184,10 @@ Settled history lives in docs/STATE-history.md.
   the original), the high-score table, name entry and the scores screen are built but not yet reachable from the menu
   (S2/S3a wire them). `Deimos/Core` is **406 / 0 / 0** with S4 alone (S2's tests add on top); replay 4 / 0; Debug and
   Release build. The erase-scores question moved to the menu's SCORES action (seat ruling, in the handoff).
-  **Next: S2 (menu, credits) closes; then S3a and S5**, started by the Coordinator.
+  **S2 closed 2026-11-20** (`docs/handoff-deimos-phase4-s2.md`): the main menu and the credits screen are the
+  original's, proved by tests (`Deimos/Core` **416 / 0 / 0** with S2 and S4 both in); the app still opens straight into a game
+  until S8a connects mouse and keys to the front end. Found: the credits have ten pages, no blank eleventh (ruling 15).
+  **Next: S3a (starting a game and coming back) and S5 (Last Film, demos)**, started by the Coordinator.
 - **Data:** `Resources/Deimos/` in git; `deimos-census` 872 entries, 0 failures.
 - **Open:** RE bank `docs/deimos/INDEX.md` #13, #59 residue, #63 and 134 cross-file label mismatches (#64 closed 2026-11-20); Ben's
   ear/eye items (on the gate card). Not modelled until Phase 4: the mouse button ending a film; the quit flag
