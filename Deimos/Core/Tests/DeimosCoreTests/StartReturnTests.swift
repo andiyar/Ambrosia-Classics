@@ -92,13 +92,38 @@ final class StartReturnTests: XCTestCase {
         return nil
     }
 
+    /// The bound on the passes from the level select's call to the game's first pass (its entry, the select, the
+    /// accept flash's 16 frames, the pass that hands the sector back).
+    private static let maxLevelSelectPasses = 40
+
+    /// Through the real level select (S3b LS) inside a front end: passes until start/return has started a game,
+    /// player 1's select key held on the level select's first live frame (the pass after the one that called it).
+    /// Returns the game's first pass and the ticks it ran at; fails on the bound.
+    private func throughLevelSelect(_ fe: inout FrontEnd, _ t: inout UInt32,
+                                    _ label: String) -> (game: PassOutput, ticks: UInt32)? {
+        let started = fe.state.gamesStarted
+        let select = HeldKeys(held: [KeyTable(prefs: fe.state.prefs).codes[6]])   // Space
+        var pressed = false
+        for _ in 0..<Self.maxLevelSelectPasses {
+            let live = fe.screens.last == .levelSelect && !pressed
+            if live { pressed = true }
+            let at = t
+            let out = fe.pass(keys: live ? select : HeldKeys(), ticks: t)
+            t += 2
+            if fe.state.gamesStarted > started { return (out, at) }
+        }
+        XCTFail("\(label): bound: no game within \(Self.maxLevelSelectPasses) passes of the level select")
+        return nil
+    }
+
     // MARK: - The start
 
     /// B §1a through the front end: `1` on the menu flashes 1 PLAYER and calls start/return. Pass 1: the music
     /// paused, a full present, the cursor hidden, the menu's element fade-out (`10023518..10023558`). Pass 2: `tran`
     /// (0x4b, 100, 1) and the fade to black on full-screen presents (`1002355c..10023584`). Pass 3: the music stopped
-    /// and `ammu` looped, the level select (its stub: sector 1), and the game — its first pass the bare session's
-    /// with the music already playing, seeded with that pass's ticks. Two players reach the game too.
+    /// and `ammu` looped, and the level select's entry (S3b); player 1's select there chooses sector 1, and once the
+    /// level select has left, the game — its first pass the bare session's with the music already playing, seeded with
+    /// that pass's ticks. Two players reach the game too.
     func testStartSequence() throws {
         let a = try assets()
         var fe = try FrontEnd(assets: a, prefs: .fresh)
@@ -128,17 +153,23 @@ final class StartReturnTests: XCTestCase {
         XCTAssertEqual(fe.state.gamesStarted, 0)
 
         let three = fe.pass(keys: HeldKeys(), ticks: t)
+        t += 2
+        XCTAssertEqual(three.music, [.stop, .play(Self.ammu, loop: true)], "the music stopped, ammu looped")
+        XCTAssertEqual(fe.screens, [.mainMenu, .startReturn, .levelSelect], "the third pass calls the level select")
+        XCTAssertEqual(fe.state.gamesStarted, 0)
+        let (first, at) = try XCTUnwrap(throughLevelSelect(&fe, &t, "1 PLAYER"))
+        XCTAssertEqual(at, 3_044, "the game's pass: after the select, 15 flash frames and the exit (was 3_008)")
         XCTAssertEqual(fe.state.gamesStarted, 1)
         XCTAssertEqual(fe.screens, [.mainMenu, .startReturn])
         let start = SessionStart(sector: 1, players: 1, film: nil, musicAlreadyPlaying: true)
         XCTAssertEqual(fe.session?.start, start, "sector 1, one player, the music already playing")
-        var bare = try DeimosSession(assets: a, prefs: .fresh, start: start, seed: t, ticks: t)
-        let reference = bare.pass(keys: HeldKeys(), ticks: t)
-        XCTAssertEqual(three.music, [.stop, .play(Self.ammu, loop: true)] + reference.music)
+        var bare = try DeimosSession(assets: a, prefs: .fresh, start: start, seed: at, ticks: at)
+        let reference = bare.pass(keys: HeldKeys(), ticks: at)
+        XCTAssertEqual(first.music, reference.music)
         XCTAssertFalse(reference.music.contains(.play(Self.ammu, loop: true)), "the game does not start ammu again")
-        XCTAssertEqual(three.sounds, reference.sounds)
-        XCTAssertEqual(three.ops, reference.ops)
-        XCTAssertEqual(three.requests, [])
+        XCTAssertEqual(first.sounds, reference.sounds)
+        XCTAssertEqual(first.ops, reference.ops)
+        XCTAssertEqual(first.requests, [])
         XCTAssertEqual(fe.session?.rng, bare.rng)
 
         // 2 PLAYER: the same start; the game has both players.
@@ -173,7 +204,7 @@ final class StartReturnTests: XCTestCase {
             }
             _ = pass()
             _ = pass(Self.typeOne)
-            for _ in 0..<3 { _ = pass() }
+            XCTAssertNotNil(throughLevelSelect(&fe, &t, label), label)
             XCTAssertEqual(fe.state.gamesStarted, 1, label)
             if onTable { fe.session?.game.players[0].score = 20_000 }
             var ending: PassOutput?
