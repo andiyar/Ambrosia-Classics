@@ -3,7 +3,7 @@ import XCTest
 
 /// 6A-BG1c (docs/superpowers/plans/2026-11-04-ferazel-remainder.md `#### 6A-BG1c`; docs/ferazel/later-levels-ledger.md
 /// §8(a), §6): the plants of levels 15 and 18 — types 2700, 2701, 2702, 2705, 2711 (faces 0xa8c, 0xa8d, 0xa8e, 0xa91,
-/// 0xa97). The Setup arm of `.SetupBackgroundSprite` (M l. 62629–62668) was already built (`case 0xa8c...0xaef`); this
+/// 0xa97). The Setup arm of `.SetupBackgroundSprite` (M l. 62629–62670) was already built (`case 0xa8c...0xaef`); this
 /// task puts their faces into the Setup-face table and marks their picture-cache singles (registered by
 /// `.InitBackgroundSprite` under flag 1, M l. 61908–61914: LL §6 singles #161, #162, #163, #166, #172). Records are read
 /// per record through `SetupFaces.setup` — level 18 still holds the Chief, so no level is opened. A missing data file is
@@ -68,13 +68,18 @@ final class PlantTests: XCTestCase {
                             XCTAssertEqual(s.layer, p3 != 0 ? 10000 : -100, what)
                             // M l. 62633: `+0x88 = 1`, the light overlay.
                             XCTAssertTrue(s.lightOverlay, what)
+                            // M l. 62638: `+0x185 = 1`, one-way, for every plant (the reset under case 0xb0b lies
+                            // outside 0xa8c…0xaef); M l. 62670: `+0x110 = 0`, no gravity.
+                            XCTAssertTrue(s.oneWay, what)
+                            XCTAssertEqual(s.gravity, 0, what)
                             // M l. 62659–62661: p1 ≠ 0 → `+0x17e = 1` (mirrored).
                             XCTAssertEqual(s.mirrored, p1 != 0, what)
                             // M l. 62663–62666: p2 ≠ 0 → `+0xb8 = p2 + 0x10000`.
                             XCTAssertEqual(s.mode, p2 != 0 ? UInt32(truncatingIfNeeded: Int(p2) + 0x10000) : 0, what)
-                            // M l. 62634: the empty rect. With p1 ≠ 0 the dump's `.FlipHRect` (M l. 62661) makes it
-                            // (top 0, left w, bottom 0, right w); the port keeps (0, 0, 0, 0) — the same recorded
-                            // deviation as 6A-BX1a's decorations (still empty). This pins the port's value.
+                            // M l. 62634: the empty rect. With p1 ≠ 0 the original's `.FlipHRect` (M l. 62661) flips
+                            // it to (top 0, left w, bottom 0, right w), still empty: that moves only the plant's centre
+                            // x, by the face width. The port keeps the unflipped (0, 0, 0, 0); nothing reads it.
+                            // Recorded in the plan's As executed for 6A-BG1c (decorations: D53.2). Pins the port's value.
                             XCTAssertEqual(s.hotRect, Rect(top: 0, left: 0, bottom: 0, right: 0),
                                            p1 != 0 ? "\(what): port deviation (the dump's is (0, w, 0, w))" : what)
                         }
@@ -134,6 +139,7 @@ final class PlantTests: XCTestCase {
             XCTAssertTrue(marked.allSatisfy { CachedFaces.record($0).flag == 1 }, "level \(level): flag 1")
         }
         // Loading the five: one face each (n 5, q 10), one step each, the five records loaded.
+        // Source: the port's own arithmetic (`CachedFaces.load`, from `.LoadCachedSpriteFaces` M l. 73749–73859): p from n, +1 a single, q = 2n.
         var cache = CachedFaces()
         let bars = cache.load(needed: CachedFaces.Needed(records: plants))
         XCTAssertEqual(bars.map { [Int($0.0), Int($0.1)] }, [[6, 10], [7, 10], [8, 10], [9, 10], [10, 10]])
@@ -164,6 +170,7 @@ final class PlantTests: XCTestCase {
                 XCTAssertEqual(e.slot.mirrored, p.p1 != 0, what)
                 XCTAssertEqual(e.slot.layer, p.p3 != 0 ? 10000 : -100, what)
                 XCTAssertEqual(e.slot.mode, p.p2 != 0 ? UInt32(truncatingIfNeeded: Int(p.p2) + 0x10000) : 0, what)
+                XCTAssertEqual([e.slot.oneWay ? 1 : 0, Int(e.slot.gravity)], [1, 0], what)
             }
         }
         // Measured from World Data (Mlvl 15 and 18): the five types' records — 22 on 15 and 5 on 18 (LL §4) — beside

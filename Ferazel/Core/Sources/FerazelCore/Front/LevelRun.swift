@@ -1345,9 +1345,9 @@ public struct CachedFaces: Equatable, Sendable {
     /// 2955, 2956, 2962 → theirs (`_DAT_100a0a6c[type − 0xb86]`, M l. 59716; #60, #61, #67); the teleporters 1060 /
     /// 1061 face from the boot singles 0x424 / 0x425 and mark nothing.
     /// 6A-BG1c: the plants 2700, 2701, 2702, 2705, 2711 → their own singles (`_DAT_100a0ad8[type − 0xa8c]`, M l.
-    /// 62649, flag 1; #161, #162, #163, #166, #172).
+    /// 62635, flag 1; #161, #162, #163, #166, #172); the plants 2703, 2704, 2706–2709 are placed on no level and mark nothing.
     /// Every other built type marks nothing. // later: Phase 6 — the marks of the types not built yet, with their
-    /// Setups (the clouds, the other plants, the other scenery, the carpet set 0x438, fire 1208's 0x4b8 + 0x4b9, the bosses' own
+    /// Setups (the clouds, the other scenery, the carpet set 0x438, fire 1208's 0x4b8 + 0x4b9, the bosses' own
     /// records and 0x46a's / 0x77b's: the Wizard `0848` only, the Chief 0x77b, the Demon all three 0x46a records,
     /// Xichra `0848` + `0840` + 0x77b — LL §1 finding 8).
     static func markedRecords(type t: Int16, p1: Int16 = 0) -> [RecordKey] {

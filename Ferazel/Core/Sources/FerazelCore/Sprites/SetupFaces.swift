@@ -417,11 +417,11 @@ public enum SetupFaces {
                 let mode = p.p1 == 0 ? 0xb : Int(p.p1)
                 guard !(1...2).contains(mode) else { throw Error.notTranscribed(type: p.type) }
                 record = BackgroundSprite.setupMace(&s, record: p)
-            case 0xa8c...0xaef:                                // plants (l. 62629–62668)
+            case 0xa8c...0xaef:                                // plants (l. 62629–62670)
                 s.layer = -100
-                s.lightOverlay = true
+                s.lightOverlay = true; s.oneWay = true         // `+0x88 = 1`; `+0x185 = 1` (l. 62638)
                 face(Int16(t), 0, .setupCached)
-                if p.p1 != 0 { s.mirrored = true }             // + `.FlipHRect` of the hot rect
+                if p.p1 != 0 { s.mirrored = true }             // no `.FlipHRect` (l. 62661): the rect stays (0,0,0,0)
                 if p.p2 != 0 { s.mode = UInt32(truncatingIfNeeded: Int(p.p2) + 0x10000) }
                 if p.p3 != 0 { s.layer = 10000 }
             case 3000..<0xbc2:                                 // wall tunnels (l. 62620–62627; W2b `setupTunnel`)
