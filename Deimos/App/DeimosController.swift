@@ -250,7 +250,10 @@ import Synchronization
             switch request {
             case .hideCursor: wantsCursorHidden = true
             case .showCursor: wantsCursorHidden = false
-            case .aboutEnabled, .quit, .saveLastFilm, .ask, .beep: break   // Phase 4 seams: nothing emits them yet (S8a)
+            // Phase 4 seams, acted on in S8a: the front end already emits `.quit` (a game ended with the quit flag
+            // set) and `.saveLastFilm` (a non-film game's recording — none until S5's recorder); nothing emits
+            // `.aboutEnabled`, `.ask` or `.beep` yet.
+            case .aboutEnabled, .quit, .saveLastFilm, .ask, .beep: break
             }
         }
         if out.screenChanged { present() }
