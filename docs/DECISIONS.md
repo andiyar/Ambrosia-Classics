@@ -2572,3 +2572,21 @@ The seat's rulings (Fable 5.2, under the Coordinator). Per-task detail is under 
    round is run 58's first act.
 4. **Proof B with background work off** is a question for Ben (Q20): it is one command of 13 minutes or more, and a
    foreground command is cut off at ten.
+
+## D56 — Ferazel's Wand: run 58's rulings (the cross-check's fix round, done at night; 2026-11-21)
+
+1. **The plan's level-10 values were wrong; the level data wins.** Level 10's ice, landing-damage and water-current
+   header fields are 0; 80 / 150 / −512 are level 11's only. The fix round asserts level 10 at 0 (which is also the
+   first proof of the player's "0 means 0x70" damage default) and level 11 at its real values.
+2. **Walkers on a damaging surface take the raw header value, with no default — not a fault.** The original applies
+   the 0 → 0x70 default in the player's handler only (dump l. 45108–45110); the Walker's subtracts the raw value
+   (l. 58457), as `Walker.swift` does. Level 10 has no damaging tiles.
+3. **A fix round may correct more stale comments than the cross-check named** when a reviewer has checked each new
+   text against the ledger or the level data (ten more were taken; D54.4's rule, widened). Two were left because
+   nobody could verify them on levels 10 and 11: `Walker.swift:48`, `BoxSprite.swift:1141`.
+4. **The second fix round applied the quality reviewer's verified patch through a fresh implementer** (background
+   work off, so the first implementer could not be resumed), with no third review: the patch was already built, run
+   and mutation-tested by the reviewer, and the seat's whole-suite run followed.
+5. **A run that starts at night with Q20 unanswered closes after the headless work as CLOSED, not STOPPED**: the hour
+   alone forbids the two launch checks, and the Coordinator's "done" is "what the chip allows at this hour is merged".
+   The checks stay owed and still come before any task.

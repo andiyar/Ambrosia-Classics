@@ -4,6 +4,16 @@
 > only). Nothing current reads this file; the live state is `docs/STATE.md`. Each later close that settles something
 > adds a dated section at the top, newest first. The two snapshots below are verbatim (headings demoted only).
 
+## Settled at Ferazel run 58's close (2026-11-21)
+
+- Run 58 started at night (00:53) and launched nothing. It ran the fix round of the wave 6A.2 cross-check: tests and
+  comments only, merged at 66875a3, Core suite 722 / 0 failed (D56). No game fault.
+- Run 56's "five planted bugs outside the level task's scope still pass every test" is closed: Continue's facing, ice,
+  landing damage, the water current and the underwater light arm are each proven at levels 10 and 11.
+- The plan had level 10's ice, landing-damage and water-current settings wrong: they are 0 there and 80 / 150 / −512
+  on level 11 only.
+- Fourteen comments that gave "levels 1–4" or "1–5" as a reason were corrected.
+
 ## Settled at Ferazel run 57's close (2026-11-21)
 
 - Run 57 started at night (00:42) and launched nothing. It did the wave 6A.2 Fable cross-check (PASS WITH FIXES, no

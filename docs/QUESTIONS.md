@@ -41,8 +41,9 @@ Options: (a) allow that one script to run detached (started with `nohup`, the se
 background work is off; (b) the Coordinator runs it itself by day and records the result; (c) you run
 `tools/windows/proof-b-ferazel.sh` once by day and paste the last line.
 Recommendation: a — it keeps the chain moving with no one at the keyboard; the script already mutes itself.
-Blocks: the next two tasks (the plants and the rain) cannot start until this check has run by day. The cross-check's
-fix round can.
+Blocks: the next two tasks (the plants and the rain) cannot start until this check has run by day.
+Update 2026-11-21 (run 58, at night): the cross-check's fix round is done and merged, so this check is now the very
+next step — nothing else is left that a night-time or ten-minute-limited session can do.
 Answer:
 
 ### Q19 — 2026-11-11 — Phase 6A plan (to the Goblin Chief): three small choices, for your later read

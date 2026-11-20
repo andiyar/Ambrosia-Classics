@@ -2006,6 +2006,26 @@ ids; its `--check` reads this table):
        `:970`), `FerazelSession.swift:391` and `:570`, `HitPlayerSprite.swift:126`. Comment-only; run the ledger check
        after.
     The seat fixed what was the seat's: the seven pinned values missing from "Goldens" above.
+  - **The cross-check's fix round — as executed (run 58, 2026-11-21, 00:53 → 02:00, at night; D56):** done, merged.
+    `b04a67d` then review fix `66875a3`. **Tests and comments only; no game fault; no pinned value moved; Core 722
+    (557 + 165), WinKit 84 untouched.** Legs: spec PASS, quality PASS WITH FIXES (33 planted bugs; 4 survivors, 1 closed
+    by a new case, 3 already held by `ParticleTests.testMoteVelocityLevel1`).
+    - **Item 2 above is wrong about level 10 — the data wins:** level 10's ice, landing-damage and water-current
+      header fields are all **0**; 80 / 150 / −512 are level 11's only. Level 10 is asserted at 0 (ice gives 800 and
+      0; damage falls back to the player's default 0x70 — the first test of that default, since levels 1–5 all hold
+      112; water motes do not drift).
+    - Where the asserts live: Continue's facing, three cases (not a checkpoint → the header's; a checkpoint → the saved
+      one; a checkpoint with no snapshot of the level → the saved one) and level 11's ice (550 and 5), damage (150) and
+      current (every mote −639…−384) in `LevelElevenTests.testLevel11SetsUpEveryRecord`; level 10's in
+      `LevelTenTests.testLevel10SetsUpEveryRecord`; the light renderer's underwater arm on level 11's unpatched header
+      (an FG-tile cell and a pattern-tile cell through the water table) in
+      `RippleTests.testSubmergedTintSitesMatchDump`. Shared helper `TenEleven.headerBehaviour`.
+    - Fourteen comments corrected (the four named, ten more found in review); the ledger script's one anchor and the
+      ledger's `:970` → `:1002` cite followed. Ledger `--check` OK.
+    - **Walkers on a damaging surface take the raw header value with no 0x70 default — as the original** (dump l.
+      58457 against the player's 45108–45110): not a fault; level 10 has no damaging tiles at all.
+    - Seat's G2 at `66875a3`, five foreground parts: 557 + 26 + 18 + 51 + 70 = **722**, 0 failed, the two opt-in
+      skips by name. **GWB and GW4R are still owed, by day** — this run began at 00:53 and Q20 had no answer.
 
 #### 6A-BG1c — minor — plants (→ 725)
 - **Files:** `Sources/FerazelCore/Sprites/SetupFaces.swift` (`:401` the arm, built; the Setup-face table rows; `:715`),
