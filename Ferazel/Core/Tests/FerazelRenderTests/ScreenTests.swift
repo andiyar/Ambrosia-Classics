@@ -202,29 +202,33 @@ final class ScreenTests: XCTestCase {
             .copyPicture(id: m.pictureId, chain: .level, source: Rect16(top: 0, left: 0, bottom: size[1], right: size[0]),
                          dest: Rect16(top: 0, left: 0, bottom: 480, right: 640), forceClut: nil, transparent: false),
         ], "level \(level)")
-        let r = try renderer(clut: 0x80)                    // a fresh surface under some other CLUT; the op sets the card's
-        r.chain = .level
-        try r.apply(first.draws)
-        XCTAssertEqual(r.surface.clut.id, m.clutId)
-        return (m, h.chapter, size, r.surface)
+        let screen = try renderer(clut: 0x80)               // a fresh surface under some other CLUT; the op sets the card's
+        screen.chain = .level
+        // Index 255 everywhere first, not the fresh surface's 0 (white): an opaque copy must write every pixel, white
+        // ones too (a mode-0x24 copy would leave its white pixels at 255).
+        screen.surface.frame.pixels = [UInt8](repeating: 0xff, count: screen.surface.frame.pixels.count)
+        try screen.apply(first.draws)
+        XCTAssertEqual(screen.surface.clut.id, m.clutId)
+        return (m, h.chapter, size, screen.surface)
     }
 
     func testChapterCard2FrameGolden() throws {
         let card = try chapterCard(level: 10)
-        // LL §4 level 10 item 3: chapter card 2 — PICT 4620, clut 282, from the dump's `chapter·10 + 0x11f8`,
+        // LL §4 level 10 item 4: chapter card 2 — PICT 4620, clut 282, from the dump's `chapter·10 + 0x11f8`,
         // `chapter + 0x118`.
         XCTAssertEqual([card.chapter, card.run.pictureId, card.run.clutId], [2, 4620, 282])
         XCTAssertEqual(card.frame, [608, 480])                          // a 608-wide card, widened to 640
         // Measured golden (6A-MC first green, 2026-11-20): FNV-1a 64 of the 640×480 indices then the CLUT's 256 entries
         // as 16-bit big-endian R, G, B — PICT 4620 converted under clut 282 (`.ruled`, lowest tie-break, error
-        // diffusion), every pixel copied by colour.
+        // diffusion), every pixel copied by colour. Both cards' hashes are the same under `.exactNearest` with either
+        // tie-break (the app's model; measured 2026-11-20, review and fix round).
         XCTAssertEqual(String(fnv1a(image(card.surface)), radix: 16), "f33072b0df2cab4d")
         XCTAssertGreaterThan(Set(card.surface.frame.pixels).count, 16)   // a picture, not a flat fill
     }
 
     func testChapterCard5FrameGolden() throws {
         let card = try chapterCard(level: 22)
-        // LL §4 level 22 item 3: chapter card 5 — PICT 4650, clut 285.
+        // LL §4 level 22 item 4: chapter card 5 — PICT 4650, clut 285.
         XCTAssertEqual([card.chapter, card.run.pictureId, card.run.clutId], [5, 4650, 285])
         XCTAssertEqual(card.frame, [640, 480])
         // Measured golden (6A-MC first green, 2026-11-20): as card 2's — PICT 4650 under clut 285.

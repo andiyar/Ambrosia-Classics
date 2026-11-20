@@ -46,8 +46,13 @@ final class LaterConversationTests: XCTestCase {
         return (w, w.active.insert(slot), p.p1)
     }
 
+    /// The sounds of the last `talk` (action 2's `.STPlayRegSound(501, 1, 0x100)`).
+    private var sounds: [SoundCue] = []
+
     /// One run of `t`'s conversation to its end: "press any key" answered by one tick of a key, each menu key wait by
-    /// the next of `menu`. The run, and every draw it made.
+    /// the next of `menu`. The run, and every draw it made; its sounds in `sounds`. Checked against the lines it showed
+    /// (`.HandleConvLine`, `.HandleLineResponses`): line #1's portrait at the start; each later shown line its portrait
+    /// and one erase, then its speaker's name; each menu portrait 4001, one erase, "Ferazel"; the end's erase.
     private func talk(_ r: FerazelResources, _ t: Talker, world w: SpriteWorld, sprite: Int, id: Int16,
                       menu: [Int] = [], save: inout SaveBlock) throws -> (run: ConversationRun, draws: [DrawOp]) {
         XCTAssertEqual(id, t.mcnv, "L\(t.level) rec \(t.record) p1")
@@ -55,7 +60,9 @@ final class LaterConversationTests: XCTestCase {
                                 prefs: FerazelPrefs(), levelName: w.level.header.name)
         var keys = menu
         var draws: [DrawOp] = []
+        sounds = []
         var now: UInt32 = 5000
+        // A hang guard, not a timing: the longest run here (206's first visit, eight lines) ends in 1,885 ticks.
         for _ in 0..<40000 where !c.isDone {
             var input = FrontInput()
             switch c.wait {
@@ -71,7 +78,9 @@ final class LaterConversationTests: XCTestCase {
                 return (c, draws)
             default: break
             }
-            draws += c.tick(now: now, input: input, save: &save).draws
+            let out = c.tick(now: now, input: input, save: &save)
+            draws += out.draws
+            sounds += out.sounds
             now &+= 1
         }
         XCTAssertTrue(c.isDone, "Mcnv \(id) did not end")
@@ -79,6 +88,36 @@ final class LaterConversationTests: XCTestCase {
         XCTAssertEqual(c.index, 20, "Mcnv \(id): its last line's next 21 → index 20, the end")
         XCTAssertEqual(draws.last, .restoreView, "Mcnv \(id)")
         XCTAssertTrue(keys.isEmpty, "Mcnv \(id): menu keys left over")
+        let lines = try Conversation.load(from: r, id: id).lines
+        var pics: [Int16] = [lines[0].portrait], names: [[UInt8]] = [], erases = 1
+        for n in c.shown {
+            let l = lines[n - 1]
+            if n != 1 {                                     // index 0 draws neither (`.Conversation` drew it)
+                pics.append(l.portrait)
+                erases += 1
+            }
+            names.append(MacRoman.bytes(l.speaker))
+            if l.responseTargets[0] != 0 {
+                pics.append(ConversationRun.ferazelPortrait)
+                names.append(MacRoman.bytes(ConversationRun.ferazelName))
+                erases += 1
+            }
+        }
+        let wholeFrame: Int16 = 0x134                       // `.CopyConvToScreen`'s frame copy, not an erase
+        XCTAssertEqual(draws.compactMap { op -> Int16? in
+            guard case .copyPicture(let id, _, _, _, nil, false) = op, id != ConversationRun.framePict else {
+                return nil
+            }
+            return id
+        }, pics, "Mcnv \(id) portraits in order")
+        XCTAssertEqual(draws.filter { op in
+            guard case .copyPicture(ConversationRun.framePict, _, _, let dest, nil, true) = op else { return false }
+            return dest.bottom - dest.top != wholeFrame
+        }.count, 2 * erases, "Mcnv \(id) erases (text + name each)")
+        XCTAssertEqual(draws.compactMap { op -> [UInt8]? in
+            guard case .drawText(let t) = op, t.v == ConversationRun.originV + 0x114 else { return nil }
+            return t.bytes
+        }, names, "Mcnv \(id) speaker names")
         return (c, draws)
     }
 
@@ -87,22 +126,26 @@ final class LaterConversationTests: XCTestCase {
     private func portraits(_ r: FerazelResources, _ draws: [DrawOp]) -> Set<Int16> {
         var ids = Set<Int16>()
         for op in draws {
-            guard case .copyPicture(let id, let chain, let source, _, nil, _) = op, id != ConversationRun.framePict else {
+            guard case .copyPicture(let id, let chain, let source, let dest, nil, _) = op,
+                  id != ConversationRun.framePict else {
                 continue
             }
             XCTAssertEqual(chain, .level)
+            // The portrait rect (24, 49)–(120, 145) at the origin (h 0x7e, v 0x2e) (`.InitConversation`, M l. 65470ff).
+            XCTAssertEqual(dest, Rect16(top: 0x31 + 0x2e, left: 0x18 + 0x7e, bottom: 0x91 + 0x2e, right: 0x78 + 0x7e),
+                           "PICT \(id) dest")
             guard let res = r.resource(type: "PICT", id: id, chain: .level) else {
                 XCTFail("PICT \(id) drawn but not on the level chain")
                 continue
             }
             let b = [UInt8](res.data.prefix(10))
             func i16(_ o: Int) -> Int16 { Int16(bitPattern: UInt16(b[o]) << 8 | UInt16(b[o + 1])) }
-            if source.top == i16(2) && source.left == i16(4) {      // the whole picture (not an erase's sub-rect)
-                XCTAssertEqual([source.bottom, source.right], [i16(6), i16(8)], "PICT \(id) frame")
-                XCTAssertGreaterThan(source.bottom - source.top, 0, "PICT \(id)")
-                XCTAssertGreaterThan(source.right - source.left, 0, "PICT \(id)")
-                XCTAssertGreaterThan(res.data.count, 512, "PICT \(id): a real picture")
-            }
+            // A portrait is always copied whole (only the frame, PICT 4000, is copied by sub-rects — the erases).
+            XCTAssertEqual([source.top, source.left, source.bottom, source.right], [i16(2), i16(4), i16(6), i16(8)],
+                           "PICT \(id) frame")
+            XCTAssertGreaterThan(source.bottom - source.top, 0, "PICT \(id)")
+            XCTAssertGreaterThan(source.right - source.left, 0, "PICT \(id)")
+            XCTAssertGreaterThan(res.data.count, 512, "PICT \(id): a real picture")
             ids.insert(id)
         }
         return ids
@@ -161,6 +204,10 @@ final class LaterConversationTests: XCTestCase {
         // talker killed, its record's spawn byte 0) and action 10 (level 11's snapshot record 283 armed: spawn byte 1).
         let l22 = try world(r, Self.dimbo, globals: g)
         XCTAssertEqual(save.snapshots[11][283].flag, 0)
+        // Level 11's snapshot record 283 as leaving level 11 left it (the level file's dormant record, spawn byte 99).
+        let dormant = l11.world.records[Self.dimboSaved.record]
+        save.snapshots[11][Self.dimboSaved.record] = dormant
+        let talker = l22.world.records[Self.dimbo.record]
         (c, d) = try talk(r, Self.dimbo, world: l22.world, sprite: l22.sprite, id: l22.id, save: &save)
         XCTAssertEqual(c.shown, [5, 6, 7, 8, 9])
         XCTAssertEqual(l22.world.globals.worldFlags[6], 1)
@@ -168,11 +215,23 @@ final class LaterConversationTests: XCTestCase {
         XCTAssertEqual(l22.world.records[Self.dimbo.record].flag, 0)
         XCTAssertEqual(save.snapshots[11][Self.dimboSaved.record].flag, 1)
         XCTAssertEqual(save.snapshots[11].filter { $0.flag != 0 }.count, 1)
+        // Only the spawn bytes move (actions 9 and 10 write `+0` alone).
+        func spawn(_ p: Placement, _ f: UInt8) -> Placement {
+            Placement(index: p.index, flag: f, byte1: p.byte1, type: p.type, p1: p.p1, p2: p.p2, p3: p.p3, p4: p.p4,
+                      y: p.y, x: p.x)
+        }
+        XCTAssertEqual(l22.world.records[Self.dimbo.record], spawn(talker, 0))
+        XCTAssertEqual(save.snapshots[11][Self.dimboSaved.record], spawn(dormant, 1))
         drawn[221, default: []].formUnion(portraits(r, d))
         g = l22.world.globals
 
-        // (e) Dimbo saved, back on level 11 (the record action 10 armed): one line, no opcode.
+        // (e) Dimbo saved, back on level 11 (level 11's file record 283, the one action 10 armed in the snapshot): one
+        // line, no opcode.
         let saved = try world(r, Self.dimboSaved, globals: g)
+        // The record talked to is the one action 10 armed, but for its spawn byte (the revisit's restore and spawn are
+        // LevelRun's, not run here).
+        XCTAssertEqual(spawn(saved.world.records[Self.dimboSaved.record], 1),
+                       save.snapshots[11][Self.dimboSaved.record])
         (c, d) = try talk(r, Self.dimboSaved, world: saved.world, sprite: saved.sprite, id: saved.id, save: &save)
         XCTAssertEqual(c.shown, [1])
         drawn[220, default: []].formUnion(portraits(r, d))
@@ -181,8 +240,9 @@ final class LaterConversationTests: XCTestCase {
         (c, d) = try talk(r, Self.nimbo, world: back.world, sprite: back.sprite, id: back.id, save: &save)
         XCTAssertEqual(c.shown, [10, 11])
         drawn[206, default: []].formUnion(portraits(r, d))
-        // (g) Flag 4 set by hand (no line of levels 10–22 sets it): #10 → #17, action 2 × 2 — items 6 and 26 × 99
-        // into the first empty slots.
+        // (g) Flag 4 set by hand (no line of levels 10–22 sets it; in the game `Mcnv` 209 #7 — Ferazel's line in the
+        // Hooded Figure's conversation, level 62 — sets it by action 5 (4, 1)): #10 → #17, action 2 × 2 — items 6 and 26 × 99 into the first empty slots,
+        // each with sound 501 and an items-only `.UpdateItemStat`.
         var g4 = back.world.globals
         g4.worldFlags[4] = 1
         let gifts = try world(r, Self.nimbo, globals: g4)
@@ -192,10 +252,24 @@ final class LaterConversationTests: XCTestCase {
         let inv = gifts.world.globals.inventory
         XCTAssertEqual([inv[empties[0]].id, inv[empties[0]].count, Int16(inv[empties[0]].isSpell)], [6, 99, 0])
         XCTAssertEqual([inv[empties[1]].id, inv[empties[1]].count, Int16(inv[empties[1]].isSpell)], [26, 99, 0])
+        XCTAssertEqual(sounds.map(\.snd), [501, 501])
+        let itemsOnly = StatusBarCall(itemsOnly: true)
+        XCTAssertEqual(d.filter { if case .statusBar(let b) = $0 { b.call == itemsOnly } else { false } }.count, 2)
         drawn[206, default: []].formUnion(portraits(r, d))
 
-        // (h) Nimbo after a theft (flag 1 set, 300 coins): #20 cond 5 true → #12's menu; reply 1 "…" → #13, action 1
-        // (coins −250) and action 5 (flag 1 = 0), next 6 → #6, #7, #8. (i) Reply 2 → #15, nothing taken.
+        // (h) Nimbo after a theft (flag 1 set by hand, 300 coins; in the game level 2's record 228, a type-1058 world
+        // flag trigger with p1 1, sets it):
+        // #20 cond 5 true → #12's menu; reply 1 "…" → #13, action 1 (coins −250) and action 5 (flag 1 = 0), next 6 →
+        // #6, #7, #8. (i) Up (stays on reply 1), down, Return: reply 2 → #15, nothing taken. The selected reply is the
+        // one row drawn black (the name is black too, at its own baseline; typed text is never pure black).
+        let replies = try Conversation.load(from: r, id: Self.nimbo.mcnv).lines[11].responses.map { MacRoman.bytes($0) }
+        func blackRows(_ d: [DrawOp]) -> [[UInt8]] {
+            d.compactMap { op -> [UInt8]? in
+                guard case .drawText(let t) = op, t.rgb == RGB16(red: 0, green: 0, blue: 0),
+                      t.v != ConversationRun.originV + 0x114 else { return nil }
+                return t.bytes
+            }
+        }
         var thief = GameGlobals(header: l11.world.level.header)
         thief.worldFlags[1] = 1
         thief.coins = 300
@@ -206,11 +280,14 @@ final class LaterConversationTests: XCTestCase {
         XCTAssertEqual(pay.world.globals.coins, 50)
         XCTAssertEqual(pay.world.globals.worldFlags[1], 0)
         XCTAssertTrue(d.contains { if case .statusBar(let b) = $0 { b.coins == 50 } else { false } })
+        XCTAssertEqual(blackRows(d), [replies[0]])
         drawn[206, default: []].formUnion(portraits(r, d))
         let refuse = try world(r, Self.nimbo, globals: thief)
+        let upKey = Int(FerazelPrefs().keys[2])
         (c, d) = try talk(r, Self.nimbo, world: refuse.world, sprite: refuse.sprite, id: refuse.id,
-                          menu: [Self.downKey, Self.returnKey], save: &save)
+                          menu: [upKey, Self.downKey, Self.returnKey], save: &save)
         XCTAssertEqual(c.shown, [12, 15])
+        XCTAssertEqual(blackRows(d), [replies[0], replies[0], replies[1]])
         XCTAssertEqual(refuse.world.globals.coins, 300)
         XCTAssertEqual(refuse.world.globals.worldFlags[1], 1)
         drawn[206, default: []].formUnion(portraits(r, d))
