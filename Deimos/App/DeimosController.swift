@@ -57,10 +57,13 @@ import Synchronization
     private var quitting = false
     /// A question waits to be put as an alert (one at a time: the front end waits for its answer).
     private var pendingQuestion: ShellQuestion?
-    /// The system asked the app to quit while it was in the background: the driver runs, unseen, until the front end
-    /// has either taken the request (the menu then quits) or holds it (a game: it waits for the menu, the app sleeps
-    /// again). The original's pump reads the Quit event while suspended and resumes first (D10).
-    private var pumpWhileSuspended = false
+    /// The system asked the app to quit while it was in the background: the driver runs, unseen and with no live
+    /// input (`heldKeys`), until `BackgroundQuitPump` says stop — the shell's quit, the request held for the menu, the
+    /// flag taken where nothing reads it (the level select), or its hard bound — and the app sleeps again. The
+    /// original's pump reads the Quit event while suspended and resumes first (D10).
+    private var backgroundPump: BackgroundQuitPump?
+    /// Caps Lock as last polled while the app was active: what a background pump hands the driver (no live input).
+    private var lastActiveCapsLock = false
     #if DEBUG
     private var audioCounter: DebugAudioCounter?
     private var launchSeconds = 0.0
@@ -332,8 +335,8 @@ import Synchronization
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         if quitting || driver == nil { return .terminateNow }
         pendingEvents.append(.quitRequested)
-        if suspended && !pumpWhileSuspended {                           // in the background: run the driver, unseen
-            pumpWhileSuspended = true
+        if suspended && backgroundPump == nil {                         // in the background: run the driver, unseen
+            backgroundPump = BackgroundQuitPump()
             timer?.start()
         }
         return .terminateCancel
@@ -343,7 +346,7 @@ import Synchronization
 
     /// One 1/240 s fire: the driver runs as far as its clock allows; a changed screen is presented.
     private func idleFired() {
-        guard driver != nil, !quitting, !suspended || pumpWhileSuspended else { return }
+        guard driver != nil, !quitting, !suspended || backgroundPump != nil else { return }
         let seconds = ProcessInfo.processInfo.systemUptime
         #if DEBUG
         let before = audioCounter?.snapshot
@@ -372,10 +375,14 @@ import Synchronization
             NSApp.terminate(nil)
             return
         }
-        // A Quit request pumped in the background that the front end holds (a game in play): sleep again.
-        if pumpWhileSuspended && suspended && driver.frontEnd.quitRequestPending {
-            pumpWhileSuspended = false
-            timer?.invalidate()
+        // A Quit request pumped in the background: sleep again when the pump says so.
+        if suspended, var pump = backgroundPump {
+            if pump.shouldStop(after: driver) {
+                backgroundPump = nil
+                timer?.invalidate()
+            } else {
+                backgroundPump = pump
+            }
         }
     }
 
@@ -414,7 +421,20 @@ import Synchronization
     /// layout is assigned before each full poll for the screen on top (`DeimosDriver.padContext`; off — an empty
     /// layout — in the controls window). The mouse: where it is over the 640×480 picture (unclamped, as `GetMouse`),
     /// whether its button is down (`Button()`), the clicks since the last fire.
+    /// In the background (a Quit request pumped while suspended) the driver gets NO live input: nothing held, the
+    /// mouse button up, no mouse position, no poll (no pad keys), Caps Lock as last seen while active — only what
+    /// was queued (the shell's events; any key or click queued before the switch) — so nothing the player does in
+    /// another app reaches the game.
     private func heldKeys(seconds: Double) -> HeldKeys {
+        if suspended {
+            let keys = HeldKeys(capsLock: lastActiveCapsLock, typed: pendingTyped, mouseDowns: pendingMouseDowns,
+                                keyEvents: pendingKeyEvents, events: pendingEvents)
+            pendingTyped = []
+            pendingKeyEvents = []
+            pendingMouseDowns = []
+            pendingEvents = []
+            return keys
+        }
         let tick = MacTicks.ticks(seconds: seconds, rate: driver.rate.perSecond)
         let state: ShellKeyState
         if tick != lastKeyPollTick {
@@ -427,6 +447,7 @@ import Synchronization
             state = shell.view.keyState
         }
         var capsLock = state.capsLock
+        lastActiveCapsLock = capsLock
         #if DEBUG
         if debugCapsLockHeld(seconds: seconds) { capsLock = true }
         #endif
@@ -488,7 +509,7 @@ import Synchronization
                 cursorHidden = false
             }
         } else {
-            pumpWhileSuspended = false
+            backgroundPump = nil
             driver.resume()
             pendingEvents.append(.resume)
             present()

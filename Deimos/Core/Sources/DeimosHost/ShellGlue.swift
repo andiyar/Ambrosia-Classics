@@ -51,6 +51,41 @@ extension DeimosDriver {
     public var padKeySet: KeyTable { KeyTable(prefs: frontEnd.livePrefs) }
 }
 
+/// The app's background pump (Phase 4 S8a AW; `osx-build.md` D10): the system asked the app to quit while it was in
+/// the background, so the app runs the driver unseen — with no live input (nothing held, the mouse button up, no
+/// position, Caps Lock as last seen while active) — and asks this, after every pumped `idle`, whether to stop. It
+/// stops when:
+/// - the front end has finished (the shell was asked to quit);
+/// - the front end holds the request for the menu (`FrontEnd.quitRequestPending`: a game, the other screens);
+/// - the request was taken (the quit flag b8) by a screen that does not act on it unseen — the level select reads
+///   the flag nowhere (D10), so it would run forever. The menu (its quit flash clears the flag, then its fade and the
+///   shell's quit) and start/return (a game the pause let go on b8: the game's end, then the menu) do act on it, so
+///   the pump runs on through them;
+/// - `maxTurns` pumped `idle` calls have run, whatever the state (a host wait on a click or a key never ends with no
+///   live input).
+public struct BackgroundQuitPump {
+    /// The hard bound: 10 seconds of the app's 1/240 s idle timer.
+    public static let maxTurns = 2_400
+    /// Pumped `idle` calls so far.
+    public private(set) var turns = 0
+
+    public init() {}
+
+    /// After one pumped `idle` of `driver`: true when the pump stops (see the type's comment).
+    public mutating func shouldStop(after driver: DeimosDriver) -> Bool {
+        turns += 1
+        let fe = driver.frontEnd
+        if turns >= Self.maxTurns || fe.isFinished || fe.quitRequestPending { return true }
+        if fe.state.quit {
+            switch fe.screens.last {
+            case .mainMenu?, .startReturn?: return false
+            default: return true
+            }
+        }
+        return false
+    }
+}
+
 /// The character a pad key "types" (S8a): a pad button presses a key the original reads, and a key-down on the
 /// Mac carries its charCode, so the screens that read key events (the menu, the scores, name entry, the credits)
 /// see the pad's Return, Esc and arrows as the keyboard's. Only the keys a pad layout binds outside play have one;

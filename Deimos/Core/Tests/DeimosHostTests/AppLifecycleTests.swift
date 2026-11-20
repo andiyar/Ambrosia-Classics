@@ -238,6 +238,73 @@ final class AppLifecycleTests: XCTestCase {
         }
     }
 
+    /// The system's Quit request while the app is in the background (D10): the app pumps the driver unseen, with no
+    /// live input (nothing held, the mouse button up, no position), and `BackgroundQuitPump` says when to stop. At the
+    /// level select the request is taken (the quit flag) but nothing there reads it: the pump stops at once. At the
+    /// menu it runs on to the shell's quit (the menu acts on the flag unseen: its quit flash clears it, then the fade
+    /// and the quit). In a game the front end holds it for the menu: the pump stops. With no request at all, the hard
+    /// bound stops it. Bound: 120 simulated s a stage; the pump itself is bounded by `BackgroundQuitPump.maxTurns`.
+    func testBackgroundQuitPumpStops() throws {
+        /// Pumps `rig` as the app does in the background — the request in the first turn, nothing live after — until
+        /// the pump says stop; returns the turns it ran (nil: the pump outran its own bound, a failure).
+        func pump(_ rig: inout Rig, request: Bool = true) -> Int? {
+            var p = BackgroundQuitPump()
+            var keys = HeldKeys(events: request ? [.quitRequested] : [])
+            for turn in 1...(BackgroundQuitPump.maxTurns + 1) {
+                rig.idle(keys)
+                keys = HeldKeys()
+                if p.shouldStop(after: rig.driver) { return turn }
+            }
+            return nil
+        }
+        let a = try assets()
+
+        // The level select: taken, never read — the pump stops as soon as the flag is set.
+        var select = Rig(try FrontEnd(assets: a, prefs: .fresh))
+        guard select.run(bound: 120, until: Rig.menuSettled) else { return XCTFail("bound: no menu") }
+        select.idle(HeldKeys(keyEvents: [Self.typeOne]))
+        guard select.run(bound: 120, until: { d, _ in d.frontEnd.screens.last == .levelSelect && !d.isFading })
+        else { return XCTFail("bound: 1 never reached the level select") }
+        select.driver.suspend()
+        let selectTurns = try XCTUnwrap(pump(&select), "the pump never stopped at the level select")
+        XCTAssertLessThan(selectTurns, 60, "it stops once the flag is set, not at the bound")
+        XCTAssertTrue(select.driver.frontEnd.state.quit, "the request was taken")
+        XCTAssertEqual(select.driver.frontEnd.screens.last, .levelSelect, "and nothing read it")
+        XCTAssertEqual(select.driver.frontEnd.state.gamesStarted, 0, "no level started unseen")
+        XCTAssertFalse(select.requests.contains(.quit))
+
+        // The menu: the pump runs through the menu's quit to the shell's.
+        var menu = Rig(try FrontEnd(assets: a, prefs: .fresh))
+        guard menu.run(bound: 120, until: Rig.menuSettled) else { return XCTFail("bound: no menu (2)") }
+        menu.driver.suspend()
+        let menuTurns = try XCTUnwrap(pump(&menu), "the pump never stopped at the menu")
+        XCTAssertLessThan(menuTurns, BackgroundQuitPump.maxTurns, "the menu's quit, not the bound")
+        XCTAssertTrue(menu.driver.frontEnd.isFinished, "the menu quit unseen")
+        XCTAssertEqual(menu.requests.filter { $0 == .quit }.count, 1, "the shell is asked to quit")
+
+        // A game: the front end holds the request for the menu — the pump stops, the game is not ended.
+        var game = Rig(try FrontEnd(assets: a, prefs: .fresh))
+        guard game.run(bound: 120, until: Rig.menuSettled) else { return XCTFail("bound: no menu (3)") }
+        game.idle(HeldKeys(keyEvents: [Self.typeOne]))
+        guard game.run(bound: 120, until: { d, _ in d.frontEnd.screens.last == .levelSelect }),
+              game.run(HeldKeys(held: [KeyTable(prefs: .fresh).codes[6]]), bound: 120,
+                       until: { d, _ in d.frontEnd.state.gameRunning })
+        else { return XCTFail("bound: no game") }
+        for _ in 0..<50 { game.idle() }
+        game.driver.suspend()
+        let gameTurns = try XCTUnwrap(pump(&game), "the pump never stopped in a game")
+        XCTAssertLessThan(gameTurns, 60)
+        XCTAssertTrue(game.driver.frontEnd.quitRequestPending, "held for the menu")
+        XCTAssertFalse(game.driver.frontEnd.state.quit)
+        XCTAssertFalse(game.requests.contains(.quit))
+
+        // No request taken or held anywhere: the hard bound.
+        var idle = Rig(try FrontEnd(assets: a, prefs: .fresh))
+        guard idle.run(bound: 120, until: Rig.menuSettled) else { return XCTFail("bound: no menu (4)") }
+        idle.driver.suspend()
+        XCTAssertEqual(pump(&idle, request: false), BackgroundQuitPump.maxTurns, "stopped by the bound")
+    }
+
     /// Ruling 9: a decoded picture (RGBA, row 0 at the top) as the game's x1R5G5B5 pixels — each channel's top five
     /// bits, alpha dropped — and a picture whose byte count is wrong refused.
     func testShellPictureFromRGBA() throws {
