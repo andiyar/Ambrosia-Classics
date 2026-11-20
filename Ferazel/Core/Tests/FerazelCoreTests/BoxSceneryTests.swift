@@ -65,16 +65,24 @@ final class BoxSceneryTests: XCTestCase {
                     switch p.type {
                     case 2827: XCTAssertEqual(s.hotRect, Rect(top: 0xd, left: 0xf, bottom: 0x28, right: 0x32), what)
                     case 2833, 2834, 2836: break                       // the graves: `testGraveHotRectFlip`
-                    default: XCTAssertEqual(s.hotRect, Rect(top: 0, left: 0, bottom: 0, right: 0), what)
+                    default:
+                        // M l. 59646: the empty rect. With p1 ≠ 0 the dump's `.FlipHRect` (M l. 59670–59673) makes it
+                        // (top 0, left w, bottom 0, right w), w = face `+6`; the port keeps (0, 0, 0, 0) — a RECORDED
+                        // DEVIATION from the dump (6A-BX1a open carry): still empty, so no `SectRect` meets it, but the
+                        // Box centre `+0x10` is x, not x + w. This pins the port's value, not the dump's.
+                        XCTAssertEqual(s.hotRect, Rect(top: 0, left: 0, bottom: 0, right: 0),
+                                       p.p1 != 0 ? "\(what): port deviation (the dump's is (0, w, 0, w))" : what)
                     }
                 } else if outcrop {
                     // M l. 59684–59702: layer 0x96, no light overlay, the fixed rect (0x15, 0x14, 0x47, 0x54).
                     XCTAssertEqual(s.layer, 0x96, what)
                     XCTAssertFalse(s.lightOverlay, what)
+                    XCTAssertTrue(s.oneWay, what)                                 // `+0x185 = 1` (M l. 59701)
                     XCTAssertEqual(s.hotRect, Rect(top: 0x14, left: 0x15, bottom: 0x54, right: 0x47), what)
                 } else {
                     // M l. 59706–59712: layer 0x78, the empty rect.
                     XCTAssertEqual(s.layer, 0x78, what)
+                    XCTAssertTrue(s.oneWay, what)                                 // `+0x185 = 1` (M l. 59710)
                     XCTAssertEqual(s.hotRect, Rect(top: 0, left: 0, bottom: 0, right: 0), what)
                 }
             }
@@ -217,16 +225,29 @@ final class BoxSceneryTests: XCTestCase {
         let r = try resources()
         let widths: [Int16: Int] = [0xb0b: 74, 0xb10: 54, 0xb11: 64, 0xb12: 40, 0xb13: 36, 0xb14: 34]
         for (t, wd) in widths {
-            XCTAssertEqual(FerazelSession.frameRect(FaceRef(pict: t, index: 0, set: .encoded), resources: r).right, wd, "\(t)")
+            let f = FerazelSession.frameRect(FaceRef(pict: t, index: 0, set: .encoded), resources: r)
+            XCTAssertEqual(f.right - f.left, wd, "\(t)")
             XCTAssertEqual(BoxSprite.decorationFaceWidths[t], wd, "\(t)")
         }
         XCTAssertEqual(BoxSprite.decorationFaceWidths.count, 6)
         // The mirror is `PlatformSprite.flipH` (the one port, 6A-TR), applied with p1 ≠ 0.
         for g in Self.graves {
-            XCTAssertEqual(PlatformSprite.flipH(g.rect, widths[g.type - 2833 + 0xb11]!), g.mirrored, "\(g.type)")
+            XCTAssertEqual(PlatformSprite.flipH(g.rect, widths[g.type]!), g.mirrored, "\(g.type)")
         }
         let s = try fixture()
         let w = s.world
+        // The table's keys are exactly the decorations whose Setup gives a non-empty rect (M l. 59650–59668): a type
+        // with a rect but no width would silently stay unmirrored.
+        let empty = Rect(top: 0, left: 0, bottom: 0, right: 0)
+        var withRect: Set<Int16> = []
+        for t: Int16 in 0xaf5...0xb21 {
+            let q = w.records[Self.graves[0].record]
+            var d = SpriteSlot(type: t, x: 100, y: 100)
+            BoxSprite.setup(&d, record: Placement(index: q.index, flag: q.flag, byte1: q.byte1, type: t, p1: 0, p2: 0,
+                                                  p3: 0, p4: 0, y: 100, x: 100), level: w.level)
+            if d.hotRect != empty { withRect.insert(t) }
+        }
+        XCTAssertEqual(withRect, Set(BoxSprite.decorationFaceWidths.keys))
         for g in Self.graves {
             let p = w.records[g.record]
             XCTAssertEqual([p.type, p.p1, p.p4], [g.type, g.p1, 0], "record \(g.record)")
@@ -240,6 +261,12 @@ final class BoxSceneryTests: XCTestCase {
             let e0 = try SetupFaces.setup(p0, context: SetupFaces.Context(level: w.level, playerX: 0))
             XCTAssertFalse(e0.slot.mirrored, "\(g.type)")
             XCTAssertEqual(e0.slot.hotRect, g.rect, "\(g.type) p1 0")
+            // A negative p1 mirrors too: the dump tests p1 ≠ 0 (M l. 59670), not p1 > 0 (no such record is placed).
+            let pn = Placement(index: p.index, flag: p.flag, byte1: p.byte1, type: p.type, p1: -1, p2: p.p2, p3: p.p3,
+                               p4: p.p4, y: p.y, x: p.x)
+            let en = try SetupFaces.setup(pn, context: SetupFaces.Context(level: w.level, playerX: 0))
+            XCTAssertTrue(en.slot.mirrored, "\(g.type) p1 −1")
+            XCTAssertEqual(en.slot.hotRect, g.mirrored, "\(g.type) p1 −1")
             // On the fixture: the spawned grave carries the mirrored rect.
             let id = try live(s, record: g.record)
             let grave = try XCTUnwrap(w.active.record(id: id))
@@ -306,6 +333,35 @@ final class BoxSceneryTests: XCTestCase {
             HitPlayerSprite.hit(w, player: pid, other: id)
             XCTAssertNil(w.suspension, "\(g.type): p4 1, no UP")
             XCTAssertEqual(w.player.countdown06cc, 0, "\(g.type): p4 1, no UP")
+            // The arm's own gates on this grave's live record, one at a time (M l. 49284–49300): p4 back to 0 so only
+            // the gate under test can refuse.
+            func setRecord(p1: Int16, p4: Int16) {
+                let q = w.records[g.record]
+                w.records[g.record] = Placement(index: q.index, flag: q.flag, byte1: q.byte1, type: q.type, p1: p1,
+                                                p2: q.p2, p3: q.p3, p4: p4, y: q.y, x: q.x)
+            }
+            //   the cooldown alone: p4 0, cooldown running → nothing (no cooldown reset, p4 kept 0);
+            setRecord(p1: g.p1, p4: 0)
+            w.player.countdown06cc = 0x5a
+            HitPlayerSprite.hit(w, player: pid, other: id)
+            XCTAssertNil(w.suspension, "\(g.type): cooldown alone")
+            XCTAssertEqual(w.records[g.record].p4, 0, "\(g.type): cooldown alone")
+            //   p1 0 → nothing at all (no cooldown, p4 kept 0);
+            setRecord(p1: 0, p4: 0)
+            w.player.countdown06cc = 0
+            HitPlayerSprite.hit(w, player: pid, other: id)
+            XCTAssertEqual([w.player.countdown06cc, w.records[g.record].p4], [0, 0], "\(g.type): p1 0")
+            XCTAssertNil(w.suspension, "\(g.type): p1 0")
+            //   p1 100 → the cooldown and p4 but no conversation; p1 101 → `.Conversation(101, …)` (`cmpwi r3,0x64`).
+            for (p1, talks) in [(Int16(100), false), (101, true)] {
+                setRecord(p1: p1, p4: 0)
+                w.player.countdown06cc = 0
+                w.suspension = nil
+                HitPlayerSprite.hit(w, player: pid, other: id)
+                XCTAssertEqual([w.player.countdown06cc, w.records[g.record].p4], [0x5a, 1], "\(g.type): p1 \(p1)")
+                XCTAssertEqual(w.suspension, talks ? .conversation(id: p1, record: g.record, sprite: id) : nil,
+                               "\(g.type): p1 \(p1)")
+            }
         }
     }
 

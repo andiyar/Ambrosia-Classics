@@ -404,8 +404,17 @@ public enum BoxSprite {
             if p.p1 != 0 {
                 s.mirrored = true
                 // `.FlipHRect(+0x34, face +6)` (M l. 59670–59673; 6A-BX1a): `PlatformSprite.flipH` with the face's width
-                // (`decorationFaceWidths`). The empty rect of every other decoration flips to left = right = w — still
-                // empty, met by no `SectRect` — so it is kept (0, 0, 0, 0): every decoration on levels 1–5 has it.
+                // (`decorationFaceWidths`), for the six types with a non-empty rect (placed mirrored: only the level-21
+                // graves). RECORDED DEVIATION (open carry): the original mirrors EVERY decoration with p1 ≠ 0, so the
+                // empty rect becomes (top 0, left w, bottom 0, right w) — still empty — and the Box centre `+0x10`
+                // (`tail`: x + left + (right − left) / 2) lands at x + w; the port keeps (0, 0, 0, 0) and the centre at
+                // x. Nothing reads the centre or rect of a decoration with an empty rect (6A-BX1a review): the dynamic
+                // light (`+0x89` sprites only), the wind (windScale > 0 only), the occluder clip (centre y only), the
+                // collide dispatch and every hit / shot / rope reader (only after a `SectRect` meets the rect, which a
+                // zero-height rect never does), Smite (enemies only), idle on / off (the face rect), the save block
+                // (records only). Every mirrored decoration on levels 1–5 has the empty rect; matching the original
+                // would move two level 1–5 state pins (`BoxRopeTests`' level-1 2842 rect, `BootFacesTests`' hot-rect
+                // hash), so the port's (0, 0, 0, 0) stays.
                 if let w = decorationFaceWidths[t] { s.hotRect = PlatformSprite.flipH(s.hotRect, w) }
             }
             if p.p2 != 0 { s.mode = UInt32(truncatingIfNeeded: Int(p.p2) + 0x10000) }
