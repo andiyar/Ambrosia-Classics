@@ -478,7 +478,10 @@ public enum SetupFaces {
             }
             switch t {
             case 0x424...0x426:                                // teleporters 1–3 (M l. 58984, 58953, 59012; 1 / 2: 6A-BX1b)
-                face(Int16(t), 0, .setup)                      // `+0xc0 = *_DAT_100a0ab0` / `0aac` / `0aa8` (boot singles)
+                // One arm for three: the dump's arms (0x425 M l. 58953–58963, 0x424 58984–58994, 0x426 59012–59022) are
+                // identical apart from the face global. Since 6A-BX1b, 1060 / 1061 also reach the audited water-mode
+                // writer below (`DrawModeAuditTests`' `box.teleporter` row); live on level 21's records 193 and 200.
+                face(Int16(t), 0, .setup)                     // `+0xc0 = *_DAT_100a0ab0` / `0aac` / `0aa8` (boot singles)
                 if inWater() { s.mode = 0x90000 }
             case 0x429:                                        // save point: set 0x429 cell p1 (l. 59000)
                 face(0x429, Int(p.p1), .setup)

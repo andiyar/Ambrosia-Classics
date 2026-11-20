@@ -198,7 +198,7 @@ final class CachedFacesTests: XCTestCase {
         }
         XCTAssertTrue(m.records.contains(.set(28)))
         // 6A-BX1b: the eight teleporters 1060 now set up and mark nothing (boot single 0x424); the NPC 2956 (record
-        // 405) sets up and marks its single 0xb8c (#61, M l. 59716).
+        // 405) sets up and marks its single 0xb8c (#61, 0-based `.single(60)`, M l. 59716).
         XCTAssertTrue(types.isSuperset(of: [1060, 2956]))
         XCTAssertEqual(m.setUp.filter { $0.type == 1060 }.count, 8)
         XCTAssertEqual(CachedFaces.markedRecords(type: 1060), [])

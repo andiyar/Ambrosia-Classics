@@ -43,6 +43,7 @@ final class BoxTalkerTests: XCTestCase {
     func testTeleporterFacesFromBootSingles() throws {
         let r = try resources()
         var byLevel: [Int16: [Int16: Int]] = [:]
+        var modes: [String: UInt32] = [:]
         for level in Self.levels {
             let L = try LevelFile.load(from: r, level: level)
             let c = SetupFaces.Context(level: L, playerX: 0)
@@ -76,7 +77,25 @@ final class BoxTalkerTests: XCTestCase {
                 let e3 = try SetupFaces.setup(q, context: c)
                 XCTAssertEqual(s.mode, e3.slot.mode, what)
                 XCTAssertTrue(s.mode == 0 || s.mode == 0x90000, what)
+                modes["\(level):\(p.index)"] = s.mode
             }
+        }
+        // The water test is live, measured per record: level 21's records 193 (x 5384, y 1906) and 200 (x 9658, y 1941)
+        // stand on a liquid BG cell (kind 200…209) → `+0xb8 = 0x90000` (M l. 58958–58963); the other 20 teleporters of
+        // 10–22 are dry (mode 0) — level 21 record 57 (x 116, y 375) named as one.
+        XCTAssertEqual(modes.count, 22)
+        XCTAssertEqual(modes.filter { $0.value != 0 }, ["21:193": 0x90000, "21:200": 0x90000])
+        XCTAssertEqual(modes["21:57"], 0)
+        // The test reads the cell at (x >> 5, (y + 0xc) >> 5): in record 193's column 168 the liquid starts at row 54
+        // (row 53 empty), so the record moved up to y 1716 reads row 54 (wet) and at y 1715 row 53 (dry) — the `+ 0xc`
+        // as read (y >> 5 is 53 for both).
+        let L21 = try LevelFile.load(from: r, level: 21)
+        let r193 = L21.placements[193]
+        for (y, mode) in [(Int16(1716), UInt32(0x90000)), (1715, 0)] {
+            let moved = Placement(index: r193.index, flag: r193.flag, byte1: r193.byte1, type: r193.type, p1: r193.p1,
+                                  p2: r193.p2, p3: r193.p3, p4: r193.p4, y: y, x: r193.x)
+            let e = try SetupFaces.setup(moved, context: SetupFaces.Context(level: L21, playerX: 0))
+            XCTAssertEqual(e.slot.mode, mode, "record 193 at y \(y)")
         }
         // LL §4: 1061 × 14 on level 21, 1060 × 8 on level 22; none elsewhere in 10–22.
         XCTAssertEqual(byLevel, [21: [1061: 14], 22: [1060: 8]])
@@ -203,7 +222,7 @@ final class BoxTalkerTests: XCTestCase {
             XCTAssertEqual(w.player.countdown06cc, 0)
             HitPlayerSprite.hit(w, player: pid, other: id)
             XCTAssertEqual(w.suspension, .conversation(id: t.p1, record: t.record, sprite: id), what)
-            XCTAssertEqual(w.player.countdown06cc, HitPlayerSprite.npcCooldown, what)
+            XCTAssertEqual(w.player.countdown06cc, 0x96, what)      // `*PTR_DAT_100a06cc = 0x96` (M l. 49207): 150, as read
             XCTAssertEqual(w.records[t.record].p4, 0, what)
             // In the cooldown: nothing more.
             w.suspension = nil
@@ -234,6 +253,10 @@ final class BoxTalkerTests: XCTestCase {
         // from resolves to a sheet the level loads — the teleporters' boot singles (`BootFaces`, loaded at boot) and
         // the furniture's and NPCs' cache singles (registered, present, marked by their Setups) — and each picture is
         // in the data with a non-empty frame (`FerazelSession.frameRect`, the session's width reader).
+        // Carry: this is a hand copy of the rule in Core. The real load rule is `FrameRenderer.spriteSheets` (the boot
+        // list + the entries' sheets + `CachedFaces.sheets(markedBy:)` …) in the Render target, which Core cannot call;
+        // `FaceTests` checks it there. The negative half (no other type marks these singles) is
+        // `testFurnitureAndNpcFacesSetUp`'s disjointness loop.
         let r = try resources()
         for t in Self.teleporters + [Self.furniture] + Self.npcs {
             let sheet = try XCTUnwrap(SetupFaces.sheet(pict: t), "\(t)")
@@ -253,8 +276,25 @@ final class BoxTalkerTests: XCTestCase {
             let k = SpriteClassTable.classify(type: t, p1Negative: false)
             XCTAssertEqual(k?.0, .box, "\(t)")
             XCTAssertEqual(k?.1, .idle, "\(t)")
-            // The Handle runs for every one of them (no `// later:` arm).
+            // The Handle runs for every one of them (no `// later:` arm). Weak: `handleBuilt` is false for six types only.
             XCTAssertTrue(BoxSprite.handleBuilt(t), "\(t)")
         }
+        // Every record of the six types on all 24 levels (any flag, outside 10–22 too) sets up without a refusal, per
+        // record through `SetupFaces.setup` — the later levels' carries (1060 on 31, 1061 on 40, 2921 on 30, 2956 on 70)
+        // included, though no test pins their state.
+        let six = Self.teleporters + [Self.furniture] + Self.npcs
+        var all: [Int16: [Int16: Int]] = [:]
+        for level: Int16 in [1, 2, 3, 4, 5, 10, 11, 15, 18, 20, 21, 22, 25, 30, 31, 40, 45, 50, 51, 52, 55, 62, 67, 70] {
+            let L = try LevelFile.load(from: r, level: level)
+            let c = SetupFaces.Context(level: L, playerX: 0)
+            for p in L.placements where six.contains(p.type) {
+                all[level, default: [:]][p.type, default: 0] += 1
+                XCTAssertNoThrow(try SetupFaces.setup(p, context: c), "L\(level) record \(p.index) type \(p.type)")
+            }
+        }
+        // 45 records (World Data, every flag): level 11's flag-99 2956 (record 283) is the only one not active.
+        XCTAssertEqual(all, [11: [2955: 1, 2956: 1], 21: [1061: 14, 2921: 2, 2962: 1], 22: [1060: 8, 2956: 1],
+                             30: [2921: 3], 31: [1060: 4], 40: [1061: 9], 70: [2956: 1]])
+        XCTAssertEqual(all.values.reduce(0) { $0 + $1.values.reduce(0, +) }, 45)
     }
 }
