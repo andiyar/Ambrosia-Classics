@@ -365,7 +365,7 @@ def _port_arm(t, cls, ps, n1):
                 if t in SHEETS:
                     return (BUILT_S, arm, what + extra)
                 return (REFUSED, face_refusal(), f'{what}: arm {arm} built; face {h(t)} not in the Setup-face table{extra}')
-        fixed = {0x426: r'case 0x426:', 0x429: r'case 0x429:', 0x42e: r'case 0x42e, 0x433, 0x434:',
+        fixed = {0x426: r'case 0x424\.\.\.0x426:', 0x429: r'case 0x429:', 0x42e: r'case 0x42e, 0x433, 0x434:',
                  0x433: r'case 0x42e, 0x433, 0x434:', 0x434: r'case 0x42e, 0x433, 0x434:', 0x42f: r'case 0x42f, 0x430:',
                  0x430: r'case 0x42f, 0x430:', 0xb72: r'case 0xb72, 0xb73:', 0xb73: r'case 0xb72, 0xb73:',
                  0xb7d: r'case 0xb7d:', 0xb7c: r'case 0xb7c:', 0x51c: r'case 0x51c:', 0x5b5: r'case 0x5b5, 0x5b6:',
@@ -386,8 +386,14 @@ def _port_arm(t, cls, ps, n1):
             return (REFUSED, dflt, f'enemy pipe: `setupPipe` built ({anchor(BOX, r"public static func setupPipe")}), '
                                    'not wired into the level spawn (6A-L10…L22, level 21)')
         if t in (0x424, 0x425):
-            return (REFUSED, dflt, f'teleporter: `BoxSprite.setup` arm built ({anchor(BOX, r"case 0x424\.\.\.0x426:")}); '
-                                   'no SetupFaces face arm (boot singles 0x424 / 0x425, M l. 58737–58740)')
+            # 6A-BX1b built the face arm (the boot singles 0x424 / 0x425, M l. 58737–58740): anchored on the Swift case
+            # as written and on the faces in the table, so a removed arm (or a dropped face) fails --check.
+            if t in SHEETS:
+                return (BUILT_S, anchor(SF, r'case 0x424\.\.\.0x426:'),
+                        f'teleporter (6A-BX1b): `BoxSprite.setup` arm {anchor(BOX, r"case 0x424\.\.\.0x426:")}; face from '
+                        'the boot single (M l. 58737–58740)')
+            return (REFUSED, face_refusal(), f'teleporter: arm {anchor(SF, r"case 0x424\.\.\.0x426:")} built; face {h(t)} '
+                                             'not in the Setup-face table')
         if t in (0x438, 0x439, 0x5c3, 0x5c4, 0xb71, 0xbfe):
             return (REFUSED, dflt, f'no Setup face arm; Handle not built ({later_box})')
         return (REFUSED, dflt, 'no Setup face arm')
