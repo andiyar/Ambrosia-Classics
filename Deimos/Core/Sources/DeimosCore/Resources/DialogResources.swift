@@ -22,6 +22,10 @@ public enum DialogResources {
     /// Every resource of a classic resource-fork image (header: data offset, map offset, data length, map length; map
     /// +24 type-list offset, +26 name-list offset; type list: count − 1, then type, count − 1, reference-list offset;
     /// references: id, name offset, attributes + 3-byte data offset, handle; data: a 4-byte length, then the bytes).
+    ///
+    /// Bounded by the fork's length: each type entry is read from its own 8 bytes and the fork can hold at most
+    /// `count / 12` references, so a map that names more (type entries sharing one reference list, say) is refused
+    /// rather than read over and over.
     public static func readFork(_ bytes: [UInt8]) throws -> [ShellResourceKey: [UInt8]] {
         let b = DialogBytes(bytes, FourCC(rawValue: 0), 0)
         guard bytes.count >= 16 else { throw DialogResourceError.notAResourceFile }
@@ -29,12 +33,16 @@ public enum DialogResources {
             let dataOff = Int(try b.u32(0)), mapOff = Int(try b.u32(4))
             let typeList = mapOff + Int(try b.u16(mapOff + 24))
             let types = (Int(try b.u16(typeList)) + 1) & 0xFFFF
+            guard typeList + 2 + types * 8 <= bytes.count else { throw DialogResourceError.notAResourceFile }
+            var room = bytes.count / 12                         // references the fork has room for
             var out: [ShellResourceKey: [UInt8]] = [:]
             for t in 0..<types {
                 let e = typeList + 2 + t * 8
                 let type = FourCC(rawValue: try b.u32(e))
                 let count = Int(try b.u16(e + 4)) + 1
                 let refs = typeList + Int(try b.u16(e + 6))
+                room -= count
+                guard room >= 0, refs + count * 12 <= bytes.count else { throw DialogResourceError.notAResourceFile }
                 for k in 0..<count {
                     let r = refs + k * 12
                     let id = try b.i16(r)
@@ -208,8 +216,8 @@ public struct DialogItemList: Equatable, Sendable {
         try DialogItemList(bytes: try DialogResources.data(DialogResources.ditl, id, in: resources), id: id)
     }
 
-    /// Item `number` (1-based).
-    public subscript(number: Int) -> DialogItem { items[number - 1] }
+    /// Item `number` (1-based); nil when the list has no such item.
+    public subscript(number: Int) -> DialogItem? { items.indices.contains(number - 1) ? items[number - 1] : nil }
 }
 
 /// A `CNTL`: rect(8) value(2) visible(1) pad(1) max(2) min(2) procID(2) refCon(4) title pstr. (CNTL 191's value is

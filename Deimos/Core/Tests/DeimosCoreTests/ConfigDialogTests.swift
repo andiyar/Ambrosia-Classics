@@ -42,11 +42,10 @@ final class ConfigDialogTests: XCTestCase {
 
     /// An item's rect in the picture.
     private func global(_ r: Run, _ item: Int) -> MacRect {
-        guard let items = r.dialog.items else {
-            XCTFail("the window has no items")
+        guard let l = r.dialog.items?[item]?.rect else {
+            XCTFail("the window has no item \(item)")
             return MacRect(top: 0, left: 0, bottom: 0, right: 0)
         }
-        let l = items[item].rect
         return MacRect(top: l.top + Self.origin.v, left: l.left + Self.origin.h,
                        bottom: l.bottom + Self.origin.v, right: l.right + Self.origin.h)
     }
@@ -101,6 +100,10 @@ final class ConfigDialogTests: XCTestCase {
         }
         XCTAssertEqual(pass(&r).output, PassOutput(), "nothing changed: nothing drawn")
         XCTAssertEqual(r.dialog.value(8), 1, "Full Screen shows byte 4 (fresh 1)")
+        let onFrame = MousePoint(h: Self.frame.left + 2, v: Self.frame.top + 2)
+        XCTAssertEqual(click(&r, at: onFrame).output, PassOutput(), "a click on the window's frame: no item, no beep")
+        XCTAssertEqual(click(&r, at: MousePoint(h: 10, v: 10)).output, PassOutput(requests: [.beep]),
+                       "a click outside the window beeps (ModalDialog)")
 
         for (item, byte) in [(8, 4), (9, 5), (17, 8)] {
             let before = r.state.prefs.bytePrefs[byte]
@@ -120,6 +123,8 @@ final class ConfigDialogTests: XCTestCase {
         let save = key(&r, Self.returnKey)
         XCTAssertEqual(save.finished, true, "Return = Save")
         XCTAssertEqual(r.state.prefs.bytePrefs[4], 0, "the edit is kept")
+        XCTAssertEqual(save.output.music, [.level(100)], "closing re-applies the music volume (X 10011758)")
+        XCTAssertEqual(pass(&r).finished, true, "a stray pass after Save still answers Save")
         XCTAssertEqual(Array(save.output.ops.suffix(3)), [
             .copy(from: .terrain, to: .back, src: Self.frame, dst: Self.frame, interlaced: false),
             .loadImage(image: FourCC("back")!, into: .terrain, dst: Self.screen),
@@ -135,7 +140,7 @@ final class ConfigDialogTests: XCTestCase {
         prefs.intPrefs = [10, 20, 30, 9]
         prefs.keyTable = (0..<14).map { UInt16(0x20 + $0) }
         var r = try open(prefs: prefs)
-        click(&r, 3)
+        XCTAssertEqual(click(&r, 3).output.music, [], "Defaults does not re-apply the volume (X 100114b4..100114cc)")
         let p = r.state.prefs
         XCTAssertEqual(Array(p.bytePrefs[4...8]), [1, 0, 0, 0, 0], "bytes 4–8")
         XCTAssertEqual(Array(p.intPrefs[0...2]), [50, 100, 50], "ints 0–2")
@@ -156,6 +161,7 @@ final class ConfigDialogTests: XCTestCase {
         prefs.keyTable[0] = 0x0D
         prefs.keyTable[13] = 0x22
         prefs.bytePrefs[5] = 1
+        prefs.intPrefs[1] = 40
         for useEsc in [false, true] {
             var r = try open(prefs: prefs)
             click(&r, 9)
@@ -167,6 +173,8 @@ final class ConfigDialogTests: XCTestCase {
             XCTAssertEqual(s.finished, false, useEsc ? "Esc = Cancel" : "Cancel")
             XCTAssertEqual(r.state.prefs, prefs, "the snapshot restored, keys included")
             XCTAssertEqual(s.output.ops.last, .screenBlit(src: Self.frame, dst: Self.frame))
+            XCTAssertEqual(s.output.music, [.level(40)], "the restored music volume re-applied (X 10011758)")
+            XCTAssertEqual(pass(&r).finished, false, "a stray pass after Cancel still answers Cancel")
         }
         var r = try open(prefs: prefs)
         click(&r, 9)
@@ -181,11 +189,12 @@ final class ConfigDialogTests: XCTestCase {
         var r = try open()
         XCTAssertFalse(r.dialog.isActive(4))
         XCTAssertEqual(click(&r, 4).output, PassOutput(), "greyed: a click does nothing")
-        click(&r, 9)
+        XCTAssertEqual(click(&r, 9).output.music, [], "a toggle does not touch the volume")
         XCTAssertEqual(r.state.prefs.bytePrefs[5], 1)
         XCTAssertTrue(r.dialog.isActive(4), "alive after a change")
         let s = click(&r, 4)
         XCTAssertNil(s.finished)
+        XCTAssertEqual(s.output.music, [.level(100)], "Revert re-applies the music volume (X 100114e4)")
         XCTAssertEqual(r.state.prefs, .fresh, "the snapshot restored")
         XCTAssertEqual(r.dialog.value(9), 0, "refreshed")
         XCTAssertFalse(r.dialog.isActive(4), "greyed again")
@@ -256,9 +265,11 @@ final class ConfigDialogTests: XCTestCase {
         XCTAssertEqual(MacRoman.decode(r.dialog.label(16)), "0%", "the live label")
         XCTAssertEqual(r.state.prefs.intPrefs[1], 100, "not set while held")
         XCTAssertFalse(far.output.ops.isEmpty, "redrawn while dragging")
+        XCTAssertEqual(far.output.music, [], "the volume is not applied while held")
         let up = pass(&r, HeldKeys(mouse: MousePoint(h: 0, v: grab.v), mouseButton: false))
         XCTAssertEqual(r.state.prefs.intPrefs[1], 0, "set on release")
         XCTAssertEqual(up.output.requests, [.beep])
+        XCTAssertEqual(up.output.music, [.level(0)], "and the music volume re-applied (X 100115d8 → 10049580)")
 
         let low = DialogDraw.sliderThumb(track, value: 0, min: 0, max: 100)
         let grab2 = MousePoint(h: (low.left + low.right) / 2, v: grab.v)
@@ -278,6 +289,7 @@ final class ConfigDialogTests: XCTestCase {
         let rel = pass(&r, HeldKeys(mouse: page, mouseButton: false))
         XCTAssertEqual(r.state.prefs.intPrefs[1], 0)
         XCTAssertEqual(rel.output.requests, [.beep])
+        XCTAssertEqual(rel.output.music, [.level(0)])
 
         // The sound slider is greyed (byte 7 = 0): a press does nothing.
         let sound = centre(r, 12)
@@ -292,8 +304,10 @@ final class ConfigDialogTests: XCTestCase {
         let st = DialogDraw.sliderThumb(s, value: 50, min: 0, max: 100)
         let sg = MousePoint(h: (st.left + st.right) / 2, v: (st.top + st.bottom) / 2)
         pass(&b, HeldKeys(mouse: sg, mouseButton: true, mouseDowns: [sg]))
-        pass(&b, HeldKeys(mouse: MousePoint(h: 639, v: sg.v), mouseButton: false))
+        let soundUp = pass(&b, HeldKeys(mouse: MousePoint(h: 639, v: sg.v), mouseButton: false))
         XCTAssertEqual(b.state.prefs.intPrefs[0], 100)
+        XCTAssertEqual(soundUp.output.music, [.level(100)],
+                       "the routine re-applies the music level (int 1); the sound level has no gain stage on OS X (D31)")
         XCTAssertEqual(MacRoman.decode(b.dialog.label(13)), "100%")
     }
 

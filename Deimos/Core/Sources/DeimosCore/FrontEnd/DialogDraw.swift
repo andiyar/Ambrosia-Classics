@@ -10,7 +10,8 @@ import Foundation
 // etched group boxes; the volume controls are plain sliders (CNTL 2000/2001 are not in the fork).
 //
 // These are general: rects come from a parsed `DITL` (`DialogItem.rect`, window-local) offset by the window's content
-// origin; S7's controls window (DITL 191) reuses the frame, buttons, text, measuring, hit-testing and tracking.
+// origin; S7's controls window (DITL 191) reuses the frame, buttons, text, measuring, hit-testing and tracking, and
+// runs its loop on `ModalDialogRunner` (the end of this file), as the configuration window does.
 
 /// One face of 1-bit glyphs, keyed by the Mac Roman byte.
 public struct DialogFont: Sendable {
@@ -30,14 +31,16 @@ public struct DialogFont: Sendable {
     public let ascent: Int32
     public let descent: Int32
     public var lineHeight: Int32 { ascent + descent }
-    private let glyphs: [Glyph?]
+    /// All 256 bytes: a byte the strike has no glyph for holds the missing glyph.
+    private let glyphs: [Glyph]
 
-    /// The glyph of Mac Roman byte `c`; the face's missing glyph when it has none (QuickDraw's rule for a strike).
-    public func glyph(_ c: UInt8) -> Glyph? { glyphs[Int(c)] }
+    /// The glyph of Mac Roman byte `c`; the face's missing glyph when it has none (QuickDraw's rule for a strike),
+    /// so there is always one.
+    public func glyph(_ c: UInt8) -> Glyph { glyphs[Int(c)] }
 
     /// The pen advance of `text` (`TextWidth`).
     public func width(_ text: [UInt8]) -> Int32 {
-        text.reduce(Int32(0)) { $0 + (glyphs[Int($1)]?.advance ?? 0) }
+        text.reduce(Int32(0)) { $0 + glyphs[Int($1)].advance }
     }
 
     /// Geneva 9 plain: Apple's own bitmap strike from System 7.5.3, `NFNT` 1025 of the Geneva suitcase, decoded once
@@ -156,7 +159,7 @@ public struct DialogFont: Sendable {
                          top: Int32(Int8(bitPattern: byte(entry, 3))), width: Int32(byte(entry, 4)), rows: rows)
         }
         let missingGlyph = glyph(Substring(missing))
-        var glyphs = [Glyph?](repeating: missingGlyph, count: 256)
+        var glyphs = [Glyph](repeating: missingGlyph, count: 256)
         for entry in table.split(whereSeparator: { $0 == " " || $0 == "\n" }) {
             glyphs[Int(byte(entry, 0))] = glyph(entry)
         }
@@ -259,7 +262,7 @@ public enum DialogDraw {
         var bits = [[Bool]](repeating: [Bool](repeating: false, count: Int(w) + 16), count: Int(h))
         var pen: Int32 = 0
         for c in text {
-            guard let g = font.glyph(c) else { continue }
+            let g = font.glyph(c)
             for (i, row) in g.rows.enumerated() {
                 let y = Int(font.ascent + g.top) + i
                 guard y >= 0, y < Int(h) else { continue }
@@ -334,16 +337,22 @@ public enum DialogDraw {
                 rect(content, Colour.content)].compactMap { $0 }
     }
 
-    /// Saves the picture under an outermost window (back → the save buffer, its rect only). Only the outermost
-    /// window saves: a window called from inside one (S7's controls window) draws over its caller, which repaints
-    /// itself when the call returns.
+    /// Saves the picture under an outermost window (back → the save buffer, its rect only). The save-under rule:
+    /// only the outermost window saves and restores; a window called from inside one (S7's controls window) draws
+    /// over its parent and restores nothing, and the parent redraws itself whole when the call returns
+    /// (`ModalDialogRunner.invalidate()`).
     public static func saveUnder(_ frame: MacRect) -> RenderOp {
         .copy(from: .back, to: .terrain, src: frame, dst: frame, interlaced: false)
     }
 
-    /// Closes an outermost window: the picture under it back (save buffer → back), the save buffer made whole again
-    /// (the screens that call a dialog — the boot and the menu — keep the `back` image there, `FUN_10009fd0`), the
-    /// window's rect blitted to the screen.
+    /// Closes an outermost window: the picture under it back (save buffer → back), the save buffer refilled with the
+    /// `back` image (`FUN_10009fd0`, as the menu fills it), the window's rect blitted to the screen.
+    ///
+    /// From the menu the save buffer held the `back` image already, so it is whole again. At boot the window opens
+    /// before anything is drawn: back and the save buffer are still the fresh buffers' black, so the window is seen
+    /// on a black screen, saves black and puts black back — the player sees black where it was. The save buffer then
+    /// holds the `back` image earlier than the original's, which is harmless: nothing reads it before the boot's
+    /// loading screen loads the same image into it again (`Boot` pass 5, X 10000564).
     public static func restoreUnder(_ frame: MacRect) -> [RenderOp] {
         [.copy(from: .terrain, to: .back, src: frame, dst: frame, interlaced: false),
          .loadImage(image: FourCC(rawValue: 0x6261_636B), into: .terrain, dst: screenClip),
@@ -502,5 +511,262 @@ public enum DialogDraw {
             inside = false
             return hit
         }
+    }
+}
+
+// MARK: - The modal loop
+
+/// `ModalDialog` for a window the game draws itself (plan ruling 8): the Dialog Manager's half of a modal window —
+/// the queued input, the press, the standard keys, the item-by-item draw and the redraw-only-on-change check — shared
+/// by the configuration window (DITL 190) and S7's controls window (DITL 191). It holds no window's own numbers: the
+/// screen opens it from its parsed `DITL` with its default and cancel items, sets the item states (`inactive`,
+/// `hidden`, `values`, `labels`), and feeds it every pass:
+///
+///     runner.begin(keys: keys)
+///     for _ in 0...runner.turnsLeft {
+///         guard let action = runner.next(keys: keys, &out) else { break }
+///         // .hit(n): ModalDialog returned item n — the screen's item action (it may finish or call)
+///     }
+///     if runner.needsRedraw() { out.ops += runner.draw { item, rect, active in nil } }
+///
+/// **What it does** (the standard filter and `ModalDialog`, Inside Macintosh: Macintosh Toolbox Essentials ch. 6):
+/// - The pass's key events, then its mouse-downs, join a queue; events behind a held press wait for its release.
+/// - Return or Enter → the default item; Esc or ⌘. → the cancel item when there is one. Other keys are dropped
+///   (no item here takes typing; S7's edit-text field will need them handed back — add it there).
+/// - A click outside the window beeps (`SysBeep`, a `.beep` request). A click inside the window on no live item —
+///   the 6-pixel frame, the bare content, a greyed or disabled item — does nothing: no item, no beep (the click is
+///   in the front window, so `ModalDialog` takes it and finds no control).
+/// - A click on a live, enabled, shown push button or check box is tracked (`TrackControl`) until the button comes
+///   up: drawn highlighted while the mouse is over it, the item reported only when it comes up over it. A press is
+///   polled once in the turn that starts it.
+/// - Bounded: each turn polls the press once (and ends the pass's input while it is held) or consumes one event; at
+///   most the queue + 2 turns a pass (`turnsLeft`, set by `begin`).
+///
+/// **Extension point — item kinds the runner does not know** (the configuration window's sliders; S7's edit-text
+/// field, focus ring, tab control and picture). Put the item's number in `ownItems`: a click on it comes back as
+/// `.ownPress(item:at:)` — the screen tracks it itself and polls it at once — then as `.ownPoll(item:)` once in each
+/// later pass while it is held; the screen calls `endOwnPress()` when the button comes up and decides whether the
+/// item was hit. To draw, `draw(own:)` asks the screen first for every shown item: the screen returns that item's
+/// ops, or nil to let the runner draw it (push buttons, check boxes, static text; any other kind left to nil is not
+/// drawn).
+///
+/// **Save-under rule.** Only the outermost window saves and restores the picture under it (`DialogDraw.saveUnder`
+/// at open, `DialogDraw.restoreUnder` at close — the screen emits them, the runner does not). A window opened from
+/// inside another draws over its parent and restores nothing; when it returns, the parent calls `invalidate()` and
+/// redraws itself whole.
+public struct ModalDialogRunner: Sendable {
+    /// What a turn produced for the screen.
+    public enum Action: Equatable, Sendable {
+        /// `ModalDialog` returned item `n`.
+        case hit(Int)
+        /// A press began on item `n`, one of `ownItems`, at `at`: the screen's to track (poll it now).
+        case ownPress(item: Int, at: MousePoint)
+        /// The screen's own press on item `n` is still being followed: poll it once.
+        case ownPoll(item: Int)
+    }
+
+    /// What a press is following.
+    public enum Tracking: Equatable, Sendable {
+        /// A push button or check box, tracked here.
+        case press(DialogDraw.Press)
+        /// One of `ownItems`, tracked by the screen.
+        case own(item: Int)
+    }
+
+    /// One queued input.
+    enum Event: Equatable, Sendable {
+        case key(KeyEvent, command: Bool)
+        case click(MousePoint)
+    }
+
+    /// Everything the drawn picture depends on: a change redraws.
+    struct Look: Equatable, Sendable {
+        var inactive: Set<Int>
+        var hidden: Set<Int>
+        var values: [Int: Int]
+        var labels: [Int: [UInt8]]
+        var tracking: Tracking?
+    }
+
+    /// The parsed `DITL`'s items (rects window-local).
+    public let items: [DialogItem]
+    /// The content rect in the picture, and the whole window (content and frame): what the screen saves and restores.
+    public let content: MacRect
+    public let windowRect: MacRect
+    /// The content's top left in the picture.
+    public var origin: MousePoint { MousePoint(h: content.left, v: content.top) }
+    /// Return and Enter hit it; it carries the default ring.
+    public let defaultItem: Int
+    /// Esc and ⌘. hit it; nil = none (they do nothing).
+    public var cancelItem: Int?
+    /// Deactivated items (drawn grey, take no click).
+    public var inactive: Set<Int> = []
+    /// Hidden items (not drawn, take no click).
+    public var hidden: Set<Int> = []
+    /// Control values (check boxes 0/1; the screen's own controls whatever they hold).
+    public var values: [Int: Int] = [:]
+    /// Item texts set at run time (`SetDialogItemText`); the `DITL`'s text otherwise.
+    public var labels: [Int: [UInt8]] = [:]
+    /// The extension point: items the screen tracks and (usually) draws itself.
+    public var ownItems: Set<Int> = []
+    public private(set) var tracking: Tracking?
+    /// Turns left this pass (see `begin`).
+    public private(set) var turnsLeft = 0
+    private var queue: [Event] = []
+    /// The screen's own press has had its poll this pass.
+    private var ownPolled = false
+    /// The picture last drawn; nil = draw at the next check.
+    private var drawn: Look?
+
+    public init(items: [DialogItem], content: MacRect, defaultItem: Int, cancelItem: Int?) {
+        self.items = items
+        self.content = content
+        windowRect = DialogDraw.frameRect(content: content)
+        self.defaultItem = defaultItem
+        self.cancelItem = cancelItem
+    }
+
+    // MARK: Item state
+
+    /// Item `n` is live (not deactivated).
+    public func isActive(_ n: Int) -> Bool { !inactive.contains(n) }
+    /// Item `n`'s control value.
+    public func value(_ n: Int) -> Int { values[n] ?? 0 }
+    /// Item `n`'s text as shown (set at run time, else the `DITL`'s).
+    public func label(_ n: Int) -> [UInt8] { labels[n] ?? item(n)?.text ?? [] }
+    /// Item `n` (1-based), nil when there is none.
+    public func item(_ n: Int) -> DialogItem? { items.indices.contains(n - 1) ? items[n - 1] : nil }
+    /// Item `n`'s rect in the picture.
+    public func rect(_ n: Int) -> MacRect? { item(n).map { DialogDraw.offset($0.rect, by: origin) } }
+
+    // MARK: Input
+
+    /// Starts a pass: its key events (with Command held or not), then its mouse-downs, join the queue.
+    public mutating func begin(keys: HeldKeys) {
+        let command = keys.held.contains(0x37) || keys.held.contains(0x36)
+        queue += keys.keyEvents.map { Event.key($0, command: command) }
+        queue += keys.mouseDowns.map(Event.click)
+        turnsLeft = queue.count + 2
+        ownPolled = false
+    }
+
+    /// The next thing for the screen to act on this pass, or nil when the pass's input is done (or waits behind a
+    /// held press). Each call uses at least one turn.
+    public mutating func next(keys: HeldKeys, _ out: inout PassOutput) -> Action? {
+        for _ in 0..<max(turnsLeft, 0) {
+            turnsLeft -= 1
+            switch tracking {
+            case var .press(press)?:
+                guard let inside = press.poll(mouse: keys.mouse, down: keys.mouseButton) else {
+                    tracking = .press(press)
+                    return stop()
+                }
+                tracking = nil
+                if inside { return .hit(press.item) }
+                continue
+            case let .own(n)?:
+                if ownPolled { return stop() }                          // still held after its poll: the rest waits
+                ownPolled = true
+                return .ownPoll(item: n)
+            case nil:
+                break
+            }
+            guard !queue.isEmpty else { return stop() }
+            switch queue.removeFirst() {
+            case let .key(k, command):
+                if k.charCode == 0x0D || k.charCode == 0x03 { return .hit(defaultItem) }          // Return, Enter
+                if let c = cancelItem, k.charCode == 0x1B || (command && k.charCode == 0x2E) {   // Esc, ⌘.
+                    return .hit(c)
+                }
+            case let .click(p):
+                guard DialogDraw.contains(windowRect, p) else {         // outside the modal window
+                    out.requests.append(.beep)
+                    continue
+                }
+                // Inside the window (its frame included) on no live item: nothing.
+                guard let n = DialogDraw.hit(p, items: items, origin: origin, candidate: takesClick) else { continue }
+                if ownItems.contains(n) {
+                    tracking = .own(item: n)
+                    ownPolled = true                                    // the screen polls it with the press
+                    return .ownPress(item: n, at: p)
+                }
+                var press = DialogDraw.Press(item: n, rect: rect(n) ?? content, at: p)
+                guard let inside = press.poll(mouse: keys.mouse, down: keys.mouseButton) else {
+                    tracking = .press(press)
+                    return stop()
+                }
+                if inside { return .hit(n) }
+            }
+        }
+        turnsLeft = 0
+        return nil
+    }
+
+    /// The pass's input ends here.
+    private mutating func stop() -> Action? {
+        turnsLeft = 0
+        return nil
+    }
+
+    /// A live, enabled, shown push button or check box, or one of the screen's own items.
+    private func takesClick(_ item: DialogItem) -> Bool {
+        item.enabled && !hidden.contains(item.number) && !inactive.contains(item.number)
+            && (ownItems.contains(item.number) || item.kind == .button || item.kind == .checkBox)
+    }
+
+    /// The screen's own press is over (the button came up).
+    public mutating func endOwnPress() {
+        if case .own? = tracking { tracking = nil }
+    }
+
+    /// The window is closing: no press, no queued input.
+    public mutating func close() {
+        tracking = nil
+        queue = []
+        turnsLeft = 0
+    }
+
+    // MARK: Drawing
+
+    /// Draw at the next check (a nested window drew over this one).
+    public mutating func invalidate() { drawn = nil }
+
+    /// Whether the picture changed since it was last drawn; true records it as drawn (the screen then draws).
+    public mutating func needsRedraw() -> Bool {
+        let now = Look(inactive: inactive, hidden: hidden, values: values, labels: labels, tracking: tracking)
+        guard now != drawn else { return false }
+        drawn = now
+        return true
+    }
+
+    /// The whole window — frame, content, every shown item in item order — then its rect blitted to the screen.
+    /// `own` is the extension point: the ops of an item the screen draws itself (given the item, its rect in the
+    /// picture and whether it is live), or nil for the runner's own drawing.
+    public func draw(own: (DialogItem, MacRect, Bool) -> [RenderOp]?) -> [RenderOp] {
+        var ops = DialogDraw.window(content: content)
+        var pressed: Int?
+        if case let .press(p)? = tracking, p.inside { pressed = p.item }
+        for item in items where !hidden.contains(item.number) {
+            let n = item.number, r = DialogDraw.offset(item.rect, by: origin), active = isActive(n)
+            if let mine = own(item, r, active) {
+                ops += mine
+                continue
+            }
+            switch item.kind {
+            case .button:
+                let look: DialogDraw.ButtonLook = !active ? .inactive : pressed == n ? .pressed : .normal
+                ops += DialogDraw.pushButton(r, title: item.text, look: look, isDefault: n == defaultItem)
+            case .checkBox:
+                ops += DialogDraw.checkBox(r, title: item.text, checked: value(n) != 0, pressed: pressed == n,
+                                           active: active)
+            case .staticText:
+                ops += DialogDraw.textBox(label(n), in: r,
+                                          colour: active ? DialogDraw.Colour.text : DialogDraw.Colour.greyText)
+            default:
+                break
+            }
+        }
+        ops.append(.screenBlit(src: windowRect, dst: windowRect))
+        return ops
     }
 }

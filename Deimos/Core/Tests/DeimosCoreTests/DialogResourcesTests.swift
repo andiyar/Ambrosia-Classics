@@ -61,7 +61,9 @@ final class DialogResourcesTests: XCTestCase {
             }
             if let id = e.4 { XCTAssertEqual(item.resourceID, id, "item \(i + 1) CNTL id") }
         }
-        XCTAssertEqual(ditl[18].text.last, 0xC9, "Set Controls… ends in the Mac Roman ellipsis")
+        XCTAssertEqual(ditl[18]?.text.last, 0xC9, "Set Controls… ends in the Mac Roman ellipsis")
+        XCTAssertNil(ditl[0], "items are numbered from 1: no item 0")
+        XCTAssertNil(ditl[21], "nor past the last")
         XCTAssertNil(fork[ShellResourceKey(FourCC("CNTL")!, 2000)], "CNTL 2000 is absent from the fork (C §2)")
         XCTAssertNil(fork[ShellResourceKey(FourCC("CNTL")!, 2001)])
 
@@ -85,6 +87,25 @@ final class DialogResourcesTests: XCTestCase {
         // A malformed DITL and a missing DLOG throw; they do not trap.
         XCTAssertThrowsError(try DialogItemList(bytes: [0x00, 0x13], id: 190))
         XCTAssertThrowsError(try DialogTemplate.load(190, from: [:]))
+
+        // A hand-built fork whose four types all name the same four references (16 reads from 48 bytes of
+        // references): more references than the fork has room for (130 / 12 = 10) — refused, never spun over.
+        var bad = [UInt8](repeating: 0, count: 130)
+        func put32(_ at: Int, _ v: UInt32) { for i in 0..<4 { bad[at + i] = UInt8(truncatingIfNeeded: v >> (24 - 8 * i)) } }
+        func put16(_ at: Int, _ v: UInt16) { bad[at] = UInt8(v >> 8); bad[at + 1] = UInt8(v & 0xFF) }
+        put32(0, 16)                                                // data at 16 (one 0-length resource)
+        put32(4, 20)                                                // map at 20
+        put16(20 + 24, 28)                                          // the type list at 48
+        put16(48, 3)                                                // four types
+        for t in 0..<4 {
+            put32(50 + t * 8, 0x5445_5330 + UInt32(t))              // 'TES0'…'TES3'
+            put16(50 + t * 8 + 4, 3)                                // four references each
+            put16(50 + t * 8 + 6, 34)                               // all at 82
+        }
+        for k in 0..<4 { put16(82 + k * 12, UInt16(k)); put16(82 + k * 12 + 2, 0xFFFF) }
+        XCTAssertThrowsError(try DialogResources.readFork(bad)) { error in
+            XCTAssertEqual(error as? DialogResourceError, .notAResourceFile)
+        }
     }
 }
 
