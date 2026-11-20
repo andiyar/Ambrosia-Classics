@@ -369,6 +369,19 @@ final class MainMenuTests: XCTestCase {
         let step = cmd.pass(keys: keys, ticks: 1_100, returned: nil, state: &cs)
         XCTAssertNil(step.callee)
         XCTAssertEqual(step.output.sounds, [])
+
+        // The entry's FlushEvents (FUN_10048e30): a key and a click that reached the pump before the menu came up
+        // are dropped, so the first pass after it acts on neither.
+        var early = try FrontEndState(assets: a, prefs: .fresh, soundAvailable: true)
+        var flushed = MainMenu()
+        _ = flushed.pass(keys: HeldKeys(mouse: Self.nowhere, mouseDowns: [Self.button(2)],
+                                        keyEvents: [KeyEvent(charCode: 0x31, keyCode: 0)]),
+                         ticks: 1_000, returned: nil, state: &early)
+        for t in UInt32(1_001)...1_002 {
+            let after = flushed.pass(keys: HeldKeys(mouse: Self.nowhere), ticks: t, returned: nil, state: &early)
+            XCTAssertNil(after.callee, "flushed at the entry (pass \(t))")
+            XCTAssertEqual(after.output.sounds, [], "flushed at the entry (pass \(t))")
+        }
     }
 
     // MARK: - Click tracking
@@ -446,6 +459,22 @@ final class MainMenuTests: XCTestCase {
         _ = menu.pass(keys: HeldKeys(), ticks: t, returned: .startReturn(nil), state: &s)
         t += 1
 
+        // The release is tested against the rect taken at the press, not the button's rect now: pressed while lit
+        // (its rect the lit one, left 270), dragged out (redrawn unlit: left 272), released at h 270 — inside the
+        // rect of the press only. 1 PLAYER runs.
+        _ = pass(HeldKeys(mouse: one))
+        XCTAssertEqual(s.menuLit, 1)
+        _ = pass(HeldKeys(mouse: one, mouseButton: true, mouseDowns: [one]))
+        _ = pass(HeldKeys(mouse: Self.nowhere, mouseButton: true))
+        XCTAssertNil(s.menuLit)
+        step = pass(HeldKeys(mouse: MousePoint(h: 270, v: 198)))
+        guard case let .call(.startReturn(srEdge)) = step.next else {
+            return XCTFail("released inside the press's rect: \(String(describing: step.callee))")
+        }
+        XCTAssertEqual(srEdge.players, 1)
+        _ = menu.pass(keys: HeldKeys(), ticks: t, returned: .startReturn(nil), state: &s)
+        t += 1
+
         // PREFERENCES, SCORES, DEMOS and the copyright line call their screens; the copyright line is About.
         let calls: [(MousePoint, FrontEndScreen.Kind)] = [(Self.button(3), .configDialog), (Self.button(4), .scores),
                                                           (Self.button(5), .films), (Self.copyrightPoint, .credits)]
@@ -458,6 +487,24 @@ final class MainMenuTests: XCTestCase {
             t += 1
             _ = pass(HeldKeys())
         }
+
+        // About from the menu bar (FUN_10023330(1) → FUN_10025060) opens the credits as the copyright line does; the
+        // credits' N (`.newGame`) starts a one-player game, and its return runs the wrapper's tail (the fade-in).
+        step = pass(HeldKeys(events: [.aboutChosen]))
+        XCTAssertEqual(step.callee, .credits, "the menu bar's About")
+        step = menu.pass(keys: HeldKeys(), ticks: t, returned: .credits(.newGame), state: &s)
+        t += 1
+        guard case let .call(.startReturn(srNew)) = step.next else {
+            return XCTFail("credits N: \(String(describing: step.callee))")
+        }
+        XCTAssertEqual(srNew.mode, .play)
+        XCTAssertEqual(srNew.players, 1)
+        XCTAssertNil(srNew.film)
+        step = menu.pass(keys: HeldKeys(), ticks: t, returned: .startReturn(nil), state: &s)
+        t += 1
+        XCTAssertNil(step.callee)
+        XCTAssertEqual(tickWaits(step.output.ops, 1), 15, "the tail's fade-in")
+        _ = pass(HeldKeys())
 
         // b8 set: a click is ignored.
         s.quit = true

@@ -153,7 +153,8 @@ final class FrontEndSkeletonTests: XCTestCase {
         XCTAssertEqual(state.prefs, fe.state.prefs, "no stub touches the prefs")
 
         // Start/return in play mode calls the level select first; the menu with the quit flag set runs its quit
-        // sequence (MainMenuTests.testMenuQuitSequence) and returns, calling no screen. Bound: 10 passes.
+        // sequence (MainMenuTests.testMenuQuitSequence) and returns, calling no screen, in exactly 5 passes: the entry,
+        // the QUIT flash, the rest of that turn, the fade-out, then the free and the music stop. Bound: 10 passes.
         var play = StartReturn(mode: .play, players: 2)
         let call = play.pass(keys: HeldKeys(), ticks: 0, returned: nil, state: &state)
         XCTAssertEqual(call.callee, .levelSelect)
@@ -161,12 +162,15 @@ final class FrontEndSkeletonTests: XCTestCase {
         state.quit = true
         var menuState = state
         var menuDone: ScreenDone?
+        var menuPasses = 0
         for t in UInt32(0)..<10 {
+            menuPasses += 1
             let step = menu.pass(keys: HeldKeys(), ticks: t, returned: nil, state: &menuState)
             XCTAssertNil(step.callee, "main menu, quit set: no screen called")
             if let done = step.finished { menuDone = done; break }
         }
         XCTAssertEqual(menuDone, ScreenDone(), "main menu, quit set: it returns (bound: 10 passes)")
+        XCTAssertEqual(menuPasses, 5, "main menu, quit set: entry, flash, rest of the turn, fade-out, free")
 
         // A film session (start/return in demo mode, de01) that ends with a recording leaves the Last Film alone.
         let index = try RealData.index()
@@ -238,6 +242,8 @@ final class FrontEndSkeletonTests: XCTestCase {
         // the shutdown.
         guard let leaving = passes(&boot, ticks: &ticks, bound: 10, until: { fe, _ in fe.isFinished }) else { return }
         XCTAssertEqual(leaving.last?.requests, [.quit], "the menu leaves; then the shutdown")
+        // The QUIT flash, the rest of that turn, the fade-out, the free and music stop, the frame's shutdown request.
+        XCTAssertEqual(leaving.count, 5, "the quit sequence's passes")
         XCTAssertEqual(([back] + leaving).flatMap(\.requests).filter { $0 == .quit }.count, 1, "one shutdown")
         XCTAssertFalse(leaving.flatMap(\.requests).contains(.hideCursor), "no new game")
         XCTAssertEqual(boot.state.gamesStarted, 1)
@@ -255,6 +261,7 @@ final class FrontEndSkeletonTests: XCTestCase {
         XCTAssertFalse(out.ops.isEmpty, "the menu's entry draws")
         guard let rest = passes(&early, ticks: &ticks, bound: 10, until: { fe, _ in fe.isFinished }) else { return }
         XCTAssertEqual(rest.last?.requests, [.quit], "then the shutdown")
+        XCTAssertEqual(rest.count, 5, "flash, rest of the turn, fade-out, free and music stop, shutdown request")
         XCTAssertEqual(rest.last?.ops, [])
         XCTAssertEqual(rest.flatMap(\.requests).filter { $0 == .quit }.count, 1, "one shutdown")
         XCTAssertEqual(early.state.gamesStarted, 0)

@@ -122,7 +122,8 @@ public struct MainMenu: Sendable {
         var out = PassOutput()
         switch phase {
         case .entry:
-            enter(ticks: ticks, state: &state, &out)
+            enqueue(keys)                                               // what reached the pump before the entry …
+            enter(ticks: ticks, state: &state, &out)                    // … which its FlushEvents drops
             return .stay(out)
         case .leaving:
             // 10022a3c..10022a44: free the button and element lists; FUN_10048120(1): stop with fade, spin ≤ 600.
@@ -269,6 +270,7 @@ public struct MainMenu: Sendable {
             return .stay(out)
         case .shell(.quitRequested):                                    // code 8: resume if suspended; b8 (the frame)
             if state.suspended {
+                // Known limit (S8a): the driver's own suspended flag stays set, so its next suspend() is skipped.
                 state.suspended = false
                 lastSuspended = false
                 resumeWork(state: &state, &out)
