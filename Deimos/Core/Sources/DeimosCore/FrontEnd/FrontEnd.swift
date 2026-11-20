@@ -475,6 +475,13 @@ public struct FrontEnd: Sendable {
     /// The shell has been asked to quit; every later pass is empty.
     public var isFinished: Bool { root == .finished }
 
+    /// The level select is the screen on top and its own pause is up (its frame controller's Caps Lock pause) —
+    /// read-only, for the shell's gamepad context (Phase 4 S8a; `DeimosPadLayout`, the S7 handoff).
+    public var levelSelectPaused: Bool {
+        guard case let .levelSelect(s)? = stack.last else { return false }
+        return s.controller.paused
+    }
+
     /// A system Quit request (`ShellEvent.quitRequested`) is held for the menu: it reached a screen whose original
     /// loop reads no Apple event (see `pass`). The pause's wait lets go on it as on a queued one (`DeimosDriver`).
     public private(set) var quitRequestPending = false

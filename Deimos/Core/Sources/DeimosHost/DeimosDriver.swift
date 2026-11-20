@@ -57,7 +57,9 @@ public struct DriverOutput: Equatable, Sendable {
 /// - **Cursor** — the front end's pass that starts a game carries `.hideCursor`, a return to a menu `.showCursor`;
 ///   `requests` passes them on, with every other shell request (`.quit` included).
 /// - **Stores** — a pass's `ShellRequest.saveLastFilm(bytes)` also goes to the Last Film store; `shutdown()` hands
-///   the live prefs to the settings store.
+///   the live prefs to the settings store, and a pass that carries `ShellRequest.quit` runs it as it begins (the
+///   shutdown `FUN_10000630` → `FUN_100045f0` writes the prefs before the app ends, question 4: every quit saves), so
+///   the app only has to terminate.
 /// - **Keys** (H2) — a pass's `typed` characters are every key-down handed to `idle` since the previous pass began
 ///   (the OS event queue `GetOSEvent` drains), in order; a game end flushes them, and so does the pause screen as
 ///   its wait begins (`10022f1c`); the front end flushes them again as a game starts (`FUN_10030210`). The pass gets
@@ -189,6 +191,8 @@ public struct DeimosDriver {
     private(set) var lastPassKeys = HeldKeys()
     /// The app is suspended (r2−0x6179, set by the suspend handler `10023dc4`, cleared by the resume `10023e34`).
     public private(set) var suspended = false
+    /// `shutdown()` has run (the settings were handed to the store at quit) — the app's last-chance save checks it.
+    public private(set) var settingsSaved = false
     /// The pause flag r2−0x617b: a pause holds the music (from the paused pass's begin to the wait's present).
     private var pauseHoldsMusic = false
     /// The current pass's `.pauseWait` has been reached (its FlushEvents ran) / has seen Caps Lock up.
@@ -227,9 +231,10 @@ public struct DeimosDriver {
     /// The app is quitting (`FUN_10000630` → `FUN_100045f0`): the live prefs — the running game's, if one runs — go to
     /// the settings store (a failure to write is the store's to report; the prefs are returned regardless).
     @discardableResult
-    public func shutdown() -> DeimosPrefs {
+    public mutating func shutdown() -> DeimosPrefs {
         let prefs = frontEnd.livePrefs
         try? settingsStore.save(prefs)
+        settingsSaved = true
         return prefs
     }
 
@@ -425,6 +430,7 @@ public struct DeimosDriver {
         for case let .saveLastFilm(film) in pass.requests {
             try? lastFilmStore.save(film)
         }
+        if pass.requests.contains(.quit) { shutdown() }               // FUN_10000630 → FUN_100045f0
         passBegun = true
         sessionEndMusic = nil
         out.requests += pass.requests
