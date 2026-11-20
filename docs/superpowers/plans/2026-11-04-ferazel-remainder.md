@@ -2026,6 +2026,12 @@ ids; its `--check` reads this table):
       58457 against the player's 45108–45110): not a fault; level 10 has no damaging tiles at all.
     - Seat's G2 at `66875a3`, five foreground parts: 557 + 26 + 18 + 51 + 70 = **722**, 0 failed, the two opt-in
       skips by name. **GWB and GW4R are still owed, by day** — this run began at 00:53 and Q20 had no answer.
+  - **Wave 6A.2 — the two launch checks (run 60, 2026-11-21, by day; D58): the wave end is closed.** GWB, started
+    detached at 09:00 on Ben's Q20 answer ("a: run detached") from d82b2bf (game code as 66875a3):
+    `proof-b: 719 passed / 0 failed / 3 skipped / 0 crashed (of 722)`, 834 s, the three skips by name
+    (`CensusTests/testExitCodes`, `RandomPlayTests/testRandomPlay`, `VisitSweepTests/testVisitEveryObject`). Run 58's
+    new asserts passed under Wine at the first try. GW4R at 09:15: exit 0, `main menu: identical`,
+    `video=dummy audio=none`, FNV `0xae2b1ee08c089b2a`.
 
 #### 6A-BG1c — minor — plants (→ 725)
 - **Files:** `Sources/FerazelCore/Sprites/SetupFaces.swift` (`:401` the arm, built; the Setup-face table rows; `:715`),
