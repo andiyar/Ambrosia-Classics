@@ -250,6 +250,7 @@ import Synchronization
             switch request {
             case .hideCursor: wantsCursorHidden = true
             case .showCursor: wantsCursorHidden = false
+            case .aboutEnabled, .quit, .saveLastFilm, .ask, .beep: break   // Phase 4 seams: nothing emits them yet (S8a)
             }
         }
         if out.screenChanged { present() }
@@ -482,6 +483,10 @@ final class DebugAudioCounter: DeimosAudioSink, PCMPullSource {
         }
         engine.apply(sounds: sounds, music: music, haltEffectsAt: haltEffectsAt)
     }
+
+    func isPlaying(_ id: FourCC) -> Bool { engine.isPlaying(id) }
+
+    func isMusicFading() -> Bool { engine.isMusicFading() }
 
     func render(into buffer: UnsafeMutableBufferPointer<Float>, frames: Int) {
         engine.render(into: buffer, frames: frames)

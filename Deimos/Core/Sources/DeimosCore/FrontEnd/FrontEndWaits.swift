@@ -1,0 +1,42 @@
+import Foundation
+
+/// The front end's blocking waits (Phase 4, plan S1a; grounding A §1, §4, §7, B §1, D Part 2 §3). The original spins
+/// in each — `TickCount` loops, the publisher-logo loop on its voice, the event loops, `Alert` — while the replica's
+/// host turns each into a yield: Core puts `RenderOp.hostWait(_:)` in a pass's ops, and the host holds the op stream
+/// there until the wait is over, as it holds a fade (`DeimosDriver`). The pass after the wait begins as usual.
+///
+/// **Input during a wait is queued, never dropped:** the events that arrive (`HeldKeys.typed`, `keyEvents`,
+/// `mouseDowns`, `events`) all reach the next pass, as the original's events stay in the OS queue while it spins
+/// (credits: "the fades and the 60-tick wait leave events queued", A §4). A wait that ends on input
+/// (`clickOrKey`, `answer`) leaves that input queued too — the next pass reads it.
+///
+/// **Cues are not ops:** the driver routes ALL of a pass's sound and music cues when the pass begins, before any of
+/// that pass's ops run — so a cue never waits behind a wait or a fade in its own pass. A screen that wants a cue to
+/// start after a wait or a fade must put it in a later pass. It follows that `.musicStopped` sees a
+/// `MusicCue.stopWithFade` issued in the same pass (already sent when the wait is reached).
+///
+/// **No audio-thread read in Core** (standing rule 10): only the host asks whether a voice still sounds, and only to
+/// end a wait; no logic decision in Core depends on it.
+public enum HostWait: Equatable, Sendable {
+    /// Until `TickCount ≥ t0 + n` (unsigned, the sum wrapping), `t0` = the tick at which the host reached the wait —
+    /// the original's `t = TickCount(); while (TickCount() < t + n)` busy-waits (boot's 5, the credits' 60, the
+    /// flash's F61 = 10, …). 0 releases at once.
+    case ticks(UInt32)
+    /// Until the named effect no longer sounds: `FUN_100476e0(id)` false — the id's last started voice has left the
+    /// mixer (boot step 12, `100003b0..10000404`: the `publ` loop, no floor and no cap). With no sound system (no
+    /// mixer) nothing sounds and the wait ends at once.
+    case voiceEnd(FourCC)
+    /// Until a mouseDown, keyDown or autoKey event is queued (the event loops that leave on "any key or click").
+    case clickOrKey
+    /// Until the shell answers the question the pass put (`ShellRequest.ask`): a `ShellEvent.answer` is queued.
+    case answer
+    /// Until the music's fade-out is over, at most `maxTicks` — `FUN_10048120(1)`'s spin after `MusicCue
+    /// .stopWithFade` (`10048164..100481ac`): t0 = `TickCount`; while the fade runs (`FUN_100d05a8`, the sink's
+    /// `isMusicFading`) idle, and leave once `TickCount > t0 + maxTicks` (`cmplw; ble`: unsigned, the sum wrapping;
+    /// the original logs an error there, `10048188..10048190`). The original's bound is 600 (`1004819c addi r31,r3,
+    /// 0x258`), so every `stopWithFade` is followed by `.musicStopped(maxTicks: 600)`. No music, or no sound system: it
+    /// ends at once. A fade moves only while the audio renders, so with no audio rendering it releases at the bound —
+    /// never a hang. The `stopWithFade` it waits on rides in the same pass's music cues, sent when that pass began
+    /// (above), so the wait sees it. Phase 4.
+    case musicStopped(maxTicks: UInt32)
+}

@@ -9,6 +9,16 @@ public protocol DeimosAudioSink: AnyObject, Sendable {
     /// Start `sounds[0..<k]`, halt every effect when `haltEffectsAt = k` (`FUN_100476a0`), start `sounds[k...]`,
     /// then apply the music cues in order.
     func apply(sounds: [SoundCue], music: [MusicCue], haltEffectsAt: Int?)
+    /// `FUN_100476e0(id)`: the effect's last started voice is still in the mixer's list ("voice ended" = false). The
+    /// host asks it only to end a `HostWait.voiceEnd` (Phase 4, plan S1a); Core never reads it (standing rule 10).
+    /// Required: every sink answers (a sink with no mixer behind it answers false — nothing sounds).
+    func isPlaying(_ id: FourCC) -> Bool
+    /// `FUN_100d05a8`: the music's fade-out (`MusicCue.stopWithFade`, `FUN_100d04d8(1000)`) is still running — its
+    /// rate `0x100e075c` is non-zero until the level reaches 0 (`100d0750..100d0848`). The host asks it only to end a
+    /// `HostWait.musicStopped` (Phase 4); Core never reads it (standing rule 10). Required: a sink with no music
+    /// behind it answers false. It moves only while the sink renders: with no audio rendering a fade never ends and
+    /// the wait releases at its bound.
+    func isMusicFading() -> Bool
 }
 
 /// The game's audio: the 16-voice / 8-audible effects mixer (`EffectMixer`, A1) and the music streamer
@@ -41,7 +51,16 @@ public final class DeimosAudioEngine: DeimosAudioSink, PCMPullSource {
         /// succeeded, and sound init applies the music pref (`FUN_10047160` → `FUN_10047920` → `FUN_10048280`):
         /// int pref 1, default 100 (`FUN_100050f0`) → 128. A different pref arrives as `MusicCue.level`.
         var musicLevel: UInt16 = MusicStream.level(pref: 100)
+        /// `FUN_10048120(1)` in progress (Phase 4, `MusicCue.stopWithFade`): output frames rendered since the fade
+        /// began. The fade level (`0x100e0730`) falls 0x100 → 0 linearly over `fadeOutFrames` (1000 ms,
+        /// `FUN_100d04d8(1000)`: one level per 1/256 of the stream's bytes per second × 1 s, stepped by the
+        /// double-buffer callback, `100d0750..100d0848` — here stepped once per `render` call); at 0 the stream is
+        /// paused, and the next `apply` disposes of it (game thread). nil = no fade.
+        var musicFadeFrames: Int?
     }
+
+    /// 1000 ms of output (`FUN_10048120(1)` → `FUN_100d04d8(1000)`).
+    static let fadeOutFrames = 44_100
 
     private let state: Mutex<State>
     /// Every music track by tag, read and parsed at `init` so `.play` does no file I/O on the game thread (music
@@ -100,6 +119,11 @@ public final class DeimosAudioEngine: DeimosAudioSink, PCMPullSource {
         var released: [MusicStream] = []
         released.reserveCapacity(music.count)
         state.withLock { s in
+            if let f = s.musicFadeFrames, f >= Self.fadeOutFrames {    // a finished fade-out: dispose (FUN_100d0250)
+                if let old = s.music { released.append(old) }
+                s.music = nil
+                s.musicFadeFrames = nil
+            }
             for (i, cue) in sounds.enumerated() {
                 if i == halt { s.effects.stopAll() }                    // FUN_100476a0 → FUN_100d1be0(0)
                 s.effects.play(cue)
@@ -113,16 +137,31 @@ public final class DeimosAudioEngine: DeimosAudioSink, PCMPullSource {
                     // A swap, not a copy: the new stream's buffers stay uniquely owned (render mutates them in
                     // place), and the old stream lands in `prepared`, released after the lock on this thread.
                     swap(&s.music, &prepared[i])
+                    s.musicFadeFrames = nil
                 case .stop:
-                    // FUN_10048120(0): pause and dispose (`FUN_100d0250`) — no fade from a cue.
+                    // FUN_10048120(0): pause and dispose (`FUN_100d0250`) — no fade.
                     if let old = s.music { released.append(old) }
                     s.music = nil
+                    s.musicFadeFrames = nil
                 case .pause:
                     s.music?.paused = true                              // FUN_10048220(1) → FUN_100d039c
                 case .resume:
-                    s.music?.paused = false                             // FUN_10048220(0) → FUN_100d040c
+                    // FUN_10048220(0) → FUN_100d040c. A stream fading out is being disposed of (the original's game
+                    // thread is inside FUN_10048120(1) until then): no resume.
+                    if s.musicFadeFrames == nil { s.music?.paused = false }
                 case let .level(v):
                     s.musicLevel = MusicStream.level(pref: v)           // FUN_10048280 → FUN_100d0470
+                case .stopWithFade:
+                    // FUN_10048120(1): no stream → nothing (FUN_100481e0); playing → the fade (FUN_100d04d8(1000)),
+                    // then pause and dispose (render, then the next apply); paused → dispose at once (10048130..).
+                    if let m = s.music, s.musicFadeFrames == nil {
+                        if m.paused {
+                            released.append(m)
+                            s.music = nil
+                        } else {
+                            s.musicFadeFrames = 0
+                        }
+                    }
                 }
             }
         }
@@ -144,8 +183,30 @@ public final class DeimosAudioEngine: DeimosAudioSink, PCMPullSource {
         guard n > 0 else { return }
         state.withLock { s in
             s.effects.render(into: buffer, frames: n)
-            let gain = MusicStream.gain(amp: MusicStream.amp(level: s.musicLevel))
+            var fade: UInt16 = 0x100
+            if let f = s.musicFadeFrames {                              // FUN_10048120(1)'s fade, per callback
+                let down = f >= Self.fadeOutFrames ? 0x100 : f * 0x100 / Self.fadeOutFrames
+                fade = UInt16(0x100 - down)
+                s.musicFadeFrames = f + n
+                if fade == 0 { s.music?.paused = true }                 // 100481b0 FUN_10048220(1)
+            }
+            let gain = MusicStream.gain(amp: MusicStream.amp(level: s.musicLevel, fade: fade))
             s.music?.mix(into: buffer, frames: n, gain: gain)
+        }
+    }
+
+    /// `FUN_100476e0(id)` on the mixer (`EffectMixer.isPlaying`), under the lock (game thread; Phase 4).
+    public func isPlaying(_ id: FourCC) -> Bool {
+        state.withLock { s in s.effects.isPlaying(id) }
+    }
+
+    /// `FUN_100d05a8` (game thread; Phase 4): a `stopWithFade` fade has begun on a stream and `render` has not yet
+    /// brought its level to 0 (the render that does pauses the stream, `100481b0`); a `.play` or `.stop` ends it, and
+    /// no stream means no fade.
+    public func isMusicFading() -> Bool {
+        state.withLock { s in
+            guard s.musicFadeFrames != nil, let m = s.music else { return false }
+            return !m.paused
         }
     }
 
