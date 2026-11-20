@@ -140,8 +140,7 @@ final class FrontEndSkeletonTests: XCTestCase {
         check(scores.pass(keys: HeldKeys(), ticks: 0, returned: nil, state: &state), .leave, "scores")
         var nameEntry = NameEntry(player: 0, slot: 3, prefs: .fresh)
         check(nameEntry.pass(keys: HeldKeys(), ticks: 0, returned: nil, state: &state), .fresh, "name entry")
-        var credits = Credits()
-        check(credits.pass(keys: HeldKeys(), ticks: 0, returned: nil, state: &state), .leave, "credits")
+        // (The credits are no longer a stub — S2 CR: CreditsTests owns them.)
         for kind in [Films.Kind.demo, .lastFilm] {
             var films = Films(kind: kind)
             check(films.pass(keys: HeldKeys(), ticks: 0, returned: nil, state: &state), ScreenDone(), "films \(kind)")
