@@ -209,6 +209,15 @@ Settled history lives in docs/STATE-history.md.
   the settings window (DITL 190) is drawn by the game in Apple's Geneva 9, with shared drawn-control code for S7's
   controls window. `Deimos/Core` **454 / 0 / 0** with S5 and S3b merged in. Nothing visible in the app until S8a
   wires it. **S7 may start.**
+  **S7 closed 2026-11-20** (`docs/handoff-deimos-phase4-s7.md`): the controls window (DITL 191, both players'
+  keys, drawn by the game) and the controller layout (Ben's default buttons in one table; plus pauses, minus is Esc).
+  `Deimos/Core` **467 / 0 / 0**. Nothing visible in the app until S8a wires it. **Every screen section is closed;
+  S8a may start.**
+  **S8a closed 2026-11-20** (`docs/handoff-deimos-phase4-s8a.md`): the app now boots to the menu (loading screen,
+  logos, menu) with mouse, keys, controller, the menu bar, settings and Last Film on disk; `-players` / `-sector`
+  deleted; the erase-scores question; unit names on the first launch only; Command-Q ignored in a game.
+  `Deimos/Core` **483 / 0 / 0**; replay 4 / 0; all four builds. **Never launched yet.** S8b may start (goldens → 491,
+  stage, gate 4).
   **S3b closed 2026-11-20** (`docs/handoff-deimos-phase4-s3b.md`): the level select is the original's — three
   previews, START / NO ACCESS, the hover outline, moving, the accept and refusal flashes, Esc, the pause. Nothing a
   player would notice until S8a. The listing showed the right-hand preview DOES draw its hover outline (plan ruling 15

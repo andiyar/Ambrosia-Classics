@@ -3,7 +3,7 @@ import HectorResources
 
 /// The boot — `FUN_100000e0` (grounding A §1, §9a items 1 and 7; Phase 4 S6 BT): the configuration window first when
 /// asked, the publisher logo held until `publ` ends, the developer logo with `inmu`, the loading screen and its five
-/// lines, every fade. The OS X build's boot is the same (X `100000e0` matches L instruction for instruction but for
+/// lines (four at a later launch: no unit names), every fade. The OS X build's boot is the same (X `100000e0` matches L instruction for instruction but for
 /// TOC offsets; `osx-build.md` §2), and its loading line differs only by a suspend/resume pump (D17); the loading
 /// lines' closing list fade is X's 16 passes (D1, ruling 5).
 ///
@@ -144,9 +144,12 @@ public struct Boot: Sendable {
     ///   `inte 8` as a new line; with no sound system (`FUN_10047910`) the line "Sound System Not Available", else per
     ///   `gaso` 0…23 that loads (`FUN_1001f950(0, id, 0)`: false for `none`, true when already loaded) `inte 8` and
     ///   the `soun` display name; `inte 9`.
-    /// - `FUN_1003cf10` → `FUN_1003d0a0(1)` (`1003d0a0..`): the Units Cache is not read (`FUN_100420f0`): the replica
-    ///   has none, as at a first launch. "Unpacking Unit:  " (hard-coded, `0x100ed24a`) as a new line; per unit
+    /// - `FUN_1003cf10` → `FUN_1003d0a0(1)` (`1003d0a0..`), only when the Units Cache does not load (`FUN_100420f0`;
+    ///   X `1003d3d4..1003d3f8` the same): "Unpacking Unit:  " (hard-coded, `0x100ed24a`) as a new line; per unit
     ///   (`FUN_1003fc50(i)`, the i-th `unde`) the text and its display name; "Unpacking Unit:  Done" (`0x100ed2ff`).
+    ///   The replica keeps no cache: a first launch (`FrontEndState.firstLaunch`, no settings file yet; Ben
+    ///   2026-11-20) stands for the missing cache, a later launch for a cache that loaded — no unit line at all, and
+    ///   the other four loaders write as usual (four lines).
     /// - `FUN_1002aa90` → `FUN_1002ab20(1)`: `inte 12` new; per `wede` `inte 12` + its display name; `inte 13`.
     /// - `FUN_100391f0` → `FUN_10039280(1)`: `inte 14` new; per `plde` `inte 14` + its display name; `inte 15`.
     private mutating func loadingLines(state: FrontEndState, _ ops: inout [RenderOp]) {
@@ -188,8 +191,10 @@ public struct Boot: Sendable {
             line(Self.noSound, newLine: false, state: state, &ops)      // 100200dc..100200e8
             line(string(9), newLine: false, state: state, &ops)
         }
-        // FUN_1003d0a0(1): the units.
-        item(Self.unpacking, a.index.records(ofType: Self.unde).map { name(Self.unde, $0.id) }, Self.unpackingDone)
+        // FUN_1003cf10: the units cache loaded (a later launch) → nothing; else FUN_1003d0a0(1): the units.
+        if state.firstLaunch {
+            item(Self.unpacking, a.index.records(ofType: Self.unde).map { name(Self.unde, $0.id) }, Self.unpackingDone)
+        }
         // FUN_1002ab20(1): the weapons; FUN_10039280(1): the players.
         item(string(12), a.index.records(ofType: Self.wede).map { name(Self.wede, $0.id) }, string(13))
         item(string(14), a.index.records(ofType: Self.plde).map { name(Self.plde, $0.id) }, string(15))

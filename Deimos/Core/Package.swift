@@ -26,6 +26,7 @@ let package = Package(
         .target(name: "DeimosCore", dependencies: [
             .product(name: "HectorResources", package: "HectorKit"),
             .product(name: "HectorAudio", package: "HectorKit"),
+            .product(name: "HectorInput", package: "HectorKit"),   // Phase 4 GP: the pad layout; Foundation-only (HectorKit D16)
         ]),
         // The renderer (Phase 1 R1–R3): RGB555 buffers, CopyBits, presents, fades, blitters. Foundation +
         // DeimosCore only (plan invariant 1) — executes Core's RenderOps on persistent buffers.

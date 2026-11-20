@@ -1093,7 +1093,9 @@ final class DriverTests: XCTestCase {
     /// ends (its halt and stop, not a film). Caps Lock is still down, so that pass pauses again; its wait sees the
     /// flag and lets go at once too, again without the resume. Then the direct start asks the shell to quit and
     /// starts no new game. With the app suspended inside the wait, the Quit runs the resume handler first (D10).
-    /// Fake-clock cap 120 s per driver.
+    /// ⌘Q / the menu-bar Quit (`quitChosen`) never lets it go (ignored in a game, Phase 4 S8a CR); a system request
+    /// that reached the game before the pause, held by the front end, lets it go at once. Fake-clock cap 120 s per
+    /// driver.
     func testQuitInsideCapsLockWait() throws {
         let sink = RecordingSink()
         var driver = try makeDriver(audio: sink)
@@ -1115,12 +1117,20 @@ final class DriverTests: XCTestCase {
         while clock.seconds < holdEnd { guard idle(caps) else { return XCTFail("cap") } }
         XCTAssertEqual(driver.passCount, pausePass, "the wait holds while Caps Lock is down")
         XCTAssertFalse(driver.frontEnd.state.quit)
+        // ⌘Q / the menu-bar Quit inside the wait is ignored, as in play (Phase 4 S8a CR; grounding B §5): it holds.
+        guard idle(HeldKeys(capsLock: true, events: [.quitChosen])) else { return XCTFail("cap") }
+        for _ in 0..<10 { guard idle(caps) else { return XCTFail("cap") } }
+        XCTAssertEqual(driver.passCount, pausePass, "⌘Q does not let the wait go")
+        XCTAssertFalse(driver.frontEnd.state.quit)
 
         let presents = driver.presentCount
         guard idle(HeldKeys(capsLock: true, events: [.quitRequested])) else { return XCTFail("cap") }
         XCTAssertTrue(driver.frontEnd.state.quit, "the quit flag (b8)")
         XCTAssertEqual(driver.presentCount, presents + 1, "the wait let go with Caps Lock down: its present")
         XCTAssertEqual(driver.passCount, pausePass + 1, "the next pass began")
+        XCTAssertEqual(driver.lastPassKeys.events, [.quitChosen],
+                       "the request the pause's pump took left the queue (the ignored ⌘Q rides on, to be dropped)")
+        XCTAssertFalse(driver.frontEnd.quitRequestPending, "so it is not held again for the menu")
         XCTAssertTrue(driver.session.controller.quitChosen, "the frame controller's +2")
         XCTAssertFalse(driver.session.running, "its begin frame reported quit: the game ended")
         XCTAssertEqual(driver.session.result?.end, .escape)
@@ -1166,6 +1176,130 @@ final class DriverTests: XCTestCase {
         XCTAssertFalse(held.session.running, "the game ended")
         XCTAssertFalse(sink2.applies.dropFirst(applies2).flatMap(\.music).contains(.resume),
                        "no music resume: the pause holds the music")
+
+        // A request that reached the game before the pause is held by the front end (it waits for the menu); X's pump
+        // inside the pause finds it still queued, so the wait lets go at once all the same.
+        var early = try makeDriver(audio: RecordingSink())
+        var clock3 = FakeClock(rate: .classic)
+        func idle3(_ keys: HeldKeys) -> Bool {
+            _ = early.idle(seconds: clock3.seconds, keys: keys)
+            clock3.seconds += Self.poll
+            return clock3.seconds <= 120
+        }
+        while early.presentCount < 20 { guard idle3(Self.capsUp) else { return XCTFail("no presents (3)") } }
+        let handed = early.passCount
+        guard idle3(HeldKeys(events: [.quitRequested])) else { return XCTFail("cap (3)") }
+        while early.passCount == handed { guard idle3(Self.capsUp) else { return XCTFail("no pass (3)") } }
+        XCTAssertTrue(early.frontEnd.quitRequestPending, "held in the game")
+        XCTAssertFalse(early.frontEnd.state.quit)
+        XCTAssertTrue(early.session.running, "the game plays on")
+        while early.session.running { guard idle3(caps) else { return XCTFail("the pause never let go (3)") } }
+        XCTAssertTrue(early.frontEnd.state.quit, "the wait let go on the held request")
+        XCTAssertEqual(early.session.result?.end, .escape)
+    }
+
+    /// The original's one suspended byte b7 (the suspend handler `FUN_10023da0` tests it first, `10023db4..10023dbc`;
+    /// the resume `FUN_10023e10` clears it): while the menu's erase question (SCORES + Option, `10022d9c..10022dc4`)
+    /// holds b7 and the music it paused, an app switch away and back neither pauses the music again nor resumes it —
+    /// the suspend finds b7 set and does nothing, the resume finds the driver's own flag clear and does nothing — so the
+    /// music stays paused until the answer resumes it, once. Then the other half of the one byte: a system Quit
+    /// arriving while the app is suspended at the menu runs the resume there (code 8, `MainMenu`), and the driver's
+    /// own flag follows, so a later suspend pauses the music again. Bound: 60 simulated seconds per stage.
+    func testAppSwitchDuringEraseQuestionKeepsMusicPaused() throws {
+        let sink = RecordingSink()
+        var driver = DeimosDriver(frontEnd: try FrontEnd(assets: try ShippedAssets.get(), prefs: .fresh),
+                                  rate: .classic, audio: sink)
+        var clock = FakeClock(rate: .classic)
+        func idle(_ keys: HeldKeys, until done: (DeimosDriver) -> Bool) -> Bool {
+            let end = clock.seconds + 60
+            while !done(driver) {
+                guard clock.seconds < end else { return false }
+                _ = driver.idle(seconds: clock.seconds, keys: keys)
+                clock.seconds += Self.poll
+            }
+            return true
+        }
+        guard idle(HeldKeys(), until: { $0.frontEnd.screens == [.mainMenu] && $0.waitingOn == nil && !$0.isFading })
+        else { return XCTFail("bound: the boot never reached the menu") }
+
+        let scores = MousePoint(h: 320, v: 288)                         // the SCORES button's centre (A §2.1)
+        let optionClick = HeldKeys(held: [0x3a], mouse: scores, mouseDowns: [scores])
+        _ = driver.idle(seconds: clock.seconds, keys: optionClick)
+        clock.seconds += Self.poll
+        guard idle(HeldKeys(held: [0x3a], mouse: scores), until: { $0.waitingOn == .answer })
+        else { return XCTFail("bound: the erase question was never put") }
+        XCTAssertTrue(driver.frontEnd.state.suspended, "the question holds b7")
+        XCTAssertFalse(driver.suspended, "the front end ran that suspension, not the app")
+        XCTAssertEqual(sink.applies.last?.music, [.pause], "FUN_10023da0 paused the music")
+        let applies = sink.applies.count
+
+        driver.suspend()                                                // the app goes to the background …
+        XCTAssertFalse(driver.suspended, "b7 already set: the suspend handler does nothing")
+        driver.resume()                                                 // … and comes back
+        XCTAssertTrue(driver.frontEnd.state.suspended, "the resume leaves the question's b7 alone")
+        let waitEnd = clock.seconds + 1
+        guard idle(HeldKeys(mouse: scores), until: { _ in clock.seconds >= waitEnd }) else { return XCTFail("cap") }
+        XCTAssertEqual(driver.waitingOn, .answer, "still waiting for the answer")
+        XCTAssertEqual(sink.applies.count, applies, "no second pause, no early resume")
+
+        let answered = driver.passCount
+        guard idle(HeldKeys(mouse: scores, events: [.answer(.second)]), until: { $0.passCount > answered })
+        else { return XCTFail("bound: the answer began no pass") }
+        XCTAssertEqual(sink.applies.dropFirst(applies).flatMap(\.music).filter { $0 == .resume }.count, 1,
+                       "the answer resumes the music, once")
+        XCTAssertFalse(driver.frontEnd.state.suspended)
+
+        // Back at the menu (the scores screen leaves by itself after 600 ticks): suspended by the app, then a system
+        // Quit.
+        guard idle(HeldKeys(), until: { $0.frontEnd.screens == [.mainMenu] }),
+              idle(HeldKeys(), until: { $0.waitingOn == nil && !$0.isFading })
+        else { return XCTFail("bound: the scores screen never returned to the menu") }
+        driver.suspend()
+        XCTAssertTrue(driver.suspended)
+        _ = driver.idle(seconds: clock.seconds, keys: HeldKeys(events: [.quitRequested]))
+        clock.seconds += Self.poll
+        guard idle(HeldKeys(), until: { !$0.frontEnd.state.suspended })
+        else { return XCTFail("bound: the menu never ran the Quit's resume (code 8)") }
+        XCTAssertFalse(driver.suspended, "the driver's own flag follows the one byte")
+        let before = sink.applies.count
+        driver.suspend()
+        XCTAssertEqual(sink.applies.dropFirst(before).map(\.music), [[.pause]], "a later suspend pauses the music")
+    }
+
+    /// `osx-build.md` D11, the part the driver carries: a player who leaves the app in the middle of a game finds it
+    /// frozen, music paused, until they come back. While the app is suspended a running game begins no pass (the pass
+    /// in hand runs out its ops); nothing reaches the sink after the suspend's music pause, whatever the keys say (Esc
+    /// held all the while does not end the game). The resume sends the music resume and the game goes on. Not here:
+    /// the pause screen D11 opens (its effects halt, Paused sound, picture and cursor) — that is the game's frame
+    /// controller's, in Core. Fake-clock cap 120 s.
+    func testLeavingTheAppPausesTheGame() throws {
+        let sink = RecordingSink()
+        var driver = try makeDriver(audio: sink)
+        var clock = FakeClock(rate: .classic)
+        func idle(_ keys: HeldKeys) -> Bool {
+            _ = driver.idle(seconds: clock.seconds, keys: keys)
+            clock.seconds += Self.poll
+            return clock.seconds <= 120
+        }
+        while driver.presentCount < 20 { guard idle(Self.capsUp) else { return XCTFail("no presents") } }
+        XCTAssertTrue(driver.session.running)
+
+        driver.suspend()
+        XCTAssertEqual(sink.applies.last, RecordingSink.Apply(sounds: [], music: [.pause], halt: nil))
+        let applies = sink.applies.count
+        let esc = HeldKeys(held: [Self.escKey])
+        for _ in 0..<10 { guard idle(esc) else { return XCTFail("cap") } }   // the pass in hand runs out
+        let passes = driver.passCount
+        let away = clock.seconds + 3
+        while clock.seconds < away { guard idle(esc) else { return XCTFail("cap") } }
+        XCTAssertEqual(driver.passCount, passes, "no pass while the app is away")
+        XCTAssertEqual(driver.restarts, 0, "Esc held while away did not end the game")
+        XCTAssertEqual(sink.applies.count, applies, "nothing reaches the sink")
+
+        driver.resume()
+        XCTAssertEqual(sink.applies.last, RecordingSink.Apply(sounds: [], music: [.resume], halt: nil))
+        while driver.passCount < passes + 30 { guard idle(Self.capsUp) else { return XCTFail("the game never went on") } }
+        XCTAssertEqual(driver.restarts, 0, "the same game goes on")
     }
 }
 

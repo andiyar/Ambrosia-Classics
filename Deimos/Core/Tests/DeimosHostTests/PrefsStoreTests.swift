@@ -64,6 +64,28 @@ final class PrefsStoreTests: XCTestCase {
         XCTAssertEqual(try onDisk(), kept)
     }
 
+    /// Whether the settings file was there when `load()` ran — read by the app to tell the boot a first launch (no
+    /// settings file yet: the unit names are listed) from a later one. A store whose folder holds no file reports
+    /// false although its `load()` has just written the fresh record; the next launch's store reports true; a file
+    /// that is there but unreadable or of another version still counts as there.
+    func testFileExistedReportsFirstLaunch() throws {
+        let first = PrefsStore(folder: folder)
+        XCTAssertFalse(first.fileExisted, "before any load")
+        _ = try first.load()
+        XCTAssertFalse(first.fileExisted, "no settings file at launch: a first launch")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: fileURL.path), "the fresh record written at once")
+        let later = PrefsStore(folder: folder)
+        _ = try later.load()
+        XCTAssertTrue(later.fileExisted, "the next launch")
+
+        var wrong = PrefsFile.fresh.fileBytes
+        wrong[3] = 0x13                                                 // version 0x2713
+        try putOnDisk(wrong)
+        let replaced = PrefsStore(folder: folder)
+        _ = try replaced.load()
+        XCTAssertTrue(replaced.fileExisted, "a wrong-version file is still a file")
+    }
+
     func testStoreRoundTripOnDisk() throws {
         // A file with bytes no typed field reads: a reserved byte, the pad, an int pref past 3.
         var file = PrefsFile.fresh.fileBytes

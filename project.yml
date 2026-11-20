@@ -160,6 +160,11 @@ targets:
         product: DeimosAudio
       - package: HectorKit
         product: HectorShell
+      # Phase 4 S8a: the app decodes its resource fork's PICTs (ruling 9) and builds the pad layouts (HectorInput).
+      - package: HectorKit
+        product: HectorGraphics
+      - package: HectorKit
+        product: HectorInput
     settings:
       base:
         PRODUCT_NAME: "Deimos Rising"
