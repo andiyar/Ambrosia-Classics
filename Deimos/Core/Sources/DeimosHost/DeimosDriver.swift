@@ -81,8 +81,9 @@ public struct DriverOutput: Equatable, Sendable {
 ///   driver sends the cues through `.pause` when the pass begins, the resume when the wait ends (`10022fb4`), and
 ///   the session end's halt + stop (`10005ad8`, `10005ae4`) — a second apply, halt index 0 — when the pass's ops are
 ///   done, before the front end's next pass. **Quit inside the wait** (Phase 4 S1b; grounding B §5 `10022f8c`, D S14;
-///   X `10023214` / `10023374`, `10023228..10023244`): with the front end's quit flag b8 set, or a Quit request
-///   (`ShellEvent.quitChosen` / `.quitRequested`) queued — X's pump inside the pause sets b8 — the wait lets go at
+///   X `10023214` / `10023374`, `10023228..10023244`): with the front end's quit flag b8 set, or the system's Quit
+///   request (`ShellEvent.quitRequested`) queued or held by the front end (`FrontEnd.quitRequestPending`) — X's pump
+///   inside the pause sets b8; ⌘Q / the menu-bar Quit (`.quitChosen`) is ignored in a game, S8a CR — the wait lets go at
 ///   once, suspended or not and before Caps Lock is tested, WITHOUT the music resume (`10022fb0` skips
 ///   `10022fb4`), and `FrontEnd.quitDuringPause` sets the flag and the frame controller's +2 (X `10030cb8`): the next
 ///   pass's begin frame reports quit and the game ends. A queued Quit that finds the app suspended runs the resume
@@ -343,7 +344,7 @@ public struct DeimosDriver {
                     flushOSEvents()                                           // 10022f1c FlushEvents
                 }
                 if !waitReleased {
-                    let quitQueued = shellEventQueue.contains(where: Self.isQuit)
+                    let quitQueued = frontEnd.quitRequestPending || shellEventQueue.contains(where: Self.isQuit)
                     if frontEnd.state.quit || quitQueued {                    // 10022f8c b8; X 10023214
                         if quitQueued && suspended { resume() }               // D10: X 10023374 resumes first
                         waitReleased = true
@@ -557,7 +558,9 @@ public struct DeimosDriver {
     }
 
     /// A Quit from the shell (File ▸ Quit, the system's Quit request).
-    private static func isQuit(_ event: ShellEvent) -> Bool { event == .quitChosen || event == .quitRequested }
+    /// The Quit that lets the pause's wait go: the system's request only — ⌘Q / the menu-bar Quit is ignored in a game
+    /// (Phase 4 S8a CR; `FrontEnd.shellEvents`).
+    private static func isQuit(_ event: ShellEvent) -> Bool { event == .quitRequested }
 
     /// Mac virtual key code of Esc (`FUN_100307c0`).
     static let escKey: UInt16 = 0x35

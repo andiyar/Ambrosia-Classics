@@ -1093,7 +1093,9 @@ final class DriverTests: XCTestCase {
     /// ends (its halt and stop, not a film). Caps Lock is still down, so that pass pauses again; its wait sees the
     /// flag and lets go at once too, again without the resume. Then the direct start asks the shell to quit and
     /// starts no new game. With the app suspended inside the wait, the Quit runs the resume handler first (D10).
-    /// Fake-clock cap 120 s per driver.
+    /// ⌘Q / the menu-bar Quit (`quitChosen`) never lets it go (ignored in a game, Phase 4 S8a CR); a system request
+    /// that reached the game before the pause, held by the front end, lets it go at once. Fake-clock cap 120 s per
+    /// driver.
     func testQuitInsideCapsLockWait() throws {
         let sink = RecordingSink()
         var driver = try makeDriver(audio: sink)
@@ -1114,6 +1116,11 @@ final class DriverTests: XCTestCase {
         let holdEnd = clock.seconds + 1
         while clock.seconds < holdEnd { guard idle(caps) else { return XCTFail("cap") } }
         XCTAssertEqual(driver.passCount, pausePass, "the wait holds while Caps Lock is down")
+        XCTAssertFalse(driver.frontEnd.state.quit)
+        // ⌘Q / the menu-bar Quit inside the wait is ignored, as in play (Phase 4 S8a CR; grounding B §5): it holds.
+        guard idle(HeldKeys(capsLock: true, events: [.quitChosen])) else { return XCTFail("cap") }
+        for _ in 0..<10 { guard idle(caps) else { return XCTFail("cap") } }
+        XCTAssertEqual(driver.passCount, pausePass, "⌘Q does not let the wait go")
         XCTAssertFalse(driver.frontEnd.state.quit)
 
         let presents = driver.presentCount
@@ -1166,6 +1173,26 @@ final class DriverTests: XCTestCase {
         XCTAssertFalse(held.session.running, "the game ended")
         XCTAssertFalse(sink2.applies.dropFirst(applies2).flatMap(\.music).contains(.resume),
                        "no music resume: the pause holds the music")
+
+        // A request that reached the game before the pause is held by the front end (it waits for the menu); X's pump
+        // inside the pause finds it still queued, so the wait lets go at once all the same.
+        var early = try makeDriver(audio: RecordingSink())
+        var clock3 = FakeClock(rate: .classic)
+        func idle3(_ keys: HeldKeys) -> Bool {
+            _ = early.idle(seconds: clock3.seconds, keys: keys)
+            clock3.seconds += Self.poll
+            return clock3.seconds <= 120
+        }
+        while early.presentCount < 20 { guard idle3(Self.capsUp) else { return XCTFail("no presents (3)") } }
+        let handed = early.passCount
+        guard idle3(HeldKeys(events: [.quitRequested])) else { return XCTFail("cap (3)") }
+        while early.passCount == handed { guard idle3(Self.capsUp) else { return XCTFail("no pass (3)") } }
+        XCTAssertTrue(early.frontEnd.quitRequestPending, "held in the game")
+        XCTAssertFalse(early.frontEnd.state.quit)
+        XCTAssertTrue(early.session.running, "the game plays on")
+        while early.session.running { guard idle3(caps) else { return XCTFail("the pause never let go (3)") } }
+        XCTAssertTrue(early.frontEnd.state.quit, "the wait let go on the held request")
+        XCTAssertEqual(early.session.result?.end, .escape)
     }
 }
 

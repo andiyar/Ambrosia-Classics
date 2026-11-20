@@ -252,11 +252,13 @@ final class FrontEndSkeletonTests: XCTestCase {
 
     /// The direct start's first pass starts its game as that pass's first step, and the session start's FlushEvents
     /// (`FUN_10030210`) empties the OS queue the game is handed — typed, key events, mouse-downs — keeping the shell's
-    /// events. A Quit (menu command or the system's request) reaching a pass sets the front end's quit flag; it does
-    /// not end the game in play. When the game ends, the direct start asks the shell to quit and starts no new game; through
-    /// the boot entry (a game started from the menu with `1`), start/return comes back to the menu, which runs its
-    /// quit sequence and returns, and the front end asks the shell to quit. A Quit before the first game: the menu
-    /// comes up, leaves the same way and never starts one. Bound: 1,000 passes per wait, 10 for each way out.
+    /// events. The system's Quit request reaching a game is held, not taken (grounding B §5: the Quit Apple event
+    /// waits in the queue for the menu's pump; Phase 4 S8a CR): the quit flag stays clear and the game plays on. When
+    /// the game ends, the direct start (the menu's stand-in) takes the held request, asks the shell to quit and starts
+    /// no new game; through the boot entry (a game started from the menu with `1`), start/return comes back to the
+    /// menu, which takes it, runs its quit sequence and returns, and the front end asks the shell to quit. A request
+    /// during the boot: the menu comes up, takes it on its first turn, leaves the same way and never starts a game.
+    /// Bound: 1,000 passes per wait, 10 for each way out.
     func testQuitRequestReachesFrontEnd() throws {
         let a = try assets()
         var ticks: UInt32 = 9_000
@@ -272,7 +274,9 @@ final class FrontEndSkeletonTests: XCTestCase {
         run(&direct, 19, ticks: &ticks)
         XCTAssertFalse(direct.state.quit)
         let quitPass = direct.pass(keys: HeldKeys(events: [.quitRequested]), ticks: ticks)
-        XCTAssertTrue(direct.state.quit)
+        XCTAssertFalse(direct.state.quit, "held, not taken, in a game")
+        XCTAssertTrue(direct.quitRequestPending)
+        XCTAssertEqual(direct.state.game?.lastKeys.events, [], "the game is not handed the held request")
         XCTAssertFalse(quitPass.sessionEnded, "a Quit does not end the game in play")
         XCTAssertEqual(quitPass.requests, [])
         for _ in 0..<50 { XCTAssertFalse(direct.pass(keys: HeldKeys(), ticks: ticks).sessionEnded) }
@@ -286,18 +290,23 @@ final class FrontEndSkeletonTests: XCTestCase {
         XCTAssertTrue(direct.isFinished)
         for _ in 0..<5 { XCTAssertEqual(direct.pass(keys: HeldKeys(), ticks: ticks), PassOutput()) }
 
-        // The boot entry: Quit chosen during the game.
+        // The boot entry: the system's Quit request during the game.
         var boot = try FrontEnd(assets: a, prefs: .fresh)
         bootToMenu(&boot, ticks: ticks)
         ticks &+= 2
         startFromMenu(&boot, ticks: &ticks, "boot entry")
         run(&boot, 17, ticks: &ticks)
-        _ = boot.pass(keys: HeldKeys(events: [.quitChosen]), ticks: ticks)
-        XCTAssertTrue(boot.state.quit)
+        _ = boot.pass(keys: HeldKeys(events: [.quitRequested]), ticks: ticks)
+        XCTAssertFalse(boot.state.quit, "held in the game")
+        XCTAssertTrue(boot.quitRequestPending)
         guard passes(&boot, keys: HeldKeys(held: [Self.escKey]), ticks: &ticks, bound: 1_000,
                      until: { _, out in out.sessionEnded }) != nil else { return }
+        // backToMenu ends with the menu's return step: the menu is the top screen there, so the held request reaches
+        // it (b8) on that pass, as the queued Apple event reaches the menu's pump.
         let back = backToMenu(&boot, ticks: &ticks, "boot entry")
         XCTAssertEqual(back.requests, [.showCursor], "back to the menu (start/return shows the cursor)")
+        XCTAssertTrue(boot.state.quit, "taken at the menu")
+        XCTAssertFalse(boot.quitRequestPending)
         // The menu, its quit flag set, runs its quit sequence (MainMenuTests.testMenuQuitSequence) and leaves; then
         // the shutdown.
         guard let leaving = passes(&boot, ticks: &ticks, bound: 10, until: { fe, _ in fe.isFinished }) else { return }
@@ -310,12 +319,13 @@ final class FrontEndSkeletonTests: XCTestCase {
         XCTAssertEqual(boot.screens, [])
         XCTAssertTrue(boot.isFinished)
 
-        // The boot entry: Quit before any game. The menu comes up (b8 kept), runs its quit sequence and never
-        // starts a game.
+        // The boot entry: the request during the boot, before any game. Held through the boot; the menu comes up,
+        // takes it on its first turn (the next pass), runs its quit sequence and never starts a game.
         var early = try FrontEnd(assets: a, prefs: .fresh)
         let out = bootToMenu(&early, first: HeldKeys(events: [.quitRequested]), ticks: ticks)
         ticks &+= 2
-        XCTAssertTrue(early.state.quit)
+        XCTAssertFalse(early.state.quit, "held during the boot")
+        XCTAssertTrue(early.quitRequestPending)
         XCTAssertEqual(early.screens, [.mainMenu])
         XCTAssertEqual(out.requests, [.showCursor], "the menu's entry")
         XCTAssertFalse(out.ops.isEmpty, "the menu's entry draws")
@@ -326,6 +336,135 @@ final class FrontEndSkeletonTests: XCTestCase {
         XCTAssertEqual(rest.flatMap(\.requests).filter { $0 == .quit }.count, 1, "one shutdown")
         XCTAssertEqual(early.state.gamesStarted, 0)
         XCTAssertNil(early.session)
+    }
+
+    /// From the menu with `1` to the level select's first live frame (`startFromMenu`'s first four passes).
+    private func toLevelSelect(_ fe: inout FrontEnd, ticks: inout UInt32, _ label: String) {
+        _ = fe.pass(keys: Self.typeOne, ticks: ticks)
+        ticks &+= 2
+        run(&fe, 3, ticks: &ticks)
+        XCTAssertEqual(fe.screens, [.mainMenu, .startReturn, .levelSelect], "\(label): the level select is up")
+    }
+
+    /// `event` at the level select takes b8 at once (X: the level select pumps one event per frame, X `1002ec5c` →
+    /// X `10023300`, whose Quit Apple event case sets the flag, X `10023374`; `osx-build.md` D10 — the menu-bar or ⌘Q
+    /// Quit reaches it as the application menu's Quit, a Quit Apple event): nothing is held and the level select goes
+    /// on, since it never reads the flag. Esc held leaves it ('none'); back at the menu, the menu runs its quit
+    /// sequence and the shell is asked to quit; no game was started. Bound: 200 passes to the menu, 12 to the quit.
+    private func quitAtLevelSelect(_ event: ShellEvent, _ a: DeimosAssets, ticks: inout UInt32) throws {
+        let label = "level select \(event)"
+        var fe = try FrontEnd(assets: a, prefs: .fresh)
+        bootToMenu(&fe, ticks: ticks)
+        ticks &+= 2
+        toLevelSelect(&fe, ticks: &ticks, label)
+        _ = fe.pass(keys: HeldKeys(events: [event]), ticks: ticks)
+        ticks &+= 2
+        XCTAssertTrue(fe.state.quit, "\(label): b8 at once")
+        XCTAssertFalse(fe.quitRequestPending, label)
+        XCTAssertEqual(fe.screens.last, .levelSelect, "\(label): the level select goes on")
+        guard passes(&fe, keys: HeldKeys(held: [Self.escKey]), ticks: &ticks, bound: 200,
+                     until: { fe, _ in fe.screens == [.mainMenu] }) != nil else { return }
+        guard let out = passes(&fe, ticks: &ticks, bound: 12, until: { fe, _ in fe.isFinished }) else { return }
+        XCTAssertEqual(out.last?.requests, [.quit], "\(label): the menu quits")
+        XCTAssertEqual(fe.state.gamesStarted, 0, label)
+    }
+
+    /// ⌘Q / the menu-bar Quit (`ShellEvent.quitChosen`) is ignored in a game, as the original (grounding B §5: the
+    /// quit flag's setters are reached only from the menu loop's event pump, and no pump runs in play; Ben
+    /// 2026-11-20): the quit flag stays clear, nothing is held, the game is not handed it and plays on; its end
+    /// returns to the menu, which stays up. The same during the boot (the loading lines' X pump acts on suspend and
+    /// resume only, D17; the menu's entry clears b8, X `10022be8`). The pause's wait is the host's
+    /// (`DriverTests.testQuitInsideCapsLockWait`). Bound: 1,000 passes per wait; 30 menu passes.
+    func testQuitChosenIgnoredInGame() throws {
+        let a = try assets()
+        var ticks: UInt32 = 30_000
+        var fe = try FrontEnd(assets: a, prefs: .fresh)
+        bootToMenu(&fe, first: HeldKeys(events: [.quitChosen]), ticks: ticks)
+        ticks &+= 2
+        XCTAssertFalse(fe.state.quit, "the boot: ignored")
+        XCTAssertFalse(fe.quitRequestPending, "the boot: dropped, not held")
+        startFromMenu(&fe, ticks: &ticks, "ignored")
+        run(&fe, 17, ticks: &ticks)
+        let out = fe.pass(keys: HeldKeys(events: [.quitChosen]), ticks: ticks)
+        ticks &+= 2
+        XCTAssertFalse(fe.state.quit, "the game: ignored")
+        XCTAssertFalse(fe.quitRequestPending, "the game: dropped, not held")
+        XCTAssertFalse(out.sessionEnded)
+        XCTAssertEqual(fe.state.game?.lastKeys.events, [], "the game is not handed it")
+        for _ in 0..<50 {
+            XCTAssertFalse(fe.pass(keys: HeldKeys(), ticks: ticks).sessionEnded)
+            ticks &+= 2
+        }
+        XCTAssertTrue(fe.session?.running ?? false, "the game plays on")
+        guard passes(&fe, keys: HeldKeys(held: [Self.escKey]), ticks: &ticks, bound: 1_000,
+                     until: { _, out in out.sessionEnded }) != nil else { return }
+        backToMenu(&fe, ticks: &ticks, "ignored")
+        for _ in 0..<30 {
+            XCTAssertFalse(fe.pass(keys: HeldKeys(), ticks: ticks).requests.contains(.quit))
+            ticks &+= 2
+        }
+        XCTAssertEqual(fe.screens, [.mainMenu], "the menu stays up")
+        XCTAssertFalse(fe.state.leave)
+        XCTAssertFalse(fe.isFinished)
+    }
+
+    /// The system's Quit request (`ShellEvent.quitRequested`, the Quit Apple event) waits for the menu (grounding B
+    /// §5; Phase 4 S8a CR): it is held through a screen whose loop reads no Apple event — here the credits — with the
+    /// flag clear, and the menu takes it on its first pass back; the app having been suspended meanwhile, the menu's
+    /// pump resumes first (code 8: resume if suspended, then b8; the cursor shown), then runs its quit sequence and
+    /// the shell is asked to quit. At the level select it is taken at once (`quitAtLevelSelect`). The game's case is
+    /// `testQuitRequestReachesFrontEnd`. Bound: 200 passes to the menu, 12 to the quit.
+    func testQuitRequestedWaitsForMenu() throws {
+        let a = try assets()
+        var ticks: UInt32 = 40_000
+        var fe = try FrontEnd(assets: a, prefs: .fresh)
+        bootToMenu(&fe, ticks: ticks)
+        ticks &+= 2
+        _ = fe.pass(keys: HeldKeys(events: [.aboutChosen]), ticks: ticks)
+        ticks &+= 2
+        XCTAssertEqual(fe.screens, [.mainMenu, .credits], "About opens the credits")
+        _ = fe.pass(keys: HeldKeys(events: [.quitRequested]), ticks: ticks)
+        ticks &+= 2
+        XCTAssertFalse(fe.state.quit, "held in the credits")
+        XCTAssertTrue(fe.quitRequestPending)
+        _ = fe.pass(keys: HeldKeys(events: [.suspend]), ticks: ticks)
+        ticks &+= 2
+        XCTAssertTrue(fe.state.suspended)
+        XCTAssertEqual(fe.screens, [.mainMenu, .credits], "the credits go on")
+        let x = HeldKeys(keyEvents: [KeyEvent(charCode: 0x78, keyCode: 0x07)])
+        guard passes(&fe, keys: x, ticks: &ticks, bound: 200, until: { fe, _ in fe.screens == [.mainMenu] }) != nil
+        else { return }
+        XCTAssertTrue(fe.quitRequestPending, "still held until the menu's own pass")
+        guard let out = passes(&fe, ticks: &ticks, bound: 12, until: { fe, _ in fe.isFinished }) else { return }
+        XCTAssertFalse(fe.quitRequestPending)
+        XCTAssertFalse(fe.state.suspended, "the menu's pump resumed first")
+        XCTAssertTrue(out.flatMap(\.requests).contains(.showCursor), "the resume handler's cursor")
+        XCTAssertEqual(out.last?.requests, [.quit], "then the shutdown")
+        XCTAssertEqual(out.flatMap(\.requests).filter { $0 == .quit }.count, 1)
+
+        try quitAtLevelSelect(.quitRequested, a, ticks: &ticks)
+    }
+
+    /// ⌘Q / the menu-bar Quit at the menu still quits (`FUN_10023330(2)`: b8 — the QUIT flash on that pass, the rest of
+    /// the turn, the fade-out, the music stop, the shutdown request: five passes, `MainMenuTests
+    /// .testMenuQuitSequence`), and at the level select it takes b8 at once, as the system's request does
+    /// (`quitAtLevelSelect`). Bound: 10 passes.
+    func testQuitChosenAtMenuStillQuits() throws {
+        let a = try assets()
+        var ticks: UInt32 = 50_000
+        var fe = try FrontEnd(assets: a, prefs: .fresh)
+        bootToMenu(&fe, ticks: ticks)
+        ticks &+= 2
+        let flash = fe.pass(keys: HeldKeys(events: [.quitChosen]), ticks: ticks)
+        ticks &+= 2
+        XCTAssertTrue(flash.ops.contains(.hostWait(.ticks(10))), "the QUIT flash on the same pass")
+        XCTAssertTrue(fe.state.leave, "b9")
+        XCTAssertFalse(fe.state.quit, "b8 cleared by the flash")
+        guard let rest = passes(&fe, ticks: &ticks, bound: 10, until: { fe, _ in fe.isFinished }) else { return }
+        XCTAssertEqual(rest.count, 4, "five passes in all")
+        XCTAssertEqual(rest.last?.requests, [.quit])
+
+        try quitAtLevelSelect(.quitChosen, a, ticks: &ticks)
     }
 
     /// The front end owns the live prefs (grounding B §6; ◇ stand-in 6 retired): a game starts from them and hands
