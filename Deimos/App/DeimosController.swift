@@ -29,7 +29,8 @@ import Synchronization
 /// as a normal macOS alert, the system beep); the settings and the Last Film live in `~/Library/Application
 /// Support/Ambrosia Classics/Deimos Rising` (rulings 6, 7); the app's resource fork is read and its pictures decoded
 /// here (ruling 9); the settings' Full Screen byte chooses full screen or a window at launch (ruling 13). Hidden
-/// switches: `-film deNN` (ruling 10) and the mute switch (D42); DEBUG only, `-debugCapsLock`.
+/// switches: `-film deNN` (ruling 10), the mute switch (D42) and the key log (`-keylog` or the `keylog` default:
+/// `KeyLog`, the bomb-freeze diagnosis); DEBUG only, `-debugCapsLock`.
 @MainActor final class DeimosController: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMenuItemValidation,
                                          ShellInputHandler {
     static let width = 640
@@ -64,6 +65,8 @@ import Synchronization
     private var backgroundPump: BackgroundQuitPump?
     /// Caps Lock as last polled while the app was active: what a background pump hands the driver (no live input).
     private var lastActiveCapsLock = false
+    /// ◇ The hidden key log (`LaunchOptions.keyLog`); nil when the switch is off.
+    private var keyLog: KeyLog?
     #if DEBUG
     private var audioCounter: DebugAudioCounter?
     private var launchSeconds = 0.0
@@ -164,6 +167,7 @@ import Synchronization
             shell.windowedWindow.makeKeyAndOrderFront(nil)
         }
         NSApp.activate()
+        if options.keyLog { keyLog = KeyLog(shell: shell) }
 
         #if DEBUG
         launchSeconds = ProcessInfo.processInfo.systemUptime
@@ -448,6 +452,7 @@ import Synchronization
         } else {
             state = shell.view.keyState
         }
+        keyLog?.pollState(state, suspended: suspended)
         var capsLock = state.capsLock
         lastActiveCapsLock = capsLock
         #if DEBUG
@@ -502,6 +507,7 @@ import Synchronization
         let suspend = !NSApp.isActive || shell.windowedWindow.isMiniaturized
         guard suspend != suspended else { return }
         suspended = suspend
+        keyLog?.suspendedChanged(suspend)
         if suspend {
             timer?.invalidate()
             driver.suspend()
@@ -559,6 +565,7 @@ import Synchronization
     /// entry and the controls window read them) with its virtual key code; a key whose characters give no charCode
     /// is still a key event, with charCode 0.
     func shellView(_ view: ShellView, keyDown event: NSEvent) {
+        keyLog?.view("keyDown", event)
         let codes = Self.macCharCodes(event.characters ?? "")
         for code in codes.isEmpty ? [0] : codes {
             pendingKeyEvents.append(KeyEvent(charCode: code, keyCode: event.keyCode, autoRepeat: event.isARepeat))
@@ -566,6 +573,11 @@ import Synchronization
         guard !event.isARepeat else { return }
         pendingTyped += codes
     }
+
+    /// A key-up or modifier change in the view: nothing for the game (play polls `keyState`, which the view keeps
+    /// itself); logged only, when the key log is on.
+    func shellView(_ view: ShellView, keyUp event: NSEvent) { keyLog?.view("keyUp", event) }
+    func shellView(_ view: ShellView, flagsChanged event: NSEvent) { keyLog?.view("flagsChanged", event) }
 
     /// A pad key pressed (HectorKit D16, from `pollKeyState`): a key-down as the keyboard's would be — a key event
     /// and its typed character, for the keys a pad layout binds outside play (`PadKeys`). A held pad key never
@@ -623,6 +635,7 @@ import Synchronization
     /// 640×480 picture under the current scale (`ShellScaling.logicalPoint`, unclamped, as the original's
     /// `GlobalToLocal`).
     func shellView(_ view: ShellView, mouseDown event: NSEvent) {
+        keyLog?.view("mouseDown", event)
         let inView = view.convert(event.locationInWindow, from: nil)
         pendingMouseDowns.append(Self.mousePoint(ShellScaling.logicalPoint(
             viewPoint: inView, imageRect: view.imageRectInPoints, logicalWidth: Self.width, logicalHeight: Self.height)))

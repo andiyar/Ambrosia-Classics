@@ -7,7 +7,8 @@ import AppKit
         let app = NSApplication.shared
         app.setActivationPolicy(.regular)
         let controller = DeimosController(options: LaunchOptions(arguments: CommandLine.arguments,
-                                                                 environment: ProcessInfo.processInfo.environment))
+                                                                 environment: ProcessInfo.processInfo.environment,
+                                                                 keyLogDefault: UserDefaults.standard.bool(forKey: "keylog")))
         app.delegate = controller          // weak: the controller lives as long as `run()`
         withExtendedLifetime(controller) {
             app.run()
@@ -29,6 +30,11 @@ struct LaunchOptions {
     /// as the original does with no sound system (`FUN_10047160`'s "Sound not available" path: the publisher logo
     /// holds 130 ticks instead of waiting for its sound), and makes no system beep.
     var mute = false
+    /// ◇ Hidden key log (the bomb-freeze diagnosis, Ben's first playtest): `-keylog`, or the user default `keylog`
+    /// (`defaults write com.ambrosiaclassics.deimos keylog -bool YES`, for a double-click launch; handed in as
+    /// `keyLogDefault`). The app then records the key events and keyboard focus it sees to
+    /// `~/Library/Logs/Deimos Rising/keys.log` (`KeyLog`); off, nothing is installed.
+    var keyLog = false
     #if DEBUG
     /// DEBUG only (A3's machine check): `-debugCapsLock <seconds>` simulates Caps Lock down through `HeldKeys` from
     /// that many seconds after launch for `debugCapsLockHold` seconds, so the pause wait can be shown reached.
@@ -36,8 +42,9 @@ struct LaunchOptions {
     static let debugCapsLockHold = 4.0
     #endif
 
-    init(arguments: [String], environment: [String: String] = [:]) {
+    init(arguments: [String], environment: [String: String] = [:], keyLogDefault: Bool = false) {
         if let value = environment["DEIMOS_MUTE"], !value.isEmpty, value != "0" { mute = true }
+        keyLog = keyLogDefault
         var i = 1
         while i < arguments.count {
             let a = arguments[i]
@@ -55,6 +62,11 @@ struct LaunchOptions {
             }
             if a == "-mute" {
                 mute = true
+                i += 1
+                continue
+            }
+            if a == "-keylog" {
+                keyLog = true
                 i += 1
                 continue
             }
