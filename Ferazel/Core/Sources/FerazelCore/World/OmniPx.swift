@@ -182,8 +182,8 @@ public struct OmniPx: Equatable, Sendable {
             if counter > 0x11 { counter = 0 }                         // M l. 13430–13432
             base = 6 + Int(counter >> 1)                              // `0x100a4f2c + 4·(c >> 1)` = slot 6 + (c >> 1)
         default:
-            // later: Phase 6 (6C-L55…L70, level 70) — mode 6's `.InterlaceBlit128` base (M l. 13438–13446), its own `c`
-            // step; mode 7's ping-pong copy (M l. 13447–13465) is on no level: unplaced, stays refused at level open.
+            // Mode 1 (6A-RN): no base, as the dump. // later: Phase 6 (6C-L55…L70) — mode 6's `.InterlaceBlit128` base
+            // (M l. 13438–13446), its own `c` step; mode 7's ping-pong copy (M l. 13447–13465): unplaced, refused.
             break
         }
         let H = Int32(Int16(truncatingIfNeeded: h)), V = Int32(Int16(truncatingIfNeeded: v))
@@ -243,8 +243,8 @@ public struct OmniPxRain: Equatable, Sendable {
     public internal(set) var started = false
     /// `sRam100a381c`: the thunder timer T.
     public internal(set) var timer: Int16 = 0
-    /// The stream (`_DAT_100a17e8`) as the last call found it on entry — for tests, which re-derive every draw.
-    public internal(set) var entrySeed: Int32 = 0
+    /// Test observation point (no game reader): the stream (`_DAT_100a17e8`) as the last call found it on entry.
+    internal private(set) var entrySeed: Int32 = 0
 
     public init() {}
 

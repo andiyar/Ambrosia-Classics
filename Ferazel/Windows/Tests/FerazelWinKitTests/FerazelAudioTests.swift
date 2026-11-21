@@ -112,6 +112,23 @@ import XCTest
         let other = try XCTUnwrap(bank.sounds.first { $0.id != 452 }).id
         let (_, both) = rig([loop, SoundCue(snd: other, priority: 1, left: 0x80, right: 0x80, rate: 0x10000)])
         XCTAssertEqual(both.snapshot().map(\.snd), [other, 452])
+        // ... and the re-play itself, once the loop runs out beside a louder entry that outlasts it: rebuilt with its
+        // id, it goes in behind that entry (the walk skips a louder one), and the pass takes one block off each once.
+        let (_, probe) = rig([])
+        var longer: Int16?
+        for snd in bank.sounds where snd.id != 452 {
+            probe.play(snd: snd.id, priority: 1, left: 0x80, right: 0x80)
+            let n = probe.snapshot().first?.countdown ?? 0
+            probe.stop(snd: snd.id)
+            if n > Int32(c + 1) { longer = snd.id; break }
+        }
+        let big = try XCTUnwrap(longer, "a sound that outlasts the loop")
+        let (_, beside) = rig([loop, SoundCue(snd: big, priority: 1, left: 0x80, right: 0x80, rate: 0x10000)])
+        var bigEntry = try XCTUnwrap(beside.snapshot().first)
+        XCTAssertEqual(beside.snapshot().map(\.snd), [big, 452])
+        _ = blocks(beside, c)
+        bigEntry.countdown -= Int32(c)
+        XCTAssertEqual(beside.snapshot(), [bigEntry, again], "the re-play behind the louder entry, its id, c − 1 blocks")
     }
 
     func testResolveTrack() throws {

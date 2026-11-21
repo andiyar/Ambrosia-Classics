@@ -160,7 +160,8 @@ final class RainTests: XCTestCase {
         let fromRecords = Set(s.world.active.sprites.map { Int($0.recordIndex) }
                               + s.world.idle.entries.compactMap { $0.map { Int($0.saved.recordIndex) } })
         XCTAssertEqual(fromRecords.intersection(active), active, "every active record set up")
-        XCTAssertFalse(s.rain.started, "`.SetupLevel` cleared the flag after `.SetupOmniPx` (M l. 2541)")
+        // `.SetupLevel`'s clear after `.SetupOmniPx` (M l. 2541) meets a fresh flag, so it cannot be seen here; its
+        // effect — iteration 1's call is a first call (R(90), the loop) — is asserted just below.
 
         // Iteration 1: the first call.
         let first = try iterate(run)
@@ -177,7 +178,6 @@ final class RainTests: XCTestCase {
         XCTAssertEqual(s.frameCues.filter { $0.snd == 452 }, [PlayerCue(call: .looped, snd: 452, priority: 1, volume: 0x55)])
         let loops = first.steps.flatMap(\.sounds).filter { $0.snd == 452 }
         XCTAssertEqual(loops, [SoundCue(snd: 452, priority: 1, left: 65, right: 65, rate: 0x10000, loops: true)])
-        XCTAssertEqual(first.steps.flatMap(\.sounds).filter(\.loops).count, 1, "nothing else loops")
 
         // The second call: no R(90), no loop — T − 1, the drops drawn from the entry seed on.
         try iterate(run)
@@ -217,7 +217,7 @@ final class RainTests: XCTestCase {
         XCTAssertEqual(run.iterations, i0 + 1, "the pause sits inside one iteration")
         XCTAssertEqual(Int(s.rain.timer), t0 - 2, "the main pass and the pause's own paint each ran the rain")
         XCTAssertFalse(s.rain.started, "`.Pause` cleared the flag (M l. 3203)")
-        let o = entry.last!
+        let o = try XCTUnwrap(entry.last)
         XCTAssertEqual(o.soundStops.suffix(2), [452, 511], "the rain loop and the ambience stopped, last")
         XCTAssertFalse(o.sounds.contains { $0.snd == 452 }, "the pause's paint started no loop (flag still set)")
 
@@ -272,9 +272,18 @@ final class RainTests: XCTestCase {
         XCTAssertEqual(s.rain.timer, -1)
         XCTAssertEqual(s.world.flash, ScreenFlash(count: 3, on: false))
         XCTAssertEqual(s.world.player.cues, [PlayerCue(call: .reg, snd: 453, priority: 1, volume: 0xab)])
-        XCTAssertEqual(SoundCues.convert(PlayerState.SoundCall(cue: s.world.player.cues[0], scrollH: h, scrollV: v),
-                                         prefs: s.prefs),
-                       .play(SoundCues.regSound(snd: 453, priority: 1, volume: 0xab, global: global)))
+        let thunderCue = try XCTUnwrap(s.world.player.cues.first)
+        // `.STPlayRegSound(453, 1, 0xab)` by the dump's arithmetic: global 7 · 0x1c = 0xc4; (0xab · 0xc4) >> 8 = 130,
+        // halved = 65 on both sides, rate 0x10000, not looping.
+        XCTAssertEqual(global, 0xc4)
+        XCTAssertEqual(SoundCues.convert(PlayerState.SoundCall(cue: thunderCue, scrollH: h, scrollV: v), prefs: s.prefs),
+                       .play(SoundCue(snd: 453, priority: 1, left: 65, right: 65, rate: 0x10000, loops: false)))
+        if case .play(let c)? = SoundCues.convert(PlayerState.SoundCall(cue: thunderCue, scrollH: h, scrollV: v),
+                                                  prefs: s.prefs) {
+            XCTAssertFalse(c.loops, "the thunder plays once: `SoundCue.loops` is off by default")
+        } else {
+            XCTFail("the thunder's cue plays")
+        }
         // −1 → −2.
         _ = callAndCheckStream(timerDraw: false)
         XCTAssertEqual(s.rain.timer, -2)
@@ -354,7 +363,8 @@ final class RainTests: XCTestCase {
         let draws = it.steps.flatMap(\.draws)
         let steps = draws.indices.filter { if case .gammaStep(_, 2, white) = draws[$0] { true } else { false } }
         XCTAssertEqual(steps.count, 3)
-        XCTAssertEqual(steps.last! - steps.first!, 2, "the three steps in a row, inside the pass")
+        guard steps.count == 3 else { return }
+        XCTAssertEqual(steps[2] - steps[0], 2, "the three steps in a row, inside the pass")
         let sprites = try XCTUnwrap(draws.firstIndex { if case .wrapDrawSprites = $0 { true } else { false } })
         let particles = try XCTUnwrap(draws.firstIndex { if case .drawParticles = $0 { true } else { false } })
         XCTAssertLessThan(sprites, steps[0])
@@ -383,9 +393,10 @@ final class RainTests: XCTestCase {
                 XCTAssertEqual(want.count % 3, 0)
                 // Columns: the first at H + 0…49, each next 50…249 to the right, the last < H + 660.
                 let columns = stride(from: 0, to: want.count, by: 3).map { want[$0].h }
-                XCTAssertTrue((h..<(h + 50)).contains(columns[0]))
+                let firstColumn = try XCTUnwrap(columns.first), lastColumn = try XCTUnwrap(columns.last)
+                XCTAssertTrue((h..<(h + 50)).contains(firstColumn))
                 for (a, b) in zip(columns, columns.dropFirst()) { XCTAssertTrue((50...249).contains(b - a)) }
-                XCTAssertLessThan(columns.last!, h + 660)
+                XCTAssertLessThan(lastColumn, h + 660)
                 XCTAssertTrue(want.allSatisfy { $0.v >= v && $0.v <= v + 8 })
             }
         }
@@ -403,6 +414,34 @@ final class RainTests: XCTestCase {
         XCTAssertEqual(pinned.count, 15, "five drops")
         // A call makes no draw beyond these: a timer of 50 → 49, no flash, no cue.
         XCTAssertEqual(s.rain.timer, 49)
+
+        // The bound is the dump's int compare `H + 0x294 <= x` (M l. 8482): a column at exactly H + 659 makes a drop,
+        // one at exactly H + 660 ends the loop — a seed for each, found by the stream (H = 0; the draw order above).
+        func columns(_ seed: Int32) -> (made: [Int], end: Int) {
+            var r = FastRand(seed: seed)
+            var x = Int(r.next(0x32)), made: [Int] = []
+            while x < 0x294 {
+                made.append(x)
+                if r.next(2) != 0 { _ = r.next(100); _ = r.next(100) }
+                x += Int(r.next(200)) + 0x32
+            }
+            return (made, x)
+        }
+        for edge in [0x293, 0x294] {
+            var seed: Int32 = 1
+            while seed < 100_000 && (edge == 0x293 ? columns(seed).made.last != edge : columns(seed).end != edge) {
+                seed += 1
+            }
+            XCTAssertLessThan(seed, 100_000, "a seed meeting H + \(edge)")
+            s.rain.timer = 50
+            s.world.rng = FastRand(seed: seed)
+            call(s, h: 0, v: 0)
+            let got = drops(s.world.particles)
+            var r = FastRand(seed: seed)
+            XCTAssertEqual(got, Self.dumpDrops(&r, H: 0, V: 0), "seed \(seed): the edge H + \(edge)")
+            XCTAssertEqual(stride(from: 0, to: got.count, by: 3).map { got[$0].h }, columns(seed).made, "edge \(edge)")
+            XCTAssertEqual(s.world.rng.seed, r.seed)
+        }
     }
 
     /// A heavy drop (`R(2)` = 0, M l. 8490–8495): shape 5, vx −1200 (−0x4b0), vy 3600 (0xe10); kinds 7, 6, 5 at (V, x),
@@ -466,6 +505,25 @@ final class RainTests: XCTestCase {
             XCTAssertEqual(fourth.h, x + Int(r.next(200)) + 50, "R(200) after the two R(100)")
         }
         XCTAssertEqual(met.count, 4, "all four R(100) outcomes met")
+        // The test is `0x32 < R(100)` (M l. 8507): a first R(100) of exactly 50 keeps h, exactly 51 moves it.
+        for (draw, moved) in [(Int16(50), false), (51, true)] {
+            func hit(_ seed: Int32) -> Bool {
+                var r = FastRand(seed: seed)
+                _ = r.next(50)
+                return r.next(2) == 1 && r.next(100) == draw
+            }
+            var seed: Int32 = 1
+            while seed < 100_000 && !hit(seed) { seed += 1 }
+            XCTAssertLessThan(seed, 100_000, "a seed with R(100) = \(draw)")
+            s.rain.timer = 50
+            s.world.rng = FastRand(seed: seed)
+            call(s, h: H, v: V)
+            var r = FastRand(seed: seed)
+            let x = H + Int(r.next(50))
+            let got = Array(drops(s.world.particles).prefix(2))
+            XCTAssertEqual(got.map(\.h), [x, moved ? x - 1 : x], "R(100) = \(draw)")
+            XCTAssertEqual(got.map(\.v), [V, V + 2])
+        }
     }
 
     /// The rain runs on every `.PaintFrameWrap` pass (M l. 9228–9229, before the drawn-frame test): on the skipped draw
@@ -492,6 +550,10 @@ final class RainTests: XCTestCase {
             XCTAssertEqual(young.map { [Int($0.kind), Int($0.shape), Int($0.vx), Int($0.vy)] },
                            want.prefix(young.count).map { [$0.kind, $0.shape, $0.vx, $0.vy] })
             XCTAssertGreaterThan(young.count, 0)
+            // The whole list where the dump puts it, at the scroll point the pass used, after the one
+            // `.HandleParticles` step since (x += vx, y += vy; gravity 0) — none died in this window.
+            XCTAssertEqual(young.map { [Int($0.kind), Int($0.shape), Int($0.vx), Int($0.vy), Int($0.x), Int($0.y)] },
+                           want.map { [$0.kind, $0.shape, $0.vx, $0.vy, ($0.h << 8) + $0.vx, ($0.v << 8) + $0.vy] })
             for ops in it.steps {
                 if ops.drawn { drawn += 1; continue }
                 undrawn += 1

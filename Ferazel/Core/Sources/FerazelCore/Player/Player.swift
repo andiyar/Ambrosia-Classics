@@ -158,8 +158,8 @@ public enum Player {
         w.player.ridden = s().ridden
         w.player.lastFacing = w.player.facing
         w.player.turnMirror = false
-        // 2 (l. 44489–44531): the looped ambient sound of level modes 2/4 (`*_DAT_1009fec4`, `.STPlayLoopedSound`,
-        // re-panned by the player's distance). // later: auto-scroll levels (not L1/L2)
+        // 2 (l. 44489–44531): auto-scroll on (`*_DAT_1009fec4`) → snd 511 `.STPlayLoopedSound(511, 0x14, 0x100)` while
+        // no voice plays it (`PlayerCue.Call.looped`), id kept; modes 2 / 4 set its volumes by distance. // later: 6B-AS
         // 3 (l. 44532–44552).
         riding(w, id: id)
         // 4 (l. 44553–44558).
