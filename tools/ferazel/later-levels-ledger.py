@@ -425,7 +425,7 @@ def _port_arm(t, cls, ps, n1):
                 return (REFUSED, anchor(SF, r'case \.bat:', r'if 9 < m && m < 0xc'), 'bat path modes 10 / 11 (.MakeRadial)')
         return (BUILT_S, anchor(SF, enemy[cls][0]), f'{cls} ({enemy[cls][1]})')
     if cls == 'Chief':
-        return (BUILT_S, anchor(SF, r'case \.chief:'), 'Chief (6A-CH1: Setup + Handle; Hit + Kill 6A-CH2)')
+        return (BUILT_S, anchor(SF, r'case \.chief:'), 'Chief (6A-CH1: Setup + Handle; 6A-CH2: Hit + Kill)')
     if cls in ('Wizard', 'Demon', 'Xichra'):
         return (REFUSED, anchor(SF, r'case \.chief:', r'throw Error\.notTranscribed'),
                 f'boss class not transcribed (`.inert`; {anchor("FerazelCore/Session/FerazelSession.swift", r"the four bosses \(levels 18, 25, 55, 67\) but the Chief")})')
