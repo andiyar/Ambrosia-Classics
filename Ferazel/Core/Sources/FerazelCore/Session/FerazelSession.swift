@@ -94,12 +94,15 @@ public final class FerazelSession {
     /// OX: OmniPx's state (`OmniPx`: the mode, faces, layer arrays, factor backup) and its counter `c`, which runs on
     /// from the previous level (`LevelCarry.omniPxCounter`). The on-flag is G+0x174 (`world.globals.omniPxActive`).
     public internal(set) var omniPx = OmniPx()
+    /// 6A-RN: `.GenerateRain`'s state (`OmniPxRain`: the first-call flag `*_DAT_1009fe88` and the thunder timer) — a
+    /// session value: `.SetupLevel` clears the flag after `.SetupOmniPx` (M l. 2541), so each level starts with it clear.
+    public internal(set) var rain = OmniPxRain()
     /// 6A-S8: the horizon strip `.SetupLevel` made (`PxSprites.create`, after `.KillAllSprites` and before
     /// `.SetupLevelSprites`): its globals (`_DAT_100a01d4` / `_DAT_100a01d0` and the counts) and the add's outcome.
     /// Empty on a level whose header `0x2716` is 0.
     public internal(set) var horizonStrip = PxSprites.Created()
-    /// OX: the renderer's `.TurnOnOmniPx` (`DrawOp.omniPx(.turnOn)`) when `.SetupOmniPx(0)` turned OmniPx on (modes 2,
-    /// 4, 5) — empty on a mode-0 level. `.SetupLevel` M l. 2540: `LevelRun.setupLevel` emits it after its last load
+    /// OX: the renderer's `.TurnOnOmniPx` (`DrawOp.omniPx(.turnOn)`) when `.SetupOmniPx(0)` turned OmniPx on (modes 1,
+    /// 2, 4, 5) — empty on a mode-0 level. `.SetupLevel` M l. 2540: `LevelRun.setupLevel` emits it after its last load
     /// bar; an unhosted session puts it first in its level-start block (before `.SetScreenClut`, M l. 2571).
     public private(set) var omniPxStartOps: [DrawOp] = []
     /// The level loaded (`Mlvl` id).
@@ -280,6 +283,8 @@ public final class FerazelSession {
         world.globals = g
         omniPx = omni
         omniPxStartOps = g.omniPxActive != 0 ? [.omniPx(.turnOn(omniPxMode: omni.omniPxMode))] : []
+        // 6A-RN: `*_DAT_1009fe88 = 0` right after `.SetupOmniPx(0)` (M l. 2541) — the rain's first-call flag.
+        rain.started = false
         // L1 (hosted): `*(G + L·2 + 0x23e) = 1` — `unlocked[L]` — right before the player `MTNewSprite` (M l. 5180–5181).
         if hostedByLevelRun { world.globals.unlocked[level] = 1 }
         // The player `MTNewSprite(0, x, y, 10, −1, .SetupPlayerSprite)` (l. 5181), then the countdown
@@ -489,6 +494,13 @@ public final class FerazelSession {
         ops.draws.append(.wrapDrawSprites(diffuseSeeds(world.active.wrapDrawSprites { s in
             Self.dynamicLight(s, level: lvl, lights: table, bounds: bounds0) { Self.frameRect($0, resources: res) }
         }, h: h, v: v)))
+        // 6A-RN: `if (hdr+0x26c7 == 1) .GenerateRain()` (M l. 9228–9229, raw `10011ee4..10011ef0`) — every pass, before
+        // the drawn-frame test, the nested passes included; its async-fade steps and cursor hide at its place.
+        if level.header.omniPxMode == 1 {
+            let r = rain.generate(world: world, h: h, v: v)
+            ops.draws.append(contentsOf: r.draws)
+            ops.requests.append(contentsOf: r.requests)
+        }
         // `*_DAT_1009fd2c += 1` (M l. 9250): every pass, before the draw block (EF; the shake reads it).
         world.paintCounter &+= 1
         if draw {
@@ -1048,6 +1060,7 @@ public final class FerazelSession {
             // After the loop (l. 5300–5310): `FUN_10091504` of 452 (`*_DAT_1009fe24`) and 511 (`*_DAT_1009fe20`);
             // G+4 ≥ 1 with the level complete (`*_DAT_100a0088`) stops 452, 453 (`*_DAT_1009fd68`) and 511 again.
             for snd: Int16 in [452, 511] { ops.stopSound(snd) }
+            rain.started = false                                         // 6A-RN: `*_DAT_1009fe88 = 0` (M l. 5300)
             if globals.health >= 1 && world.player.levelDone { for snd: Int16 in [452, 453, 511] { ops.stopSound(snd) } }
         }
         return ops
@@ -1068,6 +1081,13 @@ public final class FerazelSession {
             return .loadLevel(next.map(Int.init) ?? levelNumber)
         }
         return .deathEffect
+    }
+
+    /// 6A-RN: `.Pause`'s `*_DAT_1009fe88 = 0` (M l. 3203), after its `.PaintFrameWrap(1, 0)` (which ran the rain with
+    /// the flag still set) and the voice stops — `LevelRun` calls it right after `PauseRun.painted`. The next call
+    /// draws a fresh thunder timer and starts the rain loop again.
+    public func clearRainFirstCall() {
+        rain.started = false
     }
 
     /// OX: `.TurnOffOmniPx` then `.KillOmniPx` at `.GameLoop`'s exit (M l. 5321–5322; `OmniPx.turnOff`, `kill`).

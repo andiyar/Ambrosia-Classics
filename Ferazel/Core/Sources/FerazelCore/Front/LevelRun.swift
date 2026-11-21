@@ -21,7 +21,8 @@ public enum LevelEnd: Equatable, Sendable {
 /// (`LevelRun.setupLevel`, before the renderer and the session) — `GameFlow` reports it as every level-run error, the
 /// level-load report, never a quit. No built level has either; the census row and its check are `DrawModeAuditTests`'.
 public enum LevelOpenRefusal: Error, Equatable, Sendable {
-    /// Header `0x26c7` (OmniPx) outside 0, 2, 4, 5: 1 rain (6A-RN), 6 interlace (6C-L55…L70); 3, 7, ≥ 8 unplaced, refused.
+    /// Header `0x26c7` (OmniPx) outside 0, 1, 2, 4, 5: 6 interlace (6C-L55…L70); 3, 7, ≥ 8 unplaced, refused (1, the
+    /// rain, opens since 6A-RN).
     case omniPxMode(UInt8)
     /// Header `0x2716` ≠ 0: the parallax horizon strip's PICT (levels 10, 30, 40, 45, 62, 67). No longer thrown: 6A-S8
     /// draws the strip (the case is kept, Invariant 9).
@@ -580,9 +581,9 @@ public final class LevelRun {
     }
 
     /// PT: the level-open refusals (`LevelOpenRefusal`) for header `h` — the OmniPx mode only since 6A-S8 (the
-    /// horizon strip is drawn: `PxSprites`, mode 8).
+    /// horizon strip is drawn: `PxSprites`, mode 8). 6A-RN: mode 1 (the rain, `OmniPxRain`) opens; 3, 6, 7, ≥ 8 stay.
     static func refuseUndrawnHeader(_ h: LevelHeader) throws {
-        guard [0, 2, 4, 5].contains(h.omniPxMode) else { throw LevelOpenRefusal.omniPxMode(h.omniPxMode) }
+        guard [0, 1, 2, 4, 5].contains(h.omniPxMode) else { throw LevelOpenRefusal.omniPxMode(h.omniPxMode) }
     }
 
     /// `.SetupLevel`'s body up to `.LoadCachedSpriteFaces` (M l. 2252–2568): the bars, the G writes, the session
@@ -665,7 +666,7 @@ public final class LevelRun {
             emit(&out, StageScreens.updateStageLoad(p, of: q))
         }
         emit(&out, StageScreens.updateStageLoad(100, of: 100))
-        // `*(char *)(G + 0x174) = 0` (M l. 2539), then `.SetupOmniPx(0)` (M l. 2540; OX: modes 0, 2, 4, 5 — the
+        // `*(char *)(G + 0x174) = 0` (M l. 2539), then `.SetupOmniPx(0)` (M l. 2540; OX: modes 0, 1, 2, 4, 5 — the
         // others were refused above): both ran in the session init, before the player spawn (M l. 5181) as in the
         // binary; here, at their place in the level-start ops, the renderer's turn-on (none on a mode-0 level).
         emit(&out, FrontOutput(draws: s.omniPxStartOps))
@@ -885,6 +886,7 @@ public final class LevelRun {
         case .paused:
             guard var p = pause else { return }
             emit(&out, p.painted(now: now))
+            s.clearRainFirstCall()                                     // 6A-RN: `*_DAT_1009fe88 = 0` (M l. 3203)
             pause = p
             keysModal = .pause
         case .quit:

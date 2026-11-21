@@ -292,7 +292,8 @@ final class GameFlowGameTests: XCTestCase {
         XCTAssertNil(rig7.flow.levelRun)
         XCTAssertTrue(rig7.levels.prepared.isEmpty)
 
-        // PT (audit ruling 9): level 1 with an undrawn backdrop in its header — OmniPx rain (0x26c7 = 1) — is refused
+        // PT (audit ruling 9): level 1 with an undrawn backdrop in its header — an unplaced OmniPx mode (0x26c7 = 3;
+        // the rain's 1 opens since 6A-RN) — is refused
         // at level open, before its renderer (`prepare`): the level-load report, not a quit. 6A-S8: a horizon strip
         // (0x2716 ≠ 0) is drawn now — the same patch opens the level (below).
         func patchedLevel1(_ offset: Int, _ bytes: [UInt8]) -> FerazelResources {
@@ -322,7 +323,7 @@ final class GameFlowGameTests: XCTestCase {
         XCTAssertNil(r.backgrounds.resource(type: "PICT", id: 5000))
         XCTAssertEqual(stripRig.flow.levelRun?.session?.horizonStrip.outcome, .added(faceClut: 200))
         XCTAssertEqual(stripRig.flow.levelRun?.session?.horizonStrip.ids, [1, 2])
-        for (offset, bytes) in [(0x26c7, [UInt8(1)])] {
+        for (offset, bytes) in [(0x26c7, [UInt8(3)])] {
             let rig = Rig(patchedLevel1(offset, bytes))
             rig.toMenu()
             rig.press(0x2d)

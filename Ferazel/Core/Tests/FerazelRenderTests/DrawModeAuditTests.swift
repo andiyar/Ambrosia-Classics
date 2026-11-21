@@ -397,7 +397,7 @@ final class DrawModeAuditTests: XCTestCase {
         W("Player/Player.swift:886", .mode, .words([0xb0005, 0xb0001]), "player", at: ["884"]),
         W("Player/PlayerLiquids.swift:55", .flash, .range(0xd...0xd), "player"),
         W("Player/PlayerLiquids.swift:78", .flash, .range(0x12...0x12), "player"),
-        W("Player/PlayerState.swift:280", .mirrored, .copy, "player.shadowRing"),
+        W("Player/PlayerState.swift:283", .mirrored, .copy, "player.shadowRing"),
         W("Player/PlayerStates.swift:133", .mirrored, .flags([false, true]), "player"),
         W("Player/PlayerStates.swift:295", .mirrored, .copy, "player.mistBody"),
         // The power tints, or the mode it had (walk-on-liquid kinds other than 0…2 store nothing).
@@ -415,7 +415,7 @@ final class DrawModeAuditTests: XCTestCase {
         W("Player/ShadowDouble.swift:156", .mirrored, .copy, "player.shadowDouble"),
         W("Player/ShadowDouble.swift:157", .mode, .words([0x1000b]), "player.shadowDouble",
           at: ["Player/ShadowDouble.swift:13"]),
-        W("Session/FerazelSession.swift:223", .mirrored, .copy, "player.shadowRing"),
+        W("Session/FerazelSession.swift:226", .mirrored, .copy, "player.shadowRing"),
         W("Shots/CastSpell.swift:164", .mirrored, .flags([false]), "shot"),
         // 10·dir, dir 0…0x23, only for a shot with gravity (`0 < +0x110`: ids 0, 1, 3, 4, 7 and the seed 0x5a); the
         // followers take their main's angle (the orb 0x50 has gravity 0, PlayerShot.setup, so its followers get 0).
@@ -1235,8 +1235,9 @@ final class DrawModeAuditTests: XCTestCase {
             let n = a.level.number, L = a.level.file
             // The backdrop and OmniPx inputs: the level's header names the backdrop the renderer draws.
             XCTAssertLessThanOrEqual(L.header.flameMode, 0, "level \(n): the Fire backdrop")
-            // OX: OmniPx modes 2 / 4 / 5 draw (the port as PxBack slot 0); the rest are refused at level open.
-            XCTAssertTrue([0, 2, 4, 5].contains(L.header.omniPxMode), "level \(n): OmniPx \(L.header.omniPxMode)")
+            // OX: OmniPx modes 2 / 4 / 5 draw (the port as PxBack slot 0); 6A-RN: mode 1 (faces only, no base); the
+            // rest are refused at level open.
+            XCTAssertTrue([0, 1, 2, 4, 5].contains(L.header.omniPxMode), "level \(n): OmniPx \(L.header.omniPxMode)")
 
             // Every row's values, under every transform the renderer builds for them.
             XCTAssertTrue(failures.isEmpty, "\(failures.count) refused:\n" + failures.prefix(20).joined(separator: "\n"))
@@ -1495,7 +1496,8 @@ final class DrawModeAuditTests: XCTestCase {
         // PT (audit ruling 9): the backdrops the renderer does not draw yet, refused at level open (`setupLevel`,
         // before the session) — `GameFlow` reports a level-run error as the level-load error, never a quit.
         R("Front/LevelRun.swift", "LevelOpenRefusal.omniPxMode", 1, .headerZero, [.headerOmniPxStrip],
-          "header 0x26c7 = 0 on every built level (rain / interlace modes 1, 3, 6, 7, ≥ 8 refused until 6A-RN)"),
+          "header 0x26c7 0 / 1 / 2 / 4 / 5 drawn on every level that opens (6A-RN: mode 1, the rain, drawn — faces "
+          + "only, no base cell); interlace 6 and the unplaced 3, 7, ≥ 8 stay refused"),
         R("Front/DialogResources.swift", "WorldDataError.missing", 1, .byConstruction,
           [.callersTry(["DialogTemplate.load(", "DialogItemList.load(", "ControlTemplate.load(", "MenuTemplate.load(",
                         "MenuBarTemplate.load("])],
@@ -1997,12 +1999,13 @@ final class DrawModeAuditTests: XCTestCase {
             XCTAssertNoThrow(try r.apply(FrameOps(draws: ops)), "\(c)")
             XCTAssertEqual(r.executed, [.omniPxOn(2)] + Array(repeating: .omniPx(4), count: 9), "\(c)")
         case .headerOmniPxStrip:
-            // Every built level opens: OmniPx 0 / 2 / 4 / 5 (built: 0; level 5's 2 arrives with LV5); no built level but
+            // Every built level opens: OmniPx 0 / 1 / 2 / 4 / 5 (built: 0; level 5's 2 arrives with LV5; 6A-RN: 1 drawn,
+            // level 15's — not built until 6A-L15); no built level but
             // level 10 has a horizon strip (header 0x2716 = 0 on levels 1–5 and 11 — 6A-S8's switch-off: no strip
             // sprite, no mode 8; level 10's PICT 265, built by 6A-S8, joined the built levels at 6A-L10L11).
             for a in audits {
                 let h = a.level.file.header
-                XCTAssertTrue([0, 2, 4, 5].contains(h.omniPxMode),
+                XCTAssertTrue([0, 1, 2, 4, 5].contains(h.omniPxMode),
                               "\(c): level \(a.level.number) OmniPx \(h.omniPxMode)")
                 XCTAssertEqual(h.stripPict, a.level.number == 10 ? 265 : 0, "\(c): level \(a.level.number) strip")
                 XCTAssertNoThrow(try LevelRun.refuseUndrawnHeader(h), "\(c): level \(a.level.number)")
@@ -2016,7 +2019,7 @@ final class DrawModeAuditTests: XCTestCase {
             }
             for m: UInt8 in [0, 1, 2, 3, 4, 5, 6, 7, 8, 0xff] {
                 let h = try header { $0[$0.startIndex + 0x26c7] = m }
-                if [0, 2, 4, 5].contains(m) {
+                if [0, 1, 2, 4, 5].contains(m) {
                     XCTAssertNoThrow(try LevelRun.refuseUndrawnHeader(h), "\(c): OmniPx \(m)")
                 } else {
                     XCTAssertThrowsError(try LevelRun.refuseUndrawnHeader(h), "\(c): OmniPx \(m)") {

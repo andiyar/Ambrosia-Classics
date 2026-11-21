@@ -24,9 +24,10 @@ public struct OmniPxFrame: Equatable, Sendable {
         }
     }
 
-    /// Header `0x26c7` (2, 4 or 5 on a level that opens: `LevelRun.refuseUndrawnHeader`).
+    /// Header `0x26c7` (1, 2, 4 or 5 on a level that opens: `LevelRun.refuseUndrawnHeader`).
     public var omniPxMode: UInt8
-    /// Modes 2 / 4 / 5: the PxBack slot `6 + (c >> 1)` copied over the port first (M l. 13429–13436); nil = no base.
+    /// Modes 2 / 4 / 5: the PxBack slot `6 + (c >> 1)` copied over the port first (M l. 13429–13436); nil = no base
+    /// (mode 1, 6A-RN: the port keeps what it held and the faces are blitted over it).
     public var baseCell: Int?
     /// The loaded faces' blits, face slots 0…15 in order (null faces skipped, M l. 13469).
     public var faces: [Face]
@@ -41,7 +42,7 @@ public enum OmniPxOp: Equatable, Sendable {
     /// The renderer's half of `.TurnOnOmniPx @ 10019ac4` (M l. 13019–13060), run by `.SetupOmniPx(0)` inside
     /// `.SetupLevel` (M l. 2540) — before the player spawn (M l. 5181) and before any frame, so the first frame's sprite
     /// pass already reads the zeroed PxBack factors and the port in slot 0 (`.CalcPxRowContents`, M l. 23165–23167).
-    /// Once per level start, only when the level's mode turns OmniPx on (2, 4, 5).
+    /// Once per level start, only when the level's mode turns OmniPx on (1, 2, 4, 5).
     case turnOn(omniPxMode: UInt8)
     /// One drawn frame's `.UpdateOmniPx` (`.PaintFrameWrap` M l. 9434).
     case update(OmniPxFrame)
@@ -56,7 +57,8 @@ public enum OmniPxOp: Equatable, Sendable {
 ///
 /// Life cycle (§3.2): `.SetupLevel` clears G+0x174 and calls `setup` (M l. 2539–2540); each drawn `.PaintFrameWrap`
 /// calls `update` after `.DrawParticles` (M l. 9434); `.GameLoop`'s exit calls `turnOff` and `kill` (M l. 5321–5322).
-/// Refused at level open (`LevelRun.refuseUndrawnHeader`): 1 rain (◇ 6A-RN), 6 interlace (◇ 6C-L55…L70); 3, 7, ≥ 8 unplaced.
+/// Refused at level open (`LevelRun.refuseUndrawnHeader`): 6 interlace (◇ 6C-L55…L70); 3, 7, ≥ 8 unplaced. Mode 1 (the
+/// rain sheets, level 15) opens since 6A-RN — faces only, no base; its weather is `OmniPxRain`.
 public struct OmniPx: Equatable, Sendable {
     /// The 16 layer slots.
     public static let layers = 0x10
@@ -206,5 +208,105 @@ public struct OmniPx: Equatable, Sendable {
         let u = Int32(acc >> 8) &+ ((scroll &* Int32(factor)) >> 8)
         let r = Int32(Int16(truncatingIfNeeded: u)) &+ Int32(Int16(truncatingIfNeeded: u / 0x80)) &* -0x80
         return Int(Int16(truncatingIfNeeded: -r))
+    }
+}
+
+/// 6A-RN: `.GenerateRain @ 100109c0` (M l. 8429–8531; ENG §2.7) — OmniPx mode 1's weather (level 15, "Storm Valley").
+/// `.PaintFrameWrap` calls it on every pass while header `0x26c7` is 1 (M l. 9228–9229, raw `10011ee4..10011ef0`:
+/// after `.WrapDrawSprites`, before the drawn-frame test) — drawn or not, and on the extra passes `.Pause` (M l. 3190)
+/// and `.CheckGameLoopKeys`' dialogs make (M l. 3918, 3922, 3980, 4005). The session holds the state; the call runs on
+/// the world (the stream, the particle pool, the flash, the async fade, the sound calls).
+///
+/// - First call (`*_DAT_1009fe88 == 0`): the flag set; T = R(90) + 90; `.STPlayLoopedSound(snd 452, 1, 0x55)` — the
+///   rain loop (M l. 8449–8454; no stream draw: `.STPlayLoopedSound`, M l. 40978ff, draws nothing, sound on or off).
+///   The flag is cleared by `.SetupLevel` after `.SetupOmniPx` (M l. 2541: a new session), by `.Pause` after it stops
+///   the voices (M l. 3203: `FerazelSession.clearRainFirstCall`, called by `LevelRun` right after `PauseRun.painted`)
+///   and by `.GameLoop`'s exit (M l. 5300).
+/// - Thunder (M l. 8456–8480), T after the first-call block: T > 0 → T − 1; T = 0 → the flash count 3
+///   (`ScreenFlash`), `.STPlayRegSound(snd 453, 1, 0xab)`, T = −1; −1 → −2; −2 → `.GammaFadeOutAsync(2, white)`
+///   (the six bytes at `0x100a53ca`, FFFF ×3; r6 / r7 0xc / 0x10 unread), three `.HandleAsyncGammaFade`,
+///   `.GammaFadeInAsync(0x6e)`, T = −3 — each gated on fading enabled and the faded flag (`AsyncGammaFade`); T < −2
+///   → T = R(150) + 210.
+/// - Drops (M l. 8481–8527): x = H + R(50); while x < H + 660: s = R(2); the point (v = V, h = x); three
+///   `.NewParticle(kind, 0, point, shape, vx, vy, 0, mode 1)` — s = 0 heavy: shape 5, vx −1200, vy 3600, kinds 7, 6,
+///   5, the point moved v + 4, h − 1 before each of the next two; s = 1 light: shape 4, vx −700, vy 2100, kinds 7, 7,
+///   6, before each of the next two R(100) > 50 → h − 1, then v + 2. Then x += R(200) + 50. (H, V) is the scroll point
+///   `PTR_DAT_1009fe78`; every coordinate is a 16-bit short.
+public struct OmniPxRain: Equatable, Sendable {
+    /// snd 452 (`*_DAT_1009fe24`), the looped rain; snd 453 (`*_DAT_1009fd68`), the thunder.
+    public static let rainLoop: Int16 = 452
+    public static let thunder: Int16 = 453
+    /// `.GammaFadeOutAsync(2, …)`'s colour: the six bytes at `0x100a53ca` (the save point's flash colour).
+    public static let thunderColour = HitPlayerSprite.savePointFlashColour
+
+    /// `*_DAT_1009fe88`: the first call has been made.
+    public internal(set) var started = false
+    /// `sRam100a381c`: the thunder timer T.
+    public internal(set) var timer: Int16 = 0
+    /// The stream (`_DAT_100a17e8`) as the last call found it on entry — for tests, which re-derive every draw.
+    public internal(set) var entrySeed: Int32 = 0
+
+    public init() {}
+
+    /// One `.GenerateRain` call at scroll point (h, v): its `.HandleAsyncGammaFade` steps and the `HideCursorSafe` a
+    /// fade-out arm makes (M l. 31905), in call order.
+    public mutating func generate(world w: SpriteWorld, h: Int, v: Int) -> (draws: [DrawOp], requests: [ShellRequest]) {
+        entrySeed = w.rng.seed
+        var draws: [DrawOp] = [], requests: [ShellRequest] = []
+        if !started {                                                 // M l. 8449–8454
+            started = true
+            timer = w.rng.next(0x5a) &+ 0x5a
+            w.player.cue(PlayerCue(call: .looped, snd: Self.rainLoop, priority: 1, volume: 0x55))
+        }
+        if timer < 1 {                                                // M l. 8456–8480
+            if timer == 0 {
+                w.flash.count = 3                                     // `*_DAT_100a00fc = 3`
+                w.player.cue(PlayerCue(call: .reg, snd: Self.thunder, priority: 1, volume: 0xab))
+                timer &-= 1
+            } else if timer == -1 {
+                timer = -2
+            } else if timer == -2 {
+                if w.gammaFade.fadeOut(steps: 2, toward: Self.thunderColour) { requests.append(.hideCursor) }
+                for _ in 0..<3 { if let op = w.gammaFade.handle() { draws.append(op) } }
+                w.gammaFade.fadeIn(steps: 0x6e)
+                timer &-= 1
+            } else {
+                timer = w.rng.next(0x96) &+ 0xd2
+            }
+        } else {
+            timer &-= 1
+        }
+        // The drops (M l. 8481–8530): `sVar4` and the point's halves are shorts; the loop test is an int compare
+        // `H + 0x294 <= sVar4` with H the scroll point's h (a short).
+        let H = Int16(truncatingIfNeeded: h), V = Int16(truncatingIfNeeded: v)
+        var x = H &+ w.rng.next(0x32)
+        while !(Int(H) + 0x294 <= Int(x)) {
+            let light = w.rng.next(2) != 0                            // `sVar5`: 0 heavy, 1 light
+            let shape = light ? 4 : 5
+            let vx = light ? -700 : -0x4b0
+            let vy = light ? 0x834 : 0xe10
+            var pv = V, ph = x
+            func particle(_ kind: Int) {
+                w.particles.newParticle(kind: kind, gravity: 0, v: Int(pv), h: Int(ph), shape: shape, vx: vx, vy: vy,
+                                        delay: 0, mode: 1)
+            }
+            /// Between two particles: light → `R(100) > 0x32` → h − 1, then v + 2; heavy → v + 4, h − 1.
+            func move() {
+                if light {
+                    if 0x32 < w.rng.next(100) { ph &-= 1 }
+                    pv &+= 2
+                } else {
+                    pv &+= 4
+                    ph &-= 1
+                }
+            }
+            particle(7)
+            move()
+            particle(light ? 7 : 6)
+            move()
+            particle(light ? 6 : 5)
+            x = w.rng.next(200) &+ x &+ 0x32
+        }
+        return (draws, requests)
     }
 }

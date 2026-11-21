@@ -57,7 +57,9 @@ import Foundation
 
     /// One tick's effects, in the binary's call order (S1 as built, `FrameOps.soundStopAt`): for i in
     /// 0 … sounds.count, every stop made before play i (`FUN_10091504(snd)`), then play i (`FUN_10091208`) — a cue
-    /// marked `onlyIfIdle` is made only while no entry plays its `snd` (`if (!FUN_100916dc(snd))`).
+    /// marked `onlyIfIdle` is made only while no entry plays its `snd` (`if (!FUN_100916dc(snd))`); a cue marked
+    /// `loops` (6A-RN, `.STPlayLoopedSound`) carries the loop's completion proc into the Sound Tool, which re-plays it
+    /// each time it runs out until a stop ends it.
     func apply(sounds: [SoundCue], stops: [Int16], stopAt: [Int]) {
         guard let tool = soundTool else { return }
         var k = 0
@@ -71,7 +73,7 @@ import Foundation
             guard loaded.contains(cue.snd) else { continue }
             if cue.onlyIfIdle && tool.isPlaying(snd: cue.snd) { continue }
             tool.play(snd: cue.snd, priority: UInt16(clamping: cue.priority), left: UInt16(clamping: cue.left),
-                      right: UInt16(clamping: cue.right), rate: Int32(bitPattern: cue.rate))
+                      right: UInt16(clamping: cue.right), rate: Int32(bitPattern: cue.rate), loops: cue.loops)
         }
         while k < stops.count {           // defensive: a stop recorded without its place goes last
             tool.stop(snd: stops[k])

@@ -51,6 +51,69 @@ import XCTest
             .apply(sounds: [cue(a)], stops: [a], stopAt: [0])
     }
 
+    /// 6A-RN: a looped cue (`SoundCue.loops`, `.STPlayLoopedSound` — the rain loop, snd 452) on the Sound Tool through
+    /// `FerazelAudio.apply`: when its countdown runs out the entry is re-played at once with its id (`.STLoopCallBack`,
+    /// reason 1, M l. 78640–78644 → `FUN_10091208`) and plays its samples again from the start. The countdown pass goes
+    /// on at the same index (`iVar9 − 1`, then `+ 1`), so it meets the re-played entry in the same pass and takes one
+    /// block off it: after the first pass the loop repeats every countdown − 1 blocks. A plain cue of the same sound is
+    /// gone after the first pass; a stop (`FUN_10091504`, reason 2 — ignored) ends the loop.
+    func testLoopedCueOnTheMixer() throws {
+        let r = try resources()
+        let bank = try SoundBank(sounds: r.sounds)
+        XCTAssertTrue(bank.sounds.contains { $0.id == 452 }, "snd 452 in the Sounds file")
+        func rig(_ sounds: [SoundCue]) -> (FerazelAudio, SoundTool) {
+            let mixer = FakeMixer()
+            let audio = FerazelAudio(mixer: mixer, musicDirectory: r.musicDirectory, log: { _ in })
+            audio.loadSounds(bank, only: nil)
+            audio.apply(sounds: sounds, stops: [], stopAt: [])
+            return (audio, mixer.tools[0])
+        }
+        func blocks(_ t: SoundTool, _ n: Int) -> [Float] {
+            var buffer = [Float](repeating: 0, count: 2 * SoundTool.blockFrames * n)
+            buffer.withUnsafeMutableBufferPointer { t.render(into: $0, frames: SoundTool.blockFrames * n) }
+            return buffer
+        }
+        let loop = SoundCue(snd: 452, priority: 1, left: 65, right: 65, rate: 0x10000, loops: true)
+        var plain = loop
+        plain.loops = false
+        // The entry's full countdown (blocks), and its id.
+        let (_, looped) = rig([loop])
+        let entry = try XCTUnwrap(looped.snapshot().first)
+        XCTAssertTrue(entry.loops)
+        XCTAssertEqual([entry.left, entry.right], [65, 65])
+        let c = Int(entry.countdown)
+        XCTAssertGreaterThan(c, 1)
+        // The first pass, then the repeats: re-played with its id, one block already taken by the same pass; every
+        // repeat plays the sound's first c − 1 blocks again from its start.
+        let first = blocks(looped, c)
+        var again = entry
+        again.countdown = Int32(c - 1)
+        XCTAssertEqual(looped.snapshot(), [again], "re-played once its countdown ran out, in the same pass")
+        let period = Array(first.prefix(2 * SoundTool.blockFrames * (c - 1)))
+        XCTAssertTrue(blocks(looped, c - 1) == period, "the loop's second pass: the same samples, c − 1 blocks")
+        XCTAssertEqual(looped.snapshot(), [again])
+        XCTAssertTrue(blocks(looped, c - 1) == period, "and the third")
+        XCTAssertTrue(looped.isPlaying(snd: 452))
+        XCTAssertEqual(looped.playingSounds(), [452])
+        // The same cue unlooped: gone after the first pass.
+        let (_, once) = rig([plain])
+        XCTAssertTrue(blocks(once, c) == first, "the first pass is the same sound")
+        XCTAssertFalse(once.isPlaying(snd: 452))
+        XCTAssertTrue(once.snapshot().isEmpty)
+        // A stop ends the loop for good.
+        let (audio, stopped) = rig([loop])
+        _ = blocks(stopped, c / 2)
+        audio.apply(sounds: [], stops: [452], stopAt: [0])
+        XCTAssertFalse(stopped.isPlaying(snd: 452))
+        _ = blocks(stopped, 2 * c)
+        XCTAssertTrue(stopped.snapshot().isEmpty, "no re-play after a stop")
+        // Beside another entry: the re-play goes through the play rule (priority, then volume) — a louder plain entry
+        // of the same priority stays ahead of it.
+        let other = try XCTUnwrap(bank.sounds.first { $0.id != 452 }).id
+        let (_, both) = rig([loop, SoundCue(snd: other, priority: 1, left: 0x80, right: 0x80, rate: 0x10000)])
+        XCTAssertEqual(both.snapshot().map(\.snd), [other, 452])
+    }
+
     func testResolveTrack() throws {
         let dir = try resources().musicDirectory
         let exists = { (n: Int) in

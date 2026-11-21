@@ -222,6 +222,93 @@ final class OmniPxTests: XCTestCase {
         XCTAssertEqual(o.counter, 9, "turning off and killing leave c")
     }
 
+    /// 6A-RN (ENG §2.7 item 4): OmniPx mode 1 — level 15's rain sheets. The level opens (mode 1 left
+    /// `LevelRun.refuseUndrawnHeader`; 3, 6, 7, ≥ 8 stay refused); `.SetupOmniPx` loads faces 6000 / 6001 with their
+    /// parameters (M l. 13261–13277) and `.TurnOnOmniPx` zeroes the PxBack factors (the grid fixed to the view); each
+    /// drawn frame's `.UpdateOmniPx` has **no base cell** — no `CopyBitsCTForce` refresh (M l. 13427–13466 take no arm
+    /// for mode 1) — so the port keeps what it held and the two faces are blitted over it: 6000 first, opaque (no
+    /// transparent pixel in its 128×128 window, measured), then 6001 over it. So the port is the same whatever it held.
+    func testOmniPxModeOneFacesOnly() throws {
+        let res = try Self.resources.get()
+        var L = try level(15)
+        XCTAssertEqual(L.header.omniPxMode, 1)
+        XCTAssertNoThrow(try LevelRun.refuseUndrawnHeader(L.header), "mode 1 opens")
+        for m: UInt8 in [3, 6, 7, 8, 0xff] {
+            let Lm = try level(15, omniPxMode: m)
+            XCTAssertThrowsError(try LevelRun.refuseUndrawnHeader(Lm.header), "mode \(m) stays refused")
+        }
+        var g = GameGlobals(header: L.header)
+        var o = OmniPx()
+        o.setup(level: &L, globals: &g)
+        XCTAssertEqual(o.faces.compactMap { $0 }, [6000, 6001])
+        XCTAssertEqual(Array(o.fx.prefix(2)) + Array(o.fy.prefix(2)), [0x40, 0x80, 0x40, 0x80])
+        XCTAssertEqual(Array(o.vx.prefix(2)) + Array(o.vy.prefix(2)), [0x100, 0x200, 0x500, 0x800])
+        XCTAssertEqual(g.omniPxActive, 1)
+        XCTAssertEqual(L.backFactors, [Int16](repeating: 0, count: LevelFile.factorRows), "factors zeroed")
+
+        let r = try FrameRenderer(resources: res, level: 15, search: ColorSearch(model: .ruled, tieBreak: .lowest),
+                                  dither: .errorDiffusion, text: StatusBarTests.BoxRasterizer(), prefs: FerazelPrefs())
+        try r.buildTintTable([Int16](repeating: 0, count: 0xff * 2))
+        XCTAssertNoThrow(try r.apply(FrameOps(draws: [.omniPx(.turnOn(omniPxMode: 1))])))
+        XCTAssertEqual(r.executed, [.omniPxOn(1)])
+        XCTAssertEqual(r.parallax.backFactors, [Int16](repeating: 0, count: LevelFile.factorRows))
+        XCTAssertEqual(Array(r.parallax.faces[0..<0x4000]), [UInt8](repeating: 0, count: 0x4000), "the new port")
+
+        // Face 6000 under the level+sprite CLUT: opaque over the whole 128×128 window.
+        let clut = try ColorLUT.load(id: ColorLUT.screenClutId(L.header), from: res, chain: .level)
+        func face(_ pict: Int16) throws -> (w: Int, h: Int, px: [UInt8]) {
+            let f = try FaceSheet.load(.single(pict: pict), from: res, chain: .frontEnd, clut: clut,
+                                       search: ColorSearch(model: .ruled, tieBreak: .lowest), dither: .errorDiffusion)
+                .faces[0]
+            return (f.width, f.height, try f.decode())
+        }
+        let f0 = try face(6000), f1 = try face(6001)
+        XCTAssertGreaterThanOrEqual(min(f0.w, f0.h), 128)
+        var transparent = 0
+        for row in 0..<128 { for col in 0..<128 where f0.px[row * f0.w + col] == 0 { transparent += 1 } }
+        XCTAssertEqual(transparent, 0, "6000 has no transparent pixel in its window")
+
+        /// The port built independently from `start`: no base; each face's opaque pixels at each of its draws.
+        func port(_ frame: OmniPxFrame, from start: [UInt8]) -> [UInt8] {
+            var p = start
+            for fr in frame.faces {
+                let f = fr.pict == 6000 ? f0 : f1
+                for d in fr.draws {
+                    for row in 0..<min(f.h, 128) {
+                        for col in 0..<min(f.w, 128) where f.px[row * f.w + col] != 0 {
+                            let x = d[0] + col, y = d[1] + row
+                            guard (0..<128).contains(x), (0..<128).contains(y) else { continue }
+                            p[y * 128 + x] = f.px[row * f.w + col]
+                        }
+                    }
+                }
+            }
+            return p
+        }
+        let h = 0x123, v = 0x45
+        let frame = try XCTUnwrap(o.update(globals: g, h: h, v: v))
+        XCTAssertEqual(frame.omniPxMode, 1)
+        XCTAssertNil(frame.baseCell, "no base cell: faces only")
+        XCTAssertEqual(frame.faces.map(\.pict), [6000, 6001])
+        XCTAssertNoThrow(try r.apply(FrameOps(draws: [.omniPx(.update(frame))])))
+        XCTAssertEqual(r.executed.last, .omniPx(2))
+        let slot0 = Array(r.parallax.faces[0..<0x4000])
+        XCTAssertEqual(slot0, port(frame, from: [UInt8](repeating: 0, count: 0x4000)))
+        XCTAssertNotEqual(slot0, port(OmniPxFrame(omniPxMode: 1, baseCell: nil, faces: [frame.faces[0]]),
+                                      from: [UInt8](repeating: 0, count: 0x4000)), "6001 drew over 6000")
+        // The next frame over the port as this one left it (no refresh) equals the same frame over any start.
+        let next = try XCTUnwrap(o.update(globals: g, h: h + 5, v: v + 3))
+        XCTAssertNoThrow(try r.apply(FrameOps(draws: [.omniPx(.update(next))])))
+        let slot1 = Array(r.parallax.faces[0..<0x4000])
+        XCTAssertEqual(slot1, port(next, from: slot0))
+        XCTAssertEqual(slot1, port(next, from: [UInt8](repeating: 0x55, count: 0x4000)), "whatever the port held")
+        XCTAssertNotEqual(slot1, slot0, "the sheets moved")
+        // Pinned (measured at 6A-RN): level 15's CLUT id and the two ports' FNV-1a 32.
+        func fnv(_ b: [UInt8]) -> UInt32 { b.reduce(2166136261) { ($0 ^ UInt32($1)) &* 16777619 } }
+        XCTAssertEqual(ColorLUT.screenClutId(L.header), 214)
+        XCTAssertEqual([fnv(slot0), fnv(slot1)], [491937194, 3489796828])
+    }
+
     /// A level-5 `FrameRenderer` with its tint table built, on the committed data as it is (LV5: every level-5 record
     /// sets up — `LevelFiveTests.testLevel5SetsUpEveryRecord`). The audit's OmniPx row builds the same renderer.
     static func level5Renderer() throws -> (renderer: FrameRenderer, resources: FerazelResources) {

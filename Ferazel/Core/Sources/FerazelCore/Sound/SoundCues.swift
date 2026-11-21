@@ -14,6 +14,8 @@ import Foundation
 /// - `.STPlay3DSoundPitched @ 10047b8c`: position (0, 0) → 0x80/0x80, else `.CalcStereoVolume`, not halved; dropped
 ///   (returns 0) when L + R < 0x14; the caller's rate;
 /// - `.STPlay3DSoundRand @ 10047d44`: Pitched with rate `FastRand(10000) + 0xec77` (the `PlayerCue`'s rate).
+/// - `.STPlayLoopedSound @ 10047e34` (6A-RN): both sides (vol · global) >> 8, not halved (`local_12` / `local_10`,
+///   M l. 40996–40999), rate 0x10000, the loop's completion proc (`SoundCue.loops`).
 /// Stops `FUN_10091504(snd)` and stop-if-playing `if (FUN_100916dc(snd)) FUN_10091504(snd)` are the same call to the
 /// mixer (stopping a sound no voice plays does nothing) → `FrameOps.soundStops`; neither is gated by sound on.
 public enum SoundCues {
@@ -43,6 +45,12 @@ public enum SoundCues {
         return SoundCue(snd: snd, priority: priority, left: side, right: side, rate: rate)
     }
 
+    /// `.STPlayLoopedSound(snd, prio, vol)` (6A-RN).
+    public static func loopedSound(snd: Int16, priority: Int, volume: Int16, global: Int32) -> SoundCue {
+        let side = Int(Int16(truncatingIfNeeded: scaled(volume, global)))
+        return SoundCue(snd: snd, priority: priority, left: side, right: side, rate: 0x10000, loops: true)
+    }
+
     /// `.STPlay3DSound(snd, prio, vol, pos)`.
     public static func play3D(snd: Int16, priority: Int, volume: Int16, position: SpriteSlot.Point, scrollH: Int,
                               scrollV: Int, global: Int32) -> SoundCue {
@@ -70,7 +78,7 @@ public enum SoundCues {
         switch c.call {
         case .stop, .stopIfPlaying:
             return .stop(c.snd)
-        case .reg, .regPitched, .threeD, .threeDPitched, .threeDRand:
+        case .reg, .regPitched, .threeD, .threeDPitched, .threeDRand, .looped:
             break
         }
         guard prefs.soundOn != 0, SoundSlots.isLoaded(c.snd) else { return nil }
@@ -87,6 +95,8 @@ public enum SoundCues {
         case .threeD:
             cue = play3D(snd: c.snd, priority: prio, volume: c.volume, position: pos, scrollH: call.scrollH,
                          scrollV: call.scrollV, global: g)
+        case .looped:
+            cue = loopedSound(snd: c.snd, priority: prio, volume: c.volume, global: g)
         case .threeDPitched, .threeDRand:
             cue = play3DPitched(snd: c.snd, priority: prio, volume: c.volume, position: pos, rate: rate,
                                 scrollH: call.scrollH, scrollV: call.scrollV, global: g)

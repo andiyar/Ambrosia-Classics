@@ -25,6 +25,9 @@ public struct PlayerCue: Equatable, Sendable {
         /// `.STPlayRegSoundPitched(snd, prio, vol, rate)` — no draw inside; `rate` holds the caller's pitch, which
         /// `.HurtPlayer` draws at its call site (W2a: 508 at `FastRand(10000) + 65000` / `+ 50000`, l. 48053–48067).
         case regPitched
+        /// `.STPlayLoopedSound(snd, prio, vol) @ 10047e34` (M l. 40978ff) — no draw; the play loops until stopped
+        /// (6A-RN: the rain loop 452, `OmniPxRain`; `SoundCue.loops`).
+        case looped
     }
 
     public var call: Call

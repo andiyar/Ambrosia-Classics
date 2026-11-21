@@ -5,7 +5,7 @@ import FerazelCore
 /// §1.1–§1.5, transcribed as written — Invariant 3): `.PaintFrameWrap` → `.WrapCopyToScreen @ 100174bc` →
 /// `.DoubleBlitUniversal @ 10022e34` → `.DoubleBlitPPCParallaxOneLayer @ 10017924`. The Fire variant
 /// (`…Fire @ 10018dd4`, header `0x2722 > 0`, levels 52/55, §1.6) is not built: a level with a flame mode is refused.
-/// OmniPx (§3; OX, modes 2 / 4 / 5): `turnOnOmniPx` makes `.GetPxBackTile` answer 0 (`1003c4f8..1003c514`) and puts
+/// OmniPx (§3; OX, modes 2 / 4 / 5; 6A-RN, mode 1): `turnOnOmniPx` makes `.GetPxBackTile` answer 0 (`1003c4f8..1003c514`) and puts
 /// the 128×128 port in PxBack slot 0, which `updateOmniPx` rebuilds each drawn frame (`DrawOp.omniPx`). 6A-RP: the
 /// ripple table's producer is `.PaintFrameWrap`'s own two loops (ENG §2.5; not `.RipplePxBackOffsets`, gated on header
 /// `0x271e`, 0 on all 24 levels): `rippleAddEveryCall` and `rippleFill`, which `FrameRenderer` runs at their positions
@@ -658,7 +658,8 @@ extension ParallaxBlitter {
     /// `.UpdateOmniPx`'s pixels (M l. 13427–13513, §3.4) into the port, PxBack slot 0: the base — `CopyBitsCTForce`
     /// of PxBack slot `baseCell` (the colour-table seed copied first, so the indices copy as they are) over the whole
     /// 128×128 port — then each face's `BlitEncFaceClipX(face, port, (0, 0), point, 128, 128)` at every point of
-    /// `OmniPxFrame.Face.draws`, in order.
+    /// `OmniPxFrame.Face.draws`, in order. Mode 1 (6A-RN) has no base: the faces go over what the port held (the
+    /// turn-on's 0 fill, then the last frame's; face 6000 is opaque, so it covers it).
     /// - Parameter face: the encoded face of a PICT (`.Load1EncFaceFromPICT`, the level+sprite CLUT).
     /// - Throws: `Refusal.cellSlot` for a base cell with no face (`faceBase`), what `face` throws.
     mutating func updateOmniPx(_ frame: OmniPxFrame, face: (Int16) throws -> EncodedFace) throws {

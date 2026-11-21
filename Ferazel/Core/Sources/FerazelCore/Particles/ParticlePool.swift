@@ -114,7 +114,7 @@ public struct ParticlePool: Equatable, Sendable {
     /// - mode 2: FG tile > 0x4f and age > 1;
     /// - mode 3: unless FG < 0x50 and the BG cell is liquid (`.IsWaterTile(.LookupBGTileKind)`), die (the `−2 < age`
     ///   test always passes for age ≥ 0);
-    /// - mode 1: FG ≥ 0x51 → die; else liquid BG with vy ≥ 0x2ef → die;
+    /// - mode 1 (6A-RN: the rain's drops, `OmniPxRain`): FG ≥ 0x51 → die; else liquid BG with vy ≥ 0x2ef → die;
     /// - any other mode: only the age.
     public mutating func handle(tiles: TileGrid) {
         let bound = Int(counters.highWater) + 1

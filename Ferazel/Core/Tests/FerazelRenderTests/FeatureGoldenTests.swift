@@ -472,4 +472,124 @@ final class FeatureGoldenTests: XCTestCase {
         XCTAssertEqual(f.ticks, 143)
         XCTAssertEqual(String(f.fnv, radix: 16), "c92fbe9fb87250c3", "the level-11 ripple feature golden")
     }
+
+    // MARK: - 6A-RN: the rain and the thunder
+
+    /// A rain particle as `.DrawParticles` hands it on (`ParticleDraw`): one `.GenerateRain` made — the record in its
+    /// slot has the rain's velocity (vx −700 light / −1200 heavy, vy 2100 / 3600), shape (4 / 5) and kind (5…7).
+    static func isRain(_ d: ParticleDraw, _ pool: ParticlePool) -> Bool {
+        let r = pool.records[d.slot]
+        guard (5...7).contains(Int(d.kind)) else { return false }
+        return (r.vx == -700 && d.shape == 4) || (r.vx == -1200 && d.shape == 5)
+    }
+
+    /// Level 15's fixture (nothing left out), seed 1, `FerazelPrefs()`, the header's start, no input: the first `count`
+    /// presented frames — each one's tick count, the FNV-1a 64 of the screen indices and the rain particles its
+    /// `.DrawParticles` held. `dropRain`: the twin — every frame's rain particles taken out of its `.DrawParticles`
+    /// before the renderer draws it (the same run otherwise: Core never sees the change).
+    static func level15Frames(count: Int, dropRain: Bool) throws -> [(ticks: UInt32, fnv: UInt64, rain: Int)] {
+        let (run, services) = try LevelFixtureServices.open(level: 15, leaveOut: [])
+        var now: UInt32 = 0, frames: [(ticks: UInt32, fnv: UInt64, rain: Int)] = []
+        while frames.count < count && now < 4000 {
+            let out = try run.tick(now: now, input: FrontInput())
+            now += 1
+            var presented = false, rain = 0
+            for g in out.segments where g.target == .level {
+                let r = try XCTUnwrap(services.renderer, "a level draw before the renderer exists")
+                let pool = try XCTUnwrap(run.session).world.particles
+                let draws = g.output.draws.map { op -> DrawOp in
+                    guard case .drawParticles(let list) = op else { return op }
+                    let keep = list.filter { !isRain($0, pool) }
+                    rain += list.count - keep.count
+                    return dropRain ? .drawParticles(keep) : op
+                }
+                try r.apply(FrameOps(draws: draws))
+                presented = presented || draws.contains { if case .copyToScreen = $0 { true } else { false } }
+            }
+            if presented, let r = services.renderer {
+                frames.append((now, LevelFixtureServices.fnv1a(r.screen.pixels), rain))
+            }
+        }
+        XCTAssertEqual(frames.count, count, "\(count) presented frames within 4000 ticks")
+        return frames
+    }
+
+    /// 6A-RN: level 15's fixture (nothing left out — every one of its 183 records sets up since 6A-BG1c), seed 1,
+    /// `FerazelPrefs()`, the header's start — the backdrop's two rain sheets (OmniPx mode 1) and the falling drops.
+    /// A drop is made by `.GenerateRain` at age 0 and `.DrawParticles` draws only ages > 0 (`ParticlePool.draw`), so
+    /// the first presented frame (the first `.GameLoop` iteration) shows no drop: its twin with the rain particles
+    /// taken out is the same picture. The second presented frame is the first that shows drops — the golden, proven
+    /// by its twin. Deleted at 6A-L15 (ENG §2.7), where level 15's own first-frame golden is frame 1 below.
+    func testLevel15RainFeatureGolden() throws {
+        let real = try LevelFile.load(from: try LevelFixture.base.get(), level: 15)
+        XCTAssertEqual(try LevelFixture.leftOut(real, []).count, 0, "nothing left out")
+        XCTAssertEqual(real.activePlacements.count, 183)
+        XCTAssertEqual(real.header.omniPxMode, 1)
+        let plain = try Self.level15Frames(count: 2, dropRain: false)
+        let twin = try Self.level15Frames(count: 2, dropRain: true)
+        XCTAssertEqual(plain.map(\.ticks), twin.map(\.ticks))
+        XCTAssertEqual(plain[0].rain, 0, "frame 1: the drops are age 0, not drawn")
+        XCTAssertEqual(plain[0].fnv, twin[0].fnv, "frame 1 shows no drop")
+        XCTAssertGreaterThan(plain[1].rain, 0, "frame 2 draws the first drops")
+        XCTAssertNotEqual(plain[1].fnv, twin[1].fnv, "the drops are in the picture")
+        // Measured at 6A-RN (FNV-1a 64 of the 640×480 screen indices after the tick's level draws, the test colour
+        // model): frame 1 on the 143rd tick (now 142), frame 2 — the second iteration — on the 145th; frame 2 draws 15
+        // rain particles (the first call's five drops). With the rain's generation stubbed instead (one local patch,
+        // never committed) frame 2 is b8b5b520071e980e too — the twin's value — and frame 1 unchanged.
+        XCTAssertEqual(plain.map(\.ticks), [143, 145])
+        XCTAssertEqual(plain[1].rain, 15)
+        XCTAssertEqual(String(plain[0].fnv, radix: 16), "49eddc24d9989d95", "frame 1 (the sheets, no drop)")
+        XCTAssertEqual(String(twin[1].fnv, radix: 16), "b8b5b520071e980e", "frame 2 with the drops taken out")
+        XCTAssertEqual(String(plain[1].fnv, radix: 16), "343813c4727ef0e0", "the level-15 rain feature golden")
+    }
+
+    /// 6A-RN: the first thunder's flash on level 15's fixture (as `testLevel15RainFeatureGolden`; fading on, the
+    /// default). The first call's T = R(90) + 90 counts down one a call; at 0 the thunder sets the flash count 3
+    /// (M l. 8458) and that same pass's flash step turns the toggle on (M l. 9426–9432, after the rain at M l. 9228):
+    /// its `.WrapCopyToScreen` takes the mask port (`.copyMaskToScreen`). The twin is the same copy from the frame port
+    /// (no flash). The frame is measured from the seed: iteration (T after the first call) + 2. Kept at 6A-L15.
+    func testLevel15ThunderFlashFeatureGolden() throws {
+        let (run, services) = try LevelFixtureServices.open(level: 15, leaveOut: [])
+        var now: UInt32 = 0, afterFirst: Int?
+        while now < 6000 {
+            let out = try run.tick(now: now, input: FrontInput())
+            now += 1
+            if afterFirst == nil, run.iterations >= 1 { afterFirst = Int(try XCTUnwrap(run.session).rain.timer) }
+            var flash: (twin: UInt64, changed: Int)?
+            for g in out.segments where g.target == .level {
+                let r = try XCTUnwrap(services.renderer)
+                for op in g.output.draws {
+                    guard case .copyMaskToScreen(let h, let v, let graphicsMode, let backdrop) = op else {
+                        try r.apply(FrameOps(draws: [op]))
+                        continue
+                    }
+                    var plain = r.screen.pixels
+                    try r.parallax.copyToScreen(ports: r.ports, h: h, v: v, graphicsMode: graphicsMode,
+                                                backdrop: backdrop, parallax: Int(r.prefs.parallax), screen: &plain)
+                    try r.apply(FrameOps(draws: [op]))
+                    flash = (LevelFixtureServices.fnv1a(plain), zip(plain, r.screen.pixels).filter { $0 != $1 }.count)
+                }
+            }
+            guard let flash else { continue }
+            let s = try XCTUnwrap(run.session)
+            let r = try XCTUnwrap(services.renderer)
+            let fnv = LevelFixtureServices.fnv1a(r.screen.pixels)
+            // The thunder's pass: T −1, the count stepped once (3 → 2), the toggle on.
+            XCTAssertEqual(s.rain.timer, -1)
+            XCTAssertEqual(s.world.flash, ScreenFlash(count: 2, on: true))
+            let t1 = try XCTUnwrap(afterFirst)
+            XCTAssertEqual(run.iterations, t1 + 2, "the first thunder's iteration, from the seed")
+            XCTAssertNotEqual(fnv, flash.twin, "the flash is in the picture")
+            XCTAssertGreaterThan(flash.changed, 0)
+            // Measured at 6A-RN (FNV-1a 64 of the screen indices, the test colour model): T after the first call 127
+            // (R(90) = 38), so the thunder falls in iteration 129, on the 399th tick (now 398). With the rain's
+            // generation stubbed (one local patch, never committed) no flash comes within 6000 ticks.
+            XCTAssertEqual([t1, run.iterations, Int(now)], [127, 129, 399])
+            XCTAssertEqual(flash.changed, 49797, "the screen bytes the flash changed")
+            XCTAssertEqual(String(flash.twin, radix: 16), "1cc38d5f30226d2f", "the same frame with no flash")
+            XCTAssertEqual(String(fnv, radix: 16), "597cd03adccc11ce", "the level-15 thunder flash feature golden")
+            return
+        }
+        XCTFail("no flash within 6000 ticks")
+    }
 }

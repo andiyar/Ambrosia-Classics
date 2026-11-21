@@ -21,11 +21,17 @@ import HectorAudio
 ///   (`FUN_10091b44`). A sound therefore lasts a whole number of blocks and a play/stop is heard from the next
 ///   block.
 ///
-/// Not modelled (no caller in this API): the **request record's** id/ref field (request +0x04, always 0 from the
-/// game's wrappers; not the entry's +0x04 sound field), the completion proc (request +0x0c/+0x10 → entry
-/// +0x1c/+0x28, `FUN_1009f80c`; `.STPlayLoopedSound`'s re-play), stop/count by entry id and the `0 = all`
-/// argument (M l. 78339, 78378), the mono path `FUN_10091f00` and its louder-side copy (stereo is on), the system
-/// output volume `FUN_10091124`.
+/// The completion proc (request +0x0c → entry +0x1c; 6A-RN): the game passes one only from `.STPlayLoopedSound`
+/// (`.STLoopCallBack`, M l. 40966–40975), modelled as the entry's `loops` flag. `FUN_10091c94` calls it with reason 3
+/// for every such entry each block (the callback ignores it), and with reason 1 after removing an entry whose countdown
+/// ran out (M l. 78640–78644): the callback re-plays the request rebuilt from the entry — its sound, priority, both
+/// volumes, rate 0x10000 and **its id** (request +0x04 ≠ 0 → the entry keeps it, M l. 78299–78301) — through the play
+/// rule, at once, inside the same countdown pass (`FUN_1009f80c` → `FUN_10091208`), so the pass goes on over the list as
+/// the insert left it. A stop (`FUN_10091504`) calls it with reason 2, which it ignores: the loop ends.
+///
+/// Not modelled (no caller in this API): the request record's +0x10 (→ entry +0x28, the proc's refcon), stop/count by
+/// entry id and the `0 = all` argument (M l. 78339, 78378), the mono path `FUN_10091f00` and its louder-side copy
+/// (stereo is on), the system output volume `FUN_10091124`.
 ///
 /// Empty entries: the original keys an entry's emptiness on its asnd pointer (+0x04 == 0, M l. 78254); here the
 /// entry stores the `snd ` id and id 0 means empty. No shipped `snd ` has id 0 (ids 128…, enumerated from the
@@ -69,6 +75,7 @@ public final class SoundTool: PCMPullSource, @unchecked Sendable {
         var baseStep: Int32
         var step: Int32
         var countdown: Int32
+        var loops = false
     }
 
     /// An `'asnd'` buffer in `pool`: `length` = blocks·1024 + 0x400 (the zero padding included).
@@ -93,6 +100,7 @@ public final class SoundTool: PCMPullSource, @unchecked Sendable {
         var left: UInt16 = 0        // +0x2c
         var right: UInt16 = 0       // +0x2e
         var priority: UInt16 = 0    // +0x30
+        var loops = false           // +0x1c: `.STLoopCallBack` set (6A-RN)
     }
 
     /// Everything that changes after `init`.
@@ -159,45 +167,60 @@ public final class SoundTool: PCMPullSource, @unchecked Sendable {
     // MARK: - Control (FUN_10091208, FUN_10091504, FUN_100916dc)
 
     /// `FUN_10091208` with request {sound `snd`, ref 0, `rate` (16.16, 0x10000 = as recorded), priority, left,
-    /// right}. Returns the new entry's id (odd, from 1), or 0 when the sound is unknown or the request lost to
-    /// all 16 entries.
+    /// right, and — `loops` (6A-RN, `.STPlayLoopedSound`) — the completion proc `.STLoopCallBack`}. Returns the new
+    /// entry's id (odd, from 1), or 0 when the sound is unknown or the request lost to all 16 entries.
     @discardableResult
-    public func play(snd: Int16, priority: UInt16, left: UInt16, right: UInt16, rate: Int32 = 0x10000) -> Int32 {
+    public func play(snd: Int16, priority: UInt16, left: UInt16, right: UInt16, rate: Int32 = 0x10000,
+                     loops: Bool = false) -> Int32 {
         guard let a = bySnd[snd] else { return 0 }
+        let t = timing(a, rate: rate)   // outside the lock (pure arithmetic)
+        return state.withLock { st in
+            insert(&st, snd: snd, asnd: a, timing: t, priority: priority, left: left, right: right, id: 0, loops: loops)
+        }
+    }
+
+    /// M l. 78272–78278 (raw 10091378..100913c8): the 16.16 base step, the step at `rate` and the countdown in blocks.
+    private func timing(_ a: Int, rate: Int32) -> (base: Int32, step: Int32, countdown: Int32) {
         let asnd = asnds[a]
-        // M l. 78243–78251: priority 0 → 1; each volume > 0x80 → 0x80 (cmplwi, unsigned).
-        let prio: UInt16 = priority == 0 ? 1 : priority
-        let l: UInt16 = min(left, 0x80)
-        let r: UInt16 = min(right, 0x80)
-        // Precomputed outside the lock (pure arithmetic): M l. 78272–78278 (raw 10091378..100913c8).
         let base = Self.fixDiv(Int32(bitPattern: asnd.rate >> 8), Int32(bitPattern: Self.outputRateFixed >> 8))
         let step = Self.fixMul(base, rate)
         var countdown = Int32(bitPattern: UInt32(bitPattern: Self.fixDiv(asnd.blocks << 16, step)) >> 16)
         if countdown < 1 { countdown = 1 }   // cmpwi r23,0x1; bge (raw 100913c0)
+        return (base, step, countdown)
+    }
 
-        return state.withLock { st in
-            // M l. 78254–78263: skip while new.prio < e.prio (cmplw) or new.L+R < e.L+R (cmpw); else insert here.
-            var s = 0
-            while st.list[s].snd != 0 {
-                let e = st.list[s]
-                if prio < e.priority || Int32(l) + Int32(r) < Int32(e.left) + Int32(e.right) {
-                    s += 1
-                    if s >= Self.listLength { break }
-                } else {
-                    break
-                }
+    /// `FUN_10091208`'s insert (lock held). `id` 0 = request ref 0: a new id from `*_DAT_100a130c`; else the request's
+    /// own (the loop's re-play keeps its entry id, M l. 78294–78301).
+    private func insert(_ st: inout State, snd: Int16, asnd a: Int, timing t: (base: Int32, step: Int32, countdown: Int32),
+                        priority: UInt16, left: UInt16, right: UInt16, id ref: Int32, loops: Bool) -> Int32 {
+        // M l. 78243–78251: priority 0 → 1; each volume > 0x80 → 0x80 (cmplwi, unsigned).
+        let prio: UInt16 = priority == 0 ? 1 : priority
+        let l: UInt16 = min(left, 0x80)
+        let r: UInt16 = min(right, 0x80)
+        // M l. 78254–78263: skip while new.prio < e.prio (cmplw) or new.L+R < e.L+R (cmpw); else insert here.
+        var s = 0
+        while st.list[s].snd != 0 {
+            let e = st.list[s]
+            if prio < e.priority || Int32(l) + Int32(r) < Int32(e.left) + Int32(e.right) {
+                s += 1
+                if s >= Self.listLength { break }
+            } else {
+                break
             }
-            guard s < Self.listLength else { return 0 }   // raw 1009131c..10091334: dropped, nothing evicted
-            if st.count > 15 { st.count = 15 }            // the 16th entry is overwritten
-            var i = st.count
-            while i > s { st.list[i] = st.list[i - 1]; i -= 1 } // BlockMoveData(e[s] → e[s+1], (count − s)·0x34)
-            let id = st.nextId
-            st.nextId &+= 2                                  // request ref 0 → *_DAT_100a130c, += 2 (M l. 78294–78298)
-            st.list[s] = Entry(id: id, snd: snd, asnd: a, countdown: countdown, step: step, baseStep: base,
-                               acc: 0, cur: 0, prev: -1, left: l, right: r, priority: prio)
-            st.count += 1
-            return id
         }
+        guard s < Self.listLength else { return 0 }   // raw 1009131c..10091334: dropped, nothing evicted
+        if st.count > 15 { st.count = 15 }            // the 16th entry is overwritten
+        var i = st.count
+        while i > s { st.list[i] = st.list[i - 1]; i -= 1 } // BlockMoveData(e[s] → e[s+1], (count − s)·0x34)
+        var id = ref
+        if id == 0 {
+            id = st.nextId
+            st.nextId &+= 2                                  // request ref 0 → *_DAT_100a130c, += 2 (M l. 78294–78298)
+        }
+        st.list[s] = Entry(id: id, snd: snd, asnd: a, countdown: t.countdown, step: t.step, baseStep: t.base,
+                           acc: 0, cur: 0, prev: -1, left: l, right: r, priority: prio, loops: loops)
+        st.count += 1
+        return id
     }
 
     /// `FUN_10091504(snd)`: removes every entry playing `snd`, closing up the list. A `snd` this tool holds no sound
@@ -236,7 +259,7 @@ public final class SoundTool: PCMPullSource, @unchecked Sendable {
             (0..<st.count).map { i in
                 let e = st.list[i]
                 return VoiceState(id: e.id, snd: e.snd, priority: e.priority, left: e.left, right: e.right,
-                                  baseStep: e.baseStep, step: e.step, countdown: e.countdown)
+                                  baseStep: e.baseStep, step: e.step, countdown: e.countdown, loops: e.loops)
             }
         }
     }
@@ -260,13 +283,24 @@ public final class SoundTool: PCMPullSource, @unchecked Sendable {
         }
     }
 
-    /// `FUN_10091c94`: one block, then the countdowns (lock held).
+    /// `FUN_10091c94`: one block, then the countdowns (lock held). An entry with the loop's completion proc that runs
+    /// out is removed and re-played at once (`.STLoopCallBack`, reason 1: the request rebuilt from the entry, rate
+    /// 0x10000, its id), and the pass goes on at the same index over the list as the insert left it (M l. 78626–78645).
     private func mixBlock(_ st: inout State) {
         for f in 0..<Self.blockFrames { block[f] = mixFrame(&st) }
         var i = 0
         while i < st.count {
             st.list[i].countdown &-= 1
-            if st.list[i].countdown == 0 { remove(&st, at: i) } else { i += 1 }   // FUN_10091b44; iVar9 − 1
+            if st.list[i].countdown == 0 {
+                let e = st.list[i]
+                remove(&st, at: i)                                                 // FUN_10091b44; iVar9 − 1
+                if e.loops {
+                    _ = insert(&st, snd: e.snd, asnd: e.asnd, timing: timing(e.asnd, rate: 0x10000),
+                               priority: e.priority, left: e.left, right: e.right, id: e.id, loops: true)
+                }
+            } else {
+                i += 1
+            }
         }
     }
 

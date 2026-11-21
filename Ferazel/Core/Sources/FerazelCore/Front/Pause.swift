@@ -248,7 +248,10 @@ public struct PauseRun {
     }
 
     /// After `.PaintFrameWrap(1, 0)` (M l. 3191–3204): the banner, the flag, the voices stopped, `FadeAIFFMusic(0, 1)`
-    /// armed — its events come with the next `tick` (on this tick when ticked at `now`).
+    /// armed — its events come with the next `tick` (on this tick when ticked at `now`). 6A-RN: the store after the
+    /// two stops, `*_DAT_1009fe88 = 0` (M l. 3203, the rain's first-call flag), is the session's —
+    /// `FerazelSession.clearRainFirstCall`, which `LevelRun` calls right after this (on the map there is no session and
+    /// nothing reads the flag before the next `.SetupLevel` clears it again).
     public mutating func painted(now: UInt32) -> FrontOutput {
         var out = FrontOutput(present: true)
         if let size = ChapterScreenRun.frameSize(resources.resource(type: "PICT", id: Self.banner, chain: .frontEnd)?.data) {
@@ -258,8 +261,9 @@ public struct PauseRun {
                                           forceClut: nil, transparent: false))
         }
         paused = true
-        out.soundStops = [452, 511]
+        out.soundStops = [452, 511]                                      // `*fe24` (the rain loop), `*fe20`
         out.soundStopAt = [0, 0]
+        // `*fe88 = 0` (M l. 3203): `LevelRun` → `FerazelSession.clearRainFirstCall` (header).
         let t = live.music.fadeAIFFMusic(direction: 0, ticks: 1, prefs: live.live)
         blocking = t.isEmpty ? nil : TimelineRun(t, start: now)
         stage = .musicOut

@@ -6,7 +6,7 @@ import Foundation
 /// `.WrapCopyToScreen` takes the mask port `*_DAT_100a0008` instead of the frame port (M l. 9441–9447;
 /// `DrawOp.copyMaskToScreen`) — the alternate-frame silhouette flash, not a screen shake.
 ///
-/// Writers store 3 into the count: `.GenerateRain`'s thunder (M l. 8458), the Smiting cast in `.HandleKeys` (M l.
+/// Writers store 3 into the count: `.GenerateRain`'s thunder (M l. 8458; 6A-RN, `OmniPxRain`), the Smiting cast in `.HandleKeys` (M l.
 /// 47593; IU), `.KillPlayerShot`'s seed explosion (M l. 51149; `PlayerShotHits.kill`) and the bosses' deaths (M l.
 /// 73488, 74997, 75372, 75525, 76159, 77475; the Warrior's 73488 built in 6A-W2, `Warrior.kill`; the others // later:
 /// Phase 6). No routine resets either
