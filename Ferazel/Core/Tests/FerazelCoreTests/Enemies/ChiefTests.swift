@@ -206,6 +206,23 @@ final class ChiefTests: XCTestCase {
             XCTAssertEqual(CachedFaces.marks(type: t).singles, [0x776])
         }
         XCTAssertEqual(CachedFaces.markedRecords(type: 0x775), [], "the dart trap 0x775 marks nothing")
+        // 6A-CH2: `.LoadCachedSpriteFaces` converts a flag-1 record under the level+base CLUT (`*_DAT_1009ff8c`, M l.
+        // 73806–73812 / 73843–73849) — level 18's is 224. The record cut carries it; with no CLUT given there is none.
+        let L = try LevelFile.load(from: try LevelFixture.base.get(), level: 18)
+        let lc = ColorLUT.screenClutId(L.header)
+        XCTAssertEqual(lc, 224)
+        for k in marks where CachedFaces.record(k).flag == 1 {
+            XCTAssertEqual(CachedFaces.sheet(record: k, levelClut: lc)?.clut, lc, "\(k)")
+            XCTAssertNil(CachedFaces.sheet(record: k), "\(k): no CLUT, no sheet")
+        }
+        XCTAssertEqual(CachedFaces.sheet(record: .set(42), levelClut: lc)?.clut, 200, "the boulder set (flag 0): clut 200")
+        // The renderer's list (`FrameRenderer.spriteSheets`): the four sets come through the record cut under it — the
+        // single 0x776 and the boulders through the Setup-face table and `handleSets`, as before.
+        let cut = CachedFaces.sheets(markedBy: [Int16(0x776)], levelClut: lc).filter { (0x777...0x77a).contains($0.pict) }
+        XCTAssertEqual(cut.map(\.pict), [0x777, 0x778, 0x779, 0x77a])
+        XCTAssertEqual(Set(cut.map(\.clut)), [lc])
+        XCTAssertTrue(CachedFaces.sheets(markedBy: [Int16(0x776)]).allSatisfy { !(0x777...0x77a).contains($0.pict) },
+                      "no level CLUT: not loaded")
         // On the fixture: level 18's load needs and loads them (the plants' singles beside them).
         let (run, s) = try open()
         let needed = CachedFaces.needed(by: s).records
@@ -844,10 +861,14 @@ final class ChiefTests: XCTestCase {
 
     // MARK: - 6A-CH2: the Hit, the Kill, the three pieces (BOS §3.4–§3.6, §3.8's 6A-CH2 list, §3.10 items 24–30)
 
-    /// A player shot (type `type`, `+0xa4` = `damage`, `+0xa6` 0) with a 20×20 hot rect on the Chief's stored centre.
+    /// A player shot (type `type`, `+0xa4` = `damage`, `+0xa6` 0) with a 20×20 hot rect centred on the Chief's hot rect
+    /// — inside it, so `.BloodSpray`'s `.SectRectFast` of the two rects is not empty (his stored centre, which `target()`
+    /// sets as a marker, lies above his hot rect).
     private func shot(_ w: SpriteWorld, over id: Int, type: Int16 = 0, damage: Int16 = 100,
                       body: (inout SpriteSlot) -> Void = { _ in }) throws -> Int {
-        let c = try slot(w, id).centre
+        let m = try slot(w, id)
+        let c = SpriteSlot.Point(x: m.x + (m.hotRect.left + m.hotRect.right) / 2,
+                                 y: m.y + (m.hotRect.top + m.hotRect.bottom) / 2)
         return try XCTUnwrap(w.newSprite(type: type, x: c.x - 10, y: c.y - 10, layer: 0xb, handler: .playerShot) { s in
             s.x = c.x - 10
             s.y = c.y - 10
@@ -895,6 +916,9 @@ final class ChiefTests: XCTestCase {
             w.rng = FastRand(seed: Int32(40 + c.hp))
             t.world.rng = w.rng
             let fx0 = w.active.sprites.filter { $0.handler == .effect }.count
+            let particles0 = w.particles.counters.count
+            var spray = w.rng
+            for _ in 0..<0x28 { _ = spray.next(0x96); _ = spray.next(0x96) }
             w.player.cues = []
             FerazelSession.hitCallback(w, id, sid)
             // The twin, by hand.
@@ -903,6 +927,7 @@ final class ChiefTests: XCTestCase {
             XCTAssertTrue(HurtSprite.apply(t.world, id: tid, damage: c.damage, dvx: 0, dvy: 0, invulnerable: 2, flash: 8))
             t.world.active.update(id: tid) { u in u.invulnerable = 15; u.subState = 1 }
             BloodSpray.spray(t.world, victim: tid, attacker: tsid, count: 0x28, speed: 400, spread: 0x96, kind: 2)
+            XCTAssertEqual(t.world.rng.seed, spray.seed, "\(tag): the spray draws R(0x96) twice for each of its 0x28")
             var e = t.world.rng
             let cry = e.next(100) < 0x3c
             cried.insert(cry)
@@ -923,7 +948,7 @@ final class ChiefTests: XCTestCase {
             XCTAssertEqual([m.invulnerable, m.flash, m.subState], [15, 8, 1], "\(tag): `+0x116` 15 over the hurt's 2")
             XCTAssertEqual([m.vx, m.vy], [0x123, -0x45], "\(tag): dvx = dvy = 0")
             XCTAssertEqual(w.particles, t.world.particles, "\(tag): the blood spray (0x28, 400, 0x96, 2)")
-            XCTAssertGreaterThan(w.particles.counters.count, 0, "\(tag): blood drawn")
+            XCTAssertEqual(w.particles.counters.count, particles0 + 0x28, "\(tag): 0x28 blood particles")
             XCTAssertEqual(w.rng.seed, e.seed, "\(tag): the kill (no draw), the spray, R(100) [, the cry]")
             XCTAssertEqual(w.player.cues, want, tag)
             var mt = try slot(t.world, tid)
@@ -931,6 +956,43 @@ final class ChiefTests: XCTestCase {
             XCTAssertEqual(m, mt, tag)
         }
         XCTAssertEqual(cried, [false, true], "both sides of the cry's R(100) gate seen")
+        // The gate at its edge: after the spray's 0x50 draws, R(100) = 0x3b cries, 0x3c does not.
+        for (r, cries) in [(Int16(0x3b), true), (0x3c, false)] {
+            let k = seed { g in
+                for _ in 0..<0x50 { _ = g.next(0x96) }
+                return g.next(100) == r
+            }
+            let (s, id) = try target()
+            let sid = try shot(s.world, over: id)
+            s.world.rng = FastRand(seed: k)
+            s.world.player.cues = []
+            FerazelSession.hitCallback(s.world, id, sid)
+            XCTAssertEqual(s.world.player.cues.map(\.snd).count, cries ? 2 : 1, "R(100) = \(r)")
+        }
+        // The spray's speed is 400, not 401. Above, the shot lies right of and below his stored centre: the spray's
+        // direction is a 10°/80° sector, where 400 and 401 truncate alike. A shot centred straight below his stored
+        // centre (x 1010; `.FindDesiredDirectionGeneric` nudges the equal x by 1) aims it at sector 27, straight up,
+        // whose component is the speed itself — there they differ.
+        do {
+            let below: (inout SpriteSlot) -> Void = { $0.x = 1010 - 10 }
+            let (s, id) = try target()
+            let sid = try shot(s.world, over: id, body: below)
+            s.world.rng = FastRand(seed: 7)
+            FerazelSession.hitCallback(s.world, id, sid)
+            var twins: [Int16: ParticlePool] = [:]
+            for speed: Int16 in [400, 401] {
+                let (t, tid) = try target()
+                let tsid = try shot(t.world, over: tid, body: below)
+                t.world.rng = FastRand(seed: 7)
+                var lights = LightTable()
+                PlayerShotHits.kill(t.world, shot: tsid, sound: false, effect: false, effects: 1, lights: &lights)
+                XCTAssertTrue(HurtSprite.apply(t.world, id: tid, damage: 100, dvx: 0, dvy: 0, invulnerable: 2, flash: 8))
+                BloodSpray.spray(t.world, victim: tid, attacker: tsid, count: 0x28, speed: speed, spread: 0x96, kind: 2)
+                twins[speed] = t.world.particles
+            }
+            XCTAssertNotEqual(twins[400], twins[401], "straight up: this geometry tells 400 from 401")
+            XCTAssertEqual(s.world.particles, twins[400], "the blood spray's speed is 400")
+        }
         // Fireball 100 → 20 landed hits from 2000 (BOS §3.4): 15 frames apart (the invulnerability counts down in his
         // `.StandardSpriteHandles`).
         let (s, id) = try target()
@@ -1097,6 +1159,51 @@ final class ChiefTests: XCTestCase {
             XCTAssertFalse(try slot(s.world, crate).dead)
             XCTAssertEqual(s.world.rng.seed, seed0)
         }
+        // `.PlatformBounce`'s result must be 2 and its bounce flag 0 (M l. 75468): falling onto a crate (its top 3 px into
+        // the bottom of his Handle rect) he LANDS on it — result 1 — and rides it (`+0xce` 3, `+0xdc` the crate, vy 0):
+        // no crush, nothing drawn.
+        do {
+            let (s, id) = try target()
+            let w = s.world
+            w.active.update(id: id) { m in
+                m.vx = 0
+                m.vy = 0x300
+                m.groundKind = 0
+                m.hotRect = IdleSprites.Rect(top: 0x73, left: 0x58, bottom: 0xd2, right: 0xac)
+            }
+            let m0 = try slot(w, id)
+            let crate = try XCTUnwrap(Warrior.newCrate(w, x: m0.x + 0x82 - 0xe, y: m0.y + 0xd2 - 3))
+            let seed0 = w.rng.seed
+            w.player.cues = []
+            FerazelSession.hitCallback(w, id, crate)
+            let m = try slot(w, id)
+            XCTAssertEqual([Int(m.hp), Int(m.groundKind), Int(m.vy)], [2000, 3, 0], "landed on the crate, not crushed")
+            XCTAssertEqual(m.ridden, crate)
+            XCTAssertFalse(try slot(w, crate).dead)
+            XCTAssertEqual(w.player.cues, [])
+            XCTAssertEqual(w.rng.seed, seed0)
+        }
+        // The centre offset passed to `.PlatformBounce` is his hot rect's (x 0x58 + (0xac − 0x58) >> 1 = 130, y 0x73 +
+        // (0xd2 − 0x73) >> 1 = 162): `.RectBounce` picks the side from it. A falling crate deep in his chest (its rect at
+        // (130 ± 14, 136…164)) is still met from below (the gaps) — crushed; one at (106…134, 137…165) is met from his
+        // right — shoved, not crushed.
+        for (dx, dy, crushed) in [(116, 136, true), (106, 137, false)] {
+            let (s, id) = try target()
+            let w = s.world
+            w.active.update(id: id) { m in
+                m.vx = 0
+                m.vy = 0
+                m.groundKind = 0
+                m.hotRect = IdleSprites.Rect(top: 0x73, left: 0x58, bottom: 0xd2, right: 0xac)
+            }
+            let m0 = try slot(w, id)
+            let crate = try XCTUnwrap(Warrior.newCrate(w, x: m0.x + dx, y: m0.y + dy))
+            w.active.update(id: crate) { $0.vy = 0x300 }
+            FerazelSession.hitCallback(w, id, crate)
+            XCTAssertEqual(try slot(w, id).hp, crushed ? 1800 : 2000, "crate at (\(dx), \(dy))")
+            XCTAssertEqual(try slot(w, crate).dead, crushed)
+            if !crushed { XCTAssertEqual(try slot(w, id).x, m0.x + 134 - 0x58, "pushed out to the crate's right") }
+        }
     }
 
     // MARK: - 13
@@ -1193,8 +1300,10 @@ final class ChiefTests: XCTestCase {
 
     func testChiefRecordWriteBack() throws {
         // No `+0x18a` (BOS §3.6): `.UpdateSprites` (M l. 4959–4966) copies his type / x / y into his own record (`+0x48`
-        // = record 1) at the end of every frame — so a save mid-fight stores where he stands. The Kill's `+0xea` clears the
-        // record's active flag from the next `.UpdateSprites`.
+        // = record 1) at the end of every frame — so a save mid-fight stores where he stands. The Kill's `+0xe9 = 1` clears
+        // the record's active flag at the next `.UpdateSprites` (its `+0xe9` 1…3 arm, M l. 4982–5000: record `+4` = 0
+        // unless `+0x188`, l. 4995–4997); the `+0xea` arm (l. 4970–4980, taken only while `+0xe9` is 0) is never reached
+        // by a killed sprite.
         let (run, s) = try open()
         let w = s.world
         XCTAssertEqual([w.records[1].x, w.records[1].y], [897, 410], "the record as placed")

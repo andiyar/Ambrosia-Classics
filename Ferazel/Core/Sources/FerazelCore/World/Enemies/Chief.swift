@@ -346,7 +346,7 @@ public enum Chief {
     /// hurt at HP ≤ 200), `*_DAT_1009fd68` 453 (the boss-kill thunder).
     static let ouchSound: Int16 = 701, uhOhSound: Int16 = 702, thunderSound: Int16 = 453
 
-    /// `.HitChiefSprite(s, other) @ 1008c0e0` (M l. 75444–75499; raw `1008c0e0..1008c318`). Every Handle comparison is
+    /// `.HitChiefSprite(s, other) @ 1008c0e0` (M l. 75444–75499; raw `1008c0e0..1008c328`). Every Handle comparison is
     /// `+0x4c ==` (`BackgroundSprite.runs`):
     /// - a player shot (`PTR_PTR_100a04e8`) with `+0xa6 == 0` while HP `+0xa4` ≥ 1 → `.KillPlayerShot(o, 0, 0)` — silent,
     ///   no effect — **first**; its stale-slot path (`lha r3,0x9a(r29)`, `PlayerShotHits.kill`) reads the Chief's own
@@ -406,7 +406,7 @@ public enum Chief {
 
     /// `.KillChief(s) @ 1008c350` (M l. 75502–75532), the Kill proc `+0x50` — `.KillWarrior` line for line: the counting
     /// head (`+0xe9 == 0 ∧ +0x1b5` → live − 1 and `G+0x306+2L` + 1 — guarding the count only), `+0xe9 = 1`, `+0xea = 1`
-    /// (his record cleared by `.UpdateSprites`); then with `+0x170 ≠ 0` the boss-kill tail:
+    /// (`+0xe9` clears his record: `.UpdateSprites`' 1…3 arm, M l. 4995–4997); then with `+0x170 ≠ 0` the boss-kill tail:
     /// `.STPlay3DSoundPitched(453, 1, 0x100, +0xe, 48000)` (no draw), the shake `*_DAT_1009ffa0 = 0x1e`, the mask flash
     /// `*_DAT_100a00fc = 3`, `*_DAT_1009fed0 = 1` (no boss alive: level 18's gate 2940 p1 −1 opens from its next Handle,
     /// the loop rule fades to track 30). No score. A second call counts nothing and replays the tail.

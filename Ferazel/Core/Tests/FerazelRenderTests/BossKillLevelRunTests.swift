@@ -235,6 +235,18 @@ final class BossKillLevelRunTests: XCTestCase {
         XCTAssertEqual(g.magic, 0x230)
         carry.globals = g
         let (run, services) = try LevelFixtureServices.open(level: 18, leaveOut: level18, carry: carry)
+        // The faces the burn runs on: the renderer loads the Chief's four flag-1 sets 0x777…0x77a through the record cut
+        // under level 18's level+base CLUT (224, `.LoadCachedSpriteFaces` M l. 73806–73812) — the burn's rows below come
+        // from their masks, which no CLUT changes, so the CLUT is pinned here.
+        let context = SetupFaces.Context(level: L, playerX: SetupFaces.Context.levelStartPlayerX(L.header),
+                                         effects: FerazelPrefs().effects)
+        let entries = try L.activePlacements.map { try SetupFaces.setup($0, context: context) }
+        let loaded = FrameRenderer.spriteSheets(level: L, entries: entries,
+                                                resources: try LevelFixture.resources(level: 18, leaveOut: level18))
+        let chiefSets = loaded.filter { (0x777...0x77a).contains($0.pict) }
+        XCTAssertEqual(chiefSets.map(\.pict), [0x777, 0x778, 0x779, 0x77a])
+        XCTAssertEqual(chiefSets.map(\.clut), Array(repeating: ColorLUT.screenClutId(L.header), count: 4))
+        XCTAssertEqual(ColorLUT.screenClutId(L.header), 224)
         let k = FerazelPrefs().keys
         var script = ChiefFightScript(left: Int(k[0]), right: Int(k[1]), up: Int(k[2]), jump: Int(k[5]), use: Int(k[6]))
         var t: UInt32 = 0
@@ -290,9 +302,13 @@ final class BossKillLevelRunTests: XCTestCase {
     static let chiefHP0 = 1602, chiefKill = 1710
 }
 
-/// The Goblin Chief's scripted fight (6A-CH2): the keys, decided each frame from what a player sees — positions and
-/// motion (from the last frame), poses (his jump pose, Ferazel's stagger pose and hurt flashing), the boulders' spin
-/// frames. Nothing is patched, moved or written.
+/// The Goblin Chief's scripted fight (6A-CH2): the keys, decided each frame from what a player sees, read from the
+/// sprite fields that draw it — positions and motion (from the last frame); his jump face; Ferazel's facing, footing
+/// and stagger (the stagger counter `bossGrab`, which the stagger pose shows); Ferazel's hurt flashing (his
+/// invulnerability count — `< 3`, the flashing about to end, is finer than an eye can time); the boulders' spin frames;
+/// Ferazel's and the boulders' extents as their hot rects (stand-ins for the faces' visible outlines); the arena lock
+/// (`arena.locked`, the camera stopping). These internal reads stand in for what a player sees — accepted under D49.1,
+/// as the Warrior's script reads `arena.locked` / `groundKind`. Nothing is patched, moved or written.
 struct ChiefFightScript {
     let left: Int, right: Int, up: Int, jump: Int, use: Int
     var locked = false

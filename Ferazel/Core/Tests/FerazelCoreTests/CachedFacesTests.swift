@@ -282,7 +282,8 @@ final class CachedFacesTests: XCTestCase {
         }
         XCTAssertEqual(CachedFaces.marks(type: 0xb55).singles, [0xb55])
         // No built type marks a record of a shared PICT yet — the first boss task that marks a 0x46a record (6B-WZ /
-        // the Demon / Xichra) re-derives this. The record cut is nil for a flag-1 record (#58) and an absent one (#86).
+        // the Demon / Xichra) re-derives this. The record cut is nil for an absent record (#86) and, with no level CLUT
+        // given, for a flag-1 one (#58) (6A-CH2: under a level CLUT it loads, `testChiefCacheRegistration`).
         XCTAssertTrue(CachedFaces.recordSheets(markedBy: Int16(0)...0x0d00).isEmpty)
         XCTAssertNil(CachedFaces.sheet(record: .set(57)))
         XCTAssertNil(CachedFaces.sheet(record: .set(85)))

@@ -39,7 +39,7 @@ public struct EnemyCounting: Equatable, Sendable {
     }
 
     /// The classes whose Kill stores `+0xea = 1` (scan of the 13 enemy Kills, M l. 56701 Crawler, 65218 Roach, 68052
-    /// Blob, 69037 Bat, 69746 Gremlin, 70575 Frog, 70934 Salamander, 72935 Dillo, 73485 Warrior, 75521 Chief; not
+    /// Blob, 69037 Bat, 69746 Gremlin, 70575 Frog, 70934 Salamander, 72935 Dillo, 73485 Warrior, 75522 Chief; not
     /// `.KillWalker`).
     /// The Floater, the swarm members, the Crab and the shots have no counting Kill.
     public static func killsForGood(_ h: SpriteHandler) -> Bool {
