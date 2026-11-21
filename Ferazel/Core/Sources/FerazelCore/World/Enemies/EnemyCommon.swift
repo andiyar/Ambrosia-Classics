@@ -39,11 +39,12 @@ public struct EnemyCounting: Equatable, Sendable {
     }
 
     /// The classes whose Kill stores `+0xea = 1` (scan of the 13 enemy Kills, M l. 56701 Crawler, 65218 Roach, 68052
-    /// Blob, 69037 Bat, 69746 Gremlin, 70575 Frog, 70934 Salamander, 72935 Dillo, 73485 Warrior; not `.KillWalker`).
+    /// Blob, 69037 Bat, 69746 Gremlin, 70575 Frog, 70934 Salamander, 72935 Dillo, 73485 Warrior, 75521 Chief; not
+    /// `.KillWalker`).
     /// The Floater, the swarm members, the Crab and the shots have no counting Kill.
     public static func killsForGood(_ h: SpriteHandler) -> Bool {
         switch h {
-        case .crawler, .roach, .blob, .bat, .gremlin, .frog, .salamander, .dillo, .warrior: return true
+        case .crawler, .roach, .blob, .bat, .gremlin, .frog, .salamander, .dillo, .warrior, .chief: return true
         default: return false
         }
     }
@@ -82,12 +83,13 @@ public enum EnemyCommon {
     /// The Kill proc `+0x50` (`FUN_1009f80c(s)`, ptr-glue) for `s`'s class, as `.HandleBurn` calls it at the opaque
     /// bottom: the enemy Kills' counting part (`EnemyCounting.kill`); with no Kill proc `+0xe9 = 1` (M l. 38829–38834).
     /// ⚑ audit 4 (BL): only the classes whose Setup stores a `+0x50` have an arm — the Walker, Dillo, Frog, Salamander,
-    /// Warrior and Gremlin. The Crawler, Roach, Bat and Blob Setups store `+0x4c` / `+0x5c` only (`.SetupCrawlerSprite`
-    /// M l. 56153–56246, `.SetupRoachSprite` 64899–64957, `.SetupBatSprite` 68108ff, `.SetupBlobSprite` 67671–67735;
+    /// Warrior, Chief and Gremlin. The Crawler, Roach, Bat and Blob Setups store `+0x4c` / `+0x5c` only
+    /// (`.SetupCrawlerSprite` M l. 56153–56246, `.SetupRoachSprite` 64899–64957, `.SetupBatSprite` 68108ff, `.SetupBlobSprite` 67671–67735;
     /// `.InitSprite` zeroes `+0x50`, M l. 35571), so a burn on them ends in the default arm; the Blob dies through
     /// `.KillBlob` from its dead puddle (`BlobCrab`).
     /// The Warrior arm is `.KillWarrior` (6A-W2, `Warrior.kill`): the count, then with the boss flag the boss-kill tail
-    /// (thunder, shake, flash, "no boss alive" — the gate opens, the boss track). Classes' own parts are theirs. By id
+    /// (thunder, shake, flash, "no boss alive" — the gate opens, the boss track); the Chief arm is `.KillChief` (6A-CH2,
+    /// `Chief.kill`), the same. Classes' own parts are theirs. By id
     /// (`SpriteWorld` rule 2: a Kill tail writes and spawns) — a caller holding a copy of the slot writes it back first
     /// and re-reads after (`Burn.handle`).
     public static func killProc(_ w: SpriteWorld, id: Int) {
@@ -96,12 +98,13 @@ public enum EnemyCommon {
         // `.KillWalker` (M l. 58624–58630) stores no `+0xea`, so `forGood` is read off the Kill proc, not the Handle.
         let killer = s.walkerCallbacks ? SpriteHandler.walker : s.handler
         switch killer {
-        case .walker, .dillo, .frog, .salamander, .warrior:
+        case .walker, .dillo, .frog, .salamander, .warrior, .chief:
             switch killer {
             case .frog: FrogSalamander.killFrog(w, &s)              // `.KillFrog` (FR): the count, then its score
             case .salamander: FrogSalamander.killSalamander(w, &s)  // `.KillSalamander` (FR)
             case .dillo: Dillo.killDillo(w, &s)                     // `.KillDillo` (DL): the count, then + 1500
             case .warrior: Warrior.kill(w, &s)                      // `.KillWarrior` (6A-W2): the count, the boss tail
+            case .chief: Chief.kill(w, &s)                          // `.KillChief` (6A-CH2): the count, the boss tail
             default:
                 w.enemies.kill(&s, globals: &w.globals, level: w.levelIndex,
                                forGood: EnemyCounting.killsForGood(killer))

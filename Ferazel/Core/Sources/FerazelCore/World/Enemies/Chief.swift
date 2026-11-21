@@ -4,8 +4,8 @@ import Foundation
 /// (`.InitChiefSprite`, M l. 75008–75028 — registered by 6A-CF in `CachedFaces`), the Setup (`.SetupChiefSprite @
 /// 1008b538`, M l. 75031–75115), the Handle (`.HandleChiefSprite @ 1008b878`, M l. 75162–75441), the cry
 /// (`.GoblinChiefRandomCry @ 1008b724`, M l. 75118–75159) and the tile callback (`.HitChiefTileSprite @ 1008c434`, M l.
-/// 75535–75567) — 6A-CH1. His Hit (`.HitChiefSprite`, M l. 75444–75499) and Kill (`.KillChief`, M l. 75502–75532) are
-/// 6A-CH2's: until then the session has no hit row for him and the burn ends in the Kill proc's default arm.
+/// 75535–75567) — 6A-CH1; his Hit (`.HitChiefSprite`, M l. 75444–75499) and Kill (`.KillChief`, M l. 75502–75532) —
+/// 6A-CH2: the session's hit row and `EnemyCommon.killProc`'s `.chief` arm call them.
 /// Field map: `+0x170` the boss flag (record p4) = `classWord170`; `+0x15c` the lane (1 left, 2 middle, 3 right) =
 /// `classWord15c`; `+0x158` the throws left = `classWord158`; `+0x168` the starting HP = `bonusP4`; `+0x164` =
 /// `launchSpeed`; `+0xf0` = `voicePitch` (stored 0x1e, no reader here); `+0x17e` facing right = `mirrored`; `+0xb0` the
@@ -109,7 +109,7 @@ public enum Chief {
     /// `dying`, 2 `throwing`, 1 `jump`, 3 `land`, 6 `wait`; 0, 5 and > 6 nothing. Then the tail (M l. 75419–75438): `+0xb2
     /// > 0` → `< 5` ? + 1 : 0 (a hit counter nothing reads); HP < 1 with state ≠ 4 → state 4, `+0x46 = +0xa6 = 0`, R(100)
     /// < 0x3c → `randomCry` first, then snd 703 (3D, 1, 0x100, no draw); `.ApplyGravityAndSeparateFromTiles` with
-    /// `pass`; `.StandardSpriteCleanup`. No liquids test and no glow. His HP falls only by his Hit (6A-CH2).
+    /// `pass`; `.StandardSpriteCleanup`. No liquids test and no glow. His HP falls only by his Hit (`hit`).
     public static func handle(world w: SpriteWorld, id: Int, solver: TileSolver,
                               faceWidth: (FaceRef) -> Int = { PlayerShot.cellRect($0).right }) {
         guard let s0 = w.active.record(id: id), !s0.dead, !s0.emerging else { return }
@@ -305,8 +305,8 @@ public enum Chief {
     }
 
     /// State 4, dying (M l. 75193–75209): vx × 0.9; face 0x77a[min(`+0x46 >> 2`, 3)]; `+0x46` + 1, capped at 0x10;
-    /// `+0xa6` + 1; at 0x14 `+0x1a2 = 1` (the burn, two rows a frame by `+0x8d`; its end calls the Kill proc `+0x50` —
-    /// `.KillChief` is 6A-CH2's).
+    /// `+0xa6` + 1; at 0x14 `+0x1a2 = 1` (the burn, two rows a frame by `+0x8d`; its end calls the Kill proc `+0x50`,
+    /// `.KillChief` — `kill`, through `EnemyCommon.killProc`).
     static func dying(_ s: inout SpriteSlot) {
         s.vx = TileSolver.fctiwz(Double(s.vx) * friction90)
         var i = Int(s.phase >> 2)
@@ -338,5 +338,85 @@ public enum Chief {
         let rate = Int32(w.rng.next(10000))
         w.player.cue(PlayerCue(call: .threeDPitched, snd: snd, priority: 1, volume: volume, position: centre,
                                rate: rate + 42000))
+    }
+
+    // MARK: - Hit
+
+    /// snd slots: `*_DAT_100a0274` 701 (Crawler Ouch, the hurt above HP 200 and the crush), `*_DAT_100a0270` 702 (the
+    /// hurt at HP ≤ 200), `*_DAT_1009fd68` 453 (the boss-kill thunder).
+    static let ouchSound: Int16 = 701, uhOhSound: Int16 = 702, thunderSound: Int16 = 453
+
+    /// `.HitChiefSprite(s, other) @ 1008c0e0` (M l. 75444–75499; raw `1008c0e0..1008c318`). Every Handle comparison is
+    /// `+0x4c ==` (`BackgroundSprite.runs`):
+    /// - a player shot (`PTR_PTR_100a04e8`) with `+0xa6 == 0` while HP `+0xa4` ≥ 1 → `.KillPlayerShot(o, 0, 0)` — silent,
+    ///   no effect — **first**; its stale-slot path (`lha r3,0x9a(r29)`, `PlayerShotHits.kill`) reads the Chief's own
+    ///   `+0x9a` (`or r29,r3,r3`, raw `1008c0f8`: r29 = s). Then `.HurtSprite(s, o +0xa4, 0, 0, 2, 8)` — the shot's damage
+    ///   read after the kill; refused (`+0x116 ≠ 0`) → return: the shot is wasted. On a hurt: `+0x116 = 15`, `+0xb2 = 1`,
+    ///   `.BloodSpray(s, o, 0x28, 400, 0x96, 2)` (no HP test), HP < 0xc9 → `.STPlay3DSound(702, 1, 0x100, +0xe)`, else HP
+    ///   > 0 → 701; R(100) < 0x3c → `.GoblinChiefRandomCry`. A shot with `+0xa6 ≠ 0`, or the Chief at HP ≤ 0, falls to
+    ///   the solid test (which a shot never passes). Fireball 100 → 20 landed hits for 2000 HP;
+    /// - else a Statue (`PTR_PTR_100a01f8`) or a Box (`PTR_PTR_100a0484`): the Warrior's crush test —
+    ///   `.PlatformBounce(s, o, s's hot-rect centre offset, 0, s +0x34, 0)` == 2 and (o `+0x2c` > 0 or s `+0xce` ≠ 0), both read after the bounce
+    ///   → `.HurtSprite(s, 200, (i16)(o.vx >> 1), −1000, 2, 8)` (whether or not it lands), `+0xf0 = 0`, `.KillBox(o)` (its
+    ///   own draws), R(10000) → `.STPlay3DSoundPitched(701, 1, 0x100, s +0xe, 42000 + R)`, then `.GoblinChiefRandomCry`
+    ///   (R(100) always, [+ R(10000)]).
+    /// No environmental-hazard arm.
+    public static func hit(_ w: SpriteWorld, id: Int, other oID: Int, lights: inout LightTable, effects: Int16 = 1,
+                           faceWidth: (FaceRef) -> Int = { PlayerShot.cellRect($0).right },
+                           faceBounds: (FaceRef) -> IdleSprites.Rect = PlayerShot.cellRect) {
+        guard let s = w.active.record(id: id), let o = w.active.record(id: oID) else { return }
+        let runs = BackgroundSprite.runs
+        if runs(o, .playerShot) && o.counterA6 == 0 && 0 < s.hp {
+            PlayerShotHits.kill(w, shot: oID, sound: false, effect: false, effects: effects, lights: &lights,
+                                faceWidth: faceWidth, faceBounds: faceBounds, staleSlot: s.light)
+            let damage = (w.active.record(id: oID) ?? o).hp               // `lha r4,0xa4(r30)` after the kill
+            guard HurtSprite.apply(w, id: id, damage: damage, dvx: 0, dvy: 0, invulnerable: 2, flash: 8) else { return }
+            w.active.update(id: id) { c in
+                c.invulnerable = 0xf                                        // `+0x116 = 15`
+                c.subState = 1                                              // `+0xb2 = 1`
+            }
+            BloodSpray.spray(w, victim: id, attacker: oID, count: 0x28, speed: 400, spread: 0x96, kind: 2)
+            guard let u = w.active.record(id: id) else { return }
+            if u.hp < 0xc9 {
+                w.player.cue(PlayerCue(call: .threeD, snd: uhOhSound, priority: 1, volume: 0x100, position: u.centre))
+            } else if 0 < u.hp {
+                w.player.cue(PlayerCue(call: .threeD, snd: ouchSound, priority: 1, volume: 0x100, position: u.centre))
+            }
+            if w.rng.next(100) < 0x3c { randomCry(w, at: u.centre) }
+        } else if runs(o, .statue) || runs(o, .box) {
+            let r = s.hotRect
+            let centre = SpriteSlot.Point(x: h16(r.left + h16((r.right - r.left) >> 1)),
+                                          y: h16(r.top + h16((r.bottom - r.top) >> 1)))
+            let b = w.platformBounce(mover: id, solid: oID, centre: centre, factor: 0, rect: r, bounce: false)
+            guard b == 2, let m = w.active.record(id: id), let solid = w.active.record(id: oID),
+                  0 < solid.vy || m.groundKind != 0 else { return }
+            HurtSprite.apply(w, id: id, damage: 200, dvx: Int16(truncatingIfNeeded: solid.vx >> 1), dvy: -1000,
+                             invulnerable: 2, flash: 8)
+            w.active.update(id: id) { $0.voicePitch = 0 }                  // `+0xf0 = 0`
+            BoxSprite.killBox(w, id: oID)
+            let at = (w.active.record(id: id) ?? m).centre                 // `+0xe`
+            let r1 = Int32(w.rng.next(10000))
+            w.player.cue(PlayerCue(call: .threeDPitched, snd: ouchSound, priority: 1, volume: 0x100, position: at,
+                                   rate: r1 + 42000))
+            randomCry(w, at: at)
+        }
+    }
+
+    // MARK: - Kill
+
+    /// `.KillChief(s) @ 1008c350` (M l. 75502–75532), the Kill proc `+0x50` — `.KillWarrior` line for line: the counting
+    /// head (`+0xe9 == 0 ∧ +0x1b5` → live − 1 and `G+0x306+2L` + 1 — guarding the count only), `+0xe9 = 1`, `+0xea = 1`
+    /// (his record cleared by `.UpdateSprites`); then with `+0x170 ≠ 0` the boss-kill tail:
+    /// `.STPlay3DSoundPitched(453, 1, 0x100, +0xe, 48000)` (no draw), the shake `*_DAT_1009ffa0 = 0x1e`, the mask flash
+    /// `*_DAT_100a00fc = 3`, `*_DAT_1009fed0 = 1` (no boss alive: level 18's gate 2940 p1 −1 opens from its next Handle,
+    /// the loop rule fades to track 30). No score. A second call counts nothing and replays the tail.
+    static func kill(_ w: SpriteWorld, _ s: inout SpriteSlot) {
+        w.enemies.kill(&s, globals: &w.globals, level: w.levelIndex, forGood: true)
+        guard s.classWord170 != 0 else { return }
+        w.player.cue(PlayerCue(call: .threeDPitched, snd: thunderSound, priority: 1, volume: 0x100, position: s.centre,
+                               rate: 48000))
+        w.shakeStore = 0x1e
+        w.flash.count = 3
+        w.arena.noBossAlive = 1
     }
 }

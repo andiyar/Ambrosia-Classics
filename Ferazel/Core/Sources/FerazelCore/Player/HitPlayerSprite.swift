@@ -64,8 +64,9 @@ public enum HitPlayerSprite {
         case .salamander, .floater, .crab, .dillo:
             enemyHazard(w, player: pID, other: oID)                     // step 6's enemy rows (EC)
             return
-        case .walker, .crawler, .roach, .warrior, .gremlin, .frog, .bat, .blob, .swarmMember, .enemyShot:
-            // Step 7, the generic path (EC) with the EnemyShot rows (ES).
+        case .walker, .crawler, .roach, .warrior, .gremlin, .frog, .bat, .blob, .swarmMember, .enemyShot, .chief:
+            // Step 7, the generic path (EC) with the EnemyShot rows (ES); 6A-CH2: the Chief's Handle 0x100a04bc is in
+            // the routing list (M l. 49514–49521), his damage row 0x70 (M l. 49849–49851).
             enemyContact(w, player: pID, other: oID, lights: &lights, effects: effects)
             return
         case .statue:
@@ -1299,8 +1300,8 @@ extension HitPlayerSprite {
     /// for an EnemyShot 0x77b with `+0x14c ≠ 0` (never written, enemy-shots-and-damage-2 §4.1); none when
     /// `.ShieldBlock` blocks (`EnemyShot.shieldBlock`: only an EnemyShot is ever blocked, M l. 48389); none for type
     /// 0x6e6 with `+0x164 ≥ 2`, type 0x74d, or 0x73a…0x73e with `+0x160 ≠ 0`. Damage by Handle: Gremlin 0xe0; Crawler,
-    /// Roach, Bat, Blob 0x38; Warrior, Frog 0x70; the rest (Walker, swarm member) the default 0x70; an EnemyShot by type
-    /// (M l. 49852–49891, the type re-read after the shield): 0x71f, 0x46a / 0x46b, 0x6f4, 0x77b 0x70; 0x46c 0xa8; 0x753 /
+    /// Roach, Bat, Blob 0x38; Warrior, Frog, Chief 0x70; the rest (Walker, swarm member) the default 0x70; an EnemyShot by
+    /// type (M l. 49852–49891, the type re-read after the shield): 0x71f, 0x46a / 0x46b, 0x6f4, 0x77b 0x70; 0x46c 0xa8; 0x753 /
     /// 0x754 and 0x771…0x774 its `+0xa4`; every other type 0x38. Invulnerability 0x3c. Type 0x6a9 → 0x70; type 0x6d6 →
     /// 0x70 with invulnerability 0x24. Coins: damage 0x70 → `FastRand(100)` (M l. 49899–49904) > 0x50 → 3 — drawn
     /// **before** `.HurtPlayer` and whatever it decides (Ferazel invulnerable, the attacker dead); damage > 0x70 → 5
@@ -1328,7 +1329,7 @@ extension HitPlayerSprite {
         case .gremlin: damage = 0xe0
         case .crawler, .roach, .bat, .blob: damage = 0x38
         case .enemyShot: damage = shotDamage(o)
-        default: break                                                  // Warrior, Frog 0x70; Walker, swarm member
+        default: break                                          // Warrior, Frog, Chief 0x70; Walker, swarm member
         }
         if t == 0x6a9 { damage = 0x70 }
         if t == 0x6d6 {

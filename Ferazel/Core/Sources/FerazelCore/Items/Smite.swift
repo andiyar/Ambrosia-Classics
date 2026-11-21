@@ -13,10 +13,11 @@ public enum Smite {
     /// `.HandleBlobSprite` 1007d044 · `04c4` `.HandleBatSprite` 1007e6b0. Not listed: the Crab, the Buttons.
     ///
     /// As `SpriteHandler` cases (EC): the eleven enemy classes of levels 1–5, the Warrior's included
-    /// (0x100a0494 — Ruling 3a). The four bosses' Handles (Xichra, Wizard, Demon, Chief) have no case yet: those
-    /// sprites are `.inert`, first placed on level 18 // later: Phase 6 (their Handles: 6A-CH, 6B-WZ, 6C-DM, 6C-XI).
+    /// (0x100a0494 — Ruling 3a), and the Chief (0x100a04bc, 6A-CH2: the seed's hit is `.HitChiefSprite`'s, which hurts
+    /// by the seed's `+0xa4` — still 0 on the seed's first frame, when it overlaps him). The other three bosses' Handles
+    /// (Xichra, Wizard, Demon) have no case yet: those sprites are `.inert` // later: Phase 6 (6B-WZ, 6C-DM, 6C-XI).
     public static let enemyHandlers: [SpriteHandler] = [.warrior, .walker, .salamander, .roach, .gremlin, .frog,
-                                                        .floater, .dillo, .crawler, .blob, .bat]
+                                                        .floater, .dillo, .crawler, .blob, .bat, .chief]
 
     /// The walk (raw `10052964..10052b1c`): from the list head along `+0x68`, every sprite whose Handle is one of the
     /// 15 — no `+0xe9` test — counts n down from 0x10; while n ≥ 0: `MTNewSprite(0x5a01, +0x10 − 4, +0xe − 4, 0xb, −1,

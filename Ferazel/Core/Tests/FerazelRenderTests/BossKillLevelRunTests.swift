@@ -5,7 +5,8 @@ import XCTest
 /// 6A-W2 (docs/superpowers/plans/2026-11-04-ferazel-remainder.md `#### 6A-W2`; docs/ferazel/phase6-boss-contracts.md
 /// §1.1, §2.9 items 6 and 8, §2.10): the Warrior's death ends in a burn, and a burn completes only through the REAL
 /// renderer's face store ("Burns end only with face pixels") — so these run level 5 through `LevelRun` with the renderer
-/// side built as `FerazelDriver.prepare` builds it, as `GoblinBurnLevelRunTests` does. Frames are `.GameLoop`
+/// side built as `FerazelDriver.prepare` builds it, as `GoblinBurnLevelRunTests` does. 6A-CH2 (`#### 6A-CH2`; BOS §3.9):
+/// the Goblin Chief's scripted fight, on level 18's fixture with `LevelFixtureServices`. Frames are `.GameLoop`
 /// iterations (`LevelRun.iterations`). A missing data file is a FAILURE, never a skip.
 final class BossKillLevelRunTests: XCTestCase {
     nonisolated(unsafe) private static let resources = Result { try FerazelData.open(try FerazelData.dataDirectory()) }
@@ -208,6 +209,207 @@ final class BossKillLevelRunTests: XCTestCase {
     /// Measured 2026-11-14 (6A-W2): crushes on frames 350, 842, 1962, 2391, 2546, 2759, 3834, 4164, 4584, 4965; the death
     /// entry on 4966; T 111, B 151 → the Kill on 4966 + 45 + 40 = 5051.
     static let pinnedHP0 = 4966, pinnedKill = 5051
+
+    func testChiefScriptedKill() throws {
+        // The scripted fight (BOS §3.9, measured by the build — D46.4; D49.1: the build finds how the fight is won). The
+        // contract's starting script (stand at the arena's edge, cast every 16th frame) cannot win: from the right edge a
+        // plain Fireball falls to the floor ~190 px out, short of him unless he stands in the right lane, and his boulder
+        // from the right lane (thrown "near", < 240 px: fast and falling) sweeps the whole right edge — Ferazel dies by
+        // frame 961 with the Chief at 1100 HP. How it is won, from the data: in the right lane (x 1128, hot rect 1216…1300)
+        // Ferazel stands at x 1270 (body 1308…1332) — right of him, so the boulder he throws toward Ferazel spawns at x +
+        // 0xa1 and flies away to the right without touching; a plain Fireball from there hits at once. In the middle lane
+        // (x 897) Ferazel stands at the arena's edge (x 1340) and lobs (UP + `.use`) — reaching his right edge — and jumps
+        // the far boulders; in the left lane he is out of reach and his boulders fall short. On each landing Ferazel hops,
+        // so he is in the air on the landing frame (no stagger, BOS §3.7). `ChiefFightScript` does that with keys only,
+        // deciding from what a player sees; seed 1; level 18 through the level runner from the level start; nothing is
+        // patched, moved or written during the fight. The test carry (a named stand-in, the card's): a new game's G —
+        // the Fireball in slot 0, selected, magic full (0x230: 70 casts).
+        let L = try LevelFile.load(from: try LevelFixture.base.get(), level: 18)
+        let level18: [LevelFixture.LeaveOut] = []
+        XCTAssertEqual(try LevelFixture.leftOut(L, level18).count, 0, "nothing left out")
+        var carry = LevelCarry()
+        var g = GameGlobals(header: L.header)
+        XCTAssertEqual([Int(g.inventory[0].id), Int(g.inventory[0].isSpell), Int(g.selectedSlot)], [0, 1, 0],
+                       "the Fireball (spell 0) owned and selected")
+        g.magic = g.maxMagic
+        XCTAssertEqual(g.magic, 0x230)
+        carry.globals = g
+        let (run, services) = try LevelFixtureServices.open(level: 18, leaveOut: level18, carry: carry)
+        let k = FerazelPrefs().keys
+        var script = ChiefFightScript(left: Int(k[0]), right: Int(k[1]), up: Int(k[2]), jump: Int(k[5]), use: Int(k[6]))
+        var t: UInt32 = 0
+        var keys: [Int] = [], decidedFor = -1
+        var hps: [Int16] = [2000], hitFrames: [Int] = []
+        var entry: Int?, kill: Int?
+        var rows: [Int16] = [], faces: [FaceRef] = []
+        let cap = 20_000
+        func alive() -> Bool { (run.session?.globals.health ?? 1) >= 1 }
+        while kill == nil && run.iterations < cap && alive() && !run.died && run.end == nil {
+            if decidedFor != run.iterations, let s = run.session {
+                decidedFor = run.iterations
+                keys = script.keys(s.world)
+            }
+            let before = run.iterations
+            _ = try run.tick(now: t, input: FrontInput(keys: KeyState(pressed: keys)))
+            t &+= 1
+            guard run.iterations != before, let w = run.session?.world else { continue }
+            // His sprite while active (he idles and wakes again before the lock: a new sprite each time).
+            guard let c = w.active.sprites.first(where: { $0.handler == .chief }) else { continue }
+            if hps.last != c.hp { hps.append(c.hp); hitFrames.append(run.iterations) }
+            if entry == nil && c.subtype == 4 { entry = run.iterations }
+            if kill == nil && c.killCount == 0 && 0 < c.burnRow && rows.last != c.burnRow {
+                rows.append(c.burnRow)
+                faces.append(try XCTUnwrap(c.face))
+            }
+            if c.killCount != 0 { kill = run.iterations }
+        }
+        XCTAssertTrue(alive() && !run.died, "Ferazel lives (frame \(run.iterations), Chief HP \(hps.last ?? 0))")
+        let hp0 = try XCTUnwrap(entry, "HP 0 within \(cap) frames"), killed = try XCTUnwrap(kill)
+        XCTAssertEqual(hps, stride(from: 2000, through: 0, by: -100).map { Int16($0) }, "20 Fireballs of 100")
+        XCTAssertEqual(hitFrames, Self.pinnedChiefHits, "the hit frames")
+        XCTAssertTrue(zip(hitFrames, hitFrames.dropFirst()).allSatisfy { $1 - $0 >= 15 }, "15 frames of invulnerability")
+        XCTAssertEqual(hp0, try XCTUnwrap(hitFrames.last) + 1, "the death entry in the next frame's Handle")
+        // Kill − HP0 = 20 dying frames + ⌈(B − T + 1) / 2⌉ − 1 burn frames (BOS §3.9): the 20th dying frame sets `+0x1a2`
+        // and its Cleanup burns rows T + 1 and T + 2 (`+0x8d` 1: two a frame), one frame more each two rows until past B.
+        let face3 = FaceRef(pict: Chief.deathSet, index: 3, set: .encoded)
+        let f = try XCTUnwrap(services.renderer?.particleFaces.sprite(face3), "the store holds 0x77a[3]")
+        let top = Int(f.bounds[0]), bottom = Int(f.bounds[2])
+        XCTAssertEqual(killed - hp0, 20 + (bottom - top + 2) / 2 - 1, "Kill − HP0 (T \(top), B \(bottom))")
+        XCTAssertEqual(rows, stride(from: top + 2, through: bottom, by: 2).map { Int16($0) },
+                       "two rows a frame, T + 2 … (the Kill frame's rows pass B)")
+        XCTAssertTrue(faces.allSatisfy { $0 == face3 }, "the burn runs on 0x77a[3] (dying n capped at 0x10)")
+        XCTAssertEqual(hp0, Self.chiefHP0, "the HP-0 frame, measured once (D46.4)")
+        XCTAssertEqual(killed, Self.chiefKill, "the Kill frame, measured once (D46.4)")
+        XCTAssertEqual(run.session?.world.arena.noBossAlive, 1, "the boss-kill tail: the gate opens")
+    }
+
+    /// Measured 2026-11-22 (6A-CH2): the 20 Fireball hits; the death entry one frame after the last; 0x77a[3] T 44, B 221
+    /// → the Kill on 1602 + 20 + ⌈178 / 2⌉ − 1 = 1710. Ferazel ends the fight with 224 of 560 health (three boulders).
+    static let pinnedChiefHits = [598, 658, 674, 929, 945, 1008, 1024, 1040, 1057, 1105, 1121, 1137, 1154, 1202, 1218,
+                                  1492, 1552, 1568, 1584, 1601]
+    static let chiefHP0 = 1602, chiefKill = 1710
+}
+
+/// The Goblin Chief's scripted fight (6A-CH2): the keys, decided each frame from what a player sees — positions and
+/// motion (from the last frame), poses (his jump pose, Ferazel's stagger pose and hurt flashing), the boulders' spin
+/// frames. Nothing is patched, moved or written.
+struct ChiefFightScript {
+    let left: Int, right: Int, up: Int, jump: Int, use: Int
+    var locked = false
+    var frame = 0
+    var jumpHeld = 0, grounded = 0, jumpedLast = false
+    var lastCast = -100, pendingCast = false
+    var lastChief: (x: Int, y: Int)?
+    /// Each boulder's last position and spin frame (by sprite), and the hot rect seen for each spin frame.
+    var seen: [Int: (x: Int, y: Int, frame: Int16)] = [:]
+    var rects: [Int16: IdleSprites.Rect] = [:]
+    /// Ferazel's rise above the floor on each frame of a held jump (measured on level 18's floor).
+    static let rise = [12, 24, 36, 49, 61, 71, 80, 87, 92, 95, 96, 96, 95, 91, 86, 79, 71, 60, 48, 35, 19, 2]
+    /// Ferazel's y standing on the arena floor; his spots: right of the right lane (body 1308…1332, his hot rect ends at
+    /// 1300) and the arena's edge (the lock line 1340).
+    static let floorY = 539, rightLaneSpot = 1270, edgeSpot = 1340
+
+    mutating func keys(_ w: SpriteWorld) -> [Int] {
+        frame += 1
+        guard let pid = w.playerID, let p = w.active.record(id: pid) else { return [] }
+        if !locked {
+            // Phase 1: LEFT from the level start until the arena locks behind him (x < 1340).
+            guard w.arena.locked else { return [left] }
+            locked = true
+        }
+        guard let c = w.active.sprites.first(where: { $0.handler == .chief }) else { return [] }
+        let cvx = c.x - (lastChief?.x ?? c.x), cvy = c.y - (lastChief?.y ?? c.y)
+        lastChief = (c.x, c.y)
+        let onGround = p.groundKind != 0
+        grounded = onGround ? grounded + 1 : 0
+        let out = decide(w, p: p, c: c, cvx: cvx, cvy: cvy, onGround: onGround)
+        jumpedLast = out.contains(jump)
+        var now: [Int: (x: Int, y: Int, frame: Int16)] = [:]
+        for b in w.active.sprites where b.type == EnemyShot.chiefBoulder && !b.dead { now[b.id] = (b.x, b.y, b.phase) }
+        seen = now
+        return out
+    }
+
+    mutating func decide(_ w: SpriteWorld, p: SpriteSlot, c: SpriteSlot, cvx: Int, cvy: Int, onGround: Bool) -> [Int] {
+        let staggered = w.player.bossGrab > 0
+        var k: [Int] = []
+        if jumpHeld > 0 && onGround && grounded >= 2 { jumpHeld = 0 }   // the jump did not take: let go
+        if jumpHeld > 0 {
+            jumpHeld -= 1
+            k.append(jump)
+        }
+        // A jump needs one grounded frame with the key up first.
+        let canJump = onGround && grounded >= 2 && !jumpedLast && !staggered && jumpHeld == 0
+        // The boulders: each one seen last frame, carried on 14 frames with its motion and the fall (0x140 a frame);
+        // its hot rect by its spin frame as seen so far (an unseen one: the largest box). The first frame it would
+        // touch a standing Ferazel, and whether a jump started now keeps clear of it on every frame.
+        let pl = p.x + p.hotRect.left, pr = p.x + p.hotRect.right
+        let st = Self.floorY + p.hotRect.top, sb = Self.floorY + p.hotRect.bottom
+        var threat = false, jumpClears = true
+        for b in w.active.sprites where b.type == EnemyShot.chiefBoulder && !b.dead {
+            rects[b.phase] = b.hotRect
+            guard let last = seen[b.id], b.y + 4 < 620 else { continue }
+            let vx = (b.x - last.x) << 8
+            var vy = (b.y - last.y) << 8
+            let spin: Int16 = b.phase == (last.frame + 1) & 15 ? 1 : 15
+            var x256 = b.x << 8, y256 = b.y << 8, f = b.phase
+            for t in 1...14 {
+                vy += 0x140
+                x256 += vx
+                y256 += vy
+                f = (f + spin) & 15
+                let r = rects[f] ?? IdleSprites.Rect(top: 4, left: 4, bottom: 109, right: 109)
+                let x = x256 >> 8, y = y256 >> 8
+                guard x + r.left < pr && pl < x + r.right else { continue }
+                if y + r.top < sb && st < y + r.bottom { threat = true }
+                let up = t <= Self.rise.count ? Self.rise[t - 1] : 0
+                if y + r.top < sb - up && st - up < y + r.bottom { jumpClears = false }
+            }
+        }
+        if canJump && p.invulnerable < 3 && threat && jumpClears {
+            jumpHeld = 15
+            return k + [jump]
+        }
+        // His landing frame: the fall pose (jump face 3) reaching the floor — a one-frame hop, so Ferazel is in the air.
+        let falling = c.face == FaceRef(pict: Chief.jumpSet, index: 3, set: .encoded)
+        if canJump && falling && c.y + 0xd2 + cvy >= 620 { return k + [jump] }
+        // Where he stands, or will land (his motion carried down to the floor, his fall 2 px a frame more each frame).
+        let airborne = c.face?.pict == Chief.jumpSet
+        var standX = c.x
+        if airborne {
+            var y = c.y, vy = cvy
+            while y < 414 && standX < 2000 && standX > 0 {
+                vy += 2
+                y += vy
+                standX += cvx
+            }
+        }
+        let spot = standX >= 1100 ? Self.rightLaneSpot : Self.edgeSpot
+        let rightLane = c.x >= 1100
+        if pendingCast {
+            pendingCast = false
+            lastCast = frame
+            return k + (rightLane ? [use] : [up, use])
+        }
+        // Cast: every 16th frame or later, at the spot, he standing in the middle or right lane, no boulder between.
+        let blocked = w.active.sprites.contains { b in
+            b.type == EnemyShot.chiefBoulder && !b.dead && b.y + 4 < 600 && c.x + 0xac < b.x + 100 && b.x < p.x + 70
+        }
+        if !airborne && c.x >= 890 && frame - lastCast >= 16 && !staggered && !blocked && onGround
+            && abs(p.x - spot) <= 6 {
+            if !p.mirrored {                                           // facing right: turn to him first
+                pendingCast = true
+                return k + [left]
+            }
+            lastCast = frame
+            return k + (rightLane ? [use] : [up, use])
+        }
+        if onGround && !staggered && !threat {
+            if p.x > spot + 2 { return k + [left] }
+            if p.x < spot - 2 { return k + [right] }
+        }
+        return k
+    }
 }
 
 /// The Warrior's scripted fight: the keys, decided each frame from what a player sees (positions only).

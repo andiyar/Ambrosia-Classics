@@ -841,4 +841,511 @@ final class ChiefTests: XCTestCase {
         XCTAssertEqual(Array(Set(ys.suffix(20))), [homeA.y], "landed where the level stood him")
         XCTAssertNotEqual(try slot(a.world, aid).groundKind, 0, "on ground")
     }
+
+    // MARK: - 6A-CH2: the Hit, the Kill, the three pieces (BOS §3.4–§3.6, §3.8's 6A-CH2 list, §3.10 items 24–30)
+
+    /// A player shot (type `type`, `+0xa4` = `damage`, `+0xa6` 0) with a 20×20 hot rect on the Chief's stored centre.
+    private func shot(_ w: SpriteWorld, over id: Int, type: Int16 = 0, damage: Int16 = 100,
+                      body: (inout SpriteSlot) -> Void = { _ in }) throws -> Int {
+        let c = try slot(w, id).centre
+        return try XCTUnwrap(w.newSprite(type: type, x: c.x - 10, y: c.y - 10, layer: 0xb, handler: .playerShot) { s in
+            s.x = c.x - 10
+            s.y = c.y - 10
+            s.hotRect = IdleSprites.Rect(top: 0, left: 0, bottom: 20, right: 20)
+            s.centre = c
+            s.hp = damage
+            s.vx = 1000
+            body(&s)
+        })
+    }
+
+    /// The Chief, ready, with a known centre and the fields a hit writes set to markers.
+    private func target(hp: Int16 = 2000) throws -> (s: FerazelSession, id: Int) {
+        let (_, s, id) = try ready()
+        s.world.active.update(id: id) { c in
+            c.hp = hp
+            c.invulnerable = 0
+            c.subState = 0
+            c.flash = 0
+            c.vx = 0x123
+            c.vy = -0x45
+            c.centre = SpriteSlot.Point(x: 1010, y: 480)
+        }
+        return (s, id)
+    }
+
+    // MARK: - 10
+
+    func testChiefTakesShotDamage() throws {
+        // `.HitChiefSprite`'s shot arm (M l. 75476–75497): `.KillPlayerShot(shot, 0, 0)` first — silent, no impact
+        // effect — then `.HurtSprite(S, shot +0xa4, 0, 0, 2, 8)` (3.10 item 24: dvx = dvy = 0); on a hurt `+0x116 = 15`,
+        // `+0xb2 = 1` (item 25), `.BloodSpray(S, shot, 0x28, 400, 0x96, 2)` (item 26), HP < 0xc9 → snd 702 else 701
+        // (`.STPlay3DSound`, 1, 0x100, his centre), then R(100) < 0x3c → `.GoblinChiefRandomCry` (item 27). The twin does
+        // the routines the Hit calls by hand, in the dump's order; the cry is re-derived from a copy of the stream.
+        let cases: [(hp: Int16, damage: Int16, snd: Int16)] = [(2000, 100, 701), (301, 100, 701), (300, 100, 702),
+                                                               (101, 100, 702), (100, 100, 702), (40, 100, 702)]
+        var cried: Set<Bool> = []
+        for c in cases {
+            let tag = "HP \(c.hp) − \(c.damage)"
+            let (s, id) = try target(hp: c.hp)
+            let w = s.world
+            let sid = try shot(w, over: id, damage: c.damage)
+            let (t, tid) = try target(hp: c.hp)
+            let tsid = try shot(t.world, over: tid, damage: c.damage)
+            w.rng = FastRand(seed: Int32(40 + c.hp))
+            t.world.rng = w.rng
+            let fx0 = w.active.sprites.filter { $0.handler == .effect }.count
+            w.player.cues = []
+            FerazelSession.hitCallback(w, id, sid)
+            // The twin, by hand.
+            var lights = LightTable()
+            PlayerShotHits.kill(t.world, shot: tsid, sound: false, effect: false, effects: 1, lights: &lights)
+            XCTAssertTrue(HurtSprite.apply(t.world, id: tid, damage: c.damage, dvx: 0, dvy: 0, invulnerable: 2, flash: 8))
+            t.world.active.update(id: tid) { u in u.invulnerable = 15; u.subState = 1 }
+            BloodSpray.spray(t.world, victim: tid, attacker: tsid, count: 0x28, speed: 400, spread: 0x96, kind: 2)
+            var e = t.world.rng
+            let cry = e.next(100) < 0x3c
+            cried.insert(cry)
+            let centre = SpriteSlot.Point(x: 1010, y: 480)
+            var want = [PlayerCue(call: .threeD, snd: c.snd, priority: 1, volume: 0x100, position: centre)]
+            if cry {
+                let r = e.next(100)
+                let rate = Int32(e.next(10000)) + 42000
+                let (snd, vol): (Int16, Int16) = r < 0x29 ? (467, 0xc9) : (r < 0x47 ? (466, 0xab) : (465, 0xab))
+                want.append(PlayerCue(call: .threeDPitched, snd: snd, priority: 1, volume: vol, position: centre,
+                                      rate: rate))
+            }
+            let m = try slot(w, id), shotAfter = try slot(w, sid)
+            XCTAssertTrue(shotAfter.dead, "\(tag): the shot is killed")
+            XCTAssertEqual(w.active.sprites.filter { $0.handler == .effect }.count, fx0,
+                           "\(tag): effect 0 — no impact sprite")
+            XCTAssertEqual(Int(m.hp), Int(c.hp) - Int(c.damage), "\(tag): HP − the shot's `+0xa4`")
+            XCTAssertEqual([m.invulnerable, m.flash, m.subState], [15, 8, 1], "\(tag): `+0x116` 15 over the hurt's 2")
+            XCTAssertEqual([m.vx, m.vy], [0x123, -0x45], "\(tag): dvx = dvy = 0")
+            XCTAssertEqual(w.particles, t.world.particles, "\(tag): the blood spray (0x28, 400, 0x96, 2)")
+            XCTAssertGreaterThan(w.particles.counters.count, 0, "\(tag): blood drawn")
+            XCTAssertEqual(w.rng.seed, e.seed, "\(tag): the kill (no draw), the spray, R(100) [, the cry]")
+            XCTAssertEqual(w.player.cues, want, tag)
+            var mt = try slot(t.world, tid)
+            mt.id = m.id
+            XCTAssertEqual(m, mt, tag)
+        }
+        XCTAssertEqual(cried, [false, true], "both sides of the cry's R(100) gate seen")
+        // Fireball 100 → 20 landed hits from 2000 (BOS §3.4): 15 frames apart (the invulnerability counts down in his
+        // `.StandardSpriteHandles`).
+        let (s, id) = try target()
+        var landed = 0, frames = 0
+        while (try slot(s.world, id).hp) > 0 && frames < 2000 {
+            if try slot(s.world, id).invulnerable == 0 {
+                let sid = try shot(s.world, over: id)
+                FerazelSession.hitCallback(s.world, id, sid)
+                landed += 1
+                _ = s.world.active.remove(id: sid)
+            }
+            s.world.standardSpriteHandles(id)
+            frames += 1
+        }
+        XCTAssertEqual(landed, 20, "20 Fireballs")
+        XCTAssertEqual(frames, 19 * 15 + 1, "one landed shot every 15th frame")
+    }
+
+    // MARK: - 11
+
+    func testChiefInvulnerableWastesShots() throws {
+        // A shot while `+0x116 ≠ 0`: `.KillPlayerShot` has already run, `.HurtSprite` refuses → return (M l. 75478–75482):
+        // the shot is wasted — killed, nothing else (no HP, no `+0x116` / `+0xb2` change, no blood, no sound, no draw).
+        for invulnerable: Int16 in [1, 15] {
+            let (s, id) = try target()
+            let w = s.world
+            w.active.update(id: id) { $0.invulnerable = invulnerable }
+            let sid = try shot(w, over: id)
+            let before = try slot(w, id)
+            let seed0 = w.rng.seed, pool0 = w.particles
+            w.player.cues = []
+            FerazelSession.hitCallback(w, id, sid)
+            XCTAssertTrue(try slot(w, sid).dead, "invul \(invulnerable): the shot is killed")
+            XCTAssertEqual(try slot(w, id), before, "invul \(invulnerable): nothing else")
+            XCTAssertEqual(w.particles, pool0)
+            XCTAssertEqual(w.player.cues, [])
+            XCTAssertEqual(w.rng.seed, seed0)
+        }
+        // 3.10 item 28: at HP ≤ 0 a shot is not killed (it goes to the solid test, which ignores it); likewise a shot
+        // whose `+0xa6 ≠ 0` (M l. 75459–75461).
+        for (a6, hp) in [(Int16(0), Int16(0)), (0, -60), (1, 2000), (-6, 2000)] {
+            let (s, id) = try target(hp: hp)
+            let w = s.world
+            let sid = try shot(w, over: id) { $0.counterA6 = a6 }
+            let before = try slot(w, id)
+            let seed0 = w.rng.seed
+            w.player.cues = []
+            FerazelSession.hitCallback(w, id, sid)
+            XCTAssertFalse(try slot(w, sid).dead, "a6 \(a6) HP \(hp): passes through")
+            XCTAssertEqual(try slot(w, id), before)
+            XCTAssertEqual(w.player.cues, [])
+            XCTAssertEqual(w.rng.seed, seed0)
+        }
+        // A Statue-spell shot (type 1) is a shot like any other: no `.TurnIntoStatue` in a boss Hit — he takes its damage.
+        let (s, id) = try target()
+        let sid = try shot(s.world, over: id, type: 1, damage: 200)
+        FerazelSession.hitCallback(s.world, id, sid)
+        XCTAssertEqual(try slot(s.world, id).handler, .chief, "not turned to stone")
+        XCTAssertEqual(try slot(s.world, id).hp, 1800)
+    }
+
+    // MARK: - 12
+
+    func testChiefCrush200AndCry() throws {
+        // `.HitChiefSprite`'s solid arm (M l. 75462–75475): a Statue or a Box other → `.PlatformBounce(S, solid, S's
+        // hot-rect centre offset, 0, S +0x34, 0)` == 2 with the solid falling (`+0x2c > 0`) or S on ground (`+0xce`) →
+        // `.HurtSprite(S, 200, solid.vx >> 1, −1000, 2, 8)` (3.10 item 29), `+0xf0 = 0`, `.KillBox(solid)` — its own draws
+        // first —, R(10000) → snd 701 pitched at 42000 + R, then `.GoblinChiefRandomCry` (R(100) always, + R(10000) when
+        // no goblin voice plays). A crate 0x433 sits 3 px into the top of his Handle rect (0x58, 0x73, 0xac, 0xd2),
+        // centred over him; its face a 3-row synthetic face so `.KillBox`'s `.ExplodeFaceIntoParticles` emits.
+        func tok(_ op: UInt32, _ n: Int) -> [UInt8] {
+            let t = op << 24 | UInt32(n)
+            return [UInt8(t >> 24), UInt8(t >> 16 & 0xff), UInt8(t >> 8 & 0xff), UInt8(t & 0xff)]
+        }
+        let face = ParticleFace(frame: [0, 0, 3, 4], bounds: [0, -1, 4, 6],
+                                tokens: tok(1, 8) + tok(2, 3) + [10, 11, 12, 0] + tok(1, 12) + tok(3, 1) + tok(2, 2)
+                                    + [20, 21, 0, 0] + tok(1, 8) + tok(2, 4) + [30, 31, 32, 33] + tok(0, 0))
+        struct Case { let label: String; let vy: Int32; let ground: UInt8; let invulnerable: Int16; let crush: Bool
+                      let playing: Set<Int16> }
+        let cases = [Case(label: "falling", vy: 0x300, ground: 0, invulnerable: 0, crush: true, playing: []),
+                     Case(label: "on ground, resting", vy: 0, ground: 3, invulnerable: 0, crush: true, playing: []),
+                     Case(label: "a goblin voice playing", vy: 0x300, ground: 0, invulnerable: 0, crush: true,
+                          playing: [466]),
+                     Case(label: "invulnerable", vy: 0x300, ground: 0, invulnerable: 4, crush: true, playing: []),
+                     Case(label: "resting, in the air", vy: 0, ground: 0, invulnerable: 0, crush: false, playing: [])]
+        for c in cases {
+            for handler in [SpriteHandler.box, .statue] {
+                let tag = "\(c.label) \(handler)"
+                let (s, id) = try target()
+                let w = s.world
+                w.particleFaces = ParticleFaces(sprite: { $0.pict == 0x42e ? face : nil })
+                w.voices = SoundVoices(playing: c.playing)
+                w.active.update(id: id) { m in
+                    m.vx = 0
+                    m.vy = 0
+                    m.groundKind = c.ground
+                    m.invulnerable = c.invulnerable
+                    m.voicePitch = 0x1e
+                    m.hotRect = IdleSprites.Rect(top: 0x73, left: 0x58, bottom: 0xd2, right: 0xac)
+                }
+                let m0 = try slot(w, id)
+                let crate = try XCTUnwrap(Warrior.newCrate(w, x: m0.x + 0x82 - 0xe, y: m0.y + 0x73 + 3 - 0x1c))
+                w.active.update(id: crate) { b in
+                    b.handler = handler
+                    b.vy = c.vy
+                    b.vx = -1001
+                    b.centre = SpriteSlot.Point(x: b.x + 0x10, y: b.y + 0xe)
+                }
+                let box0 = try slot(w, crate)
+                var e = w.rng
+                let pool0 = w.particles.counters.count
+                w.player.cues = []
+                FerazelSession.hitCallback(w, id, crate)
+                let m = try slot(w, id)
+                guard c.crush else {
+                    XCTAssertEqual(m.hp, 2000, tag)
+                    XCTAssertFalse(try slot(w, crate).dead, tag)
+                    XCTAssertEqual(m.voicePitch, 0x1e, tag)
+                    XCTAssertEqual(w.player.cues, [], tag)
+                    XCTAssertEqual(w.rng.seed, e.seed, tag)
+                    continue
+                }
+                let hurt = c.invulnerable == 0
+                XCTAssertEqual(m.hp, hurt ? 1800 : 2000, "\(tag): 200 a crush")
+                if hurt {
+                    XCTAssertEqual([Int(m.invulnerable), Int(m.flash), Int(m.vx), Int(m.vy)], [2, 8, -501, -1000],
+                                   "\(tag): `.HurtSprite(S, 200, solid.vx >> 1, −1000, 2, 8)` — no `+0x116 = 15` here")
+                } else {
+                    XCTAssertEqual([Int(m.invulnerable), Int(m.vx)], [Int(c.invulnerable), 0], "\(tag): refused")
+                }
+                XCTAssertEqual(m.voicePitch, 0, "\(tag): `+0xf0 = 0`")
+                XCTAssertTrue(try slot(w, crate).dead, "\(tag): `.KillBox(solid)`")
+                // `.KillBox`'s draws first — R(10000) for snd 424, four a pixel for its particles — then R(10000) (701),
+                // then the cry: R(100) r, and (no 465 / 466 / 467 playing) R(10000).
+                let n = w.particles.counters.count - pool0
+                XCTAssertGreaterThan(n, 0, "\(tag): the crate face exploded")
+                let r424 = e.soundRate()
+                for _ in 0..<n { _ = e.next(20); _ = e.next(750); _ = e.next(100); _ = e.next(30) }
+                let r701 = Int32(e.next(10000)) + 42000
+                let r = e.next(100)
+                var want = [
+                    PlayerCue(call: .threeDRand, snd: 424, priority: 1, volume: 0x100, position: box0.centre, rate: r424),
+                    PlayerCue(call: .threeDPitched, snd: 701, priority: 1, volume: 0x100, position: m.centre, rate: r701),
+                ]
+                if c.playing.isEmpty {
+                    let rate = Int32(e.next(10000)) + 42000
+                    let (snd, vol): (Int16, Int16) = r < 0x29 ? (467, 0xc9) : (r < 0x47 ? (466, 0xab) : (465, 0xab))
+                    want.append(PlayerCue(call: .threeDPitched, snd: snd, priority: 1, volume: vol, position: m.centre,
+                                          rate: rate))
+                }
+                XCTAssertEqual(w.rng.seed, e.seed, "\(tag): exactly those draws")
+                XCTAssertEqual(w.player.cues, want, tag)
+            }
+        }
+        // Beside him (not from below) or a Platform solid: nothing.
+        for (dx, handler) in [(0xa0, SpriteHandler.box), (0, .platform)] {
+            let (s, id) = try target()
+            let m0 = try slot(s.world, id)
+            let crate = try XCTUnwrap(Warrior.newCrate(s.world, x: m0.x + 0x82 - 0xe + dx, y: m0.y + 0x73 + 3 - 0x1c))
+            s.world.active.update(id: crate) { $0.vy = 0x300; $0.handler = handler }
+            let seed0 = s.world.rng.seed
+            FerazelSession.hitCallback(s.world, id, crate)
+            XCTAssertEqual(try slot(s.world, id).hp, 2000, "dx \(dx) \(handler)")
+            XCTAssertFalse(try slot(s.world, crate).dead)
+            XCTAssertEqual(s.world.rng.seed, seed0)
+        }
+    }
+
+    // MARK: - 13
+
+    func testChiefKillTailAndGate() throws {
+        // `.KillChief` (M l. 75502–75532), the Kill proc `+0x50` (`EnemyCommon.killProc`): the count head, `+0xe9 = 1`,
+        // `+0xea = 1`; with `+0x170 ≠ 0` the boss-kill tail — snd 453 pitched (1, 0x100, +0xe, 48000; no draw), the shake
+        // 0x1e, the flash 3, "no boss alive" 1. No score.
+        let (_, s, id) = try ready()
+        let w = s.world
+        let me = try slot(w, id)
+        XCTAssertTrue(me.countedInTotals)
+        XCTAssertEqual(w.arena.noBossAlive, 0, "his Setup cleared it")
+        let live0 = w.enemies.live, stat0 = w.globals.achieved[0][w.levelIndex], score0 = w.globals.score
+        let seed0 = w.rng.seed
+        w.player.cues = []
+        w.shakeStore = nil
+        w.flash.count = 0
+        EnemyCommon.killProc(w, id: id)
+        var k = try slot(w, id)
+        XCTAssertEqual([k.dead, k.killedForGood], [true, true], "`+0xe9 = 1`, `+0xea = 1`")
+        XCTAssertEqual(w.enemies.live, live0 - 1)
+        XCTAssertEqual(w.globals.achieved[0][w.levelIndex], stat0 + 1)
+        XCTAssertEqual(w.globals.score, score0, "no score")
+        let thunder = PlayerCue(call: .threeDPitched, snd: 453, priority: 1, volume: 0x100, position: me.centre,
+                                rate: 48000)
+        XCTAssertEqual(w.player.cues, [thunder])
+        XCTAssertEqual(w.shakeStore, 0x1e)
+        XCTAssertEqual(w.flash.count, 3)
+        XCTAssertEqual(w.arena.noBossAlive, 1)
+        XCTAssertEqual(w.rng.seed, seed0, "no draw")
+        // 3.10 item 30: a second call counts nothing but replays the tail.
+        w.player.cues = []
+        w.shakeStore = nil
+        w.flash.count = 0
+        w.arena.noBossAlive = 0
+        EnemyCommon.killProc(w, id: id)
+        k = try slot(w, id)
+        XCTAssertEqual(w.enemies.live, live0 - 1, "counted once")
+        XCTAssertEqual(w.globals.achieved[0][w.levelIndex], stat0 + 1)
+        XCTAssertEqual(w.player.cues, [thunder], "the tail replays")
+        XCTAssertEqual([Int(w.shakeStore ?? 0), Int(w.flash.count), Int(w.arena.noBossAlive)], [0x1e, 3, 1])
+        // p4 = 0 (`+0x170 == 0`): the count and the flags, no tail.
+        let (_, p, pid) = try ready()
+        p.world.active.update(id: pid) { $0.classWord170 = 0 }
+        let plive = p.world.enemies.live
+        p.world.player.cues = []
+        p.world.shakeStore = nil
+        p.world.flash.count = 0
+        EnemyCommon.killProc(p.world, id: pid)
+        XCTAssertEqual([try slot(p.world, pid).dead, try slot(p.world, pid).killedForGood], [true, true])
+        XCTAssertEqual(p.world.enemies.live, plive - 1)
+        XCTAssertEqual(p.world.player.cues, [])
+        XCTAssertNil(p.world.shakeStore)
+        XCTAssertEqual([Int(p.world.flash.count), Int(p.world.arena.noBossAlive)], [0, 0])
+
+        // Through the level runner: the real Kill opens level 18's gate — 2940 record 0 (x 628, y 520, p1 −1) rises from
+        // the next gate Handle — and the loop rule fades to track 30. The player stands near the gate (start (700, 500)).
+        let L = try LevelFile.load(from: try LevelFixture.base.get(), level: 18)
+        let g = L.placements[0]
+        XCTAssertEqual([g.type, g.p1, g.x, g.y], [2940, -1, 628, 520], "the gate (card: x 628)")
+        let run = try LevelFixture.open(level: 18, leaveOut: Self.level18, start: (700, 500))
+        var t: UInt32 = 0
+        var plays: [Int] = []
+        func tick(_ n: Int) throws {
+            let goal = run.iterations + n
+            var guardTicks = 0
+            while run.iterations < goal && guardTicks < 20_000 {
+                let out = try run.tick(now: t, input: FrontInput())
+                t &+= 1
+                guardTicks += 1
+                plays += out.merged.music.compactMap { if case .play(let n) = $0 { n } else { nil } }
+            }
+        }
+        try tick(20)
+        let rs = try XCTUnwrap(run.session)
+        XCTAssertTrue(rs.world.arena.locked, "x 700 < 1340: locked")
+        let gate = try XCTUnwrap(rs.world.active.sprites.first { $0.recordIndex == 0 }, "the gate active near x 700")
+        XCTAssertEqual(gate.y, 520, "shut")
+        let cid = try XCTUnwrap(rs.world.active.sprites.first { $0.handler == .chief }?.id, "the Chief awake")
+        XCTAssertFalse(plays.contains(30), "no track 30 while he stands")
+        EnemyCommon.killProc(rs.world, id: cid)
+        XCTAssertEqual(rs.world.arena.noBossAlive, 1)
+        try tick(1)
+        XCTAssertEqual(try XCTUnwrap(rs.world.active.sprites.first { $0.recordIndex == 0 }).y, 518,
+                       "the next gate Handle lifts it 2 px")
+        try tick(239)
+        XCTAssertLessThan(try XCTUnwrap(rs.world.active.sprites.first { $0.recordIndex == 0 }).y, 520, "the gate rose")
+        XCTAssertTrue(plays.contains(30), "the loop rule's track 30")
+        XCTAssertEqual(run.music.currentTrack, 30)
+    }
+
+    // MARK: - 14
+
+    func testChiefRecordWriteBack() throws {
+        // No `+0x18a` (BOS §3.6): `.UpdateSprites` (M l. 4959–4966) copies his type / x / y into his own record (`+0x48`
+        // = record 1) at the end of every frame — so a save mid-fight stores where he stands. The Kill's `+0xea` clears the
+        // record's active flag from the next `.UpdateSprites`.
+        let (run, s) = try open()
+        let w = s.world
+        XCTAssertEqual([w.records[1].x, w.records[1].y], [897, 410], "the record as placed")
+        var moved = false
+        var checked = 0
+        while checked < 150 && run.iterations < 3000 {
+            try iterate(run, keys: [left])
+            guard let c = chief(w) else { continue }
+            XCTAssertEqual(c.recordIndex, 1)
+            XCTAssertFalse(c.noWriteBack18a)
+            let r = w.records[1]
+            XCTAssertEqual([Int(r.type), Int(r.x), Int(r.y)], [Int(c.type), c.x, c.y], "frame \(run.iterations)")
+            if c.x != 897 || c.y != 410 { moved = true }
+            checked += 1
+        }
+        XCTAssertTrue(moved, "he jumped: the record followed")
+        XCTAssertEqual(w.records[1].flag, 1)
+        let id = try XCTUnwrap(chief(w)?.id)
+        EnemyCommon.killProc(w, id: id)
+        XCTAssertTrue(try slot(w, id).killedForGood, "`+0xea = 1`")
+        try iterate(run, keys: [left])
+        XCTAssertEqual(w.records[1].flag, 0, "cleared by `.UpdateSprites` after the Kill")
+    }
+
+    // MARK: - 15
+
+    func testChiefContactAndSmite() throws {
+        // `.HitPlayerSprite` step 7: the routing list (M l. 49514–49521) holds the Chief's Handle (0x100a04bc) — the
+        // generic path; his damage row 0x70 (M l. 49849–49851), invulnerability 0x3c; damage 0x70 → R(100) > 0x50 → 3
+        // coins, drawn before `.HurtPlayer`; then `.HurtPlayer(player, him, 0x70, blood 1, 0x3c, coins)`.
+        for band in [0...0x50, 0x51...99] as [ClosedRange<Int16>] {
+            let k = seed { g in band.contains(g.next(100)) }
+            func make() throws -> (FerazelSession, Int, Int) {
+                let (_, s, id) = try ready()
+                let pid = try XCTUnwrap(s.world.playerID)
+                s.world.active.update(id: pid) { $0.invulnerable = 0 }
+                s.world.globals.coins = 20
+                s.world.rng = FastRand(seed: k)
+                return (s, id, pid)
+            }
+            let (s, id, pid) = try make()
+            let hp0 = try slot(s.world, pid).hp
+            var lights = LightTable()
+            HitPlayerSprite.hit(s.world, player: pid, other: id, lights: &lights, effects: 1)
+            let (t, tid, tpid) = try make()
+            let coins: Int16 = 0x50 < t.world.rng.next(100) ? 3 : 0
+            HurtPlayer.hurt(t.world, player: tpid, attacker: tid, damage: 0x70, blood: true, invulnerable: 0x3c,
+                            coins: coins)
+            let p = try slot(s.world, pid), q = try slot(t.world, tpid)
+            XCTAssertEqual(s.world.rng.seed, t.world.rng.seed, "band \(band): R(100) first, then the hurt's draws")
+            XCTAssertEqual(s.world.globals.coins, t.world.globals.coins)
+            XCTAssertEqual([Int(p.hp), Int(p.invulnerable)], [Int(hp0) - 0x70, 0x3c], "band \(band)")
+            XCTAssertEqual(s.world.globals.coins < 20, 0x50 < band.lowerBound, "band \(band): coins only above 0x50")
+            XCTAssertEqual([q.hp, q.invulnerable], [p.hp, p.invulnerable])
+        }
+        // The Ring of Smiting (BOS §3.6: `.chief` appended to `Smite.enemyHandlers`; 0x100a04bc is in the walk's 15): a
+        // seed at his stored centre − 4. Its hit kills the seed first (`.KillPlayerShot`: snd 435, flash 3, the big
+        // explosion), then `.HurtSprite(S, seed +0xa4, …)`. Through one session frame the seed carries `+0xa4` 0: its
+        // Setup stores none and its Handle gives it 800 only from age 1 (`PlayerShot.idArm`; age −1 → 0 on this first
+        // frame), and it overlaps him at once — so the hurt is refused (damage < 1) and his HP stands. Dump over the
+        // contract's "a seed hurts it with its `+0xa4`": the Chief's Hit has no effect arm, so neither the seed nor its
+        // explosion hurts him.
+        XCTAssertTrue(Smite.enemyHandlers.contains(.chief))
+        let (_, s, id) = try ready()
+        let c0 = try slot(s.world, id).centre
+        let shots0 = Set(s.world.active.sprites.filter { $0.handler == .playerShot }.map(\.id))
+        Smite.smiteEnemies(s.world)
+        let seeds = s.world.active.sprites.filter { $0.handler == .playerShot && !shots0.contains($0.id) }
+        XCTAssertEqual(seeds.map { [Int($0.type), $0.x, $0.y] }, [[Int(PlayerShot.seed), c0.x - 4, c0.y - 4]],
+                       "one seed, at his stored centre − 4")
+        let seedID = try XCTUnwrap(seeds.first?.id)
+        s.world.player.cues = []
+        _ = s.step(keys: KeyState())
+        let seed = try slot(s.world, seedID)
+        XCTAssertTrue(seed.dead, "the seed hit him on its first frame")
+        XCTAssertEqual([seed.hp, Int16(seed.classTimer)], [0, 0], "`+0xa4` 0 at age 0")
+        XCTAssertTrue(s.world.player.cues.contains { $0.snd == 435 }, "the seed's own kill")
+        XCTAssertFalse(s.world.player.cues.contains { $0.snd == 701 || $0.snd == 702 }, "no hurt")
+        XCTAssertEqual(try slot(s.world, id).hp, 2000, "the hurt refused: damage 0")
+        // An aged seed (`+0xa4` 800, as its Handle sets it from age 1) hurts him by its `+0xa4`: its kill first, then 701.
+        let (t, tid) = try target()
+        let aged = try shot(t.world, over: tid, type: PlayerShot.seed, damage: 800) { $0.classTimer = 3 }
+        t.world.player.cues = []
+        FerazelSession.hitCallback(t.world, tid, aged)
+        XCTAssertTrue(try slot(t.world, aged).dead)
+        XCTAssertEqual(t.world.player.cues.first?.snd, 435, "the seed's own kill first")
+        XCTAssertEqual(t.world.player.cues.dropFirst().first?.snd, 701, "then his hurt")
+        XCTAssertEqual(t.world.flash.count, 3)
+        XCTAssertEqual(try slot(t.world, tid).hp, 2000 - 800, "hurt by the seed's `+0xa4`")
+        XCTAssertEqual(try slot(t.world, tid).invulnerable, 15)
+    }
+
+    // MARK: - 16
+
+    func testLevel18ArenaBounds() throws {
+        // Level 18's arena (BOS §3.6; built at LV5 as `BossArena`): header `+0x2724` v = −1400, `+0x272e` s = −640.
+        // `.PlayerConstraints` locks when x < |v + 60| = 1340 (M l. 44045) and clamps x back to 1340 while locked;
+        // `.FindUpperLeftCorner` (M l. 5937–6028) bounds the scroll point's h to [lo, hi − 0x260]: locked, hi = 1400 and
+        // lo = 1400 − 0x260 while the pan runs, then −32000 raised to |s| = 640 by the second bound — the window [640,
+        // 1400], h in 640…792. (Closes the Phase 5 carry "the second camera bound is untested".) v < 0, so the v > 0 arm
+        // with its 0x7f60 bound during the pan is never taken on level 18: that carry stays open (no shipped level checked
+        // here has v > 0).
+        let L = try LevelFile.load(from: try LevelFixture.base.get(), level: 18)
+        XCTAssertEqual([L.header.arenaBound, L.header.secondArenaBound], [-1400, -640])
+        XCTAssertEqual(BossArena.lockLine(L.header.arenaBound), 1340)
+        XCTAssertLessThan(L.header.arenaBound, 0, "the 0x7f60 arm (v > 0) is not reached on level 18")
+        var a = BossArena(noBossAlive: 0, locked: true, panCounter: -40)
+        var window: [[Int16]] = []
+        for _ in 0..<41 {
+            let b = a.cameraBounds(arenaBound: L.header.arenaBound, secondBound: L.header.secondArenaBound)
+            window.append([b.lo, b.hi])
+        }
+        let shift39: Int16 = 16 * 39
+        XCTAssertEqual(window.first, [1400 - 0x260 + shift39, 1400 + shift39], "the pan: lo = hi − 0x260, shifted")
+        XCTAssertEqual(window[39], [1400 - 0x260, 1400], "the pan's last step")
+        XCTAssertEqual(window[40], [640, 1400], "after the pan: the second bound raises lo to 640")
+        XCTAssertFalse(window.contains { $0[1] == 0x7f60 })
+
+        // Through the level runner, LEFT held from the level start: the lock on the first frame x < 1340; then RIGHT held,
+        // x stays ≤ 1340 (clamped) and the scroll point's h ≤ 1400 − 0x260 = 792 once the pan is over.
+        let (run, s) = try open()
+        let w = s.world
+        let pid = try XCTUnwrap(w.playerID)
+        var lastX = try slot(w, pid).x
+        var lockedAt: Int?
+        while lockedAt == nil && run.iterations < 3000 {
+            lastX = try slot(w, pid).x
+            try iterate(run, keys: [left])
+            if w.arena.locked { lockedAt = run.iterations }
+        }
+        XCTAssertEqual(lockedAt, 111, "measured (seed 1): the lock (`testChiefFirstJumpAfterLock`)")
+        XCTAssertGreaterThanOrEqual(lastX, 1340, "not locked the frame before")
+        XCTAssertLessThan(try slot(w, pid).x, 1340, "locked on the first frame x < 1340")
+        XCTAssertEqual(w.arena.panCounter, -40)
+        let right = Int(FerazelPrefs().keys[1])
+        var xs: [Int] = [], hs: [Int] = []
+        for _ in 0..<60 {
+            try iterate(run, keys: [right])
+            xs.append(try slot(w, pid).x)
+            hs.append(s.camera.scrollH)
+        }
+        XCTAssertTrue(xs.allSatisfy { $0 <= 1340 }, "clamped at the lock line: \(xs)")
+        XCTAssertTrue(xs.contains(1340), "pushed against it")
+        XCTAssertTrue(hs.suffix(15).allSatisfy { $0 <= 1400 - 0x260 }, "h ≤ 792 after the pan: \(hs.suffix(15))")
+        // Started at the far left (x 100, the arena locked at once): the second bound holds h at 640 after the pan.
+        let left18 = try LevelFixture.open(level: 18, leaveOut: Self.level18, start: (100, 500))
+        now = 0
+        while left18.iterations < 60 { _ = try left18.tick(now: now, input: FrontInput()); now &+= 1 }
+        let ls = try XCTUnwrap(left18.session)
+        XCTAssertTrue(ls.world.arena.locked)
+        XCTAssertEqual(ls.world.arena.panCounter, 0, "the pan is over")
+        XCTAssertEqual(ls.camera.scrollH, 640, "the second bound: h ≥ |s| = 640")
+    }
 }
