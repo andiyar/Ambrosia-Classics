@@ -43,6 +43,7 @@ Recommendation: a — one whole run is the form the scripts were built and guard
 separate commands a level task, and a single big level may not fit in ten minutes.
 Blocks: nothing. Until you answer, runs take (b); if one level's sweep cannot finish in ten minutes, that run stops
 and says so.
+Update 2026-11-21 (run 61): taking (b) worked — the sweep ran in ten commands (levels grouped so each stayed under ten minutes, the longest 492 s) and the bot fits in one command a shell (80 s, 95 s). All clean on eight levels. So this is now a convenience question only; by level 22 a single big level may still come close to the limit.
 Answer:
 
 ### Q19 — 2026-11-11 — Phase 6A plan (to the Goblin Chief): three small choices, for your later read

@@ -249,6 +249,12 @@ New in run 60 (6A-RN, level 15's fixture, nothing left out, seed 1): the rain pi
 `343813c4727ef0e0` (the same frame with the drops removed `b8b5b520071e980e`); frame 1, tick 143, no drop yet,
 `49eddc24d9989d95` (the value 6A-L15 compares its real first frame with); the first thunder's flash — iteration 129,
 tick 399 — `597cd03adccc11ce` (the same frame with no flash `1cc38d5f30226d2f`). No existing value moved.
+New in run 61 (6A-L15, the real level 15, seed 1): the first frame, tick 143, `49eddc24d9989d95` (equal to 6A-RN's
+frame-1 value; without the rain sheets `75d168572f6f029c`); the Windows reference — flow step 609 `742a0703fa4da325`
+(black), step 611 `4a20aaf242d20d31` (the first rain-sheet frame), step 689 `d102a2c8a8ae172d`; `BootFacesTests` L15
+init 209 / `0xdf7d3df30637a1eb`, f30 214 / `0x54da315df4a76b2c`, f120 214 / `0xd37a42bc76b38645`. The rain test
+`testLevel15RainFeatureGolden` is deleted; its frame-2 values live on inside `testLevel15FirstFrameGolden`. No
+existing value moved.
 
 **What the machine does NOT prove:** the feel of every enemy's AI at 30 steps a second; the colours of the tint tables
 (through the replica's colour search, LOW); the underwater tint's strength on screen (gamma, MED); the OmniPx
@@ -2161,6 +2167,52 @@ ids; its `--check` reads this table):
 - **Gate:** Gate-L (G2 740, GW2 86). **Commit:** `Level 15 enterable: Storm Valley; 4 tests (1 feature golden retired),
   1 Windows reference`.
 
+- **As executed — 6A-L15 (run 61, 2026-11-21):** task e8d6bfd, fix round b9d0023 (tests, comments and the audit
+  only), ledger d881eb1, merged at b4482a1. The only game-source change is `BuiltLevels.list` =
+  `[1, 2, 3, 4, 5, 10, 11, 15]`. Legs: spec MERGEABLE AFTER FIXES (one must-fix, the audit's tick budget), quality
+  MERGEABLE AFTER FIXES — 83 planted bugs, 72 caught, 5 harmless, 4 in-scope slips all closed by the fix round, 2
+  out-of-scope slips that `BackgroundMoverTests.testSuperSpring` catches; no slip exposed a fault in game code.
+  - **The first frame = 6A-RN's retired value:** level 15's real first frame is `49eddc24d9989d95` at tick 143,
+    camera (0, 1018). It is the same open function as the fixture's, so the equality holds by construction; only the
+    Windows reference exercises the whole New Game path. Twins inside the test: frame 1 without the rain sheets
+    `75d168572f6f029c`; 6A-RN's frame-2 pins carried (`343813c4727ef0e0`, drops removed `b8b5b520071e980e`). The
+    thunder test and pin are kept.
+  - **New pins (measured):** Windows reference — first presented level frame, flow step 609, all black
+    `742a0703fa4da325`; first faded-in frame, step 689, `d102a2c8a8ae172d`; first rain-sheet frame, step 611,
+    `4a20aaf242d20d31` (a twin with the backdrop's rain sheets off differs in 536,532 bytes). `BootFacesTests` level
+    15: init 209 / `0xdf7d3df30637a1eb`, f30 214 / `0x54da315df4a76b2c`, f120 214 / `0xd37a42bc76b38645`.
+    Picture-cache bar 32 / 111 / 222 / 32, first step 119, last 222. The Gremlin bodies' position hash after 60 + 60
+    frames `d9e5bf39bd47e6b0`.
+  - **Data and dump over card:** level 15 refuses 0 of 183 records (the card's 38 was out of date); the header
+    values match. **The Gremlin never idles** (it spawns active, M l. 1839–1842, 1856–1858, 1922–1930) — the idle
+    test pins its three linked sprites staying active (links M l. 69203–69223) and the Dillo, which has no parts,
+    through idling and waking with no Setup re-run (M l. 4215–4275: the patrol bounds 3862 / 4012 come back, not a
+    re-run's 3793 / 3943). **Level 15 is entered from level 10's second exit (record 249), not from level 11.**
+    Level 15's own second exit value cancels the map walk: the player stays on node 15 with nodes 20 and 30 unlocked
+    (M l. 67546–67559, 67270).
+  - **List-pinned values re-derived:** the not-built probes moved to 16 / 18; the not-built walk (5 → 10 → 11 →
+    node 18) and the Continue test's not-built save (18) are unchanged; `-FerazelLevel 15` opens level 15. Nothing
+    else moved (levels 1–5, 10, 11, their Windows references, every fixture picture, the chapter cards).
+  - **Parameter trace:** in e8d6bfd's body; the spec leg derived the list of new values independently and it
+    matched; no value reaches an unbuilt arm. The fix round made the Frog-spit assert able to fail (the test's Frog
+    had id 0, so the "spit" it read was the Frog itself) and pinned the crate drops' spawn path.
+  - **Outside the card's fence, by the seat's ruling (D60.1, D60.2):** the draw-mode audit's scripted run gets
+    `runSteps * 8` ticks (was `* 6`): on level 15 the side push and the script's random jumps carry the player into
+    the back exit (record 48) and the level restarts 26 times — 2,000 steps need 13,897 ticks. The push matches the
+    dump (M l. 46348–46364). The audit test also gained an opt-in level filter, `FERAZEL_AUDIT_LEVELS`, because run
+    alone it had reached 552 s of the 600 s a command may take; unset, it runs as before; two filtered runs that
+    name every level between them run every assert. Comment fixes in `RainTests.swift`, `LevelTenTests.swift`,
+    `tools/ferazel-built-levels.sh`.
+  - **Gates at b4482a1 (the seat's own runs from a `git archive` copy, foreground, in parts):** G2 **740** = 572
+    rules + 168 render, 0 failed, the two opt-in skips by name (rules 118 s; A–C 263, F–K 260, L 307, M–Z 163, D–E
+    without the audit 55, the audit's first test 197 (levels 1–5) + 351 (10, 11, 15), its second test 543 s); GW2
+    **86**, 0 failed, the two opt-in skips (B|F|T 514, Win D|F|G 319, Win O|R|S|V 154, the three level references
+    175 / 158 / 128 s); G3 `Totals: items 1,108 decoded, failures 0`; G5 / GW1 / GW3 / GW4 the implementer's at
+    e8d6bfd. **Full GE, 8 levels, 4 workers, a level group a command** (game source as e8d6bfd; the fix round
+    touched none): sweep core **7,056 visits, rows 0** (1,652 s in five commands), windows **7,056, rows 0**
+    (1,721 s); bot core `levels 8, seeds 4, steps 172800, deaths 25, exits 237, conversations 33, saves 1,
+    failures 0 in 80 s`, windows the same counts `in 95 s`. About 0.23 s a visit, builds included.
+
 #### 6A-CH1 — ⚑ MAJOR — the Goblin Chief: class, Init, Setup, Handle; the player's stagger arm (→ 752)
 - **Files:** `Sources/FerazelCore/World/Enemies/Chief.swift` (new), `Sources/FerazelCore/Sprites/SpriteSlot.swift`
   (`SpriteHandler.chief`), `Sources/FerazelCore/Sprites/SetupFaces.swift` (`:712`, the Chief's refusal),
@@ -2544,7 +2596,7 @@ bot plays 4 seeds × 3 minutes a level = 21,600 steps a level (108,000 on 1–5,
 |---|---:|---:|---:|---|---|
 | Phase 5 (measured) | 5 | 3,488 | 108,000 | ~12 min on 1–4 (3,360 visits, measured at 6a70bce); 1–5 not recorded | Core ~130–140 MB; Windows ~295 MB after the leak fix (one worker, levels 1 / 4 / 5) — measured 2026-11-10 |
 | 6A-L10L11 (measured, run 56) | 7 | 6,324 | 151,200 | 43 min (core 1,192 s + windows 1,409 s); the bot 73 s + 86 s | not measured |
-| 6A-L15 | 8 | 7,056 | 172,800 | ~25 min (est.) | ≤ 600 MB (est.) |
+| 6A-L15 (measured, run 61) | 8 | 7,056 | 172,800 | 56 min (core 1,652 s + windows 1,721 s, a level group a command, builds included); the bot 80 s + 95 s | not measured |
 | 6A-L18 | 9 | 7,192 | 194,400 | ~26 min (est.) | ≤ 600 MB (est.) |
 | 6A-L20 | 10 | 8,524 | 216,000 | ~31 min (est.) | ≤ 700 MB (est.: 164 clouds) |
 | 6A-L21 | 11 | 9,824 | 237,600 | ~35 min (est.) | ≤ 700 MB (est.) |

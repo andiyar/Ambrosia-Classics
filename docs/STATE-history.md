@@ -4,6 +4,16 @@
 > only). Nothing current reads this file; the live state is `docs/STATE.md`. Each later close that settles something
 > adds a dated section at the top, newest first. The two snapshots below are verbatim (headings demoted only).
 
+## Settled at Ferazel run 61's close (2026-11-21)
+
+- Level 15 "Storm Valley" opened (6A-L15: e8d6bfd, fix round b9d0023, merged at b4482a1); Core suite 737 → 740,
+  Windows kit 85 → 86. Run 60's "level 15 heads run 61" is done; the level-15 card's amended first-frame comparison
+  held (`49eddc24d9989d95`).
+- Run 60's numbers replaced: G2 737 (five parts, about 22 min), GW2 85, the sweep and bot of run 56 on seven levels
+  (6,324 visits a shell; bot steps 151,200).
+- The rain's test stand-in picture test was deleted as planned; its values live inside the level's own test.
+- Run 60's worktree `recursing-morse-414aa0` was removed at its close.
+
 ## Settled at Ferazel run 60's close (2026-11-21)
 
 - Q20 answered by Ben ("a: run detached", D59.1); run 59's stop on it (07:56 → 07:58, nothing changed, D57) is over.

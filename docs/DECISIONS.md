@@ -2696,3 +2696,25 @@ Ben's answers are in `~/.claude/coordinator-notes/deimos-phase4-mailbox.md`; the
    sweep and the bot — each longer than ten minutes as one command, which a Coordinator-started session cannot run
    (Q20's answer covers the Windows test script only). Run 61 runs them one level at a time in the foreground
    (`FERAZEL_VISIT_LEVELS`, `FERAZEL_BOT_LEVELS`); Q21 asks Ben whether they may run detached instead.
+
+## D60 — Ferazel's Wand: run 61's rulings (6A-L15 — level 15 opens; 2026-11-21)
+
+1. **The draw-mode audit's scripted run gets a larger tick budget (`runSteps * 8`, was `* 6`).** D54.1 applied
+   again: on level 15 the side push and the script's random jumps carry the player into the level's back exit, the
+   level restarts 26 times, and 2,000 steps need 13,897 ticks. Both review legs checked the push against the dump
+   and found no port fault. The implementer's edit was refused as outside its fence; the seat ruled it in and the
+   fix round made it. Levels 1–5's, 10's and 11's rows and values are untouched.
+2. **The audit test may be run in level groups** (`FERAZEL_AUDIT_LEVELS`, opt-in; unset = every built level, as
+   before). Run alone it had reached 552 s of the 600 s one command may take. Two filtered runs that between them
+   name every built level execute every assert, so the gate loses nothing. An id outside the built list fails the
+   test. **Still owed:** the audit's second test (`testEveryRefusalIsUnreachable`) ignores the filter and took 543 s
+   alone — it needs the same filter before the next level (18) opens.
+3. **Dump over card, three times:** the Gremlin never idles, so there is no "idling carry" for its parts — the test
+   pins the parts' links while active and the Dillo's idle and wake; level 15 is entered from level 10's second
+   exit, not from level 11; level 15 refuses 0 records, not 38.
+4. **The sweep ran beside the review legs and the fix round, at the task commit's game source**, one level group a
+   command (D59.4), and the bot as one command a shell (80 s and 95 s — well inside ten minutes, so there was no
+   reason to split it by level). The fix round was briefed to touch no game source and `git diff` confirmed it; had
+   it touched any, the sweep would have been run again. Q21 stays open, no longer pressing: level by level works
+   and costs about twelve commands.
+5. **6A-CH1 was not started:** the level's gate ended at 21:20 and a ⚑ task takes about four hours.
