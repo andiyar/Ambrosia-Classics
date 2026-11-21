@@ -309,8 +309,8 @@ final class DrawModeAuditTests: XCTestCase {
         W("World/Enemies/Warrior.swift:265", .mirrored, .flags([true]), "warrior"),
         W("World/Enemies/Warrior.swift:319", .mirrored, .flags([false, true]), "warrior"),
         // 6A-CH1: the Chief — his Setup's facing `+0x17e = 1` (M l. 75103), the landing's and the throw cycle's "face
-        // the player" (M l. 75377–75379, 75270–75272) and the boulder's `+0x17e` = his facing (M l. 75235). Level 18 is
-        // not built yet (6A-L18): no built level reaches them.
+        // the player" (M l. 75377–75379, 75270–75272) and the boulder's `+0x17e` = his facing (M l. 75235). Level 18 (built
+        // at 6A-L18) reaches them.
         W("World/Enemies/Chief.swift:65", .mirrored, .flags([true]), "chief"),
         W("World/Enemies/Chief.swift:213", .mirrored, .flags([false, true]), "chief"),
         W("World/Enemies/Chief.swift:279", .mirrored, .copy, "enemyShot.chiefBoulder"),
@@ -700,6 +700,13 @@ final class DrawModeAuditTests: XCTestCase {
         let renderer: FrameRenderer
         let lightBytes: Set<Int>
         let liquidKinds: Set<Int16>
+        /// The light bytes the dynamic-light arm (`SpriteSlot.applyDynamicLight`, `.levelLight`) is enumerated over:
+        /// every light byte, except on a level whose `unlitProof` holds (D63), where the bytes outside the ambient rows
+        /// are left out because that proof shows the arm never runs there.
+        let armLightBytes: Set<Int>
+        /// D63: nil when every light byte is in the ambient rows (levels 1–5, 10, 11, 15); else the failures of the
+        /// three-part proof that no sprite reads one (`unlitProof`) — empty when it holds.
+        let unlitProof: [String]?
     }
 
     /// The mode words of a mode row on `L`.
@@ -710,8 +717,9 @@ final class DrawModeAuditTests: XCTestCase {
         case .levelLight:
             var out: Set<UInt32> = [0]
             // F's read is in range iff the light row L·0x6e00 + F·0x100 is (`special`'s guard, monotone in L and F):
-            // the corners and a spread decide; every L the level holds.
-            for L in l.lightBytes { for F in [0, 1, 55, 109, 110] where L >= 1 || F >= 1 {
+            // the corners and a spread decide; every L the level holds (`armLightBytes`: D63's proof leaves out the
+            // bytes outside the ambient rows — the A14 words 0xbff00 + F for L = −1 — only where it holds).
+            for L in l.armLightBytes { for F in [0, 1, 55, 109, 110] where L >= 1 || F >= 1 {
                 out.insert(UInt32(truncatingIfNeeded: L * 0x100 + 0xc0000 + F))
             } }
             return out.sorted()
@@ -728,7 +736,7 @@ final class DrawModeAuditTests: XCTestCase {
         let m = modeOf(word), L = Int(Int8(truncatingIfNeeded: word >> 8)), F = Int(word & 0xff)
         switch v {
         case .levelLight:
-            return word == 0 || (m == 0xc && l.lightBytes.contains(L) && (0...110).contains(F) && (L >= 1 || F >= 1))
+            return word == 0 || (m == 0xc && l.armLightBytes.contains(L) && (0...110).contains(F) && (L >= 1 || F >= 1))
         case .radialLight: return m == 0xc && F == 0 && (0...12).contains(L)
         default: return words(v, l).contains(word)
         }
@@ -756,6 +764,12 @@ final class DrawModeAuditTests: XCTestCase {
         /// and its ripple phase at the end.
         var prepares = 0, erasesSinceStart = 0
         var finalPhase: Int32 = 0
+        /// D63 (a)(3): the ticks whose session's active list, at the tick's end (what the next `.WrapDrawSprites`
+        /// reads), held a sprite with the dynamic-light flag `+0x89` set (`SpriteSlot.dynamicLight`).
+        var dynamicLitTicks = 0
+        /// D63 (b): the submerged draws of water kind 0 the held item made (identified by `heldItemDrew`) — kept out
+        /// of `waterKinds`, whose every kind must be a liquid of the level.
+        var heldKindZeroDraws = 0
     }
 
     struct Audit {
@@ -891,7 +905,10 @@ final class DrawModeAuditTests: XCTestCase {
             t &+= 1
             seen.ticks += 1
             seen.steps += run.lastSteps.count
-            if let session = run.session { seen.tintDraws.insert(session.tintTableDraws.count) }
+            if let session = run.session {
+                seen.tintDraws.insert(session.tintTableDraws.count)
+                if session.active.sprites.contains(where: { $0.dynamicLight }) { seen.dynamicLitTicks += 1 }
+            }
             if services.prepares != seen.prepares {
                 seen.prepares = services.prepares
                 seen.erasesSinceStart = 0
@@ -909,7 +926,8 @@ final class DrawModeAuditTests: XCTestCase {
                         && !Self.isClut(op) { seen.levelOpsOffLevel.append(name(op)) }
                     continue
                 }
-                for op in g.output.draws { observe(op, &seen) }
+                let sprites = run.session?.active.sprites ?? [], held = run.session?.world.player.heldItem
+                for op in g.output.draws { observe(op, &seen, sprites, held: held) }
                 guard let r = services.renderer else { continue }
                 let ops = g.output.draws.filter { !skippedOps.contains(name($0)) }
                 do {
@@ -936,13 +954,131 @@ final class DrawModeAuditTests: XCTestCase {
         let ctx = SetupFaces.Context(level: L, playerX: SetupFaces.Context.levelStartPlayerX(L.header),
                                      effects: prefs.effects)
         let setups = try L.activePlacements.map { try SetupFaces.setup($0, context: ctx) }
-        return Audit(level: Level(number: number, file: L, renderer: r, lightBytes: bytes, liquidKinds: liquids),
+        // D63: the arm's bytes — all of them, unless some byte is outside the ambient rows and the proof holds.
+        let ambient = r.tables.ambient.count
+        let proof = try unlitProof(L, lightBytes: bytes, ambient: ambient, seen: seen)
+        let arm = proof == [] ? bytes.filter { (0..<ambient).contains($0) } : bytes
+        return Audit(level: Level(number: number, file: L, renderer: r, lightBytes: bytes, liquidKinds: liquids,
+                                  armLightBytes: arm, unlitProof: proof),
                      setups: setups, seen: seen)
+    }
+
+    // MARK: - D63 (a): a level whose light bytes leave the ambient rows
+
+    /// The dump's six dynamic-light stores — every `*(param_1 + 0x89) = 1` in M (grep `0x89) = 1`; the handlers dump
+    /// holds the same six) — with the types whose Handle arm makes it, a superset where the arm also tests a field, and
+    /// the port's writer of each (nil: the arm is not built yet). Every arm is in a class Handle selected by type.
+    static let dynamicLightStores: [(dump: Int, port: String?, types: [ClosedRange<Int16>], arm: String)] = [
+        (55695, "World/Movers/PlatformSprite.swift:930", [0x578...0x595],
+         "`.HandlePlatformSprite`, `+0xb0 == 3` (the raft) — any Platform type (record p1 3 or 103)"),
+        (56001, "World/Movers/ChainSprite.swift:53", [0x59a...0x59a],
+         "`.HandleChainSprite` type 0x59a (M l. 55991), `+0x1ae == 0x100` — the radial maces' chain"),
+        (60284, "World/Movers/BoxSprite.swift:741", [0x42e...0x434],
+         "`.HandleBoxSprite` 0x42e…0x430 / 0x433 / 0x434 (M l. 60220–60223, the rolling boulder)"),
+        (61013, nil, [0xbfe...0xbfe], "`.HandleBoxSprite` type 0xbfe (M l. 60950, the snowball)"),
+        (63171, "World/Movers/BackgroundSprite.swift:203", [0x5c8...0x5d1],
+         "`.HandleBackgroundSprite` maces 0x5c8…0x5d1 (M l. 63137), `+0xb0` 10 / 11"),
+        (63526, nil, [0xbf4...0xbf4], "`.HandleBackgroundSprite` type 0xbf4 (M l. 63511, the blade)"),
+    ]
+
+    /// The types whose code makes a carrier of a `dynamicLightStores` arm at run time: the dump's constant-type
+    /// `.MTNewSprite` calls of a carrier type (the whole list of its 182 calls, M) and the variable-type calls that can
+    /// name any type (a record's type field). The other variable-type calls make the caller's own type (a carrier only
+    /// when the caller is one), a PlayerShot (`.CastSpell`, `.SetupPlayerShotSprite`, `.KillPlayerShot`), a computed
+    /// non-carrier (`.HurtPlayer` 0x4bf + n, `.CreateBalloonSprite` 0xcb2 + n, the 0x76c…0x76f arm's + 5, M l. 63460)
+    /// or `.KillCrate`'s record type gated to Bonus types (M l. 61272–61276). Not a spawner: the player's shots make
+    /// ice floes 0x57c (M l. 50798, 51285, 51291) with `+0xb0 = 4` (M l. 50802, 51297), never the raft's 3 (the port's
+    /// `PlayerShot.floe` / `ledge` `p.subtype = 4`, checked in `.untransformableNotTransformed`); the Chief's one spawn
+    /// is the boulder 0x77b under `.SetupEnemyShotSprite` (M l. 75232–75234), a class with no `+0x89` store.
+    static let carrierSpawners: [(dump: String, spawners: [ClosedRange<Int16>], makes: String)] = [
+        ("M l. 54954, 54987, 54991", [0x578...0x595], "platforms 0x584 / 0x58d / 0x58e (`.DoSetupPlatformSprite`)"),
+        ("M l. 62362–62371 (`.MakeRadial` l. 35789)", [0x5c8...0x5d1], "the chain 0x59a (radial modes 10–14)"),
+        ("M l. 73166, 73172, 73178", [0x71c...0x725], "the Warrior's crates 0x433"),
+        ("M l. 75739", [0x726...0x72f], "the Wizard's hovering rock 0x434"),
+        ("M l. 76898", [0x7c6...1999], "Xichra's rain 0x434"),
+        ("M l. 60101, 60155–60157", [0x51c...0x51c], "the type its record names (any type)"),
+        ("M l. 60488–60538", [0x5aa...0x5ad], "its record's type + 0x6e1"),
+    ]
+
+    /// D63 (6A-L18; D54.1 / D60.1's form): a level with a light byte outside the ambient rows (level 18: every cell
+    /// −1). nil when there is none; else the failures of the proof that nothing reads such a byte — empty when it holds:
+    /// (1) the header's darkness switch 0x2706 is 0, so the tile light pass (`.GetAmbDarkVal`, M l. 13643–13652) and
+    ///     the sprites' ambient darken read D 0, and every reader of the light byte but the dynamic-light arm is gated
+    ///     by it; (2) no record type on the level carries a dynamic-light store or spawns a carrier
+    ///     (`dynamicLightStores`, `carrierSpawners`), and the port's `+0x89` writers are exactly the table's;
+    /// (3) its scripted run never had a `+0x89` sprite on the list (`Seen.dynamicLitTicks`) and drew no word the arm
+    ///     makes from such a byte (L = −1: the A14 words 0xbff00 + F).
+    /// Where it holds, `armLightBytes` leaves those bytes out (the arm never runs there, so `.GetLightTile`'s −1 —
+    /// M l. 34955–34970, ungated in the arm, M l. 10320–10331 — is never read); where it fails, every byte stays in and
+    /// `drawWriters` refuses the words, as `.lightBytesInRange` fails on the proof.
+    static func unlitProof(_ L: LevelFile, lightBytes: Set<Int>, ambient: Int, seen: Seen) throws -> [String]? {
+        let outside = lightBytes.filter { !(0..<ambient).contains($0) }.sorted()
+        guard !outside.isEmpty else { return nil }
+        var out: [String] = []
+        // (1) The darkness switch, and every `lightByte(` reader.
+        if L.header.darknessEnable != 0 { out.append("(1) header 0x2706 = \(L.header.darknessEnable), not 0") }
+        let core = try coreLines.get().map { ("FerazelCore/" + $0.file, $0) }
+        let render = try renderLines.get().map { ("FerazelRender/" + $0.file, $0) }
+        var readers: [String] = []
+        for (path, l) in core + render where has(l.code, "lightByte(") && !has(l.code, "func lightByte(") {
+            readers.append(path)
+            if path == "FerazelCore/Session/FerazelSession.swift" { continue }   // the arm: (2) and (3)
+            if !has(l.code, "darknessEnable == 0 ? 0 : ") { out.append("(1) \(path):\(l.line) reads it ungated") }
+        }
+        if readers.sorted() != ["FerazelCore/Session/FerazelSession.swift", "FerazelCore/World/Movers/BoxSprite.swift",
+                                "FerazelRender/Frame/LightRenderer.swift"] {
+            out.append("(1) the light byte's readers: \(readers.sorted())")
+        }
+        // (2) The level's record types against the stores' and spawners' types; the port's writers against the table.
+        for t in Set(L.placements.map(\.type)).sorted() {
+            for s in dynamicLightStores where s.types.contains(where: { $0.contains(t) }) {
+                out.append("(2) type \(t) carries the +0x89 store M l. \(s.dump): \(s.arm)")
+            }
+            for s in carrierSpawners where s.spawners.contains(where: { $0.contains(t) }) {
+                out.append("(2) type \(t) spawns \(s.makes) (\(s.dump))")
+            }
+        }
+        let writers = try coreLines.get().filter { !assignedFields($0.code, ["dynamicLight"]).isEmpty }
+            .map { "\($0.file):\($0.line)" }
+        if writers.sorted() != dynamicLightStores.compactMap(\.port).sorted() {
+            out.append("(2) the port's +0x89 writers \(writers.sorted()) are not the table's")
+        }
+        // (3) The run.
+        if seen.dynamicLitTicks != 0 { out.append("(3) \(seen.dynamicLitTicks) ticks with a +0x89 sprite on the list") }
+        if seen.steps < runSteps { out.append("(3) the run took \(seen.steps) steps") }
+        for b in outside { for F in 0...110 where b >= 1 || F >= 1 {
+            let w = UInt32(truncatingIfNeeded: b * 0x100 + 0xc0000 + F)
+            if seen.modes.contains(w) { out.append("(3) the run drew \(hex(w)), the arm's word for light byte \(b)") }
+        } }
+        return out
     }
 
     private static func isClut(_ op: DrawOp) -> Bool { if case .setScreenClut = op { true } else { false } }
 
-    private static func observe(_ op: DrawOp, _ s: inout Seen) {
+    /// D63 (b): the held item's water kind — its own writer row, outside `writers` (no line assigns it): 0 from
+    /// `.InitSprite` (M l. 35668). `.SetupHeldItemSprite` clears its tile callback (`+0x1f8 = 0`, M l. 43421) and
+    /// `.SetHeldItemPos` (M l. 43460–43533) writes only the water row `+0x11c`; the one writer of `+0x128`,
+    /// `.HandleUnderWater` (M l. 38173), reaches it only once a strike has given it the player shot's tile callback
+    /// (`.HandleItemUse` c ≥ 3, M l. 44249–44251 → `.HitPlayerShotTileSprite` M l. 51375–51377, on a water tile: the
+    /// `UnderWater` row's liquid kind, checked as every sprite's). So its submerged part is drawn with kind 0
+    /// (`+0x128 + 0x60000`, M l. 10362–10363) on any level, a liquid of it or not, until it strikes a liquid. Only the
+    /// held item's draws are allowed kind 0 outside the level's liquids; it is the held sprite by identity
+    /// (`PlayerState.heldItem`), whichever Handle it carries (a strike gives it the player shot's, `.playerShot`).
+    static let heldItemWaterKind: Int16 = 0
+
+    /// D63 (b): whether the held item made `d` — every sprite whose last draw (`SpriteSlot.previous`, written by
+    /// `.WrapDrawSprites` as it builds the op) is `d` is the held sprite (`held`, the session's `PlayerState.heldItem`),
+    /// and there is one. A draw of an earlier step in the same tick, or of a sprite gone since, matches no sprite: not
+    /// the held item.
+    static func heldItemDrew(_ d: SpriteDraw, _ sprites: [SpriteSlot], held: Int?) -> Bool {
+        guard let held else { return false }
+        var e = d
+        e.randomSeed = nil                                   // `diffuseSeeds` adds it to mode-5 draws after the build
+        let makers = sprites.filter { $0.previous == e }
+        return !makers.isEmpty && makers.allSatisfy { $0.id == held }
+    }
+
+    private static func observe(_ op: DrawOp, _ s: inout Seen, _ sprites: [SpriteSlot], held: Int?) {
         switch op {
         case .wrapDrawSprites(let ds):
             for d in ds {
@@ -950,7 +1086,12 @@ final class DrawModeAuditTests: XCTestCase {
                 s.faces.insert(d.face)
                 s.rotations.insert(d.rotation)
                 s.scales.insert(d.scale)
-                if d.waterRow >= 1 && !d.noWaterSplit { s.waterKinds.insert(d.waterKind) }
+                if d.waterRow >= 1 && !d.noWaterSplit {
+                    // D63 (b): the held item's kind 0 is its own row (`heldItemWaterKind`); every other kind goes on.
+                    if d.waterKind == heldItemWaterKind && heldItemDrew(d, sprites, held: held) { s.heldKindZeroDraws += 1 } else {
+                        s.waterKinds.insert(d.waterKind)
+                    }
+                }
                 if modeOf(d.mode) == 5 && d.randomSeed == nil { s.mode5Unseeded += 1 }
             }
         case .wrapDrawWaterEffects(let list):
@@ -1345,6 +1486,13 @@ final class DrawModeAuditTests: XCTestCase {
             for k in s.waterKinds.union(s.waterFaceKinds) where !a.level.liquidKinds.contains(k) {
                 XCTFail("level \(n) run: water kind \(k) is not a liquid of the level")
             }
+            // D63 (b): the held item's own row — kind `heldItemWaterKind` on its submerged draws (counted apart in
+            // `heldKindZeroDraws`, identified by `heldItemDrew`); `HeldItem` writes no water kind and its Setup clears
+            // the tile callback, so its kind is 0 until a strike's tile callback meets a liquid (`UnderWater`'s row).
+            let held = try Self.coreLines.get().filter { $0.file == "Items/HeldItem.swift" }
+            XCTAssertTrue(held.allSatisfy { Self.assignedFields($0.code, ["waterKind"]).isEmpty },
+                          "the held item writes a water kind")
+            XCTAssertTrue(held.contains { Self.trim($0.code) == "h.hasTileHit = false" }, "the held item's tile callback")
             XCTAssertEqual(s.mode5Unseeded, 0, "level \(n): a mode-5 draw with no seed")
         }
     }
@@ -1409,16 +1557,19 @@ final class DrawModeAuditTests: XCTestCase {
           "every written word draws (test 1): no writer of modes 2, 7, 0xd, 0xe, ≥ 0xf (6A-S8: mode 8 drawn); a 0xb arg's table read in "
           + "range; tint subs ≤ 24 (placements' p2 included); modes 5 / 0xa / 0xb never on a rotated or scaled "
           + "sprite, 0xa never mirrored; light index ≥ 0x6f000 needs F ≥ 126 (DK: F max 110); A14 (light byte −1 → "
-          + "0xbff00 + F) needs a BG cell with light byte −1, none in a built level"),
+          + "0xbff00 + F) needs a dynamic-light sprite over a cell with light byte −1: none on a built level (level 18 is all "
+          + "−1 and holds no carrier, D63)"),
         R("Frame/SpriteBlitter.swift", "Refusal.darkness", 1, .dataAbsent, [.lightBytesInRange],
-          "mode 0xc's L is a light byte (0…15 on every built level, `applyDynamicLight`) or a Radial depth band 0…12"),
+          "mode 0xc's L is a light byte (0…15 on every built level the arm runs on, `applyDynamicLight`; D63) or a "
+          + "Radial depth band 0…12"),
         R("Frame/SpriteBlitter.swift", "Refusal.translucency", 3, .byConstruction,
           [.parallaxAttached, .pxBackSlotsLoaded, .headerFlame, .facesNarrow, .noCopyAfterCopy],
           "the parallax is attached on every sprite pass; every PxBack cell's slot is loaded and no level has the "
           + "Fire backdrop; no face is over 301 px wide; `FaceEncoder` never emits a copy run after a copy run"),
         R("Frame/SpriteBlitter.swift", "failure", 1, .dataAbsent,
           [.lightBytesInRange, .lightIndexInRange, .ripplePhaseHours],
-          "the light pass's carried refusals: darkness D is a light byte 0…15 on every built level; the light index "
+          "the light pass's carried refusals: darkness D is a light byte 0…15, or 0 where header 0x2706 is 0 (D63); the "
+          + "light index "
           + "stays in the table (light-face pixels 0 or 0xf5…0xff, colours ≤ 99); the ripple phase (below)"),
         R("Frame/SpriteBlitter.swift", "Refusal.transform", 3, .byConstruction, [.facesNarrow],
           "the three throws sit on the rotated / scaled walks only (`rotWalk`, entered when rotation ≠ 0 or scale ≠ "
@@ -1448,7 +1599,8 @@ final class DrawModeAuditTests: XCTestCase {
         R("Frame/TileGridRenderer.swift", "Refusal.waterTable", 1, .dataAbsent, [.waterKindsInTables],
           "no level of the 24 has a BG tile of kind 206…209 (water tables 6…9, never built by the original)"),
         R("Frame/LightRenderer.swift", "Refusal.darkness", 2, .dataAbsent, [.lightBytesInRange],
-          "the tile light pass's D is a light byte, 0…15 on every built level (the ambient rows)"),
+          "the tile light pass's D is a light byte, 0…15 on every built level (the ambient rows), or 0 where header "
+          + "0x2706 is 0 (level 18, D63)"),
         R("Frame/LightRenderer.swift", "Refusal.lightIndex", 1, .dataAbsent, [.lightBytesInRange, .lightIndexInRange],
           "the tile light pass's index stays in the table: D 0…15, light-face pixels 0 or 0xf5…0xff, colours ≤ 99"),
         R("Frame/LightRenderer.swift", "Refusal.overlay", 1, .dataAbsent, [.overlaysInSet],
@@ -1842,11 +1994,22 @@ final class DrawModeAuditTests: XCTestCase {
         case .lightBytesInRange:
             // `.GetLightTile` over every cell (the reads clamp to the grid): D for the light pass, L for the dynamic
             // light — 0…15 (the ambient rows), so no darkness refusal and no A14 word 0xbff00 + F.
+            // D63: a level with a byte outside them (level 18: every cell −1) is held instead to `unlitProof` — the
+            // darkness switch 0, no dynamic-light carrier or spawner, no `+0x89` sprite or arm word in its run — and
+            // its arm words are enumerated without those bytes only because the proof holds (`armLightBytes`).
             for a in audits {
                 let ambient = a.level.renderer.tables.ambient.count
-                for b in a.level.lightBytes {
-                    XCTAssertTrue((0..<ambient).contains(b), "\(c): level \(a.level.number) light byte \(b)")
+                guard let proof = a.level.unlitProof else {
+                    for b in a.level.lightBytes {
+                        XCTAssertTrue((0..<ambient).contains(b), "\(c): level \(a.level.number) light byte \(b)")
+                    }
+                    XCTAssertEqual(a.level.armLightBytes, a.level.lightBytes, "\(c): level \(a.level.number)")
+                    continue
                 }
+                XCTAssertTrue(a.level.lightBytes.contains { !(0..<ambient).contains($0) }, "\(c): \(a.level.number)")
+                XCTAssertEqual(proof, [], "\(c): level \(a.level.number) has light bytes outside the ambient rows")
+                XCTAssertEqual(a.level.armLightBytes, a.level.lightBytes.filter { (0..<ambient).contains($0) },
+                               "\(c): level \(a.level.number) arm bytes")
             }
         case .lightIndexInRange:
             // `lightBlit`: light[D·0x6e00 + (p + colour − 0xf5)·0x100 + d] with D 0…15 needs p + colour − 0xf5 in

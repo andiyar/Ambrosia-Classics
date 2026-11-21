@@ -7,7 +7,7 @@ import HectorResources
 /// `.SetupChiefSprite` (M l. 75031–75115), `.HandleChiefSprite` (M l. 75162–75441), `.GoblinChiefRandomCry` (M l.
 /// 75118–75159), `.HitChiefTileSprite` (M l. 75535–75567). Every test opens level 18 ("Goblin Chief") through the level
 /// fixture (6A-FX) headless with nothing left out — the Chief is record 1 (type 1910, x 897, y 410, p4 1); level 18 is
-/// not in `BuiltLevels` yet (6A-L18) and the fixture never consults it. The Handle is driven through the level runner
+/// in `BuiltLevels` since 6A-L18, and the fixture never consults the list. The Handle is driven through the level runner
 /// or called alone on the run's world; every expected draw is re-derived from a copy of the stream (`FastRand`), never
 /// from the port's generator. A missing data file is a FAILURE, never a skip.
 final class ChiefTests: XCTestCase {
@@ -266,10 +266,10 @@ final class ChiefTests: XCTestCase {
         let a = try XCTUnwrap(awake), j = try XCTUnwrap(jump)
         XCTAssertEqual(lockedFrames, 56, "state 1 on his 56th locked Handle frame")
         XCTAssertEqual(j - a + 1, 56)
-        // These frames (wake 1, asleep 2, lock 111, awake 121, jump 176; the first landing 212 below) were measured
-        // headless: the stub's wake rectangle for the re-idled Chief is the whole 256×254 cell, a superset of the opaque
-        // bounds (`FerazelSession` headless `LevelServices`), so the real-game wake may come later — 6A-L18 re-measures
-        // with the real face bounds.
+        // These frames (wake 1, asleep 2, lock 111, awake 121, jump 176; the first landing 212 below) are the headless
+        // values and stay so: the stub's wake rectangle for the re-idled Chief is the whole 256×254 cell, a superset of
+        // the opaque bounds (`FerazelSession` headless `LevelServices`). The real-picture values are pinned in
+        // `LevelFrameGoldenTests.testLevel18ChiefActivationFrame` (lock 111, awake 124, jump 179, landing 215).
         XCTAssertEqual([firstActive, asleep, lock, awake, jump], [1, 2, 111, 121, 176], "measured (seed 1)")
 
         // The twin with the arena open (the lock switched off by hand between his Handles): `+0xa6` stands, no jump
