@@ -12,7 +12,8 @@ import XCTest
 ///    the lines it cites), under every transform the renderer builds for it, on screen (each probe reaches its mode
 ///    read — a non-empty window in view, proved by a control word's refusal); every clip edge value of the clip rows;
 ///    each placement's Setup (run once, moved to (100, 100)); and a 2,000-step scripted run of the level through
-///    `LevelRun` + `FrameRenderer`, whose every drawn value must also be one the table names.
+///    `LevelRun` + `FrameRenderer`, whose every drawn value must also be one the table names. `FERAZEL_AUDIT_LEVELS`
+///    (comma-separated built level ids) narrows it to those levels, so the gate can run it in parts (`auditLevels`).
 /// 2. `testEveryRefusalIsUnreachable` — every `throw` in `Sources/FerazelRender` and in `Sources/FerazelCore` (what a
 ///    level frame can propagate; counted per file and thrown name; a new throw without a row fails) with the reason it
 ///    cannot be reached on a level frame of a built level, each reason checked by code (the writer table, the data,
@@ -865,7 +866,11 @@ final class DrawModeAuditTests: XCTestCase {
                          sounds: StageSounds(prefs: prefs, lengths: [:]), files: SweepFiles())
         }
         var run = try newRun()
-        while seen.steps < runSteps && seen.ticks < runSteps * 6 {
+        // The tick budget: 8 ticks a step (was 6 to 6A-L15). Level 15's side push (hdr 0x272c −320) carries the scripted
+        // player, airborne from the script's jumps, into its back exit (record 48, p1 −1, x −93) every ~70 steps; each
+        // restart re-opens the level (load and fade, ticks with no step): 2000 steps take 13,897 ticks, 26 restarts
+        // (measured at 6A-L15's review; the seat's ruling, D54.1).
+        while seen.steps < runSteps && seen.ticks < runSteps * 8 {
             if run.end != nil {
                 seen.restarts += 1
                 run = try newRun()
@@ -1210,6 +1215,40 @@ final class DrawModeAuditTests: XCTestCase {
 
     static func hex(_ w: UInt32) -> String { "0x" + String(w, radix: 16) }
 
+    // MARK: - The level filter
+
+    /// `FERAZEL_AUDIT_LEVELS=1,2,3` narrows `testEveryWrittenModeIsDrawable` to those built levels (6A-L15's fix round:
+    /// the whole test took ~550 s alone against a 600 s command limit, and each new level adds to it). Unset or empty:
+    /// every built level, exactly as before. Every assert of the test is either per level or reads no level (the writer
+    /// scan, the rows' source values, the skipped ops' arms — run in every filtered run), so filtered runs whose ids
+    /// together name every built level execute every assert of the unfiltered run. A token that is not a number, an id
+    /// not in `BuiltLevels.list` or an id named twice throws: the test fails, nothing is skipped. A filtered run audits
+    /// its levels afresh (the shared `audits` stay whole: `testEveryRefusalIsUnreachable` ignores the filter).
+    static let auditLevelsVariable = "FERAZEL_AUDIT_LEVELS"
+
+    struct AuditFilterError: Error, CustomStringConvertible { let description: String }
+
+    /// The levels test 1 audits for the variable's value `value`, in `BuiltLevels.list` order. Pure Swift (Proof B).
+    static func auditLevels(_ value: String?) throws -> [Int] {
+        guard let value, !value.isEmpty else { return BuiltLevels.list }
+        var chosen: [Int] = []
+        for token in value.split(separator: ",", omittingEmptySubsequences: false) {
+            let t = token.filter { $0 != " " }
+            guard let n = Int(t) else {
+                throw AuditFilterError(description: "\(auditLevelsVariable)=\(value): \"\(t)\" is not a level id")
+            }
+            guard BuiltLevels.contains(n) else {
+                throw AuditFilterError(description: "\(auditLevelsVariable)=\(value): level \(n) is not in "
+                                       + "BuiltLevels.list \(BuiltLevels.list)")
+            }
+            guard !chosen.contains(n) else {
+                throw AuditFilterError(description: "\(auditLevelsVariable)=\(value): level \(n) named twice")
+            }
+            chosen.append(n)
+        }
+        return BuiltLevels.list.filter(chosen.contains)
+    }
+
     // MARK: - testEveryWrittenModeIsDrawable
 
     func testEveryWrittenModeIsDrawable() throws {
@@ -1229,9 +1268,18 @@ final class DrawModeAuditTests: XCTestCase {
         XCTAssertTrue(mismatches.isEmpty, "rows whose values the source does not write:\n"
                       + mismatches.map { "  " + $0 }.joined(separator: "\n"))
 
-        let audits = try Self.audits.get()
+        // The levels: every built level, or those `FERAZEL_AUDIT_LEVELS` names (`auditLevels`).
+        let levels = try Self.auditLevels(ProcessInfo.processInfo.environment[Self.auditLevelsVariable])
+        let audits: [Audit], drawn: [[String]]
+        if levels == BuiltLevels.list {
+            audits = try Self.audits.get()
+            drawn = try Self.drawn.get()
+        } else {
+            audits = try levels.map { try Self.audit(level: $0) }
+            drawn = audits.map(Self.drawWriters)
+        }
         try check(.skippedOpsCannotThrow, audits)
-        for (a, failures) in zip(audits, try Self.drawn.get()) {
+        for (a, failures) in zip(audits, drawn) {
             let n = a.level.number, L = a.level.file
             // The backdrop and OmniPx inputs: the level's header names the backdrop the renderer draws.
             XCTAssertLessThanOrEqual(L.header.flameMode, 0, "level \(n): the Fire backdrop")

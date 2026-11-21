@@ -4,8 +4,9 @@ import HectorResources
 
 /// 6A-L10L11 (docs/superpowers/plans/2026-11-04-ferazel-remainder.md `#### 6A-L10L11`): level 10 "Unemployed In
 /// Greenland" enterable — every one of its 312 records sets up (54 types; LL §4 "Level 10"), its header switches as
-/// read, its music cue, the picture cache's marks, `BuiltLevels.list` = [1…5, 10, 11], and the parent / child links
-/// of the swarms (record 0x200 members, never idled) and the path bats across idling (Hazards "Idle children").
+/// read, its music cue, the picture cache's marks, `BuiltLevels.list` = [1…5, 10, 11] (+ 15 at 6A-L15), and the parent
+/// / child links of the swarms (record 0x200 members, never idled) and the path bats across idling (Hazards "Idle
+/// children").
 /// The parameter trace ("Every level task"): every built type placed here whose p1…p4 take a value no level 1–5
 /// record of that type has is traced through its Setup / Handle arm in the dump and pinned by one assert inside
 /// `testLevel10SetsUpEveryRecord`. Against the committed `Resources/Ferazel` (D26); a missing data file is a FAILURE,

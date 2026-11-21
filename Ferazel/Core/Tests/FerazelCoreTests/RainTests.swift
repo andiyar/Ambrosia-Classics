@@ -7,9 +7,9 @@ import XCTest
 /// `.PaintFrameWrap` pass — and the level's constant side push (M l. 46347–46365, built as `Player.sidePush`).
 ///
 /// Every test opens level 15's fixture (6A-FX) headless with nothing left out: since 6A-BG1c every one of its 183
-/// records sets up, and level 15 is not in `BuiltLevels` yet (6A-L15). The expected values are re-derived here from the
-/// dump's arithmetic over the game's random stream (`FastRand`, seeded where the call found it), never from the port's
-/// generator. A missing data file is a FAILURE, never a skip.
+/// records sets up (level 15 joined `BuiltLevels` at 6A-L15; the fixture never consults it). The expected values are
+/// re-derived here from the dump's arithmetic over the game's random stream (`FastRand`, seeded where the call found
+/// it), never from the port's generator. A missing data file is a FAILURE, never a skip.
 final class RainTests: XCTestCase {
     /// Level 15's leave-out list: empty (count asserted 0).
     static let level15: [LevelFixture.LeaveOut] = []

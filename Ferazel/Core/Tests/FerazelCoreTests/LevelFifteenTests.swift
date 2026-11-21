@@ -78,6 +78,8 @@ final class LevelFifteenTests: XCTestCase {
         let bars = cache.load(needed: needed)
         let q = Int(bars.first?.1 ?? 0)
         XCTAssertEqual([marks.count, q / 2, q, bars.count], [32, 111, 222, 32], "measured (needed records, n, q, steps)")
+        // The bar's own steps: p starts at n and grows by each record's faces, so the last step fills it (p = q).
+        XCTAssertEqual([bars.first?.0, bars.last?.0], [119, 222], "measured: the first step; the last fills the bar")
 
         try traceLevel15(r, L)
     }
@@ -235,10 +237,13 @@ final class LevelFifteenTests: XCTestCase {
             var f = try setup(14).slot
             XCTAssertEqual([Int(f.hp), Int(f.mode), Int(f.classWord15c)], [0x15e, 0x10017, 2])
             let id = s.world.active.insert(f)
+            // The stand-in carries its store id: `frogSpit` writes its `s` back by id (with id 0 the Frog itself
+            // would be the "new" sprite below, and the assert would read the Frog's own `+0xb8`).
+            f.id = id
             let before = Set(s.world.active.sprites.map(\.id))
             FrogSalamander.frogSpit(s.world, id: id, &f)
             let shot = try XCTUnwrap(s.world.active.sprites.first { !before.contains($0.id) })
-            XCTAssertEqual(shot.mode, 0x10017)
+            XCTAssertEqual([Int(shot.type), Int(shot.mode)], [0x709, 0x10017], "the spit 0x709's `+0xb8`")
             _ = s.world.active.remove(id: shot.id)
             let score = s.world.globals.score
             FrogSalamander.killFrog(s.world, &f)
@@ -282,12 +287,23 @@ final class LevelFifteenTests: XCTestCase {
             BoxSprite.killCrate(s.world, id: id, lights: &lights, effects: 1)
             let made = s.world.active.sprites.filter { !before.contains($0.id) }
             XCTAssertEqual(made.filter { $0.type == Int16(type) }.count, n, "crate \(i)")
+            // The two paths of `.KillCrate`, told apart: a Bonus drop through `.SetupBonusSprite` gets `+0x114` 0xc;
+            // a type > 0xc7f through `.GenerateSprite` gets gravity 0x151; both leave with vy −2000 − R(1000).
+            for d in made where d.type == Int16(type) {
+                if type == 3206 {
+                    XCTAssertEqual(d.gravity, 0x151, "crate \(i): 3206 through `.GenerateSprite`")
+                } else {
+                    XCTAssertEqual(d.pickupDelay, 0xc, "crate \(i): \(type) through `.SetupBonusSprite`")
+                }
+                XCTAssertTrue((-2999...(-2000)).contains(d.vy), "crate \(i): vy \(d.vy)")
+            }
             for d in made { _ = s.world.active.remove(id: d.id) }
             _ = s.world.active.remove(id: id)
         }
         // The exits 3249 p1 1, p2 2 (records 61, 62; levels 1–11: p2 0): `.HitPlayerSprite`'s exit arm (M l.
         // 49733–49741) — exit1 = p1, exit2 = p2 (stored when ≠ 0); node 15's links [10, 20, 30] (`Mmap 200`): the map
-        // walks to node 20 and unlocks the link to 30 (`testBuiltLevelsFifteen`).
+        // unlocks nodes 20 and 30 and, exit2 ≥ 0, cancels the walk — the player stays on node 15
+        // (`testBuiltLevelsFifteen`).
         for i in [61, 62] {
             let t = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: 15)
             try touchExit(t, record: i)
@@ -390,12 +406,15 @@ final class LevelFifteenTests: XCTestCase {
         XCTAssertEqual([k, woke.x, Int(woke.classWord15c), Int(woke.classWord160), Int(woke.idleEntry)],
                        [17, 3937, 3862, 4012, 89], "measured: in on the 17th frame, the Setup's bounds")
         for _ in 0..<120 { _ = e.step(keys: KeyState()) }
+        // `+0xe9` planted 1 before it idles, so the snapshot carries it and the waking's clear (M l. 4264) is seen.
+        e.world.active.update(id: try XCTUnwrap(dillo()).id) { $0.killCount = 1 }
         try put(1200, 1500)
         k = 0
         while dillo() != nil && k < 200 { _ = e.step(keys: KeyState()); k += 1 }
         let entry = try XCTUnwrap(e.world.idle.entries[89])
         XCTAssertNil(entry.activeID)
         let idled = entry.saved
+        XCTAssertGreaterThan(idled.killCount, 0, "the snapshot carries a non-zero `+0xe9`")
         // Measured: idled on the second frame, mid-attack (state 8, phase 1, volley 3), 69 px left of its spawn.
         XCTAssertEqual([k, idled.x, Int(idled.x256), Int(idled.subtype), Int(idled.subState), Int(idled.classTimer)],
                        [2, 3868, 990462, 8, 1, 3])

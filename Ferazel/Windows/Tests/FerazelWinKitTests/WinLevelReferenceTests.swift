@@ -239,6 +239,9 @@ import XCTest
     /// that shows the rain sheets through the shell.
     func testLevel15FirstFrameReference() throws {
         let (game, host) = try Self.game(level: 15)
+        // `-FerazelLevel 15` taken (15 ∈ `BuiltLevels.list`); refused, the game would run level 1 and every loop below
+        // would run to its cap (well past the ten-minute command limit) before failing.
+        guard game.flow.startLevel == 15 else { return XCTFail("-FerazelLevel 15 refused: level \(game.flow.startLevel)") }
         let f = try Self.firstLevelFrame(game, host, level: 15)
         // No chapter card on level 15 (hdr 0x273c = 0).
         XCTAssertFalse(f.pictures.contains { (4610...4699).contains($0) }, "no chapter card: \(f.pictures.sorted())")
