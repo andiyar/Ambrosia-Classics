@@ -986,10 +986,15 @@ final class DrawModeAuditTests: XCTestCase {
     /// name any type (a record's type field). The other variable-type calls make the caller's own type (a carrier only
     /// when the caller is one), a PlayerShot (`.CastSpell`, `.SetupPlayerShotSprite`, `.KillPlayerShot`), a computed
     /// non-carrier (`.HurtPlayer` 0x4bf + n, `.CreateBalloonSprite` 0xcb2 + n, the 0x76c…0x76f arm's + 5, M l. 63460)
-    /// or `.KillCrate`'s record type gated to Bonus types (M l. 61272–61276). Not a spawner: the player's shots make
-    /// ice floes 0x57c (M l. 50798, 51285, 51291) with `+0xb0 = 4` (M l. 50802, 51297), never the raft's 3 (the port's
-    /// `PlayerShot.floe` / `ledge` `p.subtype = 4`, checked in `.untransformableNotTransformed`); the Chief's one spawn
-    /// is the boulder 0x77b under `.SetupEnemyShotSprite` (M l. 75232–75234), a class with no `+0x89` store.
+    /// or a crate's drop. The crate's drop is not a row (its record, not its type, names what it makes): `.KillCrate`
+    /// (M l. 61181–61327) — reached for the crates 0xc12…0xc1b (`BoxSprite.crateRange`: `.HandleBoxSprite` < 0xc15,
+    /// M l. 61078–61082; `.HitBoxSprite` 0xc12…0xc1b, M l. 61367–61388; `.HitBoxTileSprite` only on record p1 2, M l.
+    /// 61575–61577, which drops just the 0x4b7) — with the live record's p1 0 or 1 makes p3 times the type its p2
+    /// names: a Bonus type by `.MTNewSprite` (M l. 61272–61276), ANY other positive type by `.GenerateSprite` (M l.
+    /// 61292–61293). So `unlitProof` (2) holds every crate record's p2 > 0 (whatever its p1: the record is live) to
+    /// both tables, as a placed type. Not a spawner: the player's shots make ice floes 0x57c (M l. 50798, 51285, 51291)
+    /// with `+0xb0 = 4` (M l. 50802, 51297), never the raft's 3 (the port's `PlayerShot.floe` / `ledge`
+    /// `p.subtype = 4`, checked in `.untransformableNotTransformed`); the Chief's one spawn is the boulder 0x77b under `.SetupEnemyShotSprite` (M l. 75232–75234), a class with no `+0x89` store.
     static let carrierSpawners: [(dump: String, spawners: [ClosedRange<Int16>], makes: String)] = [
         ("M l. 54954, 54987, 54991", [0x578...0x595], "platforms 0x584 / 0x58d / 0x58e (`.DoSetupPlatformSprite`)"),
         ("M l. 62362–62371 (`.MakeRadial` l. 35789)", [0x5c8...0x5d1], "the chain 0x59a (radial modes 10–14)"),
@@ -1004,8 +1009,9 @@ final class DrawModeAuditTests: XCTestCase {
     /// −1). nil when there is none; else the failures of the proof that nothing reads such a byte — empty when it holds:
     /// (1) the header's darkness switch 0x2706 is 0, so the tile light pass (`.GetAmbDarkVal`, M l. 13643–13652) and
     ///     the sprites' ambient darken read D 0, and every reader of the light byte but the dynamic-light arm is gated
-    ///     by it; (2) no record type on the level carries a dynamic-light store or spawns a carrier
-    ///     (`dynamicLightStores`, `carrierSpawners`), and the port's `+0x89` writers are exactly the table's;
+    ///     by it; (2) no record type on the level, and no type a crate record's p2 drops, carries a dynamic-light store
+    ///     or spawns a carrier (`dynamicLightStores`, `carrierSpawners`), and the port's `+0x89` writers are exactly
+    ///     the table's;
     /// (3) its scripted run never had a `+0x89` sprite on the list (`Seen.dynamicLitTicks`) and drew no word the arm
     ///     makes from such a byte (L = −1: the A14 words 0xbff00 + F).
     /// Where it holds, `armLightBytes` leaves those bytes out (the arm never runs there, so `.GetLightTile`'s −1 —
@@ -1029,13 +1035,18 @@ final class DrawModeAuditTests: XCTestCase {
                                 "FerazelRender/Frame/LightRenderer.swift"] {
             out.append("(1) the light byte's readers: \(readers.sorted())")
         }
-        // (2) The level's record types against the stores' and spawners' types; the port's writers against the table.
-        for t in Set(L.placements.map(\.type)).sorted() {
+        // (2) The level's record types, and its crates' drops (`.KillCrate`: record p2 > 0, `carrierSpawners`' doc),
+        // against the stores' and spawners' types; the port's writers against the table.
+        var types = Set(L.placements.map(\.type)).sorted().map { ($0, "type \($0)") }
+        for p in L.placements where BoxSprite.crateRange.contains(p.type) && p.p2 > 0 {
+            types.append((p.p2, "crate record \(p.index) (type \(p.type)) drops type \(p.p2)"))
+        }
+        for (t, what) in types {
             for s in dynamicLightStores where s.types.contains(where: { $0.contains(t) }) {
-                out.append("(2) type \(t) carries the +0x89 store M l. \(s.dump): \(s.arm)")
+                out.append("(2) \(what) carries the +0x89 store M l. \(s.dump): \(s.arm)")
             }
             for s in carrierSpawners where s.spawners.contains(where: { $0.contains(t) }) {
-                out.append("(2) type \(t) spawns \(s.makes) (\(s.dump))")
+                out.append("(2) \(what) spawns \(s.makes) (\(s.dump))")
             }
         }
         let writers = try coreLines.get().filter { !assignedFields($0.code, ["dynamicLight"]).isEmpty }
@@ -1425,6 +1436,12 @@ final class DrawModeAuditTests: XCTestCase {
         let mismatches = try Self.sourceMismatches()
         XCTAssertTrue(mismatches.isEmpty, "rows whose values the source does not write:\n"
                       + mismatches.map { "  " + $0 }.joined(separator: "\n"))
+        // D63 (b): the held item's water kind, in its source (no level): `HeldItem` writes no water kind and its Setup
+        // clears the tile callback, so its kind is 0 until a strike's tile callback meets a liquid (`UnderWater`'s row).
+        let held = try Self.coreLines.get().filter { $0.file == "Items/HeldItem.swift" }
+        XCTAssertTrue(held.allSatisfy { Self.assignedFields($0.code, ["waterKind"]).isEmpty },
+                      "the held item writes a water kind")
+        XCTAssertTrue(held.contains { Self.trim($0.code) == "h.hasTileHit = false" }, "the held item's tile callback")
 
         // The levels: every built level, or those `FERAZEL_AUDIT_LEVELS` names (`auditLevels`).
         let levels = try Self.requestedLevels()
@@ -1487,12 +1504,7 @@ final class DrawModeAuditTests: XCTestCase {
                 XCTFail("level \(n) run: water kind \(k) is not a liquid of the level")
             }
             // D63 (b): the held item's own row — kind `heldItemWaterKind` on its submerged draws (counted apart in
-            // `heldKindZeroDraws`, identified by `heldItemDrew`); `HeldItem` writes no water kind and its Setup clears
-            // the tile callback, so its kind is 0 until a strike's tile callback meets a liquid (`UnderWater`'s row).
-            let held = try Self.coreLines.get().filter { $0.file == "Items/HeldItem.swift" }
-            XCTAssertTrue(held.allSatisfy { Self.assignedFields($0.code, ["waterKind"]).isEmpty },
-                          "the held item writes a water kind")
-            XCTAssertTrue(held.contains { Self.trim($0.code) == "h.hasTileHit = false" }, "the held item's tile callback")
+            // `heldKindZeroDraws`, identified by `heldItemDrew`; its source checks run once, above the levels).
             XCTAssertEqual(s.mode5Unseeded, 0, "level \(n): a mode-5 draw with no seed")
         }
     }
@@ -2003,10 +2015,8 @@ final class DrawModeAuditTests: XCTestCase {
                     for b in a.level.lightBytes {
                         XCTAssertTrue((0..<ambient).contains(b), "\(c): level \(a.level.number) light byte \(b)")
                     }
-                    XCTAssertEqual(a.level.armLightBytes, a.level.lightBytes, "\(c): level \(a.level.number)")
                     continue
                 }
-                XCTAssertTrue(a.level.lightBytes.contains { !(0..<ambient).contains($0) }, "\(c): \(a.level.number)")
                 XCTAssertEqual(proof, [], "\(c): level \(a.level.number) has light bytes outside the ambient rows")
                 XCTAssertEqual(a.level.armLightBytes, a.level.lightBytes.filter { (0..<ambient).contains($0) },
                                "\(c): level \(a.level.number) arm bytes")

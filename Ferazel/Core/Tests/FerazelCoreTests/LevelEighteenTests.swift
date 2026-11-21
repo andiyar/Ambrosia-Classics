@@ -94,8 +94,9 @@ final class LevelEighteenTests: XCTestCase {
         var cache = CachedFaces()
         cache.enterLevel(screenClut: h.screenClut)
         let bars = cache.load(needed: needed)
-        let q = Int(bars.first?.1 ?? 0)
-        XCTAssertEqual([marks.count, q / 2, q, bars.count], [13, 40, 80, 13], "measured (needed records, n, q, steps)")
+        // n counted from the needed records' own face counts (a set its faces, a single 1), not from q.
+        let q = Int(bars.first?.1 ?? 0), n = needed.records.reduce(0) { $0 + CachedFaces.record($1).faces }
+        XCTAssertEqual([marks.count, n, q, bars.count], [13, 40, 80, 13], "measured (needed records, n, q, steps)")
         // The bar's own steps: p starts at n and grows by each record's faces, so the last step fills it (p = q).
         XCTAssertEqual([bars.first?.0, bars.last?.0], [56, 80], "measured: the first step; the last fills the bar")
 
@@ -160,9 +161,16 @@ final class LevelEighteenTests: XCTestCase {
             _ = s.world.active.remove(id: id)
         }
         // The health upgrade 1340 (0x53c) p1 1 (record 23; level 5: p1 0): the upgrades arm (M l. 52650–52663) and the
-        // pickup arm (M l. 48810–48916) read no record word — the same Setup as p1 0.
+        // pickup arm (M l. 48810–48916) read no record word — the same Setup as p1 0. `BonusSprite.setup` reads its
+        // record from the live records (`Context.records`, else the file's), never the placement handed in, so the twin
+        // zeroes record 23 there too; the sprite, its light and its children compared (the record itself differs).
         XCTAssertEqual([Int(rec(23).type), Int(rec(23).p1)], [1340, 1])
-        XCTAssertEqual(try setup(23).slot, try SetupFaces.setup(with(23), context: c).slot)
+        var zeroed = L.placements
+        zeroed[23] = with(23)
+        let c0 = SetupFaces.Context(level: L, playerX: SetupFaces.Context.levelStartPlayerX(L.header), records: zeroed)
+        let up1 = try setup(23), up0 = try SetupFaces.setup(with(23), context: c0)
+        XCTAssertEqual([up1.slot] + up1.children, [up0.slot] + up0.children)
+        XCTAssertEqual(up1.light, up0.light)
     }
 
     func testBuiltLevelsEighteen() throws {
