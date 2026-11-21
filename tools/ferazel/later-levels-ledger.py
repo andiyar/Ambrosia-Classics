@@ -633,7 +633,8 @@ SWITCH_STATE = {   # LL's reading of the port today, by field (evidence = the po
                       '(LightRenderer `plainWrapFGOverlayTile` = .PlainWrapFGOverlayTile M l. 9720–9735: overlay '
                       'faces tinted under water whatever the flag, the pattern cell with it; the original tints overlay '
                       'cells only there) — nothing to build; proven at 6A-RP (RippleTests: the seven readers, the switch-off)',
-    'omniPxMode': 'modes 0/2/4/5 built (OX); 1, 3, 6, 7, ≥ 8 refused at level open',
+    'omniPxMode': 'modes 0/1/2/4/5 built (OX; 1 at 6A-RN: the sheets faces-only, .GenerateRain in Core — '
+                  'OmniPxRain, the looped rain sound); 3, 6, 7, ≥ 8 refused at level open',
     'startFacingLeft': 'built', 'waterSurfaceEffect': 'built', 'patternPeriodSix': 'built',
     'parallaxRipple': 'built (6A-RP): .PaintFrameWrap\'s two ripple loops (M l. 9211–9226 every call, 9255–9425 '
                       'drawn frames) fill the compositor\'s table (ParallaxBlitter `rippleAddEveryCall` / `rippleFill`, '
@@ -646,7 +647,7 @@ SWITCH_STATE = {   # LL's reading of the port today, by field (evidence = the po
     'stripFactor': 'read by PxSprites', 'stripBaseY': 'read by PxSprites', 'altClut': 'not built (0 in all 24)',
     'parallaxMode': 'read (0 in all 24)', 'flameMode': 'refused (backdrop compositor init)',
     'arenaBound': 'built (LV5)', 'autoScrollX': 'not built (no reader)', 'autoScrollY': 'not built (no reader)',
-    'autoScrollEnable': 'refused (Camera init, level spawn)', 'sidePush': 'built (Player.sidePush)',
+    'autoScrollEnable': 'refused (Camera init, level spawn)', 'sidePush': 'built (Player.sidePush; level 15\'s −320 pinned at 6A-RN)',
     'secondArenaBound': 'built (Camera / BossArena)',
     'clutAnimMode': 'partial: the random draws of .AnimateCLUT consumed at level start; the recolour not built',
     'clutAnimCount': 'partial (as mode)', 'clutAnimPeriod': 'not built (no reader)', 'clutAnimAmplitude': 'not built (no reader)',
