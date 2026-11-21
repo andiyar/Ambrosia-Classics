@@ -200,8 +200,8 @@ final class DrawModeAuditTests: XCTestCase {
         W("Particles/Burn.swift:60", .clipTop, .range(1...0x100), "any", at: ["45", "50"],
           pins: ["s.burnRow = top", "s.burnRow &+= 1"]),
         // EC: the ground enemies' liquid hurt flash (`EnemyCommon.liquids`: 0xc for the Walker in water, else 0x11).
-        W("World/Enemies/EnemyCommon.swift:250", .flash, .range(0xc...0x11), "walker", "crawler", "roach", "dillo",
-          "blob", at: ["234", "239", "240", "241"], pins: ["(0xc, 0x96, 0xc)", "(0x13, 100, 0x11)"]),
+        W("World/Enemies/EnemyCommon.swift:253", .flash, .range(0xc...0x11), "walker", "crawler", "roach", "dillo",
+          "blob", at: ["237", "242", "243", "244"], pins: ["(0xc, 0x96, 0xc)", "(0x13, 100, 0x11)"]),
         // ES: the enemy shots — the egg's random facing (`R(100) > 0x32`) and its flash every 45 frames, the Warrior
         // shot's facing by vx, the Wraith shot's tint by age (`.HandleEnemyShotSprite` M l. 51711–51723).
         // BA: the Bat class — the spitters' tint 0x1000c (0x6ce / 0x73c retyped), the insects' 0xb0004, the swarm
@@ -388,12 +388,12 @@ final class DrawModeAuditTests: XCTestCase {
         W("Player/GroundCeilingEffects.swift:402", .mode, .wordRange(0x10001...0x1000f), "effect.explosion",
           pins: ["0 < p.type && p.type < 0x10", "p.mode = 0x10000 + UInt32(p.type)"]),
         W("Player/GroundCeilingEffects.swift:403", .mode, .words([0x10005]), "effect.explosion"),
-        W("Player/HitPlayerSprite.swift:99", .flash, .range(0xc...0xc), "player"),
-        W("Player/HitPlayerSprite.swift:947", .flash, .range(0x1e...0x1e), "player"),
+        W("Player/HitPlayerSprite.swift:100", .flash, .range(0xc...0xc), "player"),
+        W("Player/HitPlayerSprite.swift:948", .flash, .range(0x1e...0x1e), "player"),
         // `.HurtSprite`'s callers: the player's two (0xc) and, from WK1, the Walker's Hit and its `.HurtGoblin`s (8).
-        W("Player/HitPlayerSprite.swift:1259", .flash, .range(8...0xc), "player", "walker", "crawler", "roach", "bat",
+        W("Player/HitPlayerSprite.swift:1260", .flash, .range(8...0xc), "player", "walker", "crawler", "roach", "bat",
           "bat.swarmMember", "frog", "salamander", "blob",
-          at: ["1080", "1218", "1241", "World/Enemies/Walker.swift:827", "World/Enemies/Walker.swift:851",
+          at: ["1081", "1219", "1242", "World/Enemies/Walker.swift:827", "World/Enemies/Walker.swift:851",
                "World/Enemies/Walker.swift:856", "World/Enemies/CrawlerRoach.swift:453",
                "World/Enemies/CrawlerRoach.swift:459", "World/Enemies/CrawlerRoach.swift:480",
                "World/Enemies/CrawlerRoach.swift:486", "World/Enemies/Bat.swift:662", "World/Enemies/Bat.swift:699",
