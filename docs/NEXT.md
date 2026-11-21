@@ -21,7 +21,7 @@ themselves. As a model of a level task read "As executed — 6A-L10L11". Nothing
 3. `docs/QUESTIONS.md` "Open" — act first on any new text under an `Answer:` and record it in `docs/DECISIONS.md`
    (Q18 is Ben's Phase 5 gate: notes become tasks at the head of the order; a fail stops the build and becomes a fix
    wave. **Q21: whether the sweep and the bot may run detached.** Q19: his choices on the 6A plan).
-4. `docs/DECISIONS.md` D58, D56, D54, D53, D51 (D46–D49 only where a card cites them) and
+4. `docs/DECISIONS.md` D59, D56, D54, D53, D51 (D46–D49 only where a card cites them) and
    `docs/handoff-2026-11-21-ferazel-run60.md`.
 
 ## Before anything else
@@ -31,7 +31,7 @@ themselves. As a model of a level task read "As executed — 6A-L10L11". Nothing
 - **How long one command may run.** `echo "$CLAUDE_CODE_DISABLE_BACKGROUND_TASKS"`: `1` means background work is off
   and a foreground command is cut off at ten minutes. Then:
   - the Core suite and the Windows-kit suite run in parts (below);
-  - **the sweep and the bot run one level at a time, in the foreground** (D58.4), unless Q21's `Answer:` says they
+  - **the sweep and the bot run one level at a time, in the foreground** (D59.4), unless Q21's `Answer:` says they
     may run detached: `FERAZEL_VISIT_LEVELS=n tools/ferazel-visit-sweep.sh core`, then `… windows`, for each of the
     eight built levels (1–5, 10, 11, 15), and `FERAZEL_BOT_LEVELS=n tools/ferazel-random-play.sh core` / `windows`
     likewise. Read each script's header first for the exact variables and what a "quick mode" changes — the gate
@@ -40,7 +40,7 @@ themselves. As a model of a level task read "As executed — 6A-L10L11". Nothing
     cannot finish inside ten minutes, stop the level task's merge there and close with
     `STOPPED … — level N's sweep needs one command longer than ten minutes (Q21)`** — a level task is never merged
     without its gate, and the seat never goes around the ten-minute rule on its own.
-  - Ben's Q20 answer ("a: run detached", D58.1) covers `tools/windows/proof-b-ferazel.sh` only. It is not owed in
+  - Ben's Q20 answer ("a: run detached", D59.1) covers `tools/windows/proof-b-ferazel.sh` only. It is not owed in
     this run (next at the 6A.3 wave end, after 6A-L18).
 - **No launch is owed.** Nothing in this run opens a window or plays a sound. If you do launch anything: muted, by
   day only (09:00–21:00), LAUNCH GUARD first; the two launch scripts refuse outside 09..20 on their own.
@@ -94,7 +94,7 @@ themselves. As a model of a level task read "As executed — 6A-L10L11". Nothing
   and hand back a verdict; leg 2 also writes a proposed-asserts patch and verifies it. Each leg builds in its own
   `mktemp` copy (`git archive <sha> | tar -x`, `HECTORKIT_PATH` set). Tell every helper to commit before it reports.
 - **Check a card's numbers against the level data before briefing** (D56.1). Tell the implementer the data wins and
-  to report any difference; where the dump and the card disagree, the dump wins (D58.3: four times in 6A-RN).
+  to report any difference; where the dump and the card disagree, the dump wins (D59.3: four times in 6A-RN).
 - **Pinned values.** Each card names what may change. Nothing else may move: levels 1–5's, 10's and 11's pictures and
   state pins, the Windows level references, every fixture picture, the two chapter cards — the values are in the
   plan's "Goldens" paragraph. A moved value the card does not name is a STOP.
@@ -118,12 +118,12 @@ themselves. As a model of a level task read "As executed — 6A-L10L11". Nothing
 ## Close (in this order)
 1. Merge to local main `--ff-only` by SHA.
 2. "As executed" under each card; the plan's "Goldens" paragraph gains new values; rulings in `docs/DECISIONS.md`
-   under the next free number (D59).
+   under the next free number (D60).
 3. `docs/STATE.md`: replace the Ferazel block with today's state only; settled bits to the top of
    `docs/STATE-history.md`. One line in `docs/LOOP-LOG.md`. A short handoff with the real start and end times from
    `date`. One memory note + index line.
 4. Rebuild this file from nothing for the next run (run 62: what is left of 6A-L15, then 6A-CH1 ⚑ and 6A-CH2 ⚑, then
-   6A-L18 with the wave 6A.3 end — Proof B by day, detached as D58.1 allows — per the plan's "Execution order").
+   6A-L18 with the wave 6A.3 end — Proof B by day, detached as D59.1 allows — per the plan's "Execution order").
 5. Push main, then start the next attended session (`start_session`, fresh context, brief "read docs/NEXT.md and run
    it") — unless a Coordinator started you (then it starts the next one), or a question only Ben can answer blocks the
    next step (then `STATUS: BLOCKED`, the item in QUESTIONS with `Blocks: everything`, no new session).

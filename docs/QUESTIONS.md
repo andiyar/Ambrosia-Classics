@@ -186,7 +186,7 @@ that one script detached and watch its log), **b** (the Coordinator runs it) or 
 `cd ~/Developer/Ambrosia-Classics && tools/windows/proof-b-ferazel.sh`, and paste the last line here).
 Blocks: everything.
 Answer: **a: run detached** — Ben, typed to the Coordinator on 2026-11-21 in reply to the three options as listed here; passed to
-run 60 in its brief. Recorded as D58.1: that one script (`tools/windows/proof-b-ferazel.sh`) may be started detached
+run 60 in its brief. Recorded as D59.1: that one script (`tools/windows/proof-b-ferazel.sh`) may be started detached
 with `nohup` while the session polls its log, even when background work is off. It covers that script only.
 Acted on by run 60 (2026-11-21): the block on `docs/NEXT.md` lifted.
 

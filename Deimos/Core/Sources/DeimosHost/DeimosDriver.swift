@@ -85,12 +85,18 @@ public struct DriverOutput: Equatable, Sendable {
 ///   done, before the front end's next pass. **Quit inside the wait** (Phase 4 S1b; grounding B §5 `10022f8c`, D S14;
 ///   X `10023214` / `10023374`, `10023228..10023244`): with the front end's quit flag b8 set, or the system's Quit
 ///   request (`ShellEvent.quitRequested`) queued or held by the front end (`FrontEnd.quitRequestPending`) — X's pump
-///   inside the pause sets b8; ⌘Q / the menu-bar Quit (`.quitChosen`) is ignored in a game, S8a CR — the wait lets go at
+///   inside the pause sets b8 — or ⌘Q / the menu-bar Quit (`.quitChosen`) queued since the wait began (Ben's ruling
+///   2026-11-21, Phase 4 S8b: in X the application menu's Quit is the Quit Apple event; one queued before the
+///   wait's FlushEvents — pressed in play, or in the pass that paused — is dropped there, never remembered) — in a
+///   game's pause and the level select's alike (the one routine, `osx-build.md` D10; a film is never paused by
+///   Caps Lock, `10030408..1003041c`, and the app-switch pause is not built) — the wait lets go at
 ///   once, suspended or not and before Caps Lock is tested, WITHOUT the music resume (`10022fb0` skips
 ///   `10022fb4`), and `FrontEnd.quitDuringPause` sets the flag and the frame controller's +2 (X `10030cb8`): the next
-///   pass's begin frame reports quit and the game ends. A queued Quit that finds the app suspended runs the resume
+///   pass's begin frame reports quit — a game ends, and as the quit flag is set its post-game check is skipped (X
+///   `10023a6c`): no high score and no best sector; the level select leaves as with Esc — and the menu quits. A
+///   queued Quit (either) that finds the app suspended runs the resume
 ///   handler first (`osx-build.md` D10: X `10023374`, resume if suspended, then the flag) — `resume()`: not
-///   suspended any more, and no music resume, since the pause holds the music. The queued request is taken off the
+///   suspended any more, and no music resume, since the pause holds the music. The queued Quit is taken off the
 ///   queue there (the pause's pump consumed it), so the next pass does not hand it on to be held again. The present
 ///   and the pause flag's clear run as on a normal exit (`10022fc0..10023010`).
 /// - **`.hostWait(wait)`** (Phase 4, plan S1a; `HostWait`) — held like a fade: t0 = `TickCount` of the `idle` that
@@ -364,6 +370,7 @@ public struct DeimosDriver {
                 if !waitEntered {
                     waitEntered = true
                     flushOSEvents()                                           // 10022f1c FlushEvents
+                    shellEventQueue.removeAll { $0 == .quitChosen }           // a ⌘Q from before the wait: a key
                 }
                 if !waitReleased {
                     let quitQueued = frontEnd.quitRequestPending || shellEventQueue.contains(where: Self.isQuit)
@@ -587,10 +594,11 @@ public struct DeimosDriver {
         mouseDownQueue = []
     }
 
-    /// A Quit from the shell (File ▸ Quit, the system's Quit request).
-    /// The Quit that lets the pause's wait go: the system's request only — ⌘Q / the menu-bar Quit is ignored in a game
-    /// (Phase 4 S8a CR; `FrontEnd.shellEvents`).
-    private static func isQuit(_ event: ShellEvent) -> Bool { event == .quitRequested }
+    /// The Quit that lets the pause's wait go, in a game's pause and the level select's alike (one routine,
+    /// `osx-build.md` D10): the system's request, and ⌘Q / the menu-bar Quit (`.quitChosen`) — Ben's ruling
+    /// 2026-11-21, as X, where the application menu's Quit is the Quit Apple event the pause's pump takes. A ⌘Q
+    /// queued before the wait began is dropped as the wait begins (its FlushEvents), so never this.
+    private static func isQuit(_ event: ShellEvent) -> Bool { event == .quitRequested || event == .quitChosen }
 
     /// The app's suspend / resume events (`ShellEvent.suspend` / `.resume`).
     private static func isSuspension(_ event: ShellEvent) -> Bool { event == .suspend || event == .resume }

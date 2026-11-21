@@ -242,9 +242,11 @@ final class AppLifecycleTests: XCTestCase {
     /// (`driver.suspend()`, its `.suspend` queued), so the first pumped turn hands what queued while it slept — the
     /// leave's `.suspend`, then the request — and the turns after it hand nothing live, Caps Lock as last seen while
     /// active; until the pump says stop. Returns the turns it ran (nil: the pump outran its own bound, a failure).
-    private func pump(_ rig: inout Rig, request: Bool = true, capsLock: Bool = false) -> Int? {
+    /// `quit` is the Quit queued (the system's request unless a test says otherwise).
+    private func pump(_ rig: inout Rig, request: Bool = true, capsLock: Bool = false,
+                      quit: ShellEvent = .quitRequested) -> Int? {
         var p = BackgroundQuitPump()
-        var keys = HeldKeys(capsLock: capsLock, events: request ? [.suspend, .quitRequested] : [.suspend])
+        var keys = HeldKeys(capsLock: capsLock, events: request ? [.suspend, quit] : [.suspend])
         for turn in 1...(BackgroundQuitPump.maxTurns + 1) {
             rig.idle(keys)
             keys = HeldKeys(capsLock: capsLock)
@@ -326,34 +328,38 @@ final class AppLifecycleTests: XCTestCase {
     /// `.suspend`, queued before that resume, describes a suspension already over and must not reach the front end.
     /// The game ends (start/return), the menu flashes its Quit unseen and the shell is asked to quit, with the
     /// driver's and the front end's suspended flags in step (both clear). Bound: 120 simulated s a stage; the quit
-    /// within `maxQuitTurns` pumped turns, well under the pump's own `BackgroundQuitPump.maxTurns`.
+    /// within `maxQuitTurns` pumped turns, well under the pump's own `BackgroundQuitPump.maxTurns`. The same for
+    /// ⌘Q / the menu-bar Quit (`.quitChosen`) reaching the pause while the app is suspended (Ben's ruling 2026-11-21:
+    /// in X the application menu's Quit is the Quit Apple event): the resume first, then the quit.
     func testBackgroundQuitWhilePausedQuits() throws {
         let maxQuitTurns = 600
-        var rig = Rig(try FrontEnd(assets: try assets(), prefs: .fresh))
-        guard rig.run(bound: 120, until: Rig.menuSettled) else { return XCTFail("bound: no menu") }
-        rig.idle(HeldKeys(keyEvents: [Self.typeOne]))
-        guard rig.run(bound: 120, until: { d, _ in d.frontEnd.screens.last == .levelSelect }),
-              rig.run(HeldKeys(held: [KeyTable(prefs: .fresh).codes[6]]), bound: 120,
-                      until: { d, _ in d.frontEnd.state.gameRunning })
-        else { return XCTFail("bound: no game") }
-        for _ in 0..<50 { rig.idle() }
-        let caps = HeldKeys(capsLock: true)
-        let before = rig.driver.passCount
-        guard rig.run(caps, bound: 120, until: { d, _ in d.passCount > before })
-        else { return XCTFail("bound: no pass with Caps Lock") }
-        let paused = rig.driver.passCount
-        let holdEnd = rig.ticks &+ 60
-        guard rig.run(caps, bound: 10, until: { _, t in t >= holdEnd }) else { return XCTFail("cap") }
-        XCTAssertEqual(rig.driver.passCount, paused, "the pause's wait holds while Caps Lock is down")
+        for quit in [ShellEvent.quitRequested, .quitChosen] {
+            var rig = Rig(try FrontEnd(assets: try assets(), prefs: .fresh))
+            guard rig.run(bound: 120, until: Rig.menuSettled) else { return XCTFail("bound: no menu") }
+            rig.idle(HeldKeys(keyEvents: [Self.typeOne]))
+            guard rig.run(bound: 120, until: { d, _ in d.frontEnd.screens.last == .levelSelect }),
+                  rig.run(HeldKeys(held: [KeyTable(prefs: .fresh).codes[6]]), bound: 120,
+                          until: { d, _ in d.frontEnd.state.gameRunning })
+            else { return XCTFail("bound: no game") }
+            for _ in 0..<50 { rig.idle() }
+            let caps = HeldKeys(capsLock: true)
+            let before = rig.driver.passCount
+            guard rig.run(caps, bound: 120, until: { d, _ in d.passCount > before })
+            else { return XCTFail("bound: no pass with Caps Lock") }
+            let paused = rig.driver.passCount
+            let holdEnd = rig.ticks &+ 60
+            guard rig.run(caps, bound: 10, until: { _, t in t >= holdEnd }) else { return XCTFail("cap") }
+            XCTAssertEqual(rig.driver.passCount, paused, "the pause's wait holds while Caps Lock is down")
 
-        rig.driver.suspend()                                            // the app leaves, the game paused
-        let turns = try XCTUnwrap(pump(&rig, capsLock: true), "the pump outran its own bound")
-        XCTAssertLessThan(turns, maxQuitTurns, "the quit, not the pump's bound")
-        XCTAssertTrue(rig.driver.frontEnd.isFinished, "the menu quit unseen")
-        XCTAssertEqual(rig.requests.filter { $0 == .quit }.count, 1, "the shell is asked to quit")
-        XCTAssertFalse(rig.driver.suspended, "the Quit's resume ran")
-        XCTAssertFalse(rig.driver.frontEnd.state.suspended, "and the front end's flag stays in step with it")
-        XCTAssertEqual(rig.driver.frontEnd.state.gamesStarted, 1, "no new game")
+            rig.driver.suspend()                                            // the app leaves, the game paused
+            let turns = try XCTUnwrap(pump(&rig, capsLock: true, quit: quit), "\(quit): the pump outran its own bound")
+            XCTAssertLessThan(turns, maxQuitTurns, "\(quit): the quit, not the pump's bound")
+            XCTAssertTrue(rig.driver.frontEnd.isFinished, "\(quit): the menu quit unseen")
+            XCTAssertEqual(rig.requests.filter { $0 == .quit }.count, 1, "\(quit): the shell is asked to quit")
+            XCTAssertFalse(rig.driver.suspended, "\(quit): the Quit's resume ran first")
+            XCTAssertFalse(rig.driver.frontEnd.state.suspended, "\(quit): and the front end's flag stays in step with it")
+            XCTAssertEqual(rig.driver.frontEnd.state.gamesStarted, 1, "\(quit): no new game")
+        }
     }
 
     /// Ruling 9: a decoded picture (RGBA, row 0 at the top) as the game's x1R5G5B5 pixels — each channel's top five

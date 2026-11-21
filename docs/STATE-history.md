@@ -6,7 +6,7 @@
 
 ## Settled at Ferazel run 60's close (2026-11-21)
 
-- Q20 answered by Ben ("a: run detached", D58.1); run 59's stop on it (07:56 → 07:58, nothing changed, D57) is over.
+- Q20 answered by Ben ("a: run detached", D59.1); run 59's stop on it (07:56 → 07:58, nothing changed, D57) is over.
 - Wave 6A.2's end closed: the Windows test run 719 / 0 / 3 / 0 of 722 (09:00, detached, 834 s) and the Mac SDL
   smoke exit 0 (09:15), both by day. The wave's cross-check (run 57) and its fix round (run 58, 66875a3) were done.
 - Runs 57–59's worktrees (`strange-hopper-b151f9`, `blissful-gauss-7cdcd9`, `quirky-galileo-f0da25`) and run 56's

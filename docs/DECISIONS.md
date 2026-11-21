@@ -2608,7 +2608,74 @@ The seat's rulings (Fable 5.2, under the Coordinator). Per-task detail is under 
 4. **The run closed at once rather than waiting an hour for the smoke alone**, so the one question reaches Ben while
    he is at the keyboard. Both checks stay owed, in the same order.
 
-## D58 — Ferazel's Wand: run 60's rulings (Q20 answered; 6A-BG1c, 6A-RN; 2026-11-21)
+## D58 — Deimos Rising: Phase 4 (the front end) as executed — Ben's answers and the seat's departures (2026-11-21)
+
+Supersedes the parts of D52 named below. Detail is in the section handoffs `docs/handoff-deimos-phase4-{s0 … s8b}.md`;
+Ben's answers are in `~/.claude/coordinator-notes/deimos-phase4-mailbox.md`; the gate-4 card
+(`Deimos/WHAT-TO-EXPECT.md`) lists every ruling below for him to overturn.
+
+**Ben's answers (by picker, word for word):**
+1. Plan Q1, whole-game OS 9 / OS X comparison: "Yes, after Phase 4 (Recommended)".
+2. Plan Q2, registered-to name: "AMBROSIA CLASSICS (Recommended)".
+3. Plan Q3, website line: "Light up, do nothing (Recommended)".
+4. Plan Q4, Command-Q in the middle of a game: "Ignore it, as the original" — overturns the plan's default (quit at once).
+5. Plan Q5, controller: "yes to the design. we may need to work on button mapping".
+6. Plan Q6, the two settings windows: "Classic grey Mac look (Recommended)".
+7. Plan Q7, loading screen: "Every name, as the original (Recommended)" — replaced by answer 11.
+8. Plan Q8, the erase question and the two data alerts: "Normal macOS alert (Recommended)".
+9. A1 (a), who builds the "erase high scores?" question: "The app-wiring section (Recommended)".
+10. A1 (b), when `-players` / `-sector` go: "Delete at app-wiring (Recommended)".
+11. A3, unit names: "First launch only (Recommended)" — "Names flash past on the very first launch (when no settings
+    file exists yet); four lines and a quicker start afterwards."
+12. A5 (a), Command-Q while paused: "Quit from the pause (Recommended)" — "Command-Q does nothing while playing, but
+    quits (saving settings and scores) while the game is paused." Built in S8b (8d52eeb). As built, "scores" is the
+    table as it stood: the game in progress earns no high score and opens no sector (departure 8).
+13. A5 (b), macOS asking to quit on a non-menu screen: "Remember it, quit at the menu (Recommended)" (as built).
+14. A2, S6 may fix the nine older tests' set-up itself: "Yes, S6 fixes them (Recommended)" (internal).
+
+**The seat's departures from the plan (each one line; Ben may overturn any):**
+1. **Ruling 15 corrected:** the level select's right-hand preview DOES draw its hover outline (the listing gives it the
+   full 640×480 clip); `testHoverStripRightPreviewDrawn` replaces `…Rejected`, count unchanged (S3b).
+2. **Ruling 15 corrected:** there is no blank eleventh credits page; page ten holds for page nine's time (S2).
+3. **Ruling 12 replaced by the OS X build:** "About Deimos Rising…" is never greyed and does nothing in a game; the OS X
+   build's Preferences… item and Edit menu are not built (S0 D7–D9, S8a item 4).
+4. **Ruling 10 as executed:** `-players` / `-sector` deleted at S8a (Ben's A1 b), not S3a — the app could not reach the
+   menu until S8a wired its input; `-film deNN` stays hidden and a bad value shows the refusal alert in Release.
+5. **A new hidden switch `-mute`** (or `DEIMOS_MUTE`): no sound output, the original's no-sound boot path, for the muted
+   first launch (S8a).
+6. **Fades follow the OS X build: 16 passes, not 32** (ruling 5; osx-build D1; S1a).
+7. **Unit names on the first launch only** = no settings file existed (Ben's A3); a later launch shows four lines (S8a).
+8. **Command-Q:** ignored in play (Q4), and one pressed in play is dropped at a later pause, never acted on there;
+   quits at once from a game's Caps Lock pause (A5 a, S8b). A quit from the pause saves the settings and the
+   high-score table as it stood: the game in progress earns no high score and opens no new sector (the quit flag
+   skips the table gates, as the OS X build does; Ben may overturn). Does nothing in a demo (a film cannot be paused).
+   Quits at the menu and acts on leaving the level select; dropped on the boot, scores, name entry, credits and both
+   settings windows (the OS X build reads it as "q" on three of them); a macOS quit request is remembered until the
+   menu (A5 b), except during a Caps Lock pause, where it quits at once; the window's close button acts as Command-Q;
+   a log-out is answered "not now" (S8a items 3, 5, 6).
+8a. **The level select's own Caps Lock pause also takes Command-Q at once** (S8b fix round; the seat's call, so both
+   pauses act alike under A5). Before, a Command-Q there waited until Caps Lock was released.
+9. **The pad is switched off while the controls window is up**, so a pad press cannot be bound as a key (S8a).
+10. **The erase question is asked by the menu's SCORES click (Option, mouse only),** not by the scores screen (S4), built
+    at S8a (Ben's A1 a).
+11. **"Set Gamepad Controls…" stays hidden** (ruling 17) though the OS X build always shows it (S0 D5, S6).
+12. **Leaving the app only holds the game still;** the OS X build's pause screen on suspend is not built (S8a Left 2).
+    Nor is the OS X build's cursor shown during a game's Caps Lock pause (osx-build D12; S0 handoff item 8).
+13. **Test ladder 477 → 491:** +1 at S1a (`testElementDrawOnce`, a draw-once three closed screens needed), then
+    S8a's sixteen new tests for Ben's rulings and the app (+7 CR, +9 AW against the plan's +3), so S8a closed at 483
+    and the eight goldens end the phase at 491 (S1a, S8a handoffs).
+14. **Older tests outside a section's file list** were changed under Ben's A2 and the Coordinator's A4, each change
+    recorded in its section's handoff. S6 changed set-up helpers only (boot passes). The others changed what some
+    older tests expect: S2 removed the credits placeholder check and made the skeleton's quit cases count the real
+    sequence; S4 removed the Scores and NameEntry placeholder checks; S3a and S3b moved the cursor check and the music
+    reference, loosened one return-pass count (the exact count pinned elsewhere) and re-pinned numbers that moved with
+    the extra passes; S5 re-specified five tests' expectations under their own names (an empty recording, Films as a
+    stub). Departure 1's replaced test is the one rename this list knows of.
+15. **The start-up order is logos first, then the loading screen** (the publisher's logo, the developer's, then the
+    loading lines), as built and as the card says. The plan's gate-4 card and the S8a handoff had the loading screen
+    first, the wrong way round (corrected in the S8b card review).
+
+## D59 — Ferazel's Wand: run 60's rulings (Q20 answered; 6A-BG1c, 6A-RN; 2026-11-21)
 
 1. **Q20 answered by Ben: "a: run detached".** Typed to the Coordinator on 2026-11-21 in reply to Q20's three
    options (a, b, c) as the question lists them, and passed word for word to run 60 in its brief. It is option (a):
@@ -2629,4 +2696,3 @@ The seat's rulings (Fable 5.2, under the Coordinator). Per-task detail is under 
    sweep and the bot — each longer than ten minutes as one command, which a Coordinator-started session cannot run
    (Q20's answer covers the Windows test script only). Run 61 runs them one level at a time in the foreground
    (`FERAZEL_VISIT_LEVELS`, `FERAZEL_BOT_LEVELS`); Q21 asks Ben whether they may run detached instead.
-

@@ -285,10 +285,10 @@ import Synchronization
     /// The app menu (ruling 12, grounding C §5; the OS X build's bar, `osx-build.md` D7): "About Deimos Rising…"
     /// (MENU 128 item 1: the credits screen, `ShellEvent.aboutChosen`; on or off as the front end asks — the OS X
     /// build never greys it, D9) and Quit ⌘Q (`ShellEvent.quitChosen`: the front end acts on it at the menu and the
-    /// level select and ignores it elsewhere). Plus a hidden Full Screen ⌃⌘F item — the shortcut goes through the
-    /// menu's key-equivalent matching (layout-independent, as Aki's and BTX's Full Screen items do), but the original
-    /// had no such menu entry, so it is not shown. Not built: X's Preferences… item (D8; no shell event for it) and
-    /// its greyed Edit menu.
+    /// level select, the driver in the Caps Lock pause, and it is dropped elsewhere). Plus a hidden Full Screen ⌃⌘F
+    /// item — the shortcut goes through the menu's key-equivalent matching (layout-independent, as Aki's and BTX's
+    /// Full Screen items do), but the original had no such menu entry, so it is not shown. Not built: X's
+    /// Preferences… item (D8; no shell event for it) and its greyed Edit menu.
     private func makeMenuBar() -> NSMenu {
         let bar = NSMenu()
         let appItem = NSMenuItem()

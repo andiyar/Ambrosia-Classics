@@ -2030,7 +2030,7 @@ ids; its `--check` reads this table):
       58457 against the player's 45108–45110): not a fault; level 10 has no damaging tiles at all.
     - Seat's G2 at `66875a3`, five foreground parts: 557 + 26 + 18 + 51 + 70 = **722**, 0 failed, the two opt-in
       skips by name. **GWB and GW4R are still owed, by day** — this run began at 00:53 and Q20 had no answer.
-  - **Wave 6A.2 — the two launch checks (run 60, 2026-11-21, by day; D58): the wave end is closed.** GWB, started
+  - **Wave 6A.2 — the two launch checks (run 60, 2026-11-21, by day; D59): the wave end is closed.** GWB, started
     detached at 09:00 on Ben's Q20 answer ("a: run detached") from d82b2bf (game code as 66875a3):
     `proof-b: 719 passed / 0 failed / 3 skipped / 0 crashed (of 722)`, 834 s, the three skips by name
     (`CensusTests/testExitCodes`, `RandomPlayTests/testRandomPlay`, `VisitSweepTests/testVisitEveryObject`). Run 58's
@@ -2059,7 +2059,7 @@ ids; its `--check` reads this table):
     sets for every type 0xa8c–0xaef (`+0x185 = 1`, dump l. 62638). Now set and asserted, with gravity 0 (l. 62670).
     Level 1's plants gain it too; measured before it went in: no pinned value moves (no reader can see it — every
     reader sits behind a hot-rect overlap, and a plant's hot rect is empty).
-  - **Recorded deviation (as D53.2 for decorations, now also plants; D58.2):** the original flips a mirrored plant's
+  - **Recorded deviation (as D53.2 for decorations, now also plants; D59.2):** the original flips a mirrored plant's
     (empty) hot rect, which moves only its centre x by the face width; the port keeps the unflipped empty rect.
     Nothing reads it; level 1 has had mirrored plants all along. `PlantTests` pins the port's value and says so.
   - Reviews: spec PASS WITH FIXES, quality PASS WITH FIXES (no must-fix; every face, mark and refusal mutation
@@ -2115,7 +2115,7 @@ ids; its `--check` reads this table):
     first thunder falls on iteration 129, tick 399 (143 + 2 · 128). Goldens: the rain picture is **frame 2**, tick
     145, `343813c4727ef0e0` (drops removed: `b8b5b520071e980e`); frame 1, tick 143, `49eddc24d9989d95`; the flash
     `597cd03adccc11ce` (no flash: `1cc38d5f30226d2f`).
-  - **The dump beat the card in four places (D58.3):** (1) a drop is made unaged and the particle draw skips age-0
+  - **The dump beat the card in four places (D59.3):** (1) a drop is made unaged and the particle draw skips age-0
     particles (l. 29787; the rain at 9229 runs before the draw at 9433 and the age step at 9454), so frame 1 shows no
     drop — the rain golden is frame 2 and frame 1 is pinned beside it for 6A-L15 (that card is amended). (2) The
     looped sound runs through the Sound Tool's re-play in its block pass (l. 78625–78650), not the music mixer: an
