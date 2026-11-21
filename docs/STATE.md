@@ -7,84 +7,76 @@ Settled history lives in docs/STATE-history.md.
 > numbers and open items and moves anything settled to the top of `docs/STATE-history.md`; it never appends a run story
 > here. Forks go in `docs/DECISIONS.md`, narrative in the handoff. Re-verify before acting.
 
-## Ferazel's Wand — 2026-11-21 (attended run 58 closed at night: the cross-check's fix round merged; the two daytime launch checks head run 59)
+## Ferazel's Wand — 2026-11-21 (attended run 60 closed by day: wave 6A.2's end closed; the plants and the rain merged; level 15 heads run 61)
 
 - **Where it stands:** Phase 5 "Enemies" is closed on the machine side — **Ben's gate pending (Q18)**. Phase 6A
   "through the Goblin Chief" is being built (the plan: "Wave 5 — Phase 6A" in the one plan file; rulings D46–D49, D51,
-  D53, D54). Wave 6A.1 is built: on level 5 the Warrior is a real boss. **Wave 6A.2 is built**: run 56 opened
-  **levels 10 "Unemployed In Greenland" and 11 "River of Fears"** — the first new levels a player can reach: beat the
-  Warrior, leave level 5, see the chapter card, and play on with the horizon strip, wind, rotating cannons, trees and
-  the river. Level 10 leads to level 11; the next places on the map (15, 18) are not built yet and say so.
-- **Wave 6A.2's end is NOT closed. Owed, in this order, both by day (09:00–21:00):** (1) the Windows test run
-  under CrossOver, muted (Proof B, expected 719 / 0 / 3 / 0 of 722); (2) the Mac SDL smoke. No task may start before
-  both. The wave's cross-check (run 57: PASS WITH FIXES, no game fault) and its fix round (run 58, 00:53 → 02:00:
-  tests and comments only, merged at 66875a3; D56) are done.
-- **Proof B is one whole run of 13 minutes or more and cannot be split** — a seat whose commands are cut off at ten
-  minutes, with background work off, cannot run it. Q20 asks Ben how it should run; until he answers, such a seat
-  stops at that step and says so. **Run 59 (2026-11-21, 07:56 → 07:58) stopped there and changed nothing; the build
-  is BLOCKED on Q20** (D57). Both check scripts also refuse before 09:00 by the clock, with no override.
+  D53–D58). Waves 6A.1 (the Warrior is a real boss) and 6A.2 (levels 10 "Unemployed In Greenland" and 11 "River of
+  Fears" open) are built and **closed**: run 60 ran the two launch checks owed since run 56, by day.
+- **Wave 6A.3 "Storm Valley and the Chief" has begun.** Run 60 built the **plants** of levels 15 and 18 (6A-BG1c)
+  and **level 15's weather** (6A-RN): rain every frame, thunder with a flash and a screen fade, the looped rain
+  sound, the sideways push. All of it is proven on a test stand-in for level 15; **a player cannot reach level 15
+  yet** — opening it is the next task (6A-L15). Level 10 still leads to 11, and 15 / 18 still say "not built".
+- **Q20 is answered** (Ben, 2026-11-21: "a: run detached"; D58.1): the Windows test script may run detached in a
+  session whose commands are cut off at ten minutes. It covers that one script only.
 - **Windows test build 5 is with Andrew** (Ben asked, 2026-11-18): GitHub pre-release `ferazel-windows-test-5`, staged
   from 02717f8 (levels past 5 closed). His report is the Windows half of Q18; Ben's Mac verdict is still open. The zip
   and its checksum are in `releases/ferazel-windows-test-5/`.
 - **Staged builds on the Desktop are old** (game code as e9183ce, run 50): they still show the stand-in Warrior and no
   level past 5. The next stage is the 6A phase end unless Ben asks for one.
-- **Next:** run 60, once Q20 is answered, and started at 09:00 or later = the two owed launch checks, then 6A-BG1c (plants, Core → 725) and 6A-RN ⚑ (rain, thunder, the
-  side push, Core → 737, WinKit → 85); 6A-L15 (level 15 opens, with the full sweep) follows, alone if the context is
-  spent. None of it waits for Ben's verdict on Phase 5. **Run 60 must start between 09:00 and about 18:00, and needs
-  Q20 answered or a session whose commands may run longer than ten minutes.**
+- **Next:** run 61 = 6A-L15 (level 15 opens; Core → 740, WinKit → 86) with its whole gate: the every-object sweep and
+  the random-play bot on all eight built levels, both shells. In a session whose commands are cut off at ten minutes
+  those two run **one level at a time in the foreground** (D58.4; Q21 asks Ben whether they may run detached
+  instead). Then 6A-CH1 and 6A-CH2 (the Goblin Chief). None of it waits for Ben's verdict on Phase 5.
 - **The plan:** `docs/superpowers/plans/2026-11-04-ferazel-remainder.md` (self-contained); the design:
   `docs/superpowers/specs/2026-11-04-ferazel-remainder-design.md`.
 - **Ben's gates:** Phase 1 passed; Phases 2 and 3 passed with notes; Phase 4 passed (Fireball note) and the Windows
   twin passed on Andrew's word (2026-11-07); **Phase 5 waiting (Q18)**. Then three gated Phase 6 parts (6A to the Goblin
   Chief, 6B to the Wizard and the fire, 6C the whole game), then one release `ferazel-1.0`.
-- **Current numbers** (G2 is the seat's own run at 66875a3, 2026-11-21, foreground, in five parts; the rest are run
-  56's at ae3a20e — the game's code has not changed since, only tests and comments — except GW1 / GW3 / GW4, the
-  implementer's at 92e3128; G5 on the merged branch; Proof B and the Mac SDL smoke are run 53's, older code):
+- **Current numbers** (G2 and GW2 are the seat's own foreground runs at e00db25, 2026-11-21; Proof B and the smoke are
+  run 60's at d82b2bf, game code as 66875a3 — before the plants and the rain; the sweep and bot are run 56's at
+  ae3a20e, seven levels; GW1 / GW3 the implementer's at e4d428e, G5 / GW4 at e00db25):
 
 | gate | value |
 |---|---|
-| Ferazel/Core suite (G2) | **722** = 557 rules + 165 render; 720 passed, 0 failed, 2 opt-in skips by name: `FerazelRenderTests.VisitSweepTests testVisitEveryObject`, `FerazelRenderTests.RandomPlayTests testRandomPlay`; the render half takes 20 min (run 58: 93 s + 232 + 422 + 416 + 136) |
-| FerazelWinKit (GW2) | **84**; 82 passed, 0 failed, 2 opt-in skips (`WinVisitSweepTests testVisitEveryObjectThroughWinGame`, `WinRandomPlayTests testRandomPlayThroughWinGame`); 20 min |
+| Ferazel/Core suite (G2) | **737** = 569 rules + 168 render; 735 passed, 0 failed, 2 opt-in skips by name: `FerazelRenderTests.VisitSweepTests testVisitEveryObject`, `FerazelRenderTests.RandomPlayTests testRandomPlay`; five foreground parts (569, 26, 18, 53, 71), about 22 min |
+| FerazelWinKit (GW2) | **85**; 83 passed, 0 failed, 2 opt-in skips (`WinVisitSweepTests testVisitEveryObjectThroughWinGame`, `WinRandomPlayTests testRandomPlayThroughWinGame`); four foreground parts (2, 29, 26, 28), about 20 min |
 | census (G3) | items 1,108 decoded, failures 0 |
-| visit sweep (GE, levels 1–5, 10, 11, both shells) | core 6,324 visits, windows 6,324 visits, rows 0 on both (1,192 s + 1,409 s) |
-| random-play bot (GE, the same 7 levels, both shells) | core and windows each: steps 151,200, deaths 23, exits 201, failures 0 (73 s, 86 s) |
-| Proof B in CrossOver, muted (GWB) | **owed** (expected 719 / 0 / 3 / 0 of 722); last: 690 / 0 / 3 / 0 of 693 (run 53, at 44cb75a) |
-| Mac SDL smoke (GW4R) | **owed**; last: main menu identical, exit 0 (run 53); GW6 and G9M last passed in run 50 |
+| visit sweep (GE, levels 1–5, 10, 11, both shells) | core 6,324 visits, windows 6,324 visits, rows 0 on both (1,192 s + 1,409 s; run 56) |
+| random-play bot (GE, the same 7 levels, both shells) | core and windows each: steps 151,200, deaths 23, exits 201, failures 0 (73 s, 86 s; run 56) |
+| Proof B in CrossOver, muted (GWB) | **719 passed / 0 failed / 3 skipped / 0 crashed (of 722)**, 834 s (run 60, 09:00, detached); next owed at the 6A.3 wave end (761 of 764) |
+| Mac SDL smoke (GW4R) | exit 0, main menu identical, `video=dummy audio=none` (run 60, 09:15); GW6 and G9M last passed in run 50 |
 | GW1 / GW3 / GW4 / G5 | 0 then 2 / 0 then 1 / Build complete! / BUILD SUCCEEDED |
 | HectorKit (G1) | main **ef2c341**, clean; zero-skip executed **370**; Ferazel follows HectorKit main |
-| ladder from here | 722 → BG1c 725 → RN 737 → L15 740 … 814 at the 6A end; WinKit 84 → 90 |
+| ladder from here | 737 → L15 740 → CH1 752 → CH2 760 → L18 764 … 814 at the 6A end; WinKit 85 → 90 |
 
-- **Goldens (◈):** level 5's pins moved in 6A-W1 for the three crates — init 46 / `0xb039da66a884cb8a` (held), f30 58 /
-  `0x1142f7a252aecfcd`, f120 58 / `0x9806297cea4531f2`; nothing else moved. The Warrior's scripted fight is pinned:
-  HP 0 at game frame 4966, Kill at 5051. New fixture goldens (run 52): level 21's fixture first frame
-  `fb80e30a68e4efb7`; level 10's strip, two frames, `e471fa3eeca627d3` (tick 1612) and `e8fc9d1805afb1d5` (tick 1658);
-  level 10's wind `c9ad94cdb8b2d287` (trace `20b0a649c605b4d0`); level 10's cannons `1f159e3178d4733` (traces
-  `a94f59ac15d64d04`, `2970c03ffb33c302`); level 10's tree `d7ba88433f138e72` (run 53; planting stubbed
-  `707aa87324dfbee3`). All other values as the plan's "Goldens" paragraph.
-  New in run 54: level 11's ripple `c92fbe9fb87250c3` (fixture, player started at (16299, 600), tick 143; the fill
-  stubbed `974417c1b079fa29`; the submerged flag forced off `7c7042ee30a1f6d3`). Level 22's load-bar count moved for
-  one more cached picture: [33, 168, 336, 33] → [34, 169, 338, 34] (the card named it).
-  New in run 55: chapter card 2 (level 10) `f33072b0df2cab4d`; chapter card 5 (level 22) `517ec825dbca68cc`.
-  New in run 56 (the wind and cannon feature pictures `c9ad94cdb8b2d287` and `1f159e3178d4733` are retired; their
-  traces stay): level 10's first frame `e76116216b6d605` (tick 1612), level 11's `5d78b001424a6898` (tick 143); the
-  Windows level references — the black first frame `742a0703fa4da325` on both, level 10 steps 885 `e8f72bddcaf3b7a1`
-  (strip) and 959 `17aa796b2ef29b5` (faded in), level 11 steps 629 `f8032383209e56e0` (ripple) and 689
-  `d02281f5e0d7cdca` (faded in); the full list is in the plan's "Goldens" paragraph.
-- **Waiting on Ben (QUESTIONS.md "Open"; none answered at run 59's start):** **Q20 (how to run the 13-minute
-  Windows test run when a session's commands are cut off at ten — it now blocks everything)**, **Q18 (the Phase 5
-  gate)**, Q19 (three small choices in the 6A plan), Q17, Q16 (defaults stand), Q15's follow-ups, Q13.
-- **Worktrees:** run 58's `blissful-gauss-7cdcd9`, run 57's `strange-hopper-b151f9` and run 56's `vibrant-easley-9d49bf` were removed at their closes. `compassionate-leavitt-7ca958` is run 53's (merged; it was run 49's before). `gallant-brahmagupta-56ed81`
-  (run 52), `eager-fermat-db9ed9` (run 51), `hungry-bun-395f55` (run 50; `out/` holds the latest stages), `nifty-mendel-0ad40e` (run 48),
+- **Goldens (◈):** no existing value moved in run 60. New (level 15's test stand-in, nothing left out, seed 1): the
+  rain picture, frame 2, tick 145, `343813c4727ef0e0` (drops removed `b8b5b520071e980e`); frame 1, tick 143,
+  `49eddc24d9989d95` (6A-L15 compares its real first frame with this, then deletes the rain test); the first
+  thunder's flash, tick 399, `597cd03adccc11ce` (no flash `1cc38d5f30226d2f`). Every earlier value is in the plan's
+  "Goldens" paragraph.
+- **Waiting on Ben (QUESTIONS.md "Open"):** **Q18 (the Phase 5 gate)**, Q21 (may the sweep and bot run detached —
+  not blocking), Q19 (three small choices in the 6A plan), Q17, Q16 (defaults stand), Q15's follow-ups, Q13.
+- **Worktrees:** run 60's `recursing-morse-414aa0` was removed at its close. `compassionate-leavitt-7ca958` is run
+  53's (merged; it was run 49's before). `gallant-brahmagupta-56ed81` (run 52), `eager-fermat-db9ed9` (run 51),
+  `hungry-bun-395f55` (run 50; `out/` holds the latest stages), `nifty-mendel-0ad40e` (run 48),
   `ferazel-run-47-e0431c` and `ferazel-run-44-7428b3` are finished and merged — Ben or their sessions remove them.
   The others belong to other sessions.
 - **The sweep and the bot are guarded (2026-11-10):** both scripts kill any worker past `MAX_WORKER_MB` (4096) and
-  brake below `MIN_RUNNING_FREE_PCT` (15) free memory, with a failure row. Stop a background run with a plain
+  brake below `MIN_RUNNING_FREE_PCT` (15) free memory, with a failure row. Stop a run with a plain
   `kill <script pid>` — never `kill -9` / `pkill -9`. A `memory` row is a leak to fix, never a limit to raise. A
-  background shell that chains the sweep and then the bot starts the bot when the sweep is killed: stop the outer
-  shell too.
+  shell that chains the sweep and then the bot starts the bot when the sweep is killed: stop the outer shell too.
 - **Known deviation of muted launches (D44 As built run 48 (d)):** a muted run draws the random stream differently
   from an audible one; boot checks only.
 - **Open carries** [LOW unless marked]:
+  - From run 60: the generated marker list (`docs/ferazel/gap-ledger/markers.tsv:154`) still quotes an old comment
+    about the auto-scroll ambience sound (regenerating renumbers about 1,370 ids — a ledger pass); the engine
+    contract §2.7 still calls the fade switch a "preference" and asks for a Windows rain picture the plan overrides;
+    the rain's read-only test hook `OmniPxRain.entrySeed` lives in shipped source; the rain picture's particle filter
+    could misread a slot reused within one tick (no case seen); in `PlantTests` one assert compares the test's own
+    table with its own formula and the load-bar values are the port's own arithmetic; a mirrored plant keeps an
+    unflipped empty hot rect (D58.2, as D53.2); one mutation run of the Windows-kit audio tests with the cue's loop
+    default flipped on did not finish in ten minutes (a deliberately broken build; not chased).
   - From run 58's fix round: two comments still give "levels 1–5" reasons nobody could verify on levels 10 and 11
     (`Walker.swift:48`, `BoxSprite.swift:1141`); the water-current assert cannot tell the direction of the random
     spread (it catches a flipped sign only because one sampled draw is 0); the ice value's floor of 1 is reached on

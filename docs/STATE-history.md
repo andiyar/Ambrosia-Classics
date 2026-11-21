@@ -4,6 +4,15 @@
 > only). Nothing current reads this file; the live state is `docs/STATE.md`. Each later close that settles something
 > adds a dated section at the top, newest first. The two snapshots below are verbatim (headings demoted only).
 
+## Settled at Ferazel run 60's close (2026-11-21)
+
+- Q20 answered by Ben ("a: run detached", D58.1); run 59's stop on it (07:56 → 07:58, nothing changed, D57) is over.
+- Wave 6A.2's end closed: the Windows test run 719 / 0 / 3 / 0 of 722 (09:00, detached, 834 s) and the Mac SDL
+  smoke exit 0 (09:15), both by day. The wave's cross-check (run 57) and its fix round (run 58, 66875a3) were done.
+- Runs 57–59's worktrees (`strange-hopper-b151f9`, `blissful-gauss-7cdcd9`, `quirky-galileo-f0da25`) and run 56's
+  (`vibrant-easley-9d49bf`) were removed at their closes.
+- Run 58's five-part G2 at 66875a3 was 722 (557 rules + 165 render).
+
 ## Settled at Ferazel run 58's close (2026-11-21)
 
 - Run 58 started at night (00:53) and launched nothing. It ran the fix round of the wave 6A.2 cross-check: tests and

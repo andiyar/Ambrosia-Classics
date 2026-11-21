@@ -2608,7 +2608,7 @@ The seat's rulings (Fable 5.2, under the Coordinator). Per-task detail is under 
 4. **The run closed at once rather than waiting an hour for the smoke alone**, so the one question reaches Ben while
    he is at the keyboard. Both checks stay owed, in the same order.
 
-## D58 — Ferazel's Wand: run 60's rulings (Q20 answered; 2026-11-21)
+## D58 — Ferazel's Wand: run 60's rulings (Q20 answered; 6A-BG1c, 6A-RN; 2026-11-21)
 
 1. **Q20 answered by Ben: "a: run detached".** Typed to the Coordinator on 2026-11-21 in reply to Q20's three
    options (a, b, c) as the question lists them, and passed word for word to run 60 in its brief. It is option (a):
@@ -2616,3 +2616,17 @@ The seat's rulings (Fable 5.2, under the Coordinator). Per-task detail is under 
    polling its log, even in a session whose background work is switched off. **It covers that one script only** —
    every other long suite still runs in the foreground, in parts under ten minutes. The script's own clock check and
    mute are untouched. `docs/NEXT.md`'s BLOCKED status is lifted by this answer; Q20 moved to "Answered".
+2. **Plants are one-way, as the original; a mirrored plant's empty hot rect stays unflipped (a recorded deviation).**
+   The plant arm of 2026-10-09 never set the one-way byte (dump l. 62638). 6A-BG1c's fix round set it, after the
+   quality leg measured that no pinned value moves — so it is a fix inside the card's Files, not a moved golden. The
+   unflipped empty rect is D53.2's deviation extended from decorations to plants: nothing reads it, and matching it
+   would move level 1–5 pins.
+3. **6A-RN: the dump beat the card four times, and the seat took the dump each time** (both review legs agreed): the
+   rain picture is frame 2, with frame 1 pinned beside it for 6A-L15 (that card amended); the looped rain sound runs
+   through the Sound Tool's own re-play and loses one block per repeat, as the original; the fade switch is not a
+   preference, so tests set the fade state directly; the pause's flag clear sits in `LevelRun`.
+4. **6A-L15 was not started in run 60.** A level task is never split from its gate, and its gate is the every-object
+   sweep and the bot — each longer than ten minutes as one command, which a Coordinator-started session cannot run
+   (Q20's answer covers the Windows test script only). Run 61 runs them one level at a time in the foreground
+   (`FERAZEL_VISIT_LEVELS`, `FERAZEL_BOT_LEVELS`); Q21 asks Ben whether they may run detached instead.
+

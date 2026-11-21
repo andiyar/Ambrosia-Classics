@@ -32,6 +32,19 @@ brother's Windows machine.
 
 ## Open
 
+### Q21 — 2026-11-21 — May the every-object sweep and the random-play bot also run detached?
+Context: opening a level ends with two long checks: a sweep that walks Ferazel up to every object on every built
+level, and a bot that plays at random. As one command each takes 20 minutes or more per shell, and sessions under
+the Coordinator are cut off at ten. Your Q20 answer covers the Windows test script only. Both checks are headless
+(no window, no sound, any hour) and already guarded against running out of memory.
+Options: (a) yes — those two scripts may also run detached (`nohup`, the session polls the log); (b) no — the
+session runs them one level at a time in the foreground, each under ten minutes.
+Recommendation: a — one whole run is the form the scripts were built and guarded for; (b) works but is about twenty
+separate commands a level task, and a single big level may not fit in ten minutes.
+Blocks: nothing. Until you answer, runs take (b); if one level's sweep cannot finish in ten minutes, that run stops
+and says so.
+Answer:
+
 ### Q19 — 2026-11-11 — Phase 6A plan (to the Goblin Chief): three small choices, for your later read
 Context: the plan for levels 10–22 is written and reviewed (run 50): the Warrior's real fight, then the horizon strip,
 wind, cannons, trees, the river ripple, rain and thunder, the Goblin Chief, clouds, blades, maces and the magic carpet,

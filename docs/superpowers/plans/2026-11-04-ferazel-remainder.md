@@ -245,6 +245,10 @@ references in `WinLevelReferenceTests` (black first frame `742a0703fa4da325`; le
 L10 init 385 / `0xbb961ddb0ecba42d`, f30 398 / `0xf7d378409aba7e2e`, f120 398 / `0x29a5b373220a24e1`; L11 init 434 /
 `0xc83aaf016c964735`, f30 479 / `0xf004624fe7acbe58`, f120 479 / `0xf55033eec8d3de69` (the last seven values were in
 the tests since 6A-L10L11 but not listed here until run 57's cross-check).
+New in run 60 (6A-RN, level 15's fixture, nothing left out, seed 1): the rain picture — frame 2, tick 145 —
+`343813c4727ef0e0` (the same frame with the drops removed `b8b5b520071e980e`); frame 1, tick 143, no drop yet,
+`49eddc24d9989d95` (the value 6A-L15 compares its real first frame with); the first thunder's flash — iteration 129,
+tick 399 — `597cd03adccc11ce` (the same frame with no flash `1cc38d5f30226d2f`). No existing value moved.
 
 **What the machine does NOT prove:** the feel of every enemy's AI at 30 steps a second; the colours of the tint tables
 (through the replica's colour search, LOW); the underwater tint's strength on screen (gamma, MED); the OmniPx
@@ -2045,6 +2049,24 @@ ids; its `--check` reads this table):
   level is opened): `testPlantFacesSetUp` · `testPlantCacheMarksFlagOne` · `testPlantsOnLevels15And18` (every plant
   record of 15 and 18 sets up).
 - **Gate:** Gate-F (G2 725). **Commit:** `FerazelCore: the plants of levels 15 and 18; 3 tests`.
+- **As executed — 6A-BG1c (run 60, 2026-11-21):** task ae196fd, ledger 0878df8, fix round ce32d88. The five faces
+  (0xa8c, 0xa8d, 0xa8e, 0xa91, 0xa97; flag 1, the level's colour table) are in the Setup-face table and their own
+  singles #161, #162, #163, #166, #172 are marked (dump l. 62635) — "#161–#172" in the card is a span; #164, #165,
+  #167–#170 belong to types 2703, 2704, 2706–2709, which no level places. Measured from the data: level 15 holds 22
+  records of the five types (2700 ×4, 2701 ×8, 2702 ×6, 2705 ×3, 2711 ×1) plus 8 older plants; level 18 holds 5
+  (2700 ×2, 2701 ×1, 2702 ×2); level 25 one 2700. Level 15 now refuses 0 of 183 records, level 18 only the Chief.
+  - **An older fault fixed in the fix round:** the plant arm (2026-10-09) never set the one-way byte the original
+    sets for every type 0xa8c–0xaef (`+0x185 = 1`, dump l. 62638). Now set and asserted, with gravity 0 (l. 62670).
+    Level 1's plants gain it too; measured before it went in: no pinned value moves (no reader can see it — every
+    reader sits behind a hot-rect overlap, and a plant's hot rect is empty).
+  - **Recorded deviation (as D53.2 for decorations, now also plants; D58.2):** the original flips a mirrored plant's
+    (empty) hot rect, which moves only its centre x by the face width; the port keeps the unflipped empty rect.
+    Nothing reads it; level 1 has had mirrored plants all along. `PlantTests` pins the port's value and says so.
+  - Reviews: spec PASS WITH FIXES, quality PASS WITH FIXES (no must-fix; every face, mark and refusal mutation
+    caught; survivors gravity and one-way, now asserted). Left: one assert in `testPlantCacheMarksFlagOne` compares
+    the test's own table with its own formula; the load-bar values pinned there are the port's own arithmetic, not a
+    reading of the original (the comment says so); an extra mark for an unplaced type would pass.
+  - Seat's G2 at ce32d88, five foreground parts: 560 + 26 + 18 + 51 + 70 = **725**, 0 failed, the two opt-in skips.
 
 #### 6A-RN — ⚑ MAJOR — OmniPx rain (mode 1), thunder, the side push (→ 737)
 - **Files:** `Sources/FerazelCore/World/OmniPx.swift` (mode 1 — 6000 / 6001 already loaded, `:96`, `:125`),
@@ -2067,7 +2089,7 @@ ids; its `--check` reads this table):
   `.STPlayLoopedSound` 40978ff; the side push 46347–46365 (**built**, `Player.sidePush` — a test only, ENG E4 / LL §10.7).
   - First call: T = R(90) + 90, the rain loop snd 452 (no stream draw); after every Caps-Lock pause a fresh R(90) and
     the loop again. Thunder: T counts down; 0 → flash 3 + snd 453; −2 → the fade as **`AsyncGammaFade` plus three
-    `gammaStep` ops in the same iteration**, gated on the fading preference and the faded flag; then T = R(150) + 210.
+    `gammaStep` ops in the same iteration**, gated on the fading switch and the faded flag (the switch is NOT a preference — see As executed); then T = R(150) + 210.
     Drops: x from H + R(50) while < H + 660, heavy / light by R(2), three particles each, the draw order R(2), [R(100),
     R(100)], R(200). Runs on undrawn frames and on the pause's and the quit dialogs' extra paints.
   - Fixture: level 15 with nothing left out (6A-BG1c, before this task, built the plants; level 15 is not yet in
@@ -2082,6 +2104,37 @@ ids; its `--check` reads this table):
   Asserts: ENG §2.7's five.
 - **Gate:** Gate-F with lockstep (a) (G2 737, GW2 85; G5; G-MUTE 1 / 1). **Commit:** `Ferazel: Storm Valley's rain,
   thunder and the looped rain sound; the side push pinned; 12 tests, 1 Windows audio test`.
+- **As executed — 6A-RN (run 60, 2026-11-21):** task e4d428e, ledger 8b3a0e5, fix round e00db25 (tests and
+  comments only). Level 15's header read from the data matches the card: OmniPx mode 1, `0x26c9` = 1, `0x270e` = 56,
+  side push −320, 183 records; it is the only mode-1 level. Both review legs re-read `.GenerateRain` against the port
+  line by line: no difference. Spec PASS WITH FIXES (wording only); quality PASS WITH FIXES — 76 mutations, 5
+  survivors (the drop loop's bound 660 and its `<`; the `0x33 < R(100)` comparison; the rain called at the wrong
+  scroll point; the cue's loop default; the Windows re-play skipping the priority / volume walk), all asserted in the
+  fix round inside the card's tests.
+  - **Measured (seed 1):** the first call draws R(90) = 38 and, in the same call, counts down once: timer 127. The
+    first thunder falls on iteration 129, tick 399 (143 + 2 · 128). Goldens: the rain picture is **frame 2**, tick
+    145, `343813c4727ef0e0` (drops removed: `b8b5b520071e980e`); frame 1, tick 143, `49eddc24d9989d95`; the flash
+    `597cd03adccc11ce` (no flash: `1cc38d5f30226d2f`).
+  - **The dump beat the card in four places (D58.3):** (1) a drop is made unaged and the particle draw skips age-0
+    particles (l. 29787; the rain at 9229 runs before the draw at 9433 and the age step at 9454), so frame 1 shows no
+    drop — the rain golden is frame 2 and frame 1 is pinned beside it for 6A-L15 (that card is amended). (2) The
+    looped sound runs through the Sound Tool's re-play in its block pass (l. 78625–78650), not the music mixer: an
+    expiring looped sound is removed and re-played at once with the same id, and loses one block in that same pass —
+    the original's behaviour, ported as is. (3) **The fade switch is not a preference**: its only writer is the boot
+    code (l. 8313, N+F held); the tests set the session's fade state directly, not through `prefs:`. (4) The pause's
+    flag clear (l. 3203) sits in `LevelRun` right after `PauseRun.painted`, same order.
+  - Files beyond the card's list, each needed for the looped cue: `PlayerState.swift` (a `.looped` call),
+    `SoundCues.swift`, `SoundTool.swift`. The cue's loop field defaults to off (Invariant 9); the re-play keeps the
+    entry id, so 6B-AS can address "the voice playing snd N" either way. The renderer needed no change for mode 1.
+  - Unprovable by a test, by construction: the setup-time clear of the first-call flag (it meets a fresh flag) and
+    the fade-in's faded-flag gate (the rain cannot reach it unfaded).
+  - Left: `docs/ferazel/gap-ledger/markers.tsv:154` still quotes the old `Player.swift:161` comment (regenerating it
+    renumbers about 1,370 ids — a ledger pass's job); `OmniPxRain.entrySeed` stays in shipped source as a read-only
+    test observation point; the rain filter in `FeatureGoldenTests` could misread a particle slot reused within one
+    tick (no case seen); ENG §2.7 still says "preference" and asks for a Windows feature golden the plan overrides.
+  - Seat's gates at e00db25, foreground: G2 569 + 26 + 18 + 53 + 71 = **737**, 0 failed, the two opt-in skips; GW2
+    2 + 29 + 26 + 28 = **85**, 0 failed, the two opt-in skips. The implementer's at e4d428e: G5 BUILD SUCCEEDED, GW1
+    0 / 2, GW3 0 / 1, GW4 Build complete!, G-MUTE 1 / 1; G5 and GW4 again at e00db25.
 
 #### 6A-L15 — minor — level 15 "Storm Valley" enterable (→ 740)
 - **Files:** `Sources/FerazelCore/Front/BuiltLevels.swift` (+ 15), `Tests/FerazelCoreTests/LevelFifteenTests.swift` (new),
@@ -2094,8 +2147,10 @@ ids; its `--check` reads this table):
   composite and the Dillo (a test).
   - **Parameter trace:** the springs 1150 / 1152 / 1153, the Bonus 1293, 3102, 3219, 3223, the Gremlin 1770, the Dillo
     1870, and every type built on 1–5 whose p1…p4 here the script finds new.
-  - The new real first-frame golden is checked against the rain golden it retires: 6A-RN's fixture left nothing out,
-    so the two worlds agree at frame 1 unless the opening path differs (`LevelRun` through `BuiltLevels` and the
+  - The new real first-frame golden is checked against **6A-RN's frame-1 pin `49eddc24d9989d95` (tick 143)** — the
+    first assert inside `testLevel15RainFeatureGolden`, the test this task deletes — **not** against the rain picture
+    itself (`343813c4727ef0e0`, which is frame 2: a drop is not drawn on the frame it is made). 6A-RN's fixture left
+    nothing out, so the two worlds agree at frame 1 unless the opening path differs (`LevelRun` through `BuiltLevels` and the
     chapter / stage screens against the fixture's direct open) — As executed records "new = RN's retired value", or
     why not.
 - **Tests (+4 / −1):** `testLevel15SetsUpEveryRecord` · `testLevel15FirstFrameGolden` · `testBuiltLevelsFifteen` ·
