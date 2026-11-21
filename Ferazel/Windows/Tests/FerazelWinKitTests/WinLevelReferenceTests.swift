@@ -231,4 +231,51 @@ import XCTest
         }
         XCTFail("no ripple row / rippled frame in 24,000 wakes")
     }
+
+    /// 6A-L15: level 15 "Storm Valley" — no chapter card. Its feature is the rain backdrop (OmniPx mode 1, the two rain
+    /// sheets 6000 / 6001 painted into PxBack slot 0 every drawn frame, 6A-RN): the twin game's renderer has OmniPx
+    /// switched off after the first level frame (`ParallaxBlitter.omniPxActive` false: `.GetPxBackTile` reads the
+    /// level's own PxBack map again), Core untouched — the first presented frame where the two differ is the first
+    /// that shows the rain sheets through the shell.
+    func testLevel15FirstFrameReference() throws {
+        let (game, host) = try Self.game(level: 15)
+        let f = try Self.firstLevelFrame(game, host, level: 15)
+        // No chapter card on level 15 (hdr 0x273c = 0).
+        XCTAssertFalse(f.pictures.contains { (4610...4699).contains($0) }, "no chapter card: \(f.pictures.sorted())")
+        // Measured at 6A-L15: flow step 609 (wake 2,433) — as level 11's, no card on either —, the first iteration under
+        // the fade-in: all black.
+        XCTAssertEqual(Self.lit(f.rgba), 0)
+        XCTAssertEqual([f.wakes, f.steps], [2433, 609])
+        XCTAssertEqual(String(WinGame.fnv1a64(f.rgba), radix: 16), "742a0703fa4da325", "level 15's first presented frame")
+        // The first frame with the fade done. Measured: flow step 689, the 41st iteration, 127,162 pixels lit (the dark
+        // storm sky).
+        let lit15 = try Self.firstFadedInFrame(level: 15)
+        XCTAssertEqual([lit15.steps, lit15.iterations, Self.lit(lit15.rgba)], [689, 41, 127_162])
+        XCTAssertEqual(String(WinGame.fnv1a64(lit15.rgba), radix: 16), "d102a2c8a8ae172d", "level 15's first faded-in frame")
+        // The twin: the same game, its renderer's OmniPx off from the first level frame on.
+        let (twin, twinHost) = try Self.game(level: 15)
+        let g = try Self.firstLevelFrame(twin, twinHost, level: 15)
+        XCTAssertEqual([g.steps, g.wakes], [f.steps, f.wakes])
+        XCTAssertEqual(g.rgba, f.rgba)
+        let tr = try XCTUnwrap(twin.driver.levelRenderer)
+        XCTAssertTrue(tr.parallax.omniPxActive, "OmniPx turned on at the level start")
+        tr.parallax.omniPxActive = false
+        var last = game.flowSteps, twinLast = twin.flowSteps
+        for _ in 1...24_000 {
+            let presented = Self.wake(game, host, last: &last)
+            XCTAssertEqual(Self.wake(twin, twinHost, last: &twinLast), presented)
+            guard presented else { continue }
+            let a = try XCTUnwrap(game.lastPresented), b = try XCTUnwrap(twin.lastPresented)
+            guard a != b else { continue }
+            let s = try XCTUnwrap(game.flow.levelRun?.session)
+            // Measured: flow step 611, the second iteration (still fading in), the camera at (0, 1027); 76,335 pixels lit,
+            // 536,532 RGBA bytes the sheets changed (the backdrop wherever no tile covers it).
+            XCTAssertEqual([Self.lit(a), zip(a, b).filter { $0 != $1 }.count], [76_335, 536_532])
+            XCTAssertEqual([game.flowSteps, game.flow.levelRun?.iterations ?? -1], [611, 2])
+            XCTAssertEqual([s.camera.scrollH, s.camera.scrollV], [0, 1027])
+            XCTAssertEqual(String(WinGame.fnv1a64(a), radix: 16), "4a20aaf242d20d31", "level 15's first rain-sheet frame")
+            return
+        }
+        XCTFail("no rain-sheet frame in 24,000 wakes")
+    }
 }

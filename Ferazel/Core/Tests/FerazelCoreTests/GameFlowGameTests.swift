@@ -246,10 +246,11 @@ final class GameFlowGameTests: XCTestCase {
         XCTAssertEqual(rig2.levels.prepared, [1])
         // The hidden `FerazelLevel` switch starts at its level (∈ BuiltLevels) instead, Option or not; a level outside
         // BuiltLevels (6, 12 and 0) starts level 1 (LV4: level 4 is built; LV5: level 5 is built, 6 is the first outside;
-        // 6A-L10L11: 10 and 11 are built, 12 is not).
-        XCTAssertEqual(BuiltLevels.list, [1, 2, 3, 4, 5, 10, 11])
+        // 6A-L10L11: 10 and 11 are built, 12 is not; 6A-L15: 15 is built, 18 is not).
+        XCTAssertEqual(BuiltLevels.list, [1, 2, 3, 4, 5, 10, 11, 15])
         for (start, option, expected) in [(2, true, 2), (4, false, 4), (5, false, 5), (6, false, 1), (10, false, 10),
-                                          (11, false, 11), (12, false, 1), (0, false, 1)] {
+                                          (11, false, 11), (12, false, 1), (15, false, 15), (18, false, 1),
+                                          (0, false, 1)] {
             let rig3 = Rig(r, startLevel: start)
             rig3.toMenu()
             let keys = option ? [0x2d, 0x3a] : [0x2d]
@@ -505,7 +506,7 @@ final class GameFlowGameTests: XCTestCase {
         // the gate) → the auto-walk to node 10 → Return → level 10 (6A-L10L11: built); its exit p1 1 (record 290) → node
         // 11 → Return → level 11 (built); its exit p1 1 (record 133) → node 18 → Return → the "not built yet" report (the
         // only invented text, D35), still on the map, nothing new unlocked. (Level 10's other exit, p1 2 — record 249 —
-        // leads to node 15, also not built.)
+        // leads to node 15, built since 6A-L15: `LevelFifteenTests.testBuiltLevelsFifteen`.)
         try touchExit(s2, record: 98)
         rig.drive { self.onIdleMap($0) }
         let m4 = try XCTUnwrap(flow.worldMap)

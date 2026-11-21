@@ -64,4 +64,35 @@ final class LevelFrameGoldenTests: XCTestCase {
         XCTAssertLessThan(f.scroll.v + 383, 0x200, "no ripple row in view")
         XCTAssertEqual(String(f.fnv, radix: 16), "5d78b001424a6898", "the level-11 first-frame golden")
     }
+
+    /// 6A-L15: level 15 "Storm Valley" — no chapter card; the first presented frame, the backdrop replaced by the two
+    /// rain sheets (OmniPx mode 1, 6000 / 6001). It is 6A-RN's frame 1 on the same world (that fixture left nothing out,
+    /// and this open is the fixture's: `LevelFixture.open` on the data set itself), and it supersedes 6A-RN's rain
+    /// feature golden (ENG §2.7), whose pins it carries with their twins (D54.2): frame 1 shows the sheets — the twin
+    /// without the `.UpdateOmniPx` ops differs — and no drop (a drop is made at age 0 and `.DrawParticles` draws only
+    /// ages > 0, M l. 29787: the twin without the rain particles is the same picture); frame 2 is the first with drops.
+    func testLevel15FirstFrameGolden() throws {
+        let f = try Self.firstFrame(level: 15)
+        try checkShowsLevel(f, 15)
+        XCTAssertEqual(f.run.levelFile.header.chapter, 0)
+        XCTAssertEqual(f.run.levelFile.header.omniPxMode, 1)
+        // Measured at 6A-L15 (seed 1): the 143rd tick (now 142), no card, the camera at (0, 1018) — the same value
+        // as 6A-RN's frame 1: the opening paths agree (the level runner, no chapter or stage screen before it).
+        XCTAssertEqual(f.ticks, 143)
+        XCTAssertEqual([f.scroll.h, f.scroll.v], [0, 1018])
+        XCTAssertEqual(String(f.fnv, radix: 16), "49eddc24d9989d95", "the level-15 first-frame golden (6A-RN's frame 1)")
+        let plain = try FeatureGoldenTests.level15Frames(count: 2, dropRain: false)
+        let noDrops = try FeatureGoldenTests.level15Frames(count: 2, dropRain: true)
+        let noSheets = try FeatureGoldenTests.level15Frames(count: 1, dropRain: false, dropOmniPx: true)
+        XCTAssertEqual(plain.map(\.ticks), [143, 145])
+        XCTAssertEqual(noDrops.map(\.ticks), [143, 145])
+        XCTAssertEqual(plain[0].fnv, f.fnv, "the fixture helper's frame 1 is this frame")
+        XCTAssertNotEqual(noSheets[0].fnv, f.fnv, "frame 1 shows the rain sheets")
+        XCTAssertEqual(String(noSheets[0].fnv, radix: 16), "75d168572f6f029c", "measured: frame 1 without the sheets")
+        XCTAssertEqual([plain[0].rain, plain[1].rain], [0, 15], "frame 1 no drop drawn; frame 2 the first call's five")
+        XCTAssertEqual(plain[0].fnv, noDrops[0].fnv, "frame 1 shows no drop")
+        XCTAssertNotEqual(plain[1].fnv, noDrops[1].fnv, "frame 2 shows the drops")
+        XCTAssertEqual(String(noDrops[1].fnv, radix: 16), "b8b5b520071e980e", "frame 2 with the drops taken out (6A-RN)")
+        XCTAssertEqual(String(plain[1].fnv, radix: 16), "343813c4727ef0e0", "the rain picture, frame 2 (6A-RN)")
+    }
 }

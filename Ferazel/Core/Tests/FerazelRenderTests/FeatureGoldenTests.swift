@@ -486,8 +486,11 @@ final class FeatureGoldenTests: XCTestCase {
     /// Level 15's fixture (nothing left out), seed 1, `FerazelPrefs()`, the header's start, no input: the first `count`
     /// presented frames — each one's tick count, the FNV-1a 64 of the screen indices and the rain particles its
     /// `.DrawParticles` held. `dropRain`: the twin — every frame's rain particles taken out of its `.DrawParticles`
-    /// before the renderer draws it (the same run otherwise: Core never sees the change).
-    static func level15Frames(count: Int, dropRain: Bool) throws -> [(ticks: UInt32, fnv: UInt64, rain: Int)] {
+    /// before the renderer draws it (the same run otherwise: Core never sees the change). `dropOmniPx` (6A-L15): the
+    /// twin whose `.UpdateOmniPx` ops are taken out — the rain sheets never painted into the backdrop port. Used by
+    /// `LevelFrameGoldenTests.testLevel15FirstFrameGolden`, which took over this file's rain golden at 6A-L15.
+    static func level15Frames(count: Int, dropRain: Bool, dropOmniPx: Bool = false) throws
+        -> [(ticks: UInt32, fnv: UInt64, rain: Int)] {
         let (run, services) = try LevelFixtureServices.open(level: 15, leaveOut: [])
         var now: UInt32 = 0, frames: [(ticks: UInt32, fnv: UInt64, rain: Int)] = []
         while frames.count < count && now < 4000 {
@@ -497,7 +500,8 @@ final class FeatureGoldenTests: XCTestCase {
             for g in out.segments where g.target == .level {
                 let r = try XCTUnwrap(services.renderer, "a level draw before the renderer exists")
                 let pool = try XCTUnwrap(run.session).world.particles
-                let draws = g.output.draws.map { op -> DrawOp in
+                let draws = g.output.draws.compactMap { op -> DrawOp? in
+                    if dropOmniPx, case .omniPx(.update) = op { return nil }
                     guard case .drawParticles(let list) = op else { return op }
                     let keep = list.filter { !isRain($0, pool) }
                     rain += list.count - keep.count
@@ -514,40 +518,13 @@ final class FeatureGoldenTests: XCTestCase {
         return frames
     }
 
-    /// 6A-RN: level 15's fixture (nothing left out — every one of its 183 records sets up since 6A-BG1c), seed 1,
-    /// `FerazelPrefs()`, the header's start — the backdrop's two rain sheets (OmniPx mode 1) and the falling drops.
-    /// A drop is made by `.GenerateRain` at age 0 and `.DrawParticles` draws only ages > 0 (`ParticlePool.draw`), so
-    /// the first presented frame (the first `.GameLoop` iteration) shows no drop: its twin with the rain particles
-    /// taken out is the same picture. The second presented frame is the first that shows drops — the golden, proven
-    /// by its twin. Deleted at 6A-L15 (ENG §2.7), where level 15's own first-frame golden is frame 1 below.
-    func testLevel15RainFeatureGolden() throws {
-        let real = try LevelFile.load(from: try LevelFixture.base.get(), level: 15)
-        XCTAssertEqual(try LevelFixture.leftOut(real, []).count, 0, "nothing left out")
-        XCTAssertEqual(real.activePlacements.count, 183)
-        XCTAssertEqual(real.header.omniPxMode, 1)
-        let plain = try Self.level15Frames(count: 2, dropRain: false)
-        let twin = try Self.level15Frames(count: 2, dropRain: true)
-        XCTAssertEqual(plain.map(\.ticks), twin.map(\.ticks))
-        XCTAssertEqual(plain[0].rain, 0, "frame 1: the drops are age 0, not drawn")
-        XCTAssertEqual(plain[0].fnv, twin[0].fnv, "frame 1 shows no drop")
-        XCTAssertGreaterThan(plain[1].rain, 0, "frame 2 draws the first drops")
-        XCTAssertNotEqual(plain[1].fnv, twin[1].fnv, "the drops are in the picture")
-        // Measured at 6A-RN (FNV-1a 64 of the 640×480 screen indices after the tick's level draws, the test colour
-        // model): frame 1 on the 143rd tick (now 142), frame 2 — the second iteration — on the 145th; frame 2 draws 15
-        // rain particles (the first call's five drops). With the rain's generation stubbed instead (one local patch,
-        // never committed) frame 2 is b8b5b520071e980e too — the twin's value — and frame 1 unchanged.
-        XCTAssertEqual(plain.map(\.ticks), [143, 145])
-        XCTAssertEqual(plain[1].rain, 15)
-        XCTAssertEqual(String(plain[0].fnv, radix: 16), "49eddc24d9989d95", "frame 1 (the sheets, no drop)")
-        XCTAssertEqual(String(twin[1].fnv, radix: 16), "b8b5b520071e980e", "frame 2 with the drops taken out")
-        XCTAssertEqual(String(plain[1].fnv, radix: 16), "343813c4727ef0e0", "the level-15 rain feature golden")
-    }
-
-    /// 6A-RN: the first thunder's flash on level 15's fixture (as `testLevel15RainFeatureGolden`; fading on, the
-    /// default). The first call's T = R(90) + 90 counts down one a call; at 0 the thunder sets the flash count 3
-    /// (M l. 8458) and that same pass's flash step turns the toggle on (M l. 9426–9432, after the rain at M l. 9228):
-    /// its `.WrapCopyToScreen` takes the mask port (`.copyMaskToScreen`). The twin is the same copy from the frame port
-    /// (no flash). The frame is measured from the seed: iteration (T after the first call) + 2. Kept at 6A-L15.
+    /// 6A-RN: the first thunder's flash on level 15's fixture (nothing left out, seed 1, `FerazelPrefs()`; fading on,
+    /// the default). The rain's own picture (6A-RN's `testLevel15RainFeatureGolden`, retired at 6A-L15) is now
+    /// `LevelFrameGoldenTests.testLevel15FirstFrameGolden`'s, with both its twins. The first call's T = R(90) + 90
+    /// counts down one a call; at 0 the thunder sets the flash count 3 (M l. 8458) and that same pass's flash step
+    /// turns the toggle on (M l. 9426–9432, after the rain at M l. 9228): its `.WrapCopyToScreen` takes the mask port
+    /// (`.copyMaskToScreen`). The twin is the same copy from the frame port (no flash). The frame is measured from the
+    /// seed: iteration (T after the first call) + 2. Kept at 6A-L15.
     func testLevel15ThunderFlashFeatureGolden() throws {
         let (run, services) = try LevelFixtureServices.open(level: 15, leaveOut: [])
         var now: UInt32 = 0, afterFirst: Int?

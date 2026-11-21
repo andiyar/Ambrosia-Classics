@@ -663,9 +663,11 @@ final class FaceTests: XCTestCase {
         // places two chests (139 p2 3201 → 0xc81, p3 1; 356 p2 1302 → the hurt coin 0x516, p3 10), both unlocked (p1 0),
         // and the door 140 p1 1 (key face 0xc81). Their Handles' cache sets: the 1750's (both levels), the swarm members'
         // 0x74d (both: records 0x200 of the swarms 1869), the geysers' three (level 10), the 1851's 0x73a / 0x73b (level
-        // 11, p1 < 0 records mark 0x73b too).
+        // 11, p1 < 0 records mark 0x73b too). 6A-L15: level 15 places no chest or door; its nine crates 3090 drop p2
+        // 1290 (0x50a), 1291 (0x50b), 1293 (0x50d) and 3206 (0xc86), none locked. Its Handles' cache sets: the 1750's,
+        // the Gremlin's three (0x6ea, 0x6eb, 0x6ec), the Dillo's four (0x74e…0x751) and the Frog's 0x708 (record 14).
         let keys: [Int: [Int16]] = [1: [0xc81, 0xc82], 2: [0xc81, 0xc82], 3: [0xc83], 4: [0xc81], 5: [], 10: [],
-                                    11: [0xc81]]
+                                    11: [0xc81], 15: []]
         let drops: [Int: [(Int16, Int)]] = [
             1: [(0xc81, 1), (0xc82, 1), (0x51d, 9), (0x516, 9), (0xc93, 1), (0x50b, 1), (0x50d, 1)],
             2: [(0x51d, 9), (0xc82, 1), (0xc81, 1), (0x516, 9), (0x50d, 1)],
@@ -674,6 +676,7 @@ final class FaceTests: XCTestCase {
             5: [],
             10: [],
             11: [(0xc81, 1), (0x516, 9)],
+            15: [(0x50a, 1), (0x50b, 1), (0x50d, 1), (0xc86, 1)],
         ]
         for n in BuiltLevels.list {
             let frame = n == 1 ? one : try renderer(n)
@@ -684,11 +687,18 @@ final class FaceTests: XCTestCase {
             if n == 5 {
                 for sh in Warrior.sheets { want("level 5 Warrior set", sh.pict, cells: sh.count, in: frame) }
             }
-            if n == 10 || n == 11 {
+            if n == 10 || n == 11 || n == 15 {
                 for sh in CachedFaces.sheets(markedBy: [Int16(0x6d6)]) {
                     want("level \(n) 1750 set", sh.pict, cells: sh.single ? 1 : sh.count, in: frame)
                 }
-                want("level \(n) swarm member set", Bat.memberSet, cells: 8, in: frame)
+            }
+            if n == 10 || n == 11 { want("level \(n) swarm member set", Bat.memberSet, cells: 8, in: frame) }
+            if n == 15 {
+                for (p, cells) in [(GremlinFloater.bodySet, 10), (GremlinFloater.backSet, 10), (GremlinFloater.riderSet, 4),
+                                   (Dillo.walkType, 6), (Dillo.curlType, 5), (Dillo.deathType, 5), (Dillo.jumpType, 2),
+                                   (FrogSalamander.frogSet, 8)] {
+                    want("level 15 cache set", p, cells: cells, in: frame)
+                }
             }
             if n == 10 {
                 for (p, cells) in [(Geyser.baseSet, 12), (Geyser.headSet, 6), (Geyser.segmentSet, 6)] {
