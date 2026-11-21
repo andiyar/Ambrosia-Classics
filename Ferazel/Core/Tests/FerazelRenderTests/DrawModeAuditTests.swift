@@ -17,7 +17,8 @@ import XCTest
 /// 2. `testEveryRefusalIsUnreachable` — every `throw` in `Sources/FerazelRender` and in `Sources/FerazelCore` (what a
 ///    level frame can propagate; counted per file and thrown name; a new throw without a row fails) with the reason it
 ///    cannot be reached on a level frame of a built level, each reason checked by code (the writer table, the data,
-///    the level headers, the routing, the combinations' guards in the source).
+///    the level headers, the routing, the combinations' guards in the source). `FERAZEL_AUDIT_LEVELS` narrows its
+///    per-level checks the same way (D60.2).
 ///
 /// **Maintained by every task** that adds a writer of a draw input or a Core / renderer throw (Invariant 8): add its
 /// row here in the same task. When a row's line moves, the failure prints the scanned `file:line` to paste.
@@ -1223,8 +1224,16 @@ final class DrawModeAuditTests: XCTestCase {
     /// scan, the rows' source values, the skipped ops' arms — run in every filtered run), so filtered runs whose ids
     /// together name every built level execute every assert of the unfiltered run. A token that is not a number, an id
     /// not in `BuiltLevels.list` or an id named twice throws: the test fails, nothing is skipped. A filtered run audits
-    /// its levels afresh (the shared `audits` stay whole: `testEveryRefusalIsUnreachable` ignores the filter).
+    /// its levels afresh (the shared `audits` stay whole). `testEveryRefusalIsUnreachable` honours it too (run 62,
+    /// D60.2: alone it took 543 s — the scripted runs ~400 s and `writtenWordsDraw`'s drawn writers ~130 s, both per
+    /// level): its checks read only the levels named; the throw scan and the checks that read no audit (source scans,
+    /// level 5's OmniPx port, the 24-level water census, the synthetic headers) run in every filtered run.
     static let auditLevelsVariable = "FERAZEL_AUDIT_LEVELS"
+
+    /// The levels `FERAZEL_AUDIT_LEVELS` names in this process (`auditLevels` of the environment's value).
+    static func requestedLevels() throws -> [Int] {
+        try auditLevels(ProcessInfo.processInfo.environment[auditLevelsVariable])
+    }
 
     struct AuditFilterError: Error, CustomStringConvertible { let description: String }
 
@@ -1269,7 +1278,7 @@ final class DrawModeAuditTests: XCTestCase {
                       + mismatches.map { "  " + $0 }.joined(separator: "\n"))
 
         // The levels: every built level, or those `FERAZEL_AUDIT_LEVELS` names (`auditLevels`).
-        let levels = try Self.auditLevels(ProcessInfo.processInfo.environment[Self.auditLevelsVariable])
+        let levels = try Self.requestedLevels()
         let audits: [Audit], drawn: [[String]]
         if levels == BuiltLevels.list {
             audits = try Self.audits.get()
@@ -1635,7 +1644,9 @@ final class DrawModeAuditTests: XCTestCase {
             XCTAssertEqual(scanned.values.reduce(0, +), rows.map(\.count).reduce(0, +), module)
         }
 
-        let audits = try Self.audits.get()
+        // The levels: every built level, or those `FERAZEL_AUDIT_LEVELS` names (as in test 1).
+        let levels = try Self.requestedLevels()
+        let audits = levels == BuiltLevels.list ? try Self.audits.get() : try levels.map { try Self.audit(level: $0) }
         var checks: [Check] = []
         for r in Self.refusals + Self.coreRefusals { for c in r.checks where !checks.contains(c) { checks.append(c) } }
         for c in checks { try check(c, audits) }
@@ -1647,7 +1658,10 @@ final class DrawModeAuditTests: XCTestCase {
         let core = try Self.coreLines.get(), render = try Self.renderLines.get()
         switch c {
         case .writtenWordsDraw:
-            for f in try Self.drawn.get() { XCTAssertTrue(f.isEmpty, "\(c): \(f.prefix(5))") }
+            // The shared `drawn` for every built level; a filtered run draws its own levels' writers.
+            let drawn = audits.map(\.level.number) == BuiltLevels.list
+                ? try Self.drawn.get() : audits.map(Self.drawWriters)
+            for f in drawn { XCTAssertTrue(f.isEmpty, "\(c): \(f.prefix(5))") }
         case .untransformableNotTransformed:
             // Modes the transformed blitters have no table for, on a sprite some rotation / scale row writes.
             let transformed = Set(Self.transformedSprites)
@@ -1845,7 +1859,7 @@ final class DrawModeAuditTests: XCTestCase {
         case .levelsLoad:
             // Every built level's renderer was built (faces, tile sets, tables, parallax, status bar), its Setup lights
             // and tint table attached and PICT 129 drawn by the run; every `.Load1LightFaceFromPICT` site loads.
-            XCTAssertEqual(audits.map(\.level.number), BuiltLevels.list)
+            XCTAssertEqual(audits.map(\.level.number), try Self.requestedLevels())
             for a in audits { XCTAssertTrue(a.seen.refusals.isEmpty, "\(c): level \(a.level.number) \(a.seen.refusals)") }
             for site in LightFace.callSites {
                 XCTAssertNoThrow(try LightFace.load(pict: site.pict, width: site.width, height: site.height, from: res,
