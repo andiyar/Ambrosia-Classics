@@ -2737,3 +2737,26 @@ Ben's answers are in `~/.claude/coordinator-notes/deimos-phase4-mailbox.md`; the
    check that game source did not move is `git diff <task> -- Ferazel/Core/Sources` showing comment lines only.
 5. **A ⚑ task was started at 21:55 at night.** The chip leaves this to the seat ("or you are content to close
    late"); everything was headless, nothing was launched. The whole run took four hours.
+
+## D62 — Ferazel's Wand: run 63's rulings (6A-CH2 — the Goblin Chief, part two; 2026-11-22)
+
+1. **The picture loader is inside a boss task's fence when its fight cannot run without it.** The Chief's four
+   picture sets 0x777–0x77a are "level-coloured" records, which the loader could not load; the fight's death burn
+   needs them and the card named no loader file. The implementer made the change as its own commit (462ba91, in
+   `LevelRun.swift` and `FrameRenderer.swift`) and flagged it; the seat ruled it in after the spec leg showed it
+   follows the original's loader, defaults to the old behaviour for every other caller, and leaves the loaded
+   pictures of every built level unchanged (D54.1 / D61.1's form). The colour table (224 on level 18) is pinned.
+2. **A list-length pin in another class follows the card's own edit.** Adding the Chief to the Smite list moved two
+   counts (11 → 12) in `EnemyCommonTests` and `ItemUseTests`, outside the card's Files; ruled in as the necessary
+   consequence, nothing more.
+3. **The Chief's fight script is the build's own (D49.1), and may read three internal values as stand-ins for what a
+   player sees** — the stagger count, his invulnerability count, and hit rectangles for outlines — provided its
+   comment names them, as the Warrior's script reads the arena lock and the ground flag. The contract's starting
+   script loses (Ferazel dies on frame 961). Measured and pinned: health 0 on frame 1602, the Kill on 1710.
+4. **Dump over contract twice more** — a Smite seed never hurts the Chief on level 18 (it touches him before its
+   damage is set), and his record is cleared at the Kill by the kill flag `+0xe9`, not `+0xea`. The boss contract
+   carries dated corrections (f523e2a).
+5. **The seat's gate ran once, after the fix round**, which was held to tests, comments and one contract document;
+   `git diff 38d0579 -- Ferazel/Core/Sources` shows six comment lines with line counts kept (D61.4's form).
+6. **No memory note was written for this run.** The run taught no new standing rule, and the memory index is past
+   its size limit; the run's record is this entry, the plan's "As executed — 6A-CH2" and the handoff.

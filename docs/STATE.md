@@ -7,25 +7,26 @@ Settled history lives in docs/STATE-history.md.
 > numbers and open items and moves anything settled to the top of `docs/STATE-history.md`; it never appends a run story
 > here. Forks go in `docs/DECISIONS.md`, narrative in the handoff. Re-verify before acting.
 
-## Ferazel's Wand — 2026-11-22 (attended run 62 closed at night: the Goblin Chief jumps, lands and throws; his being hit and killed heads run 63)
+## Ferazel's Wand — 2026-11-22 (attended run 63 closed before dawn: the Goblin Chief can be hit and killed, and a scripted fight on his level is won; opening level 18 heads run 64)
 
 - **Where it stands:** Phase 5 "Enemies" is closed on the machine side — **Ben's gate pending (Q18)**. Phase 6A
   "through the Goblin Chief" is being built (the plan: "Wave 5 — Phase 6A" in the one plan file; rulings D46–D49, D51,
-  D53–D57, D59–D61). Waves 6A.1 (the Warrior is a real boss) and 6A.2 (levels 10 and 11 open) are built and closed.
-- **Wave 6A.3 "Storm Valley and the Chief" is two thirds built.** Level 15 "Storm Valley" is open (run 61).
-  **The Goblin Chief's first half is built** (run 62, 6A-CH1): he waits until the arena locks, jumps between three
-  lanes, lands with a screen shake that can stagger Ferazel, and throws one or two boulders a
-  landing. He cannot be hurt or killed yet (6A-CH2), and no player can meet him yet: his level, 18, is not open
-  (6A-L18). Levels playable on main: **1–5, 10, 11, 15** — unchanged.
+  D53–D57, D59–D62). Waves 6A.1 (the Warrior is a real boss) and 6A.2 (levels 10 and 11 open) are built and closed.
+- **Wave 6A.3 "Storm Valley and the Chief" has one task left.** Level 15 "Storm Valley" is open (run 61).
+  **The Goblin Chief is built whole** (run 62 6A-CH1, run 63 6A-CH2): he waits until the arena locks, jumps between
+  three lanes, lands with a screen shake that can stagger Ferazel, throws boulders, takes 20 Fireball hits, can be
+  crushed, and dies in a burn that opens the arena gate and changes the music. A scripted fight on level 18 —
+  keys only, seed 1 — kills him on frame 1710. No player can meet him yet: his level, 18, is not open (6A-L18).
+  Levels playable on main: **1–5, 10, 11, 15** — unchanged.
 - **Windows test build 5 is with Andrew** (Ben asked, 2026-11-18): GitHub pre-release `ferazel-windows-test-5`, staged
   from 02717f8 (levels past 5 closed). His report is the Windows half of Q18; Ben's Mac verdict is still open. The zip
   and its checksum are in `releases/ferazel-windows-test-5/`.
 - **Staged builds on the Desktop are old** (game code as e9183ce, run 50): they still show the stand-in Warrior and no
   level past 5. The next stage is the 6A phase end unless Ben asks for one.
-- **Next:** run 63 = **6A-CH2 ⚑** (the Chief's Hit and Kill, his three pieces, the fight; Core → 760), which first
-  finds from the data how the fight is won (D49.1); then, in a later run, 6A-L18 (level 18 opens; → 764 / WinKit 87)
-  with the wave 6A.3 end (the Windows test run by day, detached as D59.1 allows; the smoke; the Fable cross-check).
-  None of it waits for Ben's verdict on Phase 5.
+- **Next:** run 64 = **6A-L18** (level 18 "Goblin Chief" opens; Core → 764, WinKit → 87), with the every-object
+  sweep and the bot on all nine levels, then the wave 6A.3 end (the Windows test run by day, detached as D59.1
+  allows; the smoke by day; the Fable cross-check of the wave's whole diff). The wave end needs daylight
+  (09:00–21:00). None of it waits for Ben's verdict on Phase 5.
 - **How long checks run under the Coordinator** (commands cut off at ten minutes): the suites in parts, the sweep one
   level group a command, the bot one command a shell (D59.4, D60.4); only the Windows test script may run detached
   (D59.1). Q21 asks Ben whether the sweep and bot may too — no longer pressing.
@@ -34,15 +35,15 @@ Settled history lives in docs/STATE-history.md.
 - **Ben's gates:** Phase 1 passed; Phases 2 and 3 passed with notes; Phase 4 passed (Fireball note) and the Windows
   twin passed on Andrew's word (2026-11-07); **Phase 5 waiting (Q18)**. Then three gated Phase 6 parts (6A to the Goblin
   Chief, 6B to the Wizard and the fire, 6C the whole game), then one release `ferazel-1.0`.
-- **Current numbers** (G2 and GW2 are the seat's own foreground runs of run 62, 2026-11-22, at d7dc0ad; G3, the
+- **Current numbers** (G2 and GW2 are the seat's own foreground runs of run 63, 2026-11-22, at f523e2a; G3, the
   sweep and the bot are run 61's at b4482a1 / game source as e8d6bfd — before the Chief, who is on no built level;
   Proof B and the smoke are run 60's at d82b2bf, game code as 66875a3 — before the plants, the rain, level 15 and the
-  Chief; G5 / GW1 / GW3 / GW4 the implementer's at ea93ffb):
+  Chief; G5 / GW1 / GW3 / GW4 the implementer's at 38d0579):
 
 | gate | value |
 |---|---|
-| Ferazel/Core suite (G2) | **752** = 584 rules + 168 render; 750 passed, 0 failed, 2 opt-in skips by name: `FerazelRenderTests.VisitSweepTests testVisitEveryObject`, `FerazelRenderTests.RandomPlayTests testRandomPlay`; ten foreground parts, about 38 min, the longest 367 s (rules 107 s; A–C 277; D–E without the audit 58; the audit's first test 205 + 364 in two level groups; its second test 215 + 367 the same way; F–K 192; L 313; M–Z 148) |
-| FerazelWinKit (GW2) | **86**; 84 passed, 0 failed, 2 opt-in skips (`WinVisitSweepTests testVisitEveryObjectThroughWinGame`, `WinRandomPlayTests testRandomPlayThroughWinGame`); seven foreground parts (B 301 s, F\|T 168, Win D\|F\|G 318, Win O\|R\|S\|V 154, the three level references 185 / 159 / 138), about 24 min |
+| Ferazel/Core suite (G2) | **760** = 591 rules + 169 render; 758 passed, 0 failed, 2 opt-in skips by name: `FerazelRenderTests.VisitSweepTests testVisitEveryObject`, `FerazelRenderTests.RandomPlayTests testRandomPlay`; ten foreground parts, about 36 min, the longest 348 s (rules 109 s; A–C 260; D–E without the audit 55; the audit's first test 191 + 335 in two level groups; its second test 209 + 348 the same way; F–K 193; L 300; M–Z 162) |
+| FerazelWinKit (GW2) | **86**; 84 passed, 0 failed, 2 opt-in skips (`WinVisitSweepTests testVisitEveryObjectThroughWinGame`, `WinRandomPlayTests testRandomPlayThroughWinGame`); seven foreground parts (B 317 s, F\|T 177, Win D\|F\|G 338, Win O\|R\|S\|V 143, the three level references 170 / 153 / 123), about 24 min |
 | census (G3) | items 1,108 decoded, failures 0 |
 | visit sweep (GE, levels 1–5, 10, 11, 15, both shells) | core 7,056 visits, windows 7,056 visits, rows 0 on both (1,652 s + 1,721 s in five commands a shell; run 61) |
 | random-play bot (GE, the same 8 levels, both shells) | core and windows each: steps 172,800, deaths 25, exits 237, conversations 33, saves 1, failures 0 (80 s, 95 s; run 61) |
@@ -50,15 +51,17 @@ Settled history lives in docs/STATE-history.md.
 | Mac SDL smoke (GW4R) | exit 0, main menu identical, `video=dummy audio=none` (run 60, 09:15); GW6 and G9M last passed in run 50 |
 | GW1 / GW3 / GW4 / G5 | 0 then 2 / 0 then 1 / Build complete! / BUILD SUCCEEDED |
 | HectorKit (G1) | main **ef2c341**, clean; zero-skip executed **370**; Ferazel follows HectorKit main |
-| ladder from here | 752 → CH2 760 → L18 764 … 814 at the 6A end; WinKit 86 → 90 |
+| ladder from here | 760 → L18 764 … 814 at the 6A end; WinKit 86 → 87 at L18 → 90 |
 
-- **Goldens (◈):** no existing value moved in run 62 and no picture was added (the Chief is on no built level).
-  Measured and pinned for the Chief (seed 1, level 18 through the test fixture, headless): arena lock on frame 111,
-  awake for good 121, first jump 176, first landing 212 — **6A-L18 re-measures these with real pictures and may move
-  them** (D61.3). Every value is in the plan's "As executed — 6A-CH1".
+- **Goldens (◈):** no existing value moved in run 63 and no picture was added (the Chief is on no built level).
+  Measured and pinned for the Chief's fight (seed 1, level 18 through the test fixture with real pictures, keys
+  only): his health reaches 0 on frame 1602, the Kill on 1710 (108 later = 20 dying frames + the burn of his last
+  picture). Run 62's four headless frames (lock 111, awake 121, first jump 176, landing 212) are untouched —
+  **6A-L18 re-measures those with real pictures and may move them** (D61.3). Every value is in the plan's
+  "As executed — 6A-CH1" and "As executed — 6A-CH2".
 - **Waiting on Ben (QUESTIONS.md "Open"):** **Q18 (the Phase 5 gate)**, Q21 (may the sweep and bot run detached —
   not blocking), Q19 (three small choices in the 6A plan), Q17, Q16 (defaults stand), Q15's follow-ups, Q13.
-- **Worktrees:** run 62's `zen-hamilton-a3370d` was removed at its close. `compassionate-leavitt-7ca958` is run
+- **Worktrees:** run 63's `zealous-bartik-85e6f8` was removed at its close. `compassionate-leavitt-7ca958` is run
   53's (merged; it was run 49's before). `gallant-brahmagupta-56ed81` (run 52), `eager-fermat-db9ed9` (run 51),
   `hungry-bun-395f55` (run 50; `out/` holds the latest stages), `nifty-mendel-0ad40e` (run 48),
   `ferazel-run-47-e0431c` and `ferazel-run-44-7428b3` are finished and merged — Ben or their sessions remove them.
@@ -70,14 +73,22 @@ Settled history lives in docs/STATE-history.md.
 - **Known deviation of muted launches (D44 As built run 48 (d)):** a muted run draws the random stream differently
   from an audible one; boot checks only.
 - **Open carries** [LOW unless marked]:
+  - From run 63: the picture loader now loads a level-coloured picture set under the level's colour table, but the
+    shared-picture path (`recordSheets` in `LevelRun.swift`) still skips that table — nothing reaches it today, check
+    when a later boss needs it; the loader treats any non-zero flag as "level-coloured" (the original only ever uses
+    0 and 1); the Chief's and the Warrior's Kill are the same code twice and their crush arms differ only in a sound —
+    share them if a third boss repeats it; the fight script reads three internal values as stand-ins for what a player
+    sees (the stagger count, his invulnerability count, hit rectangles), named so in its comment (D62.3); a "killed
+    for good" row for the Chief exists but can never be reached (he has his own kill arm); the 0x7f60 right-opening
+    camera bound is reached on neither level 5 nor level 18 (still untested); the Smite test calls the strike
+    directly rather than through the Ring.
   - From run 62: the Chief's wake and first-jump frames were measured headless (whole-cell wake rectangle) — 6A-L18
-    re-measures with pictures; the renderer cannot yet load his picture sets 0x777–0x77a (6A-CH2 / 6A-L18);
-    `Smite.swift:16` still calls him inert (6A-CH2's file); the ledger now shows picture 161 on level 67 as "named in
-    code only" — a false match on the boulder's x offset `0xa1` at `Chief.swift:255` (the script matches the number,
-    not its meaning); the seven older player arms stop the spin sound without first asking whether it is playing
-    (the original asks every time; same sound, a different call list); `Chief.stagger` (the length 0x18) and
-    `PlayerStates.stagger` (face 1037) share a name; the audit test works out "is this run filtered?" in two places;
-    one assert that cannot fail is left at `ChiefTests` (`+0xa6` 0 on the return to waiting — harmless).
+    re-measures with pictures; the ledger shows picture 161 on level 67 as "named in code only" — a false match on
+    the boulder's x offset `0xa1` in `Chief.swift` (the script matches the number, not its meaning); the seven older
+    player arms stop the spin sound without first asking whether it is playing (the original asks every time; same
+    sound, a different call list); `Chief.stagger` (the length 0x18) and `PlayerStates.stagger` (face 1037) share a
+    name; the audit test works out "is this run filtered?" in two places; one assert that cannot fail is left at
+    `ChiefTests` (`+0xa6` 0 on the return to waiting — harmless).
   - From run 61: the audit's scripted run on level 15 never gets past the first 300 px (the push sends the player back
     out of the exit), so it draws 7 of the 38 placed types there and none of the four modes level 15's Setups write —
     those are still drawn once each by the audit's fixed-spot check and visited by the sweep, but values the game
@@ -149,7 +160,7 @@ Settled history lives in docs/STATE-history.md.
     defaults for bot settings that are set but empty; `FERAZEL_VISIT_LIMIT` is not validated; huge limit values are
     accepted; the sweep does not clear a reused `OUT`; a worker-exit comment in `tools/ferazel-worker-watchdog.sh`
     overstates when the cleanup runs; the release test covers the sweep's game wrapper only (the bot's has the same shape).
-  - From run 47: the second camera bound and the 0x7f60 right-opening bound are unreachable on level 5 (untested); `try!` at
+  - From run 47: the 0x7f60 right-opening bound is unreachable on level 5 (untested; the second camera bound is now tested on level 18, run 63); `try!` at
     `GremlinFloater.swift:298` (safe: Bonus setup throws only for 0xc25 / out-of-table) is outside the census; the
     `setupPipe` p2 write-back is pinned on the helper's return only (level 21's task asserts it in `w.records`).
   - From run 46: a census row marked "trap: unreachable" is not checked to point at a trap

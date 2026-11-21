@@ -2323,6 +2323,52 @@ ids; its `--check` reads this table):
   items 24–30.
 - **Gate:** Gate-B (G2 760; the bot cannot reach level 18 until 6A-L18 — quick mode there). **Commit:** `FerazelCore:
   the Goblin Chief's Hit and Kill; the scripted fight on level 18; 8 tests`.
+- **As executed — 6A-CH2 (run 63, 2026-11-22, at night):** loader 462ba91, task 40d6843, ledger ef4c7b0, audit
+  re-anchors d5b6775, Smite list pins 38d0579, fix round 2210d33 (tests and comments only — `git diff 38d0579 --
+  Ferazel/Core/Sources` is six comment lines, line counts kept), contract corrections f523e2a; merged at f523e2a.
+  Core 752 → **760** (591 rules + 169 render), WinKit 86 unchanged. Legs: spec MERGEABLE AFTER FIXES (0 / 0 / 6
+  minor; Hit and Kill match the dump line by line, the order of random draws included), quality MERGEABLE AFTER
+  FIXES — 107 planted bugs, 76 caught, 15 harmless, 16 real test gaps, all 16 closed by the fix round (15 by the
+  reviewer's verified patch, the last — spray speed 400 against 401 — by a shot placed straight below his centre);
+  no planted bug exposed a fault in game code. The worst gap: the blood-spray asserts tested nothing (the test shot
+  sat above his body, so the spray returned at once).
+  - **The scripted kill — the contract's starting script cannot win; replaced under D49.1.** With BOS §3.9's script
+    Ferazel dies on frame 961 with the Chief at 1100 HP (both legs confirmed). What wins, keys only: when he is in the
+    right lane stand at x 1270 (his near boulder flies past to the right) and cast straight; otherwise stand at
+    x 1340, lob the Fireball (UP + use) at the middle lane and jump the far boulders; hop on each of his landings so
+    the stagger never lands. `ChiefFightScript` (in the test file), seed 1, level 18 through `LevelFixtureServices`
+    from the level start with the named test carry (Fireball owned and selected), cap 20,000 frames. Leg 1
+    snapshotted the world around each of the 1,710 key decisions: the script writes nothing. It reads three internal
+    values as stand-ins for what a player sees — the stagger count, his invulnerability count (< 3), hit rectangles —
+    named in its comment (D62.3). **Measured and pinned (game-loop frames): HP 0 (the death entry) 1602; Kill
+    1710**; Kill − HP0 = 108 = 20 + ⌈(B 221 − T 44 + 1) / 2⌉ − 1 of face 0x77a[3] (bounds re-read from the face's own
+    pixels by leg 1; 221 is the exclusive bottom). Ferazel's health at the end: 224. The fight costs 5.6 s.
+  - **Dump and data over card and contract:** (a) a Smite seed never hurts the Chief on level 18: the Hit reads the
+    seed's `+0xa4`, which `.InitSprite` zeroes and which becomes 800 only from age 1, and the seed touches him on its
+    first frame — BOS §3.6 corrected; (b) his record is cleared at the Kill by the kill flag `+0xe9`
+    (`.UpdateSprites` M l. 4995–4997), not by `+0xea` — BOS §3.6 corrected; (c) the write-back was already built
+    generically: `SpriteWorld.swift` needed no change. The card's numbers all hold against level 18's data (gate
+    x 628, lock x < 1340, bounds −1400 / −640, track 30, 20 hits).
+  - **Arena:** lock on frame 111, the window ends at [640, 1400] — **the Phase 5 carry "the second camera bound is
+    untested" is closed.** The 0x7f60 right-opening bound is not reached on level 18 either (its bound is negative):
+    that half of the run-47 carry stays, untested.
+  - **Files beyond the card (seat rulings, D62):** `Front/LevelRun.swift` and `FerazelRender/Frame/FrameRenderer.swift`
+    (462ba91: a flag-1 cache record loads under the level+base colour table, as the dump's cache loader does —
+    `CachedFaces.sheet/sheets` gain a `levelClut` parameter defaulting to nil; the Warrior's form would have loaded
+    the sets under clut 200, level 18 uses 224; leg 1 proved the sheet lists of levels 1–5, 10, 11, 15, 25, 55 and 67
+    unchanged and level 18's gaining exactly 0x777–0x77a); `EnemyCommonTests.swift`, `ItemUseTests.swift` (the Smite
+    list's length 11 → 12, the card's own Smite edit); `CachedFacesTests.swift` (the colour-table pin, 224);
+    comment-only: `Camera/BossArena.swift`, `Camera/Camera.swift`; `tools/ferazel/later-levels-ledger.py` (the
+    remark's wording, as the chip asked).
+  - **No pinned value moved** (levels 1–5, 10, 11, 15; the Windows references; every fixture picture; run 62's four
+    Chief frames). No golden: the Chief is on no built level.
+  - **Gates (the seat's own, foreground, at f523e2a from a `git archive` copy):** G2 760 = 758 passed, 0 failed, the
+    two opt-in skips by name, ten parts (109 / 260 / 55 / 191 / 335 / 209 / 348 / 193 / 300 / 162 s); GW2 86 = 84
+    passed, 0 failed, the two skips, seven parts (317 / 177 / 338 / 143 / 170 / 153 / 123 s); the implementer's G5,
+    GW1 0/2, GW3 0/1, GW4, G6–G8, G10 at 38d0579; the ledger check OK at f523e2a. The bot check on level 18 is
+    6A-L18's (Gate-B: the level is not built). Nothing launched.
+  - **Owed on:** 6A-L18 re-measures run 62's four frames with pictures (D61.3) and makes the bot checks 6A-CH1 and
+    6A-CH2 owe.
 
 #### 6A-L18 — minor — level 18 "Goblin Chief" enterable (→ 764)
 - **Files:** `Sources/FerazelCore/Front/BuiltLevels.swift` (+ 18), `Tests/FerazelCoreTests/LevelEighteenTests.swift` (new),

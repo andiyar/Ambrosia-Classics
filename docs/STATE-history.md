@@ -4,6 +4,14 @@
 > only). Nothing current reads this file; the live state is `docs/STATE.md`. Each later close that settles something
 > adds a dated section at the top, newest first. The two snapshots below are verbatim (headings demoted only).
 
+## Settled at Ferazel run 63's close (2026-11-22)
+
+- The Goblin Chief's second half built (6A-CH2: loader 462ba91, task 40d6843, ledger ef4c7b0, audit anchors d5b6775,
+  Smite pins 38d0579, fix round 2210d33, contract corrections f523e2a; merged at f523e2a); Core suite 752 → 760,
+  Windows kit 86 unchanged.
+- Run 62's carries paid: the renderer loads the Chief's picture sets 0x777–0x77a (D62.1); `Smite.swift` no longer
+  calls him inert. Run 47's carry "the second camera bound is untested" is paid on level 18.
+
 ## Settled at Ferazel run 62's close (2026-11-22)
 
 - The Goblin Chief's first half built (6A-CH1: ea93ffb, fix round 6cc92d4, ledger d7dc0ad, merged at d7dc0ad); Core
