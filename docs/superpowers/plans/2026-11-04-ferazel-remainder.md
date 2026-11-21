@@ -2250,6 +2250,49 @@ ids; its `--check` reads this table):
   the bot: not applicable until 6A-L18 — level 18 is not in `BuiltLevels.list` — its quick mode on 18 is 6A-L18's).
   **Commit:** `FerazelCore: the Goblin Chief's class and Handle; the player's stagger; 12 tests`.
 
+- **As executed — 6A-CH1 (run 62, 2026-11-21 into 2026-11-22):** task ea93ffb, fix round 6cc92d4 (tests and
+  comments only — `git diff ea93ffb -- Ferazel/Core/Sources` is three comment lines), ledger d7dc0ad, merged at
+  d7dc0ad. Core 740 → **752** (584 rules + 168 render), WinKit 86 unchanged. Legs: spec PASS WITH FIXES (the port
+  matches the six dump spans line by line; all 23 BOS §3.10 asserts and ENG §2.13's two present), quality PASS WITH
+  FIXES — 142 planted bugs, 123 caught by the 12 new tests, 1 by the audit, 8 harmless, 10 real test gaps all closed
+  by the fix round's 13 asserts (inside the named tests; `ChiefTests` 9, `PlayerStaggerTests` 3); no planted bug
+  exposed a fault in game code. The most visible gap closed: nothing checked which way he faces at the start of a
+  throw cycle.
+  - **Dump and data over card and contract:** (a) BOS §3.3 / §3.8's "first jump 56 frames after the lock" is wrong
+    on level 18: an idle sprite's Handle does not run, so state 6 counts only while locked **and awake**. Measured,
+    seed 1, level 18 through `LevelFixture` (empty leave-out list): first active frame 1, asleep 2, arena lock 111,
+    awake for good 121, enters the jump on 176 (his 56th locked-and-awake frame), first landing 212. **These were
+    measured with the headless stub's whole-cell wake rectangle; the app uses real face bounds, so 6A-L18 re-measures
+    them with faces.** (b) There was no Chief-specific refusal at `SetupFaces` `:712`, only the generic default; a
+    `.chief` arm now sits before it. (c) The idle entry carries face 0x776 (the house `.handle` form the Dillo,
+    Floater and Gremlin use) where the dump leaves `+0xc0 = 0`: one extra draw op on his first wake frame, off screen
+    on level 18 — accepted (D61.3). (d) The spin-sound stop: the dump asks "is 427 playing?" before every stop in all
+    eight player arms; the stagger arm does so, the older arms' unconditional stop is an older shortcut (same sound,
+    a different call list) — left alone, a carry.
+  - **Pinned (measured, seed 1):** the frames above (`testChiefFirstJumpAfterLock`); landing 212 sets the stagger
+    0x18, next frame 0x17 with pose 1037[2] (`testChiefLandingShakeAndStagger`); 2 throws → 1 boulder, back to
+    waiting on throw-cycle frame 20, 3 → 2 boulders, frame 39 (`testChiefThrowCount`); stagger 0x18 → 23 arm frames,
+    0x14 → 19, one pre-empted frame → 22 (`testStaggerSlowsAndPoses`); jump vy after the Handle −9870; dying vx
+    −1001 → −900 → −810 (truncated). No golden: the Chief is on no built level, and no existing value moved.
+  - **Files beyond the card (seat rulings, D61):** `tools/ferazel/later-levels-ledger.py` (a Chief "built" arm; the
+    script still listed him as an unbuilt boss — the implementer refused the edit as outside its fence, the seat
+    ruled it in, the fix round made it; level 18 now refuses 0 types, refused records 258 → 257 on levels 10–22);
+    comment-only: `EnemyShot.swift` (the 0x77b mark is built), `PlantTests.swift` (a line saying the Chief was
+    unbuilt), the hurt-stun cite in `PlayerStates.swift` (M l. 45634–45660).
+  - **Gates (the seat's own, foreground, at d7dc0ad from a `git archive` copy):** G2 752 = 750 passed, 0 failed, the
+    two opt-in skips by name, ten parts (107 / 277 / 58 / 205 / 364 / 215 / 367 / 192 / 313 / 148 s); GW2 86 = 84
+    passed, 0 failed, the two skips, seven parts (B 301, F|T 168, Win D|F|G 318, Win O|R|S|V 154, levels 10 / 11 / 15
+    185 / 159 / 138 s); the implementer's G5, GW1 0/2, GW3 0/1, GW4, G6–G8, G10 at ea93ffb. The bot check on level 18
+    is 6A-L18's (Gate-B: the level is not built). Nothing launched.
+  - **Owed on:** the renderer cannot yet load his flag-1 picture sets 0x777–0x77a (6A-CH2 / 6A-L18); `Smite.swift:16`
+    still calls him `.inert` (6A-CH2's file).
+- **As executed — AF (run 62; no card, not on the ladder):** 05b3276 + ledger 138a07e; wording 6cc92d4. The audit's
+  second test, `testEveryRefusalIsUnreachable`, honours `FERAZEL_AUDIT_LEVELS` through the first test's parser
+  (D60.2's "still owed" is paid). What took its 544 s: the scripted runs (401 s, all per level — level 15 alone 136 s)
+  and the drawn-writers pass (133 s, per level). The parts that read no level run in every filtered run. One review
+  leg (a tests-only change): PASS; a planted level-3 fault was caught by the 1–5 group, a level-15 one by the group
+  naming 15. Times: levels 1–5 215 s, levels 10, 11, 15 367 s. Core 740 unchanged by it.
+
 #### 6A-CH2 — ⚑ MAJOR — the Chief's Hit and Kill, the three pieces, the fight (→ 760)
 - **Files:** `Sources/FerazelCore/World/Enemies/Chief.swift`, `Sources/FerazelCore/World/Enemies/EnemyCommon.swift`
   (a `.chief` `killProc` arm; `killsForGood` gains `.chief`), `Sources/FerazelCore/Player/HitPlayerSprite.swift` (`:67`,

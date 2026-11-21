@@ -2718,3 +2718,22 @@ Ben's answers are in `~/.claude/coordinator-notes/deimos-phase4-mailbox.md`; the
    it touched any, the sweep would have been run again. Q21 stays open, no longer pressing: level by level works
    and costs about twelve commands.
 5. **6A-CH1 was not started:** the level's gate ended at 21:20 and a ⚑ task takes about four hours.
+
+## D61 — Ferazel's Wand: run 62's rulings (the audit filter; 6A-CH1 — the Goblin Chief, part one; 2026-11-22)
+
+1. **The ledger script is inside a task's fence when the task builds a type the script still calls refused.**
+   `tools/ferazel/later-levels-ledger.py` hard-coded the Chief as an unbuilt boss, so `--check` failed and `--write`
+   would have kept him "refused". The implementer refused the edit (outside the card's Files) and reported it; the
+   seat ruled it in and the fix round made it (D54.1 / D60.1's form). The Wizard, the Demon and Xichra stay refused.
+   6A-CH2 changes nothing here (the arm already says Hit and Kill are 6A-CH2's); the next boss task will need the same.
+2. **The audit's second test takes the level filter** (`FERAZEL_AUDIT_LEVELS`; D60.2's "still owed" is paid). A
+   tests-only change with no card got one review leg, not two. The suite's longest single command is now 367 s.
+3. **Dump and data over the Chief's card and contract** — (a) "first jump 56 frames after the lock" holds only for
+   frames he is awake: on level 18 he sleeps through the lock and jumps on frame 176, not 167; (b) the frames pinned
+   in `testChiefFirstJumpAfterLock` were measured headless with a whole-cell wake rectangle — **6A-L18 re-measures
+   them with real face bounds and may move them** (a named, allowed move for that task only); (c) the idle entry's
+   0x776 face where the dump stores none is accepted as the house form (off screen on level 18; one extra draw op).
+4. **The seat's gate ran after a fix round held to tests, comments and one tool script**, at the final commit; the
+   check that game source did not move is `git diff <task> -- Ferazel/Core/Sources` showing comment lines only.
+5. **A ⚑ task was started at 21:55 at night.** The chip leaves this to the seat ("or you are content to close
+   late"); everything was headless, nothing was launched. The whole run took four hours.

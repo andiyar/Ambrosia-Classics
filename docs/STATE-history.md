@@ -4,6 +4,14 @@
 > only). Nothing current reads this file; the live state is `docs/STATE.md`. Each later close that settles something
 > adds a dated section at the top, newest first. The two snapshots below are verbatim (headings demoted only).
 
+## Settled at Ferazel run 62's close (2026-11-22)
+
+- The Goblin Chief's first half built (6A-CH1: ea93ffb, fix round 6cc92d4, ledger d7dc0ad, merged at d7dc0ad); Core
+  suite 740 → 752, Windows kit 86 unchanged. Run 61's "the Goblin Chief heads run 62" is done for part one.
+- Run 61's [MED] carry is paid: the draw-mode audit's second test takes the level filter (05b3276); it took 543 s
+  alone and now runs as 215 s + 367 s. The Windows-kit `B|F|T` part (514 s) is now run as two commands (301 s, 168 s).
+- Run 61's numbers replaced: G2 740 (nine parts, the longest 543 s), GW2 86 in six parts.
+
 ## Settled at Ferazel run 61's close (2026-11-21)
 
 - Level 15 "Storm Valley" opened (6A-L15: e8d6bfd, fix round b9d0023, merged at b4482a1); Core suite 737 → 740,
