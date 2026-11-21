@@ -7,17 +7,17 @@ import XCTest
 /// Plain Swift only (Proof B: no Foundation string search or trim, no regular expressions).
 final class BuiltLevelsTests: XCTestCase {
     func testBuiltLevelsListAndContains() {
-        XCTAssertEqual(BuiltLevels.list, [1, 2, 3, 4, 5, 10, 11, 15])
+        XCTAssertEqual(BuiltLevels.list, [1, 2, 3, 4, 5, 10, 11, 15, 18])
         // Sorted, no duplicates: strictly increasing.
         for (a, b) in zip(BuiltLevels.list, BuiltLevels.list.dropFirst()) {
             XCTAssertLessThan(a, b, "BuiltLevels.list must be strictly increasing")
         }
         XCTAssertEqual(Set(BuiltLevels.list).count, BuiltLevels.list.count)
         for n in BuiltLevels.list { XCTAssertTrue(BuiltLevels.contains(n), "level \(n)") }
-        // 6–9 have no level data; 12 has none either, 18 is not built yet (6A-L10L11 built 10 and 11, 6A-L15 15); 0
-        // and −1 are no level.
-        for n in [-1, 0, 6, 7, 8, 9, 12, 16, 18] { XCTAssertFalse(BuiltLevels.contains(n), "level \(n)") }
-        XCTAssertEqual(BuiltLevels.notBuiltReport(18), "Level 18 is not built yet (Phase 6).")
+        // 6–9 have no level data; 12 has none either, 20 is not built yet (6A-L10L11 built 10 and 11, 6A-L15 15,
+        // 6A-L18 18); 0 and −1 are no level.
+        for n in [-1, 0, 6, 7, 8, 9, 12, 16, 20] { XCTAssertFalse(BuiltLevels.contains(n), "level \(n)") }
+        XCTAssertEqual(BuiltLevels.notBuiltReport(20), "Level 20 is not built yet (Phase 6).")
     }
 
     /// The shape `tools/ferazel-built-levels.sh` reads: after leading blanks, this prefix, then digits, commas and

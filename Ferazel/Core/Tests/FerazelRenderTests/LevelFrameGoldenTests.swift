@@ -95,4 +95,89 @@ final class LevelFrameGoldenTests: XCTestCase {
         XCTAssertEqual(String(noDrops[1].fnv, radix: 16), "b8b5b520071e980e", "frame 2 with the drops taken out (6A-RN)")
         XCTAssertEqual(String(plain[1].fnv, radix: 16), "343813c4727ef0e0", "the rain picture, frame 2 (6A-RN)")
     }
+
+    /// 6A-L18: level 18 "Goblin Chief" — no chapter card; the first presented frame. Two things are new on this level:
+    /// the ripple (hdr 0x26ca 1, 6A-RP) and the level-coloured pictures (the Chief's single 0x776 and sets 0x777…0x77a,
+    /// loaded under colour table 224 — D62.1). The first frame shows the ripple and not the Chief (D51.1 / D54.2, the
+    /// twins inside the test): the view's backdrop rows reach the ripple band (yb 256: rows track the view 1:1, rows
+    /// 338…721 ≥ 0x200), and the twin opened with hdr 0x26ca patched to 0 (no table, no fill) differs; the Chief stands
+    /// at x 897, his 256-wide cell left of the view (h 1408), so no level-coloured picture is in this frame — they first
+    /// show at his activation (`testLevel18ChiefActivationFrame`), through the fight (`BossKillLevelRunTests`).
+    func testLevel18FirstFrameGolden() throws {
+        let f = try Self.firstFrame(level: 18)
+        try checkShowsLevel(f, 18)
+        let h = f.run.levelFile.header
+        XCTAssertEqual([Int(h.chapter), Int(h.parallaxRipple), Int(h.pxBackYFactor)], [0, 1, 256])
+        // Measured at 6A-L18 (seed 1): the 143rd tick (now 142), no card, the camera at (1408, 338) — the player starts
+        // at (1996, 605), right of the arena.
+        XCTAssertEqual(f.ticks, 143)
+        XCTAssertEqual([f.scroll.h, f.scroll.v], [1408, 338])
+        XCTAssertGreaterThanOrEqual(f.scroll.v + 383, 0x200, "ripple rows in view")
+        XCTAssertEqual(String(f.fnv, radix: 16), "d3ce9327fd19d8b4", "the level-18 first-frame golden")
+        let s = try XCTUnwrap(f.run.session)
+        let chief = try XCTUnwrap(s.world.active.sprites.first { $0.handler == .chief })
+        XCTAssertEqual([chief.x, chief.y], [897, 412])
+        XCTAssertLessThanOrEqual(chief.x + 0x100, f.scroll.h, "the Chief's cell is left of the view")
+        // The twin: the same open with hdr 0x26ca patched to 0 (no ripple table, no fill: the backdrop rows unshifted).
+        let res = try LevelFixture.resources(level: 18, leaveOut: [], header: [(0x26ca, [0])])
+        let services = LevelFixtureServices(resources: res)
+        let run = try LevelFixture.open(resources: res, level: 18, services: services)
+        let flat = try services.firstPresentedFrame(run)
+        XCTAssertEqual(flat.renderer.parallax.rippleTable.count, 0)
+        XCTAssertEqual(flat.ticks, f.ticks)
+        XCTAssertNotEqual(flat.fnv, f.fnv, "frame 1 shows the ripple")
+        // Measured: 23,852 screen bytes the ripple moved; the frame without it.
+        XCTAssertEqual(zip(flat.renderer.screen.pixels, f.renderer.screen.pixels).filter { $0 != $1 }.count, 23_852)
+        XCTAssertEqual(String(flat.fnv, radix: 16), "3267c6feda5903c7", "measured: frame 1 without the ripple")
+    }
+
+    /// 6A-L18: the Chief's activation on the real level with real pictures (BOS §9.3, D61.3) — level 18 through the
+    /// level runner with the renderer-backed services (`LevelFixtureServices`: the wake rectangle is his picture's
+    /// opaque bounds), seed 1, LEFT held from the level start: he is active on the first frame (the camera's pan), idle
+    /// from the second, the arena locks, he wakes for good when the view meets his picture's bounds, jumps on his 56th
+    /// locked-and-awake frame and lands 36 frames later. The twin through the headless stub (the whole 256×254 cell
+    /// for a wake rectangle, `ChiefTests.testChiefFirstJumpAfterLock`'s run) wakes three frames sooner — the measured
+    /// difference the pictures make.
+    func testLevel18ChiefActivationFrame() throws {
+        func measure(_ services: LevelServices) throws -> [Int?] {
+            let run = try LevelFixture.open(resources: try LevelFixture.base.get(), level: 18, services: services)
+            let left = Int(FerazelPrefs().keys[0])
+            var now: UInt32 = 0
+            func tick(_ keys: [Int]) throws {
+                if let r = services as? LevelFixtureServices {
+                    _ = try r.step(run, now: now, input: FrontInput(keys: KeyState(pressed: keys)))
+                } else {
+                    _ = try run.tick(now: now, input: FrontInput(keys: KeyState(pressed: keys)))
+                }
+                now &+= 1
+            }
+            while run.session == nil && now < 4000 { try tick([]) }
+            let w = try XCTUnwrap(run.session).world
+            func chief() -> SpriteSlot? { w.active.sprites.first { $0.handler == .chief } }
+            var firstActive: Int?, asleep: Int?, lock: Int?, awake: Int?, jump: Int?, land: Int?
+            while land == nil && run.iterations < 3000 {
+                let was = chief()?.subtype
+                let before = run.iterations
+                var k = 0
+                while run.iterations == before && k < 400 { try tick([left]); k += 1 }
+                if lock == nil && w.arena.locked { lock = run.iterations }
+                guard let c = chief() else {
+                    if firstActive != nil && asleep == nil { asleep = run.iterations }
+                    continue
+                }
+                if firstActive == nil { firstActive = run.iterations }
+                if asleep != nil && awake == nil { awake = run.iterations }
+                if jump == nil && c.subtype == 1 { jump = run.iterations }
+                if jump != nil && was == 3 && c.phase == 1 && c.onSprite != 0 && c.subtype == 3 { land = run.iterations }
+            }
+            return [firstActive, asleep, lock, awake, jump, land]
+        }
+        let res = try LevelFixture.base.get()
+        let real = try measure(LevelFixtureServices(resources: res))
+        // Measured at 6A-L18 (seed 1, game-loop frames): active 1, idle from 2, the arena locked on 111, awake for good
+        // on 124 — the activation frame —, the first jump's state 1 on 179 (124 + 55), the first landing on 215.
+        XCTAssertEqual(real, [1, 2, 111, 124, 179, 215], "measured with real pictures (seed 1)")
+        let headless = try measure(LevelFixture.Headless())
+        XCTAssertEqual(headless, [1, 2, 111, 121, 176, 212], "the whole-cell wake rectangle (ChiefTests' frames)")
+    }
 }

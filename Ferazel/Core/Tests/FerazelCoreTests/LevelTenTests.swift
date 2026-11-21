@@ -325,9 +325,9 @@ final class LevelTenTests: XCTestCase {
     }
 
     func testBuiltLevelsTenEleven() throws {
-        XCTAssertEqual(BuiltLevels.list, [1, 2, 3, 4, 5, 10, 11, 15])     // 6A-L15: + 15
+        XCTAssertEqual(BuiltLevels.list, [1, 2, 3, 4, 5, 10, 11, 15, 18]) // 6A-L15: + 15; 6A-L18: + 18
         for n in [10, 11] { XCTAssertTrue(BuiltLevels.contains(n)) }
-        for n in [6, 9, 12, 18] { XCTAssertFalse(BuiltLevels.contains(n)) }
+        for n in [6, 9, 12, 20] { XCTAssertFalse(BuiltLevels.contains(n)) }
         let r = try TenEleven.resources()
         // `startLevel` 10 / 11 (the hidden `FerazelLevel` switch) is accepted: New Game there, nothing asked.
         for n in [10, 11] {

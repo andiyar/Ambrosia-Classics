@@ -281,4 +281,65 @@ import XCTest
         }
         XCTFail("no rain-sheet frame in 24,000 wakes")
     }
+
+    /// 6A-L18: level 18 "Goblin Chief" — no chapter card. Its new feature in view from the start is the ripple (hdr
+    /// 0x26ca 1, 6A-RP; the view's backdrop rows reach the band from the header's start, so no hold is needed): a twin
+    /// game whose renderer runs level 18 with 0x26ca patched to 0 (no ripple table, no fill) from the first level frame
+    /// on, as level 11's — the first presented frame where the two differ is the first that shows the ripple through
+    /// the shell. The Chief's level-coloured pictures are not in view there (`LevelFrameGoldenTests
+    /// .testLevel18FirstFrameGolden`).
+    func testLevel18FirstFrameReference() throws {
+        let (game, host) = try Self.game(level: 18)
+        // `-FerazelLevel 18` taken (18 ∈ `BuiltLevels.list`); refused, the game would run level 1 and every loop below
+        // would run to its cap (well past the ten-minute command limit) before failing.
+        guard game.flow.startLevel == 18 else { return XCTFail("-FerazelLevel 18 refused: level \(game.flow.startLevel)") }
+        let f = try Self.firstLevelFrame(game, host, level: 18)
+        // No chapter card on level 18 (hdr 0x273c = 0).
+        XCTAssertFalse(f.pictures.contains { (4610...4699).contains($0) }, "no chapter card: \(f.pictures.sorted())")
+        // Measured at 6A-L18: flow step 609 (wake 2,433) — as levels 11's and 15's, no card on any —, the first iteration
+        // under the fade-in: all black.
+        XCTAssertEqual(Self.lit(f.rgba), 0)
+        XCTAssertEqual([f.wakes, f.steps], [2433, 609])
+        XCTAssertEqual(String(WinGame.fnv1a64(f.rgba), radix: 16), "742a0703fa4da325", "level 18's first presented frame")
+        // The first frame with the fade done. Measured: flow step 689, the 41st iteration, 246,794 pixels lit.
+        let lit18 = try Self.firstFadedInFrame(level: 18)
+        XCTAssertEqual([lit18.steps, lit18.iterations, Self.lit(lit18.rgba)], [689, 41, 246_794])
+        XCTAssertEqual(String(WinGame.fnv1a64(lit18.rgba), radix: 16), "2941c3b772683f78", "level 18's first faded-in frame")
+        // The twin: the same game, its renderer's ripple off from the first level frame on.
+        let (twin, twinHost) = try Self.game(level: 18)
+        let g = try Self.firstLevelFrame(twin, twinHost, level: 18)
+        XCTAssertEqual([g.steps, g.wakes], [f.steps, f.wakes])
+        XCTAssertEqual(g.rgba, f.rgba)
+        do {
+            let res = try XCTUnwrap(twin.driver.resources.world.resource(type: "Mlvl", id: 18))
+            var d = res.data
+            XCTAssertEqual(d[d.startIndex + 0x26ca], 1)
+            d[d.startIndex + 0x26ca] = 0
+            let flat = try LevelFile(id: 18, data: d)
+            let tr = try XCTUnwrap(twin.driver.levelRenderer)
+            var p = try ParallaxBlitter(level: flat, faceSlots: [[UInt8]?](repeating: nil, count: ParallaxBlitter.slotCount))
+            p.faces = tr.parallax.faces
+            p.slotLoaded = tr.parallax.slotLoaded
+            p.omniPxActive = tr.parallax.omniPxActive
+            XCTAssertEqual(p.rippleTable.count, 0)
+            tr.parallax = p
+        }
+        var last = game.flowSteps, twinLast = twin.flowSteps
+        for _ in 1...24_000 {
+            let presented = Self.wake(game, host, last: &last)
+            XCTAssertEqual(Self.wake(twin, twinHost, last: &twinLast), presented)
+            guard presented else { continue }
+            let a = try XCTUnwrap(game.lastPresented), b = try XCTUnwrap(twin.lastPresented)
+            guard a != b else { continue }
+            let s = try XCTUnwrap(game.flow.levelRun?.session)
+            // Measured: flow step 611, the second iteration (still fading in), the camera at (1408, 332); 174,343 pixels
+            // lit, 35,398 RGBA bytes the ripple moved.
+            XCTAssertEqual([Self.lit(a), zip(a, b).filter { $0 != $1 }.count], [174_343, 35_398])
+            XCTAssertEqual([game.flowSteps, game.flow.levelRun?.iterations ?? -1], [611, 2])
+            XCTAssertEqual([s.camera.scrollH, s.camera.scrollV], [1408, 332])
+            XCTAssertEqual(String(WinGame.fnv1a64(a), radix: 16), "3cc8e65d285a207c", "level 18's first rippled frame")
+            return
+        }
+        XCTFail("no rippled frame in 24,000 wakes")
+    }
 }

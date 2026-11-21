@@ -666,8 +666,12 @@ final class FaceTests: XCTestCase {
         // 11, p1 < 0 records mark 0x73b too). 6A-L15: level 15 places no chest or door; its nine crates 3090 drop p2
         // 1290 (0x50a), 1291 (0x50b), 1293 (0x50d) and 3206 (0xc86), none locked. Its Handles' cache sets: the 1750's,
         // the Gremlin's three (0x6ea, 0x6eb, 0x6ec), the Dillo's four (0x74e…0x751) and the Frog's 0x708 (record 14).
+        // 6A-L18: level 18 places no chest, door or crate (its 15 types: Bonus 1055, 1059, 1340, 2000; Box 1065, 2820,
+        // 2821, 2822, 2841, 2940; Background 2700, 2701, 2702, 3249; the Chief 1910) — no key face, no drop. Its cache
+        // faces are the Chief's (record 1): the single 0x776, the four level-coloured sets 0x777…0x77a (4 × 0x100×0xfe,
+        // under colour table 224 — D62.1) and the boulder set 0x77b.
         let keys: [Int: [Int16]] = [1: [0xc81, 0xc82], 2: [0xc81, 0xc82], 3: [0xc83], 4: [0xc81], 5: [], 10: [],
-                                    11: [0xc81], 15: []]
+                                    11: [0xc81], 15: [], 18: []]
         let drops: [Int: [(Int16, Int)]] = [
             1: [(0xc81, 1), (0xc82, 1), (0x51d, 9), (0x516, 9), (0xc93, 1), (0x50b, 1), (0x50d, 1)],
             2: [(0x51d, 9), (0xc82, 1), (0xc81, 1), (0x516, 9), (0x50d, 1)],
@@ -677,6 +681,7 @@ final class FaceTests: XCTestCase {
             10: [],
             11: [(0xc81, 1), (0x516, 9)],
             15: [(0x50a, 1), (0x50b, 1), (0x50d, 1), (0xc86, 1)],
+            18: [],
         ]
         for n in BuiltLevels.list {
             let frame = n == 1 ? one : try renderer(n)
@@ -698,6 +703,12 @@ final class FaceTests: XCTestCase {
                                    (Dillo.walkType, 6), (Dillo.curlType, 5), (Dillo.deathType, 5), (Dillo.jumpType, 2),
                                    (FrogSalamander.frogSet, 8)] {
                     want("level 15 cache set", p, cells: cells, in: frame)
+                }
+            }
+            if n == 18 {
+                for (p, cells) in [(Chief.standing, 1), (Chief.throwA, 4), (Chief.throwB, 4), (Chief.jumpSet, 4),
+                                   (Chief.deathSet, 4), (EnemyShot.chiefBoulder, 16)] {
+                    want("level 18 cache set", p, cells: cells, in: frame)
                 }
             }
             if n == 10 {
