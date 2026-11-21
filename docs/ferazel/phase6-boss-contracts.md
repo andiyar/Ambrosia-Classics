@@ -426,6 +426,14 @@ switch, bosses-3 §10.3); death entry with **R(100) < 0x3c → `.GoblinChiefRand
 Identical to `.KillWarrior` (head, then the tail with `+0x170 ≠ 0`).
 
 ### 3.6 The three pieces and the class duties
+> **Corrected by the build (6A-CH2, run 63, 2026-11-22):** (1) Smite: `.HitChiefSprite` reads the seed's `+0xa4` after
+> `.KillPlayerShot`, and a seed touches him with it still 0 — `.InitSprite` zeroes it (M l. 35589) and the seed's Handle
+> sets 800 only from age 1 (M l. 50690), while the seed spawns overlapping him. `.HurtSprite` refuses damage < 1
+> (M l. 32712), so on level 18 a Smite seed never hurts him (the seed is wasted). The sentence below is true of the
+> code but not of the game. (2) Write-back: the record is cleared by the Kill's `+0xe9 = 1`, not by `+0xea` —
+> `.UpdateSprites` takes its `+0xe9` 1…3 arm (record `+4` = 0 unless `+0x188`, M l. 4995–4997); the `+0xea` arm
+> (M l. 4970–4980) runs only while `+0xe9` is 0, so a killed sprite never reaches it.
+
 - killProc: new `.chief` arm = count + tail (`killsForGood` gains `.chief`).
 - step 7: add `.chief` to the routing case (row M l. 49849–49851, 0x70).
 - Smite: append `.chief`; a seed hurts it with the seed's `+0xa4`.
@@ -489,6 +497,12 @@ Identical to `.KillWarrior` (head, then the tail with `+0x170 ≠ 0`).
 8. `testChiefScriptedKill` — see 3.9.
 
 ### 3.9 Scripted kill — measured by the build (the §0 ruling)
+> **Corrected by the build (6A-CH2, run 63, 2026-11-22):** the starting key script below cannot win — Ferazel dies on
+> frame 961 with the Chief still at 1100 HP. The script the build wins with (it dodges the boulders, casts from two
+> spots, and reads sprite fields as stand-ins for what a player sees, accepted under D49.1 as the Warrior's was) and
+> the measured frames (HP 0 at 1602, Kill at 1710) are `ChiefFightScript` and `testChiefScriptedKill` in
+> `BossKillLevelRunTests`.
+
 On paper: 20 landed Fireball hits at most one per 15 frames; the tail from HP0 (§0: the death-entry frame) = 20 dying
 frames + ⌈(B − T + 1) / 2⌉ − 1 burn frames of 0x77a[3] (2 rows a frame, no R(100) rows since `+0x8d ≠ 0`). The landing frames of the hits depend on the
 player's casting, the Chief's random lanes and the boulders' hits on the player. **Seed 1. Key script the build starts
