@@ -645,7 +645,8 @@ public struct SpriteSlot: Equatable, Sendable {
 }
 
 /// The Handle a sprite's `+0x4c` names (plan S2, LOCKED). `inert`: no Handle, no hit callback; still drawn, idled and
-/// erased — the four bosses (later: Phase 6) and the countdown digits (`FerazelSession`). `bonus` (BN) = `BonusSprite`.
+/// erased — three of the four later bosses (later: Phase 6; the Chief has his own case, 6A-CH1) and the countdown
+/// digits (`FerazelSession`). `bonus` (BN) = `BonusSprite`.
 public enum SpriteHandler: Equatable, Hashable, Sendable {
     case player, platform, chain, background, box, effect, rope, ropeSegment, inert
     /// W1 (added, Invariant 9): `.HandleSeeSawSegSprite @ 100655c8` (`_DAT_100a01c8`) — the see-saw segments 0x59b
@@ -685,10 +686,13 @@ public enum SpriteHandler: Equatable, Hashable, Sendable {
     /// `.walker` 0x100a0498 (WK1), `.crawler` 04b8 / `.roach` 04a0 (CR), `.dillo` 04b4 (DL), `.bat` 04c4,
     /// `.swarmMember` 0470 and the insect body (BA), `.gremlin` 04a4 / `.floater` 04ac (GF), `.frog` 04a8 /
     /// `.salamander` 049c (FR), `.blob` 04c0, the dead Blob, `.crab` 046c and its segments (BL), `.enemyShot` 0488 (ES),
-    /// `.geyserSegment` (`.HandleGeyserSegSprite`, GY), `.warrior` 0494 (LV5; its Handle 6A-W1). `.inert` stays for the four
-    /// bosses (on levels 18, 25, 55, 67 only: Demon 04b0, Chief 04bc, Wizard 0490, Xichra 048c).
+    /// `.geyserSegment` (`.HandleGeyserSegSprite`, GY), `.warrior` 0494 (LV5; its Handle 6A-W1). `.inert` stays for three
+    /// bosses (on levels 25, 55, 67 only: Demon 04b0, Wizard 0490, Xichra 048c).
     case walker, crawler, roach, dillo, bat, swarmMember, insectBody, gremlin, floater, frog, salamander, blob,
          deadBlob, crab, crabSegment, enemyShot, geyserSegment, warrior
+    /// 6A-CH1 (added, Invariant 9): `.HandleChiefSprite @ 1008b878` (`PTR_PTR_100a04bc`, M l. 75162–75441), installed
+    /// by `.SetupChiefSprite` (`Chief`) — the Goblin Chief 1910…1919, level 18.
+    case chief
 
     /// The Handle the class Setup `.GenerateSprite` selects for `type` installs (`SpriteClassTable`). The player
     /// (`.SetupPlayerSprite`), chain spokes (`.SetupChainSprite`, W1) and rope segments (W3) are set by their makers.
@@ -711,6 +715,7 @@ public enum SpriteHandler: Equatable, Hashable, Sendable {
         case .floater: return .floater      // GF: the Floater (the Wraith) 1780…1799
         case .dillo: return .dillo          // DL: the Dillo 1870…1879
         case .warrior: return .warrior      // LV5: the Warrior 1820…1829 (`Warrior.handle`, 6A-W1)
+        case .chief: return .chief          // 6A-CH1: the Goblin Chief 1910…1919 (`Chief.handle`)
         default: return .inert
         }
     }

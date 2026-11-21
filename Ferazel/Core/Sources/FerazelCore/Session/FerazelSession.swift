@@ -579,7 +579,9 @@ public final class FerazelSession {
             // `.MTHandlePxSprites` runs it again after the next `.FindUpperLeftCorner` (`findUpperLeftCorner`).
             PxSprites.handle(world: world, id: id, h: camera.scrollH, v: camera.scrollV)
         case .inert:
-            break // the countdown digits, any unmapped class, the four bosses (levels 18, 25, 55, 67) // later: Phase 6
+            // The countdown digits, any unmapped class, the four bosses (levels 18, 25, 55, 67) but the Chief, who has
+            // his own row (6A-CH1). // later: Phase 6
+            break
         case .enemyShot:
             // `.HandleEnemyShotSprite @ 1005bffc` (ES, `EnemyShot.handle`): its Kills' Effects take `lightTable` and
             // prefs+6; the Chief boulder's hot rect reads the face bounds.
@@ -651,6 +653,10 @@ public final class FerazelSession {
             // `.HandleWarriorSprite @ 10087c04` (6A-W1, `Warrior.handle`): the crates, the glow, the state machine, the
             // fall through `solver` with the Crawler-body tile callback, the liquids, `.StandardSpriteCleanup`.
             Warrior.handle(world: world, id: id, solver: solver) { Self.frameRect($0, resources: res).right }
+        case .chief:
+            // `.HandleChiefSprite @ 1008b878` (6A-CH1, `Chief.handle`): the wait, jump, landing, throw and dying states,
+            // the boulder, the fall through `solver` with the Crawler-body tile callback, `.StandardSpriteCleanup`.
+            Chief.handle(world: world, id: id, solver: solver) { Self.frameRect($0, resources: res).right }
         case .button:
             // `.HandleButtonSprite @ 10070e60` (BT, `ButtonSprite.handle`).
             ButtonSprite.handle(world: world, id: id) { Self.frameRect($0, resources: res).right }

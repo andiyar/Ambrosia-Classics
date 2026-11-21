@@ -4,8 +4,8 @@ import Foundation
 /// `1004ec4c..10050e6c`; player-states §3) — and row 36's tint (l. 46242–46346): plan P3. **First match wins**, in the binary's order: glider → dying → spirit transition → boss grab →
 /// hurt-stun → door walk (`_DAT_100a05f8`) → rope → swim → wall cling / climb / pull-up → melee (`.HandleItemUse`) →
 /// grounded (crouch, walk / run with footsteps, stand / turn / uphill / fidget) → airborne. The glider arm is GL's,
-/// the spirit transition and the dying arm's necklace revive MS's; the boss-grab arm is a named stub (no writer until
-/// Phase 6: 6A-CH, 6C-XI); the melee arm is IU's `.HandleItemUse`, `HeldItem`; the door
+/// the spirit transition and the dying arm's necklace revive MS's; the boss-stagger arm is 6A-CH1's (its writers: the
+/// Chief, and Xichra at 6C-XI); the melee arm is IU's `.HandleItemUse`, `HeldItem`; the door
 /// arm is W2b's (passages) (plan Invariant 6). A face is `+0xc0 = set + index·0x34` (one 0x34-byte face record per index).
 public enum PlayerStates {
     // MARK: the face sets (`.InitPlayerSprite @ 1004a284`, l. 42428–42490; player-states §7)
@@ -26,6 +26,10 @@ public enum PlayerStates {
     public static let mist: Int16 = 1038
     /// 1033 (`_DAT_100a07a0`): the door walk-in (W2b).
     public static let walkIn: Int16 = 1033
+    /// 1037 (`_DAT_100a0784`, 4 × 100×120, `.InitPlayerSprite` M l. 42480–42481): the boss stagger's poses (6A-CH1).
+    public static let stagger: Int16 = 1037
+    /// f64 `0x100a1a28` 0.5: the boss stagger's vx (M l. 45594–45597).
+    static let staggerDrag = Double(bitPattern: 0x3fe0_0000_0000_0000)
     /// The glider's cached sets (`_CacheEncFaceSetFromPICT`, l. 42486–42489; 160×160 cells): 1050 deploy / stow / turn
     /// (`_DAT_100a0778`, 6), 1051 the glide loop (`_DAT_100a0774`, 4), 1052 pitch (`_DAT_100a0770`, 6: nose up 0…2,
     /// down 3…5), 1053 casting (`_DAT_100a076c`, 4).
@@ -368,8 +372,24 @@ public enum PlayerStates {
             spiritTransition(w, id: id)
             return false
         }
-        // Boss grab (`_DAT_100a0570 > 0`, l. 45625–45672). // later: Phase 6 (Chief, Xichra; no Phase-2 writer)
-        if 0 < w.player.bossGrab { return false }
+        // Boss stagger (`_DAT_100a0570 > 0`, M l. 45591–45632; 6A-CH1 — the Chief's landing writes 0x18, Xichra's
+        // 0x14 // later: 6C-XI). The count c as row 13 left it (M l. 44740–44741: v − 1 arm frames unless an earlier arm
+        // pre-empts one): vx × 0.5 (f64 `0x100a1a28`, `fctiwz`); the idle reset, the standing / climb / spin clears,
+        // the spin sound 427 stopped while a voice plays it (`FUN_100916dc` answered by `SoundVoices`), crouch 0; the
+        // face 1037 (`_DAT_100a0784`) by (c mod 12) >> 1 → +0, +0x34, +0, +0x68, +0x9c, +0x68 (faces 0, 1, 0, 2, 3, 2);
+        // then the end of the state chain (`LAB_10050e6c`: row 34 next).
+        if 0 < w.player.bossGrab {
+            let c = Int(w.player.bossGrab)
+            set { $0.vx = TileSolver.fctiwz(Double($0.vx) * staggerDrag) }
+            idleReset()
+            w.player.standing0670 = false
+            w.player.climb = 0
+            w.player.spin = false
+            if w.isSoundPlaying(427) { stopSpinSound() }
+            w.player.crouch = 0
+            setFace(face(stagger, [0, 1, 0, 2, 3, 2][(c % 12) >> 1]))
+            return false
+        }
 
         // Hurt-stun (`_DAT_100a0748 > 0`, l. 45673–45700): 1013 at 0,1,2,3,3,3,3,3,2,1, then the stun ends.
         if 0 < w.player.stun {

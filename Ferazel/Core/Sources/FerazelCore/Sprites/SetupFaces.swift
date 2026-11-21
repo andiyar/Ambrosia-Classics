@@ -733,6 +733,18 @@ public enum SetupFaces {
             clearsNoBossAlive = w.clearsNoBossAlive
             face(Warrior.walkSet, 0, .setupCached)
 
+        case .chief:
+            // `.SetupChiefSprite @ 1008b538` (M l. 75031–75115; 6A-CH1, `Chief.setup`): layer 12, the four procs, the
+            // five records marked, HP and "no boss alive" by p4, the re-seat, R(10) drawn and overwritten, lane 2,
+            // `+0xa6` −40, the counting window; no `+0x18a`, no `+0x1b4`. `+0xc0 = 0`: his first Handle faces him from
+            // the cache single 0x776 (flag 1 → the level+base CLUT); the entry names that face (`.handle`). Every type
+            // 0x776…0x77f takes it; only 1910 is placed (level 18).
+            s.oldPosition = SpriteSlot.Point(x: s.x, y: s.y)           // `.MTNewSprite`'s `+8` / `+6`
+            clearsNoBossAlive = Chief.setup(&s, record: p, rng: &rng, counting: &counting)
+            sheet = .single(Chief.standing, clut: ColorLUT.screenClutId(c.level.header))
+            index = 0
+            source = .handle
+
         default:
             throw Error.notTranscribed(type: p.type)
         }
@@ -781,9 +793,9 @@ public enum SetupFaces {
     /// `.SetupBlobSprite` at its end for every type (M l. 67728–67731; LV3, BL). The Crab counts nothing (BL).
     /// `.SetupGremlinSprite` in the body arm (M l. 69227–69230), `.SetupFloaterSprite` for every type (M l. 69900–69903;
     /// GF), `.SetupDilloSprite` at its end for 1870 / 1871 (M l. 72371–72374; DL), `.SetupWarriorSprite` at its end
-    /// (M l. 73070–73074; LV5). // later: Phase 6 — the other boss classes' sites (Demon 74493, Chief 75110, Wizard
-    /// 75676, Xichra 76435), some branch-gated, are not transcribed (their Setups throw `notTranscribed` before any
-    /// tally). EC: the enemies are `EnemyCounting.live` — each counted Setup's `countIfWindow` — copied here after the
+    /// (M l. 73070–73074; LV5), `.SetupChiefSprite` at its end (M l. 75108–75111; 6A-CH1). // later: Phase 6 — the
+    /// other boss classes' sites (Demon 74493, Wizard 75676, Xichra 76435), some branch-gated, are not transcribed
+    /// (their Setups throw `notTranscribed` before any tally). EC: the enemies are `EnemyCounting.live` — each counted Setup's `countIfWindow` — copied here after the
     /// spawn; the secrets and Xichrons are counted here by type, while the window is set.
     public struct Tallies: Equatable, Sendable {
         public var secrets: Int16 = 0

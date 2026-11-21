@@ -1348,10 +1348,12 @@ public struct CachedFaces: Equatable, Sendable {
     /// 1061 face from the boot singles 0x424 / 0x425 and mark nothing.
     /// 6A-BG1c: the plants 2700, 2701, 2702, 2705, 2711 → their own singles (`_DAT_100a0ad8[type − 0xa8c]`, M l.
     /// 62635, flag 1; #161, #162, #163, #166, #172); the plants 2703, 2704, 2706–2709 are placed on no level and mark nothing.
+    /// 6A-CH1: every Chief type 0x776…0x77f → the single 0x776, the sets 0x777…0x77a and the boulder set 0x77b
+    /// (`_DAT_100a083c`) (`.SetupChiefSprite` M l. 75067–75075; #193, #60–#63, #43).
     /// Every other built type marks nothing. // later: Phase 6 — the marks of the types not built yet, with their
-    /// Setups (the clouds, the other scenery, the carpet set 0x438, fire 1208's 0x4b8 + 0x4b9, the bosses' own
-    /// records and 0x46a's / 0x77b's: the Wizard `0848` only, the Chief 0x77b, the Demon all three 0x46a records,
-    /// Xichra `0848` + `0840` + 0x77b — LL §1 finding 8).
+    /// Setups (the clouds, the other scenery, the carpet set 0x438, fire 1208's 0x4b8 + 0x4b9, the other bosses' own
+    /// records and 0x46a's / 0x77b's: the Wizard `0848` only, the Demon all three 0x46a records, Xichra `0848` +
+    /// `0840` + 0x77b — LL §1 finding 8).
     static func markedRecords(type t: Int16, p1: Int16 = 0) -> [RecordKey] {
         switch t {
         case 0x6a4: return [set(0x6a5), set(0x6a6), single(0x6a4)]
@@ -1374,6 +1376,7 @@ public struct CachedFaces: Equatable, Sendable {
         case 0x762...0x76b: return [set(0x762), single(0x767)]
         case 0x74e...0x757: return [set(0x74e), set(0x74f), set(0x750), set(0x751)]
         case 0x71c...0x725: return [set(0x71c), set(0x71d), set(0x71e)]
+        case 0x776...0x77f: return [set(0x77b), set(0x777), set(0x778), set(0x779), set(0x77a), single(0x776)]
         case 0x5a0...0x5a8: return [set(0x5a0), set(0x5a1), set(0x5a2)]
         case 0x730, 0x731: return [set(0x730)]
         case 0x76c, 0x76d: return [set(0x76c)]
