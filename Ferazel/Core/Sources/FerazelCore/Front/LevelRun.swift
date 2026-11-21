@@ -1443,14 +1443,17 @@ public struct CachedFaces: Equatable, Sendable {
 
     /// Record `k`'s own sheet, as `.LoadCachedSpriteFaces` loads it (M l. 73806–73815, 73843–73850): a set's cut or a
     /// single, under clut 200 (flag 0 leaves the conversion CLUT as the Inits set it). Nil for an absent PICT (the load
-    /// returns nil) and for a flag-1 record (the level+base CLUT is the renderer's: no flag-1 record outside the
-    /// Setup-face table is marked by a built type). // later: Phase 6 — the bosses' flag-1 records.
-    public static func sheet(record k: RecordKey) -> SetupFaces.Sheet? {
+    /// returns nil). A flag-1 record converts under the level+base CLUT `*_DAT_1009ff8c` (raw `1008901c..1008903c`):
+    /// `levelClut` (`ColorLUT.screenClutId`, the renderer's) — nil there → nil (no CLUT to load it under). 6A-CH2: the
+    /// Chief's sets 0x777…0x77a are the first flag-1 records outside the Setup-face table that a built type marks.
+    public static func sheet(record k: RecordKey, levelClut: Int16? = nil) -> SetupFaces.Sheet? {
         let r = record(k)
-        guard r.present, r.flag == 0 else { return nil }
-        if case .single = k { return .single(r.pict) }
+        guard r.present else { return nil }
+        let clut: Int16
+        if r.flag == 0 { clut = 200 } else if let l = levelClut { clut = l } else { return nil }
+        if case .single = k { return .single(r.pict, clut: clut) }
         return SetupFaces.Sheet(pict: r.pict, count: r.faces, cellWidth: r.cellWidth, cellHeight: r.cellHeight,
-                                columns: r.columns, clut: 200)
+                                columns: r.columns, clut: clut)
     }
 
     /// Whether PICT `p` is registered as more than one set record (only 0x46a): its faces are keyed by record.
@@ -1462,8 +1465,10 @@ public struct CachedFaces: Equatable, Sendable {
     /// `.LoadCachedSpriteFaces` loads for those placements, for the renderer: each marked set / single whose geometry
     /// the Setup-face table, `handleSets` or the record itself (`sheet(record:)`) holds (an absent PICT is skipped; a
     /// placed type's own Setup sheet is the table's, so it comes out the same). The records of a PICT registered more
-    /// than once (0x46a) are `recordSheets(markedBy:)`'s: the face store keys them by record.
-    public static func sheets<S: Sequence>(markedBy types: S) -> [SetupFaces.Sheet] where S.Element == Int16 {
+    /// than once (0x46a) are `recordSheets(markedBy:)`'s: the face store keys them by record. `levelClut`: the level+base
+    /// CLUT a flag-1 record's cut loads under (`sheet(record:levelClut:)`).
+    public static func sheets<S: Sequence>(markedBy types: S, levelClut: Int16? = nil) -> [SetupFaces.Sheet]
+    where S.Element == Int16 {
         types.flatMap { t -> [SetupFaces.Sheet] in
             let ks = markedRecords(type: t)
             let ordered = ks.filter { if case .set = $0 { return true }; return false }
@@ -1471,7 +1476,8 @@ public struct CachedFaces: Equatable, Sendable {
             return ordered.compactMap { k in
                 let p = record(k).pict
                 guard !sharedPict(p) else { return nil }
-                return SetupFaces.sheet(pict: p) ?? handleSets.first(where: { $0.pict == p }) ?? sheet(record: k)
+                return SetupFaces.sheet(pict: p) ?? handleSets.first(where: { $0.pict == p })
+                    ?? sheet(record: k, levelClut: levelClut)
             }
         }
     }

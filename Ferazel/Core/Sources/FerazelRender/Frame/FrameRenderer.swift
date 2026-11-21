@@ -223,7 +223,8 @@ public final class FrameRenderer {
     /// whose PICT the data holds (on the chain the faces load from), then the level's caches — the Setup sheets of its
     /// active placements, the glider caches (`FaceSheet.gliderSheets`, `.InitPlayerSprite` M l. 42486–42489),
     /// `SetupFaces.backgroundSheets` / `backgroundW2bSheets`, the cache faces the placements' Setups mark
-    /// (`CachedFaces.sheets(markedBy:)`; WK1: the Walker Handles' sets), `BoxSprite.spawnSheets`,
+    /// (`CachedFaces.sheets(markedBy:)`; WK1: the Walker Handles' sets; 6A-CH2: a flag-1 record under the level+base
+    /// CLUT), `BoxSprite.spawnSheets`,
     /// `BoxSprite.dropSheets` — less any PICT already loaded at boot. One sheet per PICT (`seen`): a PICT registered as
     /// more than one cache record (0x46a's two cuts, 6A-CF) is not here — the face store loads its marked records by
     /// record (`CachedFaces.recordSheets(markedBy:)`, `SpriteBlitter.Faces.recordSheets`).
@@ -242,7 +243,7 @@ public final class FrameRenderer {
         var caches: [SetupFaces.Sheet] = []
         var seen = bootPicts
         for s in entries.compactMap(\.sheet) + gliders + SetupFaces.backgroundSheets + SetupFaces.backgroundW2bSheets
-            + CachedFaces.sheets(markedBy: entries.map(\.type))
+            + CachedFaces.sheets(markedBy: entries.map(\.type), levelClut: ColorLUT.screenClutId(L.header))
             + BoxSprite.spawnSheets.sorted(by: { $0.pict < $1.pict })
             + BoxSprite.dropSheets(L.placements).sorted(by: { $0.pict < $1.pict }) where !seen.contains(s.pict) {
             seen.insert(s.pict)
