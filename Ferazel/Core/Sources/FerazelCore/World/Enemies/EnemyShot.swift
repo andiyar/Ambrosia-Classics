@@ -45,7 +45,9 @@ public enum EnemyShot {
     /// 0x46a as 6 × 48×48 (`_DAT_100a0848`, the fireball) and twice as 6 × 64×64 (`_DAT_100a0844` / `0840`, the dead
     /// types 0x46b / 0x46c, enemy-shots-and-damage-2 §4.1), and 0x77b 16 × 112×112, 4 a row (`_DAT_100a083c`, the
     /// Chief's boulder). Only the boss Setups mark them needed (M l. 74412–74416, 75070, 75629, 76343–76347: Demon,
-    /// Chief, Wizard, Xichra) — none placed on levels 1–5, 10, 11. // later: Phase 6 — the boss Setups' marks.
+    /// Chief, Wizard, Xichra) — none placed on levels 1–5, 10, 11. The Chief's mark of 0x77b is built (6A-CH1,
+    /// `CachedFaces.markedRecords` 0x776…0x77f, level 18); no 0x46a record is marked yet. // later: Phase 6 — the
+    /// Demon's, Wizard's and Xichra's marks, with their Setups.
     public static let cachedSheets: [SetupFaces.Sheet] = [
         SetupFaces.Sheet(pict: fireball, count: 6, cellWidth: 0x30, cellHeight: 0x30, columns: 6, clut: 200),
         SetupFaces.Sheet(pict: fireball, count: 6, cellWidth: 0x40, cellHeight: 0x40, columns: 6, clut: 200),

@@ -326,10 +326,10 @@ final class DrawModeAuditTests: XCTestCase {
         W("World/Enemies/Dillo.swift:354", .mode, .words([0, 0x1000b]), "enemyShot.spine", at: ["337"],
           pins: ["let mode: UInt32 = walker ? 0 : 0x1000b"]),
         W("World/Enemies/Dillo.swift:394", .mirrored, .flags([false, true]), "dillo"),
-        W("World/Enemies/EnemyShot.swift:163", .mirrored, .flags([false, true]), "enemyShot.egg"),
-        W("World/Enemies/EnemyShot.swift:322", .mode, .words([0xb0002, 0xb0000, 0xb0001, 0]), "enemyShot.wraith"),
-        W("World/Enemies/EnemyShot.swift:347", .mirrored, .flags([false, true]), "enemyShot.warrior"),
-        W("World/Enemies/EnemyShot.swift:356", .flash, .range(5...5), "enemyShot.egg"),
+        W("World/Enemies/EnemyShot.swift:165", .mirrored, .flags([false, true]), "enemyShot.egg"),
+        W("World/Enemies/EnemyShot.swift:324", .mode, .words([0xb0002, 0xb0000, 0xb0001, 0]), "enemyShot.wraith"),
+        W("World/Enemies/EnemyShot.swift:349", .mirrored, .flags([false, true]), "enemyShot.warrior"),
+        W("World/Enemies/EnemyShot.swift:358", .flash, .range(5...5), "enemyShot.egg"),
         // WK1: the Walker — `.SetupWalkerSprite`'s flip (0x6e0 always, the others by the player's x) and tier tint
         // (`+0xb8` 0x10010…0x10015 by record p3), the 1700's facing, the 1705's turn, the 1760 death entry's inverted
         // flip, and the damaging-surface flash 0x12.
@@ -1225,9 +1225,10 @@ final class DrawModeAuditTests: XCTestCase {
 
     // MARK: - The level filter
 
-    /// `FERAZEL_AUDIT_LEVELS=1,2,3` narrows `testEveryWrittenModeIsDrawable` to those built levels (6A-L15's fix round:
-    /// the whole test took ~550 s alone against a 600 s command limit, and each new level adds to it). Unset or empty:
-    /// every built level, exactly as before. Every assert of the test is either per level or reads no level (the writer
+    /// `FERAZEL_AUDIT_LEVELS=1,2,3` narrows both tests to those built levels: `testEveryWrittenModeIsDrawable` first
+    /// (6A-L15's fix round: the whole test took ~550 s alone against a 600 s command limit, and each new level adds to
+    /// it), then `testEveryRefusalIsUnreachable` (below). Unset or empty:
+    /// every built level, exactly as before. Every assert of test 1 is either per level or reads no level (the writer
     /// scan, the rows' source values, the skipped ops' arms — run in every filtered run), so filtered runs whose ids
     /// together name every built level execute every assert of the unfiltered run. A token that is not a number, an id
     /// not in `BuiltLevels.list` or an id named twice throws: the test fails, nothing is skipped. A filtered run audits
@@ -1244,7 +1245,7 @@ final class DrawModeAuditTests: XCTestCase {
 
     struct AuditFilterError: Error, CustomStringConvertible { let description: String }
 
-    /// The levels test 1 audits for the variable's value `value`, in `BuiltLevels.list` order. Pure Swift (Proof B).
+    /// The levels both tests audit for the variable's value `value`, in `BuiltLevels.list` order. Pure Swift (Proof B).
     static func auditLevels(_ value: String?) throws -> [Int] {
         guard let value, !value.isEmpty else { return BuiltLevels.list }
         var chosen: [Int] = []

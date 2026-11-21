@@ -391,7 +391,7 @@ public enum PlayerStates {
             return false
         }
 
-        // Hurt-stun (`_DAT_100a0748 > 0`, l. 45673–45700): 1013 at 0,1,2,3,3,3,3,3,2,1, then the stun ends.
+        // Hurt-stun (`_DAT_100a0748 > 0`, M l. 45634–45660): 1013 at 0,1,2,3,3,3,3,3,2,1, then the stun ends.
         if 0 < w.player.stun {
             idleReset()
             w.player.standing0670 = false

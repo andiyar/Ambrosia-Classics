@@ -148,6 +148,17 @@ final class ChiefTests: XCTestCase {
         XCTAssertTrue(d.lightOverlay, "p4 = 0: `+0x88` left as `.InitSprite` set it")
         XCTAssertEqual([d.countedInTotals], [false])
         XCTAssertEqual(outside.live, 0)
+        // The class row (`SpriteClassTable` `.chief`) installs his Handle for every type, as the sister classes pin
+        // theirs; the Setup entry: idle, the face the Handle sets (`.handle`: `.AddIdleSprite` sees `+0xc0 = 0`, so the
+        // app's idle rect is SetRect(0, 0, 64, 64), not the placeholder PICT 150's bounds), the cache single 0x776.
+        for t in Int16(0x776)...0x77f { XCTAssertEqual(SpriteHandler.forClass(type: t), .chief, "\(t)") }
+        let L18 = try LevelFile.load(from: try LevelFixture.base.get(), level: 18)
+        let e = try SetupFaces.setup(p, context: SetupFaces.Context(level: L18, playerX: 0))
+        XCTAssertEqual(e.spawn, .idle)
+        XCTAssertEqual(e.source, .handle)
+        XCTAssertEqual([e.sheet?.pict, Int16(e.faceIndex)], [0x776, 0])
+        XCTAssertEqual(e.sheet?.single, true)
+        XCTAssertTrue(e.clearsNoBossAlive)
 
         // On the level (the fixture): `.GenerateSprite` queues him idle (`SpriteClassTable` `.idle`), with his Setup's
         // fields in the snapshot; "no boss alive" cleared by his Setup; the arena unlocked; counted in the level total.
@@ -238,6 +249,10 @@ final class ChiefTests: XCTestCase {
         let a = try XCTUnwrap(awake), j = try XCTUnwrap(jump)
         XCTAssertEqual(lockedFrames, 56, "state 1 on his 56th locked Handle frame")
         XCTAssertEqual(j - a + 1, 56)
+        // These frames (wake 1, asleep 2, lock 111, awake 121, jump 176; the first landing 212 below) were measured
+        // headless: the stub's wake rectangle for the re-idled Chief is the whole 256×254 cell, a superset of the opaque
+        // bounds (`FerazelSession` headless `LevelServices`), so the real-game wake may come later — 6A-L18 re-measures
+        // with the real face bounds.
         XCTAssertEqual([firstActive, asleep, lock, awake, jump], [1, 2, 111, 121, 176], "measured (seed 1)")
 
         // The twin with the arena open (the lock switched off by hand between his Handles): `+0xa6` stands, no jump
@@ -246,10 +261,12 @@ final class ChiefTests: XCTestCase {
         s3.world.active.update(id: id3) { c in
             c.subtype = 6
             c.counterA6 = -40
+            c.vx = 0x300                                                 // pushed (6A-CH2's Hit): the wait stops him
         }
-        for _ in 0..<100 {
+        for k in 0..<100 {
             s3.world.arena.locked = false
             handle(s3.world, id3)
+            if k == 0 { XCTAssertEqual(try slot(s3.world, id3).vx, 0, "state 6: vx 0, even pushed (3.10 item 3)") }
         }
         XCTAssertEqual([try slot(s3.world, id3).counterA6, try slot(s3.world, id3).subtype], [-40, 6],
                        "unlocked: no count, no jump")
@@ -302,8 +319,8 @@ final class ChiefTests: XCTestCase {
         // (0x14, 0xab, centre, 35000 + p) (3.10 item 5); vy −0x2904; `+0xce = 0` (item 6); the lane change by r.
         let rows: [(lane: Int32, r: Int, vx: Int32, to: Int32)] = [
             (2, 0x20, -0x700, 1), (2, 0x21, 0, 2), (2, 0x41, 0, 2), (2, 0x42, 0x700, 3),
-            (1, 0x20, 0, 1), (1, 0x21, 0x700, 2), (1, 0x42, 0xe00, 3),
-            (3, 0x20, -0xe00, 1), (3, 0x41, -0x700, 2), (3, 0x42, 0, 3),
+            (1, 0x20, 0, 1), (1, 0x21, 0x700, 2), (1, 0x41, 0x700, 2), (1, 0x42, 0xe00, 3),
+            (3, 0x20, -0xe00, 1), (3, 0x21, -0x700, 2), (3, 0x41, -0x700, 2), (3, 0x42, 0, 3),
         ]
         for row in rows {
             let sd = seed { r in Int(r.next(100)) == row.r }
@@ -430,6 +447,7 @@ final class ChiefTests: XCTestCase {
                 c.vx = 0x300
                 c.mirrored = !right
                 c.centre = SpriteSlot.Point(x: 1000, y: 480)
+                c.face = f(Chief.jumpSet, 3)                             // he lands wearing the fall face
                 var copy = w.rng
                 let r = Int32(copy.next(12000))
                 Chief.land(w, &c)
@@ -462,6 +480,7 @@ final class ChiefTests: XCTestCase {
         XCTAssertEqual(c.phase, 6)
         for (r2, throwsLeft) in [(0, 2), (1, 3)] {
             var t = c
+            t.face = nil                                                 // n 6 writes its own face
             let sd = seed { r in r.next(2) == r2 }
             w.rng = FastRand(seed: sd)
             var copy = w.rng
@@ -487,6 +506,7 @@ final class ChiefTests: XCTestCase {
         }
         let land = try XCTUnwrap(landed)
         let p = try slot(w2, pid)
+        // Measured headless (the whole-cell wake rectangle; see `testChiefFirstJumpAfterLock`) — 6A-L18 re-measures.
         XCTAssertEqual(land, 212, "measured: the first landing (seed 1), 36 frames after the first jump's state 1")
         XCTAssertEqual(w2.player.bossGrab, 0x18, "the player on the ground (ground \(p.groundKind), on \(p.onSprite))")
         try iterate(run)
@@ -593,11 +613,17 @@ final class ChiefTests: XCTestCase {
         for (left, boulders, back) in [(Int32(2), [8], 20), (3, [8, 27], 39)] {
             let (_, s, id) = try ready()
             let w = s.world
+            // The player on his far side (right for 2 throws, left for 3): n 0 turns him to face the player (M l.
+            // 75270–75272). The hot rect as the Setup left it: the Handle writes its own every live frame (3.10 item 2).
+            let toRight = left == 2
+            w.player.centreX = Int16(try slot(w, id).centre.x + (toRight ? 300 : -300))
             s.world.active.update(id: id) { c in
                 c.subtype = 2
                 c.phase = 0
                 c.counterA6 = 9                                          // the landing leaves 0; 9 shows each reset
                 c.classWord158 = left
+                c.mirrored = !toRight
+                c.hotRect = IdleSprites.Rect(top: 0x55, left: 0x5e, bottom: 0xd4, right: 0xa5)
             }
             var thrown: [Int] = [], state6: Int?
             var seen = Set(w.active.sprites.filter { $0.type == 0x77b }.map(\.id))
@@ -605,6 +631,8 @@ final class ChiefTests: XCTestCase {
                 let n = try slot(w, id).phase
                 handle(w, id)
                 let c = try slot(w, id)
+                XCTAssertEqual(c.hotRect, IdleSprites.Rect(top: 0x73, left: 0x58, bottom: 0xd2, right: 0xac), "frame \(k)")
+                XCTAssertEqual(c.mirrored, toRight, "frame \(k): facing the player since n 0")
                 let fresh = w.active.sprites.filter { $0.type == 0x77b && !seen.contains($0.id) }
                 if !fresh.isEmpty { thrown.append(k) }
                 seen.formUnion(fresh.map(\.id))
@@ -658,6 +686,12 @@ final class ChiefTests: XCTestCase {
         XCTAssertEqual(w.rng.seed, copy.seed, "one R(100)")
         XCTAssertEqual(cues, [death])
         XCTAssertEqual([c.subtype, c.phase, c.counterA6], [4, 0, 0])
+        // The gate's edge: R(100) 0x3c is quiet, 0x3b cries.
+        for (r1, cries) in [(0x3c, false), (0x3b, true)] {
+            (cues, c, copy) = try die(seed { r in Int(r.next(100)) == r1 })
+            XCTAssertEqual(cues.count, cries ? 2 : 1, "R(100) \(r1)")
+            XCTAssertEqual(cues.last, death, "R(100) \(r1)")
+        }
         // The cry, each band at its edges.
         for (r2, snd, vol) in [(0x28, Int16(467), Int16(0xc9)), (0x29, 466, 0xab), (0x46, 466, 0xab), (0x47, 465, 0xab),
                                (0, 467, 0xc9), (99, 465, 0xab)] {
@@ -693,20 +727,24 @@ final class ChiefTests: XCTestCase {
             c.subtype = 6
         }
         handle(w2, id2)                                                  // the death entry
-        s2.world.active.update(id: id2) { $0.vx = 1000 }
+        s2.world.active.update(id: id2) { $0.vx = -1001 }
         var vxs: [Int32] = []
-        for k in 1...20 {
+        for k in 1...21 {
+            // Frame 21: a burn under way (row 5; headless has no face provider, so `.HandleBurn` leaves it) is not
+            // restarted — the burn starts on `+0xa6 == 0x14` only.
+            if k == 21 { s2.world.active.update(id: id2) { $0.burnRow = 5 } }
             let v = try slot(w2, id2).vx
             handle(w2, id2)
             let d = try slot(w2, id2)
             XCTAssertEqual(d.face, f(Chief.deathSet, min((k - 1) >> 2, 3)), "dying frame \(k)")
             XCTAssertEqual(d.phase, Int16(min(k, 0x10)), "dying frame \(k)")
             XCTAssertEqual(d.counterA6, Int16(k))
-            XCTAssertEqual(d.burnRow != 0, k == 20, "dying frame \(k): the burn on 20")
+            XCTAssertEqual(d.burnRow != 0, k >= 20, "dying frame \(k): the burn on 20")
+            if k == 21 { XCTAssertEqual(d.burnRow, 5, "frame 21: not restarted") }
             if k <= 3 { vxs.append(v) }
             XCTAssertEqual(d.subtype, 4)
         }
-        XCTAssertEqual(vxs, [1000, 900, 810], "vx × 0.9 (`fctiwz`)")
+        XCTAssertEqual(vxs, [-1001, -900, -810], "vx × 0.9 (`fctiwz`: −900.9 → −900, not −901)")
 
         // The `+0xb2` counter (3.10 item 19): > 0 → < 5 ? + 1 : 0, every frame, whatever the state.
         let (_, s3, id3) = try ready()

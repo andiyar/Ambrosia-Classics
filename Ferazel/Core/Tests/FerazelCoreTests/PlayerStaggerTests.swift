@@ -27,7 +27,14 @@ final class PlayerStaggerTests: XCTestCase {
         return w
     }
 
-    private func player(_ w: SpriteWorld) -> SpriteSlot { w.active.record(id: w.playerID!)! }
+    /// The player's record; a missing player fails the test (a blank slot comes back) rather than crashing the run.
+    private func player(_ w: SpriteWorld, file: StaticString = #filePath, line: UInt = #line) -> SpriteSlot {
+        guard let id = w.playerID, let s = w.active.record(id: id) else {
+            XCTFail("no player", file: file, line: line)
+            return SpriteSlot(type: 0, x: 0, y: 0)
+        }
+        return s
+    }
 
     @discardableResult
     private func frame(_ w: SpriteWorld, _ solver: TileSolver, _ keys: InputActions = []) -> FaceRef? {
@@ -58,7 +65,7 @@ final class PlayerStaggerTests: XCTestCase {
         // −3 → −1, not −2), the pose by the count, the end of the chain (false: no tumble face drawn).
         let w = try world()
         _ = standing(w)
-        let id = w.playerID!
+        let id = try XCTUnwrap(w.playerID)
         for (v, want) in [(Int32(0x800), Int32(0x400)), (-3, -1), (3, 1), (-0x801, -0x400), (1, 0), (-1, 0)] {
             w.player.bossGrab = 5
             w.active.update(id: id) { $0.vx = v }
@@ -136,7 +143,7 @@ final class PlayerStaggerTests: XCTestCase {
         // (ENG §2.13's assert).
         let w = try world()
         _ = standing(w)
-        let id = w.playerID!
+        let id = try XCTUnwrap(w.playerID)
         for (idle, fidgets, want) in [(Int16(7), Int16(2), Int16(2)), (0, 2, 0), (1, 0, 0)] {
             w.player.bossGrab = 3
             w.player.idle = idle
@@ -170,12 +177,18 @@ final class PlayerStaggerTests: XCTestCase {
                                rate: 60000))
         PlayerStates.select(world: w, id: id)
         XCTAssertEqual(w.player.cues.last, PlayerCue(call: .stopIfPlaying, snd: 427))
-        // The twin with no stagger: the grounded arm leaves the crouch to `.HandleKeys` and the climb alone.
+        // The twin with no stagger: the grounded arm leaves the crouch to `.HandleKeys` and the climb alone (crouch 2
+        // stands and shows 1011[1]; climb 0 must hold or the climb arm runs; the standing flag the arm clears stands).
         w.player.bossGrab = 0
         w.player.climb = 0
+        w.player.crouch = 2
         w.player.standing0670 = true
         PlayerStates.select(world: w, id: id)
         XCTAssertNotEqual(player(w).face?.pict, 1037)
+        XCTAssertEqual(player(w).face, FaceRef(pict: PlayerStates.crouch, index: 1, set: .encoded), "the crouch arm's face")
+        XCTAssertEqual(w.player.crouch, 2, "the crouch left to `.HandleKeys`")
+        XCTAssertEqual(w.player.climb, 0, "the climb left alone")
+        XCTAssertTrue(w.player.standing0670, "the standing flag not cleared")
     }
 
     // MARK: - 3
@@ -186,7 +199,7 @@ final class PlayerStaggerTests: XCTestCase {
         // is not reached on their frames. Row 34 still runs: the facing comes from `facing` (no tumble face drawn).
         let w = try world()
         let solver = standing(w)
-        let id = w.playerID!
+        let id = try XCTUnwrap(w.playerID)
         w.player.bossGrab = 4
         w.player.stun = 1
         w.player.animation05f8 = 3
@@ -204,12 +217,13 @@ final class PlayerStaggerTests: XCTestCase {
         w.player.stun = 0
         w.player.animation05f8 = 0
         w.player.swim = 0
-        // The earlier arms first: dying and the spirit transition pre-empt it (no 1037, vx not halved by it).
-        for (label, set) in [("dying", { (v: SpriteWorld) in v.player.dying = 1 }),
+        // The earlier arms first: the glider, dying and the spirit transition pre-empt it (no 1037, vx not halved by it).
+        for (label, set) in [("glider", { (v: SpriteWorld) in v.player.glider = true }),
+                             ("dying", { (v: SpriteWorld) in v.player.dying = 1 }),
                              ("spirit", { (v: SpriteWorld) in v.player.spiritTransition = 2 })] {
             let v = try world()
             _ = standing(v)
-            let vid = v.playerID!
+            let vid = try XCTUnwrap(v.playerID)
             v.player.bossGrab = 4
             set(v)
             PlayerStates.select(world: v, id: vid)

@@ -6,7 +6,8 @@ import XCTest
 /// 0xa97). The Setup arm of `.SetupBackgroundSprite` (M l. 62629–62670) was already built (`case 0xa8c...0xaef`); this
 /// task puts their faces into the Setup-face table and marks their picture-cache singles (registered by
 /// `.InitBackgroundSprite` under flag 1, M l. 61908–61914: LL §6 singles #161, #162, #163, #166, #172). Records are read
-/// per record through `SetupFaces.setup` — level 18 still holds the Chief, so no level is opened. A missing data file is
+/// per record through `SetupFaces.setup` — level 18 held the Chief, unbuilt when this task landed (6A-CH1 built him
+/// since), so no level is opened. A missing data file is
 /// a FAILURE, never a skip.
 final class PlantTests: XCTestCase {
 
