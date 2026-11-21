@@ -118,6 +118,31 @@ public enum PadKeys {
     }
 }
 
+/// When the full-screen game takes the keyboard back (Ben's first playtest, 2026-11-22). A fast double tap of left
+/// Option (the bomb) is another app's global shortcut: its non-activating panel takes the keyboard without making the
+/// game inactive, and opens hidden behind the full-screen window. From then on no key-down or key-up reaches the app
+/// (the arrows, Space and Esc go dead; the modifier fire keys still work) until a click makes the window key again.
+/// So while the app is active, in full screen, not suspended and showing none of its own questions, a game window that
+/// is not key, or whose first responder is not the game view, takes the keyboard back. Windowed mode is left alone on
+/// purpose: there the other app's panel is visible, and the player may want it.
+public enum KeyboardFocus {
+    /// The wait between attempts, in Mac ticks (a quarter second at 60): a reclaim that does not take is retried
+    /// without asking the window server every poll.
+    public static let retryTicks: UInt32 = 15
+
+    /// - `ticksSinceLastAttempt`: Mac ticks since the last reclaim was tried, nil when none has been.
+    ///
+    /// True when the app should take the keyboard back now (see the type's comment).
+    public static func shouldReclaim(appActive: Bool, fullScreen: Bool, suspended: Bool, questionUp: Bool,
+                                     windowIsKey: Bool, firstResponderIsView: Bool,
+                                     ticksSinceLastAttempt: UInt32?) -> Bool {
+        guard appActive, fullScreen, !suspended, !questionUp else { return false }
+        guard !windowIsKey || !firstResponderIsView else { return false }
+        if let since = ticksSinceLastAttempt, since < retryTicks { return false }
+        return true
+    }
+}
+
 /// A picture the shell decoded (HectorKit's PICT path: RGBA, 8 bits a channel, row 0 at the top) as the game's
 /// x1R5G5B5 pixels (`ShellPicture`, ruling 9): each channel's top five bits, as `DrawPicture` into a 16-bit GWorld
 /// keeps them; alpha is dropped (the top bit stays 0). nil when `rgba` is not `width × height × 4` bytes.

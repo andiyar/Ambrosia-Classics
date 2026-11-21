@@ -419,6 +419,8 @@ import Synchronization
 
     /// The Mac tick of the last full key poll.
     private var lastKeyPollTick: UInt32?
+    /// The Mac tick of the last attempt to take the keyboard back (`KeyboardFocus`); nil before the first.
+    private var lastFocusReclaimTick: UInt32?
 
     /// The keys for this fire. A pass can begin only when the Mac tick moves (the limiter and fades wait on it), so
     /// the full poll (`pollKeyState`: modifiers, Caps Lock, and HectorKit's `CGPreflightListenEventAccess` ⌘-release
@@ -427,6 +429,9 @@ import Synchronization
     /// layout is assigned before each full poll for the screen on top (`DeimosDriver.padContext`; off — an empty
     /// layout — in the controls window). The mouse: where it is over the 640×480 picture (unclamped, as `GetMouse`),
     /// whether its button is down (`Button()`), the clicks since the last fire.
+    /// Before each full poll, a full-screen game window that another app's hidden panel has left without the keyboard
+    /// takes it back (`KeyboardFocus.shouldReclaim`; Ben's bomb freeze, 2026-11-22), retried at most every quarter
+    /// second.
     /// In the background (a Quit request pumped while suspended) the driver gets NO live input: nothing held, the
     /// mouse button up, no mouse position, no poll (no pad keys), Caps Lock as last seen while active — only what
     /// was queued (the shell's events; any key or click queued before the switch) — so nothing the player does in
@@ -445,6 +450,18 @@ import Synchronization
         let state: ShellKeyState
         if tick != lastKeyPollTick {
             lastKeyPollTick = tick
+            let window = shell.currentWindow
+            let viewIsFirst = window.firstResponder === shell.view
+            if KeyboardFocus.shouldReclaim(appActive: NSApp.isActive, fullScreen: shell.isFullscreen,
+                                           suspended: suspended,
+                                           questionUp: pendingQuestion != nil || NSApp.modalWindow != nil,
+                                           windowIsKey: window.isKeyWindow, firstResponderIsView: viewIsFirst,
+                                           ticksSinceLastAttempt: lastFocusReclaimTick.map { tick &- $0 }) {
+                lastFocusReclaimTick = tick
+                window.makeKeyAndOrderFront(nil)
+                if !viewIsFirst { window.makeFirstResponder(shell.view) }
+                keyLog?.note("reclaim keyboard")
+            }
             shell.view.padMapping = driver.padContext.map {
                 DeimosPadLayout.mapping(keySet: driver.padKeySet, context: $0)
             } ?? ShellPadMapping(bindings: [:])

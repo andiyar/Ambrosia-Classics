@@ -83,6 +83,11 @@ import HectorShell
         write("suspended -> \(Self.yesNo(suspended))")
     }
 
+    /// Something the app did, as a plain line ("reclaim keyboard").
+    func note(_ text: String) {
+        write(text)
+    }
+
     /// The key poll's state, written when it differs from the last state line.
     func pollState(_ state: ShellKeyState, suspended: Bool) {
         let window = shell.currentWindow
