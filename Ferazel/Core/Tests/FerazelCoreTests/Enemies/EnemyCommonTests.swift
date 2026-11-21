@@ -533,7 +533,7 @@ final class EnemyCommonTests: XCTestCase {
         XCTAssertEqual(seeds.count, 16)
         XCTAssertEqual(seeds.map(\.oldPosition),
                        [SpriteSlot.Point(x: 27, y: 43)] + (0..<15).map { SpriteSlot.Point(x: 296 + $0, y: 396 + $0) })
-        XCTAssertEqual(Smite.enemyHandlers.count, 11)
+        XCTAssertEqual(Smite.enemyHandlers.count, 12)                           // 6A-CH2: the Chief's appended
         XCTAssertTrue(Smite.enemyHandlers.contains(.warrior))
     }
 }

@@ -588,10 +588,11 @@ final class ItemUseTests: XCTestCase {
         HandleKeys.run(world: v, keys: .use, ridden: nil)
         XCTAssertEqual(shots(v).count, 16)
         // The 15 Handles resolved (`pef.py tocfunc`) as `SpriteHandler` cases (EC): the eleven classes of levels 1–5,
-        // the Warrior's included (Ruling 3a); the four bosses have no case yet; no Crab, no Button.
+        // the Warrior's included (Ruling 3a), and the Chief's (6A-CH2); the other three bosses have no case yet; no
+        // Crab, no Button.
         XCTAssertEqual(Set(Smite.enemyHandlers), [.warrior, .walker, .salamander, .roach, .gremlin, .frog, .floater,
-                                                  .dillo, .crawler, .blob, .bat])
-        XCTAssertEqual(Smite.enemyHandlers.count, 11)
+                                                  .dillo, .crawler, .blob, .bat, .chief])
+        XCTAssertEqual(Smite.enemyHandlers.count, 12)
         XCTAssertEqual([Smite.enemyHandlers.contains(.crab), Smite.enemyHandlers.contains(.button)], [false, false])
     }
 
