@@ -11,7 +11,7 @@ Settled history lives in docs/STATE-history.md.
 
 - **Where it stands:** Phase 5 "Enemies" is closed on the machine side — **Ben's gate pending (Q18)**. Phase 6A
   "through the Goblin Chief" is being built (the plan: "Wave 5 — Phase 6A" in the one plan file; rulings D46–D49, D51,
-  D53–D57, D59–D63). Waves 6A.1 (the Warrior is a real boss) and 6A.2 (levels 10 and 11 open) are built and closed.
+  D53–D57, D59–D62, D64). Waves 6A.1 (the Warrior is a real boss) and 6A.2 (levels 10 and 11 open) are built and closed.
 - **Wave 6A.3 "Storm Valley and the Chief" is built; one review is left.** Level 18 "Goblin Chief" opened in run 64:
   a player can now walk into the arena, be locked in, and fight the Chief. Levels playable on main:
   **1–5, 10, 11, 15, 18**. The wave end's machine checks all passed by day (census, the Windows test run, the smoke).
@@ -27,7 +27,7 @@ Settled history lives in docs/STATE-history.md.
   20, 21, 22 and the phase end. None of it waits for Ben's verdict on Phase 5.
 - **A known problem waiting for 6A-BD:** level 20's map has the same "no light" cells as level 18, and its 28 blades
   take their brightness from the cell they are on. The original itself reads outside its table there, so there is no
-  defined picture to copy; the blade task's seat must rule what the port draws (D63.6).
+  defined picture to copy; the blade task's seat must rule what the port draws (D64.6).
 - **How long checks run under the Coordinator** (commands cut off at ten minutes): the suites in parts, the sweep one
   level group a command, the bot one command a shell (D59.4, D60.4); only the Windows test script may run detached
   (D59.1). The longest sweep command is now 509 s (levels 3 and 4 on the Windows path) — split that group next time.
@@ -55,7 +55,7 @@ Settled history lives in docs/STATE-history.md.
 
 - **Goldens (◈):** no existing value moved in run 64. New, measured (seed 1): level 18's first frame, its ripple-off
   twin, its Windows reference frames, its face-load pins, and the Chief's wake-up with real pictures (lock 111, awake
-  124, first jump 179, landing 215; the headless 111 / 121 / 176 / 212 stay in `ChiefTests`, D63.2). Every value is in
+  124, first jump 179, landing 215; the headless 111 / 121 / 176 / 212 stay in `ChiefTests`, D64.2). Every value is in
   the plan's "As executed — 6A-L18" and its "Goldens" paragraph.
 - **Waiting on Ben (QUESTIONS.md "Open"):** **Q18 (the Phase 5 gate)**, Q21 (may the sweep and bot run detached —
   not blocking), Q19 (three small choices in the 6A plan), Q17, Q16 (defaults stand), Q15's follow-ups, Q13.
@@ -71,7 +71,7 @@ Settled history lives in docs/STATE-history.md.
 - **Known deviation of muted launches (D44 As built run 48 (d)):** a muted run draws the random stream differently
   from an audible one; boot checks only.
 - **Open carries** [LOW unless marked]:
-  - From run 64: level 20's all −1 light grid with blades that take dynamic light — 6A-BD's ruling (D63.6) [MED];
+  - From run 64: level 20's all −1 light grid with blades that take dynamic light — 6A-BD's ruling (D64.6) [MED];
     the bot meets the Chief on one quick-mode seed of four and never kills him, and its summary line cannot show a
     meeting (a probe did); one audit assert (the arm bytes for a level under the new light proof) is true by
     construction once the proof passes; the new light proof groups variable-type spawns by kind rather than tracing
@@ -183,7 +183,7 @@ Settled history lives in docs/STATE-history.md.
   - Older small carries from Phases 2–4: listed in the history file's Snapshot B; each closes when a task next touches
     its file.
 
-## Deimos Rising — 2026-11-21 (Phase 4 built and staged; Ben's gates 2, 3 and 4 all wait on the one app)
+## Deimos Rising — 2026-11-22 (Phase 4 built and staged; Ben's first play found the bomb freeze, fixed and restaged; gates 2, 3 and 4 wait on the one app)
 
 - **Where it stands:** Phase 1 "level 1 look" gate passed 2026-10-07. Phase 2 "level 1 plays", Phase 3 "the
   campaign" and **Phase 4 "the front end" are all built, merged to local main and staged as ONE app**:
@@ -193,16 +193,24 @@ Settled history lives in docs/STATE-history.md.
   cards follow, trimmed where the front end replaced their stand-ins. The app now boots to the original's menu
   (logos, loading screen, menu), with the level select, high scores and name entry, demos and Last Film (`F`), credits,
   the settings and controls windows drawn by the game, a controller, and quit-with-save. `-players` / `-sector` are
-  gone; `-film deNN` and `-mute` are hidden switches. First launch: NOT DONE. The app has never been launched. The question (mailbox Q6: may the section launch it once, muted?) had no answer by the close, so its default applied: Ben launches it first.
-- **Numbers (S8b's seat, at the staged head):**
+  gone; `-film deNN` and `-mute` are hidden switches. First launch: Ben's, 2026-11-22.
+- **The bomb freeze (2026-11-22, D63):** Ben's first play: after bombs the arrow keys died until he clicked the
+  picture. Cause: a quick double-tap of Option is another app's shortcut (the Claude app's quick-entry box); its panel
+  took the keyboard, hidden behind the full-screen picture. Fix, app layer only (no HectorKit change): in full screen
+  the game takes the keyboard back within a tick and keeps keys that were held across the steal. A hidden key log
+  (`-keylog`) stays in the app. The restaged app is on the Desktop with the key log switched ON by a user default
+  (`defaults delete com.ambrosiaclassics.deimos keylog` turns it off). **Ben's replay of the fix is owed**: no test
+  can show the reclaim works on real hardware. His log from the fault is kept at
+  `~/Library/Application Support/Claude/side-session-notes/local_f2c134b5-6951-46d4-9de2-485cd57ef9e7/bomb-freeze-keys-2026-11-22.log`.
+- **Numbers (the bomb-freeze seat, 2026-11-22, at the staged head; S8b's were 491):**
 
 | check | value |
 |---|---|
-| `Deimos/Core` (without the replay and campaign bundles) | **491 / 0 / 0** (the phase's ladder ends at 491: S8a's 483 + eight goldens) |
+| `Deimos/Core` (without the replay and campaign bundles) | **511 / 0 / 0** (Phase 4 ended at 491; + 20 keyboard-focus tests) |
 | `DeimosReplayTests`, and `deimos-replay --all` | 4 / 0; four PASS lines, exit 0 |
 | `DeimosCampaignTests` (one test at a time) | 3 / 0 (about 8 minutes for the longest) |
 | HectorKit zero-skip | executed 370, 0 failed, the 4 known Aki 1.1 data skips (kit main ef2c341, unchanged) |
-| app builds | Deimos Debug and Release, Aki, BubbleTroubleX: all BUILD SUCCEEDED |
+| app builds | Deimos Debug and Release: BUILD SUCCEEDED (Aki and BubbleTroubleX not rebuilt: nothing shared changed) |
 | census file; layering grep | unchanged; empty |
 
 - **Waiting on Ben:** (1) his first play of the staged app — the first launch of the front end ever, unless the line

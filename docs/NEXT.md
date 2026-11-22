@@ -22,7 +22,7 @@ Nothing else is a plan.
 3. `docs/QUESTIONS.md` "Open" — act first on any new text under an `Answer:` and record it in `docs/DECISIONS.md`
    (Q18 is Ben's Phase 5 gate: notes become tasks at the head of the order; a fail stops the build and becomes a fix
    wave. Q21: whether the sweep and the bot may run detached. Q19: his choices on the 6A plan).
-4. `docs/DECISIONS.md` D63 (D63.6 above all: the blade task meets a case the original itself gets wrong), D62, D61,
+4. `docs/DECISIONS.md` D64 (D64.6 above all: the blade task meets a case the original itself gets wrong), D62, D61,
    D59 (D59.1: the one script that may run detached), D54, D51, and `docs/handoff-2026-11-22-ferazel-run64.md`.
 
 ## Before anything else
@@ -41,7 +41,7 @@ Nothing else is a plan.
 ## Reconcile first
 - `git -C "$REPO" worktree list`, `git -C "$REPO" log --oneline -8 main`: main at or past run 64's close. Other
   sessions (Deimos, Castles) also merge to local main: merge main into your branch before each `--ff-only`, and
-  check the next free D-number at the close (D64 unless another project took it).
+  check the next free D-number at the close (D65 unless another project took it).
 - G1 HectorKit per the plan's gate table (main ef2c341, clean, at run 64).
 - G2 is not owed at the start (run 64's own, at a66d567: **764**, 0 failed, the two opt-in skips by name). At each
   merge it runs from a `git archive` copy with `HECTORKIT_PATH=$HOME/Developer/HectorKit` set (game data is in git,
@@ -87,7 +87,7 @@ Nothing else is a plan.
 - **The cross-check first, before any task** (the plan's "Wave end" rule; the one review the Fable seat does
   itself). The wave is 6A-BG1c, 6A-RN, 6A-L15, 6A-CH1, 6A-CH2, 6A-L18: `git diff 66875a3 a66d567` (66875a3 is the
   last commit before 6A-BG1c's work — confirm with `git log`), read by file with the six "As executed" notes and
-  D59–D63 beside it. Its gate numbers are in STATE's table, all taken at a66d567. Look hardest at what no single
+  D59–D62, D64 beside it. Its gate numbers are in STATE's table, all taken at a66d567. Look hardest at what no single
   task's reviewers could see: things two tasks both touched (the picture loader, the draw-mode audit's rows and its
   two new proofs from run 64, the Smite list, `LevelRun`), stand-ins left behind, and comments that still promise
   work a later task already did. Findings go to **one** fix round (an `fk-implementer`), reviewed by one Opus leg,
@@ -96,7 +96,7 @@ Nothing else is a plan.
   never two at once): one `fk-implementer`, then two Opus review legs (spec, then quality with a mutation table,
   told what leg 1 found), a fix round, the seat's own G2 and GW2 at the merge. Gate-F: no sweep or bot is owed
   (no level opens), and nothing is launched.
-- **Known before you brief 6A-BD (D63.6):** level 20's light grid is all −1 (19,200 cells), and its 28 blades
+- **Known before you brief 6A-BD (D64.6):** level 20's light grid is all −1 (19,200 cells), and its 28 blades
   (type 3060) take their brightness from the cell they sit on. The original then draws with the word `0xbff00 + F`,
   which reads its grey-pull table far before the table's start (`.BlitEncFaceTransClip`, M l. 23277–23286): there
   is no defined picture to copy. The blade task must find out what the original actually shows there (the bytes it
@@ -114,7 +114,7 @@ Nothing else is a plan.
   `mktemp` copy (`git archive <sha> | tar -x`, `HECTORKIT_PATH` set). Tell every helper to commit before it reports.
 - **Check a card's numbers against the level data before briefing** (D56.1), or tell the implementer plainly that
   they are unchecked. The data wins; where the dump and the card disagree, the dump wins (eleven times in runs 60–64).
-- **A helper whose edit is refused as outside its fence** reports it; the seat rules (D54.1, D61.1, D62.1, D63.1) and
+- **A helper whose edit is refused as outside its fence** reports it; the seat rules (D54.1, D61.1, D62.1, D64.1) and
   a fix round makes the change with the ruling written in its brief. The seat does not make the edit for it.
 - **Pinned values.** Each card names what may change. Nothing else may move: the pictures and state pins of levels
   1–5, 10, 11, 15 and 18, the Windows level references, every fixture picture, the two chapter cards, the Chief's

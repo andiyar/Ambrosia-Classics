@@ -2761,7 +2761,36 @@ Ben's answers are in `~/.claude/coordinator-notes/deimos-phase4-mailbox.md`; the
 6. **No memory note was written for this run.** The run taught no new standing rule, and the memory index is past
    its size limit; the run's record is this entry, the plan's "As executed — 6A-CH2" and the handoff.
 
-## D63 — Ferazel's Wand: run 64's rulings (6A-L18 — level 18 opens; the wave 6A.3 end; 2026-11-22)
+## D63 — Deimos Rising: the bomb freeze (a full-screen game takes the keyboard back; 2026-11-22)
+
+Ben's first play of the staged app: after bombs (left Option) the arrow keys died for the rest of the game, the fire
+keys kept working, and one click on the picture brought the arrows back. A key log he ran (`-keylog`, below) showed
+the cause: a quick double-tap of Option is another app's global shortcut (the Claude desktop app's quick-entry box).
+Its panel took the keyboard without bringing that app forward and opened behind the full-screen picture, so nothing
+was seen. macOS then sent ordinary key presses to the hidden panel (none reached the game) while modifier changes
+still reached the game window. The game's own rules were never at fault.
+
+1. **In full screen the game takes the keyboard back.** While the app is in front, in full screen, not suspended,
+   with no question of its own up, and its window is not the key window (or the picture is not the first responder),
+   it makes its window key again: checked once per Mac tick, tried at most eight times a quarter second apart, then
+   not again until the window is key (`KeyboardFocus.shouldReclaim`, `DeimosHost/ShellGlue.swift`; wired in
+   `DeimosController.heldKeys`).
+2. **Windowed mode is left alone.** There the other app's panel is visible and the player may want it.
+3. **Keys held across the steal stay held.** HectorKit drops every held key when the window stops being key. After a
+   reclaim the game's bound keys that the hardware reports down are handed to the game again and kept until the
+   hardware reads them up (`KeyboardFocus.stepRecovered`). The hardware read needed no permission on Ben's Mac; a Mac
+   where it reads "up" for everything just gets no recovery.
+4. **Accepted limit.** With a second display, a panel another app opens there while Deimos is full screen loses the
+   keyboard to the game for about two seconds of tries.
+5. **The key log stays as a hidden switch** like `-mute`: `-keylog`, or `defaults write com.ambrosiaclassics.deimos
+   keylog -bool YES` (off again: `defaults delete com.ambrosiaclassics.deimos keylog`). It writes
+   `~/Library/Logs/Deimos Rising/keys.log`, emptied at each launch. Off, it installs nothing.
+6. **Not changed: HectorKit.** Aki and Bubble Trouble X share the full-screen window and could meet the same steal;
+   neither uses a bare modifier double-tap in play. Moving the reclaim into the kit is a follow-up if one of them
+   shows it.
+7. **Not proved by a test:** that the reclaim wins the keyboard back on real hardware. Only Ben's replay shows it.
+
+## D64 — Ferazel's Wand: run 64's rulings (6A-L18 — level 18 opens; the wave 6A.3 end; 2026-11-22)
 
 1. **The draw-mode audit's proofs are inside a level task's fence when the level's data breaks a proof's premise
    and the game is right** (D54.1 / D60.1's form). Level 18 is the first built level whose light grid is all −1;

@@ -2393,7 +2393,7 @@ ids; its `--check` reads this table):
   Chief's arena; 4 tests, 1 Windows reference`.
 
 - **As executed — 6A-L18 (run 64, 2026-11-22, 05:17 → the close, night into day):** task c09d5c1, fix round A
-  414047f (the draw-mode audit's two new proofs; the seat's ruling D63.1), ledger 330b937, fix round B 266b72e
+  414047f (the draw-mode audit's two new proofs; the seat's ruling D64.1), ledger 330b937, fix round B 266b72e
   (tests and comments), ledger a66d567; merged at a66d567. The only game-source change is `BuiltLevels.list` =
   `[1, 2, 3, 4, 5, 10, 11, 15, 18]` (`git diff c09d5c1 a66d567 -- Ferazel/Core/Sources Ferazel/App
   Ferazel/Windows/Sources` is empty). Legs: spec MERGEABLE AFTER FIXES (the audit red; the game change matches the
@@ -2421,7 +2421,7 @@ ids; its `--check` reads this table):
     `GameFlowGameTests` — start-level 18 gives 18 and 20 gives 1, the not-built walk now enters 18 and ends at
     "Level 40 is not built yet", the not-built save names 20; `FerazelSettingsTests` 18 → 18 and 20 → 1. No other
     pinned value moved (levels 1–5, 10, 11, 15, their Windows references, fixtures, the chapter cards).
-  - **Outside the card's fence, by the seat's ruling (D63.1):** level 18 is the first built level whose light grid
+  - **Outside the card's fence, by the seat's ruling (D64.1):** level 18 is the first built level whose light grid
     is all −1 (2,048 cells), which broke the audit's proof "every light byte is 0…15". The proof is now, for a
     level with an out-of-range byte: the darkness switch 0x2706 is 0 (the tile pass never reads the byte, M l.
     13643–13652); no record type on the level, no spawner and no crate drop is one of the dump's six dynamic-light
@@ -2433,7 +2433,7 @@ ids; its `--check` reads this table):
   - **Gate-B's bot check, owed by 6A-CH1 / CH2:** quick mode on 18 — `== core: random play — levels 1, seeds 4,
     steps 7200, deaths 1, exits 17, conversations 0, saves 0, failures 0 in 169 s`. The quality leg's probe: seed 1
     locks the arena, fights the Chief for 1,481 ticks and dies once; seeds 2–4 leave by the back exit beside the
-    start. Accepted as "meets the Chief" (D63.3); the bot never kills him.
+    start. Accepted as "meets the Chief" (D64.3); the bot never kills him.
   - **Gates at a66d567 (the seat's own runs from a `git archive` copy, foreground, in parts):** G2 **764** = 593
     rules + 171 render, 762 passed, 0 failed, the two opt-in skips by name (rules 110 s; A–C 273; D–E without the
     audit 53; the audit's first test 188 + 331 + 40 for levels 1–5 / 10, 11, 15 / 18; its second 191 + 335 + 44;

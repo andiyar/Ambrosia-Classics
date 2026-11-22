@@ -118,6 +118,80 @@ public enum PadKeys {
     }
 }
 
+/// When the full-screen game takes the keyboard back (Ben's first playtest, 2026-11-22). A quick double tap of left
+/// Option (the bomb) is another app's global shortcut: its non-activating panel takes the keyboard without making the
+/// game inactive, and opens hidden behind the full-screen window. From then on no key-down or key-up reaches the app
+/// (the arrows, Space and Esc go dead; the modifier fire keys still work) until a click makes the window key again.
+/// So while the app is active, in full screen, not suspended and showing none of its own questions, a game window that
+/// is not key, or whose first responder is not the game view, takes the keyboard back. Windowed mode is left alone on
+/// purpose: there the other app's panel is visible, and the player may want it.
+///
+/// A reclaim that does not take is tried again every quarter second, but only `maxAttempts` times (about two seconds)
+/// after the window was last key with the view first responder; then the game stops trying until that is true again.
+/// Accepted limit: on a Mac with a second display, a panel another app opens there while the game is full screen
+/// loses the keyboard to the game for up to two seconds of tries, then keeps it.
+///
+/// Losing key drops every key the view held (HectorKit's `ShellView` releases them all), so a key the player holds
+/// across the steal — an arrow, or Command held to fire, whose code comes back only with a re-press — would stay dead.
+/// So for `recoveryTicks` after each attempt, any of the game's bound keys that the hardware reports down and the view
+/// does not hold is picked up as a recovered key. A recovered key then stays held until the hardware reads it up,
+/// however long that is (Command never repeats, so the view would never get it back), or until the view holds it
+/// again from a repeat or a fresh press, after which the view's own key-up releases it (`stepRecovered`).
+public enum KeyboardFocus {
+    /// The wait between attempts, in Mac ticks (a quarter second at 60): a reclaim that does not take is retried
+    /// without asking the window server every poll.
+    public static let retryTicks: UInt32 = 15
+    /// The attempts made since the window was last key with the view first responder after which the game gives up
+    /// (about two seconds of tries at `retryTicks`).
+    public static let maxAttempts = 8
+    /// How long after an attempt new recovered keys are picked up from the hardware, in Mac ticks (two seconds at 60:
+    /// longer than the slowest initial key-repeat delay). Keys already recovered outlast it (`stepRecovered`).
+    public static let recoveryTicks: UInt32 = 120
+
+    /// - `ticksSinceLastAttempt`: Mac ticks since the last reclaim was tried, nil when none has been.
+    /// - `attemptsSinceKey`: attempts made since the window was last key with the view first responder.
+    ///
+    /// True when the app should take the keyboard back now (see the type's comment).
+    public static func shouldReclaim(appActive: Bool, fullScreen: Bool, suspended: Bool, questionUp: Bool,
+                                     windowIsKey: Bool, firstResponderIsView: Bool,
+                                     ticksSinceLastAttempt: UInt32?, attemptsSinceKey: Int) -> Bool {
+        guard appActive, fullScreen, !suspended, !questionUp else { return false }
+        guard !windowIsKey || !firstResponderIsView else { return false }
+        guard attemptsSinceKey < maxAttempts else { return false }
+        if let since = ticksSinceLastAttempt, since < retryTicks { return false }
+        return true
+    }
+
+    /// True while new recovered keys are picked up from the hardware: there was an attempt, fewer than
+    /// `recoveryTicks` ago. The caller measures `ticksSinceLastAttempt` with wrapping subtraction (`now &- last`), so
+    /// the Mac tick counter rolling over still gives the small true difference.
+    public static func inRecovery(ticksSinceLastAttempt: UInt32?) -> Bool {
+        guard let since = ticksSinceLastAttempt else { return false }
+        return since < recoveryTicks
+    }
+
+    /// One step of the recovered keys (once per Mac tick). Each key of `recovered` that the view does not hold again
+    /// stays while `isDown` still reports it down; and only when `inRecovery`, each code of `bound` that the view does
+    /// not hold and `isDown` reports down joins. `isDown` is asked at most once per code, never about a code in
+    /// `viewHeld`, and not at all when nothing is recovered and recovery is over.
+    public static func stepRecovered(recovered: Set<UInt16>, viewHeld: Set<UInt16>, bound: [UInt16], inRecovery: Bool,
+                                     isDown: (UInt16) -> Bool) -> Set<UInt16> {
+        var asked: Set<UInt16> = []
+        var out: Set<UInt16> = []
+        for code in recovered where !viewHeld.contains(code) {
+            asked.insert(code)
+            if isDown(code) { out.insert(code) }
+        }
+        if inRecovery {
+            for code in bound where !viewHeld.contains(code) && !asked.contains(code) {
+                asked.insert(code)
+                if isDown(code) { out.insert(code) }
+            }
+        }
+        return out
+    }
+}
+
 /// A picture the shell decoded (HectorKit's PICT path: RGBA, 8 bits a channel, row 0 at the top) as the game's
 /// x1R5G5B5 pixels (`ShellPicture`, ruling 9): each channel's top five bits, as `DrawPicture` into a 16-bit GWorld
 /// keeps them; alpha is dropped (the top bit stays 0). nil when `rgba` is not `width × height × 4` bytes.
