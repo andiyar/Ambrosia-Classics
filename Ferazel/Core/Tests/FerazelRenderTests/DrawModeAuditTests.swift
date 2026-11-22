@@ -701,10 +701,10 @@ final class DrawModeAuditTests: XCTestCase {
         let lightBytes: Set<Int>
         let liquidKinds: Set<Int16>
         /// The light bytes the dynamic-light arm (`SpriteSlot.applyDynamicLight`, `.levelLight`) is enumerated over:
-        /// every light byte, except on a level whose `unlitProof` holds (D63), where the bytes outside the ambient rows
+        /// every light byte, except on a level whose `unlitProof` holds (D64), where the bytes outside the ambient rows
         /// are left out because that proof shows the arm never runs there.
         let armLightBytes: Set<Int>
-        /// D63: nil when every light byte is in the ambient rows (levels 1–5, 10, 11, 15); else the failures of the
+        /// D64: nil when every light byte is in the ambient rows (levels 1–5, 10, 11, 15); else the failures of the
         /// three-part proof that no sprite reads one (`unlitProof`) — empty when it holds.
         let unlitProof: [String]?
     }
@@ -717,7 +717,7 @@ final class DrawModeAuditTests: XCTestCase {
         case .levelLight:
             var out: Set<UInt32> = [0]
             // F's read is in range iff the light row L·0x6e00 + F·0x100 is (`special`'s guard, monotone in L and F):
-            // the corners and a spread decide; every L the level holds (`armLightBytes`: D63's proof leaves out the
+            // the corners and a spread decide; every L the level holds (`armLightBytes`: D64's proof leaves out the
             // bytes outside the ambient rows — the A14 words 0xbff00 + F for L = −1 — only where it holds).
             for L in l.armLightBytes { for F in [0, 1, 55, 109, 110] where L >= 1 || F >= 1 {
                 out.insert(UInt32(truncatingIfNeeded: L * 0x100 + 0xc0000 + F))
@@ -764,10 +764,10 @@ final class DrawModeAuditTests: XCTestCase {
         /// and its ripple phase at the end.
         var prepares = 0, erasesSinceStart = 0
         var finalPhase: Int32 = 0
-        /// D63 (a)(3): the ticks whose session's active list, at the tick's end (what the next `.WrapDrawSprites`
+        /// D64 (a)(3): the ticks whose session's active list, at the tick's end (what the next `.WrapDrawSprites`
         /// reads), held a sprite with the dynamic-light flag `+0x89` set (`SpriteSlot.dynamicLight`).
         var dynamicLitTicks = 0
-        /// D63 (b): the submerged draws of water kind 0 the held item made (identified by `heldItemDrew`) — kept out
+        /// D64 (b): the submerged draws of water kind 0 the held item made (identified by `heldItemDrew`) — kept out
         /// of `waterKinds`, whose every kind must be a liquid of the level.
         var heldKindZeroDraws = 0
     }
@@ -954,7 +954,7 @@ final class DrawModeAuditTests: XCTestCase {
         let ctx = SetupFaces.Context(level: L, playerX: SetupFaces.Context.levelStartPlayerX(L.header),
                                      effects: prefs.effects)
         let setups = try L.activePlacements.map { try SetupFaces.setup($0, context: ctx) }
-        // D63: the arm's bytes — all of them, unless some byte is outside the ambient rows and the proof holds.
+        // D64: the arm's bytes — all of them, unless some byte is outside the ambient rows and the proof holds.
         let ambient = r.tables.ambient.count
         let proof = try unlitProof(L, lightBytes: bytes, ambient: ambient, seen: seen)
         let arm = proof == [] ? bytes.filter { (0..<ambient).contains($0) } : bytes
@@ -963,7 +963,7 @@ final class DrawModeAuditTests: XCTestCase {
                      setups: setups, seen: seen)
     }
 
-    // MARK: - D63 (a): a level whose light bytes leave the ambient rows
+    // MARK: - D64 (a): a level whose light bytes leave the ambient rows
 
     /// The dump's six dynamic-light stores — every `*(param_1 + 0x89) = 1` in M (grep `0x89) = 1`; the handlers dump
     /// holds the same six) — with the types whose Handle arm makes it, a superset where the arm also tests a field, and
@@ -1005,7 +1005,7 @@ final class DrawModeAuditTests: XCTestCase {
         ("M l. 60488–60538", [0x5aa...0x5ad], "its record's type + 0x6e1"),
     ]
 
-    /// D63 (6A-L18; D54.1 / D60.1's form): a level with a light byte outside the ambient rows (level 18: every cell
+    /// D64 (6A-L18; D54.1 / D60.1's form): a level with a light byte outside the ambient rows (level 18: every cell
     /// −1). nil when there is none; else the failures of the proof that nothing reads such a byte — empty when it holds:
     /// (1) the header's darkness switch 0x2706 is 0, so the tile light pass (`.GetAmbDarkVal`, M l. 13643–13652) and
     ///     the sprites' ambient darken read D 0, and every reader of the light byte but the dynamic-light arm is gated
@@ -1066,7 +1066,7 @@ final class DrawModeAuditTests: XCTestCase {
 
     private static func isClut(_ op: DrawOp) -> Bool { if case .setScreenClut = op { true } else { false } }
 
-    /// D63 (b): the held item's water kind — its own writer row, outside `writers` (no line assigns it): 0 from
+    /// D64 (b): the held item's water kind — its own writer row, outside `writers` (no line assigns it): 0 from
     /// `.InitSprite` (M l. 35668). `.SetupHeldItemSprite` clears its tile callback (`+0x1f8 = 0`, M l. 43421) and
     /// `.SetHeldItemPos` (M l. 43460–43533) writes only the water row `+0x11c`; the one writer of `+0x128`,
     /// `.HandleUnderWater` (M l. 38173), reaches it only once a strike has given it the player shot's tile callback
@@ -1077,7 +1077,7 @@ final class DrawModeAuditTests: XCTestCase {
     /// (`PlayerState.heldItem`), whichever Handle it carries (a strike gives it the player shot's, `.playerShot`).
     static let heldItemWaterKind: Int16 = 0
 
-    /// D63 (b): whether the held item made `d` — every sprite whose last draw (`SpriteSlot.previous`, written by
+    /// D64 (b): whether the held item made `d` — every sprite whose last draw (`SpriteSlot.previous`, written by
     /// `.WrapDrawSprites` as it builds the op) is `d` is the held sprite (`held`, the session's `PlayerState.heldItem`),
     /// and there is one. A draw of an earlier step in the same tick, or of a sprite gone since, matches no sprite: not
     /// the held item.
@@ -1098,7 +1098,7 @@ final class DrawModeAuditTests: XCTestCase {
                 s.rotations.insert(d.rotation)
                 s.scales.insert(d.scale)
                 if d.waterRow >= 1 && !d.noWaterSplit {
-                    // D63 (b): the held item's kind 0 is its own row (`heldItemWaterKind`); every other kind goes on.
+                    // D64 (b): the held item's kind 0 is its own row (`heldItemWaterKind`); every other kind goes on.
                     if d.waterKind == heldItemWaterKind && heldItemDrew(d, sprites, held: held) { s.heldKindZeroDraws += 1 } else {
                         s.waterKinds.insert(d.waterKind)
                     }
@@ -1436,7 +1436,7 @@ final class DrawModeAuditTests: XCTestCase {
         let mismatches = try Self.sourceMismatches()
         XCTAssertTrue(mismatches.isEmpty, "rows whose values the source does not write:\n"
                       + mismatches.map { "  " + $0 }.joined(separator: "\n"))
-        // D63 (b): the held item's water kind, in its source (no level): `HeldItem` writes no water kind and its Setup
+        // D64 (b): the held item's water kind, in its source (no level): `HeldItem` writes no water kind and its Setup
         // clears the tile callback, so its kind is 0 until a strike's tile callback meets a liquid (`UnderWater`'s row).
         let held = try Self.coreLines.get().filter { $0.file == "Items/HeldItem.swift" }
         XCTAssertTrue(held.allSatisfy { Self.assignedFields($0.code, ["waterKind"]).isEmpty },
@@ -1503,8 +1503,12 @@ final class DrawModeAuditTests: XCTestCase {
             for k in s.waterKinds.union(s.waterFaceKinds) where !a.level.liquidKinds.contains(k) {
                 XCTFail("level \(n) run: water kind \(k) is not a liquid of the level")
             }
-            // D63 (b): the held item's own row — kind `heldItemWaterKind` on its submerged draws (counted apart in
+            // D64 (b): the held item's own row — kind `heldItemWaterKind` on its submerged draws (counted apart in
             // `heldKindZeroDraws`, identified by `heldItemDrew`; its source checks run once, above the levels).
+            // Measured on the fixed-seed run: 39 on level 2, 7 on level 18, none on every other built level (a level
+            // built later starts at 0 until measured). A `heldItemDrew` claiming none moves it; claiming all, on level 1.
+            let heldKindZero: [Int: Int] = [2: 39, 18: 7]
+            XCTAssertEqual(s.heldKindZeroDraws, heldKindZero[n, default: 0], "level \(n): the held item's kind-0 draws")
             XCTAssertEqual(s.mode5Unseeded, 0, "level \(n): a mode-5 draw with no seed")
         }
     }
@@ -1570,9 +1574,9 @@ final class DrawModeAuditTests: XCTestCase {
           + "range; tint subs ≤ 24 (placements' p2 included); modes 5 / 0xa / 0xb never on a rotated or scaled "
           + "sprite, 0xa never mirrored; light index ≥ 0x6f000 needs F ≥ 126 (DK: F max 110); A14 (light byte −1 → "
           + "0xbff00 + F) needs a dynamic-light sprite over a cell with light byte −1: none on a built level (level 18 is all "
-          + "−1 and holds no carrier, D63)"),
+          + "−1 and holds no carrier, D64)"),
         R("Frame/SpriteBlitter.swift", "Refusal.darkness", 1, .dataAbsent, [.lightBytesInRange],
-          "mode 0xc's L is a light byte (0…15 on every built level the arm runs on, `applyDynamicLight`; D63) or a "
+          "mode 0xc's L is a light byte (0…15 on every built level the arm runs on, `applyDynamicLight`; D64) or a "
           + "Radial depth band 0…12"),
         R("Frame/SpriteBlitter.swift", "Refusal.translucency", 3, .byConstruction,
           [.parallaxAttached, .pxBackSlotsLoaded, .headerFlame, .facesNarrow, .noCopyAfterCopy],
@@ -1580,7 +1584,7 @@ final class DrawModeAuditTests: XCTestCase {
           + "Fire backdrop; no face is over 301 px wide; `FaceEncoder` never emits a copy run after a copy run"),
         R("Frame/SpriteBlitter.swift", "failure", 1, .dataAbsent,
           [.lightBytesInRange, .lightIndexInRange, .ripplePhaseHours],
-          "the light pass's carried refusals: darkness D is a light byte 0…15, or 0 where header 0x2706 is 0 (D63); the "
+          "the light pass's carried refusals: darkness D is a light byte 0…15, or 0 where header 0x2706 is 0 (D64); the "
           + "light index "
           + "stays in the table (light-face pixels 0 or 0xf5…0xff, colours ≤ 99); the ripple phase (below)"),
         R("Frame/SpriteBlitter.swift", "Refusal.transform", 3, .byConstruction, [.facesNarrow],
@@ -1612,7 +1616,7 @@ final class DrawModeAuditTests: XCTestCase {
           "no level of the 24 has a BG tile of kind 206…209 (water tables 6…9, never built by the original)"),
         R("Frame/LightRenderer.swift", "Refusal.darkness", 2, .dataAbsent, [.lightBytesInRange],
           "the tile light pass's D is a light byte, 0…15 on every built level (the ambient rows), or 0 where header "
-          + "0x2706 is 0 (level 18, D63)"),
+          + "0x2706 is 0 (level 18, D64)"),
         R("Frame/LightRenderer.swift", "Refusal.lightIndex", 1, .dataAbsent, [.lightBytesInRange, .lightIndexInRange],
           "the tile light pass's index stays in the table: D 0…15, light-face pixels 0 or 0xf5…0xff, colours ≤ 99"),
         R("Frame/LightRenderer.swift", "Refusal.overlay", 1, .dataAbsent, [.overlaysInSet],
@@ -2006,7 +2010,7 @@ final class DrawModeAuditTests: XCTestCase {
         case .lightBytesInRange:
             // `.GetLightTile` over every cell (the reads clamp to the grid): D for the light pass, L for the dynamic
             // light — 0…15 (the ambient rows), so no darkness refusal and no A14 word 0xbff00 + F.
-            // D63: a level with a byte outside them (level 18: every cell −1) is held instead to `unlitProof` — the
+            // D64: a level with a byte outside them (level 18: every cell −1) is held instead to `unlitProof` — the
             // darkness switch 0, no dynamic-light carrier or spawner, no `+0x89` sprite or arm word in its run — and
             // its arm words are enumerated without those bytes only because the proof holds (`armLightBytes`).
             for a in audits {
@@ -2242,8 +2246,8 @@ final class DrawModeAuditTests: XCTestCase {
             XCTAssertNoThrow(try r.apply(FrameOps(draws: ops)), "\(c)")
             XCTAssertEqual(r.executed, [.omniPxOn(2)] + Array(repeating: .omniPx(4), count: 9), "\(c)")
         case .headerOmniPxStrip:
-            // Every built level opens: OmniPx 0 / 1 / 2 / 4 / 5 (built: 0; level 5's 2 arrives with LV5; 6A-RN: 1 drawn,
-            // level 15's — not built until 6A-L15); no built level but
+            // Every built level opens: OmniPx 0 / 1 / 2 / 4 / 5 (built: 0 on levels 1–4, 10, 11 and 18; 2 on level 5;
+            // 1 on level 15, drawn since 6A-RN; no built level has 4 or 5); no built level but
             // level 10 has a horizon strip (header 0x2716 = 0 on levels 1–5 and 11 — 6A-S8's switch-off: no strip
             // sprite, no mode 8; level 10's PICT 265, built by 6A-S8, joined the built levels at 6A-L10L11).
             for a in audits {
