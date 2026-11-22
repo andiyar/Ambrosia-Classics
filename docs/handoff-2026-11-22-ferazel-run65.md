@@ -1,4 +1,4 @@
-# Handoff — Ferazel's Wand, attended run 65 (2026-11-22 11:46 → 13:50; both times from `date`)
+# Handoff — Ferazel's Wand, attended run 65 (2026-11-22 11:46 → 13:42; both times from `date`)
 
 **What happened.** The seat's own review of the last wave (plants, rain, level 15, the Goblin Chief, level 18) is
 done. It found nothing wrong in the game. The three new engine features planned for this run were **not started**:

@@ -2456,7 +2456,7 @@ ids; its `--check` reads this table):
     6A-BD must rule on it before it measures its fixture, and 6A-L20's audit proof will not hold as written.
     Level 15's audit run never puts the held item under a liquid.
 
-- **As executed — the wave 6A.3 cross-check (run 65, 2026-11-22, 11:46 → 13:40, by day; nothing launched):** the
+- **As executed — the wave 6A.3 cross-check (run 65, 2026-11-22, 11:46 → 13:42, by day; nothing launched):** the
   Fable seat read `git diff 66875a3 a66d567` — every Ferazel source file's diff (the Chief's own file by search
   only), the whole draw-mode audit diff — with D64 and STATE's gate table beside it. No fault in game behaviour.
   Four findings, all tests or comments, to one fix round (b42bb43, reviewed by one Opus leg: PASS): (1) the audit
