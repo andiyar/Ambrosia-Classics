@@ -9,8 +9,8 @@ import Foundation
 /// `.HitBackgroundSprite`. Part 3 (LV3, below): the retracting spikes 0x730…0x733. ES: the dart traps 0x76c…0x76f,
 /// Handle arm (`dartTrap`) and Setup arm (`setupDartTrap`), built as read — first placed on level 22, unreachable on
 /// levels 1–5. 6A-TR: the trees 0xc08…0xc0f (`setupTree`, the Handle arm `tree`, `.SetupTree` = `plantBranches`) —
-/// first placed on level 10. // later: fire 0x4b8 / 0x4bb…0x4bd, 0x73f / 0x740, 0xb4a…0xb4d, 0xbf4 — none placed on
-/// levels 1–5, 10, 11.
+/// first placed on level 10. 6A-CL: the clouds 0xb4a…0xb4d (`setupCloud`, `cloud`), placed on level 20 only.
+/// // later: fire 0x4b8 / 0x4bb…0x4bd, 0x73f / 0x740, 0xbf4 — none placed on levels 1–5, 10, 11.
 public enum BackgroundSprite {
     /// The radial bars (0x5c8…0x5cc) and balls (0x5cd…0x5d1).
     public static let maces: ClosedRange<Int16> = 0x5c8...0x5d1
@@ -113,12 +113,12 @@ public enum BackgroundSprite {
     // MARK: - Handle
 
     /// The types whose `.HandleBackgroundSprite` arm is not built: their Handle is not run (as before W2a), so
-    /// nothing of it — `.StandardSpriteHandles` included — changes them. // later: fire, 0x73f / 0x740, clouds,
-    /// 0xbf4 (none on levels 1–5, 10, 11, so `SetupFaces` refuses them; the spikes: LV3; the dart traps: ES; the trees:
-    /// 6A-TR).
+    /// nothing of it — `.StandardSpriteHandles` included — changes them. // later: fire, 0x73f / 0x740, 0xbf4 (none
+    /// on levels 1–5, 10, 11, so `SetupFaces` refuses them; the spikes: LV3; the dart traps: ES; the trees: 6A-TR; the
+    /// clouds: 6A-CL).
     static func isUnbuiltArm(_ t: Int16) -> Bool {
         t == 0x4b8 || (0x4bb...0x4bd).contains(t) || (0x73f...0x740).contains(t)
-            || (0xb4a...0xb4d).contains(t) || t == 0xbf4
+            || t == 0xbf4
     }
 
     /// Modes 12…14's layer and harmful flag from the depth D (radial `+0x40`; l. 63167–63180, raw
@@ -141,7 +141,7 @@ public enum BackgroundSprite {
     ///   `.MTChangeSpriteLayer` (the F2 no-op guard), so the frame a ball comes **in front** moves it to the list's
     ///   tail and `.MTHandleSprites` handles it **twice** (Invariant 7).
     /// - the trees 0xc08…0xc0f (M l. 63538–63546; 6A-TR, `tree`): `.SetupTree` on the first Handle, then the face and the
-    ///   mirror every frame.
+    ///   mirror every frame; the clouds 0xb4a…0xb4d (M l. 63304–63341; 6A-CL, `cloud`): the face and the parallax.
     /// - The tail for every type no arm takes (l. 63549–63556): plants 0xa8c…0xaef → `+0xc0 = _DAT_100a0ad8[type −
     ///   0xa8c] + 4`, tunnels 3000…0xbc1 → `_DAT_100a0adc[type − 3000] + 4` (the caches hold 30 plants and 6 tunnels:
     ///   a higher type reads past them [LOW: none placed on levels 1–2]). This is what replaces the Phase-1 Setup faces
@@ -166,6 +166,8 @@ public enum BackgroundSprite {
             dartTrap(w, id: id)
         } else if trees.contains(t) {
             tree(w, id: id, faceWidth: faceWidth)
+        } else if clouds.contains(t) {
+            cloud(w, id: id)
         } else if (0xa8c...0xaef).contains(t) || (3000...0xbc1).contains(t) {
             w.active.update(id: id) { $0.face = FaceRef(pict: t, index: 0, set: .encoded) }
         }
@@ -1205,6 +1207,74 @@ extension BackgroundSprite {
                 k.hotRect = origin
                 if s.type == 0xc0f { k.oneWay = false }
             }
+        }
+    }
+}
+
+// MARK: - 6A-CL: clouds
+
+extension BackgroundSprite {
+    /// The clouds 2890–2893 (ENG §2.8): 0xb4a ×44, 0xb4b ×44, 0xb4c ×32, 0xb4d ×44, all on level 20, all p1…p4 = 0. Both
+    /// arms of the dump take 0xb4a…0xb53 (`0xb49 < type`, below 0xb54); 0xb4e…0xb53 are placed on no level and have no
+    /// face (their Setup would store none) — `SetupFaces` refuses them, no owner.
+    public static let clouds: ClosedRange<Int16> = 0xb4a...0xb4d
+
+    /// The cloud arm of `.SetupBackgroundSprite` (M l. 62526–62567, after the common part `setupCommon`): `+0x5c = +0x1f8
+    /// = 0`, the empty rect `SetRect(0, 0, 0, 0)` — it never collides (M l. 62527–62529); the face `+0xc0` = its cache
+    /// single + 4 and the cache record marked (`SetupFaces`' `.setupCached`, `CachedFaces.markedRecords`; `_DAT_100a0b20`
+    /// / `0b1c` / `0b18` / `0b14`, M l. 62530–62548); `+0x88 = 0` (M l. 62549); `+0xb8 = 0xb0004` (mode 0xb, translucency
+    /// table 4, M l. 62550); layer `+0x80 = 0x7ef4`, in front of everything (M l. 62551, stored directly — no
+    /// `.MTChangeSpriteLayer`: the Setup runs before the insert); `+0x14c` = record p1, 0 → **`FastRand(60)` + 270** (M l.
+    /// 62552–62557); `+0x150` = record p2, 0 → `+0x14c` (M l. 62558–62562); `+0x154 = +0xc << 8`, `+0x158 = +0xa << 8`
+    /// (the spawn copy's position, M l. 62563–62564); `+0x15c = FastRand(50)` (M l. 62565–62566; no reader found). Two
+    /// draws per shipped cloud, in that order — 328 on level 20, inside `.SetupLevelSprites`. Nothing is written back.
+    /// Fields: `+0x14c` = `classTimer` (fx), `+0x150` = `classWord150` (fy), `+0x154` = `classWord154` (the base x256),
+    /// `+0x158` = `classWord158` (the base y256), `+0x15c` = `classWord15c`.
+    public static func setupCloud(_ s: inout SpriteSlot, record p: Placement, rng: inout FastRand) {
+        s.hasHit = false
+        s.hasTileHit = false
+        s.hotRect = IdleSprites.Rect(top: 0, left: 0, bottom: 0, right: 0)
+        s.lightOverlay = false
+        s.mode = 0xb0004
+        s.layer = Int32(frontLayer)
+        s.classTimer = Int32(p.p1)
+        if s.classTimer == 0 { s.classTimer = Int32(rng.next(0x3c)) + 0x10e }
+        s.classWord150 = Int32(p.p2)
+        if s.classWord150 == 0 { s.classWord150 = s.classTimer }
+        s.classWord154 = Int32(Int16(truncatingIfNeeded: s.x)) << 8
+        s.classWord158 = Int32(Int16(truncatingIfNeeded: s.y)) << 8
+        s.classWord15c = Int32(rng.next(0x32))
+    }
+
+    /// The cloud arm of `.HandleBackgroundSprite` (M l. 63304–63341), after `.StandardSpriteHandles`: fx = `+0x14c` and fy
+    /// = `+0x150` read first (M l. 63305–63306); the face re-read from the type's cache single every frame (M l.
+    /// 63307–63320); then with the scroll point (H, V) = `PTR_DAT_1009fe78` as this frame's `.FindUpperLeftCorner` left
+    /// it (the Handle pass runs after the frame's draw, so the next draw shows the cloud where this scroll put it):
+    /// - fx > 0 → x256 `+0x14` = H·256 + (`+0x154` − (H·256·fx >> 8)) (32-bit, the shift arithmetic); fx = 0 → x256 =
+    ///   `+0x154`; fx < 0 → x256 unchanged (M l. 63321–63329);
+    /// - the same for y256 `+0x1c` with fy, V and `+0x158` (M l. 63330–63339);
+    /// - then the pixel copies `+0xc` = (short)(x256 >> 8), `+0xa` = (short)(y256 >> 8) (M l. 63340–63341).
+    /// As shipped fx = fy ∈ 270…329: the clouds move faster than the camera — foreground parallax. Then
+    /// `.StandardSpriteCleanup` (`LAB_10074e14`).
+    static func cloud(_ w: SpriteWorld, id: Int) {
+        let h = Int32(Int16(truncatingIfNeeded: w.player.scrollH)), v = Int32(Int16(truncatingIfNeeded: w.player.scrollV))
+        w.active.update(id: id) { c in
+            let fx = c.classTimer, fy = c.classWord150
+            c.face = FaceRef(pict: c.type, index: 0, set: .encoded)
+            if fx > 0 {
+                let s = h &* 0x100
+                c.x256 = s &+ (c.classWord154 &- ((s &* fx) >> 8))
+            } else if fx == 0 {
+                c.x256 = c.classWord154
+            }
+            if fy > 0 {
+                let s = v &* 0x100
+                c.y256 = (s &+ c.classWord158) &- ((s &* fy) >> 8)
+            } else if fy == 0 {
+                c.y256 = c.classWord158
+            }
+            c.x = Int(Int16(truncatingIfNeeded: c.x256 >> 8))
+            c.y = Int(Int16(truncatingIfNeeded: c.y256 >> 8))
         }
     }
 }

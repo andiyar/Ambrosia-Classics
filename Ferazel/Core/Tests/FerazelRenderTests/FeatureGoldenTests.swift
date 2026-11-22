@@ -569,4 +569,93 @@ final class FeatureGoldenTests: XCTestCase {
         }
         XCTFail("no flash within 6000 ticks")
     }
+
+    // MARK: - 6A-CL: the clouds of Hangnabit
+
+    /// 6A-CL's level-20 leave-out list (ENG §7.2; the card): the blades 3060 (28) and the maces 1485 (16), by type — 44
+    /// records. The same literal as `CloudTests.level20` (the Render target cannot see a Core test's list); never
+    /// computed from what the port refuses today.
+    static let level20Clouds: [LevelFixture.LeaveOut] = [.type(3060), .type(1485)]
+
+    /// One presented frame of level 20's fixture: its tick count, the screen's indices and their FNV-1a 64, and the
+    /// cloud draws (faces 0xb4a…0xb4d) its `.WrapDrawSprites` held, as (PICT, x, y).
+    struct CloudFrame {
+        let ticks: UInt32
+        let pixels: [UInt8]
+        let fnv: UInt64
+        let clouds: [[Int]]
+    }
+
+    /// Level 20's fixture (`level20Clouds`), seed 1, `FerazelPrefs()`, the header's start, no input: the first `count`
+    /// presented frames. `dropClouds`: the twin — every cloud draw taken out of each `.WrapDrawSprites` before the
+    /// renderer draws it (the same run otherwise: Core never sees the change).
+    static func level20CloudFrames(count: Int, dropClouds: Bool) throws -> [CloudFrame] {
+        let (run, services) = try LevelFixtureServices.open(level: 20, leaveOut: level20Clouds)
+        var now: UInt32 = 0, frames: [CloudFrame] = []
+        while frames.count < count && now < 4000 {
+            let out = try run.tick(now: now, input: FrontInput())
+            now += 1
+            var presented = false, clouds: [[Int]] = []
+            for g in out.segments where g.target == .level {
+                let r = try XCTUnwrap(services.renderer, "a level draw before the renderer exists")
+                let draws = g.output.draws.map { op -> DrawOp in
+                    guard case .wrapDrawSprites(let list) = op else { return op }
+                    let keep = list.filter { !(0xb4a...0xb4d).contains($0.face.pict) }
+                    clouds += list.filter { (0xb4a...0xb4d).contains($0.face.pict) }.map { [Int($0.face.pict), $0.x, $0.y] }
+                    return dropClouds ? .wrapDrawSprites(keep) : op
+                }
+                try r.apply(FrameOps(draws: draws))
+                presented = presented || draws.contains { if case .copyToScreen = $0 { true } else { false } }
+            }
+            if presented, let r = services.renderer {
+                frames.append(CloudFrame(ticks: now, pixels: r.screen.pixels, fnv: LevelFixtureServices.fnv1a(r.screen.pixels),
+                                         clouds: clouds))
+            }
+        }
+        XCTAssertEqual(frames.count, count, "\(count) presented frames within 4000 ticks")
+        return frames
+    }
+
+    /// 6A-CL: the first presented frame of level 20's fixture (44 left out, seed 1, `FerazelPrefs()`, the header's
+    /// start, no input) with a cloud on screen — proved by its twin with every cloud draw removed, which differs. It is
+    /// the level's frame 1 (the first `.GameLoop` iteration), so the clouds there stand where their Setups put them:
+    /// the Handle pass runs after the draw (M l. 9207, 9453). Frame 2 is pinned beside it — the first frame drawn after
+    /// the clouds' first Handle, their parallax applied. The clouds draw with mode 0xb arg 4 (translucency table 4) at
+    /// layer 0x7ef4, in front of everything. Frame 1: 6A-L20 deletes this golden if the level's own first frame is it
+    /// (ENG §2.8 "First level / golden").
+    func testLevel20CloudFeatureGolden() throws {
+        let real = try LevelFile.load(from: try LevelFixture.base.get(), level: 20)
+        let out = try LevelFixture.leftOut(real, Self.level20Clouds)
+        XCTAssertEqual(out.count, 44, "the 44 refused records")
+        var perType: [Int16: Int] = [:]
+        for i in out { perType[real.placements[i].type, default: 0] += 1 }
+        XCTAssertEqual(perType, [3060: 28, 1485: 16])
+
+        let frames = try Self.level20CloudFrames(count: 2, dropClouds: false)
+        let twin = try Self.level20CloudFrames(count: 2, dropClouds: true)
+        guard frames.count == 2, twin.count == 2 else { return }          // a failure above, never a crash
+        XCTAssertEqual(frames.map(\.ticks), twin.map(\.ticks))
+        XCTAssertEqual(frames.map(\.clouds), twin.map(\.clouds), "the twin's run is the same run")
+        let changed = (0..<2).map { k in zip(frames[k].pixels, twin[k].pixels).filter { $0 != $1 }.count }
+        XCTAssertNotEqual(frames[0].fnv, twin[0].fnv, "a cloud is on screen in frame 1")
+        XCTAssertNotEqual(frames[1].fnv, twin[1].fnv, "and in frame 2")
+        // Frame 1: every cloud drawn at its record's own position (no Handle has run yet); frame 2: moved.
+        let placed = Set(real.activePlacements.filter { (0xb4a...0xb4d).contains($0.type) }
+            .map { [Int($0.type), Int($0.x), Int($0.y)] })
+        XCTAssertEqual(placed.count, 164)
+        XCTAssertFalse(frames[0].clouds.isEmpty)
+        XCTAssertTrue(Set(frames[0].clouds).isSubset(of: placed))
+        XCTAssertEqual(frames[0].clouds.count, frames[1].clouds.count)
+        let moved = zip(frames[0].clouds, frames[1].clouds).filter { $0 != $1 }.count
+        // Measured at 6A-CL (FNV-1a 64 of the 640×480 screen indices after that tick's level draws, the test colour
+        // model). With the Handle's parallax stubbed (one local patch, never committed) frame 1 holds and frame 2 is
+        // e63ae32a71d4526: no cloud moved, and the clouds change 25,886 bytes there, as in frame 1.
+        XCTAssertEqual([Int(frames[0].ticks), Int(frames[1].ticks)], [143, 145])
+        XCTAssertEqual([frames[0].clouds.count, moved], [164, 164], "all 164 drawn (none idled), all moved")
+        XCTAssertEqual(changed, [25886, 31081], "the screen bytes the clouds changed")
+        XCTAssertEqual(String(twin[0].fnv, radix: 16), "8964bdab39954f49", "frame 1 with no cloud drawn")
+        XCTAssertEqual(String(frames[0].fnv, radix: 16), "9f0b821fbbc60084", "the level-20 cloud feature golden")
+        XCTAssertEqual(String(twin[1].fnv, radix: 16), "4679418e47ef711b", "frame 2 with no cloud drawn")
+        XCTAssertEqual(String(frames[1].fnv, radix: 16), "37eb1f7eb12e8f76", "frame 2, the parallax applied")
+    }
 }

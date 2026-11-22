@@ -172,10 +172,14 @@ final class CachedFacesTests: XCTestCase {
         }
         XCTAssertEqual(CachedFaces.record(.set(28)).pict, 0x442)
         XCTAssertTrue(m.records.isSuperset(of: [.set(0), .set(1), .set(2), .set(3), .set(28)]))
-        // Measured at CF's point (6A-CF): needed records, n, q, steps — the four Player sets (20 faces), 0x442 (5), the
-        // Gremlin's three (24), the tunnel single 3002 and the mace single 1480. Every later task that adds a mark on
-        // level 20 or makes one of its records set up re-derives these (RC, CL, BD, MP).
-        XCTAssertEqual(bar(m.records, m.L), [10, 51, 102, 10])
+        // 6A-CL: the 164 clouds set up and mark their four singles #132–#135 (0-based 131…134, one face each).
+        XCTAssertTrue(types.isSuperset(of: [0xb4a, 0xb4b, 0xb4c, 0xb4d]))
+        XCTAssertTrue(m.records.isSuperset(of: [.single(131), .single(132), .single(133), .single(134)]))
+        // Measured: needed records, n, q, steps. At CF's point (6A-CF) [10, 51, 102, 10] — the four Player sets (20
+        // faces), 0x442 (5), the Gremlin's three (24), the tunnel single 3002 and the mace single 1480; at 6A-CL
+        // [14, 55, 110, 14] (+ the four cloud singles). Every later task that adds a mark on level 20 or makes one of its
+        // records set up re-derives these (BD, MP).
+        XCTAssertEqual(bar(m.records, m.L), [14, 55, 110, 14])
     }
 
     func testLevel22LoadBarMarks() throws {
