@@ -328,6 +328,12 @@ def _port_arm(t, cls, ps, n1):
             return (BUILT_S, anchor(SF, r'case 0xc08\.\.\.0xc0f:'),
                     f'tree (6A-TR); Handle {anchor(BG, r"static func tree\(")}, branches '
                     f'{anchor(BG, r"static func plantBranches\(")}')
+        if 0xb4a <= t <= 0xb4d:
+            # 6A-CL: the clouds — the Setup arm (`setupCloud`: R(60) then R(50)) and the Handle arm (`cloud`, the
+            # parallax). Anchored on the Swift case as written: a narrowed (or removed) case fails --check.
+            return (BUILT_S, anchor(SF, r'case 0xb4a\.\.\.0xb4d:'),
+                    f'cloud (6A-CL); Setup {anchor(BG, r"static func setupCloud\(")}, Handle '
+                    f'{anchor(BG, r"static func cloud\(")}')
         if t == 0xcb1:
             return (BUILT_S, anchor(SF, r'case 0xcb1:'), 'level exit')
         return (REFUSED, anchor(SF, r'case 0xcb1:', r'throw Error\.notTranscribed'),
