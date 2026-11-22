@@ -425,6 +425,9 @@ import Synchronization
     /// Attempts to take the keyboard back since the window was last key with the view first responder
     /// (`KeyboardFocus.maxAttempts`).
     private var focusReclaimAttempts = 0
+    /// Keys held across a keyboard steal that the view no longer holds, read from the hardware once per Mac tick
+    /// (`KeyboardFocus.stepRecovered`); each stays until the hardware reads it up or the view holds it again.
+    private var recoveredKeys: Set<UInt16> = []
 
     /// The keys for this fire. A pass can begin only when the Mac tick moves (the limiter and fades wait on it), so
     /// the full poll (`pollKeyState`: modifiers, Caps Lock, and HectorKit's `CGPreflightListenEventAccess` ⌘-release
@@ -435,11 +438,13 @@ import Synchronization
     /// whether its button is down (`Button()`), the clicks since the last fire.
     /// Before each full poll, a full-screen game window that another app's hidden panel has left without the keyboard
     /// takes it back (`KeyboardFocus.shouldReclaim`; Ben's bomb freeze, 2026-11-22), retried at most every quarter
-    /// second and at most eight times (two seconds) after the window was last key with the view first responder; then
-    /// the game stops trying until that is true again (so a panel another app opens on a second display is not fought
-    /// for longer than that). Losing key drops every held key in the view, so for two seconds after each attempt the
-    /// held set is the view's plus the game's bound keys that the hardware reports down
-    /// (`KeyboardFocus.recoveredHeld`): a key held across the steal keeps working without a re-press.
+    /// second and at most eight times (about two seconds) after the window was last key with the view first responder;
+    /// then the game stops trying until that is true again (so a panel another app opens on a second display is not
+    /// fought for longer than that). Losing key drops every held key in the view, so for two seconds after each attempt
+    /// the game's bound keys that the hardware reports down are picked up as recovered keys, and a recovered key stays
+    /// until the hardware reads it up or the view holds it again (`KeyboardFocus.stepRecovered`, once per tick after
+    /// the poll). The held set handed to the game is the view's plus the recovered keys: a key held across the steal,
+    /// Command held to fire included, keeps working without a re-press for as long as it is held.
     /// In the background (a Quit request pumped while suspended) the driver gets NO live input: nothing held, the
     /// mouse button up, no mouse position, no poll (no pad keys), Caps Lock as last seen while active — only what
     /// was queued (the shell's events; any key or click queued before the switch) — so nothing the player does in
@@ -484,16 +489,22 @@ import Synchronization
                 DeimosPadLayout.mapping(keySet: driver.padKeySet, context: $0)
             } ?? ShellPadMapping(bindings: [:])
             state = shell.view.pollKeyState()                           // the pad's key events arrive from here
-            keyLog?.pollState(state)
+            // Wrapping subtraction: a Mac tick counter roll-over still gives the small true difference.
+            let inRecovery = KeyboardFocus.inRecovery(ticksSinceLastAttempt: lastFocusReclaimTick.map { tick &- $0 })
+            if inRecovery || !recoveredKeys.isEmpty {
+                recoveredKeys = KeyboardFocus.stepRecovered(recovered: recoveredKeys, viewHeld: state.held,
+                                                            bound: driver.padKeySet.codes, inRecovery: inRecovery,
+                                                            isDown: {
+                    CGEventSource.keyState(.combinedSessionState, key: CGKeyCode($0))
+                })
+            }
+            var given = state
+            given.held = state.held.union(recoveredKeys)
+            keyLog?.pollState(given)                                    // the held set the game is given
         } else {
             state = shell.view.keyState
         }
-        var held = state.held
-        if KeyboardFocus.inRecovery(ticksSinceLastAttempt: lastFocusReclaimTick.map { tick &- $0 }) {
-            held = KeyboardFocus.recoveredHeld(held: held, bound: driver.padKeySet.codes, isDown: {
-                CGEventSource.keyState(.combinedSessionState, key: CGKeyCode($0))
-            })
-        }
+        let held = state.held.union(recoveredKeys)
         var capsLock = state.capsLock
         lastActiveCapsLock = capsLock
         #if DEBUG
@@ -550,6 +561,7 @@ import Synchronization
         suspended = suspend
         keyLog?.suspendedChanged(suspend)
         if suspend {
+            recoveredKeys = []                                          // nothing carries over an app switch
             timer?.invalidate()
             driver.suspend()
             pendingEvents.append(.suspend)

@@ -126,24 +126,26 @@ public enum PadKeys {
 /// is not key, or whose first responder is not the game view, takes the keyboard back. Windowed mode is left alone on
 /// purpose: there the other app's panel is visible, and the player may want it.
 ///
-/// A reclaim that does not take is tried again every quarter second, but only `maxAttempts` times (two seconds) after
-/// the window was last key with the view first responder; then the game stops trying until that is true again.
+/// A reclaim that does not take is tried again every quarter second, but only `maxAttempts` times (about two seconds)
+/// after the window was last key with the view first responder; then the game stops trying until that is true again.
 /// Accepted limit: on a Mac with a second display, a panel another app opens there while the game is full screen
 /// loses the keyboard to the game for up to two seconds of tries, then keeps it.
 ///
 /// Losing key drops every key the view held (HectorKit's `ShellView` releases them all), so a key the player holds
 /// across the steal — an arrow, or Command held to fire, whose code comes back only with a re-press — would stay dead.
-/// For `recoveryTicks` after each attempt the game's bound keys that the hardware reports down are added back
-/// (`recoveredHeld`).
+/// So for `recoveryTicks` after each attempt, any of the game's bound keys that the hardware reports down and the view
+/// does not hold is picked up as a recovered key. A recovered key then stays held until the hardware reads it up,
+/// however long that is (Command never repeats, so the view would never get it back), or until the view holds it
+/// again from a repeat or a fresh press, after which the view's own key-up releases it (`stepRecovered`).
 public enum KeyboardFocus {
     /// The wait between attempts, in Mac ticks (a quarter second at 60): a reclaim that does not take is retried
     /// without asking the window server every poll.
     public static let retryTicks: UInt32 = 15
     /// The attempts made since the window was last key with the view first responder after which the game gives up
-    /// (two seconds of tries at `retryTicks`).
+    /// (about two seconds of tries at `retryTicks`).
     public static let maxAttempts = 8
-    /// How long after an attempt the hardware is asked for held keys, in Mac ticks (two seconds at 60: longer than
-    /// the slowest initial key-repeat delay, after which the key's own repeats arrive).
+    /// How long after an attempt new recovered keys are picked up from the hardware, in Mac ticks (two seconds at 60:
+    /// longer than the slowest initial key-repeat delay). Keys already recovered outlast it (`stepRecovered`).
     public static let recoveryTicks: UInt32 = 120
 
     /// - `ticksSinceLastAttempt`: Mac ticks since the last reclaim was tried, nil when none has been.
@@ -160,17 +162,32 @@ public enum KeyboardFocus {
         return true
     }
 
-    /// True while held keys are recovered from the hardware: there was an attempt, fewer than `recoveryTicks` ago.
+    /// True while new recovered keys are picked up from the hardware: there was an attempt, fewer than
+    /// `recoveryTicks` ago. The caller measures `ticksSinceLastAttempt` with wrapping subtraction (`now &- last`), so
+    /// the Mac tick counter rolling over still gives the small true difference.
     public static func inRecovery(ticksSinceLastAttempt: UInt32?) -> Bool {
         guard let since = ticksSinceLastAttempt else { return false }
         return since < recoveryTicks
     }
 
-    /// `held` plus each code of `bound` that `isDown` reports down; `isDown` is asked only about bound codes not
-    /// already held.
-    public static func recoveredHeld(held: Set<UInt16>, bound: [UInt16], isDown: (UInt16) -> Bool) -> Set<UInt16> {
-        var out = held
-        for code in bound where !out.contains(code) && isDown(code) { out.insert(code) }
+    /// One step of the recovered keys (once per Mac tick). Each key of `recovered` that the view does not hold again
+    /// stays while `isDown` still reports it down; and only when `inRecovery`, each code of `bound` that the view does
+    /// not hold and `isDown` reports down joins. `isDown` is asked at most once per code, never about a code in
+    /// `viewHeld`, and not at all when nothing is recovered and recovery is over.
+    public static func stepRecovered(recovered: Set<UInt16>, viewHeld: Set<UInt16>, bound: [UInt16], inRecovery: Bool,
+                                     isDown: (UInt16) -> Bool) -> Set<UInt16> {
+        var asked: Set<UInt16> = []
+        var out: Set<UInt16> = []
+        for code in recovered where !viewHeld.contains(code) {
+            asked.insert(code)
+            if isDown(code) { out.insert(code) }
+        }
+        if inRecovery {
+            for code in bound where !viewHeld.contains(code) && !asked.contains(code) {
+                asked.insert(code)
+                if isDown(code) { out.insert(code) }
+            }
+        }
         return out
     }
 }
