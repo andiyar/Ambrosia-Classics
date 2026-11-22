@@ -3,8 +3,9 @@ import CoreGraphics
 import HectorShell
 
 /// ◇ The hidden key log (`-keylog`, or `defaults write com.ambrosiaclassics.deimos keylog -bool YES`): a diagnostic
-/// for Ben's first playtest, where one tap of left Option (a bomb) left the arrow keys dead until a click on the
-/// window. It writes, to `~/Library/Logs/Deimos Rising/keys.log` (truncated at each launch), one plain-text line per
+/// for Ben's first playtest, where left Option (a bomb) left the arrow keys dead until a click on the window. The
+/// measured cause: a quick double tap of Option, which another app's global shortcut answers by taking the keyboard
+/// with a hidden panel (`KeyboardFocus`). It writes, to `~/Library/Logs/Deimos Rising/keys.log` (truncated at each launch), one plain-text line per
 /// thing the app sees, each line written at once (a crash or force-quit loses nothing) and led by the seconds since
 /// the log began:
 /// - every key-down, key-up, modifier change and left mouse-down the APP receives, before routing (a local event
@@ -12,7 +13,8 @@ import HectorShell
 /// - every such event that reaches the game view (`DeimosController`'s `ShellInputHandler` hooks);
 /// - the windows becoming / resigning key and main, the app becoming / resigning active;
 /// - a state line whenever the polled keyboard, focus or hardware key state differs from the last one written;
-/// - each change of the display's suspension.
+/// - each change of the display's suspension;
+/// - what the app did about the keyboard ("reclaim keyboard", "reclaim gave up").
 /// Nothing here changes what the game sees. With the switch off no `KeyLog` exists and nothing is installed.
 @MainActor final class KeyLog: NSObject {
     private let shell: ShellWindowController
@@ -68,7 +70,7 @@ import HectorShell
     // MARK: Hooks
 
     /// An event that reached the game view (`ShellInputHandler`): "view keyDown 123 …".
-    func view(_ kind: String, _ event: NSEvent) {
+    func viewEvent(_ kind: String, _ event: NSEvent) {
         var line = "view \(kind)"
         if event.type == .keyDown || event.type == .keyUp || event.type == .flagsChanged {
             line += " \(event.keyCode)"
@@ -88,8 +90,9 @@ import HectorShell
         write(text)
     }
 
-    /// The key poll's state, written when it differs from the last state line.
-    func pollState(_ state: ShellKeyState, suspended: Bool) {
+    /// The full key poll's state (once per Mac tick, never while suspended), written when it differs from the last
+    /// state line.
+    func pollState(_ state: ShellKeyState) {
         let window = shell.currentWindow
         let responder: String
         if let first = window.firstResponder {
@@ -104,7 +107,7 @@ import HectorShell
             + " capsLock \(Self.yesNo(state.capsLock)) active \(Self.yesNo(NSApp.isActive))"
             + " keyWindow \(describe(NSApp.keyWindow)) currentIsKey \(Self.yesNo(window.isKeyWindow))"
             + " firstResponder \(responder) fullScreen \(Self.yesNo(shell.isFullscreen))"
-            + " suspended \(Self.yesNo(suspended)) hardware [\(hardware)] pad \(shell.view.padFrame.held.sorted())"
+            + " hardware [\(hardware)] pad \(shell.view.padFrame.held.sorted())"
         guard line != lastState else { return }
         lastState = line
         write(line)

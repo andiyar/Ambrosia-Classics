@@ -419,8 +419,12 @@ import Synchronization
 
     /// The Mac tick of the last full key poll.
     private var lastKeyPollTick: UInt32?
-    /// The Mac tick of the last attempt to take the keyboard back (`KeyboardFocus`); nil before the first.
+    /// The Mac tick of the last attempt to take the keyboard back (`KeyboardFocus`); nil before the first. Also
+    /// starts the recovery window in which held keys are read from the hardware.
     private var lastFocusReclaimTick: UInt32?
+    /// Attempts to take the keyboard back since the window was last key with the view first responder
+    /// (`KeyboardFocus.maxAttempts`).
+    private var focusReclaimAttempts = 0
 
     /// The keys for this fire. A pass can begin only when the Mac tick moves (the limiter and fades wait on it), so
     /// the full poll (`pollKeyState`: modifiers, Caps Lock, and HectorKit's `CGPreflightListenEventAccess` ⌘-release
@@ -431,7 +435,11 @@ import Synchronization
     /// whether its button is down (`Button()`), the clicks since the last fire.
     /// Before each full poll, a full-screen game window that another app's hidden panel has left without the keyboard
     /// takes it back (`KeyboardFocus.shouldReclaim`; Ben's bomb freeze, 2026-11-22), retried at most every quarter
-    /// second.
+    /// second and at most eight times (two seconds) after the window was last key with the view first responder; then
+    /// the game stops trying until that is true again (so a panel another app opens on a second display is not fought
+    /// for longer than that). Losing key drops every held key in the view, so for two seconds after each attempt the
+    /// held set is the view's plus the game's bound keys that the hardware reports down
+    /// (`KeyboardFocus.recoveredHeld`): a key held across the steal keeps working without a re-press.
     /// In the background (a Quit request pumped while suspended) the driver gets NO live input: nothing held, the
     /// mouse button up, no mouse position, no poll (no pad keys), Caps Lock as last seen while active — only what
     /// was queued (the shell's events; any key or click queued before the switch) — so nothing the player does in
@@ -452,31 +460,47 @@ import Synchronization
             lastKeyPollTick = tick
             let window = shell.currentWindow
             let viewIsFirst = window.firstResponder === shell.view
-            if KeyboardFocus.shouldReclaim(appActive: NSApp.isActive, fullScreen: shell.isFullscreen,
-                                           suspended: suspended,
-                                           questionUp: pendingQuestion != nil || NSApp.modalWindow != nil,
-                                           windowIsKey: window.isKeyWindow, firstResponderIsView: viewIsFirst,
-                                           ticksSinceLastAttempt: lastFocusReclaimTick.map { tick &- $0 }) {
+            if window.isKeyWindow && viewIsFirst { focusReclaimAttempts = 0 }
+            let reclaim = { (attempts: Int) in
+                KeyboardFocus.shouldReclaim(appActive: NSApp.isActive, fullScreen: self.shell.isFullscreen,
+                                            suspended: self.suspended,
+                                            questionUp: self.pendingQuestion != nil || NSApp.modalWindow != nil,
+                                            windowIsKey: window.isKeyWindow, firstResponderIsView: viewIsFirst,
+                                            ticksSinceLastAttempt: self.lastFocusReclaimTick.map { tick &- $0 },
+                                            attemptsSinceKey: attempts)
+            }
+            if reclaim(focusReclaimAttempts) {
                 lastFocusReclaimTick = tick
+                focusReclaimAttempts += 1
                 window.makeKeyAndOrderFront(nil)
                 if !viewIsFirst { window.makeFirstResponder(shell.view) }
                 keyLog?.note("reclaim keyboard")
+            } else if focusReclaimAttempts == KeyboardFocus.maxAttempts && reclaim(0) {
+                // Only the limit stopped a ninth try: counted past it so the give-up is noted once.
+                focusReclaimAttempts += 1
+                keyLog?.note("reclaim gave up")
             }
             shell.view.padMapping = driver.padContext.map {
                 DeimosPadLayout.mapping(keySet: driver.padKeySet, context: $0)
             } ?? ShellPadMapping(bindings: [:])
             state = shell.view.pollKeyState()                           // the pad's key events arrive from here
+            keyLog?.pollState(state)
         } else {
             state = shell.view.keyState
         }
-        keyLog?.pollState(state, suspended: suspended)
+        var held = state.held
+        if KeyboardFocus.inRecovery(ticksSinceLastAttempt: lastFocusReclaimTick.map { tick &- $0 }) {
+            held = KeyboardFocus.recoveredHeld(held: held, bound: driver.padKeySet.codes, isDown: {
+                CGEventSource.keyState(.combinedSessionState, key: CGKeyCode($0))
+            })
+        }
         var capsLock = state.capsLock
         lastActiveCapsLock = capsLock
         #if DEBUG
         if debugCapsLockHeld(seconds: seconds) { capsLock = true }
         #endif
         // The queued input goes to exactly one `idle` (the driver queues it into its next pass).
-        let keys = HeldKeys(held: state.held, capsLock: capsLock, typed: pendingTyped,
+        let keys = HeldKeys(held: held, capsLock: capsLock, typed: pendingTyped,
                             mouse: Self.mousePoint(shell.view.logicalMouseLocation()),
                             mouseButton: NSEvent.pressedMouseButtons & 1 != 0, mouseDowns: pendingMouseDowns,
                             keyEvents: pendingKeyEvents, events: pendingEvents)
@@ -582,7 +606,7 @@ import Synchronization
     /// entry and the controls window read them) with its virtual key code; a key whose characters give no charCode
     /// is still a key event, with charCode 0.
     func shellView(_ view: ShellView, keyDown event: NSEvent) {
-        keyLog?.view("keyDown", event)
+        keyLog?.viewEvent("keyDown", event)
         let codes = Self.macCharCodes(event.characters ?? "")
         for code in codes.isEmpty ? [0] : codes {
             pendingKeyEvents.append(KeyEvent(charCode: code, keyCode: event.keyCode, autoRepeat: event.isARepeat))
@@ -593,8 +617,8 @@ import Synchronization
 
     /// A key-up or modifier change in the view: nothing for the game (play polls `keyState`, which the view keeps
     /// itself); logged only, when the key log is on.
-    func shellView(_ view: ShellView, keyUp event: NSEvent) { keyLog?.view("keyUp", event) }
-    func shellView(_ view: ShellView, flagsChanged event: NSEvent) { keyLog?.view("flagsChanged", event) }
+    func shellView(_ view: ShellView, keyUp event: NSEvent) { keyLog?.viewEvent("keyUp", event) }
+    func shellView(_ view: ShellView, flagsChanged event: NSEvent) { keyLog?.viewEvent("flagsChanged", event) }
 
     /// A pad key pressed (HectorKit D16, from `pollKeyState`): a key-down as the keyboard's would be — a key event
     /// and its typed character, for the keys a pad layout binds outside play (`PadKeys`). A held pad key never
@@ -652,7 +676,7 @@ import Synchronization
     /// 640×480 picture under the current scale (`ShellScaling.logicalPoint`, unclamped, as the original's
     /// `GlobalToLocal`).
     func shellView(_ view: ShellView, mouseDown event: NSEvent) {
-        keyLog?.view("mouseDown", event)
+        keyLog?.viewEvent("mouseDown", event)
         let inView = view.convert(event.locationInWindow, from: nil)
         pendingMouseDowns.append(Self.mousePoint(ShellScaling.logicalPoint(
             viewPoint: inView, imageRect: view.imageRectInPoints, logicalWidth: Self.width, logicalHeight: Self.height)))

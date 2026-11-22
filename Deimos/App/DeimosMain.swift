@@ -33,7 +33,8 @@ struct LaunchOptions {
     /// ◇ Hidden key log (the bomb-freeze diagnosis, Ben's first playtest): `-keylog`, or the user default `keylog`
     /// (`defaults write com.ambrosiaclassics.deimos keylog -bool YES`, for a double-click launch; handed in as
     /// `keyLogDefault`). The app then records the key events and keyboard focus it sees to
-    /// `~/Library/Logs/Deimos Rising/keys.log` (`KeyLog`); off, nothing is installed.
+    /// `~/Library/Logs/Deimos Rising/keys.log` (`KeyLog`); off, nothing is installed. To turn the default off again:
+    /// `defaults delete com.ambrosiaclassics.deimos keylog`.
     var keyLog = false
     #if DEBUG
     /// DEBUG only (A3's machine check): `-debugCapsLock <seconds>` simulates Caps Lock down through `HeldKeys` from
