@@ -2760,3 +2760,32 @@ Ben's answers are in `~/.claude/coordinator-notes/deimos-phase4-mailbox.md`; the
    `git diff 38d0579 -- Ferazel/Core/Sources` shows six comment lines with line counts kept (D61.4's form).
 6. **No memory note was written for this run.** The run taught no new standing rule, and the memory index is past
    its size limit; the run's record is this entry, the plan's "As executed — 6A-CH2" and the handoff.
+
+## D63 — Ferazel's Wand: run 64's rulings (6A-L18 — level 18 opens; the wave 6A.3 end; 2026-11-22)
+
+1. **The draw-mode audit's proofs are inside a level task's fence when the level's data breaks a proof's premise
+   and the game is right** (D54.1 / D60.1's form). Level 18 is the first built level whose light grid is all −1;
+   the audit proved a renderer refusal unreachable by "every light byte is 0…15". The seat ruled the proof
+   replaced, not loosened, after the spec leg read the dump: for a level with an out-of-range light byte the audit
+   now asserts the darkness switch is off, that no record type, spawner or crate drop on the level is one of the
+   original's six dynamic-light writers, and that its scripted run saw no dynamic-light sprite. The same ruling
+   lets the held item — and only the held item, matched by id — draw with water kind 0, as the original always
+   does. A fix round made the edits; the quality leg broke each proof on purpose and each failed.
+2. **D61.3's allowed move was not used.** The four headless frames in `ChiefTests` stay (a rules test never has
+   picture bounds); the real-picture frames (lock 111, awake 124, first jump 179, landing 215) are pinned in the
+   level's own activation test beside a headless twin. Both legs agreed.
+3. **"The bot's quick mode on 18 meets the Chief" is met by one seed of four** (seed 1 locks the arena, fights him
+   and dies once; the other three leave by the exit beside the start), with 0 failures. Accepted: the gate asks
+   for a meeting, not a kill, and the scripted fight (run 63) is the kill's proof. The bot's summary line cannot
+   show a meeting; a probe had to.
+4. **The sweep ran beside the review legs and both fix rounds**, at the task commit's game source (D60.4's form);
+   both rounds were held to tests and comments and `git diff c09d5c1 a66d567` over the three source folders is empty.
+5. **The wave 6A.3 end's launch checks were done by day in the same run** (Proof B detached per D59.1, the smoke),
+   at the merged commit. **The Fable cross-check was not started**: weekly Fable usage stood at 75% (the chip's
+   limit is about 70%) and the seat's context was past 210k. It opens run 65, before the next wave's first task,
+   as the plan's "Wave end" rule allows.
+6. **For 6A-BD and 6A-L20 (not ruled here):** level 20's light grid is also all −1 and its blades take dynamic
+   light, so the original itself draws through an out-of-range table read there. That task's seat rules what the
+   port draws; nothing in run 64 depends on it.
+7. **No memory note was written** (D62.6's reasons hold).
+

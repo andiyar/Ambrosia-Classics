@@ -1,20 +1,20 @@
 STATUS: CONTINUE
 
-# NEXT — Ferazel's Wand, run 64: 6A-L18 (level 18 "Goblin Chief" opens) and the wave 6A.3 end
+# NEXT — Ferazel's Wand, run 65: the wave 6A.3 cross-check, then wave 6A.4 begins (6A-CL, 6A-BD, 6A-MP)
 
 You are the seat for **Ferazel's Wand** in Ambrosia Classics, repo `/Users/andiyar/Developer/Ambrosia-Classics`
-(`$REPO`). Method: `~/Developer/Toolkits/fable-kit/orchestrator.md`. This is a build run with a wave end. In your first
-message say which model you are and, in one sentence, what you will do first; then start. **If a Coordinator session
-started you, its overrides win over this file** (who starts the next session, the handoff's name, foreground-only work,
-removing your worktree).
+(`$REPO`). Method: `~/Developer/Toolkits/fable-kit/orchestrator.md`. This run opens with a review, then builds. In your
+first message say which model you are and, in one sentence, what you will do first; then start. **If a Coordinator
+session started you, its overrides win over this file** (who starts the next session, the handoff's name,
+foreground-only work, removing your worktree).
 
-**Authority:** `docs/superpowers/plans/2026-11-04-ferazel-remainder.md` — the one plan. This run's card:
-`#### 6A-L18` in "Wave 5 — Phase 6A" (then `#### 6A-CL`, a later run's), with that section's opening rules,
-"Verification-model additions for 6A" (the gate bundles: **Gate-L** for a level task, **Wave end**), "The sweep's and
-the bot's budget as levels 10–22 join" and "Execution order". The seat reads the cards and the gate block only;
-implementers read "0. The verification model", "Invariants and hazards" and "Shared architecture" themselves. As
-models read "As executed — 6A-L15" (the last level opened, run 61) and "As executed — 6A-CH1" and "— 6A-CH2" (the
-boss this level holds). Nothing else is a plan.
+**Authority:** `docs/superpowers/plans/2026-11-04-ferazel-remainder.md` — the one plan. This run's cards:
+`#### 6A-CL`, `#### 6A-BD`, `#### 6A-MP` in "Wave 5 — Phase 6A", with that section's opening rules ("Every
+engine-feature task"), "Verification-model additions for 6A" (the level fixture; the gate bundles: **Gate-F**;
+**Wave end**) and "Execution order". The seat reads the cards and the gate block only; implementers read
+"0. The verification model", "Invariants and hazards" and "Shared architecture" themselves. As models read
+"As executed — 6A-RN" (the last engine feature built on a fixture, run 60) and "As executed — 6A-L18" (run 64).
+Nothing else is a plan.
 
 ## Read first
 1. `CLAUDE.md` (repo root).
@@ -22,93 +22,88 @@ boss this level holds). Nothing else is a plan.
 3. `docs/QUESTIONS.md` "Open" — act first on any new text under an `Answer:` and record it in `docs/DECISIONS.md`
    (Q18 is Ben's Phase 5 gate: notes become tasks at the head of the order; a fail stops the build and becomes a fix
    wave. Q21: whether the sweep and the bot may run detached. Q19: his choices on the 6A plan).
-4. `docs/DECISIONS.md` D62, D61 (D61.3 above all: this task re-measures the Chief's four headless frames), D60, D59
-   (D59.1: the one script that may run detached), D54, D51, and the newest `docs/handoff-*-ferazel-run63.md`.
+4. `docs/DECISIONS.md` D63 (D63.6 above all: the blade task meets a case the original itself gets wrong), D62, D61,
+   D59 (D59.1: the one script that may run detached), D54, D51, and `docs/handoff-2026-11-22-ferazel-run64.md`.
 
 ## Before anything else
-- **The time of day** (`date`). The wave end needs daylight: the Windows test run and the smoke are launches, muted,
-  **09:00–21:00 only**. The level task itself is headless and may run at any hour. If you start at night, build and
-  gate the level, and leave the wave end's two daytime checks as the first act of the next run that starts by day
-  (the plan's "Wave end" rule allows exactly that) — say so in STATE, NEXT and the handoff.
-- **The weekly usage limit** (`get_usage`). Above about 70%, do not start the wave end's cross-check. (Run 63 closed
-  near 50% all models, 60% Fable; the week resets on 2026-11-24 at 02:00 Sydney time.)
-- **Your own context.** Read the meter before every dispatch. Run 63 began at 114k, was at 140k before its first
-  dispatch and about 200k at its close, after one ⚑ task (four helper reports) and seventeen suite commands.
+- **The weekly usage limit** (`get_usage`). Run 64 closed at 75% Fable, about 60% all models; the week resets on
+  2026-11-24 at 02:00 Sydney time. The cross-check below is the Fable-heavy part and it must come before 6A-CL. Do
+  it lean (the diff by file, the review findings, the gate numbers — not whole sources). If the limit is so close
+  that you cannot finish it, close with that as your reason rather than skip it.
+- **Your own context.** Read the meter before every dispatch. Run 64 began at 116k, was at 148k before its first
+  dispatch and about 230k at its close, after one task (five helper reports) and about forty gate commands.
 - **How long one command may run.** `echo "$CLAUDE_CODE_DISABLE_BACKGROUND_TASKS"`: `1` means background work is off
   and a foreground command is cut off at ten minutes. Then every suite runs in parts (below), **never two parts
   chained in one command**. Only `tools/windows/proof-b-ferazel.sh` may run detached (D59.1).
+- **The time of day** (`date`). Nothing in this run needs a launch: the three tasks are headless (Gate-F), and wave
+  6A.3's launch checks were done in run 64.
 
 ## Reconcile first
-- `git -C "$REPO" worktree list`, `git -C "$REPO" log --oneline -8 main`: main at or past run 63's close. Other
+- `git -C "$REPO" worktree list`, `git -C "$REPO" log --oneline -8 main`: main at or past run 64's close. Other
   sessions (Deimos, Castles) also merge to local main: merge main into your branch before each `--ff-only`, and
-  check the next free D-number at the close (D63 unless another project took it).
-- G1 HectorKit per the plan's gate table (main ef2c341, clean, at run 63).
-- G2 is not owed at the start (run 63's own, at f523e2a: **760**, 0 failed, the two opt-in skips by name). At each
+  check the next free D-number at the close (D64 unless another project took it).
+- G1 HectorKit per the plan's gate table (main ef2c341, clean, at run 64).
+- G2 is not owed at the start (run 64's own, at a66d567: **764**, 0 failed, the two opt-in skips by name). At each
   merge it runs from a `git archive` copy with `HECTORKIT_PATH=$HOME/Developer/HectorKit` set (game data is in git,
   so the copy is complete). After one `swift build --build-tests` in `Ferazel/Core`, each part is its own command,
-  `swift test --skip-build --filter …` (run 63's times):
+  `swift test --skip-build --filter …` (run 64's times):
 
   | part | tests | time |
   |---|---:|---:|
-  | `--filter FerazelCoreTests` | 591 | 109 s |
-  | `--filter 'FerazelRenderTests\.[A-C]'` | 27 | 260 s |
-  | `--filter 'FerazelRenderTests\.[D-E]' --skip DrawModeAuditTests` | 16 | 55 s |
-  | `FERAZEL_AUDIT_LEVELS=1,2,3,4,5 … --filter DrawModeAuditTests/testEveryWrittenModeIsDrawable` | 1 | 191 s |
+  | `--filter FerazelCoreTests` | 593 | 110 s |
+  | `--filter 'FerazelRenderTests\.[A-C]'` | 27 | 273 s |
+  | `--filter 'FerazelRenderTests\.[D-E]' --skip DrawModeAuditTests` | 16 | 53 s |
+  | `FERAZEL_AUDIT_LEVELS=1,2,3,4,5 … --filter DrawModeAuditTests/testEveryWrittenModeIsDrawable` | 1 | 188 s |
+  | `FERAZEL_AUDIT_LEVELS=10,11,15 …` the same test | (the same 1) | 331 s |
+  | `FERAZEL_AUDIT_LEVELS=18 …` the same test | (the same 1) | 40 s |
+  | `FERAZEL_AUDIT_LEVELS=1,2,3,4,5 … --filter DrawModeAuditTests/testEveryRefusalIsUnreachable` | 1 | 191 s |
   | `FERAZEL_AUDIT_LEVELS=10,11,15 …` the same test | (the same 1) | 335 s |
-  | `FERAZEL_AUDIT_LEVELS=1,2,3,4,5 … --filter DrawModeAuditTests/testEveryRefusalIsUnreachable` | 1 | 209 s |
-  | `FERAZEL_AUDIT_LEVELS=10,11,15 …` the same test | (the same 1) | 348 s |
-  | `--filter 'FerazelRenderTests\.[F-K]'` | 38 | 193 s |
-  | `--filter 'FerazelRenderTests\.L'` | 15 | 300 s |
-  | `--filter 'FerazelRenderTests\.[M-Z]'` | 69 + the 2 skips | 162 s |
+  | `FERAZEL_AUDIT_LEVELS=18 …` the same test | (the same 1) | 44 s |
+  | `--filter 'FerazelRenderTests\.[F-K]'` | 38 | 186 s |
+  | `--filter 'FerazelRenderTests\.L'` | 17 | 357 s |
+  | `--filter 'FerazelRenderTests\.[M-Z]'` | 69 + the 2 skips | 152 s |
 
-  **When level 18 opens, add `FERAZEL_AUDIT_LEVELS=18` as its own command for each of the two audit tests** (the
-  `10,11,15` groups are already near six minutes). The `\.L` part gains level 18's picture test: time it early and
-  split it if it nears seven minutes.
+  The `\.L` part is the longest: if a task adds a test whose class starts with L, time it early and split the part.
+  New feature pictures land in `FeatureGoldenTests` (the F–K part): split that part if it nears seven minutes.
   Each log ends with a second, empty bundle's "Executed 0 tests" — count the `Test Case … passed` lines instead. A
   wrong filter runs zero tests and still exits 0. This Mac has no `timeout` command — use the Bash tool's own timeout.
-- GW2 (86 → **87** in this run): after `swift build --build-tests` in `Ferazel/Windows` —
-  `'FerazelWinKitTests\.B'` (10, 317 s), `'FerazelWinKitTests\.(F|T)'` (19, 177 s),
-  `'FerazelWinKitTests\.Win(D|F|G)'` (26, 338 s), `'FerazelWinKitTests\.Win(O|R|S|V)'` (26 + the 2 skips, 143 s),
-  and `WinLevelReferenceTests` one test a command: `WinLevelReferenceTests/testLevel10FirstFrameReference`,
-  `…Level11…`, `…Level15…` (170 / 153 / 123 s), and the new `…Level18…`.
+- GW2 (**87**, unchanged by this run's three tasks): after `swift build --build-tests` in `Ferazel/Windows` —
+  `'FerazelWinKitTests\.B'` (10, 348 s), `'FerazelWinKitTests\.(F|T)'` (19, 173 s),
+  `'FerazelWinKitTests\.Win(D|F|G)'` (26, 312 s), `'FerazelWinKitTests\.Win(O|R|S|V)'` (26 + the 2 skips, 147 s),
+  and `WinLevelReferenceTests` one test a command: `…/testLevel10FirstFrameReference`, `…Level11…`, `…Level15…`,
+  `…Level18…` (172 / 152 / 121 / 125 s).
 - **A seat's command may run beside ONE working helper**: send the helper's dispatch and the one command in the same
   message.
 
 ## This run
 
-| task | what it must produce | Core after | WinKit after |
+| step | what it must produce | Core after | WinKit after |
 |---|---|---|---|
-| **6A-L18** | level 18 "Goblin Chief" can be entered; its first picture pinned on both paths; the Chief's wake-up frame on the real level measured; every object visited and the bot run on all nine levels | 764 | 87 |
-| wave 6A.3 end | the census, the Windows test run by day, the smoke by day, the Fable cross-check of the wave's whole diff | 764 | 87 |
+| **the wave 6A.3 cross-check** | the Fable seat's own review of the wave's whole diff and gate numbers; findings to one fix round | 764 | 87 |
+| **6A-CL** | clouds, on a level-20 fixture | 771 | 87 |
+| **6A-BD** | the rotating blade and the segment test | 784 | 87 |
+| **6A-MP** | programmed-path maces, modes 1 and 2 | 791 | 87 |
 
-- **6A-L18 with Gate-L**: one `fk-implementer`, then two Opus review legs (spec, then quality with a mutation table,
-  told what leg 1 found), a fix round, the seat's own G2 and GW2 at the merge, G3, then the full sweep and bot.
-- **Known before you brief (from runs 62 and 63):**
-  - **D61.3:** `testChiefFirstJumpAfterLock` pins four frames measured headless (lock 111, awake 121, first jump 176,
-    landing 212). With real pictures his wake rectangle is his picture's, not a whole cell, so they may differ. This
-    task re-measures them with pictures and **may move those four values, and only those** — old → new in the commit
-    body and As executed.
-  - Run 63's scripted fight already runs with real pictures through `LevelFixtureServices` (arena lock on frame 111;
-    health 0 on 1602; Kill on 1710). Those are pinned and may not move: if opening the level moves them, STOP.
-  - The picture loader now loads his four level-coloured sets under colour table 224 (D62.1). Level 18's first
-    picture is the first to show the level through it.
-  - **The bot's quick mode on level 18** is owed by 6A-CH1 and 6A-CH2 (Gate-B) and is made here:
-    `FERAZEL_BOT_LEVELS=18 FERAZEL_BOT_MINUTES=1 tools/ferazel-random-play.sh core`, 0 failures, its `== core:` line
-    recorded.
-  - The card says 34 records with 6 refused "before 6A-BG1c": the plants and the Chief are built now, so expect 0
-    refused. The data wins; the implementer reports any difference.
-- **The full check after the level opens**, under the ten-minute limit (D59.4 / D60.4): the sweep one level group a
-  command — `JOBS=4 FERAZEL_VISIT_LEVELS=<ids> tools/ferazel-visit-sweep.sh core`, then `… windows` — with the groups
-  `1,2` / `3,4` / `5` / `10` / `11` / `15` / `18`. The bot as one command a shell: `JOBS=4
-  tools/ferazel-random-play.sh core`, then `windows` (80 s, 95 s at eight levels). Add the `== core:` /
-  `== windows:` lines up and record them. The sweep may run beside the review legs at the task commit **only if** the
-  fix round is then held to tests and comments and `git diff` proves it touched no game source; otherwise run it
-  again.
-- **The wave 6A.3 end** (by day): G3; Proof B detached as D59.1 allows — `tools/windows/proof-b-ferazel.sh`, expected
-  **761 passed / 0 failed / 3 skipped / 0 crashed (of 764)**; the smoke (GW4R); then **your own cross-check** — the
-  one review the Fable seat does itself — over the whole wave's diff (6A-BG1c, 6A-RN, 6A-L15, 6A-CH1, 6A-CH2,
-  6A-L18) and its gate numbers, before the next wave's first task. Findings go to one fix round. If the context is
-  spent, the cross-check opens the next run.
+- **The cross-check first, before any task** (the plan's "Wave end" rule; the one review the Fable seat does
+  itself). The wave is 6A-BG1c, 6A-RN, 6A-L15, 6A-CH1, 6A-CH2, 6A-L18: `git diff 66875a3 a66d567` (66875a3 is the
+  last commit before 6A-BG1c's work — confirm with `git log`), read by file with the six "As executed" notes and
+  D59–D63 beside it. Its gate numbers are in STATE's table, all taken at a66d567. Look hardest at what no single
+  task's reviewers could see: things two tasks both touched (the picture loader, the draw-mode audit's rows and its
+  two new proofs from run 64, the Smite list, `LevelRun`), stand-ins left behind, and comments that still promise
+  work a later task already did. Findings go to **one** fix round (an `fk-implementer`), reviewed by one Opus leg,
+  then G2 and GW2 in parts if any source or test moved.
+- **Then the three tasks, in the card order, one at a time** (each measures on a fixture the one before it defines —
+  never two at once): one `fk-implementer`, then two Opus review legs (spec, then quality with a mutation table,
+  told what leg 1 found), a fix round, the seat's own G2 and GW2 at the merge. Gate-F: no sweep or bot is owed
+  (no level opens), and nothing is launched.
+- **Known before you brief 6A-BD (D63.6):** level 20's light grid is all −1 (19,200 cells), and its 28 blades
+  (type 3060) take their brightness from the cell they sit on. The original then draws with the word `0xbff00 + F`,
+  which reads its grey-pull table far before the table's start (`.BlitEncFaceTransClip`, M l. 23277–23286): there
+  is no defined picture to copy. The blade task must find out what the original actually shows there (the bytes it
+  reads are whatever sits before the table — look at what that memory is in the dump's data section), and you rule
+  what the port draws before the fixture's picture is measured. If only Ben can say, queue it in QUESTIONS and build
+  the rest of the card around it. Run 64's audit proof for such levels ("no dynamic-light sprite can exist here")
+  will not hold on level 20 and will need its own replacement when 6A-L20 opens the level — not in this run.
 - Brief each leg with the card, the document sections and dump spans the card cites, and the test names; do not
   pre-read source.
 - **The fix round** is a fresh `fk-implementer` briefed from the two review files and the reviewer's verified patch
@@ -118,23 +113,26 @@ boss this level holds). Nothing else is a plan.
   and hand back a verdict; leg 2 also writes a proposed-asserts patch and verifies it. Each leg builds in its own
   `mktemp` copy (`git archive <sha> | tar -x`, `HECTORKIT_PATH` set). Tell every helper to commit before it reports.
 - **Check a card's numbers against the level data before briefing** (D56.1), or tell the implementer plainly that
-  they are unchecked. The data wins; where the dump and the card disagree, the dump wins (ten times in runs 60–63).
-- **A helper whose edit is refused as outside its fence** reports it; the seat rules (D54.1, D61.1, D62.1) and the
-  fix round makes the change with the ruling written in its brief. The seat does not make the edit for it.
+  they are unchecked. The data wins; where the dump and the card disagree, the dump wins (eleven times in runs 60–64).
+- **A helper whose edit is refused as outside its fence** reports it; the seat rules (D54.1, D61.1, D62.1, D63.1) and
+  a fix round makes the change with the ruling written in its brief. The seat does not make the edit for it.
 - **Pinned values.** Each card names what may change. Nothing else may move: the pictures and state pins of levels
-  1–5, 10, 11 and 15, the Windows level references, every fixture picture, the two chapter cards, the Chief's fight
-  frames — the values are in the plan's "Goldens" paragraph and the "As executed" notes. A moved value the card (or
-  D61.3) does not name is a STOP.
+  1–5, 10, 11, 15 and 18, the Windows level references, every fixture picture, the two chapter cards, the Chief's
+  fight frames (111 / 1602 / 1710) and wake-up frames. A moved value the card does not name is a STOP.
 - A picture's start point must actually show the feature (D51.1, D53.1), **proven inside the test by a twin with the
   feature off** (D54.2).
 - **A review leg's new asserts go inside the card's named tests** (D51.2): the ladder is the card's number.
 - After any commit that moves Core source or audit-test lines, run
   `python3 -I -B tools/ferazel/later-levels-ledger.py --check`; if it says a generated block is stale, `--write`, check
-  again, and commit the ledger. Delete any `__pycache__` under `tools/ferazel/` and `docs/ferazel/tools/`.
+  again, and commit the ledger. A task that builds a type the script still calls refused must give the script a
+  built arm (D61.1). Delete any `__pycache__` under `tools/ferazel/` and `docs/ferazel/tools/`.
+- **If the context will not hold all three tasks**, finish the one in flight at about 240k and close; the rest head
+  the next run.
 
 ## After this run
-Wave 6A.4 "Hangnabit to the Labyrinth": 6A-CL, 6A-BD, 6A-MP (clouds, the rotating blade, programmed maces), then
-levels 20, 21 and 22, then the phase end (6A-END) and Ben's gate card. Never two ⚑ tasks at once.
+Level 20 "Hangnabit" (6A-L20, with the full sweep and bot on ten levels — split the Windows-path sweep of levels 3
+and 4 into one level a command: together they took 509 s in run 64), then 6A-PS, 6A-L21, 6A-CP, 6A-L22, the phase
+end (6A-END) and Ben's gate card.
 
 ## Binding rules
 - Launch a build only **muted**, few and short, **never 21:00–09:00** — LAUNCH GUARD first. Headless work any hour.
@@ -148,13 +146,13 @@ levels 20, 21 and 22, then the phase end (6A-END) and Ben's gate card. Never two
 
 ## Close (in this order)
 1. Merge to local main `--ff-only` by SHA.
-2. "As executed" under the card; the plan's "Goldens" paragraph gains new values; rulings in `docs/DECISIONS.md`
+2. "As executed" under each card; the plan's "Goldens" paragraph gains new values; rulings in `docs/DECISIONS.md`
    under the next free number.
 3. `docs/STATE.md`: replace the Ferazel block with today's state only; settled bits to the top of
    `docs/STATE-history.md`. One line in `docs/LOOP-LOG.md`. A short handoff with the real start and end times from
    `date`. A memory note only if the run taught a new standing rule (D62.6).
-4. Rebuild this file from nothing for the next run (wave 6A.4's first tasks per the plan's "Execution order"; or the
-   wave 6A.3 end's daytime checks first, if they are still owed).
+4. Rebuild this file from nothing for the next run (the tasks left of this wave, then 6A-L20, per the plan's
+   "Execution order").
 5. Push main, then start the next attended session (`start_session`, fresh context, brief "read docs/NEXT.md and run
    it") — unless a Coordinator started you (then it starts the next one), or a question only Ben can answer blocks the
    next step (then `STATUS: BLOCKED`, the item in QUESTIONS with `Blocks: everything`, no new session).

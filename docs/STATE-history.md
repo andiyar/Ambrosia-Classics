@@ -4,6 +4,18 @@
 > only). Nothing current reads this file; the live state is `docs/STATE.md`. Each later close that settles something
 > adds a dated section at the top, newest first. The two snapshots below are verbatim (headings demoted only).
 
+## Settled at Ferazel run 64's close (2026-11-22)
+
+- Level 18 "Goblin Chief" opened (6A-L18: task c09d5c1, audit proofs 414047f, ledger 330b937, fix round 266b72e,
+  ledger a66d567; merged at a66d567); Core suite 760 → 764, Windows kit 86 → 87; the sweep and bot clean on nine
+  levels, both paths.
+- Run 62's and 63's debts paid: the Chief's wake-up measured with real pictures (awake 124, first jump 179,
+  landing 215; D63.2); the bot's quick mode on his level (D63.3).
+- Wave 6A.3's machine checks closed by day: census, Proof B 761 / 0 / 3 / 0 (of 764), the smoke. Only the seat's
+  cross-check of the wave remained, for run 65.
+- Before this run: the Goblin Chief was built whole but on no open level; levels playable were 1–5, 10, 11, 15;
+  Proof B and the smoke had last passed in run 60 (719 of 722).
+
 ## Settled at Ferazel run 63's close (2026-11-22)
 
 - The Goblin Chief's second half built (6A-CH2: loader 462ba91, task 40d6843, ledger ef4c7b0, audit anchors d5b6775,

@@ -256,6 +256,13 @@ init 209 / `0xdf7d3df30637a1eb`, f30 214 / `0x54da315df4a76b2c`, f120 214 / `0xd
 `testLevel15RainFeatureGolden` is deleted; its frame-2 values live on inside `testLevel15FirstFrameGolden`. No
 existing value moved.
 
+New in run 64 (6A-L18, the real level 18, seed 1): the first frame, tick 143, camera (1408, 338),
+`d3ce9327fd19d8b4` (ripple off `3267c6feda5903c7`); the Windows reference — flow step 609 (black), step 611
+`3cc8e65d285a207c` (the first rippled frame), step 689 `2941c3b772683f78`; `BootFacesTests` L18 init 48 /
+`0xfd976b95f50accb7`, f30 56 / `0xe5ae2ad490865daa`, f120 56 / `0x3538fd7f3aaa74e3`; the Chief with real pictures,
+LEFT held: lock 111, awake 124, first jump 179, landing 215 (the headless 111 / 121 / 176 / 212 in `ChiefTests`
+stay). No existing value moved.
+
 **What the machine does NOT prove:** the feel of every enemy's AI at 30 steps a second; the colours of the tint tables
 (through the replica's colour search, LOW); the underwater tint's strength on screen (gamma, MED); the OmniPx
 backdrop's look (MED); sound by ear. Agents cannot screenshot on this machine.
@@ -2385,6 +2392,68 @@ ids; its `--check` reads this table):
   **761 / 0 / 3 / 0 (of 764)**, GW4R by day, the Fable cross-check of BG1c…L18. **Commit:** `Level 18 enterable: the Goblin
   Chief's arena; 4 tests, 1 Windows reference`.
 
+- **As executed — 6A-L18 (run 64, 2026-11-22, 05:17 → the close, night into day):** task c09d5c1, fix round A
+  414047f (the draw-mode audit's two new proofs; the seat's ruling D63.1), ledger 330b937, fix round B 266b72e
+  (tests and comments), ledger a66d567; merged at a66d567. The only game-source change is `BuiltLevels.list` =
+  `[1, 2, 3, 4, 5, 10, 11, 15, 18]` (`git diff c09d5c1 a66d567 -- Ferazel/Core/Sources Ferazel/App
+  Ferazel/Windows/Sources` is empty). Legs: spec MERGEABLE AFTER FIXES (the audit red; the game change matches the
+  dump), quality MERGEABLE AFTER FIXES — 37 planted bugs, 29 caught, 5 harmless, 2 in-scope slips (both the
+  health-upgrade twin, which could not fail) closed by fix round B, 1 out-of-scope slip that `LevelFiveTests`
+  catches; no slip exposed a fault in game code.
+  - **Data over card:** 34 records, 15 types, **0 refused** (the card's 6 predates the plants and the Chief);
+    `refusedSpawns` 0. Start (1996, 605) facing left; music 23, then 30 once no boss is alive; the header values
+    as the card. Level 18 has no crates and no conversations.
+  - **New pins (measured, seed 1):** first frame tick 143, camera (1408, 338), `d3ce9327fd19d8b4`; it shows the
+    river ripple (the twin with the ripple off `3267c6feda5903c7`, 23,852 bytes differ) and not the Chief, who is
+    left of the view. Windows reference — first presented level frame, flow step 609, black; first rippled frame,
+    step 611, `3cc8e65d285a207c`; first faded-in frame, step 689, `2941c3b772683f78`. `BootFacesTests` level 18:
+    init 48 / `0xfd976b95f50accb7`, f30 56 / `0xe5ae2ad490865daa`, f120 56 / `0x3538fd7f3aaa74e3`. The load bar's
+    pinned 40.
+  - **D61.3 — the four headless frames did not move.** `ChiefTests` runs on the headless stub, which never has
+    picture bounds, so lock 111 / awake 121 / first jump 176 / landing 212 stay true there. With real pictures on
+    the real level (LEFT held) `testLevel18ChiefActivationFrame` pins lock 111, **awake 124**, first jump 179,
+    landing 215 beside the headless twin; the spec leg derived 124 from the dump's wake test (his picture's
+    rectangle x 930…1110 against the window's left edge). The fight's 111 / 1602 / 1710 are untouched.
+  - **Parameter trace** (the same list from the implementer's script and the spec leg's own): gates 2940 p1 0,
+    decorations p2 11, scroll 2000 p1 4, health upgrade 1340 p1 1 — each arm built and right (gate M l.
+    61021–61031; decorations 59674–59677; scroll 52723–52735 and 48941; the upgrade reads no record word).
+  - **Re-derived list pins (the list gaining 18, nothing more):** the not-built probes 18 → 20 in four classes;
+    `GameFlowGameTests` — start-level 18 gives 18 and 20 gives 1, the not-built walk now enters 18 and ends at
+    "Level 40 is not built yet", the not-built save names 20; `FerazelSettingsTests` 18 → 18 and 20 → 1. No other
+    pinned value moved (levels 1–5, 10, 11, 15, their Windows references, fixtures, the chapter cards).
+  - **Outside the card's fence, by the seat's ruling (D63.1):** level 18 is the first built level whose light grid
+    is all −1 (2,048 cells), which broke the audit's proof "every light byte is 0…15". The proof is now, for a
+    level with an out-of-range byte: the darkness switch 0x2706 is 0 (the tile pass never reads the byte, M l.
+    13643–13652); no record type on the level, no spawner and no crate drop is one of the dump's six dynamic-light
+    writers (raft M l. 55695, chain 56001, boulder 60284, snowball 61013, mace ball 63171, blade 63526); and the
+    scripted run saw no dynamic-light sprite and no `0xbff00 + F` word. Levels with bytes in range keep their old
+    asserts. Second, the held item's water kind is always 0 in the original (set by `InitSprite` M l. 35668, never
+    again; drawn at M l. 10360–10363), so kind 0 is allowed only for draws matched to the held sprite by id.
+    Both legs broke each new proof on purpose and each failed as it should.
+  - **Gate-B's bot check, owed by 6A-CH1 / CH2:** quick mode on 18 — `== core: random play — levels 1, seeds 4,
+    steps 7200, deaths 1, exits 17, conversations 0, saves 0, failures 0 in 169 s`. The quality leg's probe: seed 1
+    locks the arena, fights the Chief for 1,481 ticks and dies once; seeds 2–4 leave by the back exit beside the
+    start. Accepted as "meets the Chief" (D63.3); the bot never kills him.
+  - **Gates at a66d567 (the seat's own runs from a `git archive` copy, foreground, in parts):** G2 **764** = 593
+    rules + 171 render, 762 passed, 0 failed, the two opt-in skips by name (rules 110 s; A–C 273; D–E without the
+    audit 53; the audit's first test 188 + 331 + 40 for levels 1–5 / 10, 11, 15 / 18; its second 191 + 335 + 44;
+    F–K 186; L 357; M–Z 152); GW2 **87** = 85 passed, 0 failed, the two skips (B 348, F|T 173, Win D|F|G 312,
+    Win O|R|S|V 147, the four level references 172 / 152 / 121 / 125 s); G3 `Totals: items 1,108 decoded,
+    failures 0`; G5 / GW1 / GW3 / GW4 the implementer's at c09d5c1. **Full GE, 9 levels, 4 workers, a level group
+    a command** (game source as c09d5c1): sweep core **7,192 visits, rows 0** (1,869 s in seven commands: 307 /
+    355 / 44 / 379 / 472 / 130 / 182), windows **7,192, rows 0** (1,928 s: 385 / 509 / 45 / 315 / 406 / 158 /
+    110); bot core `levels 9, seeds 4, steps 194400, deaths 29, exits 292, conversations 33, saves 2, failures 0
+    in 91 s`, windows the same counts `in 108 s`.
+  - **Wave 6A.3 end, by day (2026-11-22, 11:20–11:40):** GWB detached (D59.1) **761 passed / 0 failed / 3 skipped
+    / 0 crashed (of 764)**, about 19 min; GW4R exit 0, main menu identical, `video=dummy audio=none`. **The Fable
+    cross-check of the wave's diff (6A-BG1c … 6A-L18) is still owed** — it opens run 65, before 6A-CL (weekly
+    Fable usage 75% and the seat's context past 210k at the close).
+  - **Owed on:** **level 20's light grid is also all −1 (19,200 cells) and its 28 blades (type 3060) do take
+    dynamic light** — the original really reaches the word `0xbff00 + F` there, which reads the grey-pull table far
+    before its start (`.BlitEncFaceTransClip`, M l. 23277–23286), so the port has no defined picture to copy.
+    6A-BD must rule on it before it measures its fixture, and 6A-L20's audit proof will not hold as written.
+    Level 15's audit run never puts the held item under a liquid.
+
 #### 6A-CL — minor — clouds (→ 771)
 - **Files:** `Sources/FerazelCore/Sprites/SetupFaces.swift` (`:430`), `Sources/FerazelCore/World/Movers/BackgroundSprite.swift`,
   `Sources/FerazelCore/Front/LevelRun.swift` (the cloud singles #132–#135 marked), `Tests/FerazelCoreTests/CloudTests.swift`
@@ -2686,7 +2755,7 @@ bot plays 4 seeds × 3 minutes a level = 21,600 steps a level (108,000 on 1–5,
 | Phase 5 (measured) | 5 | 3,488 | 108,000 | ~12 min on 1–4 (3,360 visits, measured at 6a70bce); 1–5 not recorded | Core ~130–140 MB; Windows ~295 MB after the leak fix (one worker, levels 1 / 4 / 5) — measured 2026-11-10 |
 | 6A-L10L11 (measured, run 56) | 7 | 6,324 | 151,200 | 43 min (core 1,192 s + windows 1,409 s); the bot 73 s + 86 s | not measured |
 | 6A-L15 (measured, run 61) | 8 | 7,056 | 172,800 | 56 min (core 1,652 s + windows 1,721 s, a level group a command, builds included); the bot 80 s + 95 s | not measured |
-| 6A-L18 | 9 | 7,192 | 194,400 | ~26 min (est.) | ≤ 600 MB (est.) |
+| 6A-L18 (measured, run 64) | 9 | 7,192 | 194,400 | 63 min (core 1,869 s + windows 1,928 s, a level group a command, builds included; the longest command 509 s — levels 3, 4 on the Windows path); the bot 91 s + 108 s | not measured |
 | 6A-L20 | 10 | 8,524 | 216,000 | ~31 min (est.) | ≤ 700 MB (est.: 164 clouds) |
 | 6A-L21 | 11 | 9,824 | 237,600 | ~35 min (est.) | ≤ 700 MB (est.) |
 | 6A-L22 / END | 12 | 11,864 | 259,200 | ~43 min, up to ~65 min if a visit costs more on the big levels (est.) | ≤ 800 MB (est.: 510 records) |
