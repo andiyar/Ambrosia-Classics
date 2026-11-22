@@ -4,6 +4,13 @@
 > only). Nothing current reads this file; the live state is `docs/STATE.md`. Each later close that settles something
 > adds a dated section at the top, newest first. The two snapshots below are verbatim (headings demoted only).
 
+## Settled at Ferazel run 65's close (2026-11-22)
+
+- The Fable seat's cross-check of wave 6A.3 (plants, rain, level 15, the Chief, level 18) is done: no fault in the
+  game; four test-and-comment findings fixed at b42bb43 (D65). Wave 6A.3 is closed.
+- Run 64's carry "one audit assert … the held item" is narrowed: the held item's kind-0 draws are now counted and
+  pinned per level.
+
 ## Settled at Ferazel run 64's close (2026-11-22)
 
 - Level 18 "Goblin Chief" opened (6A-L18: task c09d5c1, audit proofs 414047f, ledger 330b937, fix round 266b72e,

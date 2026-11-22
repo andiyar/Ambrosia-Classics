@@ -256,6 +256,8 @@ init 209 / `0xdf7d3df30637a1eb`, f30 214 / `0x54da315df4a76b2c`, f120 214 / `0xd
 `testLevel15RainFeatureGolden` is deleted; its frame-2 values live on inside `testLevel15FirstFrameGolden`. No
 existing value moved.
 
+Run 65 moved no value and pinned one new kind (the audit's per-level count of the held item's water-kind-0 draws:
+level 2 39, level 18 7, the other built levels 0).
 New in run 64 (6A-L18, the real level 18, seed 1): the first frame, tick 143, camera (1408, 338),
 `d3ce9327fd19d8b4` (ripple off `3267c6feda5903c7`); the Windows reference — flow step 609 (black), step 611
 `3cc8e65d285a207c` (the first rippled frame), step 689 `2941c3b772683f78`; `BootFacesTests` L18 init 48 /
@@ -2453,6 +2455,23 @@ ids; its `--check` reads this table):
     before its start (`.BlitEncFaceTransClip`, M l. 23277–23286), so the port has no defined picture to copy.
     6A-BD must rule on it before it measures its fixture, and 6A-L20's audit proof will not hold as written.
     Level 15's audit run never puts the held item under a liquid.
+
+- **As executed — the wave 6A.3 cross-check (run 65, 2026-11-22, 11:46 → 13:40, by day; nothing launched):** the
+  Fable seat read `git diff 66875a3 a66d567` — every Ferazel source file's diff (the Chief's own file by search
+  only), the whole draw-mode audit diff — with D64 and STATE's gate table beside it. No fault in game behaviour.
+  Four findings, all tests or comments, to one fix round (b42bb43, reviewed by one Opus leg: PASS): (1) the audit
+  test cited run 64's rulings as "D63" 18 times — they were renumbered D64 at the merge; (2) the audit counted the
+  held item's water-kind-0 draws and never asserted the count — now a per-level table inside
+  `testEveryWrittenModeIsDrawable` (level 2: 39, level 18: 7, every other built level 0; a level missing from the
+  table expects 0); (3) `ScreenFlash.swift`'s header still said only the Warrior's boss flash was built — the
+  Chief's (M l. 75525) is; M l. 75372 was never a flash writer (the Chief's landing writes the shake only) and left
+  the list; (4) a stale note in the audit's OmniPx check. Gates at b42bb43, the seat's own: G2 **764** (762 passed,
+  0 failed, the 2 opt-in skips), GW2 **87** (85 passed, 0 failed, 2 opt-in skips), the ledger check OK (one block
+  regenerated, anchors +4). **Left:** the header's "writers store 3" is not the whole truth (Xichra's Handle stores
+  5 and 7, M l. 76689, 76719, 76772 — 6C-XI's to write); the audit's strip note lists "levels 1–5 and 11" where 15
+  and 18 are also 0; the new table's keys are not checked against the built-level list; on level 18 alone the new
+  assert catches an under-count only (an over-claim is caught on level 1). The three tasks of wave 6A.4 were not
+  started: the diff reading took the seat's context from 123k to 208k (D65).
 
 #### 6A-CL — minor — clouds (→ 771)
 - **Files:** `Sources/FerazelCore/Sprites/SetupFaces.swift` (`:430`), `Sources/FerazelCore/World/Movers/BackgroundSprite.swift`,

@@ -2818,3 +2818,17 @@ still reached the game window. The game's own rules were never at fault.
    port draws; nothing in run 64 depends on it.
 7. **No memory note was written** (D62.6's reasons hold).
 
+## D65 — Ferazel's Wand: run 65's rulings (the wave 6A.3 cross-check; 2026-11-22)
+
+1. **The cross-check of wave 6A.3 is done and found no fault in the game.** Four findings, all in tests or
+   comments, went to one fix round (b42bb43), one Opus review leg (PASS), then both suites in parts at that commit
+   (Core 764, Windows kit 87, 0 failed). The findings and what was left are in the plan's "As executed — the wave
+   6A.3 cross-check".
+2. **The run closed after the cross-check; 6A-CL, 6A-BD and 6A-MP head run 66.** Reading the wave's diff took the
+   seat's context from 123k to 208k, and one merge's gates took it to 228k; the chip's rule is to close at about
+   240k rather than start a task that cannot be finished. Weekly Fable usage stood at 82% at the close.
+3. **The audit's new per-level count is a pinned value.** A later task that changes what the audit's scripted run
+   does on a built level may move it; that is a named move in that task's "As executed", never a silent edit.
+4. **D64.6 is still open:** what the port draws for level 20's blades on "no light" cells is 6A-BD's seat to rule
+   (run 66 or later). Nothing in run 65 touched it.
+5. **No memory note was written** (D62.6's reasons hold).

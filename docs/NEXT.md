@@ -1,9 +1,9 @@
 STATUS: CONTINUE
 
-# NEXT — Ferazel's Wand, run 65: the wave 6A.3 cross-check, then wave 6A.4 begins (6A-CL, 6A-BD, 6A-MP)
+# NEXT — Ferazel's Wand, run 66: wave 6A.4 begins (6A-CL, 6A-BD, 6A-MP)
 
 You are the seat for **Ferazel's Wand** in Ambrosia Classics, repo `/Users/andiyar/Developer/Ambrosia-Classics`
-(`$REPO`). Method: `~/Developer/Toolkits/fable-kit/orchestrator.md`. This run opens with a review, then builds. In your
+(`$REPO`). Method: `~/Developer/Toolkits/fable-kit/orchestrator.md`. This run builds three engine features, one at a time. In your
 first message say which model you are and, in one sentence, what you will do first; then start. **If a Coordinator
 session started you, its overrides win over this file** (who starts the next session, the handoff's name,
 foreground-only work, removing your worktree).
@@ -23,15 +23,16 @@ Nothing else is a plan.
    (Q18 is Ben's Phase 5 gate: notes become tasks at the head of the order; a fail stops the build and becomes a fix
    wave. Q21: whether the sweep and the bot may run detached. Q19: his choices on the 6A plan).
 4. `docs/DECISIONS.md` D64 (D64.6 above all: the blade task meets a case the original itself gets wrong), D62, D61,
-   D59 (D59.1: the one script that may run detached), D54, D51, and `docs/handoff-2026-11-22-ferazel-run64.md`.
+   D59 (D59.1: the one script that may run detached), D54, D51, D65 (run 65: the wave 6A.3 cross-check), and
+   `docs/handoff-2026-11-22-ferazel-run65.md`.
 
 ## Before anything else
-- **The weekly usage limit** (`get_usage`). Run 64 closed at 75% Fable, about 60% all models; the week resets on
-  2026-11-24 at 02:00 Sydney time. The cross-check below is the Fable-heavy part and it must come before 6A-CL. Do
-  it lean (the diff by file, the review findings, the gate numbers — not whole sources). If the limit is so close
-  that you cannot finish it, close with that as your reason rather than skip it.
-- **Your own context.** Read the meter before every dispatch. Run 64 began at 116k, was at 148k before its first
-  dispatch and about 230k at its close, after one task (five helper reports) and about forty gate commands.
+- **The weekly usage limit** (`get_usage`). Run 65 closed at 82% Fable, 64% all models; the week resets on
+  2026-11-24 at 02:00 Sydney time. The seat's own reading is the Fable-heavy part: keep it to the three cards and the
+  gate block. If the limit is so close that a task cannot be finished, do not start it — close with that as the reason.
+- **Your own context.** Read the meter before every dispatch. Run 65 began at 123k, spent 85k reading a wave's diff
+  (not owed in this run), and about 20k on the twenty gate commands of one merge. A task costs the seat roughly
+  35–45k (five helper reports and one merge's gates): three tasks will not fit under 240k — expect one or two.
 - **How long one command may run.** `echo "$CLAUDE_CODE_DISABLE_BACKGROUND_TASKS"`: `1` means background work is off
   and a foreground command is cut off at ten minutes. Then every suite runs in parts (below), **never two parts
   chained in one command**. Only `tools/windows/proof-b-ferazel.sh` may run detached (D59.1).
@@ -39,60 +40,53 @@ Nothing else is a plan.
   6A.3's launch checks were done in run 64.
 
 ## Reconcile first
-- `git -C "$REPO" worktree list`, `git -C "$REPO" log --oneline -8 main`: main at or past run 64's close. Other
+- `git -C "$REPO" worktree list`, `git -C "$REPO" log --oneline -8 main`: main at or past run 65's close. Other
   sessions (Deimos, Castles) also merge to local main: merge main into your branch before each `--ff-only`, and
-  check the next free D-number at the close (D65 unless another project took it).
-- G1 HectorKit per the plan's gate table (main ef2c341, clean, at run 64).
-- G2 is not owed at the start (run 64's own, at a66d567: **764**, 0 failed, the two opt-in skips by name). At each
+  check the next free D-number at the close (D66 unless another project took it).
+- G1 HectorKit per the plan's gate table (main ef2c341, clean, at run 65).
+- G2 is not owed at the start (run 65's own, at b42bb43: **764**, 0 failed, the two opt-in skips by name). At each
   merge it runs from a `git archive` copy with `HECTORKIT_PATH=$HOME/Developer/HectorKit` set (game data is in git,
   so the copy is complete). After one `swift build --build-tests` in `Ferazel/Core`, each part is its own command,
-  `swift test --skip-build --filter …` (run 64's times):
+  `swift test --skip-build --filter …` (run 65's times):
 
   | part | tests | time |
   |---|---:|---:|
-  | `--filter FerazelCoreTests` | 593 | 110 s |
-  | `--filter 'FerazelRenderTests\.[A-C]'` | 27 | 273 s |
-  | `--filter 'FerazelRenderTests\.[D-E]' --skip DrawModeAuditTests` | 16 | 53 s |
-  | `FERAZEL_AUDIT_LEVELS=1,2,3,4,5 … --filter DrawModeAuditTests/testEveryWrittenModeIsDrawable` | 1 | 188 s |
-  | `FERAZEL_AUDIT_LEVELS=10,11,15 …` the same test | (the same 1) | 331 s |
-  | `FERAZEL_AUDIT_LEVELS=18 …` the same test | (the same 1) | 40 s |
-  | `FERAZEL_AUDIT_LEVELS=1,2,3,4,5 … --filter DrawModeAuditTests/testEveryRefusalIsUnreachable` | 1 | 191 s |
-  | `FERAZEL_AUDIT_LEVELS=10,11,15 …` the same test | (the same 1) | 335 s |
-  | `FERAZEL_AUDIT_LEVELS=18 …` the same test | (the same 1) | 44 s |
-  | `--filter 'FerazelRenderTests\.[F-K]'` | 38 | 186 s |
-  | `--filter 'FerazelRenderTests\.L'` | 17 | 357 s |
-  | `--filter 'FerazelRenderTests\.[M-Z]'` | 69 + the 2 skips | 152 s |
+  | `--filter FerazelCoreTests` | 593 | 109 s |
+  | `--filter 'FerazelRenderTests\.[A-C]'` | 27 | 296 s |
+  | `--filter 'FerazelRenderTests\.[D-E]' --skip DrawModeAuditTests` | 16 | 69 s |
+  | `FERAZEL_AUDIT_LEVELS=1,2,3,4,5 … --filter DrawModeAuditTests/testEveryWrittenModeIsDrawable` | 1 | 203 s |
+  | `FERAZEL_AUDIT_LEVELS=10,11,15 …` the same test | (the same 1) | 359 s |
+  | `FERAZEL_AUDIT_LEVELS=18 …` the same test | (the same 1) | 43 s |
+  | `FERAZEL_AUDIT_LEVELS=1,2,3,4,5 … --filter DrawModeAuditTests/testEveryRefusalIsUnreachable` | 1 | 206 s |
+  | `FERAZEL_AUDIT_LEVELS=10,11,15 …` the same test | (the same 1) | 343 s |
+  | `FERAZEL_AUDIT_LEVELS=18 …` the same test | (the same 1) | 45 s |
+  | `--filter 'FerazelRenderTests\.[F-K]'` | 38 | 190 s |
+  | `--filter 'FerazelRenderTests\.L'` | 17 | 338 s |
+  | `--filter 'FerazelRenderTests\.[M-Z]'` | 69 + the 2 skips | 151 s |
 
   The `\.L` part is the longest: if a task adds a test whose class starts with L, time it early and split the part.
   New feature pictures land in `FeatureGoldenTests` (the F–K part): split that part if it nears seven minutes.
   Each log ends with a second, empty bundle's "Executed 0 tests" — count the `Test Case … passed` lines instead. A
   wrong filter runs zero tests and still exits 0. This Mac has no `timeout` command — use the Bash tool's own timeout.
 - GW2 (**87**, unchanged by this run's three tasks): after `swift build --build-tests` in `Ferazel/Windows` —
-  `'FerazelWinKitTests\.B'` (10, 348 s), `'FerazelWinKitTests\.(F|T)'` (19, 173 s),
-  `'FerazelWinKitTests\.Win(D|F|G)'` (26, 312 s), `'FerazelWinKitTests\.Win(O|R|S|V)'` (26 + the 2 skips, 147 s),
+  `'FerazelWinKitTests\.B'` (10, 320 s), `'FerazelWinKitTests\.(F|T)'` (19, 179 s),
+  `'FerazelWinKitTests\.Win(D|F|G)'` (26, 318 s), `'FerazelWinKitTests\.Win(O|R|S|V)'` (26 + the 2 skips, 144 s),
   and `WinLevelReferenceTests` one test a command: `…/testLevel10FirstFrameReference`, `…Level11…`, `…Level15…`,
-  `…Level18…` (172 / 152 / 121 / 125 s).
+  `…Level18…` (172 / 152 / 121 / 123 s).
 - **A seat's command may run beside ONE working helper**: send the helper's dispatch and the one command in the same
   message.
+- A small script that runs one part and prints only `passed / failed / skipped / exit / time` keeps each gate
+  command to one line of the seat's context (run 65 did this; write your own in the scratch folder).
 
 ## This run
 
 | step | what it must produce | Core after | WinKit after |
 |---|---|---|---|
-| **the wave 6A.3 cross-check** | the Fable seat's own review of the wave's whole diff and gate numbers; findings to one fix round | 764 | 87 |
 | **6A-CL** | clouds, on a level-20 fixture | 771 | 87 |
 | **6A-BD** | the rotating blade and the segment test | 784 | 87 |
 | **6A-MP** | programmed-path maces, modes 1 and 2 | 791 | 87 |
 
-- **The cross-check first, before any task** (the plan's "Wave end" rule; the one review the Fable seat does
-  itself). The wave is 6A-BG1c, 6A-RN, 6A-L15, 6A-CH1, 6A-CH2, 6A-L18: `git diff 66875a3 a66d567` (66875a3 is the
-  last commit before 6A-BG1c's work — confirm with `git log`), read by file with the six "As executed" notes and
-  D59–D62, D64 beside it. Its gate numbers are in STATE's table, all taken at a66d567. Look hardest at what no single
-  task's reviewers could see: things two tasks both touched (the picture loader, the draw-mode audit's rows and its
-  two new proofs from run 64, the Smite list, `LevelRun`), stand-ins left behind, and comments that still promise
-  work a later task already did. Findings go to **one** fix round (an `fk-implementer`), reviewed by one Opus leg,
-  then G2 and GW2 in parts if any source or test moved.
-- **Then the three tasks, in the card order, one at a time** (each measures on a fixture the one before it defines —
+- **The three tasks, in the card order, one at a time** (each measures on a fixture the one before it defines —
   never two at once): one `fk-implementer`, then two Opus review legs (spec, then quality with a mutation table,
   told what leg 1 found), a fix round, the seat's own G2 and GW2 at the merge. Gate-F: no sweep or bot is owed
   (no level opens), and nothing is launched.
@@ -114,6 +108,9 @@ Nothing else is a plan.
   `mktemp` copy (`git archive <sha> | tar -x`, `HECTORKIT_PATH` set). Tell every helper to commit before it reports.
 - **Check a card's numbers against the level data before briefing** (D56.1), or tell the implementer plainly that
   they are unchecked. The data wins; where the dump and the card disagree, the dump wins (eleven times in runs 60–64).
+- **The audit test now pins how often the held item is drawn under water with kind 0, per level** (run 65: level 2
+  39, level 18 7, every other built level 0 — a table inside `testEveryWrittenModeIsDrawable`). A task that changes
+  what the audit's scripted run does on a built level may move a count: that is a named, explained move or a STOP.
 - **A helper whose edit is refused as outside its fence** reports it; the seat rules (D54.1, D61.1, D62.1, D64.1) and
   a fix round makes the change with the ruling written in its brief. The seat does not make the edit for it.
 - **Pinned values.** Each card names what may change. Nothing else may move: the pictures and state pins of levels
@@ -126,8 +123,8 @@ Nothing else is a plan.
   `python3 -I -B tools/ferazel/later-levels-ledger.py --check`; if it says a generated block is stale, `--write`, check
   again, and commit the ledger. A task that builds a type the script still calls refused must give the script a
   built arm (D61.1). Delete any `__pycache__` under `tools/ferazel/` and `docs/ferazel/tools/`.
-- **If the context will not hold all three tasks**, finish the one in flight at about 240k and close; the rest head
-  the next run.
+- **If the context will not hold all three tasks** (likely), finish the one in flight at about 240k and close; the
+  rest head the next run.
 
 ## After this run
 Level 20 "Hangnabit" (6A-L20, with the full sweep and bot on ten levels — split the Windows-path sweep of levels 3
