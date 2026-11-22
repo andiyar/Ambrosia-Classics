@@ -169,8 +169,8 @@ final class CloudTests: XCTestCase {
             let s = e.slot
             let fx = Int32(own.next(60)) + 270, r50 = Int32(own.next(50))
             // The common head (`setupCommon`, M l. 61966–61977), then the arm: `+0x5c = +0x1f8 = 0`, the empty rect
-            // (M l. 62527–62529); the face from the cache and its mark (M l. 62531–62546); `+0x88 = 0`, `+0xb8 =
-            // 0xb0004` (translucency, table 4), layer 0x7ef4 (M l. 62548–62551); `+0x14c` = p1, 0 → R(60) + 270;
+            // (M l. 62527–62529); the face from the cache and its mark (M l. 62530–62548); `+0x88 = 0`, `+0xb8 =
+            // 0xb0004` (translucency, table 4), layer 0x7ef4 (M l. 62549–62551); `+0x14c` = p1, 0 → R(60) + 270;
             // `+0x150` = p2, 0 → `+0x14c`; `+0x154 = x << 8`, `+0x158 = y << 8`; `+0x15c = R(50)` (M l. 62552–62565).
             XCTAssertEqual(s.handler, .background, what)
             XCTAssertEqual([s.hasHit, s.hasTileHit], [false, false], what)
@@ -226,6 +226,12 @@ final class CloudTests: XCTestCase {
             XCTAssertEqual(rng.seed, own.seed, "p1 \(p1): \(p1 == 0 ? 2 : 1) draws")
             XCTAssertEqual([e.slot.classWord154, e.slot.classWord158], [-40 * 256, -2 * 256])
         }
+        // The base is the spawn copy's 16-bit position (`(int)*(short *)(+0xc) << 8`, M l. 62563–62564): a pixel
+        // position past 16 bits keeps its low half.
+        var wide = SpriteSlot(type: 0xb4a, x: 0x10000 + 40, y: -0x10000 - 2)
+        var wideRng = FastRand(seed: 5)
+        BackgroundSprite.setupCloud(&wide, record: rec(0xb4a), rng: &wideRng)
+        XCTAssertEqual([wide.classWord154, wide.classWord158], [40 * 256, -2 * 256], "the 16-bit position")
     }
 
     // MARK: - the Handle arm (M l. 63304–63341)
@@ -265,6 +271,11 @@ final class CloudTests: XCTestCase {
         w.active.update(id: id) { $0.classTimer = Int32.min; $0.x256 = -0x1234; $0.x = 1 }
         s = try handle(w, id, h: 5000, v: 0)
         XCTAssertEqual([s.x256, Int32(s.x)], [-0x1234, -0x13], "the copy is the 24.8 value's middle 16 bits")
+        // H is the scroll point's 16-bit h (`*(short *)(PTR_DAT_1009fe78 + 2)`, M l. 63327): a wider scroll keeps its
+        // low half.
+        w.active.update(id: id) { $0.classTimer = 300 }
+        s = try handle(w, id, h: 0x10000 + 100, v: 0)
+        XCTAssertEqual(s.x256, parallax(scroll: 100, base: 3000 << 8, factor: 300), "H is 16-bit")
     }
 
     func testCloudParallaxY() throws {
@@ -294,6 +305,10 @@ final class CloudTests: XCTestCase {
         s = try handle(w, id, h: 100, v: 4000)
         XCTAssertEqual([s.y256, Int32(s.y)], [0x7777, 0x77])
         XCTAssertEqual([Int32(s.x)], [500 - 100], "x moved in the same Handle")
+        // V is the scroll point's 16-bit v (`*(short *)PTR_DAT_1009fe78`, M l. 63336): a wider scroll keeps its low half.
+        w.active.update(id: id) { $0.classWord150 = 280 }
+        s = try handle(w, id, h: 100, v: 0x10000 + 416)
+        XCTAssertEqual(s.y256, parallax(scroll: 416, base: 1200 << 8, factor: 280), "V is 16-bit")
     }
 
     func testCloudNeverCollides() throws {
@@ -356,7 +371,8 @@ final class CloudTests: XCTestCase {
         let fxs = sp.active.sprites.filter { Self.types.contains($0.type) }.map(\.classTimer)
         XCTAssertEqual(fxs.count, 164)
         XCTAssertTrue(fxs.allSatisfy { $0 > 256 && $0 < 330 })
-        // R(60)'s whole range is drawn somewhere among the 164 (a spread, not one value).
-        XCTAssertGreaterThan(Set(fxs).count, 30)
+        // A spread, not one value: measured 58 of R(60)'s 60 values among the 164, from 270 to 329.
+        XCTAssertEqual(Set(fxs).count, 58)
+        XCTAssertEqual([fxs.min(), fxs.max()], [270, 329])
     }
 }

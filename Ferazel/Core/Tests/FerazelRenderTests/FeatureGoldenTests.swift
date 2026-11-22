@@ -621,8 +621,14 @@ final class FeatureGoldenTests: XCTestCase {
     /// the level's frame 1 (the first `.GameLoop` iteration), so the clouds there stand where their Setups put them:
     /// the Handle pass runs after the draw (M l. 9207, 9453). Frame 2 is pinned beside it — the first frame drawn after
     /// the clouds' first Handle, their parallax applied. The clouds draw with mode 0xb arg 4 (translucency table 4) at
-    /// layer 0x7ef4, in front of everything. Frame 1: 6A-L20 deletes this golden if the level's own first frame is it
-    /// (ENG §2.8 "First level / golden").
+    /// layer 0x7ef4, in front of everything.
+    /// - Frame 1 is a first-load frame, and there the port knowingly differs from the original: on a level's first
+    ///   load the original's cloud Setup copies the placeholder PICT 150 face (the cached face is not loaded yet), so
+    ///   the original would still show placeholders here, while the port draws the loaded cloud faces (the ruled port
+    ///   difference noted at `SetupFaces.swift:21`, `FaceSource.setupCached`). The frame-1 value pins that difference;
+    ///   it is the value the level-20 opening task (6A-L20) deletes (ENG §2.8 "First level / golden").
+    /// - Frame 2 matches the original: the clouds' first Handle has re-read their faces from the loaded cache. It is
+    ///   the value that is kept.
     func testLevel20CloudFeatureGolden() throws {
         let real = try LevelFile.load(from: try LevelFixture.base.get(), level: 20)
         let out = try LevelFixture.leftOut(real, Self.level20Clouds)
@@ -654,7 +660,8 @@ final class FeatureGoldenTests: XCTestCase {
         XCTAssertEqual([frames[0].clouds.count, moved], [164, 164], "all 164 drawn (none idled), all moved")
         XCTAssertEqual(changed, [25886, 31081], "the screen bytes the clouds changed")
         XCTAssertEqual(String(twin[0].fnv, radix: 16), "8964bdab39954f49", "frame 1 with no cloud drawn")
-        XCTAssertEqual(String(frames[0].fnv, radix: 16), "9f0b821fbbc60084", "the level-20 cloud feature golden")
+        XCTAssertEqual(String(frames[0].fnv, radix: 16), "9f0b821fbbc60084", "the level-20 cloud feature golden")  // frame 1: the port difference; 6A-L20 deletes it
+        // Frame 2: matches the original (faces re-read by the first Handle); kept.
         XCTAssertEqual(String(twin[1].fnv, radix: 16), "4679418e47ef711b", "frame 2 with no cloud drawn")
         XCTAssertEqual(String(frames[1].fnv, radix: 16), "37eb1f7eb12e8f76", "frame 2, the parallax applied")
     }
