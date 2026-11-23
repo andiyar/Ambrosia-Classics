@@ -177,8 +177,8 @@ Three sections that need nothing from Ben (5A, 5B, 5C), then the slot for his no
   `docs/deimos/front-end.md`, `docs/deimos/display-window-present.md`, `docs/handoff-deimos-phase4-s6.md`,
   `docs/handoff-deimos-phase4-s8a.md`, `ghidra/deimos/*`, `ghidra/README.md`, comment-only edits in
   `App/DeimosController.swift`, `FE/SessionResult.swift`, `Core/Seams/ShellRequest.swift`, `FE/Credits.swift`,
-  `FE/Boot.swift`, `Host/PrefsStore.swift` or wherever the settings key-slot note lives, `Core/Game/ScrollState.swift`,
-  `Core/Game/Removal.swift`.
+  `FE/Boot.swift`, `Core/Game/DeimosPrefs.swift`, `Core/Game/ScrollState.swift`,
+  `Core/Combat/Removal.swift`.
   **Contract:** (a) the bank says the level select's right-hand preview never draws its hover outline; the listing
   gives that draw the full 640×480 clip and the port draws it: correct INDEX item 59 and close it. (b) The bank's
   credits text still has a blank last page; the data has ten pages and no blank one. (c) The bank gives element
@@ -365,7 +365,7 @@ that demo, and the item goes to Ben as a question that blocks nothing.
 - **6-FX-n — one card per row** (a slot; the count is the comparison's). One implementer and two legs each; G2, G4
   (the film rule), G7, G8 where the row touches a rule every sector uses. More than six cards is a second section.
 - **6-BANK — the research bank closed** (+1 → the ladder's next figure). **Files:** `docs/deimos/INDEX.md` and the
-  topical files it points at, `T/DeimosCoreTests/CensusFactsTests.swift` (new or the existing census-facts file).
+  topical files it points at, one new test file under `T/DeimosCensusTests/`.
   **Contract:** every item under INDEX "NOT RESOLVED" that is not struck through gets exactly one ending, written
   as a dated note: *closed* with the evidence; *inert* (a data key no code reads in either build — the weapon keys
   with no consumer, the `invulnerableUntil…` unit keys, the circular-burst flag — shown by a search of both
