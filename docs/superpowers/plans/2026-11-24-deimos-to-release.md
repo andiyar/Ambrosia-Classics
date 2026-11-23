@@ -26,26 +26,26 @@ app's shortcut stole the keyboard in full screen) is fixed and restaged.
 | `Deimos/Core` tests, without the replay and campaign bundles | 511 passed, 0 failed, 0 skipped |
 | Replay tests; the four demo films | 4 / 0; four PASS lines |
 | Campaign tests | 3 / 0 |
-| HectorKit | main `ef2c341`, 370 executed (4 known Aki 1.1 data skips) |
+| The shared library (HectorKit) | 370 tests run, none failed |
 
 ## What stands between today and "done"
 
 | # | What | Why it is on the list | Phase |
 |---|---|---|---|
 | 1 | Ben's play gates 2 (level 1 plays), 3 (the campaign), 4 (the front end), and his replay of the keyboard fix | never yet judged; his notes become fixes | 5 |
-| 2 | Seven known faults and untested paths the Phase 4 closing review found | found, not fixed | 5 |
+| 2 | Eight known faults and untested paths the Phase 4 closing review found | found, not fixed | 5 |
 | 3 | Four things the OS X build does that the port does not: the pause when you leave the app, the cursor during a pause, the Preferences… menu item, the Edit menu | the game is to match the original; these are known gaps on the gate card | 5 |
 | 4 | Small code and test follow-ups carried since Phases 2–4 | each is a line in STATE | 5 |
 | 5 | Winning sector 12 by destroying the end boss has never been run by a machine | the campaign test outlasts the boss on a timer instead | 5 |
-| 6 | Records that are now wrong (research bank, comments, two handoffs), and decompile housekeeping | the next reader is misled; a public repo carries home-folder paths | 5 |
+| 6 | Records that are now wrong (research notes, comments, two handoffs), and tidying the committed decompile files | the next reader is misled; a public repo carries home-folder paths | 5 |
 | 7 | The whole-game comparison of the OS 9 build (what the research describes) with the OS X build (what Ben played) | Ben: "Yes, after Phase 4". Only the front end has been compared | 6 |
-| 8 | The research bank's open items, and 134 label mismatches between its files | a finished project has none open | 6 |
+| 8 | The research notes' open items, and 134 places where two research files rate one fact differently | a finished project has none open | 6 |
 | 9 | The Windows build | Ben's ruling of 2026-10-06: done = the whole game, Mac and Windows | 7 |
 | 10 | The app icon in the current macOS style | every public build has one (Aki, Bubble Trouble X) | 8 |
 | 11 | The public release | notarized DMG, Windows zip, copies kept, README | 8 |
 
 **Dropped, and why.** The level editor, registration, the website link's browser dialog, the original's own gamepad
-windows and its HID bundle, the debug-only console commands, an iPad build and remastered art stay out (the design's
+windows and its HID bundle (the seat's ruling, on the gate card for Ben to overturn), the debug-only console commands, an iPad build and remastered art stay out (the design's
 scope; Ben's answers of 2026-11-20). A second controller for player 2 stays out (it needs a HectorKit change Ben has
 not asked for). "Attract mode" is not owed: the original starts no demo by itself. The research items #14, #62 and
 #64 are already closed. A game started above sector 1 having no finale is the original's rule, not a gap.
@@ -81,7 +81,7 @@ carries its Windows side in the same task, and every phase end stages both build
 | Numbers from your own run | the seat re-runs the count at the merge head; a helper's figure is never relayed |
 | Reviewers run things | each review leg runs the task's tests on its own scratch build folder and re-derives two or three rules from the dump or listing; reading the diff alone is not a review |
 | Diagnosis before dispatch, to file and line | "investigate and fix" is never a helper's task; a gate note is traced to a cause by the seat first |
-| STOP on any unexpected number | report it; never edit an expectation. A demo film that stops matching follows the film rule under Phase 6 |
+| STOP on any unexpected number | report it; never edit an expectation. A card that changes play on purpose (5-GN, 6-FX) lists, before dispatch, the pinned values it expects to move; only an unlisted move is a STOP. A demo film that stops matching follows the film rule under Phase 6 |
 | Scope fence | changed paths are a subset of the task's Files; an extra file is scope creep until shown to be a call site |
 | Explicit-path commits | never `git add -A`, never a bare `git stash`; the helper's trailer on every commit |
 | Bounded tests | every loop names a bound and fails on reaching it |
@@ -172,11 +172,11 @@ Path shorthand: `Core/` = `Deimos/Core/Sources/DeimosCore/`, `Host/` = `Deimos/C
 ## Phase 5 — loose ends on the Mac
 
 Three sections that need nothing from Ben (5B, 5C, then 5A), then the slot for his notes (5D) and the stage
-(5E). The running order is in "Order" above; no two of these sections run at once.
+(5E). The running order is in "Order" above; no two of these sections run at once, except 5-BK.
 
 ### Section 5A — records and housekeeping (docs only; an Opus seat may hold it)
 
-- **5-DOC — the records put right** (no tests; G3, G6, G10). **Files:** `docs/deimos/INDEX.md`,
+- **5-DOC — the records put right** (no tests; G3, G5, G6, G10). **Files:** `docs/deimos/INDEX.md`,
   `docs/deimos/front-end.md`, `docs/deimos/display-window-present.md`, `docs/handoff-deimos-phase4-s6.md`,
   `docs/handoff-deimos-phase4-s8a.md`, `ghidra/deimos/*`, `ghidra/README.md`, `docs/deimos/*.md` (paths only), the earlier Deimos plans (one header
   line each), comment-only edits in
@@ -191,11 +191,11 @@ Three sections that need nothing from Ben (5B, 5C, then 5A), then the slot for h
   logo, developer's logo, loading lines, menu. (f) Stale comments: the pause-quit result "never set"; About
   "disabled during a game"; a Quit during the credits "acts when they end"; "every unit name is shown"; the key-slot
   meanings marked low confidence (they are settled: fire air, fire ground, select); `ScrollState.step`'s "Phase 2";
-  the one at `Removal.swift` near line 59. (g) Commit the OS 9 listing **and its data image** (`~/Developer/Ghidra/deimos/proj/mem/100de330.bin`)
+  the stale one in `Removal.swift` (the comment the Phase 3 close listed). (g) Commit the OS 9 listing **and its data image** (`~/Developer/Ghidra/deimos/proj/mem/100de330.bin`)
   under `ghidra/deimos/` and name both in `ghidra/README.md`; replace home-folder paths with `~` in the OS 9
   analysis log `ghidra/deimos/analyze-Deimos_pef.log` and in the twelve bank files under `docs/deimos/` that name
   `/Users/andiyar` (other games' logs are a repo-wide chore, listed in the handoff, not done here); correct the
-  Ghidra version the notes name. (h) Each earlier Deimos plan (`docs/plans/2026-10-0*-deimos-*.md`,
+  Ghidra version `ghidra/README.md` names to the one the logs record. (h) Each earlier Deimos plan (`docs/plans/2026-10-0*-deimos-*.md`,
   `docs/superpowers/plans/2026-11-14-deimos-phase3.md`) gets the one-line "Superseded by" header if it lacks one. Every corrected bank line is a dated ⚑ note with its address, the bank's own append rule.
   **Done:** each of (a)–(h) shown by a grep in the report; two review legs split the list between them and check
   every note against the listing.
@@ -204,19 +204,19 @@ Three sections that need nothing from Ben (5B, 5C, then 5A), then the slot for h
 
 - **5-QF — the closing review's faults** (+6 → **517**). **Files:** `FE/LevelSelect.swift`, `FE/Scores.swift`,
   `FE/MainMenu.swift`, `FE/Boot.swift`, `FE/ControlsDialog.swift`, `FE/ConfigDialog.swift`, `FE/FrontEnd.swift`,
-  `App/DeimosController.swift`, `Core/Input/DeimosPadLayout.swift`, `Host/ShellGlue.swift`, `Deimos/GAMEPAD.md`,
-  `Deimos/WHAT-TO-EXPECT.md`, their test files under `T/`.
+  `App/DeimosController.swift`, `Core/Input/DeimosPadLayout.swift`, `Host/ShellGlue.swift`, `Host/DeimosDriver.swift`,
+  `Deimos/Core/Sources/DeimosAudio/DeimosAudioEngine.swift`, `Deimos/GAMEPAD.md`, `Deimos/WHAT-TO-EXPECT.md`, their test files under `T/`.
   **Contract:**
   1. *Command-Q on the level select.* Today a remembered "quit" is never cleared when a game starts, so the next
      game earns no score, the first pause quits, and the app quits back at the menu. First re-read the OS X level
      select and game start (the quit flag's every reader and writer) to HIGH confidence; build exactly what it
      shows. If the re-read confirms today's behaviour, the code stays and the gate card says in plain words that
-     the game will not score (Ben may overturn; his question is in `docs/QUESTIONS.md`). Test:
+     the game will not score (Ben may overturn: question 3). Test:
      `testQuitOnLevelSelectThenStart` pins whichever is read.
   2. *A macOS quit or log-out while paused on the level select with the app in the background* quits at once, as
      the card already promises for every pause. Test: `testBackgroundQuitDuringLevelSelectPause`.
   3. *The start-up cannot hang.* The publisher's logo waits for its sound to end. If the sound output is lost
-     during it, the wait ends (the seat's ruling: a port hazard the original could not meet; nothing changes while
+     during it, the audio engine reports the loss and the driver ends its wait-for-the-sound on that report (the seat's ruling: a port hazard the original could not meet; nothing changes while
      sound works). Command-Q during the boot stays ignored, as the original, unless Ben answers
      otherwise (question 9). Test:
      `testLogoWaitEndsWhenOutputIsLost`.
@@ -234,23 +234,24 @@ Three sections that need nothing from Ben (5B, 5C, then 5A), then the slot for h
      "suspended" flags set on the way out; clear them as the resume path does, and hand the existing test its
      events in the order the app really produces (re-specified under its name).
   8. *The controller's paused layout.* It never switches on, because the pause clears its flag before the app
-     looks. Default: the pad behaves as the keyboard does (held buttons act when the pause ends); remove the dead
+     looks. Default (question 4): the pad behaves as the keyboard does (held buttons act when the pause ends); remove the dead
      layout, re-specify the one test that pins behaviour the app never reaches, and correct `Deimos/GAMEPAD.md`
      and the card. If Ben answers that held buttons should do nothing on resume, build that instead.
   **Done:** the six new tests pass; items 4, 7 and 8 show their re-specified tests failing on a mutant.
   **Gate:** G2 = 517, G4, G5, G7, G12.
 
-- **5-SM — small follow-ups** (+7 → **524**; replay bundle 4 → **5**). **Files:** `Host/HeadlessRunner.swift`,
+- **5-SM — small follow-ups** ⚑ MAJOR (+6 → **523**; replay bundle 4 → **5**). **Files:** `Host/HeadlessRunner.swift`,
   `Host/FilmLookup.swift` (moved to `Core/FilmLookup.swift`), `Host/ShellGlue.swift`,
   `Deimos/Core/Sources/deimos-replay/main.swift`, `FE/LevelSelect.swift`, `FE/ControlsDialog.swift`,
-  `Core/Game/PrefsFile.swift`, `Deimos/Core/Sources/DeimosRender/Fades.swift`, `Core/Effects/MotionBlurPool.swift`, `FE/MainMenu.swift`, `FE/Boot.swift`,
+  `Core/Game/PrefsFile.swift`, `FE/ElementList.swift`, `FE/NameEntry.swift`,
+  `Deimos/Core/Sources/DeimosAudio/DeimosAudioEngine.swift`, `Core/Effects/MotionBlurPool.swift`, `FE/MainMenu.swift`, `FE/Boot.swift`,
   `Host/PrefsStore.swift`, `FE/FrontEnd.swift`, `App/DeimosController.swift`, tests under `T/`.
   **Contract:** (1) a failed `--frames` write no longer hides a film's result line (`testFramesWriteFailureKeepsResult`, in the replay bundle, the only one that can reach the tool: G4 becomes 5 / 0);
   (2) `HeadlessRunner` returns a named error, not a trap, on an end no rule explains
   (`testUnexplainedEndIsAnError`); (3) the four private film lookups inside the core test bundle use the shared
   lookup, which moves from the host layer into `DeimosCore` so the core tests can reach it (no count change); (4) `MotionBlurPool.emit` — read the listing for the field at +0x90 and copy it or not
-  as read (`testBlurCopiesStampTime` either way); (5) a key with no character: read what the OS X key reader sends
-  and send that (`testKeyWithoutCharacter`); (6) the background pump's bound is named and `testBackgroundQuitPumpStops` is re-specified to fail on reaching it
+  as read (`testBlurCopiesStampTime` either way); (5) a key with no character: read what the OS X key reader sends; the fix and its test land in 7-W1, where
+  the key reader first becomes reachable by a test; (6) the background pump's bound is named and `testBackgroundQuitPumpStops` is re-specified to fail on reaching it
   (no count change);
   (7) the logo sound stops on a quit during the boot, if the listing stops it (`testQuitDuringBootStopsLogoSound`
   pins what is read); (8) an unreadable settings file starts fresh without a crash
@@ -265,12 +266,13 @@ Three sections that need nothing from Ben (5B, 5C, then 5A), then the slot for h
   (`testNameEntryAutoRepeat`); the audio engine's fading flag and stop-with-fade get one
   (`testMusicFadeFlagAndStop`, in the audio tests).
   **Done:** each of (1)–(12) shown by its test or by the listing address that says "already right".
-  **Gate:** G2 = 524, G4 = 5 / 0, G5, G7, G12.
+  **Gate:** G2 = 523, G4 = 5 / 0, G5, G7, G12.
 
 - **5-BK — the end boss, beaten** (campaign bundle 3 → **4**). **Files:** `T/DeimosCampaignTests/*`.
-  **Contract:** a bounded headless run of sector 12 inside a game begun at sector 1 (the finale's condition; the test builds
-  that carry directly, as the existing sweep's helper does, and does not replay sectors 1–11), that
-  destroys the end boss (the unit the sector-12 controller waits on; `docs/deimos/bosses.md` and
+  **Contract:** a bounded headless run of sector 12 inside a game begun at sector 1 (the finale's condition: sector 12 must count as the
+  twelfth level started; the test sets that count and builds the carried player state — weapons, lives — itself,
+  saying in a comment what it built, and does not replay sectors 1–11), bounded at 20,000 passes, that
+  destroys the end boss (unit `be02`, which the sector-12 controller waits on; `docs/deimos/bosses.md` and
   `loose-ends-session.md`, "the finale") and reaches the finale through the kill, not through the controller's
   timer. The run may switch on the game's own invulnerability cheat through the console, as a player could
   (`messages-notices-console.md`, "The cheat word"); it says so in its name: `testSector12WonByDestroyingTheBoss`.
@@ -279,7 +281,7 @@ Three sections that need nothing from Ben (5B, 5C, then 5A), then the slot for h
 
 ### Section 5C — what the OS X build does that the port does not
 
-- **5-PS — ⚑ MAJOR — the pause on leaving the app, the cursor, the menu bar** (+9 → **533**). **Files:**
+- **5-PS — ⚑ MAJOR — the pause on leaving the app, the cursor, the menu bar** (+9 → **532**). **Files:**
   `Core/Game/FrameKeys.swift`, `Core/Game/DeimosSession.swift`, `FE/FrontEnd.swift`, `FE/LevelSelect.swift`,
   `FE/MainMenu.swift`, `Core/Seams/*` (additions only), `Host/DeimosDriver.swift`, `Host/HeadlessRunner.swift`,
   `Deimos/Core/Sources/DeimosRender/DeimosRenderer.swift` (switch arms only), `App/DeimosController.swift`,
@@ -294,7 +296,9 @@ Three sections that need nothing from Ben (5B, 5C, then 5A), then the slot for h
   paused in the background goes through the pause: the game ends with no high score and the app quits (today it
   waits for the player's return). The level select does what the OS X build does: its own per-frame pump takes the
   switch (music paused, no pause screen); the pause screen opens only if the switch arrives after the pump and
-  before the frame's check. A demo cannot take the Caps Lock pause, but an app switch during a demo opens the
+  before the frame's check. Whether entering the pause drops the waiting suspend event (and so whether the music
+  pauses) is built as read; if the listing cannot settle it, the suspend still runs (the seat's ruling, on the
+  card). A demo cannot take the Caps Lock pause, but an app switch during a demo opens the
   pause as in a game. (2) The cursor is shown while a game is paused and hidden again on resume; a demo keeps the
   cursor until an app switch, shows it while away, and hides it for the rest of that film on return. (3) The application menu gains Preferences… (Command-comma), which
   runs the menu's PREFERENCES action and does on every other screen what the listing shows (including nothing).
@@ -308,7 +312,7 @@ Three sections that need nothing from Ben (5B, 5C, then 5A), then the slot for h
   `testCursorShownWhilePaused` · `testDemoKeepsCursorUntilSwitch` · `testPreferencesCommandOpensConfig` ·
   `testPreferencesCommandElsewhere`.
   **Done:** the nine tests pass; the card's lines for the pause, the cursor and the menu bar are rewritten.
-  **Gate:** G2 = 533, G4, G5, G7, G8 (the pause path is in every game), G12. Any of the eight front-end goldens
+  **Gate:** G2 = 532, G4, G5, G7, G8 (the pause path is in every game), G12. Any of the eight front-end goldens
   that moves is a STOP unless the card above explains it.
 
 ### Section 5D — the slot for Ben's notes (content unknown until he plays)
@@ -322,7 +326,9 @@ Opens when Ben has played the staged app and written notes for any of gates 2, 3
   he said may need work; his four named gate-3 questions:
   the flip pitch, sector 12 ending with the boss alive, his own overload while invulnerable, player 2's keys) are
   built as he says. **The rows are written into this section of this file as task cards before any dispatch**, each
-  with Files, Contract, Tests and its G2 figure, continuing the ladder from the count then on main. One implementer
+  with Files, Contract, Tests, the pinned values it expects to move, and its gates (G2 continuing the ladder from
+  the count then on main, G4, G5, G7, G12, and G8 for every card that changes play). One review leg reads the card
+  set against its evidence before the first dispatch. One implementer
   and two review legs per card; cards on the same file run one after another. More than eight cards is a second
   section. A note no one can trace is not guessed at: the seat asks Ben for the keys he pressed or a screen
   recording, and the hidden key log (`-keylog`) exists for exactly that.
@@ -358,12 +364,15 @@ The app file holds two complete games: the Mac OS 9 build, which all the researc
 build, which Ben played. An earlier pass paired 955 of the OS 9 build's 979 functions with their OS X partners and
 found 906 identical instruction for instruction; it then read only the front-end ones. This phase reads the rest.
 
-**The rule the seat sets (Ben may overturn; his question is in `docs/QUESTIONS.md`):** where the two builds differ
+**The rule the seat sets (Ben may overturn: question 5):** where the two builds differ
 in what the player sees, hears or can do, the port follows the OS X build, in the game as it already does in the
 front end. **The film rule:** the four demo films are the proof of the game's rules. A change made to follow the
-OS X build lands only if all four films still replay to their stored scores. If one stops matching, the port keeps
-the OS 9 rule for that one function, the comparison file records that the OS X build would itself have drifted on
-that demo, and the item goes to Ben as a question that blocks nothing.
+OS X build lands only if all four films still replay to their stored scores. A film checks only its final score,
+so each card also shows that the changed function runs in at least one film (a call count) and compares the
+replay trace before and after; if no film reaches the function, the campaign run (G8) is the witness. If a film
+stops matching, it is first traced to its first diverging pass and both review legs re-check the transcription
+against the OS X listing. Only then does the port keep the OS 9 rule for that one function — recorded in the
+comparison file as a departure from what Ben played — and the item goes to Ben as a question that blocks nothing.
 
 ### Section 6A — the comparison (research; an Opus seat may hold it)
 
@@ -374,7 +383,9 @@ that demo, and the item goes to Ben as a question that blocks nothing.
   describes (normalise each instruction, resolve imports and data references through each build's own data image,
   align in address order), as a committed script whose output states its counts; the counts must reproduce 955
   paired and 906 identical, or the difference is explained. Then, for **every pair whose bodies differ and that the
-  front-end address table does not already cover, and every function left unpaired on either side**, one row:
+  front-end address table does not already cover, every unpaired OS 9 function, and every unpaired OS X function that lies inside the game's address range
+  or is called from a paired game function** (the OS X build's library code beyond that — about 1,700 functions —
+  gets one row per library range, by name), one row:
   both addresses; the function's role from `function-roles.md`; what differs, read by hand in both listings;
   one class — *compiler only* (same behaviour: register choice, a rounding instruction with no effect on any
   reachable value, a constant read from another pool slot with the same bits), *plumbing* (Carbon in place of the
@@ -389,18 +400,19 @@ that demo, and the item goes to Ben as a question that blocks nothing.
   and the on-screen message); which physical keys the menu's two volume characters are.
   **Done:** the file exists with every row classed; two review legs each re-read a third of the rows of their own
   choosing in both listings, and between them every *play* and *look or sound* row; their disagreements are settled
-  from the listing by the seat.
+  from the listing by the seat. **Gate:** G6, G10.
 
 ### Section 6B — rulings and fixes
 
 - **6-RUL — the seat rules each row** and writes one task card per *play* or *look or sound* row **into this
   section of this file** before any dispatch: Files, the OS X rule with its addresses, tests that pin it by bit
-  pattern, the G2 figure continuing the ladder, and the film rule above as the card's gate. Rows of the first two
+  pattern, the pinned values it expects to move, the G2 figure continuing the ladder, and the film rule above as
+  the card's gate. One review leg reads the card set against the comparison file before the first dispatch. Rows of the first two
   classes need no card. No rows of the last two classes means no cards, said in the handoff.
 - **6-FX-n — one card per row** (a slot; the count is the comparison's). One implementer and two legs each; G2, G4
-  (the film rule), G7, G8 where the row touches a rule every sector uses. More than six cards is a second section.
+  (the film rule), G5, G7, G12, and G8 for every *play* row. More than six cards is a second section.
 - **6-BANK — the research bank closed** (+1 → the ladder's next figure). **Files:** `docs/deimos/INDEX.md` and the
-  topical files it points at, one new test file under `T/DeimosCensusTests/`.
+  topical files it points at, `ghidra/deimos/tools/critic3-lowlist.py` (new), one new test file under `T/DeimosCensusTests/`.
   **Contract:** every item under INDEX "NOT RESOLVED" that is not struck through gets exactly one ending, written
   as a dated note: *closed* with the evidence (the tick rate: Ben's 60 Hz ruling of 2026-10-07; the plates' colour cut: shown at
   gate 1 without objection; items 14 and 62, closed in their text, are struck through); *inert* (a data key or setting no code reads in either build — the third integer setting and the unread rest of
@@ -458,19 +470,19 @@ the text is the game's own bitmap fonts, so the Windows shell is thin: no baked 
 
 | Task | What | Count |
 |---|---|---|
-| 7-W0 | the core cross-builds and its tests run under CrossOver | Core unchanged; Proof B first run |
+| 7-W0 ⚑ | the core cross-builds and its tests run under CrossOver | Core unchanged; Proof B first run |
 | 7-W1 ⚑ | the shared half and the launch-argument parser | WinKit 0 → **16** |
 | 7-W2 ⚑ | the game on SDL | WinKit → **38** |
-| 7-W3 | the Windows-only edges: questions, alerts, About, Preferences…, pad, quit paths | WinKit → **52** |
-| 7-W4 | reference pictures, stage, smoke, the Windows card; phase end | WinKit → **62** |
+| 7-W3 | the Windows-only edges: questions, alerts, About, Preferences…, pad, quit paths | WinKit → **53** |
+| 7-W4 | reference pictures, stage, smoke, the Windows card; phase end | WinKit → **63** |
 
-- **7-W0 — the core on Windows.** **Files:** `tools/windows/proof-b-deimos.sh` (new), `tools/windows/README.md`,
+- **7-W0 — ⚑ MAJOR — the core on Windows.** **Files:** `tools/windows/proof-b-deimos.sh` (new), `tools/windows/README.md`,
   and only those `Deimos/Core` sources and test files a Windows trap forces, plus `Deimos/Core/Package.swift` for
   platform conditions (each named in the report; behaviour unchanged, G2 and G4 prove it). Known sites to start
   from: `TagName.swift` and `TagIndex.swift` (string searches), `FE/MainMenu.swift` (`replacingOccurrences`), and
   eight test files that call `.contains("…")` on a string. **Contract:** `tools/windows/build.sh Deimos/Core all --tests` ends clean (GW1); the script copies
   the package and the data it reads to the cross-build work folder, builds the tests, runs each test class in
-  CrossOver muted and tallies (GWB), refusing between 21:00 and 09:00. The replay bundle and one campaign test are in
+  CrossOver muted and tallies (GWB), refusing between 21:00 and 09:00. The replay bundle and one campaign test (`testEverySectorReachesItsEnd`) are in
   the run, each as its own separately timed step with its own watchdog (the campaign test takes about eight
   minutes natively, so the script runs detached only if Ben allows it: question 10; until then it runs the
   campaign step last and reports a timeout as "not run", never as a pass): the four films must reach their stored scores on Windows too — float fidelity under another compiler
@@ -513,14 +525,15 @@ the text is the game's own bitmap fonts, so the Windows shell is thin: no baked 
 - **7-W3 — the Windows-only edges.** **Files:** `DeimosWinKit/Win{Questions,Alerts,Shortcuts,Pad,Quit}.swift`,
   `DeimosWin/main.swift`, `FE/MainMenu.swift` (one switch for the 22-pixel rule, default as the Mac), tests.
   **Contract:** the erase question and the two refusal alerts as message boxes answering the core's question seam;
-  F1, Ctrl+comma, Ctrl+Q, Alt+F4, the close button and log-off, each with the Mac path's rules (ignored in play,
-  quit from a pause, remembered until the menu elsewhere); Alt at launch; the pad; losing and regaining focus and
+  F1, Ctrl+comma, Ctrl+Q, Alt+F4, the close button and log-off, Ctrl+Q, Alt+F4 and the close button with the Mac's Command-Q rules (ignored in play,
+  quit from a pause), a log-off with the Mac's system-quit rules (remembered in play and elsewhere until the menu,
+  at once from a pause); Alt at launch; the pad; losing and regaining focus and
   minimising as the Mac's leave and return, including Phase 5's pause; the 22-pixel hover rule off.
-  **Tests (+14 → 52):** each driven through `WinGame` headless: the erase question answered yes and no (2); the
-  two refusal alerts (2); F1 (1); Ctrl+comma (1); Ctrl+Q in play, in a pause and at the menu (3); the close button
+  **Tests (+15 → 53):** each driven through `WinGame` headless: the erase question answered yes and no (2); the
+  two refusal alerts (2); F1 (1); Ctrl+comma (1); Ctrl+Q in play, in a pause, at the menu and on the level select (4); the close button
   (1); a log-off (1); Alt at launch (1); the pad switched off in the controls window (1); focus lost and regained
-  in a game (1); plus `testMenuHoverTopStripLiveOnWindows` and its Mac twin in Core (+1 on G2, re-stated at merge).
-  **Gate:** GW2 = 52, GW3, G2 +1, G4, G7.
+  in a game (1). In Core: `testMenuHoverTopStripLiveOnWindows` and its Mac twin (+2 on G2, re-stated at merge).
+  **Gate:** GW2 = 53, GW3, G2 +2, G4, G7.
 
 - **7-W4 — pictures, stage, smoke, phase end.** **Files:** `Deimos/Windows/Tests/…/WinReferenceTests.swift`,
   `tools/windows/stage-deimos-win.sh`, `tools/windows/smoke-deimos-win.sh`, `Deimos/WINDOWS-WHAT-TO-EXPECT.md`,
@@ -533,7 +546,7 @@ the text is the game's own bitmap fonts, so the Windows shell is thin: no baked 
   over the phase's whole change and both cards, then both builds staged (`out/Deimos/`, `out/Deimos-Windows/`, the
   Desktop, and copies in the main checkout's `out/`). With Ben's say-so only, the zip goes up as the GitHub pre-release `deimos-windows-test-1` for his
   tester, with its checksum, and both are copied to the main checkout's `releases/deimos-windows-test-1/`.
-  **Gate:** GW2 = 62; smoke exit 0. **STOP for Ben.**
+  **Gate:** GW2 = 63; smoke exit 0. **STOP for Ben.**
 
 **Gate card for Phase 7 — "does it play the same on a PC"** (for whoever plays on real Windows 10 or 11):
 1. Unzip, double-click `Deimos Rising.exe`: logos with sound, loading lines, the menu with music.
@@ -552,7 +565,8 @@ the text is the game's own bitmap fonts, so the Windows shell is thin: no baked 
 Starts only when gates 2, 3, 4 and the Windows gate are closed and Phases 5–7 are merged and pushed.
 
 - **8-IC — the icon.** **Files:** `Deimos/App/AppIcon.icon` (new), `project.yml`, the Windows `.ico` in
-  `Deimos/Windows/Resources/`. **Contract:** an Icon Composer document made from the original's own icon art
+  `Deimos/Windows/Resources/`, `tools/windows/stage-deimos-win.sh` (it embeds the icon, as the Bubble Trouble X
+  stage does). **Contract:** an Icon Composer document made from the original's own icon art
   (the app's 128-pixel icon, already in the repo, upscaled as Aki's was), three or four previews rendered to
   `out/Deimos/icon-previews/` for Ben to pick from. The Windows exe carries the same art. **Done:** the previews exist; G5 (all five schemes); the pick is
   Ben's and blocks only the release build.
@@ -592,22 +606,23 @@ macOS always shows; the game plays; "publish".
 
 ---
 
-## Questions for Ben (also in `docs/QUESTIONS.md` under "Deimos Rising", as DQ1–DQ10, each with what it blocks)
+## Questions for Ben (also in `docs/QUESTIONS.md` under "Deimos Rising", as DQ1–DQ11, each with what it blocks; the planning session wrote them there)
 
 | # | Question | Default the plan builds | Blocks |
 |---|---|---|---|
 | 1 | Is this plan approved to start? | — | everything |
-| 2 | Your play of the staged app: gates 2, 3 and 4, and whether the arrow keys survive bombs in full screen | — | Phase 5's fix wave and close, and the release; nothing else |
+| 2 | Your play of the staged app: gates 2, 3 and 4, and whether the arrow keys survive bombs in full screen | — | the fixes your notes need, Phase 5's close, and the release; nothing else |
 | 3 | Command-Q on the level select: keep whatever the OS X build did (it seems to make the next game score nothing), or drop the Command-Q once you choose a sector, or quit at once? | what the OS X build did, re-read first | nothing |
 | 4 | A controller button held through a pause: act the moment the pause ends (as a held key does), or do nothing until pressed again? | as a held key | nothing |
 | 5 | Where the OS 9 and OS X builds differ in the game itself, follow the OS X build you played, provided the four demo films still play out right? | yes | nothing |
-| 6 | Windows: may a test build go up as a GitHub pre-release for your tester when Phase 7 ends, and should the controls window show Mac key names ("option", "command") or Windows ones ("Alt", "Ctrl")? | ask again at the phase end; Mac names | only the upload |
+| 6 | Windows: may a test build go up as a GitHub pre-release for your tester when Phase 7 ends? | ask again at the phase end | only the upload |
+| 11 | Windows: should the controls window show Mac key names ("option", "command") or Windows ones ("Alt", "Ctrl")? | Mac names | nothing |
 | 7 | The icon: pick one of the previews when they exist | — | the release build only |
 | 8 | Release Mac and Windows together as `deimos-1.0`? | together | nothing until Phase 8 |
 | 9 | During the start-up logos, should Command-Q quit? (Today it is ignored, as the original.) | ignored | nothing |
-| 10 | May the Deimos Windows test script run detached, as you allowed for Ferazel's? (It takes longer than a session's ten-minute command limit.) | yes | only the campaign step of the Windows test run |
+| 10 | May the Deimos Windows test script run detached, as you allowed for Ferazel's? (It takes longer than the ten minutes one command may run, so it would run in the background.) | yes | only the campaign step of the Windows test run |
 
-## Self-review (the seat, after writing; revised after the first review leg)
+## Self-review (the seat, after writing; revised after both review legs and the seat's cross-check)
 
 - **Coverage.** Each of the eleven rows of "What stands between today and done" has a task: 1 → 5-GN, 5-ST;
   2 → 5-QF; 3 → 5-PS; 4 → 5-SM; 5 → 5-BK; 6 → 5-DOC; 7 → 6-CMP, 6-RUL, 6-FX; 8 → 6-BANK; 9 → 7-W0 … 7-W4;
@@ -620,6 +635,6 @@ macOS always shows; the game plays; "publish".
   5–12, sound reaching the speakers, frame checks under translucent draws (no machine can: Ben's gates).
 - **Two slots have no content yet by design:** 5-GN (his notes) and 6-FX (the comparison's rows). Each says who
   writes its cards, where, and before what.
-- **Ladder:** Core 511 → 517 (5-QF) → 524 (5-SM) → 533 (5-PS) → +n (5-GN, as written then) → +n (6-FX) → +1
-  (6-BANK) → +1 (7-W3). Campaign 3 → 4 (5-BK). Replay 4 → 5 (5-SM). WinKit 0 → 16 → 38 → 52 → 62. Where two
+- **Ladder:** Core 511 → 517 (5-QF) → 523 (5-SM) → 532 (5-PS) → +n (5-GN, as written then) → +n (6-FX) → +1
+  (6-BANK) → +2 (7-W3). Campaign 3 → 4 (5-BK). Replay 4 → 5 (5-SM). WinKit 0 → 16 → 38 → 53 → 63. Where two
   sections merge in another order, each task's figure is main's count at its merge plus its own delta.
