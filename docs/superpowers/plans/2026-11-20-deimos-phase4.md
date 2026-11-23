@@ -1,3 +1,5 @@
+> Superseded by docs/superpowers/plans/2026-11-24-deimos-to-release.md on 2026-11-24. Kept as history; nothing current reads it.
+
 # Deimos Rising — Phase 4, the front end — implementation plan (2026-11-20)
 
 > **This file is the authority for Phase 4.** It is built from the "Phase 4 — the front end (cards)" paragraph of

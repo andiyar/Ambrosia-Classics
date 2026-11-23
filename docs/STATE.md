@@ -185,7 +185,14 @@ Settled history lives in docs/STATE-history.md.
   - Older small carries from Phases 2–4: listed in the history file's Snapshot B; each closes when a task next touches
     its file.
 
-## Deimos Rising — 2026-11-22 (Phase 4 built and staged; Ben's first play found the bomb freeze, fixed and restaged; gates 2, 3 and 4 wait on the one app)
+## Deimos Rising — 2026-11-24 (Phase 4 built and staged; the plan from here to the release is written and waits for Ben's approval; gates 2, 3 and 4 wait on the one app)
+
+- **The plan for everything left (2026-11-24, D66):** `docs/superpowers/plans/2026-11-24-deimos-to-release.md` —
+  the one authority; the earlier Deimos plans are history. Phase 5 loose ends on the Mac (Ben's gate notes, eight
+  known faults, the OS X build's pause on leaving the app, the end boss beaten by a test, records put right);
+  Phase 6 the OS 9 / OS X comparison of the whole game and the research notes closed; Phase 7 Windows; Phase 8
+  the release `deimos-1.0`. **Nothing starts until Ben approves it** (`docs/QUESTIONS.md`, DQ1–DQ11; only DQ1
+  blocks everything). Handoff: `docs/handoff-2026-11-24-deimos-remaining-plan.md`.
 
 - **Where it stands:** Phase 1 "level 1 look" gate passed 2026-10-07. Phase 2 "level 1 plays", Phase 3 "the
   campaign" and **Phase 4 "the front end" are all built, merged to local main and staged as ONE app**:
@@ -220,12 +227,10 @@ Settled history lives in docs/STATE-history.md.
   wants changed; (3) gate 3, "does the campaign play like Deimos", with its four named questions (flip pitch; sector
   12 ending with the Beamer alive; own overload while invulnerable; player 2's keys); (4) gate 2, "does level 1 play
   like Deimos". His notes from any gate become a fix wave first.
-- **Where things are:** the plan `docs/superpowers/plans/2026-11-20-deimos-phase4.md` (D52; as executed: D58); the
-  section handoffs `docs/handoff-deimos-phase4-*.md` (history below); Ben's answers in
-  `~/.claude/coordinator-notes/deimos-phase4-mailbox.md`; the OS X build compared with the OS 9 one in
-  `docs/deimos/osx-build.md`; the controller guide `Deimos/GAMEPAD.md`.
-- **Next after the gates:** the fix wave from Ben's notes; the whole-game OS 9 / OS X comparison (Ben: "Yes, after
-  Phase 4"); Phase 5 (Windows).
+- **Where things are:** Phase 4 as executed: D58 and the section handoffs `docs/handoff-deimos-phase4-*.md`
+  (history below); Ben's answers in `~/.claude/coordinator-notes/deimos-phase4-mailbox.md`; the OS X build
+  compared with the OS 9 one (front end only) in `docs/deimos/osx-build.md`; the controller guide `Deimos/GAMEPAD.md`.
+- **Next:** Ben's approval of the plan, then its Phase 5 (the order of tasks is in the plan's "Order" paragraph).
 - **Open from Phase 4** (all on the card's "Known gaps and faults"): one narrow known fault (an app switch during the
   erase question, then Quit, leaves the suspended flags set); the original's pause screen on leaving the app not
   built (a macOS quit during play waits for the player's return); the OS X build's Preferences… menu item and Edit

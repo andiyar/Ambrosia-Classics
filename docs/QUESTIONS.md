@@ -164,6 +164,62 @@ Recommendation: (a) for all six — closest to the Mac app and to what Bubble Tr
 Blocks: nothing (D34: execution does not wait).
 Answer:
 
+## Deimos Rising — open (the plan of 2026-11-24; an attended project, so Ben may also just answer in chat)
+
+The plan: `docs/superpowers/plans/2026-11-24-deimos-to-release.md`. Numbered DQ so they never collide with the loop's.
+
+### DQ1 — 2026-11-24 — Is the plan to finish Deimos Rising approved to start?
+Context: four phases: loose ends on the Mac, the OS 9 / OS X comparison, Windows, the release. Nothing has been built.
+Recommendation: yes. Blocks: everything.
+Answer:
+
+### DQ2 — 2026-11-24 — Your play of the staged app: gates 2, 3 and 4, and do the arrow keys survive bombs in full screen?
+Context: `~/Desktop/Deimos Rising.app` with its card beside it. Your notes become the first fixes.
+Blocks: the fixes your notes need, Phase 5's close, and the release. Nothing else waits.
+Answer:
+
+### DQ3 — 2026-11-24 — Command-Q on the level select
+Context: today a Command-Q there is remembered: the next game earns no score and the app quits back at the menu. That is our reading of the OS X build.
+Options: (a) whatever the OS X build did, re-read first (b) forget the Command-Q once you choose a sector (c) quit at once.
+Recommendation: a. Blocks: nothing.
+Answer:
+
+### DQ4 — 2026-11-24 — A controller button held through a pause
+Options: (a) it acts the moment the pause ends, as a held key does (b) it does nothing until pressed again.
+Recommendation: a. Blocks: nothing.
+Answer:
+
+### DQ5 — 2026-11-24 — Where the OS 9 and OS X builds differ in the game itself, follow the OS X build you played?
+Context: only if the four demo films still play out right; a change that breaks one is kept back and brought to you.
+Recommendation: yes. Blocks: nothing.
+Answer:
+
+### DQ6 — 2026-11-24 — May a Windows test build go up as a GitHub pre-release for your tester when Phase 7 ends?
+Recommendation: asked again then. Blocks: only that upload.
+Answer:
+
+### DQ7 — 2026-11-24 — The icon: pick one of the previews when they exist
+Blocks: the release build only.
+Answer:
+
+### DQ8 — 2026-11-24 — Release Mac and Windows together as `deimos-1.0`?
+Recommendation: together. Blocks: nothing until Phase 8.
+Answer:
+
+### DQ9 — 2026-11-24 — During the start-up logos, should Command-Q quit?
+Context: today it is ignored, as the original. The plan makes sure the logos cannot hang if the sound output disappears.
+Recommendation: leave it ignored. Blocks: nothing.
+Answer:
+
+### DQ10 — 2026-11-24 — May the Deimos Windows test script run in the background, as you allowed for Ferazel's?
+Context: it takes longer than the ten minutes one command may run.
+Recommendation: yes. Blocks: only the longest step of the Windows test run.
+Answer:
+
+### DQ11 — 2026-11-24 — On Windows, should the controls window show Mac key names ("option", "command") or Windows ones ("Alt", "Ctrl")?
+Recommendation: Mac names, as the original's list. Blocks: nothing.
+Answer:
+
 ## Answered
 
 _(moved here by the run that acted on the answer, with what it did)_

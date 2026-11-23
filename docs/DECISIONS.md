@@ -2832,3 +2832,36 @@ still reached the game window. The game's own rules were never at fault.
 4. **D64.6 is still open:** what the port draws for level 20's blades on "no light" cells is 6A-BD's seat to rule
    (run 66 or later). Nothing in run 65 touched it.
 5. **No memory note was written** (D62.6's reasons hold).
+
+## D66 — Deimos Rising: the plan from today to the release, and the seat's rulings (2026-11-24)
+
+**Decided (the seat, Claude Fable 5.2, planning; every item is Ben's to overturn; nothing starts until he approves):**
+the plan is `docs/superpowers/plans/2026-11-24-deimos-to-release.md`, the one authority for all remaining Deimos work.
+It replaces the Phase 5 card of the 2026-11-05 remainder plan; that plan and the Phase 4 plan are marked superseded.
+1. **Four phases:** 5 loose ends on the Mac (Ben's gate notes as a slot; the Phase 4 closing review's eight faults;
+   small follow-ups; the end boss destroyed by a test; records put right), 6 the whole-game comparison of the OS 9 and
+   OS X builds and the research bank closed with no open item, 7 Windows, 8 the release `deimos-1.0`.
+2. **Where the two builds differ in the game, the port follows the OS X build** (as the front end already does, D52),
+   under a film rule: the change lands only if the four demo films still reach their stored scores, the changed
+   function is shown to run in a film (or the campaign run is the witness), and the replay trace is compared before
+   and after. A film that stops matching is traced and the transcription re-checked by both review legs before the
+   OS 9 rule is kept for that function, as a recorded departure. Rejected: staying on the OS 9 build throughout (it
+   is not what Ben played); following OS X regardless of the films (they are the only machine proof of the rules).
+3. **The OS X build's pause on leaving the app, its cursor during a pause, its Preferences… menu item and Edit menu
+   are built** (task 5-PS) without a question, under the standing 100 % rule; they were "known gaps" on the gate-4 card.
+4. **The start-up cannot hang:** if the sound output is lost during the publisher's logo the wait ends (a port
+   hazard the original could not meet). Command-Q during the boot stays ignored unless Ben says otherwise (DQ9).
+5. **Windows shape:** a thin shell (the game, its drawing, sound and every screen are already in the Foundation-only
+   core; no baked fonts, no drawn-dialog work); `Deimos/Shared` compiled by both apps by symlink, `Deimos/Windows`
+   with `DeimosWinKit` and `DeimosWin` on HectorSDL, no HectorKit change; Ctrl = Command, Alt = Option; F1 = About,
+   Ctrl+comma = Preferences…; close and Alt+F4 act as Ctrl+Q; native message boxes for the erase question and the two
+   alerts; settings under `%APPDATA%\Ambrosia Classics\Deimos Rising\`; the menu's 22-pixel menu-bar rule off on
+   Windows; lockstep from the day the Windows build exists (as D41 for Ferazel).
+6. **Release:** Mac and Windows together as `deimos-1.0` (DQ8), a draft first; Ben tries the browser-downloaded DMG
+   and says "publish"; copies in the main checkout's `releases/deimos-1.0/`.
+7. **Dropped, with reasons in the plan:** the level editor, registration, the browser dialog, the original's gamepad
+   windows and HID bundle, a second pad, iPad, remastered art; "attract mode" (the original has none).
+**Questions for Ben:** eleven, `docs/QUESTIONS.md` DQ1–DQ11; only DQ1 (approval) blocks everything.
+**Reviewed by:** two Opus 5.5 legs (spec: 1 blocker, 20 should-fix, 14 minor — the blocker was the plan saying the
+game stays paused on return to the app, where the OS X build ends the pause unless Caps Lock is on; quality: 12
+should-fix, 8 minor), all folded in; then the seat's cross-check.
