@@ -43,7 +43,7 @@ No grounding appendix was needed: every fact the plan uses is in the research ba
   (6-FX). The plan says who writes their cards, where, and what review they get before any dispatch.
 - Not done here, listed for whoever picks it up: other games' Ghidra logs also carry home-folder paths (a
   repo-wide chore); the older October Deimos plans get their "superseded" line in task 5-DOC.
-- The seat's context: 278k at the second review dispatch, past the 300k cap by the close. The plan was the one task
+- The seat's context: 278k at the second review dispatch, 299k of the 300k cap at the close. The plan was the one task
   in flight; nothing else was started.
 
 ## The brief for the next session (only after Ben says go)
