@@ -1,3 +1,5 @@
+> Superseded by docs/superpowers/plans/2026-11-24-deimos-to-release.md on 2026-11-24. Kept as history; nothing current reads it.
+
 # Deimos Rising — the remainder — implementation plan (2026-11-05; made self-contained 2026-11-08)
 
 > **This file is the authority for the remaining work; the earlier plans and the audit are history.** Every task still
