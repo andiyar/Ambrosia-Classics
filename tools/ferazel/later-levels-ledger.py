@@ -334,6 +334,14 @@ def _port_arm(t, cls, ps, n1):
             return (BUILT_S, anchor(SF, r'case 0xb4a\.\.\.0xb4d:'),
                     f'cloud (6A-CL); Setup {anchor(BG, r"static func setupCloud\(")}, Handle '
                     f'{anchor(BG, r"static func cloud\(")}')
+        if t == 0xbf4:
+            # 6A-BD: the rotating blade — the Setup arm (`setupBlade`), the Handle arm (`blade`: spin, dynamic light,
+            # the p4-0 clip) and the player arm (`HitPlayerSprite.blade`, the segment test). Anchored on the Swift case
+            # as written: a removed case fails --check.
+            return (BUILT_S, anchor(SF, r'case 0xbf4:'),
+                    f'rotating blade (6A-BD); Setup {anchor(BG, r"static func setupBlade\(")}, Handle '
+                    f'{anchor(BG, r"static func blade\(")}, hit '
+                    f'{anchor("FerazelCore/Player/HitPlayerSprite.swift", r"static func blade\(")}')
         if t == 0xcb1:
             return (BUILT_S, anchor(SF, r'case 0xcb1:'), 'level exit')
         return (REFUSED, anchor(SF, r'case 0xcb1:', r'throw Error\.notTranscribed'),
