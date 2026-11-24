@@ -446,11 +446,11 @@ final class DrawModeAuditTests: XCTestCase {
         // `SpriteBlitter.behindTilesWalk` (no built level has a strip: header 0x2716 = 0 on levels 1–5).
         W("Sprites/PxSprites.swift:242", .mode, .words([0x80000]), "pxSprite", at: ["28"],
           pins: ["s.mode = PxSprites.drawMode", "drawMode: UInt32 = 0x80000"]),
-        W("Sprites/SetupFaces.swift:430", .mirrored, .flags([true]), "background.plant"),
-        W("Sprites/SetupFaces.swift:431", .mode, .placedTint(0xa8c...0xaef), "background.plant",
+        W("Sprites/SetupFaces.swift:436", .mirrored, .flags([true]), "background.plant"),
+        W("Sprites/SetupFaces.swift:437", .mode, .placedTint(0xa8c...0xaef), "background.plant",
           pins: ["if p.p2 != 0 { s.mode = UInt32(truncatingIfNeeded: Int(p.p2) + 0x10000) }"]),
-        W("Sprites/SetupFaces.swift:500", .mode, .words([0x90000]), "box.teleporter"),
-        W("Sprites/SetupFaces.swift:522", .mode, .words([0x90000]), "box.chest"),
+        W("Sprites/SetupFaces.swift:512", .mode, .words([0x90000]), "box.teleporter"),
+        W("Sprites/SetupFaces.swift:536", .mode, .words([0x90000]), "box.chest"),
         // The dynamic-light arm: 0 for L < 1 and F < 1, and (D67.1, known deviation 7) for L −1 with F 1…0xff, where
         // the original's 0xbff00 + F reads no fixed data; else the light word (`.levelLight`; L −1 never reaches it).
         W("Sprites/SpriteSlot.swift:609", .mode, .words([0]), "platform.raft", "box.boulder", "background.maceBall",

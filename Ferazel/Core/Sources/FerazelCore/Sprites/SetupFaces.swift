@@ -142,6 +142,9 @@ public enum SetupFaces {
 
     /// `*_DAT_100a0080`: the cache placeholder face (`.Load1EncFaceFromPICT(0x96)`, app file).
     public static let placeholderPict: Int16 = 150
+    /// 6A-PS: the placeholder face's `+0` frame (PICT 150's 64 × 64, `FerazelSession.frameRect`) — what a Setup that
+    /// reads its class-cache face's rect sees on a level's first load (the pipes' hot rect, M l. 59338–59343).
+    static let placeholderFrame = IdleSprites.Rect(top: 0, left: 0, bottom: 64, right: 64)
 
     // MARK: - sheets
 
@@ -263,6 +266,9 @@ public enum SetupFaces {
         // 6A-BD: the blade 0xbf4 (`.InitBackgroundSprite` M l. 61876–61878: cache single, flag 0, converted under clut
         // 200 — `*_DAT_1009ff94 = *_DAT_100a0020`), faced by its Handle.
         all.append(one(BackgroundSprite.blade))
+        // 6A-PS: the enemy pipes 0x5d2…0x5d5 (`.InitBoxSprite` M l. 58771: cache singles, flag 0 → clut 200), faced at
+        // Setup from the cache and again by their Handle.
+        for p in BoxSprite.pipes { all.append(one(p)) }
         all.append(one(placeholderPict))
         // BN: every face `.InitBonusSprite` loads (`BonusSprite.sheets`; the level-1/2 entries above are the same sheets).
         var table = Dictionary(uniqueKeysWithValues: all)
@@ -488,6 +494,12 @@ public enum SetupFaces {
             // (`Entry.children`, inserted before the parent; its links index them).
             if Geyser.placed.contains(p.type) {
                 children = Geyser.setup(&s, record: p, level: c.level, rng: &rng)
+            } else if BoxSprite.pipes.contains(p.type) {
+                // 6A-PS: the pipe arm (M l. 59325–59356; `BoxSprite.setupPipe`): the head and tail, `.Deviation(p2)`, the
+                // p2 0 → 100 written back; the hot rect from `+0xc0`'s `+0` frame — on a level's first load the cache
+                // record still holds the placeholder (`placeholderFrame`). Its last call, the throwaway child, is the
+                // spawn's (`spawnLevelSprites`).
+                record = BoxSprite.setupPipe(&s, record: p, level: c.level, rng: &rng, faceRect: placeholderFrame)
             } else {
                 BoxSprite.setup(&s, record: p, level: c.level)
             }
@@ -518,6 +530,8 @@ public enum SetupFaces {
                 face(Geyser.baseSet, 0, .handle)
             case 0x5a9:                                        // the geyser head (GY; never placed): `+0xc0` 0, no face
                 break
+            case 0x5d2...0x5d5:                                // enemy pipes (M l. 59336–59337; 6A-PS): cache single + 4
+                face(Int16(t), 0, .setupCached)
             case 0x51c:                                        // chest (l. 59031)
                 if inWater() { s.mode = 0x90000 }
                 face(0x51c, 0, .setup)
@@ -913,6 +927,25 @@ public enum SetupFaces {
                 parent.siblings.first = out.active.insert(k)
                 e = Entry(type: e.type, spriteClass: e.spriteClass, spawn: e.spawn, sheet: e.sheet,
                           faceIndex: e.faceIndex, source: e.source, slot: parent, light: e.light, record: e.record)
+            }
+            if BoxSprite.pipes.contains(e.type), e.slot.recordIndex != -1 {
+                // 6A-PS: the pipe arm's last call (M l. 59347–59353), before the pipe is inserted:
+                // `.GenerateSprite(+0xc, +0xa, +0x15c, 0x200, now 1, +0x80 + 1)` — the child's class Setup on the session
+                // stream and under the counting window (its draws; its + 1 on the live count, never taken back), the child
+                // inserted (`BoxSprite.generate`) — then child `+0xe9 = 1`: a throwaway that `.UpdateSprites` unlinks. The
+                // pipe's `+0x1d4` stays 0 (its Handle makes the children that emerge). No free record → nothing made.
+                let w = SpriteWorld(level: c.level, active: out.active, records: out.records)
+                w.rng = rng
+                w.enemies = counting
+                w.player.centreX = Int16(truncatingIfNeeded: c.playerX)     // `*_DAT_1009fd94`, the Walker Setup's read
+                if let k = BoxSprite.generate(w, type: Int16(truncatingIfNeeded: e.slot.classWord15c), x: e.slot.x,
+                                              y: e.slot.y, layer: e.slot.layer &+ 1, lights: &out.lightTable,
+                                              effects: c.effects) {
+                    w.active.update(id: k) { $0.dead = true }
+                }
+                rng = w.rng
+                counting = w.enemies
+                out.active = w.active
             }
             if !e.children.isEmpty {
                 // BA: the Bat Setup's own `.MTNewSprite`s (M l. 68186–68196, 68228–68233) — the swarm's members and the

@@ -475,11 +475,11 @@ public enum BoxSprite {
 
     /// `.SetupBoxSprite`'s pipe arm (M l. 59325–59356; PI): the head and tail (`setup`), then `+0x80 = 1`; the live
     /// record's p2 0 → 100, **written back** (the returned record); `+0xa6 = .Deviation(p2)`; `+0x15c` = p1 (the child's
-    /// type); the class cache of the type marked and `+0xc0` = its face (`FaceRef(type, 0)`; no `SetupFaces` arm yet);
+    /// type); the class cache of the type marked and `+0xc0` = its face (`FaceRef(type, 0)`; `SetupFaces`' pipe arm);
     /// the hot rect = that face's `+0` rect (`faceRect`) inset by 3 on each side; `+0x110` (gravity), `+0x1f8`, `+0x5c` 0;
     /// then `goto LAB_1006cf1c`. Not here: the arm's last call, `.GenerateSprite(+0xc, +0xa, +0x15c, 0x200, 1, +0x80 + 1)`
     /// with the child's `+0xe9 = 1` (M l. 59347–59353) — a throwaway child (its class Setup's draws, and its count while
-    /// the Setup window is open) that needs the level spawn's world: // later: level 21's `SetupFaces` pipe arm.
+    /// the Setup window is open), made by the level spawn before the pipe's insert (6A-PS, `SetupFaces.spawnLevelSprites`).
     public static func setupPipe(_ s: inout SpriteSlot, record p: Placement, level: LevelFile, rng: inout FastRand,
                                  faceRect: IdleSprites.Rect) -> Placement {
         setup(&s, record: p, level: level)

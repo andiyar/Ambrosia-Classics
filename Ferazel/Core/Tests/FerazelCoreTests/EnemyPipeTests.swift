@@ -325,4 +325,178 @@ final class EnemyPipeTests: XCTestCase {
         XCTAssertTrue(open.countedInTotals)
         XCTAssertEqual(w.enemies.live, 1)
     }
+
+    // MARK: - 6A-PS: the pipes' level spawn (level 21, on the fixture with nothing left out)
+
+    /// Level 21's six pipes as shipped (World Data): record, type, p1 (the child type), p2.
+    private static let level21Pipes: [[Int]] = [
+        [35, 1491, 1730, 0], [36, 1491, 1705, 150], [135, 1491, 1705, 60], [136, 1492, 1700, 110],
+        [137, 1490, 1860, 60], [169, 1493, 1730, 100],
+    ]
+
+    func testLevel21PipeLevelSpawn() throws {
+        let data = try LevelFixture.base.get()
+        let real = try LevelFile.load(from: data, level: 21)
+        let pipes = real.activePlacements.filter { BoxSprite.pipes.contains($0.type) }
+        XCTAssertEqual(pipes.map { [$0.index, Int($0.type), Int($0.p1), Int($0.p2)] }, Self.level21Pipes)
+        // Every child type is placed on level 21 itself (a child type not placed here would be a STOP for the seat):
+        // the Walkers 1700 / 1705, the Blob 1730, the insect 1860.
+        var placed: [Int16: Int] = [:]
+        for p in real.activePlacements where [1700, 1705, 1730, 1860].contains(p.type) { placed[p.type, default: 0] += 1 }
+        XCTAssertEqual(placed, [1700: 5, 1705: 5, 1730: 3, 1860: 5])
+
+        // The Setup arm (M l. 59325–59356): the type's cache single marked (`rec+1 = 1`, M l. 59335 — singles #6–#9,
+        // `.InitBoxSprite` M l. 58771) and `+0xc0` = its face (`rec+4`, M l. 59336–59337) — on a level's first load the
+        // placeholder PICT 150 (`.Cache1EncFaceFromPICT` M l. 73951–73952), so the hot rect is the placeholder's `+0`
+        // frame (0, 0, 64, 64) inset by 3 (M l. 59338–59343); drawn from the cache (`.setupCached`).
+        let ctx = SetupFaces.Context(level: real, playerX: SetupFaces.Context.levelStartPlayerX(real.header))
+        let placeholder = FaceRef(pict: SetupFaces.placeholderPict, index: 0, set: .encoded)
+        XCTAssertEqual(FerazelSession.frameRect(placeholder, resources: data),
+                       IdleSprites.Rect(top: 0, left: 0, bottom: 64, right: 64))
+        for (k, t) in (Int16(0x5d2)...0x5d5).enumerated() {
+            XCTAssertEqual(CachedFaces.markedRecords(type: t), [.single(5 + k)], "\(t)")
+            XCTAssertEqual(CachedFaces.singles[5 + k].pict, t)
+            XCTAssertEqual(CachedFaces.singles[5 + k].flag, 0)
+        }
+        for p in pipes {
+            var r = FastRand(seed: 3), own = FastRand(seed: 3)
+            let e = try SetupFaces.setup(p, context: ctx, rng: &r)
+            let s = e.slot, what = "record \(p.index)"
+            XCTAssertEqual(e.source, .setupCached, what)
+            XCTAssertEqual(e.sheet, .single(p.type), what)
+            XCTAssertEqual(s.face, FaceRef(pict: p.type, index: 0, set: .encoded), what)
+            XCTAssertEqual(s.hotRect, IdleSprites.Rect(top: 3, left: 3, bottom: 61, right: 61), what)
+            XCTAssertEqual(s.layer, 1, what)
+            XCTAssertEqual(s.classWord15c, Int32(p.p1), what)
+            XCTAssertEqual(e.record.p2, p.p2 == 0 ? 100 : p.p2, what)
+            XCTAssertEqual(s.counterA6, deviation(e.record.p2, &own), what)
+            XCTAssertEqual(r.seed, own.seed, "\(what): the Setup itself draws `.Deviation` only")
+            XCTAssertTrue(e.children.isEmpty, "\(what): the throwaway child is the level spawn's")
+        }
+
+        // The spawn: after each pipe's Setup, `.GenerateSprite(x, y, p1, 0x200, now 1, layer 2)` (M l. 59347–59350) —
+        // the child's class Setup draws here (a Walker R(0x5fff), R(0x46), R(400), M l. 56898–57100; the Blob and the
+        // insect none) and counts it (the window is open: Walker M l. 57090–57094, Blob 67728–67731, insect
+        // 68234–68237) — then child `+0xe9 = 1` (M l. 59351–59353). Replayed per record on a copy of the stream.
+        var rng = FastRand(seed: 1)
+        var counting = EnemyCounting(window: true)
+        let spawned = try SetupFaces.spawnLevelSprites(context: ctx, rng: &rng, counting: &counting) { _ in .noFace }
+        var replay = FastRand(seed: 1)
+        var replayCount = EnemyCounting(window: true)
+        var lights = LightTable()
+        var bumps: Int32 = 0
+        var expected: [[Int]] = []                                     // type, x, y, then a Walker's three draws
+        for p in real.spawnOrder {
+            _ = try SetupFaces.setup(p, context: ctx, lights: &lights, counting: &replayCount, rng: &replay)
+            guard BoxSprite.pipes.contains(p.type) else { continue }
+            replayCount.live += 1
+            bumps += 1
+            var row = [Int(p.p1), Int(p.x), Int(p.y)]
+            if p.p1 == 1700 || p.p1 == 1705 {
+                row += [Int(replay.next(0x5fff)) * 2 + 0xbfff, Int(replay.next(0x46)) + 0x78, Int(replay.next(400)) + 1000]
+            }
+            expected.append(row)
+        }
+        XCTAssertEqual(rng.seed, replay.seed, "the throwaway children's draws sit after their pipes' Setups")
+        XCTAssertEqual(bumps, 6)
+        XCTAssertEqual(counting.live, replayCount.live)
+        let thrown = spawned.active.sprites.filter { $0.recordIndex == 0x200 && $0.dead }
+        XCTAssertEqual(thrown.map { Int($0.killCount) }, [1, 1, 1, 1, 1, 1])
+        var seen = thrown.map { k -> [Int] in
+            var row = [Int(k.type), k.x, k.y]
+            if k.handler == .walker { row += [Int(k.voicePitch), Int(k.classTimer), Int(k.classWord154)] }
+            return row
+        }
+        seen.sort { $0.lexicographicallyPrecedes($1) }
+        XCTAssertEqual(seen, expected.sorted { $0.lexicographicallyPrecedes($1) })
+        XCTAssertEqual(thrown.filter(\.countedInTotals).count, 6)
+        for s in spawned.active.sprites where BoxSprite.pipes.contains(s.type) {
+            XCTAssertNil(s.siblings.first, "record \(s.recordIndex): the throwaway is not linked (`+0x1d4` 0)")
+        }
+        XCTAssertEqual(spawned.records[35].p2, 100)
+
+        // On the fixture (level 21, nothing left out, through the level runner; headless).
+        XCTAssertEqual(try LevelFixture.leftOut(real, []).count, 0)
+        let run = try LevelFixture.open(level: 21, leaveOut: [])
+        var now: UInt32 = 0
+        func tick() throws {
+            _ = try run.tick(now: now, input: FrontInput())
+            now &+= 1
+        }
+        while run.session == nil && now < 4000 { try tick() }
+        let session = try XCTUnwrap(run.session, "level 21 opens with nothing left out")
+        let w = session.world
+        // The p2 write-back (M l. 59328–59330) in the live records: record 35's 0 → 100, the others as shipped.
+        XCTAssertEqual(real.placements[35].p2, 0)
+        for row in Self.level21Pipes {
+            XCTAssertEqual(w.records[row[0]].p2, row[3] == 0 ? 100 : Int16(row[3]), "record \(row[0])")
+        }
+        // The six throwaways on the list (`+0xe9` 1), each counted: the live count and the level's enemy total carry
+        // the + 6 (M l. 2528–2536).
+        XCTAssertEqual(w.active.sprites.filter { $0.recordIndex == 0x200 && $0.dead }.count, 6)
+        XCTAssertEqual(w.enemies.live, counting.live)
+        XCTAssertEqual(w.globals.totals[0][21], Int16(truncatingIfNeeded: w.enemies.live))
+        // The insect throwaway's Setup made its body (record 0x200), which `+0xe9 = 1` does not reach: five placed
+        // insects' bodies and that one.
+        XCTAssertEqual(w.active.sprites.filter { $0.handler == .insectBody }.count, 6)
+        let liveAtStart = w.enemies.live
+        XCTAssertEqual(liveAtStart, 36 + 6, "measured: the 36 counted placements and the six throwaways")
+        // The pipes on the list with their first-load hot rect, no link, no idle entry: 0x5d2…0x5db spawn now
+        // (`.GenerateSprite` M l. 1691–1936 → `.MTNewSprite`), so `.HandleIdleSprites` never idles a pipe.
+        for row in Self.level21Pipes {
+            let s = try XCTUnwrap(w.active.sprites.first { Int($0.recordIndex) == row[0] }, "record \(row[0])")
+            XCTAssertEqual(s.hotRect, IdleSprites.Rect(top: 3, left: 3, bottom: 61, right: 61))
+            XCTAssertNil(s.siblings.first)
+            XCTAssertFalse(w.idle.entries.contains { $0?.saved.recordIndex == Int16(row[0]) })
+        }
+
+        // The load bar (`.LoadCachedSpriteFaces`, M l. 73769–73869): the pipes' singles #6–#9 marked; the throwaways'
+        // Setups also mark their classes' records, but every child type is placed here, so the marks of the placed
+        // types (`needed(by:)`) already hold them — the count is the same with and without.
+        let needed = CachedFaces.needed(by: session)
+        for k in 5...8 { XCTAssertTrue(needed.records.contains(.single(k)), "single #\(k + 1)") }
+        var withChildren = needed
+        for p in pipes { withChildren.records.formUnion(CachedFaces.markedRecords(type: p.p1, p1: 0)) }
+        XCTAssertEqual(withChildren, needed)
+        var a = CachedFaces(), b = CachedFaces(), c = CachedFaces()
+        let bars = a.load(needed: needed)
+        XCTAssertEqual(b.load(needed: withChildren).count, bars.count)
+        var noPipes = needed
+        for k in 5...8 { noPipes.records.remove(.single(k)) }
+        XCTAssertEqual(c.load(needed: noPipes).count, bars.count - 4)
+        // Measured: 40 bars (36 without the pipes' singles), n = 150 faces → the last bar (300, 300).
+        XCTAssertEqual(bars.count, 40)
+        XCTAssertEqual(bars.last.map { [$0.0, $0.1] }, [300, 300])
+
+        // Frames: `.UpdateSprites` counts each throwaway's `+0xe9` up and unlinks it at 4 (M l. 4968–5032); the count
+        // is never taken back (`EnemyCounting.kill` needs `+0xe9` 0).
+        let start = run.iterations
+        while run.iterations < start + 5 && now < 8000 { try tick() }
+        XCTAssertTrue(w.active.sprites.filter { $0.recordIndex == 0x200 && $0.dead }.isEmpty)
+        XCTAssertEqual(w.enemies.live, liveAtStart)
+
+        // The parent / child carry: pipe 135 (1491, p2 60) makes its 1705 at run time (`pipeArm`); the pipe is never
+        // idled, so while the child lives its `+0x1d4` stays, and no second child is made (M l. 60760–60767).
+        let pipeID = try XCTUnwrap(w.active.sprites.first { $0.recordIndex == 135 }?.id)
+        var guardFrames = 0
+        while try XCTUnwrap(w.active.record(id: pipeID)).siblings.first == nil && guardFrames < 200 {
+            let i = run.iterations
+            while run.iterations == i && now < 20000 { try tick() }
+            guardFrames += 1
+        }
+        let child = try XCTUnwrap(w.active.record(id: pipeID)?.siblings.first, "pipe 135 spawned")
+        let k = try XCTUnwrap(w.active.record(id: child))
+        XCTAssertEqual([Int(k.type), Int(k.recordIndex)], [1705, 0x200])
+        XCTAssertFalse(k.dead)
+        var lived = 0
+        for _ in 0..<60 {
+            let i = run.iterations
+            while run.iterations == i && now < 30000 { try tick() }
+            guard let c = w.active.record(id: child), !c.dead, !c.killedForGood else { break }
+            lived += 1
+            XCTAssertEqual(try XCTUnwrap(w.active.record(id: pipeID)).siblings.first, child)
+            XCTAssertFalse(w.idle.entries.contains { $0?.saved.recordIndex == 135 })
+        }
+        XCTAssertEqual(lived, 60, "measured: the child lives the 60 frames")
+    }
 }
