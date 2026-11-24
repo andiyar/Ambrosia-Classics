@@ -45,8 +45,7 @@ public enum BackgroundSprite {
     /// - `+0x5c`, `+0x1f8` 0; rect `SetRect(0x12, 0x2c, 0x6e, 0x44)` below 0x5cd, else `(0x16, 0x16, 0x4e, 0x4e)`;
     ///   the class-cache face (`+0xc0 = PTR_DAT_100a09f4[type − 0x5c8] + 4`, flagged for `.LoadCachedSpriteFaces`).
     /// - mode `+0xb0` = p1, 0 → 0xb; **p2 0 → 0x8c and p3 0 → 0x1e written back to the record**.
-    /// - modes 1, 2: the programmed path and `+0x188 = 1` (M l. 62342; `SetupFaces` refuses them — // later: no level
-    ///   1–5 placement).
+    /// - modes 1, 2 (6A-MP): the programmed path on the written-back record (`setupPath`, M l. 62339–62360).
     /// - modes 10…14: `+0x188 = 1` (M l. 62363: `keepRecord` — no `.UpdateSprites` write-back or count-up flag clear),
     ///   one-way `+0x185 = 1`; with a record (`+0x48 ≠ −1`): persp = 1 for modes 12, 13, 2 for 14, else 0; persp ≠ 0
     ///   clears `+0x88`; `+0xa6 = 0`, `+0x1f8 = 0`.
@@ -62,6 +61,7 @@ public enum BackgroundSprite {
         let rec = Placement(index: p.index, flag: p.flag, byte1: p.byte1, type: p.type, p1: p.p1,
                             p2: p.p2 == 0 ? 0x8c : p.p2, p3: p.p3 == 0 ? 0x1e : p.p3, p4: p.p4, y: p.y, x: p.x)
         let mode = s.subtype
+        if 0 < mode && mode < 3 { setupPath(&s, record: rec) }      // `sVar21 < 3 && 0 < sVar21` (M l. 62339)
         if 9 < mode && mode < 0xf {
             s.keepRecord = true
             s.oneWay = true
@@ -134,7 +134,7 @@ public enum BackgroundSprite {
     /// (`spring`), passages 0xb54 / 0xb55 (`passage`) and the two below; `.StandardSpriteCleanup` (`LAB_10074e14`).
     /// - 0x5c8…0x5d1 (l. 63136–63186): **the face re-set every frame** from the class cache (`+0xc0 =
     ///   PTR_DAT_100a09f4[type − 0x5c8] + 4`); modes 1, 2 → `.HandleProgrammedPath` + `.ApplyGravityAndSeparate`
-    ///   (// later: none on levels 1–5, 10, 11; Setup refuses them); modes 10…14: `+0xa6` < 0 counts up, else 0;
+    ///   (6A-MP, `pathMace`; first placed on level 20); modes 10…14: `+0xa6` < 0 counts up, else 0;
     ///   vx = vy = 0; below 0x5cd the centre `+0x10 = +0xc + 0x40`, `+0xe = +0xa + 0x32`; `.UpdateRadialPos`;
     ///   `.UpdateRadiusSprites(s, 0, 0)`; `+0x194 = 0`; modes 10, 11: `+0x170 = 1`, rotation `+0x1aa = (angle >> 8)
     ///   + 90` (− 360 past 359), `+0x88 = 0`, `+0x89 = 1`; modes 12…14: `depthBand` — the layer through
@@ -182,8 +182,8 @@ public enum BackgroundSprite {
         guard let s = w.active.record(id: id) else { return }
         let mode = s.subtype
         if mode < 10 {
-            // later: modes 1, 2 (`.HandleProgrammedPath`, `.ApplyGravityAndSeparateFromTiles`) — refused at Setup.
-            return
+            if 0 < mode && mode < 3 { pathMace(w, id: id) }             // modes 1, 2 (M l. 63141–63145; 6A-MP)
+            return                                                      // 3…9 and below 1: nothing
         }
         guard mode < 0xf else { return }
         w.active.update(id: id) { c in
@@ -1351,5 +1351,45 @@ extension BackgroundSprite {
         func t(_ v: Double) -> Int32 { Int32(v.rounded(.towardZero)) }
         return (t(x.addingProduct(16.0, c)), t(y.addingProduct(-16.0, s)),
                 t(x.addingProduct(88.0, c)), t(y.addingProduct(-88.0, s)))
+    }
+}
+
+// MARK: - 6A-MP: the programmed-path maces (modes 1 and 2)
+
+extension BackgroundSprite {
+    /// The mode-1 / mode-2 arm of the 0x5c8…0x5d1 Setup (M l. 62339–62360; ENG §2.10), run by `setupMace` after the
+    /// common stores and the record write-backs (p2 0 → 0x8c, p3 0 → 0x1e, M l. 62329–62336), so the path reads the
+    /// written-back record `rec`: `+0x170 = 1` (the harmful flag — never cleared: the Handle's depth band is modes 12…14
+    /// only), `+0x185 = 0` (not one-way, unlike modes 10–14), `+0x188 = 1` (`keepRecord`: `.UpdateSprites` writes no
+    /// position back), `.SetupProgrammedPath(s, −1, 0)` (`ProgrammedPath.setup` — its bounds from the position **before**
+    /// the offset, M l. 62343), then mode 1 → `+0x1c += 256·p4`, mode 2 → `+0x14 += 256·p4` (M l. 62344–62353), and the
+    /// pixel copies `+0xc = +8 = (i16)(+0x14 >> 8)`, `+0xa = +6 = (i16)(+0x1c >> 8)` (M l. 62354–62359). No random draw;
+    /// no radial and no chain (those are the mode 10–14 branch's, M l. 62362–62427 — `makeRadial` returns for 1, 2).
+    /// Levels 20 (1 ×16) and 22 (1 ×23, 2 ×6) place them, every one the ball 1485; none on levels 1–5, 10, 11, 15, 18.
+    static func setupPath(_ s: inout SpriteSlot, record rec: Placement) {
+        s.classWord170 = 1
+        s.oneWay = false
+        s.keepRecord = true
+        ProgrammedPath.setup(&s, record: rec)
+        if s.subtype == 1 {
+            s.y256 &+= Int32(rec.p4) &* 0x100
+        } else if s.subtype == 2 {
+            s.x256 &+= Int32(rec.p4) &* 0x100
+        }
+        s.x = SpriteWorld.pixel(s.x256)
+        s.y = SpriteWorld.pixel(s.y256)
+        s.oldPosition = SpriteSlot.Point(x: s.x, y: s.y)
+    }
+
+    /// The mode-1 / mode-2 arm of the 0x5c8…0x5d1 Handle (M l. 63141–63145), after the face (M l. 63138–63139):
+    /// `.HandleProgrammedPath` (`ProgrammedPath.handle` — vy (mode 1) or vx (mode 2) toward ±p3 by p3 >> 4, turning
+    /// past a bound) then `.ApplyGravityAndSeparateFromTiles` (`TileSolver.applyGravityAndSeparate`; `+0x1f8` is 0, so
+    /// no tile callback: the path is not stopped by tiles, and gravity `+0x110` is the `.InitSprite` 0). No radial step,
+    /// no spoke update, no layer change and no `+0x170` store (all modes 10–14's, M l. 63147–63187).
+    static func pathMace(_ w: SpriteWorld, id: Int) {
+        guard var c = w.active.record(id: id) else { return }
+        ProgrammedPath.handle(w, id: id, slot: &c)
+        w.active.update(id: id) { [c] in $0 = c }
+        TileSolver(world: w).applyGravityAndSeparate(id, pass: nil)
     }
 }

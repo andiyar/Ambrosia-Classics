@@ -417,11 +417,11 @@ public enum SetupFaces {
                 // here, so frame 1 can carry PICT 150 until the Handle's per-frame re-face; Core takes the cached face
                 // (`.setupCached`). Not visible on L1 (pendulums at x 2656 / 2756, off screen at the start). 1489
                 // (0x5d1): no shipped PICT and no level places it.
-                // `+0xb0 = p1` (0 → 0xb); modes 1, 2 move the sprite onto a programmed path (not transcribed). The rest
-                // (W2a): `BackgroundSprite.setupMace` — rect, the written-back p2 / p3, one-way, `+0x88`, `+0xa6`; the
-                // radial block and the mace chains are made after the insert (`spawnLevelSprites`).
-                let mode = p.p1 == 0 ? 0xb : Int(p.p1)
-                guard !(1...2).contains(mode) else { throw Error.notTranscribed(type: p.type) }
+                // `+0xb0 = p1` (0 → 0xb). The rest (W2a): `BackgroundSprite.setupMace` — rect, the written-back p2 / p3,
+                // one-way, `+0x88`, `+0xa6`; modes 1, 2 (6A-MP, M l. 62339–62360): the programmed path
+                // (`BackgroundSprite.setupPath`, on the written-back record — the one `ProgrammedPath`). The radial
+                // block and the mace chains (modes 10–14 only, M l. 62362–62427) are made after the insert
+                // (`spawnLevelSprites`).
                 record = BackgroundSprite.setupMace(&s, record: p)
             case 0xa8c...0xaef:                                // plants (l. 62629–62670)
                 s.layer = -100
@@ -941,8 +941,9 @@ public enum SetupFaces {
             case .now:
                 let id = out.active.insert(e.slot)
                 if BackgroundSprite.maces.contains(e.type) {
-                    // `.MakeRadial` + `.MakeRadiusSprites` inside the 1480–1489 Setup (W2a): the mace chains are
-                    // `.MTNewSprite`s of their own (no `FastRand`). 1480–1489 always spawn now (`SpriteClassTable`).
+                    // `.MakeRadial` + `.MakeRadiusSprites` inside the 1480–1489 Setup (W2a), modes 10–14 only (M l. 62362;
+                    // `makeRadial` returns for the path modes 1, 2 — ENG E19): the mace chains are `.MTNewSprite`s of
+                    // their own (no `FastRand`). 1480–1489 always spawn now (`SpriteClassTable`).
                     // ⚑ The throwaway `SpriteWorld` here has its own seed-1 `rng`, not `rng` above: a `FastRand` draw
                     // added to `makeRadial` would be swallowed silently — thread the stream through first.
                     let w = SpriteWorld(level: c.level, active: out.active)
