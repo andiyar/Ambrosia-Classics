@@ -643,7 +643,8 @@ public final class LevelRun {
                                    start: start,
                                    refreshFacing: refreshFacing,
                                    records: revisit ? save.restoreSnapshot(level: Int16(L)) : nil,
-                                   hostedByLevelRun: true, stripClut: stripClut)
+                                   hostedByLevelRun: true, stripClut: stripClut,
+                                   loadedSingles: cachedFaces.loadedSingles)   // D69: before this level's load
         session = s
         if systemQuitRequested { s.requestSystemQuit(); systemQuitRequested = false }
         try services.attach(lights: s.lights, tintTableDraws: s.tintTableDraws)
@@ -1353,7 +1354,7 @@ public struct CachedFaces: Equatable, Sendable {
     /// 6A-CL: every cloud 0xb4a…0xb4d → its own single (`_DAT_100a0b20`, `0b1c`, `0b18`, `0b14`: `rec+1 = 1`, M l.
     /// 62530–62548; #132–#135, flag 0).
     /// 6A-BD: the blade 0xbf4 → its single (`_DAT_100a0b0c`: `rec+1 = 1`, M l. 62572; #136, flag 0).
-    /// 6A-PS: every enemy pipe 0x5d2…0x5d5 → its own single (`rec+1 = 1` at `type·0x10 − 0x5d1f`, M l. 59335; #6–#9, flag
+    /// 6A-PS: every enemy pipe 0x5d2…0x5d5 → its own single (`rec+1 = 1` at `type·0x10 − 0x5d1f`, M l. 59336; #6–#9, flag
     /// 0). Its throwaway child's Setup marks that class's records too; every child type is placed where pipes are (21).
     /// Every other built type marks nothing. // later: Phase 6 — the marks of the types not built yet, with their
     /// Setups (the other scenery, the carpet set 0x438, fire 1208's 0x4b8 + 0x4b9, the other bosses' own

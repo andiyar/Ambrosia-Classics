@@ -478,7 +478,7 @@ public enum BoxSprite {
     /// type); the class cache of the type marked and `+0xc0` = its face (`FaceRef(type, 0)`; `SetupFaces`' pipe arm);
     /// the hot rect = that face's `+0` rect (`faceRect`) inset by 3 on each side; `+0x110` (gravity), `+0x1f8`, `+0x5c` 0;
     /// then `goto LAB_1006cf1c`. Not here: the arm's last call, `.GenerateSprite(+0xc, +0xa, +0x15c, 0x200, 1, +0x80 + 1)`
-    /// with the child's `+0xe9 = 1` (M l. 59347–59353) — a throwaway child (its class Setup's draws, and its count while
+    /// with the child's `+0xe9 = 1` (M l. 59349–59355) — a throwaway child (its class Setup's draws, and its count while
     /// the Setup window is open), made by the level spawn before the pipe's insert (6A-PS, `SetupFaces.spawnLevelSprites`).
     public static func setupPipe(_ s: inout SpriteSlot, record p: Placement, level: LevelFile, rng: inout FastRand,
                                  faceRect: IdleSprites.Rect) -> Placement {
@@ -1441,6 +1441,13 @@ public enum BoxSprite {
         default:
             return nil
         }
+    }
+
+    /// The types `generate` builds a Setup for: its class is one of `generate`'s arms. The pipes' level spawn refuses
+    /// any other child type (D69, `SetupFaces.spawnLevelSprites`); the run-time callers keep `generate`'s nil.
+    static func generates(type: Int16) -> Bool {
+        guard let (cls, _) = SpriteClassTable.classify(type: type, p1Negative: false) else { return false }
+        return [.bonus, .bat, .walker, .blob].contains(cls)
     }
 
     /// `.KillBox(s) @ 100705f0` (M l. 61483–61520): `+0xe9 = 1`; the switch blocks 0x4e2…0x4ff and the rocks 0x433 /

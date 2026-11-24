@@ -424,7 +424,7 @@ final class DrawModeAuditTests: XCTestCase {
         W("Player/ShadowDouble.swift:156", .mirrored, .copy, "player.shadowDouble"),
         W("Player/ShadowDouble.swift:157", .mode, .words([0x1000b]), "player.shadowDouble",
           at: ["Player/ShadowDouble.swift:13"]),
-        W("Session/FerazelSession.swift:226", .mirrored, .copy, "player.shadowRing"),
+        W("Session/FerazelSession.swift:234", .mirrored, .copy, "player.shadowRing"),
         W("Shots/CastSpell.swift:164", .mirrored, .flags([false]), "shot"),
         // 10·dir, dir 0…0x23, only for a shot with gravity (`0 < +0x110`: ids 0, 1, 3, 4, 7 and the seed 0x5a); the
         // followers take their main's angle (the orb 0x50 has gravity 0, PlayerShot.setup, so its followers get 0).
@@ -446,11 +446,11 @@ final class DrawModeAuditTests: XCTestCase {
         // `SpriteBlitter.behindTilesWalk` (no built level has a strip: header 0x2716 = 0 on levels 1–5).
         W("Sprites/PxSprites.swift:242", .mode, .words([0x80000]), "pxSprite", at: ["28"],
           pins: ["s.mode = PxSprites.drawMode", "drawMode: UInt32 = 0x80000"]),
-        W("Sprites/SetupFaces.swift:436", .mirrored, .flags([true]), "background.plant"),
-        W("Sprites/SetupFaces.swift:437", .mode, .placedTint(0xa8c...0xaef), "background.plant",
+        W("Sprites/SetupFaces.swift:442", .mirrored, .flags([true]), "background.plant"),
+        W("Sprites/SetupFaces.swift:443", .mode, .placedTint(0xa8c...0xaef), "background.plant",
           pins: ["if p.p2 != 0 { s.mode = UInt32(truncatingIfNeeded: Int(p.p2) + 0x10000) }"]),
-        W("Sprites/SetupFaces.swift:512", .mode, .words([0x90000]), "box.teleporter"),
-        W("Sprites/SetupFaces.swift:536", .mode, .words([0x90000]), "box.chest"),
+        W("Sprites/SetupFaces.swift:519", .mode, .words([0x90000]), "box.teleporter"),
+        W("Sprites/SetupFaces.swift:543", .mode, .words([0x90000]), "box.chest"),
         // The dynamic-light arm: 0 for L < 1 and F < 1, and (D67.1, known deviation 7) for L −1 with F 1…0xff, where
         // the original's 0xbff00 + F reads no fixed data; else the light word (`.levelLight`; L −1 never reaches it).
         W("Sprites/SpriteSlot.swift:609", .mode, .words([0]), "platform.raft", "box.boulder", "background.maceBall",
@@ -1815,7 +1815,9 @@ final class DrawModeAuditTests: XCTestCase {
           "the session is built at each level start, every built level's run included"),
         R("Sprites/SetupFaces.swift", "Error.unmapped", 1, .loadsClean, [.levelsLoad],
           "every active placement of every built level sets up (the audit runs each one, and the level start does)"),
-        R("Sprites/SetupFaces.swift", "Error.notTranscribed", 13, .loadsClean, [.levelsLoad], "the same Setups"),
+        // D69 (6A-PS review, on D67.3): 13 → 14 — the pipes' level spawn refuses a child type `BoxSprite.generate`
+        // does not build (pipes are placed on level 21 only, not built yet, and every child type there is built).
+        R("Sprites/SetupFaces.swift", "Error.notTranscribed", 14, .loadsClean, [.levelsLoad], "the same Setups"),
         R("Sprites/SetupFaces.swift", "Error.autoScrollSprites", 1, .headerZero, [.headerCamera],
           "header `autoScrollEnable` = 0 on every built level"),
         R("World/Movers/BonusSprite.swift", "SetupFaces.Error.notTranscribed", 2, .loadsClean,

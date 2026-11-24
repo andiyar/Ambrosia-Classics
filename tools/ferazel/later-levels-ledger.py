@@ -402,8 +402,12 @@ def _port_arm(t, cls, ps, n1):
             return (BUILT_S, anchor(SF, r'case 0xc12\.\.\.0xc14:'), 'crate')
         dflt = anchor(SF, r'case 0xc12\.\.\.0xc14:', r'throw Error\.notTranscribed')
         if 0x5d2 <= t <= 0x5d5:
-            return (REFUSED, dflt, f'enemy pipe: `setupPipe` built ({anchor(BOX, r"public static func setupPipe")}), '
-                                   'not wired into the level spawn (6A-L10…L22, level 21)')
+            # 6A-PS built the pipe arm and its level spawn (D69): anchored on the Swift case as written and on the
+            # spawn's throwaway-child block, so a removed arm or spawn fails --check.
+            setup = anchor(BOX, r'public static func setupPipe')
+            spawn = anchor(SF, r'guard BoxSprite[.]generates[(]type: childType[)]')
+            return (BUILT_S, anchor(SF, r'case 0x5d2[.][.][.]0x5d5:'),
+                    f'enemy pipe (6A-PS): `setupPipe` ({setup}) in the level spawn, with its throwaway child ({spawn})')
         if t in (0x424, 0x425):
             # 6A-BX1b built the face arm (the boot singles 0x424 / 0x425, M l. 58737–58740): anchored on the Swift case
             # as written and on the faces in the table, so a removed arm (or a dropped face) fails --check.

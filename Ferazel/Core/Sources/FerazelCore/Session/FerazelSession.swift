@@ -164,12 +164,15 @@ public final class FerazelSession {
     ///   `unlocked[L] = 1` before the player spawn). False (every caller before L1) = Phase 2's behaviour exactly.
     /// - Parameter stripClut: 6A-S8 — what `*_DAT_1009ff94` holds when `.SetupLevel` reaches the horizon strip's add
     ///   (`LevelRun.setupLevel` passes it per path; `PxSprites.setupLevelClut` on both).
+    /// - Parameter loadedSingles: 6A-PS review (D69) — the cache singles still loaded when this level's Setups run
+    ///   (`LevelRun`'s `CachedFaces`, before this level's `.LoadCachedSpriteFaces`): each loaded pipe single's `+0`
+    ///   frame goes to the Setups (`SetupFaces.Context.loadedPipeFrames`). Empty (the default) → a first load.
     public init(resources: FerazelResources, prefs: FerazelPrefs, level: Int, seed: Int32 = 1,
                 carry: LevelCarry = LevelCarry(), faceBounds: ((FaceRef) -> IdleSprites.Rect)? = nil,
                 particleFaces: ParticleFaces = ParticleFaces(), diffuseRandoms: DiffuseRandoms? = nil,
                 diffuseRandomsAt: DiffuseRandomsAt? = nil, start: (x: Int, y: Int)? = nil,
                 refreshFacing: Bool = true, records: [Placement]? = nil, hostedByLevelRun: Bool = false,
-                stripClut: Int16 = PxSprites.setupLevelClut) throws {
+                stripClut: Int16 = PxSprites.setupLevelClut, loadedSingles: Set<Int16> = []) throws {
         self.resources = resources
         self.prefs = prefs
         self.hostedByLevelRun = hostedByLevelRun
@@ -209,7 +212,12 @@ public final class FerazelSession {
         camera = try Camera(header: L.header, spriteX: px, spriteY: py)
         camera.shake = carry.shake                                     // EF review fix: the shake runs on (`LevelCarry`)
         // playerX = `fd94` = origin x + 0x32 (`.GameLoop` l. 5149, before `.SetupLevel`).
-        let context = SetupFaces.Context(level: L, playerX: px + 0x32, effects: prefs.effects, records: records)
+        // D69: a loaded pipe single's `rec+4` is its real face; its Setup reads that `+0` frame (M l. 59337–59345).
+        let pipeFrames = Dictionary(uniqueKeysWithValues: BoxSprite.pipes.filter(loadedSingles.contains).map {
+            ($0, Self.frameRect(FaceRef(pict: $0, index: 0, set: .encoded), resources: resources))
+        })
+        let context = SetupFaces.Context(level: L, playerX: px + 0x32, effects: prefs.effects, records: records,
+                                         loadedPipeFrames: pipeFrames)
         // `.ClearCrunchSprites` (`.GameLoop` l. 5160, before `.SetupLevel`): the 40-slot overlay table — already empty
         // in this fresh world; W4's level flow keeps the order when a world is reused.
         world.player.crunchSprites = [Int?](repeating: nil, count: 0x28)
