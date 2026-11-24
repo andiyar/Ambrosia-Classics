@@ -124,8 +124,10 @@ extension HitPlayerSprite {
     ///   = 0` and the no-cling timer `PTR_DAT_100a05f0 = 3` on every contact; then, only while the player's `+0x116` is
     ///   0, `.HurtPlayer(player, spike, 0x70, blood 1, invul 0x3c, coins 0)` and `+0x116 = 0x1e` — whether or not the
     ///   hurt landed; return. (The spike's rect is empty unless it is out — `BackgroundSprite.spike`.)
-    /// - // later: 0xbf4 and the other Background arms (Phase 6; none placed on a built level, `BuiltLevels.list` —
-    ///   0xbf4 first on level 20). Cannons, springs, tunnels: no arm here (`.HitBackgroundSprite` runs in both passes).
+    /// - **the rotating blade** 0xbf4 (M l. 49684–49724, raw `100581c4..10058340`; 6A-BD): `blade` — the hurt only when
+    ///   the arm's segment crosses his body; return either way.
+    /// - // later: the other Background arms (Phase 6; none placed on a built level, `BuiltLevels.list`). Cannons,
+    ///   springs, tunnels: no arm here (`.HitBackgroundSprite` runs in both passes).
     /// The level exit (PICT-less Background type 3249).
     public static let levelExit: Int16 = 0xcb1
 
@@ -139,6 +141,10 @@ extension HitPlayerSprite {
         }
         if BackgroundSprite.passages.contains(o.type) {
             passage(w, player: pID, passage: oID, keys: keys)
+            return
+        }
+        if o.type == BackgroundSprite.blade {
+            blade(w, player: pID, blade: oID)
             return
         }
         if o.type == levelExit {
@@ -157,13 +163,42 @@ extension HitPlayerSprite {
             w.active.update(id: pID) { $0.invulnerable = 0x1e }
             return
         }
-        guard BackgroundSprite.maces.contains(o.type) else { return }    // later: 0xbf4 … (Phase 6)
+        guard BackgroundSprite.maces.contains(o.type) else { return }    // later: the other arms (Phase 6)
         if p.invulnerable == 0 && o.classWord170 == 1 {
             HurtPlayer.hurt(w, player: pID, attacker: oID, damage: 0xe0, blood: true, invulnerable: 0x3c, coins: 5)
             w.active.update(id: pID) { $0.invulnerable = 0x1e }
         }
         guard let o1 = w.active.record(id: oID), !o1.oneWay, let p1 = w.active.record(id: pID) else { return }
         w.platformBounce(mover: pID, solid: oID, centre: d, factor: 0, rect: p1.hotRect, bounce: false)
+    }
+}
+
+extension HitPlayerSprite {
+    /// The rotating blade's arm (M l. 49684–49724, raw `100581c4..10058340`; phase6-engine-contracts §2.9 item 3),
+    /// reached on a rect overlap:
+    /// 1. his body: the player's rect `+0x34` offset by his position (`+0xc`, `+0xa`), then top + 6 and bottom − 8 (16-bit
+    ///    fields, M l. 49685–49689);
+    /// 2. the blade's arm from its centre at its angle (`BackgroundSprite.bladeArm`: 16 to 88 px out);
+    /// 3. `.SectRectLineSeg(body, P1, P2)` (`LineSegments`) = 0 → return: **no random draw** on an overlap frame whose
+    ///    segment misses (M l. 49711–49713);
+    /// 4. the blade's vx `+0x24` saved; vx = +0x8fc when the blade's centre x `+0x10` < his (signed 16-bit, strict —
+    ///    equal centres push −0x8fc, `cmpw; bge`, M l. 49715–49720), else −0x8fc; coins = `FastRand(100)` ≤ 0x32 ? 0 : 4
+    ///    (M l. 49721–49727); `.HurtPlayer(player, blade, 0x70, blood 0, invul 0x3c, coins)` — which takes the blade's vx
+    ///    as the push; the blade's vx restored, whether or not the hurt landed (M l. 49728–49729).
+    static func blade(_ w: SpriteWorld, player pID: Int, blade bID: Int) {
+        guard let p = w.active.record(id: pID), let b = w.active.record(id: bID) else { return }
+        let h = { (v: Int) in Int(Int16(truncatingIfNeeded: v)) }
+        let r = p.hotRect
+        let body = IdleSprites.Rect(top: h(h(r.top + p.y) + 6), left: h(r.left + p.x), bottom: h(h(r.bottom + p.y) - 8),
+                                    right: h(r.right + p.x))
+        guard let arm = BackgroundSprite.bladeArm(angle: b.phase, cx: b.centre.x, cy: b.centre.y),
+              LineSegments.sectRectLineSeg(body, arm.x1, arm.y1, arm.x2, arm.y2) else { return }
+        let saved = b.vx
+        let push: Int32 = h(b.centre.x) < h(p.centre.x) ? 0x8fc : -0x8fc
+        w.active.update(id: bID) { $0.vx = push }
+        let coins: Int16 = w.rng.next(100) < 0x33 ? 0 : 4
+        HurtPlayer.hurt(w, player: pID, attacker: bID, damage: 0x70, blood: false, invulnerable: 0x3c, coins: coins)
+        w.active.update(id: bID) { $0.vx = saved }
     }
 }
 

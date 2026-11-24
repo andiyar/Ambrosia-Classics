@@ -190,7 +190,7 @@ final class DrawModeAuditTests: XCTestCase {
         ("Session/FerazelSession.swift", .flash, "`world.flash` / `LevelCarry.flash`: the screen flash, not +0xaa"),
     ]
 
-    static let dynamicLit = ["platform.raft", "box.boulder", "background.maceBall", "chain.maceChain"]
+    static let dynamicLit = ["platform.raft", "box.boulder", "background.maceBall", "chain.maceChain", "background.blade"]
 
     static let writers: [Writer] = [
         W("Items/HeldItem.swift:111", .mirrored, .copy, "heldItem"),
@@ -389,11 +389,11 @@ final class DrawModeAuditTests: XCTestCase {
           pins: ["0 < p.type && p.type < 0x10", "p.mode = 0x10000 + UInt32(p.type)"]),
         W("Player/GroundCeilingEffects.swift:403", .mode, .words([0x10005]), "effect.explosion"),
         W("Player/HitPlayerSprite.swift:100", .flash, .range(0xc...0xc), "player"),
-        W("Player/HitPlayerSprite.swift:948", .flash, .range(0x1e...0x1e), "player"),
+        W("Player/HitPlayerSprite.swift:983", .flash, .range(0x1e...0x1e), "player"),
         // `.HurtSprite`'s callers: the player's two (0xc) and, from WK1, the Walker's Hit and its `.HurtGoblin`s (8).
-        W("Player/HitPlayerSprite.swift:1260", .flash, .range(8...0xc), "player", "walker", "crawler", "roach", "bat",
+        W("Player/HitPlayerSprite.swift:1295", .flash, .range(8...0xc), "player", "walker", "crawler", "roach", "bat",
           "bat.swarmMember", "frog", "salamander", "blob",
-          at: ["1081", "1219", "1242", "World/Enemies/Walker.swift:827", "World/Enemies/Walker.swift:851",
+          at: ["1116", "1254", "1277", "World/Enemies/Walker.swift:827", "World/Enemies/Walker.swift:851",
                "World/Enemies/Walker.swift:856", "World/Enemies/CrawlerRoach.swift:453",
                "World/Enemies/CrawlerRoach.swift:459", "World/Enemies/CrawlerRoach.swift:480",
                "World/Enemies/CrawlerRoach.swift:486", "World/Enemies/Bat.swift:662", "World/Enemies/Bat.swift:699",
@@ -446,53 +446,62 @@ final class DrawModeAuditTests: XCTestCase {
         // `SpriteBlitter.behindTilesWalk` (no built level has a strip: header 0x2716 = 0 on levels 1–5).
         W("Sprites/PxSprites.swift:242", .mode, .words([0x80000]), "pxSprite", at: ["28"],
           pins: ["s.mode = PxSprites.drawMode", "drawMode: UInt32 = 0x80000"]),
-        W("Sprites/SetupFaces.swift:427", .mirrored, .flags([true]), "background.plant"),
-        W("Sprites/SetupFaces.swift:428", .mode, .placedTint(0xa8c...0xaef), "background.plant",
+        W("Sprites/SetupFaces.swift:430", .mirrored, .flags([true]), "background.plant"),
+        W("Sprites/SetupFaces.swift:431", .mode, .placedTint(0xa8c...0xaef), "background.plant",
           pins: ["if p.p2 != 0 { s.mode = UInt32(truncatingIfNeeded: Int(p.p2) + 0x10000) }"]),
-        W("Sprites/SetupFaces.swift:494", .mode, .words([0x90000]), "box.teleporter"),
-        W("Sprites/SetupFaces.swift:516", .mode, .words([0x90000]), "box.chest"),
+        W("Sprites/SetupFaces.swift:500", .mode, .words([0x90000]), "box.teleporter"),
+        W("Sprites/SetupFaces.swift:522", .mode, .words([0x90000]), "box.chest"),
         W("Sprites/SpriteSlot.swift:606", .mode, .words([0]), "platform.raft", "box.boulder", "background.maceBall",
-          "chain.maceChain"),
+          "chain.maceChain", "background.blade"),
         W("Sprites/SpriteSlot.swift:608", .mode, .levelLight, "platform.raft", "box.boulder", "background.maceBall",
-          "chain.maceChain", pins: ["mode = UInt32(truncatingIfNeeded: L * 0x100 + 0xc0000 + F)"]),
+          "chain.maceChain", "background.blade", pins: ["mode = UInt32(truncatingIfNeeded: L * 0x100 + 0xc0000 + F)"]),
         // (angle >> 8) + 0x5a with the angle wrapped into 0…0x167ff (`RadialMotion.updatePosition`), − 360 once.
-        W("World/Movers/BackgroundSprite.swift:203", .rotation, .range(0...359), "background.maceBall", at: ["201", "202"],
+        W("World/Movers/BackgroundSprite.swift:206", .rotation, .range(0...359), "background.maceBall", at: ["204", "205"],
           pins: ["UInt32(bitPattern: c.radial?.angle ?? 0) >> 8) &+ 0x5a", "if 0x167 < r { r &-= 0x168 }"]),
-        W("World/Movers/BackgroundSprite.swift:332", .clipBottom, .range(32000...32000), "background.spring"),
-        W("World/Movers/BackgroundSprite.swift:339", .mode, .words([0x10018]), "background.spring"),  // hdr 0x26cd ≠ 0
-        W("World/Movers/BackgroundSprite.swift:419", .mirrored, .flags([false]), "background.cannon"),
-        W("World/Movers/BackgroundSprite.swift:421", .mirrored, .flags([true]), "background.cannon"),
-        W("World/Movers/BackgroundSprite.swift:424", .mirrored, .flags([false]), "background.cannon"),
-        W("World/Movers/BackgroundSprite.swift:429", .mirrored, .flags([false]), "background.cannon"),
-        W("World/Movers/BackgroundSprite.swift:431", .mirrored, .flags([true]), "background.cannon"),
-        W("World/Movers/BackgroundSprite.swift:434", .rotation, .range(0...0), "background.cannon"),
-        W("World/Movers/BackgroundSprite.swift:436", .mode, .words([0]), "background.cannon"),
-        W("World/Movers/BackgroundSprite.swift:441", .mirrored, .flags([false]), "background.cannon"),
+        W("World/Movers/BackgroundSprite.swift:335", .clipBottom, .range(32000...32000), "background.spring"),
+        W("World/Movers/BackgroundSprite.swift:342", .mode, .words([0x10018]), "background.spring"),  // hdr 0x26cd ≠ 0
+        W("World/Movers/BackgroundSprite.swift:422", .mirrored, .flags([false]), "background.cannon"),
+        W("World/Movers/BackgroundSprite.swift:424", .mirrored, .flags([true]), "background.cannon"),
+        W("World/Movers/BackgroundSprite.swift:427", .mirrored, .flags([false]), "background.cannon"),
+        W("World/Movers/BackgroundSprite.swift:432", .mirrored, .flags([false]), "background.cannon"),
+        W("World/Movers/BackgroundSprite.swift:434", .mirrored, .flags([true]), "background.cannon"),
+        W("World/Movers/BackgroundSprite.swift:437", .rotation, .range(0...0), "background.cannon"),
+        W("World/Movers/BackgroundSprite.swift:439", .mode, .words([0]), "background.cannon"),
+        W("World/Movers/BackgroundSprite.swift:444", .mirrored, .flags([false]), "background.cannon"),
         // r = ((0x20 − aim)·0xb4 / 16) / 2 for aim 1…31 not ≡ 0 mod 4 → 5…174, doubled: 10…348.
-        W("World/Movers/BackgroundSprite.swift:443", .rotation, .range(10...348), "background.cannon",
-          at: ["438", "439", "442"], pins: ["0x20 - aim)) * 0xb4", "(u / 16) / 2", "if 0xb3 < r { r -= 0xb4 }",
+        W("World/Movers/BackgroundSprite.swift:446", .rotation, .range(10...348), "background.cannon",
+          at: ["441", "442", "445"], pins: ["0x20 - aim)) * 0xb4", "(u / 16) / 2", "if 0xb3 < r { r -= 0xb4 }",
                                             "c.rotation = r << 1"]),
-        W("World/Movers/BackgroundSprite.swift:484", .mirrored, .flags([true]), "background.spring"),
+        W("World/Movers/BackgroundSprite.swift:487", .mirrored, .flags([true]), "background.spring"),
         // ES: the dart traps' Handle arm (1901 mirrored; built as read — their Setup arm is refused, none on 1–5).
-        W("World/Movers/BackgroundSprite.swift:531", .mirrored, .flags([true]), "background.dartTrap"),
-        W("World/Movers/BackgroundSprite.swift:966", .mirrored, .flags([false, true]), "background.smoke"),
-        W("World/Movers/BackgroundSprite.swift:1024", .mirrored, .flags([true]), "background.spike"),
-        W("World/Movers/BackgroundSprite.swift:1032", .mode, .words([0x10018]), "background.spike"),   // hdr 0x26cd ≠ 0
-        W("World/Movers/BackgroundSprite.swift:1034", .mode, .words([0x90000]), "background.spike"),
+        W("World/Movers/BackgroundSprite.swift:534", .mirrored, .flags([true]), "background.dartTrap"),
+        W("World/Movers/BackgroundSprite.swift:969", .mirrored, .flags([false, true]), "background.smoke"),
+        W("World/Movers/BackgroundSprite.swift:1027", .mirrored, .flags([true]), "background.spike"),
+        W("World/Movers/BackgroundSprite.swift:1035", .mode, .words([0x10018]), "background.spike"),   // hdr 0x26cd ≠ 0
+        W("World/Movers/BackgroundSprite.swift:1037", .mode, .words([0x90000]), "background.spike"),
         // The retracting spikes (0x732 / 0x733): f = the phase 0…0xb.
-        W("World/Movers/BackgroundSprite.swift:1074", .clipBottom, .range(0...0x14), "background.spike",
-          at: ["1065", "1068"], pins: ["} else if s.phase < 0xb {", "max(0, 0x14 - f * 2)"]),
-        W("World/Movers/BackgroundSprite.swift:1078", .clipTop, .range(0...0x16), "background.spike",
-          at: ["1065", "1068", "1077"], pins: ["} else if s.phase < 0xb {", "s.y = h(base - f * 2)", "h(base - s.y)"]),
+        W("World/Movers/BackgroundSprite.swift:1077", .clipBottom, .range(0...0x14), "background.spike",
+          at: ["1068", "1071"], pins: ["} else if s.phase < 0xb {", "max(0, 0x14 - f * 2)"]),
+        W("World/Movers/BackgroundSprite.swift:1081", .clipTop, .range(0...0x16), "background.spike",
+          at: ["1068", "1071", "1080"], pins: ["} else if s.phase < 0xb {", "s.y = h(base - f * 2)", "h(base - s.y)"]),
         // 6A-TR: the trees' mirror `+0x17e` = (byte) record p1 — at Setup (M l. 62605–62606) and again on every Handle
         // (M l. 63543–63544); their face is the cache single of the type (`Check.facesLoaded`), their layer 30000 (0xc0f
         // −10, a sort key, no draw input). First placed on level 10 (none on 1–5).
-        W("World/Movers/BackgroundSprite.swift:1129", .mirrored, .flags([false, true]), "background.tree"),
-        W("World/Movers/BackgroundSprite.swift:1171", .mirrored, .flags([false, true]), "background.tree"),
+        W("World/Movers/BackgroundSprite.swift:1132", .mirrored, .flags([false, true]), "background.tree"),
+        W("World/Movers/BackgroundSprite.swift:1174", .mirrored, .flags([false, true]), "background.tree"),
         // 6A-CL: the clouds' `+0xb8 = 0xb0004` (mode 0xb, translucency table 4; `.SetupBackgroundSprite` M l. 62550),
         // never changed by their Handle; their layer `+0x80 = 0x7ef4` (M l. 62551) is a sort key, no draw input (no
         // layer row exists). Placed on level 20 only (none on a built level); never rotated, scaled or mirrored.
-        W("World/Movers/BackgroundSprite.swift:1238", .mode, .words([0xb0004]), "background.cloud"),
+        W("World/Movers/BackgroundSprite.swift:1241", .mode, .words([0xb0004]), "background.cloud"),
+        // 6A-BD: the blade's Handle (M l. 63511–63530) — rotation `+0x1aa` = its angle (M l. 63524), wrapped one step
+        // each way into 0…359 (M l. 63515–63523): every placed blade starts at p2 0 with speed 8 (p3 0;
+        // `BladeTests.testBladeSetupFields` pins both on all 53), so 0…352; `+0x89 = 1` (M l. 63526: the light word,
+        // `SpriteSlot.swift:606` / `:608` above; `dynamicLightStores`); bottom clip `+0x1ba = 0x5e` on a record with p4 0
+        // (M l. 63528; levels 22 and 62). Placed first on level 20 (none on a built level).
+        W("World/Movers/BackgroundSprite.swift:1326", .rotation, .range(0...359), "background.blade",
+          at: ["1319", "1321", "1323"], pins: ["var a = c.phase &+ Int16(truncatingIfNeeded: c.classWord150)",
+                                               "a &-= 0x168", "a &+= 0x168"]),
+        W("World/Movers/BackgroundSprite.swift:1329", .clipBottom, .range(0x5e...0x5e), "background.blade"),
         W("World/Movers/BonusSprite.swift:130", .mode, .words([0]), "bonus"),
         W("World/Movers/BonusSprite.swift:388", .mode, .words([0x10008]), "bonus"),
         W("World/Movers/BonusSprite.swift:389", .mode, .words([0x10009]), "bonus"),
@@ -980,9 +989,10 @@ final class DrawModeAuditTests: XCTestCase {
         (60284, "World/Movers/BoxSprite.swift:741", [0x42e...0x434],
          "`.HandleBoxSprite` 0x42e…0x430 / 0x433 / 0x434 (M l. 60220–60223, the rolling boulder)"),
         (61013, nil, [0xbfe...0xbfe], "`.HandleBoxSprite` type 0xbfe (M l. 60950, the snowball)"),
-        (63171, "World/Movers/BackgroundSprite.swift:205", [0x5c8...0x5d1],
+        (63171, "World/Movers/BackgroundSprite.swift:208", [0x5c8...0x5d1],
          "`.HandleBackgroundSprite` maces 0x5c8…0x5d1 (M l. 63137), `+0xb0` 10 / 11"),
-        (63526, nil, [0xbf4...0xbf4], "`.HandleBackgroundSprite` type 0xbf4 (M l. 63511, the blade)"),
+        (63526, "World/Movers/BackgroundSprite.swift:1328", [0xbf4...0xbf4],
+         "`.HandleBackgroundSprite` type 0xbf4 (M l. 63511, the blade; 6A-BD)"),
     ]
 
     /// The types whose code makes a carrier of a `dynamicLightStores` arm at run time: the dump's constant-type
@@ -1578,7 +1588,8 @@ final class DrawModeAuditTests: XCTestCase {
           + "range; tint subs ≤ 24 (placements' p2 included); modes 5 / 0xa / 0xb never on a rotated or scaled "
           + "sprite, 0xa never mirrored; light index ≥ 0x6f000 needs F ≥ 126 (DK: F max 110); A14 (light byte −1 → "
           + "0xbff00 + F) needs a dynamic-light sprite over a cell with light byte −1: none on a built level (level 18 is all "
-          + "−1 and holds no carrier, D64)"),
+          + "−1 and holds no carrier, D64; level 20's blades are carriers on an all −1 grid — 6A-BD found what the original "
+          + "reads there is not fixed data, so the word stays refused by name, D64.6, for 6A-L20's seat)"),
         R("Frame/SpriteBlitter.swift", "Refusal.darkness", 1, .dataAbsent, [.lightBytesInRange],
           "mode 0xc's L is a light byte (0…15 on every built level the arm runs on, `applyDynamicLight`; D64) or a "
           + "Radial depth band 0…12"),

@@ -380,4 +380,70 @@ final class SpriteDrawTests: XCTestCase {
         XCTAssertEqual(list.wrapDrawSprites { _ in (0, 0) }.first?.mode, 0)
         XCTAssertEqual(list.sprites[0].mode, 0)
     }
+
+    /// 6A-BD (ENG §2.9 "Seam"; Invariant 8): the blade's draw — rotated (`+0x1aa` = its angle), lit (`+0x89`: mode 0xc,
+    /// or 0 where L < 1 and F < 1) and, on levels 22 and 62, bottom-clipped at `+0x1ba = 0x5e` — is drawable. A 120×120
+    /// face (the frame rect (0, 0, 120, 120)) opaque in a disc of radius 50 about its centre, so no rotation carries a
+    /// pixel out of the frame's left, right or top. `.BlitEncFaceRot` tests the clip window on the **rotated** point (the
+    /// window is not the whole face, so the clip flag is set): the clipped draw is the open draw with every destination
+    /// row from y + 0x5e − 1 down left untouched (y = dv + cy − sv − 1 + iy, iy + cy < 0x5e). The light word on a light
+    /// byte −1 (`0xbff00 + F`, mode 0xb) has no table under rotation — refused by name (D64.6, ruled at 6A-BD: what the
+    /// original reads there is not fixed data; the unrotated case is `testWrapDrawSpritesClipAndMaskPass`'s).
+    func testBladeRotatedLitDrawIsDrawable() throws {
+        let f = try fixture()
+        let n = 120, c = 60
+        let px = (0..<n).flatMap { r in (0..<n).map { k -> UInt8 in
+            let dr = r - c, dk = k - c
+            return dr * dr + dk * dk <= 50 * 50 ? UInt8(0x20 + (r + k) % 0x40) : 0
+        } }
+        let disc = try FaceEncoder.encode(pixels: px, width: n, height: n,
+                                          rect: EncodedFace.Rect(top: 0, left: 0, bottom: Int16(n), right: Int16(n)),
+                                          sourceId: 9003)
+        let args = try FaceSheet.Arguments(pict: 9003, count: 1, cellWidth: n, cellHeight: n, columns: 1)
+        var sheets = try faces().sheets
+        sheets[9003] = FaceSheet(arguments: args, faces: [disc], shortCells: [:], clutId: 202)
+        let b = SpriteBlitter(level: f.level, tables: f.tables, faces: SpriteBlitter.Faces(sheets: sheets))
+        let ref = FaceRef(pict: 9003, index: 0, set: .encoded)
+        let open = SpriteClip(left: 0, right: 32000, bottom: 32000, top: 0)
+        var clipped = open
+        clipped.bottom = 0x5e
+        let fill: UInt8 = 0x77, x0 = 200, y0 = 100
+        func draw(_ word: UInt32, _ rot: Int16, _ clip: SpriteClip) throws -> FramePorts {
+            var ports = FramePorts(fill: fill)
+            try b.wrapDrawSprites([SpriteDraw(face: ref, x: x0, y: y0, mode: word, clip: clip, rotation: rot)], h: 0,
+                                  v: 0, ports: &ports)
+            return ports
+        }
+        for word: UInt32 in [0, 0xc0300, 0xc0205] {
+            for rot: Int16 in [8, 90, 352] {
+                let whole = try draw(word, rot, open), cut = try draw(word, rot, clipped)
+                var drawn = 0, kept = 0
+                for y in (y0 - 4)..<(y0 + n + 4) {
+                    for x in (x0 - 4)..<(x0 + n + 4) {
+                        let o = FramePorts.ringOffset(x: x, y: y)
+                        let below = y >= y0 + 0x5e - 1
+                        XCTAssertEqual(cut.frame[o], below ? fill : whole.frame[o], "word \(word) rot \(rot) (\(x), \(y))")
+                        XCTAssertEqual(cut.mask[o], below ? fill : whole.mask[o], "word \(word) rot \(rot) (\(x), \(y))")
+                        if whole.frame[o] != fill { drawn += 1; if !below { kept += 1 } }
+                    }
+                }
+                XCTAssertGreaterThan(kept, 0, "word \(word) rot \(rot): the top part draws")
+                XCTAssertGreaterThan(drawn, kept, "word \(word) rot \(rot): the clip cut something")
+            }
+        }
+        // The lit words read their tables: ambient row 3 and the light slab (2, 5), as unrotated.
+        let lit = try draw(0xc0205, 90, open), plain = try draw(0, 90, open)
+        var checked = 0
+        for k in plain.frame.indices where plain.frame[k] != fill {
+            XCTAssertEqual(lit.frame[k], f.tables.light[2 * 0x6e00 + 5 * 0x100 + Int(plain.frame[k])])
+            checked += 1
+        }
+        XCTAssertGreaterThan(checked, 0)
+        // D64.6: the light-byte −1 word, rotated → no table (`.BlitEncFaceRot`'s switch has no 0xb case) → refused.
+        for rot: Int16 in [8, 352] {
+            XCTAssertThrowsError(try draw(0xbff02, rot, clipped)) {
+                XCTAssertEqual($0 as? SpriteBlitter.Refusal, .mode(0xbff02))
+            }
+        }
+    }
 }

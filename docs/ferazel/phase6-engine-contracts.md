@@ -751,6 +751,28 @@ bottom clip 0x5e draws); `testLevel20BladeFeatureGolden`.
 - the negative wrap (+ 360) as well as the positive one (M l. 63517–63518).
 - the strict `<` on the centre x: equal centres push −0x8fc (M l. 49716–49720).
 
+**As read — the −1 light case (6A-BD, 2026-11-24; D64.6).** Level 20's light grid is all −1 and its blades carry `+0x89`,
+so wherever a fake light reaches one (F ≥ 1; F ≤ 110) `.WrapDrawSprites` gives it `0xbff00 + F`: mode 0xb, arg
+a = (short)(0xff00 + F) = F − 256. With F = 0 the word is 0 (a plain copy) — every frame 6A-BD pins is that case. What the
+original draws for F ≥ 1 is **not fixed data in the shipped binary**:
+- **Unrotated** (angle 0, one Handle in 45 at speed 8): `.BlitEncFaceTransClip`'s table (raw `10027de4..10027df8`: `lha`,
+  `subi 0x80`, `lwz r7,-0x76fc(r2)`, `extsh`, `rlwinm 0xc`, `add`) = G + (F − 384)·0x1000, where G = `*0x100a0144`, the
+  grey-pull table — TOC slot value 0x130a82, an offset into the data section, which the loader relocates (data section
+  0x239f74 bytes, only the first 0x8169 from the file, the rest zero-filled at load). a < 0x80, so the pixel s is not
+  first mapped through `0148`; the byte read is G + (F − 384)·0x1000 + s·0x100 + bg = data start + 0x130a82 −
+  (384 − F)·0x1000 + 0…0xffff. F = 1: data start − 0x4e57e … − 0x3e57f, memory before the data section (outside the
+  fragment, wherever the Code Fragment Manager placed it); F = 79 straddles the start; F = 80…110: data start + 0xa82 …
+  + 0x2ea81 — the TOC (pointers relocated at load) and the zero-filled area the game writes at run time.
+- **Rotated** (the other 44 angles): `.BlitEncFaceRot`'s table switch (jump table `0x100a3e34`, 13 entries; mode 0xb →
+  `1002ad14`, no store) leaves r24 as its caller set it — `.BlitEncFaceX` loads r24 = its ninth argument, the mirror
+  flag, at `1002c938` and never rewrites it — so the per-pixel read `*(r24 + s)` (M l. 25785) reads absolute address
+  0 + s (a blade is never mirrored): Mac OS 9 low memory (system globals), or an unmapped page zero on Mac OS X.
+
+Both are run-dependent, so the port draws no picture there: the word stays refused by name (`SpriteBlitter.Refusal.mode`,
+unrotated `transClip` and rotated `table(mode:)` alike; `SpriteDrawTests` pins both), and no fixture value depends on it.
+Whether level 20 can open with a refusal a fireball can reach (a player shot's light near a blade) is 6A-L20's seat's
+ruling.
+
 ### 2.10 Programmed-path maces, modes 1 and 2 (6A-MP)
 
 **What it is.** A spiked ball that shuttles up and down (mode 1) or left and right (mode 2) on a fixed path instead of

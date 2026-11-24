@@ -260,6 +260,9 @@ public enum SetupFaces {
         // 6A-CL: the clouds 0xb4a…0xb4d of level 20 (`.InitBackgroundSprite` M l. 61869–61872: cache singles, flag 0 →
         // clut 200), faced at Setup and again by their Handle.
         for p in BackgroundSprite.clouds { all.append(one(p)) }
+        // 6A-BD: the blade 0xbf4 (`.InitBackgroundSprite` M l. 61876–61878: cache single, flag 0, converted under clut
+        // 200 — `*_DAT_1009ff94 = *_DAT_100a0020`), faced by its Handle.
+        all.append(one(BackgroundSprite.blade))
         all.append(one(placeholderPict))
         // BN: every face `.InitBonusSprite` loads (`BonusSprite.sheets`; the level-1/2 entries above are the same sheets).
         var table = Dictionary(uniqueKeysWithValues: all)
@@ -452,6 +455,9 @@ public enum SetupFaces {
             case 0xb4a...0xb4d:                                // clouds (M l. 62526–62567; 6A-CL `setupCloud`)
                 BackgroundSprite.setupCloud(&s, record: p, rng: &rng)   // R(60), then R(50)
                 face(Int16(t), 0, .setupCached)                // `+0xc0 = cache + 4` (`_DAT_100a0b20` … `0b14`)
+            case 0xbf4:                                        // the blade (M l. 62571–62583; 6A-BD `setupBlade`)
+                BackgroundSprite.setupBlade(&s, record: p)
+                face(Int16(t), 0, .handle)                     // `+0xc0` stays 0: the Handle faces it every frame
             case 0xcb1:                                        // level exit: `+0xc0 = 0` (l. 62593)
                 s.hotRect = IdleSprites.Rect(top: 0xc, left: 0xc, bottom: 0x54, right: 0x54)   // l. 62594 (W4)
             default:

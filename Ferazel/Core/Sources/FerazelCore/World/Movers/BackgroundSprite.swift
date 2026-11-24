@@ -9,8 +9,9 @@ import Foundation
 /// `.HitBackgroundSprite`. Part 3 (LV3, below): the retracting spikes 0x730…0x733. ES: the dart traps 0x76c…0x76f,
 /// Handle arm (`dartTrap`) and Setup arm (`setupDartTrap`), built as read — first placed on level 22, unreachable on
 /// levels 1–5. 6A-TR: the trees 0xc08…0xc0f (`setupTree`, the Handle arm `tree`, `.SetupTree` = `plantBranches`) —
-/// first placed on level 10. 6A-CL: the clouds 0xb4a…0xb4d (`setupCloud`, `cloud`), placed on level 20 only.
-/// // later: fire 0x4b8 / 0x4bb…0x4bd, 0x73f / 0x740, 0xbf4 — none placed on levels 1–5, 10, 11.
+/// first placed on level 10. 6A-CL: the clouds 0xb4a…0xb4d (`setupCloud`, `cloud`), placed on level 20 only. 6A-BD:
+/// the rotating blade 0xbf4 (`setupBlade`, `blade`, `bladeArm`; its player arm in `HitPlayerSprite`), first on level 20.
+/// // later: fire 0x4b8 / 0x4bb…0x4bd, 0x73f / 0x740 — none placed on levels 1–5, 10, 11.
 public enum BackgroundSprite {
     /// The radial bars (0x5c8…0x5cc) and balls (0x5cd…0x5d1).
     public static let maces: ClosedRange<Int16> = 0x5c8...0x5d1
@@ -113,12 +114,11 @@ public enum BackgroundSprite {
     // MARK: - Handle
 
     /// The types whose `.HandleBackgroundSprite` arm is not built: their Handle is not run (as before W2a), so
-    /// nothing of it — `.StandardSpriteHandles` included — changes them. // later: fire, 0x73f / 0x740, 0xbf4 (none
-    /// on levels 1–5, 10, 11, so `SetupFaces` refuses them; the spikes: LV3; the dart traps: ES; the trees: 6A-TR; the
-    /// clouds: 6A-CL).
+    /// nothing of it — `.StandardSpriteHandles` included — changes them. // later: fire, 0x73f / 0x740 (none on levels
+    /// 1–5, 10, 11, so `SetupFaces` refuses them; the spikes: LV3; the dart traps: ES; the trees: 6A-TR; the clouds:
+    /// 6A-CL; the blade: 6A-BD).
     static func isUnbuiltArm(_ t: Int16) -> Bool {
         t == 0x4b8 || (0x4bb...0x4bd).contains(t) || (0x73f...0x740).contains(t)
-            || t == 0xbf4
     }
 
     /// Modes 12…14's layer and harmful flag from the depth D (radial `+0x40`; l. 63167–63180, raw
@@ -141,7 +141,8 @@ public enum BackgroundSprite {
     ///   `.MTChangeSpriteLayer` (the F2 no-op guard), so the frame a ball comes **in front** moves it to the list's
     ///   tail and `.MTHandleSprites` handles it **twice** (Invariant 7).
     /// - the trees 0xc08…0xc0f (M l. 63538–63546; 6A-TR, `tree`): `.SetupTree` on the first Handle, then the face and the
-    ///   mirror every frame; the clouds 0xb4a…0xb4d (M l. 63304–63341; 6A-CL, `cloud`): the face and the parallax.
+    ///   mirror every frame; the clouds 0xb4a…0xb4d (M l. 63304–63341; 6A-CL, `cloud`): the face and the parallax; the
+    ///   blade 0xbf4 (M l. 63511–63530; 6A-BD, `blade`): the face, the spin, the dynamic light and the p4-0 clip.
     /// - The tail for every type no arm takes (l. 63549–63556): plants 0xa8c…0xaef → `+0xc0 = _DAT_100a0ad8[type −
     ///   0xa8c] + 4`, tunnels 3000…0xbc1 → `_DAT_100a0adc[type − 3000] + 4` (the caches hold 30 plants and 6 tunnels:
     ///   a higher type reads past them [LOW: none placed on levels 1–2]). This is what replaces the Phase-1 Setup faces
@@ -168,6 +169,8 @@ public enum BackgroundSprite {
             tree(w, id: id, faceWidth: faceWidth)
         } else if clouds.contains(t) {
             cloud(w, id: id)
+        } else if t == blade {
+            blade(w, id: id)
         } else if (0xa8c...0xaef).contains(t) || (3000...0xbc1).contains(t) {
             w.active.update(id: id) { $0.face = FaceRef(pict: t, index: 0, set: .encoded) }
         }
@@ -1276,5 +1279,77 @@ extension BackgroundSprite {
             c.x = Int(Int16(truncatingIfNeeded: c.x256 >> 8))
             c.y = Int(Int16(truncatingIfNeeded: c.y256 >> 8))
         }
+    }
+}
+
+// MARK: - 6A-BD: the rotating blade
+
+extension BackgroundSprite {
+    /// The rotating blade 3060 (ENG §2.9): 28 on level 20 (p4 1), 13 on 22 (p4 0), 3 on 30 (p4 1), 9 on 62 (p4 0); every
+    /// p2 and p3 0; p1 ≠ 0 on two (level 20 record 257 p1 1, level 30 p1 180) — neither arm reads p1.
+    public static let blade: Int16 = 0xbf4
+
+    /// The blade arm of `.SetupBackgroundSprite` (M l. 62571–62583, after the common part `setupCommon`): the cache
+    /// single `_DAT_100a0b0c` marked (`*(rec + 1) = 1`, M l. 62572; `CachedFaces.markedRecords`) — no face stored, `+0xc0`
+    /// stays 0 (the Handle faces it; `SetupFaces`' `.handle`); angle `+0x46` = record p2 (M l. 62573–62574); speed
+    /// `+0x150` = record p3, 0 → 8 (M l. 62575–62579); `.SetRect(+0x34, 5, 5, 0xb5, 0xb5)` (M l. 62580); callbacks `+0x5c`
+    /// / `+0x1f8` 0 (M l. 62581–62582). No random draw, nothing written back. Fields: `+0x46` = `phase` (the angle),
+    /// `+0x150` = `classWord150` (the speed).
+    static func setupBlade(_ s: inout SpriteSlot, record p: Placement) {
+        s.phase = p.p2
+        s.classWord150 = Int32(p.p3)
+        if s.classWord150 == 0 { s.classWord150 = 8 }
+        s.hotRect = IdleSprites.Rect(top: 5, left: 5, bottom: 0xb5, right: 0xb5)
+        s.hasHit = false
+        s.hasTileHit = false
+    }
+
+    /// The blade arm of `.HandleBackgroundSprite` (M l. 63511–63530), after `.StandardSpriteHandles` (which reset the
+    /// clips): the face `+0xc0` = the cache single 0xbf4 (`_DAT_100a0b0c + 4`, M l. 63512) every frame; angle `+0x46` +=
+    /// speed (16-bit), then one step into 0…359 — ≥ 360 → − 360, < 0 → + 360, never both and never twice (M l.
+    /// 63513–63523); rotation `+0x1aa` = the angle (M l. 63524); `+0x88 = 0`, `+0x89 = 1` — dynamic light, so the draw
+    /// takes `.WrapDrawSprites`' light word (M l. 63525–63526); the live record's p4 = 0 → bottom clip `+0x1ba = 0x5e`
+    /// (M l. 63527–63529: the face's rows from 0x5e down are not drawn). Then `.StandardSpriteCleanup` (`LAB_10074e14`).
+    /// A sprite with no record (none: every blade is placed) takes no clip.
+    static func blade(_ w: SpriteWorld, id: Int) {
+        guard let s0 = w.active.record(id: id) else { return }
+        let clip = record(w, s0)?.p4 == 0
+        w.active.update(id: id) { c in
+            c.face = FaceRef(pict: blade, index: 0, set: .encoded)
+            var a = c.phase &+ Int16(truncatingIfNeeded: c.classWord150)
+            if 0x167 < a {
+                a &-= 0x168
+            } else if a < 0 {
+                a &+= 0x168
+            }
+            c.phase = a
+            c.rotation = a
+            c.lightOverlay = false
+            c.dynamicLight = true
+            if clip { c.clip.bottom = 0x5e }
+        }
+    }
+
+    /// `.BuildTintTable`'s cos / sin tables `_DAT_100a0168` / `_DAT_100a0164` (`10020b10..10020b8c`): for i = 0…359, a =
+    /// (π · (2.0 · i)) / 360.0 with π = 3.1415926535 as stored (`100a16c8` = 0x400921fb54411744) — the tables
+    /// `SpriteBlitter.cosTable` / `sinTable` build for the renderer, made again here for Core's one reader.
+    public static let bladeCos: [Double] = (0..<360).map { Foundation.cos(tableAngle($0)) }
+    public static let bladeSin: [Double] = (0..<360).map { Foundation.sin(tableAngle($0)) }
+    private static func tableAngle(_ i: Int) -> Double {
+        (Double(bitPattern: 0x4009_21fb_5441_1744) * (2.0 * Double(i))) / 360.0
+    }
+
+    /// The blade's arm as `.HitPlayerSprite` builds it (M l. 49690–49710, raw `10058224..100582c0`): with c = the
+    /// blade's centre (`+0x10`, `+0xe`) and the angle `+0x46` indexing the tables, P1 = (fctiwz(16·cos + cx),
+    /// fctiwz(cy − 16·sin)), P2 the same with 88 (f64 16.0 `100a19f8`, 88.0 `100a19f0`; each a single fused `fmadd` /
+    /// `fnmsub` rounding, then truncation toward zero). nil for an angle outside 0…359 — the original reads past the
+    /// tables there; no shipped blade reaches one (every p2 and p3 is 0, so the Handle keeps the angle in range).
+    public static func bladeArm(angle: Int16, cx: Int, cy: Int) -> (x1: Int32, y1: Int32, x2: Int32, y2: Int32)? {
+        guard (0..<360).contains(Int(angle)) else { return nil }
+        let c = bladeCos[Int(angle)], s = bladeSin[Int(angle)]
+        let x = Double(Int16(truncatingIfNeeded: cx)), y = Double(Int16(truncatingIfNeeded: cy))
+        func t(_ v: Double) -> Int32 { Int32(v.rounded(.towardZero)) }
+        return (t(x.addingProduct(16.0, c)), t(y.addingProduct(-16.0, s)),
+                t(x.addingProduct(88.0, c)), t(y.addingProduct(-88.0, s)))
     }
 }

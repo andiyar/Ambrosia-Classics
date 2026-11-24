@@ -175,11 +175,14 @@ final class CachedFacesTests: XCTestCase {
         // 6A-CL: the 164 clouds set up and mark their four singles #132–#135 (0-based 131…134, one face each).
         XCTAssertTrue(types.isSuperset(of: [0xb4a, 0xb4b, 0xb4c, 0xb4d]))
         XCTAssertTrue(m.records.isSuperset(of: [.single(131), .single(132), .single(133), .single(134)]))
+        // 6A-BD: the 28 blades set up and mark their single #136 (0-based 135, one face).
+        XCTAssertTrue(types.contains(3060))
+        XCTAssertTrue(m.records.contains(.single(135)))
         // Measured: needed records, n, q, steps. At CF's point (6A-CF) [10, 51, 102, 10] — the four Player sets (20
         // faces), 0x442 (5), the Gremlin's three (24), the tunnel single 3002 and the mace single 1480; at 6A-CL
-        // [14, 55, 110, 14] (+ the four cloud singles). Every later task that adds a mark on level 20 or makes one of its
-        // records set up re-derives these (BD, MP).
-        XCTAssertEqual(bar(m.records, m.L), [14, 55, 110, 14])
+        // [14, 55, 110, 14] (+ the four cloud singles); at 6A-BD [15, 56, 112, 15] (+ the blade single). Every later task
+        // that adds a mark on level 20 or makes one of its records set up re-derives these (MP).
+        XCTAssertEqual(bar(m.records, m.L), [15, 56, 112, 15])
     }
 
     func testLevel22LoadBarMarks() throws {
@@ -208,10 +211,14 @@ final class CachedFacesTests: XCTestCase {
         XCTAssertEqual(CachedFaces.markedRecords(type: 1060), [])
         XCTAssertTrue(m.records.contains(.single(60)))
         XCTAssertEqual(CachedFaces.record(.single(60)).pict, 2956)
+        // 6A-BD: the 13 blades set up and mark their single #136 (0-based 135, one face).
+        XCTAssertEqual(m.setUp.filter { $0.type == 3060 }.count, 13)
+        XCTAssertTrue(m.records.contains(.single(135)))
         // Measured: needed records, n, q, steps. At CF's point (6A-CF) [33, 168, 336, 33] (24 sets, 9 singles); at
-        // 6A-BX1b [34, 169, 338, 34] (+ 2956's single, one face: 24 sets, 10 singles). Every later task that adds a mark
-        // on level 22 or makes one of its records set up re-derives these (BD, MP, CP).
-        XCTAssertEqual(bar(m.records, m.L), [34, 169, 338, 34])
+        // 6A-BX1b [34, 169, 338, 34] (+ 2956's single, one face: 24 sets, 10 singles); at 6A-BD [35, 170, 340, 35] (+ the
+        // blade single: 24 sets, 11 singles). Every later task that adds a mark on level 22 or makes one of its records
+        // set up re-derives these (MP, CP).
+        XCTAssertEqual(bar(m.records, m.L), [35, 170, 340, 35])
     }
 
     func testShot46bReadsRecord0844() throws {

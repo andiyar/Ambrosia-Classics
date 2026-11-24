@@ -665,4 +665,103 @@ final class FeatureGoldenTests: XCTestCase {
         XCTAssertEqual(String(twin[1].fnv, radix: 16), "4679418e47ef711b", "frame 2 with no cloud drawn")
         XCTAssertEqual(String(frames[1].fnv, radix: 16), "37eb1f7eb12e8f76", "frame 2, the parallax applied")
     }
+
+    // MARK: - 6A-BD: the rotating blade
+
+    /// 6A-BD's level-20 leave-out list (ENG §2.9 / §7.2; the card): the 16 maces 1485 (every one a mode-1 path, 6A-MP),
+    /// by type. The 28 blades are in. A literal list, never computed from what the port refuses today.
+    static let level20Blades: [LevelFixture.LeaveOut] = [.type(1485)]
+
+    /// Where the player starts (`LevelRun`'s `start:`): beside level 20's first blade cluster — records 93 (8149, 244),
+    /// 95 (8150, 499), 241 (8149, 18), 244 (8756, 497) and 248 (8500, 146) — 160 px right of record 93's hub (8242, 337),
+    /// beyond its arm's reach (hub + 88 = 8330 < his rect's left 8338).
+    static let bladeStart = (x: 8300, y: 300)
+
+    /// One presented frame of level 20's blade fixture: its tick count, the screen's indices and their FNV-1a 64, and the
+    /// blade draws (face 0xbf4) its `.WrapDrawSprites` held, as (x, y, rotation, mode, bottom clip).
+    struct BladeFrame {
+        let ticks: UInt32
+        let pixels: [UInt8]
+        let fnv: UInt64
+        let blades: [[Int]]
+    }
+
+    /// Level 20's fixture with `leaveOut`, seed 1, `FerazelPrefs()`, the player at `bladeStart`, no input: the first
+    /// `count` presented frames. `dropBlades`: every blade draw taken out of each `.WrapDrawSprites` before the renderer
+    /// draws it (the same run otherwise: Core never sees the change).
+    static func level20BladeFrames(count: Int, leaveOut: [LevelFixture.LeaveOut],
+                                   dropBlades: Bool) throws -> [BladeFrame] {
+        let (run, services) = try LevelFixtureServices.open(level: 20, leaveOut: leaveOut, start: bladeStart)
+        var now: UInt32 = 0, frames: [BladeFrame] = []
+        while frames.count < count && now < 4000 {
+            let out = try run.tick(now: now, input: FrontInput())
+            now += 1
+            var presented = false, blades: [[Int]] = []
+            for g in out.segments where g.target == .level {
+                let r = try XCTUnwrap(services.renderer, "a level draw before the renderer exists")
+                let draws = g.output.draws.map { op -> DrawOp in
+                    guard case .wrapDrawSprites(let list) = op else { return op }
+                    blades += list.filter { $0.face.pict == BackgroundSprite.blade }
+                        .map { [$0.x, $0.y, Int($0.rotation), Int($0.mode), $0.clip.bottom] }
+                    return dropBlades ? .wrapDrawSprites(list.filter { $0.face.pict != BackgroundSprite.blade }) : op
+                }
+                try r.apply(FrameOps(draws: draws))
+                presented = presented || draws.contains { if case .copyToScreen = $0 { true } else { false } }
+            }
+            if presented, let r = services.renderer {
+                frames.append(BladeFrame(ticks: now, pixels: r.screen.pixels, fnv: LevelFixtureServices.fnv1a(r.screen.pixels),
+                                         blades: blades))
+            }
+        }
+        XCTAssertEqual(frames.count, count, "\(count) presented frames within 4000 ticks")
+        return frames
+    }
+
+    /// 6A-BD: level 20's fixture (the 16 maces left out, seed 1, `FerazelPrefs()`, the player at `bladeStart`, no input).
+    /// Frame 1 holds no blade: the blades were idled at the spawn (far from the header's start) and `.HandleIdleSprites`
+    /// wakes them in iteration 1, after its draw; their first Handle (the same iteration) turns them 8° and sets the
+    /// dynamic light. Frame 2 — the first frame with a blade on screen — is the golden; frame 3 (16°) is pinned beside
+    /// it. Each is proved by its twin with every blade draw removed, which differs, while frame 1 does not; the twin is
+    /// also the fixture with the 28 blades left out as well (the same three frames byte for byte), so the blades change
+    /// nothing in these frames but their own pixels. Every blade here sits on a light byte −1 (level 20's grid is all
+    /// −1) with no light near: L < 1 and F < 1 → `+0xb8 = 0`, a plain rotated copy (D64.6: the F ≥ 1 word is refused).
+    func testLevel20BladeFeatureGolden() throws {
+        let real = try LevelFile.load(from: try LevelFixture.base.get(), level: 20)
+        let out = try LevelFixture.leftOut(real, Self.level20Blades)
+        XCTAssertEqual(out.count, 16, "the 16 refused records")
+        XCTAssertEqual(Set(out.map { real.placements[$0].type }), [1485])
+        XCTAssertEqual(real.activePlacements.filter { $0.type == BackgroundSprite.blade }.count, 28)
+
+        let frames = try Self.level20BladeFrames(count: 3, leaveOut: Self.level20Blades, dropBlades: false)
+        let twin = try Self.level20BladeFrames(count: 3, leaveOut: Self.level20Blades, dropBlades: true)
+        let none = try Self.level20BladeFrames(count: 3, leaveOut: Self.level20Blades + [.type(3060)], dropBlades: false)
+        guard frames.count == 3, twin.count == 3, none.count == 3 else { return }    // a failure above, never a crash
+        XCTAssertEqual(frames.map(\.ticks), [143, 145, 147])
+        XCTAssertEqual(twin.map(\.ticks), frames.map(\.ticks))
+        XCTAssertEqual(frames.map(\.blades), twin.map(\.blades), "the twin's run is the same run")
+        XCTAssertEqual(none.map(\.fnv), twin.map(\.fnv), "no blade drawn = no blade placed, in these frames")
+        XCTAssertEqual(none.map(\.blades), [[], [], []])
+        // Frame 1: no blade on the list. Frames 2 and 3: the five of the cluster, at their record positions, turned 8°
+        // then 16°, mode 0 (the light word on light byte −1, F 0), the bottom clip open (p4 1).
+        XCTAssertEqual(frames[0].blades, [])
+        let cluster = [[8149, 244], [8150, 499], [8149, 18], [8756, 497], [8500, 146]]
+        for (k, rot) in [(1, 8), (2, 16)] {
+            XCTAssertEqual(Set(frames[k].blades.map { [$0[0], $0[1]] }), Set(cluster), "frame \(k + 1)")
+            XCTAssertEqual(Set(frames[k].blades.map { [$0[2], $0[3], $0[4]] }), [[rot, 0, 32000]], "frame \(k + 1)")
+        }
+        for b in cluster {
+            XCTAssertEqual(real.lightByte(col: (b[0] + 0x5d) >> 5, row: (b[1] + 0x5d) >> 5), -1, "under \(b)")
+        }
+        let changed = (0..<3).map { k in zip(frames[k].pixels, twin[k].pixels).filter { $0 != $1 }.count }
+        XCTAssertEqual(frames[0].fnv, twin[0].fnv, "frame 1: no blade drawn")
+        XCTAssertNotEqual(frames[1].fnv, twin[1].fnv, "a blade is on screen in frame 2")
+        XCTAssertNotEqual(frames[2].fnv, twin[2].fnv, "and in frame 3")
+        // Measured at 6A-BD (FNV-1a 64 of the 640×480 screen indices after that tick's level draws, the test colour
+        // model).
+        XCTAssertEqual(changed, [0, 1520, 1358], "the screen bytes the blades changed")
+        XCTAssertEqual(String(twin[1].fnv, radix: 16), "9a2b74440c941f4c", "frame 2 with no blade drawn")
+        XCTAssertEqual(String(frames[1].fnv, radix: 16), "91d21e527fca201f", "the level-20 blade feature golden")
+        XCTAssertEqual(String(twin[2].fnv, radix: 16), "dd63720402386079", "frame 3 with no blade drawn")
+        XCTAssertEqual(String(frames[2].fnv, radix: 16), "62cc02eb7433cde1", "frame 3, the blades turned 16°")
+    }
 }
