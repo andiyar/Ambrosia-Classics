@@ -2906,6 +2906,6 @@ should-fix, 8 minor), all folded in; then the seat's cross-check.
 5. **The sweep ran while the reviews ran, from a separate copy of the reviewed commit.** The fix round changed
    tests and comments only (proven by the diff), so the sweep and bot results at 28e1d0b count for fcea130 — as
    run 64 did for level 18.
-6. **6A-PS was not started:** the seat's context was at 209k after level 20's gates, and the task with its two
-   reviews and merge gates would have passed the 240k mark. It heads run 68.
+6. **6A-PS was not started:** the seat's context was at 209k after level 20's gates and 240k after the
+   close; the task with its two reviews and merge gates would have ended past 270k. It heads run 68.
 
