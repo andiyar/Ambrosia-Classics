@@ -4,6 +4,18 @@
 > only). Nothing current reads this file; the live state is `docs/STATE.md`. Each later close that settles something
 > adds a dated section at the top, newest first. The two snapshots below are verbatim (headings demoted only).
 
+## Settled at Ferazel run 67's close (2026-11-25)
+
+- Run 66's state named level 20 as still closed and the lit blade (D67.1) as "must be built inside 6A-L20". Both
+  are done: level 20 "Hangnabit" is on main at fcea130 (Core 791 → 795, WinKit 87 → 88), with the lit-blade rule
+  built first and listed as known deviation 7.
+- Run 66's numbers at 771e1e4: G2 791 (789 passed, 2 opt-in skips), GW2 87; the sweep and bot were run 64's on
+  nine levels (7,192 visits a shell, rows 0; bot steps 194,400, failures 0).
+- Closed carries: level 20's all "no light" grid with blades that take light (run 64, D64.6); the clouds'
+  first-frame placeholder difference (the original's screen is black on that frame); the `\.L` suite part near
+  the ten-minute cut (now run as two commands); the Windows-path sweep of levels 3 and 4 at 509 s (now one level a
+  command: 206 s and 228 s).
+
 ## Settled at Ferazel run 66's close (2026-11-24)
 
 - Run 65's state named 6A-CL, 6A-BD and 6A-MP as not started and D64.6 (the blade's brightness on level 20's

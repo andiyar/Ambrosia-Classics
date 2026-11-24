@@ -254,7 +254,7 @@ frame-1 value; without the rain sheets `75d168572f6f029c`); the Windows referenc
 (black), step 611 `4a20aaf242d20d31` (the first rain-sheet frame), step 689 `d102a2c8a8ae172d`; `BootFacesTests` L15
 init 209 / `0xdf7d3df30637a1eb`, f30 214 / `0x54da315df4a76b2c`, f120 214 / `0xd37a42bc76b38645`. The rain test
 `testLevel15RainFeatureGolden` is deleted; its frame-2 values live on inside `testLevel15FirstFrameGolden`. No
-existing value moved. **Run 66 (wave 6A.4, fixtures of level 20):** clouds frame 1 `9f0b821fbbc60084`, frame 2 `37eb1f7eb12e8f76`; the blade frame 2 `91d21e527fca201f`; the mace trace `76e08997895b6e89` and picture `eea2913e69628851`; level 20's load bar `[16, 57, 114, 16]`; the audit's `SetupFaces` refusal count 13.
+existing value moved. **Run 66 (wave 6A.4, fixtures of level 20):** clouds frame 1 `9f0b821fbbc60084`, frame 2 `37eb1f7eb12e8f76`; the blade frame 2 `91d21e527fca201f`; the mace trace `76e08997895b6e89` and picture `eea2913e69628851`; level 20's load bar `[16, 57, 114, 16]`; the audit's `SetupFaces` refusal count 13. **Run 67 (6A-L20, level 20 opens):** level 20's first frame tick 143, camera (0, 640), `9f0b821fbbc60084` (twin without the cloud draws `8964bdab39954f49`), frame 2 `37eb1f7eb12e8f76` (twin `4679418e47ef711b`); Windows reference steps 609 / 611 / 689: `742a0703fa4da325` (black), `e96292a59a14194a` (first cloud frame), `8e04ee6e011d489` (faded in); `BootFacesTests` level 20 init 395 / `0x227efad5eb1282e2`, f30 397 / `0xc3e7eaa89a63c731`, f120 397 / `0x1d4163bbf435315d`; the mace trace's record 267 `77379b19446b30c6`. Retired: the mace-path picture `eea2913e69628851` (the card) and the cloud fixture's frame-1 pin (the level's own first-frame golden holds the same frame, D68.3). No existing value moved.
 
 Run 65 moved no value and pinned one new kind (the audit's per-level count of the held item's water-kind-0 draws:
 level 2 39, level 18 7, the other built levels 0).
@@ -1075,12 +1075,12 @@ ENG's "asserts the build task adds" inside its named tests and its `DrawModeAudi
 | 22 | 6A-CL clouds | | +7 | 771 | 87 | |
 | 23 | 6A-BD rotating blade | | +13 | 784 | 87 | |
 | 24 | 6A-MP mace paths | | +7 | 791 | 87 | |
-| 25 | 6A-L20 level 20 enterable | | +4 / −1 | 794 | 88 | |
-| 26 | 6A-PS the pipes' level spawn | | +1 | 795 | 88 | |
-| 27 | 6A-L21 level 21 enterable | | +3 | 798 | 89 | |
-| 28 | 6A-CP magic carpet | | +12 | 810 | 89 | |
-| 29 | 6A-L22 level 22 enterable | | +4 | **814** | **90** | **6A.4 end = phase end:** 811 / 0 / 3 / 0 (of 814) |
-| 30 | 6A-END phase end | | 0 | 814 | 90 | (the same, at the staged head) |
+| 25 | 6A-L20 level 20 enterable | | +5 / −1 | 795 (the card's 794 + D67.1's own test, D68.1) | 88 | |
+| 26 | 6A-PS the pipes' level spawn | | +1 | 796 | 88 | |
+| 27 | 6A-L21 level 21 enterable | | +3 | 799 | 89 | |
+| 28 | 6A-CP magic carpet | | +12 | 811 | 89 | |
+| 29 | 6A-L22 level 22 enterable | | +4 | **815** | **90** | **6A.4 end = phase end:** 812 / 0 / 3 / 0 (of 815) |
+| 30 | 6A-END phase end | | 0 | 815 | 90 | (the same, at the staged head) |
 
 New tests 198, deleted 4 (the wind, rotating-cannon, rain and mace-path feature goldens), net **+194**. 29 build tasks
 + the phase end; **9 ⚑** (CF, W1, W2, S8, RP, L10L11, RN, CH1, CH2); ◈ W1 and W2 (level 5's goldens) and WD (one
@@ -2585,7 +2585,7 @@ ids; its `--check` reads this table):
   branch ends at M l. 62427. Carries: the kept trace follows only record 266 (no p4 offset) — add record 267 when
   6A-L20 deletes the picture; the plan's "6C-BG3 1 type" is stale (nothing left to build there).
 
-#### 6A-L20 — minor — level 20 "Hangnabit" enterable (→ 794)
+#### 6A-L20 — minor — level 20 "Hangnabit" enterable (→ 795)
 - **Files:** `Sources/FerazelCore/Front/BuiltLevels.swift` (+ 20), `Tests/FerazelCoreTests/LevelTwentyTests.swift` (new),
   `Tests/FerazelRenderTests/{LevelFrameGoldenTests,FeatureGoldenTests,BootFacesTests,FaceTests}.swift` (the mace-path
   feature golden deleted, its trace kept), `Ferazel/Windows/Tests/FerazelWinKitTests/{WinLevelReferenceTests,FerazelSettingsTests}.swift`,
@@ -2598,7 +2598,7 @@ ids; its `--check` reads this table):
   opened level's `CachedFaces.needed(by:)` equals `testLevel20LoadBarMarks`' count and total as last re-derived) ·
   `testLevel20FirstFrameGolden` · `testBuiltLevelsTwenty` · `testLevel20GliderMarksAndWind`; deleted:
   `testLevel20MacePathFeatureGolden`. WinKit (+1): `testLevel20FirstFrameReference`.
-- **Gate:** Gate-L (G2 794, GW2 88). **Commit:** `Level 20 enterable: Hangnabit; 4 tests (1 feature golden retired), 1
+- **Gate:** Gate-L (G2 795, GW2 88). **Commit:** `Level 20 enterable: Hangnabit; 4 tests (1 feature golden retired), 1
   Windows reference`.
 - **Run 66's notes for this card (D67):** (1) **build D67.1 first** — a blade lit by a play-made light on a −1
   cell is drawn plain and unlit (the F 0 draw) instead of refused, a named known deviation, with its own test and
@@ -2608,7 +2608,56 @@ ids; its `--check` reads this table):
   92 in all) fall among the clouds, so the cloud draws run from the 2nd to the 420th and 421st. (3) The clouds' frame-1 picture and the blade Setup face are first-frame
   hazards (see their As executed). (4) The mace trace gains record 267 when the picture is deleted.
 
-#### 6A-PS — minor — the pipes' level spawn (→ 795)
+- **As executed — 6A-L20 (run 67, 2026-11-24 20:23 → 2026-11-25, evening into night; nothing launched):** part 1
+  70446c2 (D67.1), ledger 343a228, part 2 28e1d0b, fix round fcea130 (tests and comments only — the non-comment
+  diff of `Ferazel/Core/Sources`, `Ferazel/App`, `Ferazel/Windows/Sources` over the fix round is empty); merged at
+  fcea130. Game-source change: `BuiltLevels.list` gains 20, and `SpriteSlot.applyDynamicLight` forms the unlit
+  word 0 for a "no light" cell (−1) with a play-made light value 1…0xff — the one case where the original reads
+  undefined memory (known deviation 7; Ben had not answered mailbox Q1, so option A stands). Legs: spec PASS WITH
+  FIXES (the rule touches only the undefined case; the level matches its data), quality PASS WITH FIXES — 43
+  planted bugs, 37 caught, 4 harmless, 2 in-scope slips closed by the reviewer's verified asserts (the rule checked
+  on every cell value −1…15 against every light value 0…0xff; a calm-cell twin for the wind test).
+  - **Core 795, not the card's 794:** D67.1 has its own test (`SpriteDrawTests.testBladeLitOnNoLightCellDrawsUnlit`);
+    the ladder from here is +1 (D68.1).
+  - **Data over card:** 333 records, 26 types, **0 refused**, `refusedSpawns` 0; music 15, start (86, 886) facing
+    right, grid 600 × 32, every light byte −1; wind 2,899 cells (36 crossed). **The 328 cloud draws are not back
+    to back:** 23 crystals (type 1055, 4 draws each, 92 in all) sit among the clouds, so the cloud draws run from
+    the 2nd to the 420th / 421st draw (run 66's "2…329" was wrong). Load bar `[16, 57, 114, 16]` holds.
+  - **The two first-frame hazards:** (1) the clouds' buffer on the first frame shows loaded faces where the
+    original's holds placeholders — but the original's screen is fully black on that frame (the fade-out before
+    setup M l. 2570, no blocking fade-in on this level, the first fade step after the first draw M l. 5248 / 5282;
+    the Windows reference shows it black), so nothing a player sees differs; (2) no blade is drawn in frames 1–2
+    (all 28 idle), so the Setup stand-in face never reaches a draw.
+  - **New pins (measured, seed 1):** in the "Goldens" paragraph. The first-frame golden equals the cloud fixture's
+    frame 1, so that fixture pin was retired by the fix round (ENG §2.8 and 6A-CL's note said this task removes
+    it; D68.3); frame 2 stays in both.
+  - **Outside the card's fence, by the seat's ruling:** the D67.1 change itself and its test; two older tests
+    that pinned the undefined word (`SpriteDrawTests.testWrapDrawSpritesClipAndMaskPass`,
+    `LightingTests.testA14LightByteMinusOneStillRefused`) now expect 0, their refusal asserts kept; the draw
+    audit's new proof for a level with −1 cells **and** dynamic-light sprites (level 20 stands on it; level 18
+    keeps D64.1's, unchanged). The refusal census did not move.
+  - **Re-derived list pins (the list gaining 20, nothing more):** the not-built probes 20 → 21 in five classes;
+    `GameFlowGameTests` start 20 → 20 and (21 → 1), the not-built save names 21; `FerazelSettingsTests` 20 → 20,
+    21 → 1. No other pinned value moved.
+  - **Gates at fcea130 (the seat's own, from a `git archive` copy, foreground, in parts):** G2 **795** = 618 rules
+    + 177 render, 793 passed, 0 failed, the two opt-in skips by name (rules 128 s; A–C 305; D–E without the audit
+    57; F–K 236; the three L classes without `LevelSweepTests` 98; `LevelSweepTests` 281; M–Z 154; the audit, both
+    tests together: levels 1–5 411, level 18 88, level 20 207; levels 10, 11, 15 one test a command 363 + 367);
+    GW2 **88** = 86 passed, 0 failed, the two skips (B 317, F|T 178, Win D|F|G 322, Win O|R|S|V 153, the five level
+    references 182 / 162 / 129 / 131 / 132 s); G3 `Totals: items 1,108 decoded, failures 0`; G5 BUILD SUCCEEDED;
+    GW1 0 then 2; GW3 0 then 1; GW4 Build complete!; the ledger check OK. **Full GE, 10 levels, 4 workers, a level
+    group a command** (game source as 28e1d0b; the fix round changed comments only): sweep core **8,524 visits,
+    rows 0** (1,786 s: levels 1, 2 284 / 3, 4 349 / 5 204 / 10 249 / 11 314 / 15, 18 149 / 20 237), windows
+    **8,524, rows 0** (2,019 s: 335 / 206 + 228 for 3 and 4 apart / 120 / 295 / 372 / 180 / 283); bot core
+    `levels 10, seeds 4, steps 216000, deaths 34, exits 323, conversations 33, saves 3, failures 0 in 98 s`,
+    windows the same counts `in 119 s`. Quick mode on level 20 (the implementer's): failures 0.
+  - **Owed:** the muted boot check of level 20 (night rule — the run ran 20:23 → after 03:00); Proof B and the
+    Mac SDL smoke at the wave end, by day. **Carried:** the audit's check of the guard's exact source text fails
+    on a harmless rewrite with a confusing first message; `refusedSpawns == 0` on level 20 cannot fail alone;
+    in the new light test the picture equalities follow from the equal words; the candelabra arm in
+    `BonusSprite.swift` has a dead store (older than this task); two long doc lines in `LevelTwentyTests.swift`.
+
+#### 6A-PS — minor — the pipes' level spawn (→ 796)
 - **Files:** `Sources/FerazelCore/World/Movers/BoxSprite.swift` (`setupPipe` `:446` wired into the level spawn; the
   throwaway child), `Sources/FerazelCore/Sprites/SetupFaces.swift` (`:512` — the pipe arm 1490…1493),
   `Sources/FerazelCore/Front/LevelRun.swift` (the pipe singles #6–#9 marked on CF's list),
@@ -2629,10 +2678,10 @@ ids; its `--check` reads this table):
   1860 — is also placed on level 21 (the Fable cross-check's reading; the test asserts each type's placement), so
   `CachedFaces.needed(by:)`, which works from the placed types, already holds them; a child type not placed there is a
   STOP for the seat).
-- **Gate:** Gate-F (G2 795; the bot cannot reach level 21 until 6A-L21 — its quick mode there is 6A-L21's, as for
+- **Gate:** Gate-F (G2 796; the bot cannot reach level 21 until 6A-L21 — its quick mode there is 6A-L21's, as for
   6A-CH1). **Commit:** `FerazelCore: the enemy pipes spawn from the level (levels 21 on); 1 test`.
 
-#### 6A-L21 — minor — level 21 "Obfuscation & Edification" enterable (→ 798)
+#### 6A-L21 — minor — level 21 "Obfuscation & Edification" enterable (→ 799)
 - **Files:** `Sources/FerazelCore/Front/BuiltLevels.swift` (+ 21), `Tests/FerazelCoreTests/LevelTwentyOneTests.swift`
   (new), `Tests/FerazelRenderTests/{LevelFrameGoldenTests,BootFacesTests,FaceTests}.swift`,
   `Ferazel/Windows/Tests/FerazelWinKitTests/{WinLevelReferenceTests,FerazelSettingsTests}.swift`, the list-pinned tests.
@@ -2647,10 +2696,10 @@ ids; its `--check` reads this table):
 - **Tests (3):** `testLevel21SetsUpEveryRecord` (assert: with an insect 1860 idled, its body keeps its link and keeps
   running — measured over the idle frames) · `testLevel21FirstFrameGolden` · `testBuiltLevelsTwentyOne`. WinKit (+1):
   `testLevel21FirstFrameReference`.
-- **Gate:** Gate-L (G2 798, GW2 89). **Commit:** `Level 21 enterable: Obfuscation & Edification; 3 tests, 1 Windows
+- **Gate:** Gate-L (G2 799, GW2 89). **Commit:** `Level 21 enterable: Obfuscation & Edification; 3 tests, 1 Windows
   reference`.
 
-#### 6A-CP — minor — the magic carpet (→ 810)
+#### 6A-CP — minor — the magic carpet (→ 811)
 - **Files:** `Sources/FerazelCore/World/Movers/BoxSprite.swift` (`:147` the Setup `// later`; `:472` `handleBuilt`;
   `:1521`, `:1594` the wake; the tail `:605–:621` keeps its two exclusions), `Sources/FerazelCore/Sprites/SetupFaces.swift`
   (`:512`, the carpet's face arm), `Sources/FerazelCore/Front/LevelRun.swift` (set #27 0x438 marked), the player's half
@@ -2673,9 +2722,9 @@ ids; its `--check` reads this table):
   `testCarpetVerticalDampingAfterBob` · `testCarpetRideCountAndFlash` · `testCarpetBurstsAtZero` ·
   `testCarpetLevel22NeverCounts` · `testCarpetSteeringMovesCarpet` · `testCarpetExcludedFromBoxTileHits` ·
   `testLevel22CarpetFeatureGolden` (the first frame after the wake, measured; kept). Asserts: ENG §2.11's ten.
-- **Gate:** Gate-F (G2 810). **Commit:** `FerazelCore: the magic carpet; the player's built half proven; 12 tests`.
+- **Gate:** Gate-F (G2 811). **Commit:** `FerazelCore: the magic carpet; the player's built half proven; 12 tests`.
 
-#### 6A-L22 — minor — level 22 "The Labyrinth" enterable (→ 814)
+#### 6A-L22 — minor — level 22 "The Labyrinth" enterable (→ 815)
 - **Files:** `Sources/FerazelCore/Front/BuiltLevels.swift` (`[1, 2, 3, 4, 5, 10, 11, 15, 18, 20, 21, 22]`),
   `Tests/FerazelCoreTests/LevelTwentyTwoTests.swift` (new), `Tests/FerazelRenderTests/{LevelFrameGoldenTests,BootFacesTests,FaceTests}.swift`,
   `Ferazel/Windows/Tests/FerazelWinKitTests/{WinLevelReferenceTests,FerazelSettingsTests}.swift`, the list-pinned tests.
@@ -2693,10 +2742,10 @@ ids; its `--check` reads this table):
   record 283, Mcnv 220 — read in `ConvActions`, measured; assert: when what they write is what enables the dormant
   Dimbo (LL §5), level 11 opened with it sets record 283 up and it talks — Mcnv 220; if the measurement says otherwise,
   the As executed names it an open item for 6B). WinKit (+1): `testLevel22FirstFrameReference`.
-- **Gate:** Gate-L (G2 814, GW2 90). Wave 6A.4 end = the phase end (6A-END). **Commit:** `Level 22 enterable: The
+- **Gate:** Gate-L (G2 815, GW2 90). Wave 6A.4 end = the phase end (6A-END). **Commit:** `Level 22 enterable: The
   Labyrinth; BuiltLevels holds every level through the Goblin Chief; 4 tests, 1 Windows reference`.
 
-#### 6A-END — minor — the phase end: the checks, the relabel sweep, both builds staged, one gate card (→ 814)
+#### 6A-END — minor — the phase end: the checks, the relabel sweep, both builds staged, one gate card (→ 815)
 - **Files:** `Ferazel/WHAT-TO-EXPECT.md` (the 6A card, Mac part), `Ferazel/WINDOWS-WHAT-TO-EXPECT.md` (Windows part —
   one card, two files), any `Ferazel/Core/Sources` file with a stale `// later:` naming a merged 6A task or "Phase 6"
   where a 6A task now owns it (comment-only relabels to the real owner: 6B / 6C task ids), `docs/ferazel/port-gap-ledger.md`
@@ -2710,8 +2759,8 @@ ids; its `--check` reads this table):
   diff (`git diff <phase-start SHA>..HEAD`, Mac + Windows) and the card — it covers wave 6A.4; Opus implementers fix
   its findings; re-stage. **STOP for Ben:** the card goes to QUESTIONS as a new item (the 6A gate, Mac and Windows). The
   next run is the 6B planning run (P6B: the Wave 6 cards expanded the same way), which does not wait for his verdict.
-- **Gate:** G1; G2 814 / 2 named skips; GW2 90 / 2 named skips; G3; G5; GW1–GW4; GW5; GE; by day GWB **811 / 0 / 3 /
-  0 (of 814)**, GW6, G9M. **Commit:** `WHAT-TO-EXPECT: Phase 6A gate card (through the Goblin Chief), Mac and Windows`.
+- **Gate:** G1; G2 815 / 2 named skips; GW2 90 / 2 named skips; G3; G5; GW1–GW4; GW5; GE; by day GWB **812 / 0 / 3 /
+  0 (of 815)**, GW6, G9M. **Commit:** `WHAT-TO-EXPECT: Phase 6A gate card (through the Goblin Chief), Mac and Windows`.
 
 ### Execution order
 
@@ -2736,9 +2785,9 @@ than before; 6A-L10L11 (⚑, the first full GE over seven levels) runs alone in 
 | 58 | 6A-CH1, 6A-CH2 | 2 | 760 / 86 | — |
 | 59 | 6A-L18 (+ the full GE) | 0 | 764 / 87 | **6A.3 "Storm Valley and the Chief"**: GWB 761 / 0 / 3 / 0 (of 764); the cross-check in this run |
 | 60 | 6A-CL, 6A-BD, 6A-MP | 0 | 791 / 87 | — |
-| 61 | 6A-L20, 6A-PS, 6A-L21 (+ the full GE after each level) | 0 | 798 / 89 | — |
-| 62 | 6A-CP, 6A-L22 (+ the full GE) | 0 | 814 / 90 | **6A.4 "Hangnabit to the Labyrinth"** — its cross-check is the phase review |
-| 63 | 6A-END | — | 814 / 90 | the phase end: GE both shells, stages, GWB 811 / 0 / 3 / 0 (of 814), the Fable phase review, the card → Ben |
+| 61 | 6A-L20, 6A-PS, 6A-L21 (+ the full GE after each level) | 0 | 799 / 89 | — |
+| 62 | 6A-CP, 6A-L22 (+ the full GE) | 0 | 815 / 90 | **6A.4 "Hangnabit to the Labyrinth"** — its cross-check is the phase review |
+| 63 | 6A-END | — | 815 / 90 | the phase end: GE both shells, stages, GWB 812 / 0 / 3 / 0 (of 815), the Fable phase review, the card → Ben |
 
 Every dependency holds: CF before every type and level task; FR before W1; FX before S8 and every other fixture user
 (it builds the fixture); S8 before every level-10 feature (it removes the strip's refusal and shifts the slot ids they
@@ -2843,7 +2892,7 @@ bot plays 4 seeds × 3 minutes a level = 21,600 steps a level (108,000 on 1–5,
 | 6A-L10L11 (measured, run 56) | 7 | 6,324 | 151,200 | 43 min (core 1,192 s + windows 1,409 s); the bot 73 s + 86 s | not measured |
 | 6A-L15 (measured, run 61) | 8 | 7,056 | 172,800 | 56 min (core 1,652 s + windows 1,721 s, a level group a command, builds included); the bot 80 s + 95 s | not measured |
 | 6A-L18 (measured, run 64) | 9 | 7,192 | 194,400 | 63 min (core 1,869 s + windows 1,928 s, a level group a command, builds included; the longest command 509 s — levels 3, 4 on the Windows path); the bot 91 s + 108 s | not measured |
-| 6A-L20 | 10 | 8,524 | 216,000 | ~31 min (est.) | ≤ 700 MB (est.: 164 clouds) |
+| 6A-L20 (measured, run 67) | 10 | 8,524 | 216,000 | 63 min (measured, run 67: core 1,786 s in seven commands + windows 2,019 s in eight, a level group a command, builds included; the longest command 372 s — level 11 on the Windows path); the bot 98 s + 119 s | not measured |
 | 6A-L21 | 11 | 9,824 | 237,600 | ~35 min (est.) | ≤ 700 MB (est.) |
 | 6A-L22 / END | 12 | 11,864 | 259,200 | ~43 min, up to ~65 min if a visit costs more on the big levels (est.) | ≤ 800 MB (est.: 510 records) |
 | 6C-END (the whole game) | 24 | 22,564 | 518,400 | ~80 min (est.) | ≤ 800 MB (est.) |

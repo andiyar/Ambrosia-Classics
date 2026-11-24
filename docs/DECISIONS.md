@@ -2884,3 +2884,28 @@ It replaces the Phase 5 card of the 2026-11-05 remainder plan; that plan and the
 **Reviewed by:** two Opus 5.5 legs (spec: 1 blocker, 20 should-fix, 14 minor — the blocker was the plan saying the
 game stays paused on return to the app, where the OS X build ends the pause unless Caps Lock is on; quality: 12
 should-fix, 8 minor), all folded in; then the seat's cross-check.
+
+## D68 — Ferazel's Wand: run 67's rulings (6A-L20 — level 20 "Hangnabit" opens; 2026-11-25)
+
+1. **The lit-blade fix keeps its own test, and the Core ladder moves up by one.** D67.1 was built inside 6A-L20
+   with its own test method, so the task landed on 795 where the card said 794. Every later Core number in the
+   plan is one higher (PS 796, L21 799, CP 811, L22 and the phase end 815; Proof B 812 of 815). Rejected: folding
+   the test into another to keep the card's number.
+2. **D67.1 as built covers every sprite that takes play-made light, not only blades, and lives where the draw
+   word is formed.** `SpriteSlot.applyDynamicLight` forms the unlit word for a "no light" cell (−1) with a light
+   value 1…0xff — exactly the words that would read undefined memory; maces, chains, rafts and boulders take the
+   same path. The blitter cannot tell those words from translucency words, so its refusal of the raw word stays.
+   Two older tests that pinned the undefined word were re-pinned to 0 under this ruling; the draw audit gained a
+   second proof for levels with "no light" cells and light-taking sprites (level 18 keeps D64.1's). Ben's mailbox
+   Q1 was still unanswered at the close; his answer, if it comes, replaces this.
+3. **The cloud fixture's frame-1 pin is retired.** Level 20's own first-frame golden is the same frame (the
+   engine contract and 6A-CL's note said the level task removes it); frame 2 stays pinned in both tests.
+4. **The clouds' first-frame difference needs no ruling.** The original's first frame of level 20 holds
+   placeholder cloud pictures in its buffer, but its screen is still fully black then (no blocking fade-in on this
+   level); the port's loaded pictures cannot be seen either. Checked by the spec leg against the dump.
+5. **The sweep ran while the reviews ran, from a separate copy of the reviewed commit.** The fix round changed
+   tests and comments only (proven by the diff), so the sweep and bot results at 28e1d0b count for fcea130 — as
+   run 64 did for level 18.
+6. **6A-PS was not started:** the seat's context was at 209k after level 20's gates, and the task with its two
+   reviews and merge gates would have passed the 240k mark. It heads run 68.
+
