@@ -1381,11 +1381,11 @@ extension BackgroundSprite {
         s.oldPosition = SpriteSlot.Point(x: s.x, y: s.y)
     }
 
-    /// The mode-1 / mode-2 arm of the 0x5c8…0x5d1 Handle (M l. 63141–63145), after the face (M l. 63138–63139):
-    /// `.HandleProgrammedPath` (`ProgrammedPath.handle` — vy (mode 1) or vx (mode 2) toward ±p3 by p3 >> 4, turning
-    /// past a bound) then `.ApplyGravityAndSeparateFromTiles` (`TileSolver.applyGravityAndSeparate`; `+0x1f8` is 0, so
-    /// no tile callback: the path is not stopped by tiles, and gravity `+0x110` is the `.InitSprite` 0). No radial step,
-    /// no spoke update, no layer change and no `+0x170` store (all modes 10–14's, M l. 63147–63187).
+    /// The mode-1 / mode-2 arm of the 0x5c8…0x5d1 Handle (M l. 63141–63145, after the face at 63138–63139):
+    /// `.HandleProgrammedPath` (`ProgrammedPath.handle` — vy / vx (mode 1 / 2) toward ±p3 by p3 >> 4, turning past a bound)
+    /// then `.ApplyGravityAndSeparateFromTiles` (`TileSolver.applyGravityAndSeparate`; `+0x1f8` 0: no tile callback, so
+    /// no tile stops the path, and the in-water flag `+0x11c` stays 0 — its gravity branch never runs, in the original too;
+    /// gravity `+0x110` is the `.InitSprite` 0). No radial step, spokes, layer or `+0x170` (modes 10–14's, M l. 63147–63187).
     static func pathMace(_ w: SpriteWorld, id: Int) {
         guard var c = w.active.record(id: id) else { return }
         ProgrammedPath.handle(w, id: id, slot: &c)

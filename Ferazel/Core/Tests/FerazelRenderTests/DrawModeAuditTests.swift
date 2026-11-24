@@ -1757,7 +1757,7 @@ final class DrawModeAuditTests: XCTestCase {
           "the session is built at each level start, every built level's run included"),
         R("Sprites/SetupFaces.swift", "Error.unmapped", 1, .loadsClean, [.levelsLoad],
           "every active placement of every built level sets up (the audit runs each one, and the level start does)"),
-        R("Sprites/SetupFaces.swift", "Error.notTranscribed", 14, .loadsClean, [.levelsLoad], "the same Setups"),
+        R("Sprites/SetupFaces.swift", "Error.notTranscribed", 13, .loadsClean, [.levelsLoad], "the same Setups"),
         R("Sprites/SetupFaces.swift", "Error.autoScrollSprites", 1, .headerZero, [.headerCamera],
           "header `autoScrollEnable` = 0 on every built level"),
         R("World/Movers/BonusSprite.swift", "SetupFaces.Error.notTranscribed", 2, .loadsClean,

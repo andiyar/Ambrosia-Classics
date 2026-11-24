@@ -846,7 +846,7 @@ final class FeatureGoldenTests: XCTestCase {
         let a = try Self.level20MaceRun(iterations: 124)
         guard a.trace.count == 124 else { return }                     // a failure above, never a crash
         XCTAssertEqual(Set(a.balls), [16], "all 16 balls on the list every frame (never idled)")
-        XCTAssertEqual(Set(a.player.map { $0 }), [[10700, 560]], "the player neither moved sideways nor was hurt")
+        XCTAssertEqual(Set(a.player), [[10700, 560]], "the player neither moved sideways nor was hurt")
         XCTAssertEqual(Set(a.trace.map { $0[0] }), [10436], "mode 1 never moves x")
         let ys = a.trace.map { $0[1] }, vs = a.trace.map { $0[2] }, ds = a.trace.map { $0[3] }
         let turns = ds.indices.dropFirst().filter { ds[$0] != ds[$0 - 1] }.map { $0 + 1 }

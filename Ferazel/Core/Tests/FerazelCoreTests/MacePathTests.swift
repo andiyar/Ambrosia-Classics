@@ -3,7 +3,7 @@ import XCTest
 
 /// 6A-MP (docs/superpowers/plans/2026-11-04-ferazel-remainder.md `#### 6A-MP`; docs/ferazel/phase6-engine-contracts.md
 /// §2.10, E19): the programmed-path maces — the radial bars and balls 0x5c8…0x5d1 with mode `+0xb0` 1 (up and down) or
-/// 2 (left and right). The Setup arm of `.SetupBackgroundSprite` (M l. 62337–62360, after the common stores and the
+/// 2 (left and right). The Setup arm of `.SetupBackgroundSprite` (M l. 62339–62360, after the common stores and the
 /// record write-backs M l. 62312–62336) runs `.SetupProgrammedPath(s, −1, 0)` (M l. 39288–39381, the one
 /// `ProgrammedPath`); the Handle arm (M l. 63137–63146) re-faces the sprite and runs `.HandleProgrammedPath` (M l.
 /// 39384–39462) and `.ApplyGravityAndSeparateFromTiles`; the radial and its chain belong to modes 10–14 only (M l.
@@ -74,7 +74,7 @@ final class MacePathTests: XCTestCase {
         XCTAssertEqual(e.source, .setupCached, what, file: file, line: line)
     }
 
-    // MARK: - the Setup arm (M l. 62337–62360)
+    // MARK: - the Setup arm (M l. 62339–62360)
 
     func testMacePathSetupModeOne() throws {
         // The data (ENG §2.10 "Switch", re-read): mode 1 ×16 on level 20 and ×23 on level 22, every one the ball 1485;
@@ -110,8 +110,7 @@ final class MacePathTests: XCTestCase {
         XCTAssertEqual(census, [20: [16, 0, 6], 22: [23, 0, 6]])
         XCTAssertEqual(try paths(20, mode: 1).1.filter { $0.p4 == $0.p2 }.count, 5)
 
-        let w = try world()
-        let c = SetupFaces.Context(level: w.level, playerX: 0)
+        let c = SetupFaces.Context(level: try LevelFile.load(from: try resources(), level: 20), playerX: 0)
         // The write-backs come first (M l. 62329–62336 before 62343): p2 0 → 0x8c and p3 0 → 0x1e are the path's.
         let e0 = try SetupFaces.setup(rec(p2: 0, p3: 0), context: c)
         XCTAssertEqual([e0.record.p2, e0.record.p3], [0x8c, 0x1e])
@@ -133,9 +132,8 @@ final class MacePathTests: XCTestCase {
 
     func testMacePathSetupModeTwo() throws {
         // Mode 2 ×6 on level 22 (none on 20), every one 1485 with p4 0.
-        let (L20, none) = try paths(20, mode: 2)
+        let (_, none) = try paths(20, mode: 2)
         XCTAssertEqual(none.count, 0)
-        _ = L20
         let (L, list) = try paths(22, mode: 2)
         XCTAssertEqual(list.map { [$0.index, Int($0.type), Int($0.p4)] },
                        [[314, 1485, 0], [315, 1485, 0], [346, 1485, 0], [374, 1485, 0], [396, 1485, 0], [466, 1485, 0]])
@@ -247,6 +245,32 @@ final class MacePathTests: XCTestCase {
         XCTAssertEqual(b.turns, [70, 132, 194])
         XCTAssertEqual([b.ys.first, b.ys.min(), b.ys.max()], [886, 424, 962])
         for k in 36..<76 { XCTAssertEqual(a.ys[k + 124], a.ys[k], "record 266, Handle \(k + 1): periodic") }
+
+        // Mode 2 on the level records (leg-2 review): level 22's six mode-2 balls, 300 Handles each in level 22's world.
+        // y never moves; x shuttles from its record (p4 0 on all six) at p3 / 256 px a frame — the turns and x range
+        // match a model written from the dump alone (M l. 39342–39351, 39392–39417; x += vx, gravity 0). No tile
+        // callback (`+0x1f8` 0), so `+0x11c` / `+0x120` stay 0: the in-water gravity floor is unreachable for a path mace.
+        let (L22, two) = try paths(22, mode: 2)
+        let w22 = SpriteWorld(level: L22)
+        var got: [[Int]] = []
+        for p in two {
+            let m = try mace(w22, p)
+            var d: [Int32] = [], xs: [Int] = []
+            for k in 1...300 {
+                let s = try handle(w22, m)
+                XCTAssertEqual([s.y, Int(s.vy), Int(s.waterRow), Int(s.lastWater)], [Int(p.y), 0, 0, 0],
+                               "record \(p.index), Handle \(k)")
+                XCTAssertLessThanOrEqual(abs(s.vx), Int32(p.p3), "record \(p.index), Handle \(k)")
+                d.append(s.pathDirection)
+                xs.append(s.x)
+            }
+            let turns = d.indices.dropFirst().filter { d[$0] != d[$0 - 1] }.map { $0 + 1 }
+            got.append([p.index, turns.count, turns.first ?? 0, xs[0], xs.min() ?? 0, xs.max() ?? 0, xs[299]])
+        }
+        // [record, turns, first turn, x after Handle 1, min, max, x after Handle 300].
+        XCTAssertEqual(got, [[314, 3, 62, 1682, 1669, 2084, 1848], [315, 4, 45, 1522, 1514, 1683, 1581],
+                             [346, 3, 62, 2634, 2621, 3036, 2800], [374, 6, 28, 4356, 4343, 4559, 4356],
+                             [396, 5, 39, 5699, 5689, 5881, 5867], [466, 3, 58, 5894, 5878, 6297, 5969]])
     }
 
     // MARK: - no chain, no radial, no spoke update (M l. 62362–62427, 63147–63187; E19)
