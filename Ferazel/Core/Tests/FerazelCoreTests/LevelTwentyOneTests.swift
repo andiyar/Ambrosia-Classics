@@ -5,8 +5,9 @@ import HectorResources
 /// 6A-L21 (docs/superpowers/plans/2026-11-04-ferazel-remainder.md `#### 6A-L21`): level 21 "Obfuscation & Edification"
 /// enterable — every one of its 325 records sets up (62 types; LL §4 "Level 21"; the Box scenery, faces and talkers
 /// built by 6A-BX1a / 6A-BX1b, the pipes' level spawn by 6A-PS, none refused), its header as read (music 9, no chapter
-/// card, the start, the darkness switch 0x2706 = 2 — the first built level where it is not 0 — over a light grid whose
-/// every byte is 0…14, inside the ambient table's 16 rows), the picture cache's marks and load bar, the insects 1860
+/// card, the start, the darkness switch 0x2706 = 2 — a value no earlier built level has (levels 1 and 4: 5; 2, 3 and 10:
+/// 1; 5, 11, 15, 18, 20: 0) — over a light grid whose every byte is 0…14, inside the ambient table's 16 rows, and the
+/// first shipped outcrop on a cell darker than 7, record 98), the picture cache's marks and load bar, the insects 1860
 /// (first placed here: an idle head's body, a record-0x200 child, keeps its link and keeps running — Hazards "Idle
 /// children"), the teleporters' pair ids, the conversations, and `BuiltLevels.list` = [1…5, 10, 11, 15, 18, 20, 21] with
 /// the way in (level 20's exit) and on. The parameter trace ("Every level task"): every built type placed here whose
@@ -21,19 +22,20 @@ final class LevelTwentyOneTests: XCTestCase {
         let r = try TenEleven.resources()
         let L = try LevelFile.load(from: r, level: 21)
         let census = try TenEleven.census(r, level: 21)
-        XCTAssertEqual(census.records, 325)
-        XCTAssertEqual(census.types, 62)
+        XCTAssertEqual(census.records, 325, "records")
+        XCTAssertEqual(census.types, 62, "types")
         XCTAssertEqual(census.refused, [], "every record sets up — no `notTranscribed`, per record (the card's 30 are built)")
-        XCTAssertEqual(census.created, 325)
+        XCTAssertEqual(census.created, 325, "records created")
         XCTAssertEqual(census.refusedSpawns, 0, "no spawn dropped for want of a record (known deviation 6)")
         var perType: [Int16: Int] = [:]
         for p in L.activePlacements { perType[p.type, default: 0] += 1 }
         XCTAssertEqual([1061, 1490, 1491, 1492, 1493, 1860, 1742, 1487, 2962, 1308].map { perType[Int16($0)] ?? 0 },
-                       [14, 1, 3, 1, 1, 5, 1, 1, 1, 4])
+                       [14, 1, 3, 1, 1, 5, 1, 1, 1, 4], "records per type")
 
-        // The header (LL §4 "Level 21" item 1: the darkness switch and the music are the switches new against 1–5).
+        // The header (LL §4 "Level 21" item 1: the darkness switch's value 2 and the music 9 are the values new against
+        // 1–5; levels 1 and 4 have the switch at 5, levels 2 and 3 at 1).
         let h = L.header
-        XCTAssertEqual(h.name, "Obfuscation & Edification")
+        XCTAssertEqual(h.name, "Obfuscation & Edification", "the name")
         XCTAssertEqual([h.music, h.chapter, h.levelClut, h.screenClut], [9, 0, 211, 212], "0x284a / 0x273c")
         XCTAssertEqual([h.startX, h.startY, Int16(h.startFacingLeft)], [100, 1678, 0], "the start, facing right")
         XCTAssertEqual([Int(h.parallaxRipple), Int(h.omniPxMode), Int(h.waterSurfaceEffect), Int(h.submergedFaces),
@@ -41,23 +43,24 @@ final class LevelTwentyOneTests: XCTestCase {
         XCTAssertEqual([h.sidePush, h.stripPict, h.autoScrollEnable, h.flameMode, h.darknessEnable, h.cameraOffsetX,
                         h.cameraOffsetY, h.landingDamage, h.iceSlipperiness, h.waterCurrent, h.arenaBound,
                         h.secondArenaBound], [0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0], "0x2706 = 2, the others 0")
-        XCTAssertEqual([Int(h.gridWidth), Int(h.gridHeight)], [350, 65])
+        XCTAssertEqual([Int(h.gridWidth), Int(h.gridHeight)], [350, 65], "the grid")
         // The darkness grid: every light byte 0…14 (no −1, none past the ambient table's 16 rows), so the tile light
         // pass (`.GetAmbDarkVal`, M l. 13643–13652) reads a defined ambient row on every cell (measured counts).
         var bytes: [Int: Int] = [:]
         for row in 0..<Int(h.gridHeight) { for col in 0..<Int(h.gridWidth) { bytes[L.lightByte(col: col, row: row), default: 0] += 1 } }
-        XCTAssertEqual(bytes.keys.sorted(), Array(0...14))
+        XCTAssertEqual(bytes.keys.sorted(), Array(0...14), "every light byte 0…14 occurs")
         XCTAssertEqual([bytes[0], bytes[14]], [9709, 36], "measured: the unlit and the darkest cells")
         // The music: New Game at level 21 (the hidden `FerazelLevel` switch) plays the level's own track 9; no chapter
         // card; the player starts facing right; `.SetupLevel` copies the darkness switch into G+0x22 (M l. 2377).
         let rig = TenElevenRig(r, start: 21)
         rig.newGame(level: 21)
-        XCTAssertEqual(rig.plays, [9])
+        XCTAssertEqual(rig.plays, [9], "the music")
         let run = try XCTUnwrap(rig.flow.levelRun)
-        XCTAssertEqual(run.music.currentTrack, 9)
+        XCTAssertEqual(run.music.currentTrack, 9, "the music")
         let session = try XCTUnwrap(run.session)
         XCTAssertEqual([session.globals.startFacing, session.world.player.facing], [0, 2], "facing right")
-        XCTAssertEqual([Int(session.world.globals.savedDarkness), Int(session.world.globals.darknessOverride)], [2, 0])
+        XCTAssertEqual([Int(session.world.globals.savedDarkness), Int(session.world.globals.darknessOverride)], [2, 0],
+                       "G+0x22 the switch, no override")
 
         // The picture cache (LL §4 item 6, the new types' marks as 1-based list positions — `.set(n − 1)` here): every
         // one is marked; the opened session needs exactly the Setups' marks; the bar on a fresh cache (6A-PS: 40 steps).
@@ -68,7 +71,7 @@ final class LevelTwentyOneTests: XCTestCase {
         ]
         let c = SetupFaces.Context(level: L, playerX: SetupFaces.Context.levelStartPlayerX(h))
         let setUp = SetupFaces.spawnOrder(L.placements).filter { (try? SetupFaces.setup($0, context: c)) != nil }
-        XCTAssertEqual(setUp.count, L.activePlacements.count)
+        XCTAssertEqual(setUp.count, L.activePlacements.count, "every record sets up")
         let marks = Set(setUp.flatMap { CachedFaces.markedRecords(type: $0.type, p1: $0.p1) })
         for k in expected { XCTAssertTrue(marks.contains(k), "\(k)") }
         let s = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: 21)
@@ -148,10 +151,10 @@ final class LevelTwentyOneTests: XCTestCase {
         var k = 0
         while try entry(319).activeID == nil && k < 200 { _ = s.step(keys: KeyState()); k += 1 }
         let head = try XCTUnwrap(w.active.record(id: try XCTUnwrap(try entry(319).activeID)))
-        XCTAssertEqual(head.siblings.first, bodies[4])
+        XCTAssertEqual(head.siblings.first, bodies[4], "insect 319: the same body")
         let body = try XCTUnwrap(w.active.record(id: bodies[4]))
         XCTAssertEqual([body.x, body.y, k], [head.x, head.y, 1], "measured: in on the first frame; the head's Handle copies its position to the body")
-        XCTAssertEqual(body.face, FaceRef(pict: Bat.insectSet, index: 8, set: .encoded))
+        XCTAssertEqual(body.face, FaceRef(pict: Bat.insectSet, index: 8, set: .encoded), "insect 319: its body's face")
     }
 
     /// Level 21's three conversations (LL §5: 261 on record 89, 260 on 207, 300 on 318) use no action, so nothing on
@@ -168,7 +171,7 @@ final class LevelTwentyOneTests: XCTestCase {
             XCTAssertEqual(Set(lines.flatMap { [$0.action1.type, $0.action2.type] }).subtracting([0]), [], "Mcnv \(id)")
         }
         let L11 = try LevelFile.load(from: r, level: 11)
-        XCTAssertEqual([Int(L11.placements[283].type), Int(L11.placements[283].flag)], [2956, 99])
+        XCTAssertEqual([Int(L11.placements[283].type), Int(L11.placements[283].flag)], [2956, 99], "level 11 record 283")
         func revisit(armed: Bool) throws -> SpriteWorld {
             var g = GameGlobals(header: L11.header)
             g.hasSnapshot[11] = 1
@@ -188,15 +191,27 @@ final class LevelTwentyOneTests: XCTestCase {
                                    sounds: StageSounds(prefs: prefs, lengths: [:]))
             var now: UInt32 = 0
             while run.session == nil && now < 4000 { _ = try run.tick(now: now, input: FrontInput()); now &+= 1 }
-            XCTAssertTrue(run.revisit)
+            XCTAssertTrue(run.revisit, "a revisit (armed: \(armed))")
             return try XCTUnwrap(run.session).world
         }
         func dimbo(_ w: SpriteWorld) -> [Int] {
             w.active.sprites.filter { $0.recordIndex == 283 }.map { Int($0.type) }
                 + w.idle.entries.compactMap { $0 }.filter { $0.saved.recordIndex == 283 }.map { Int($0.saved.type) }
         }
-        XCTAssertEqual(dimbo(try revisit(armed: true)), [2956], "the armed record appears on the revisit")
-        XCTAssertEqual(dimbo(try revisit(armed: false)), [], "dormant, it does not")
+        let armed = try revisit(armed: true), dormant = try revisit(armed: false)
+        XCTAssertEqual(dimbo(armed), [2956], "the armed record appears on the revisit")
+        XCTAssertEqual(dimbo(dormant), [], "dormant, it does not")
+        // The snapshot stored −6 comes back +6 (`SaveBlock.restoreSnapshot`, `.SetupLevel` M l. 2405–2409): the live
+        // record 283 is at the level file's place, its spawn byte as stored, and the armed Dimbo spawns there.
+        let p283 = L11.placements[283]
+        for (w, flag) in [(armed, 1), (dormant, 99)] {
+            let q = w.records[283]
+            XCTAssertEqual([Int(q.type), Int(q.flag), Int(q.x), Int(q.y)], [2956, flag, Int(p283.x), Int(p283.y)],
+                           "record 283 restored (spawn byte \(flag))")
+        }
+        let spawned = try XCTUnwrap(armed.active.sprites.first { $0.recordIndex == 283 }?.oldPosition
+                                    ?? armed.idle.entries.compactMap { $0 }.first { $0.saved.recordIndex == 283 }?.saved.oldPosition)
+        XCTAssertEqual([Int(spawned.x), Int(spawned.y)], [Int(p283.x), Int(p283.y)], "the Dimbo at its record's place")
     }
 
     /// The parameter trace of level 21 (the script's list and each value's dump line are in the commit body). One
@@ -219,36 +234,95 @@ final class LevelTwentyOneTests: XCTestCase {
         // entry. Each p1 names another 1061 of the level, and exactly one entry holds it at the spawn. Six pairs, and
         // one chain of four: 57 → 60, 58 → 57, 59 → 60, 60 → 59.
         let teleporters = L.activePlacements.filter { $0.type == 1061 }.map(\.index)
-        XCTAssertEqual(teleporters, [57, 58, 59, 60, 138, 143, 170, 171, 179, 180, 193, 200, 235, 236])
-        XCTAssertEqual(teleporters.map { Int(rec($0).p1) }, [60, 57, 60, 59, 143, 138, 171, 170, 180, 179, 200, 193, 236, 235])
+        XCTAssertEqual(teleporters, [57, 58, 59, 60, 138, 143, 170, 171, 179, 180, 193, 200, 235, 236], "teleporters")
+        XCTAssertEqual(teleporters.map { Int(rec($0).p1) }, [60, 57, 60, 59, 143, 138, 171, 170, 180, 179, 200, 193, 236, 235],
+                       "teleporters' p1")
         for i in teleporters {
             let partner = rec(i).p1
             XCTAssertEqual(rec(Int(partner)).type, 1061, "teleporter \(i)")
             XCTAssertEqual(w.idle.inUseEntries(record: partner).count, 1, "teleporter \(i): one entry holds \(partner)")
         }
+        // …and the port's teleport reads them (`HitPlayerSprite.teleportMove`, M l. 49418–49462): each teleporter, its
+        // record index kept, moves the player to the one entry holding its p1 — the chain included — the player's
+        // offset from the teleporter kept. On a session of its own (the move leaves the player there).
+        do {
+            let ts = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: 21, seed: 1)
+            let tw = ts.world
+            let pid = try XCTUnwrap(tw.playerID)
+            let home = try XCTUnwrap(tw.active.record(id: pid))
+            for i in teleporters {
+                var slot = try setup(i).slot
+                slot.recordIndex = Int16(i)
+                let tel = tw.active.insert(slot)
+                tw.active.update(id: pid) { $0 = home }
+                let p0 = try XCTUnwrap(tw.active.record(id: pid)), o = try XCTUnwrap(tw.active.record(id: tel))
+                tw.player.teleportTail = tel
+                let matched = HitPlayerSprite.teleportMove(tw, player: pid) {}
+                XCTAssertEqual(matched.map { tw.idle.entries[$0]?.saved.recordIndex }, [rec(i).p1], "teleporter \(i)")
+                let e = try XCTUnwrap(tw.idle.entries[try XCTUnwrap(matched.first, "teleporter \(i)")])
+                let p1 = try XCTUnwrap(tw.active.record(id: pid))
+                XCTAssertEqual([p1.x - e.saved.x, p1.y - e.saved.y], [p0.x - o.x, p0.y - o.y],
+                               "teleporter \(i) → \(rec(i).p1): the offset kept")
+                tw.player.teleportTail = nil
+                _ = tw.active.remove(id: tel)
+            }
+        }
         // The passages 2900 (0xb54, records 313 / 314; levels 1–5, 10, 11, 15, 18, 20: p1 another pair, p3 0): p1 the
         // partner (M l. 49594–49683), p3 ≠ 0 → no face (the Handle, M l. 63281–63288: `+0xc` of the record).
-        XCTAssertEqual([rec(313).p1, rec(314).p1, rec(313).p3, rec(314).p3], [314, 313, 1, 0])
+        XCTAssertEqual([rec(313).p1, rec(314).p1, rec(313).p3, rec(314).p3], [314, 313, 1, 0], "passages")
         for i in [313, 314] {
             XCTAssertEqual(w.idle.inUseEntries(record: rec(i).p1).count, 1, "passage \(i)")
             let id = try put(i)
             BackgroundSprite.passage(w, id: id)
-            XCTAssertEqual(w.active.record(id: id)?.face, i == 313 ? nil : FaceRef(pict: 0xb54, index: 0, set: .encoded))
+            XCTAssertEqual(w.active.record(id: id)?.face, i == 313 ? nil : FaceRef(pict: 0xb54, index: 0, set: .encoded),
+                           "passage \(i)")
             _ = w.active.remove(id: id)
         }
         // The decoration 2821 (0xb05) p1 1 (record 88; elsewhere p1 0): `+0x17e = 1` (M l. 59668), mirrored.
-        XCTAssertEqual([try setup(88).slot.mirrored, try setup(83).slot.mirrored], [true, false])
+        XCTAssertEqual([try setup(88).slot.mirrored, try setup(83).slot.mirrored], [true, false], "decorations 88, 83")
+        // The rock outcrop 2850 (0xb22, record 98): `.SetupBoxSprite`'s outcrop arm reads `.GetAmbDarkVal(x, y)` (M l.
+        // 59688–59695) — the switch 2 gives the cell's light byte 10 (> 7 → 0x10007; levels 1 and 3's outcrops sit on
+        // 6 / 7 → 0x10006, `SpriteListTests` holds the thresholds). The twin with hdr 0x2706 patched to 0 reads D 0:
+        // no mode.
+        do {
+            let p = rec(98)
+            XCTAssertEqual([Int(p.type), L.lightByte(col: Int(p.x) >> 5, row: Int(p.y) >> 5)], [2850, 10], "outcrop 98")
+            XCTAssertEqual(try setup(98).slot.mode, 0x10007, "outcrop 98: D 10 under the switch 2")
+            var data = try XCTUnwrap(r.world.resource(type: "Mlvl", id: 21)).data
+            data[data.startIndex + 0x2706] = 0
+            data[data.startIndex + 0x2707] = 0
+            let off = try LevelFile(id: 21, data: data)
+            XCTAssertEqual(off.header.darknessEnable, 0, "the twin's switch")
+            let c0 = SetupFaces.Context(level: off, playerX: SetupFaces.Context.levelStartPlayerX(off.header))
+            XCTAssertEqual(try SetupFaces.setup(off.placements[98], context: c0).slot.mode, 0, "outcrop 98, switch 0")
+        }
         // The graves 2833 / 2834 and the NPC 2962: p1 is their conversation (`.HitPlayerSprite`'s talker arms hand it on;
         // `conversations` above). The grave 2836 p1 1: mirrored (6A-BX1a's `.FlipHRect`).
-        XCTAssertEqual([rec(207).p1, rec(89).p1, rec(318).p1, rec(90).p1], [260, 261, 300, 1])
-        XCTAssertTrue(try setup(90).slot.mirrored)
-        // The door 2911 (0xb5f, record 152) p1 0 (levels 1–5: p1 ≥ 1): unlocked — no balloon (M l. 60803–60868).
+        XCTAssertEqual([rec(207).p1, rec(89).p1, rec(318).p1, rec(90).p1], [260, 261, 300, 1], "graves and the NPC")
+        XCTAssertTrue(try setup(90).slot.mirrored, "grave 90")
+        // The door 2911 (0xb5f, record 152) p1 0 (levels 1–5: p1 ≥ 1): unlocked — no balloon (M l. 60803–60868). The
+        // balloon block runs only with the player within 0x4b of the door's centre (`BoxSprite.playerNear`), so the
+        // player's centre is put on the door's; the twin, the locked door 2910 (record 22, p1 1 — key 1), shows its
+        // balloon there.
         do {
+            XCTAssertEqual([rec(152).type, rec(152).p1, rec(22).type, rec(22).p1], [2911, 0, 2910, 1], "doors 152, 22")
             var lights = LightTable()
-            let id = try put(152)
-            BoxSprite.doorArm(w, id: id, lights: &lights, effects: 1)
-            XCTAssertNil(w.active.record(id: id)?.siblings.first, "no key balloon")
-            _ = w.active.remove(id: id)
+            let saved = (w.player.centreX, w.player.centreY)
+            for (i, locked) in [(152, false), (22, true)] {
+                let id = try put(i)
+                let d = try XCTUnwrap(w.active.record(id: id))
+                w.player.centreX = Int16(truncatingIfNeeded: d.centre.x)
+                w.player.centreY = Int16(truncatingIfNeeded: d.centre.y)
+                BoxSprite.doorArm(w, id: id, lights: &lights, effects: 1)
+                let b = w.active.record(id: id)?.siblings.first
+                XCTAssertEqual(b != nil, locked, locked ? "door \(i): the key balloon" : "door \(i): no key balloon")
+                if let b {
+                    if let icon = w.active.record(id: b)?.siblings.first { _ = w.active.remove(id: icon) }
+                    _ = w.active.remove(id: b)
+                }
+                _ = w.active.remove(id: id)
+            }
+            (w.player.centreX, w.player.centreY) = saved
         }
         // The chests 1308 (0x51c): record 109 p2 1300 (the crystal 0x514), p3 4; record 237 p2 1302, p3 30. The opened
         // chest's drop (M l. 60101–60187): `MTNewSprite(p2, …, .SetupBonusSprite)`, p3 > 2 with a light → its light
@@ -268,15 +342,17 @@ final class LevelTwentyOneTests: XCTestCase {
         // The spikes 1840 / 1841 / 1843 (0x730 / 0x731 / 0x733; p2 60 / 30 / 50, p3 100 / 30 / 20, p4 0 / 80 / 10 / 20 —
         // new against 10, 11): `+0x150` = p2, `+0x154` = p3, `+0xa6` = p4, out (`+0x46` 0) when p4 < p2, else in (0xb)
         // (M l. 61982–62015, 62279–62309, 62459–62490).
-        for p in L.activePlacements where (1840...1843).contains(p.type) && p.p2 != 0 {
+        // The p2-0 spikes (records 1–4, 49–52) included: `+0x150` = 32000, never retracting (M l. 62459–62490).
+        for p in L.activePlacements where (1840...1843).contains(p.type) {
             let k = try SetupFaces.setup(p, context: c).slot
+            let out = p.p2 == 0 ? 32000 : Int(p.p2)
             XCTAssertEqual([Int(k.classWord150), Int(k.classWord154), Int(k.counterA6), Int(k.phase)],
-                           [Int(p.p2), Int(p.p3), Int(p.p4), p.p4 < p.p2 ? 0 : 0xb], "spike \(p.index)")
+                           [out, Int(p.p3), Int(p.p4), Int(p.p4) < out ? 0 : 0xb], "spike \(p.index)")
         }
         // The swarm 1869 (0x74d, record 103) p2 9 (levels 10, 11: 8 / 6 / 12): nine members (M l. 68160–68213).
         do {
             let e = try XCTUnwrap(w.idle.entries.compactMap { $0 }.first { $0.saved.recordIndex == 103 })
-            XCTAssertEqual([Int(e.saved.swarm?.total ?? 0), e.saved.swarm?.members.count ?? 0], [9, 9])
+            XCTAssertEqual([Int(e.saved.swarm?.total ?? 0), e.saved.swarm?.members.count ?? 0], [9, 9], "swarm 103")
         }
         // The path bats 1741 (0x6cd, records 53, 54) and 1742 (0x6ce, record 55; first placed here, → 0x6cd with
         // `+0x154` = R(0x50) + 0x32), p1 1, p2 100 / 60, p3 768 / 512 (level 3: p2 / p3 others): `.SetupProgrammedPath`
@@ -292,12 +368,12 @@ final class LevelTwentyOneTests: XCTestCase {
         // The mace 1487 (0x5cf, record 263; first placed here) p1 13, p2 80, p3 2800, p4 200: modes 10…14 (M l.
         // 62362–62427) — persp 1 (13), `.MakeRadial(r = 80, speed = 2800, angle = 200)`, 80 / 16 = 5 links 0x59a.
         do {
-            XCTAssertEqual([rec(263).p1, rec(263).p2, rec(263).p3, rec(263).p4], [13, 80, 2800, 200])
+            XCTAssertEqual([rec(263).p1, rec(263).p2, rec(263).p3, rec(263).p4], [13, 80, 2800, 200], "mace 263")
             let ball = try XCTUnwrap(w.active.sprites.first { $0.recordIndex == 263 }
                                      ?? w.idle.entries.compactMap { $0 }.first { $0.saved.recordIndex == 263 }?.saved)
             let rad = try XCTUnwrap(ball.radial)
             XCTAssertEqual([Int(ball.subtype), Int(rad.radius), Int(rad.speed), Int(rad.persp), Int(rad.spokeCount)],
-                           [13, 80 << 8, 2800, 1, 5])
+                           [13, 80 << 8, 2800, 1, 5], "mace 263")
             XCTAssertFalse(ball.lightOverlay, "persp ≠ 0 clears `+0x88`")
         }
         // The platforms (their Setup is the first Handle's `.DoSetupPlatformSprite`, M l. 54541–55025): 1400 (0x578)
@@ -347,7 +423,7 @@ final class LevelTwentyOneTests: XCTestCase {
         do {
             let before = Set(w.active.sprites.map(\.id))
             let k = try doSetup(149)
-            XCTAssertEqual([rec(149).p1, rec(149).p2], [20, 55])
+            XCTAssertEqual([rec(149).p1, rec(149).p2], [20, 55], "platform 149")
             let made = w.active.sprites.filter { !before.contains($0.id) && $0.id != k.id }
             XCTAssertEqual([made.filter { $0.type == 0x57b }.count, made.filter { $0.type == ChainSprite.link }.count],
                            [2, 12], "two siblings; 4 links on each of the three")
@@ -358,39 +434,39 @@ final class LevelTwentyOneTests: XCTestCase {
             let id = try put(156)
             RopeSprite.setupSegArray(w, id: id)
             let k = try XCTUnwrap(w.active.record(id: id))
-            XCTAssertEqual([Int(k.classWord150), Int(k.classTimer), Int(k.rope?.dy ?? 0)], [17, 408, -73])
+            XCTAssertEqual([Int(k.classWord150), Int(k.classTimer), Int(k.rope?.dy ?? 0)], [17, 408, -73], "rope 156")
         }
         // The Bonus 1291 (records 285–288), 1293 (301), 3206 (305…), 3219 (302), all p1 0 here: the default gravity (p1 ≠ 0
         // alone zeroes it — M l. 52496–52500, 52704–52706).
         for p in L.activePlacements where [1291, 1293, 3206, 3219].contains(p.type) {
-            XCTAssertEqual(p.p1, 0)
+            XCTAssertEqual(p.p1, 0, "Bonus \(p.index)")
             XCTAssertNotEqual(try SetupFaces.setup(p, context: c).slot.gravity, 0, "Bonus \(p.index)")
         }
     }
 
     func testBuiltLevelsTwentyOne() throws {
-        XCTAssertEqual(BuiltLevels.list, [1, 2, 3, 4, 5, 10, 11, 15, 18, 20, 21])
-        XCTAssertTrue(BuiltLevels.contains(21))
+        XCTAssertEqual(BuiltLevels.list, [1, 2, 3, 4, 5, 10, 11, 15, 18, 20, 21], "the built levels")
+        XCTAssertTrue(BuiltLevels.contains(21), "level 21")
         for n in [12, 16, 19, 22, 25, 40] { XCTAssertFalse(BuiltLevels.contains(n), "level \(n)") }
-        XCTAssertEqual(BuiltLevels.notBuiltReport(22), "Level 22 is not built yet (Phase 6).")
+        XCTAssertEqual(BuiltLevels.notBuiltReport(22), "Level 22 is not built yet (Phase 6).", "level 22's report")
         let r = try TenEleven.resources()
         // `startLevel` 21 (the hidden `FerazelLevel` switch) is accepted: New Game there, nothing asked.
         let rig = TenElevenRig(r, start: 21)
         rig.newGame(level: 21)
-        XCTAssertEqual(rig.flow.levelNumber, 21)
-        XCTAssertEqual(rig.levels.prepared, [21])
-        XCTAssertEqual(rig.asked, [])
+        XCTAssertEqual(rig.flow.levelNumber, 21, "New Game at 21")
+        XCTAssertEqual(rig.levels.prepared, [21], "level 21 prepared")
+        XCTAssertEqual(rig.asked, [], "nothing asked")
         // The map: node 21's links [20, 22, 70] (node 20's [15, 21]: level 20's exit 311 → node 21, `LevelTwentyTests`).
         let map = try WorldMap.load(from: r)
-        XCTAssertEqual(try XCTUnwrap(map.findCurrNode(level: 21)).links, [20, 22, 70, 0, 0, 0, 0])
+        XCTAssertEqual(try XCTUnwrap(map.findCurrNode(level: 21)).links, [20, 22, 70, 0, 0, 0, 0], "node 21's links")
         // Level 21's exit p1 1 (record 140) → node 22 (links[1]) → Return → the not-built report, still on the map.
         let L = try LevelFile.load(from: r, level: 21)
         XCTAssertEqual(L.activePlacements.filter { $0.type == 3249 }.map { [$0.index, Int($0.p1)] },
-                       [[139, 0], [140, 1], [260, -1], [315, 2]])
+                       [[139, 0], [140, 1], [260, -1], [315, 2]], "level 21's exits")
         try rig.exit(140, toNode: 22)
-        XCTAssertEqual(rig.asked.last, .report(text: "Level 22 is not built yet (Phase 6)."))
-        XCTAssertNil(rig.flow.levelRun)
-        XCTAssertEqual(rig.levels.prepared, [21])
+        XCTAssertEqual(rig.asked.last, .report(text: "Level 22 is not built yet (Phase 6)."), "the not-built report")
+        XCTAssertNil(rig.flow.levelRun, "still on the map")
+        XCTAssertEqual(rig.levels.prepared, [21], "no level prepared after 21")
         // A save made on level 21 (a save point's block, the level's own records) continues there through
         // `.ContinueGame`: level 21 runs, nothing asked.
         var g = GameGlobals.initGameGlobals(previous: nil)
@@ -405,8 +481,8 @@ final class LevelTwentyOneTests: XCTestCase {
         cont.flow.fileDone(.chosen(SavedGameRef(url: URL(fileURLWithPath: "/nonexistent/twentyOne"),
                                                 displayName: "twentyOne")))
         cont.drive { f in f.levelRun?.levelNumber == 21 && (f.levelRun?.iterations ?? 0) >= 1 }
-        XCTAssertEqual(cont.asked, [])
-        XCTAssertEqual(cont.flow.levelNumber, 21)
-        XCTAssertEqual(cont.levels.prepared, [21])
+        XCTAssertEqual(cont.asked, [], "Continue: nothing asked")
+        XCTAssertEqual(cont.flow.levelNumber, 21, "Continue: level 21")
+        XCTAssertEqual(cont.levels.prepared, [21], "Continue: level 21 prepared")
     }
 }

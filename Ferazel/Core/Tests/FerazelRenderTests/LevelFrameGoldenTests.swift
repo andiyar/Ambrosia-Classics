@@ -177,38 +177,42 @@ final class LevelFrameGoldenTests: XCTestCase {
     }
 
     /// 6A-L21: level 21 "Obfuscation & Edification" — no chapter card; the first presented frame. New on this level is
-    /// the darkness switch hdr 0x2706 = 2 (the first built level where it is not 0): the tile light pass darkens every
-    /// unlit tile cell through ambient row D = its light byte (`.GetAmbDarkVal`, M l. 13643–13652; every byte here is
-    /// 0…14), unlit sprites likewise (`SpriteBlitter`), and `.DrawParticles` lights the negative particle kinds through
-    /// ambient row 0x2706 itself (M l. 29824 `0x2706 · 0x100`; `.InitParticleColors`, `FrameRenderer.swift` hands it to
-    /// `ParticleRenderer`). The first frame shows the darkness — the twin opened with hdr 0x2706 patched to 0 differs
-    /// (D51.1 / D54.2) — and a lit-kind particle's colour is row 2's.
+    /// the darkness switch's value hdr 0x2706 = 2 (levels 1 and 4 have 5, levels 2, 3 and 10 have 1; level 1's goldens
+    /// hold the darken gates): with the switch on, `.GetAmbDarkVal` (M l. 13643–13652) gives each cell's light byte D
+    /// (every byte here is 0…14); this frame's per-cell tile pass darkens an unlit tile through ambient row D when D ≠ 0
+    /// (M l. 14962). The op-tile darken (D 0 included, M l. 15058) and the sprite darken (`SpriteBlitter`) change no
+    /// pixel of this frame (measured: either gate switched off leaves the golden). `.DrawParticles` lights the negative
+    /// particle kinds through ambient row 0x2706 itself (M l. 29824 `0x2706 · 0x100`; `.InitParticleColors`,
+    /// `FrameRenderer.swift` hands it to `ParticleRenderer`). The first frame shows the darkness — the twin opened with
+    /// hdr 0x2706 patched to 0 differs (D51.1 / D54.2) — and a lit-kind particle's colour is row 2's.
     func testLevel21FirstFrameGolden() throws {
         let f = try Self.firstFrame(level: 21)
         try checkShowsLevel(f, 21)
         let h = f.run.levelFile.header
-        XCTAssertEqual([Int(h.chapter), Int(h.startX), Int(h.startY), Int(h.darknessEnable)], [0, 100, 1678, 2])
+        XCTAssertEqual([Int(h.chapter), Int(h.startX), Int(h.startY), Int(h.darknessEnable)], [0, 100, 1678, 2],
+                       "no card, the start, the switch 2")
         // Measured at 6A-L21 (seed 1): the 143rd tick (now 142), no card, the camera at (0, 1442). The value is 6A-FX's
         // level-21 fixture frame (`LevelFixtureRenderTests`, 30 records left out): none of those records is drawn here.
-        XCTAssertEqual(f.ticks, 143)
-        XCTAssertEqual([f.scroll.h, f.scroll.v], [0, 1442])
+        XCTAssertEqual(f.ticks, 143, "measured: the first presented frame's tick")
+        XCTAssertEqual([f.scroll.h, f.scroll.v], [0, 1442], "measured: the camera")
         XCTAssertEqual(String(f.fnv, radix: 16), "fb80e30a68e4efb7", "the level-21 first-frame golden")
         // The twin: the same open with hdr 0x2706 patched to 0 (no ambient darkening; particles through row 0).
         let res = try LevelFixture.resources(level: 21, leaveOut: [], header: [(0x2706, [0, 0])])
         let services = LevelFixtureServices(resources: res)
         let run = try LevelFixture.open(resources: res, level: 21, services: services)
         let flat = try services.firstPresentedFrame(run)
-        XCTAssertEqual(flat.renderer.level.header.darknessEnable, 0)
-        XCTAssertEqual(flat.ticks, f.ticks)
+        XCTAssertEqual(flat.renderer.level.header.darknessEnable, 0, "the twin's switch")
+        XCTAssertEqual(flat.ticks, f.ticks, "the twin's first frame on the same tick")
         XCTAssertNotEqual(flat.fnv, f.fnv, "frame 1 shows the darkness")
         XCTAssertEqual(zip(flat.renderer.screen.pixels, f.renderer.screen.pixels).filter { $0 != $1 }.count, 189_626,
                        "measured: the screen bytes the darkness changed")
         XCTAssertEqual(String(flat.fnv, radix: 16), "1388825e7f7bc7d5", "measured: frame 1 without the darkness")
         // The particles' ambient row is row 2 (hdr 0x2706); a lit kind (negative: `ambient[c]`) draws row 2's colour.
         let tables = f.renderer.tables
-        XCTAssertEqual(f.renderer.particles.ambient, tables.ambient[2])
-        XCTAssertEqual(flat.renderer.particles.ambient, flat.renderer.tables.ambient[0])
-        let c = try XCTUnwrap((1...255).first { tables.ambient[2][$0] != UInt8($0) && tables.ambient[2][$0] != tables.ambient[0][$0] })
+        XCTAssertEqual(f.renderer.particles.ambient, tables.ambient[2], "particles through row 2")
+        XCTAssertEqual(flat.renderer.particles.ambient, flat.renderer.tables.ambient[0], "the twin's through row 0")
+        let c = try XCTUnwrap((1...255).first { tables.ambient[2][$0] != UInt8($0) && tables.ambient[2][$0] != tables.ambient[0][$0] },
+                              "a colour row 2 moves")
         var p = f.renderer.particles
         var ports = FramePorts(fill: 0xff)
         ports.frame = [UInt8](repeating: 0, count: ports.frame.count)

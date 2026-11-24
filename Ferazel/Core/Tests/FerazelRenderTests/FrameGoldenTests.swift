@@ -271,9 +271,9 @@ final class FrameGoldenTests: XCTestCase {
         XCTAssertTrue(zeroed.allSatisfy { (0..<32).contains($0 / w) })
         XCTAssertEqual([Int(t), changed.count, masked.count, zeroed.count], [40, 292, 0, 292])
         XCTAssertEqual(hex(fnv1a(r.ports.frame + r.ports.mask)), "2ed3103e74e4550b")
-        // Under a light (the first active slot whose point is in the frame-1 view; level 1's hdr 0x2706 is 0, so an
-        // unlit face gets no darken pass): the light pass runs with water row 1 — the underwater (rippled) light
-        // blitter, which differs from the dry one.
+        // Under a light (the first active slot whose point is in the frame-1 view; level 1's hdr 0x2706 is 5, so an
+        // unlit face gets the ambient darken pass, which a light that meets it replaces): the light pass runs with
+        // water row 1 — the underwater (rippled) light blitter, which differs from the dry one.
         let lit = r.lights.slots.first { $0.active && (0..<0x260).contains($0.x) && (0..<0x180).contains($0.y) }!
         let ld = WaterFaceDraw(cellX: lit.x >> 5, cellY: lit.y >> 5, tile: t, waterKind: 1)
         var l1 = before
