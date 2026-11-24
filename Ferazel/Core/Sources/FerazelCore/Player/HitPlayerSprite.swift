@@ -184,7 +184,7 @@ extension HitPlayerSprite {
     /// 4. the blade's vx `+0x24` saved; vx = +0x8fc when the blade's centre x `+0x10` < his (signed 16-bit, strict —
     ///    equal centres push −0x8fc, `cmpw; bge`, M l. 49715–49720), else −0x8fc; coins = `FastRand(100)` ≤ 0x32 ? 0 : 4
     ///    (M l. 49721–49727); `.HurtPlayer(player, blade, 0x70, blood 0, invul 0x3c, coins)` — which takes the blade's vx
-    ///    as the push; the blade's vx restored, whether or not the hurt landed (M l. 49728–49729).
+    ///    as the push; the blade's vx restored, whether or not the hurt landed (M l. 49729–49730).
     static func blade(_ w: SpriteWorld, player pID: Int, blade bID: Int) {
         guard let p = w.active.record(id: pID), let b = w.active.record(id: bID) else { return }
         let h = { (v: Int) in Int(Int16(truncatingIfNeeded: v)) }

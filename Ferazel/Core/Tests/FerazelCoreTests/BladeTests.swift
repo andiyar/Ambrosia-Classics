@@ -145,6 +145,10 @@ final class BladeTests: XCTestCase {
         XCTAssertEqual(try handle(w, try blade(w, rec(p2: 300, p3: 500, index: 243))).phase, 440)
         // 16-bit: 0x7ff0 + 0x20 wraps to −0x7ff0 before the test, then + 360.
         XCTAssertEqual(try handle(w, try blade(w, rec(p2: 0x7ff0, p3: 0x20, index: 244))).phase, -0x7ff0 + 360)
+        // The bounds exactly (M l. 63515–63522: `< 0x168`, then `< 0`): 359 stays, 0 stays, −1 → 359.
+        XCTAssertEqual(try handle(w, try blade(w, rec(p2: 351, p3: 8, index: 245))).phase, 359)
+        XCTAssertEqual(try handle(w, try blade(w, rec(p2: 8, p3: -8, index: 246))).phase, 0)
+        XCTAssertEqual(try handle(w, try blade(w, rec(p2: 7, p3: -8, index: 247))).phase, 359)
         // The Handle draws no random.
         let seed = w.rng.seed
         for _ in 0..<10 { try handle(w, id) }
@@ -222,6 +226,9 @@ final class BladeTests: XCTestCase {
         XCTAssertFalse(s(r, 230, 151, 230, 190), "below, one off the bottom edge")
         // Collinear with an edge's line but off the edge: still a hit (the edge's segment test).
         XCTAssertTrue(s(r, 400, 100, 420, 100), "on the top edge's line, beyond it")
+        // The edges are the 16-bit fields as stored: a field past 16 bits reads as its low half.
+        let wide = Rect(top: 100 + 0x10000, left: 200, bottom: 150 + 0x10000, right: 260)
+        XCTAssertTrue(s(wide, 230, 80, 230, 120), "across the top at 100, not 65636")
     }
 
     // MARK: - the player arm (M l. 49684–49724)
@@ -237,6 +244,9 @@ final class BladeTests: XCTestCase {
         XCTAssertEqual(e(270), [999, 516, 999, 588])
         XCTAssertEqual(e(45), [1011, 488, 1062, 437])
         XCTAssertEqual(e(352), [1015, 502, 1087, 512])
+        // fctiwz truncates toward zero, not down: a hub near the origin puts the ends at negative fractions.
+        XCTAssertEqual(BackgroundSprite.bladeArm(angle: 135, cx: 10, cy: 10).map { [$0.x1, $0.y1, $0.x2, $0.y2] },
+                       [-1, -1, -52, -52])
         // The table entries as built.
         XCTAssertEqual(BackgroundSprite.bladeCos[0], 1.0)
         XCTAssertEqual(BackgroundSprite.bladeSin[90], 1.0)
@@ -285,6 +295,16 @@ final class BladeTests: XCTestCase {
             if lost == 0 { XCTAssertEqual(w.rng.seed, r.seed, "seed \(seed): R(100), R(10000), R(3) and nothing else") }
         }
         XCTAssertEqual(arms, [0, 4], "both coin arms met")
+        // The coin threshold exactly (M l. 49723 `< 0x33`): a draw of 0x32 loses nothing, 0x33 loses coins.
+        for (draw, loses) in [(Int16(0x32), false), (Int16(0x33), true)] {
+            let seed = try XCTUnwrap((Int32(1)...Int32(100_000)).first { var r = FastRand(seed: $0); return r.next(100) == draw })
+            let (w, p) = try world()
+            let b = try blade(w, rec())
+            w.globals.coins = 10
+            w.rng = FastRand(seed: seed)
+            HitPlayerSprite.hit(w, player: p, other: b)
+            XCTAssertEqual(w.player.coinsLost > 0, loses, "R(100) = \(draw)")
+        }
 
         // The strict `<` (M l. 49716): equal centres push −0x8fc. Angle 90 runs the arm up from (1093, 1077) to
         // (1093, 1005); his body x 1081…1105 (centre 1093), y 1040…1077.
@@ -323,6 +343,9 @@ final class BladeTests: XCTestCase {
         XCTAssertEqual(try hitAt(playerY: 1010).hurt, false)
         XCTAssertEqual(try hitAt(playerY: 1010).draws, false)
         XCTAssertEqual(try hitAt(playerY: 1016).hurt, true)
+        // One row off each band edge (the + 6 and − 8 exactly): py 1054 → body top 1094; py 1015 → body bottom 1092.
+        XCTAssertEqual(try hitAt(playerY: 1054).hurt, false)
+        XCTAssertEqual(try hitAt(playerY: 1015).hurt, false)
         // The arm wholly inside his body (no containment test): a body around the whole arm — none here, the arm is 72
         // px long and his body 24 wide; instead the arm pointing away (angle 180 from a blade left of him) misses.
         XCTAssertEqual(try hitAt(playerY: 1035, angle: 180).draws, false)
@@ -336,7 +359,7 @@ final class BladeTests: XCTestCase {
     }
 
     func testBladeHitRestoresVx() throws {
-        // The blade's vx is saved before the push and restored after `.HurtPlayer` (M l. 49714, 49723), whether or not
+        // The blade's vx is saved before the push and restored after `.HurtPlayer` (M l. 49715, 49730), whether or not
         // the hurt landed; the R(100) is drawn either way.
         let (w, p) = try world()
         let b = try blade(w, rec())

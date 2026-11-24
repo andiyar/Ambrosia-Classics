@@ -445,5 +445,9 @@ final class SpriteDrawTests: XCTestCase {
                 XCTAssertEqual($0 as? SpriteBlitter.Refusal, .mode(0xbff02))
             }
         }
+        // The arm Core builds (`BackgroundSprite.bladeArm`) and the rotation drawn here read one pair of tables
+        // (`.BuildTintTable`'s `_DAT_100a0168` / `_DAT_100a0164`): Core's copy is the renderer's, entry for entry.
+        XCTAssertEqual(BackgroundSprite.bladeCos, SpriteBlitter.cosTable)
+        XCTAssertEqual(BackgroundSprite.bladeSin, SpriteBlitter.sinTable)
     }
 }

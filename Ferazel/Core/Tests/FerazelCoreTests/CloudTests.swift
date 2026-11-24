@@ -10,10 +10,10 @@ import HectorResources
 /// missing data file is a FAILURE, never a skip.
 final class CloudTests: XCTestCase {
 
-    /// Level 20's leave-out list (6A-CL; ENG §7.2): the 44 records the port still refuses there once the clouds are
-    /// built — the blades 3060 (28, 6A-BD) and the maces 1485 (16, every one a mode-1 path, 6A-MP), by type. A literal
-    /// list, never computed from what the port refuses today; `FeatureGoldenTests.level20Clouds` is the same list
-    /// (the Render target cannot see a Core test's list).
+    /// Level 20's leave-out list (6A-CL; ENG §7.2): the 44 records the port refused there when the clouds were built
+    /// — the blades 3060 (28, built since by 6A-BD) and the maces 1485 (16, every one a mode-1 path, 6A-MP), by
+    /// type. A literal list, never computed from what the port refuses today; `FeatureGoldenTests.level20Clouds` is
+    /// the same list (the Render target cannot see a Core test's list).
     static let level20: [LevelFixture.LeaveOut] = [.type(3060), .type(1485)]
 
     /// The four cloud types, written here (not read from the port).

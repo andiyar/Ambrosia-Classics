@@ -1,7 +1,7 @@
 import Foundation
 
 /// The two segment routines of the rotating blade's player arm (6A-BD; phase6-engine-contracts §2.9 item 4). Their only
-/// caller is `.HitPlayerSprite`'s 0xbf4 arm (M l. 49710), so no level without a blade reaches them.
+/// caller is `.HitPlayerSprite`'s 0xbf4 arm (M l. 49711), so no level without a blade reaches them.
 public enum LineSegments {
     /// `.SectLineSegs(a, b, c, d, e, f, g, h) @ 10045340` (M l. 39507–39561): segment (a, b)–(c, d) against (e, f)–(g, h),
     /// all i32 with wrapping products (`mullw`). k = c·b − a·d; s1 = (d − b)·e + (a − c)·f + k, s2 = (d − b)·g + (a − c)·h

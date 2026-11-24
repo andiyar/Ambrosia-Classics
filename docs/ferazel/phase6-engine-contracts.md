@@ -727,8 +727,11 @@ player's body box.
 **Seam.** Core. Render: a rotated mode-0xc draw with a bottom clip must be drawable; if it is refused today, the
 renderer change is part of this task (Invariant 8). New writer rows in `Tests/FerazelRenderTests/DrawModeAuditTests.swift`
 (the table is keyed by writer site): rotation `+0x1aa` 0…359 (M l. 63524), dynamic light `+0x89 = 1` (M l. 63526),
-clip bottom `+0x1ba = 0x5e` (M l. 63528). Mode 0xb rotated (refused) is unreachable here: it needs light byte −1,
-which no level has. Owns type 3060 (R1; LL's 6A-BG1b dissolves).
+clip bottom `+0x1ba = 0x5e` (M l. 63528). Mode 0xb rotated (refused) needs light byte −1 — ~~which no level has~~
+corrected by the build: level 20's light grid is all −1 (see "As read" below), so mode 0xb is reachable there with any
+fake light F ≥ 1. In real play that light is one made during play: a player shot passing within about 36 px of a
+blade's hub, also Gremlin drops, explosions and opened Box items; the seat's ruling is `docs/DECISIONS.md` D67.
+Owns type 3060 (R1; LL's 6A-BG1b dissolves).
 
 **First level / golden (R3).** Level 20, after 6A-CL. Fixture: level 20 with the mace-path records (16) left out.
 `testLevel20BladeFeatureGolden`: the first frame with a blade on screen (measured), Mac. Kept at level 20's enterable
