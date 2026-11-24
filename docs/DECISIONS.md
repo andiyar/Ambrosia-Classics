@@ -2833,6 +2833,25 @@ still reached the game window. The game's own rules were never at fault.
    (run 66 or later). Nothing in run 65 touched it.
 5. **No memory note was written** (D62.6's reasons hold).
 
+## D67 — Ferazel's Wand: run 66's rulings (clouds, the rotating blade, programmed maces; 2026-11-24)
+
+1. **A blade lit on a "no light" cell is drawn plain and unlit (closes D64.6).** On level 20 the light grid is
+   all −1. When a light made during play falls on a blade there, the original's draw reads its shading table at
+   an address that holds no fixed data (two review legs re-did the arithmetic on the shipped file), so there is
+   no picture to copy. The port draws the blade as it looks with no light near (the F 0 draw) — a named known
+   deviation. Run 66 left the draw refused (nothing pinned depends on it); **6A-L20 builds this before level 20
+   opens**, because a refused draw ends the game in the app. Ben may overrule (Coordinator mailbox Q1: plain,
+   black silhouette, or what he remembers).
+2. **A run cut off mid-task is resumed from its commits, and its own gate logs count when the tree is the same.**
+   6A-CL's eleven finished suite parts from 2026-11-22 were accepted after `git diff` showed the game tree
+   unchanged; the cut-off part and every Windows-side check were run fresh.
+3. **A census count in the draw audit follows a refusal a task removes.** 6A-MP removed one
+   `Error.notTranscribed` throw from `SetupFaces.swift`; the audit's row 14 → 13 was outside the card's fence and
+   was made by the fix round on this ruling (as D54.1, D61.1, D62.1, D64.1).
+4. **Left as carries, not fixed:** Core's second copy of the cos/sin tables (pinned equal to the renderer's);
+   the Wine last-bit risk in `testBladeArmEndpoints`; a path-off twin inside the mace picture test (it would need
+   a hook in the source; motion is proven in-test another way).
+
 ## D66 — Deimos Rising: the plan from today to the release, and the seat's rulings (2026-11-24)
 
 **Decided (the seat, Claude Fable 5.2, planning; every item is Ben's to overturn; nothing starts until he approves):**

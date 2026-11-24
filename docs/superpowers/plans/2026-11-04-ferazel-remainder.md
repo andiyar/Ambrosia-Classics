@@ -254,7 +254,7 @@ frame-1 value; without the rain sheets `75d168572f6f029c`); the Windows referenc
 (black), step 611 `4a20aaf242d20d31` (the first rain-sheet frame), step 689 `d102a2c8a8ae172d`; `BootFacesTests` L15
 init 209 / `0xdf7d3df30637a1eb`, f30 214 / `0x54da315df4a76b2c`, f120 214 / `0xd37a42bc76b38645`. The rain test
 `testLevel15RainFeatureGolden` is deleted; its frame-2 values live on inside `testLevel15FirstFrameGolden`. No
-existing value moved.
+existing value moved. **Run 66 (wave 6A.4, fixtures of level 20):** clouds frame 1 `9f0b821fbbc60084`, frame 2 `37eb1f7eb12e8f76`; the blade frame 2 `91d21e527fca201f`; the mace trace `76e08997895b6e89` and picture `eea2913e69628851`; level 20's load bar `[16, 57, 114, 16]`; the audit's `SetupFaces` refusal count 13.
 
 Run 65 moved no value and pinned one new kind (the audit's per-level count of the held item's water-kind-0 draws:
 level 2 39, level 18 7, the other built levels 0).
@@ -2490,6 +2490,20 @@ ids; its `--check` reads this table):
   (synthetic clouds, the fx / fy = 0 and < 0 arms too) · `testCloudFxAlwaysAbove256OnLevel20` (per record from the level
   file); in `FeatureGoldenTests` (Render, on the fixture): `testLevel20CloudFeatureGolden` (kept). Asserts: ENG §2.8's six.
 - **Gate:** Gate-F (G2 771). **Commit:** `FerazelCore: the clouds of Hangnabit; 7 tests`.
+- **As executed — 6A-CL (run 66; built 2026-11-22 before the weekly limit cut the run, gated and merged 2026-11-24):**
+  task 8a1b441, ledger 320aedf, fix round b2107bc (tests only: `git diff 320aedf b2107bc -- Ferazel/Core/Sources`
+  is empty); merged at 93a0eb7. Legs: spec — the Setup and Handle match the dump store by store; quality — every
+  listed planted bug caught, three slips on 16-bit cuts closed by the fix round. Gates: G2 **771** (eleven parts
+  the interrupted seat's own logs at b2107bc, the M–Z part re-run 2026-11-24 on the same tree), GW2 87, G5,
+  GW1 0 / 2, GW3 0 / 1, GW4, ledger OK. Measured: 164 clouds on level 20 only (44 / 44 / 32 / 44), all p1…p4 0;
+  their Setups are the level's draws 2…329 (one draw comes first — records 0 and 1 — so 6A-L20's "328 first in the
+  stream" is wrong by one draw); the load bar `[10, 51, 102, 10]` → `[14, 55, 110, 14]`; the picture: frame 1
+  `9f0b821fbbc60084` (twin `8964bdab39954f49`), frame 2 `37eb1f7eb12e8f76` (twin `4679418e47ef711b`). Card
+  errors: `:430` was the spikes' case (the refusal was the Background `default: throw`); the audit has no layer
+  input, so no 0x7ef4 writer row exists; ENG §2.8's "before this frame's `.FindUpperLeftCorner`" is wrong — the
+  Handle pass runs after the draw (M l. 9453). **Known and left for 6A-L20:** the frame-1 picture draws the loaded
+  cloud faces where the original's first load would still show its placeholder (the house `.setupCached` rule);
+  frame 2 is the binary-faithful one — 6A-L20 deletes the frame-1 pin if the level's own first frame is that frame.
 
 #### 6A-BD — minor — the rotating blade and the segment test (→ 784)
 - **Files:** `Sources/FerazelCore/Sprites/SetupFaces.swift` (`:430`), `Sources/FerazelCore/World/Movers/BackgroundSprite.swift`,
@@ -2515,6 +2529,25 @@ ids; its `--check` reads this table):
   `testBladeRotatedLitDrawIsDrawable`; in `FeatureGoldenTests` (Render, on the fixture): `testLevel20BladeFeatureGolden`
   (kept). Asserts: ENG §2.9's seven.
 - **Gate:** Gate-F (G2 784). **Commit:** `Ferazel: the rotating blade and its segment test; 13 tests`.
+- **As executed — 6A-BD (run 66, 2026-11-24):** task 67d0698, ledger 42af4f0, fix round f85efb7 (tests and
+  comments only — the non-comment diff of `Ferazel/Core/Sources` over the fix round is empty); merged at f85efb7.
+  Legs: spec PASS WITH FIXES (the code matches the dump line by line; the −1 light arithmetic re-done on the
+  shipped file), quality PASS WITH FIXES — 69 planted bugs, 8 boundary slips (angle wrap bounds, body box + 6 /
+  − 8, the coin threshold, 16-bit rect edges) closed by the reviewer's verified asserts, 2 harmless. Gates: G2
+  **784**, GW2 87, G5, GW1, GW3, GW4, ledger OK. Measured: 28 blades on level 20, 13 on 22; fixture leaves out the
+  16 maces; the picture starts at (8300, 300): frame 2 `91d21e527fca201f` (twin without blades
+  `9a2b74440c941f4c`); the load bar of level 20 `[14, 55, 110, 14]` → `[15, 56, 112, 15]` (single #136), level
+  22's re-derived for the same single. No renderer change was needed. **The −1 light case (D64.6 → D67.1):** with a
+  light value F ≠ 0 on a −1 cell the original reads memory that is not fixed data (unrotated: before the data
+  section or run-written memory; rotated: absolute address 0–255); the port keeps the named refusal
+  (`SpriteBlitter.Refusal.mode`), every pinned blade draw has F 0. In play the route is a light made during play
+  (a player shot within about 36 px of a hub; Gremlin drops, explosions, opened Box items); a refused draw ends
+  the game in the app, so **6A-L20 must build D67.1 before level 20 opens**. Card errors: `:430` stale (the
+  refusal was at `:458`), `:126` / `:159` off by one; the hurt arm runs M l. 49684–49732 (not –49724), the coins
+  step is 49722–49728. Carries: Core's cos/sin tables are a second copy of the renderer's (pinned equal by a test;
+  one table in Core is the fix); `testBladeArmEndpoints` pins exact cos/sin values that Wine's maths library could
+  round differently (watch Proof B at the wave end); the Setup slot still carries face 0xbf4 (a blade active at
+  level start would be drawn where the original draws nothing — a hazard for 6A-L20's first frame).
 
 #### 6A-MP — minor — programmed-path maces, modes 1 and 2 (→ 791)
 - **Files:** `Sources/FerazelCore/Sprites/SetupFaces.swift` (`:399` the modes 1–2 refusal; `:888–:898` the spawn —
@@ -2535,6 +2568,21 @@ ids; its `--check` reads this table):
   keeps it when it deletes the golden beside it) · `testLevel20MacePathFeatureGolden` (**deleted at 6A-L20**). Asserts:
   ENG §2.10's five.
 - **Gate:** Gate-F (G2 791). **Commit:** `FerazelCore: mace paths (modes 1 and 2) on the one ProgrammedPath; 7 tests`.
+- **As executed — 6A-MP (run 66, 2026-11-24):** task ae68c0a, ledger 32119bc, fix round 771e1e4 (tests and
+  comments only, plus the audit's census row — D67.3); merged at 771e1e4. Legs: spec PASS WITH FIXES (Setup and
+  Handle match the dump line by line; the one fix the audit count), quality PASS — 32 planted bugs, 27 caught, the
+  rest harmless (code a path mace can never reach: with no tile callback the in-water flag is never set, in the
+  original too). Gates: G2 **791**, GW2 87, G5, GW1, GW3, GW4, ledger OK. Measured: 16 path maces on level 20 (all
+  mode 1), 29 on level 22; the trace `76e08997895b6e89` (a model written from the dump alone gives the same);
+  the picture `eea2913e69628851` (twin without the balls `6bda759a3cda8fc3`; with the path stubbed
+  `42eb0840c742e1e6`); level 20's load bar `[15, 56, 112, 15]` → `[16, 57, 114, 16]` (the ball's picture), level
+  22's unmoved (its 9 radial balls already mark the same entry). **Moved outside the card (D67.3):**
+  `DrawModeAuditTests`' census row for `SetupFaces.swift` `Error.notTranscribed` 14 → 13 (this task removed that
+  throw). The fix round ran level 22's six mode-2 balls through the Handle. Card errors: the refusal was at `:424`
+  (not `:399`), the spawn `:943–951`, the Handle arm `:184`; the spawn needed no change (`makeRadial` already
+  skipped modes 1 and 2 — ENG §2.10's "Today" note and E19 describe a defect that never existed); the radial
+  branch ends at M l. 62427. Carries: the kept trace follows only record 266 (no p4 offset) — add record 267 when
+  6A-L20 deletes the picture; the plan's "6C-BG3 1 type" is stale (nothing left to build there).
 
 #### 6A-L20 — minor — level 20 "Hangnabit" enterable (→ 794)
 - **Files:** `Sources/FerazelCore/Front/BuiltLevels.swift` (+ 20), `Tests/FerazelCoreTests/LevelTwentyTests.swift` (new),
@@ -2551,6 +2599,12 @@ ids; its `--check` reads this table):
   `testLevel20MacePathFeatureGolden`. WinKit (+1): `testLevel20FirstFrameReference`.
 - **Gate:** Gate-L (G2 794, GW2 88). **Commit:** `Level 20 enterable: Hangnabit; 4 tests (1 feature golden retired), 1
   Windows reference`.
+- **Run 66's notes for this card (D67):** (1) **build D67.1 first** — a blade lit by a play-made light on a −1
+  cell is drawn plain and unlit (the F 0 draw) instead of refused, a named known deviation, with its own test and
+  the audit's replacement proof for level 20 (run 64's "no dynamic-light sprite can exist here" does not hold);
+  Ben may overrule the choice (the Coordinator mailbox, Q1) — read it first. (2) The 328 cloud draws are the
+  level's draws 2…329, not the first. (3) The clouds' frame-1 picture and the blade Setup face are first-frame
+  hazards (see their As executed). (4) The mace trace gains record 267 when the picture is deleted.
 
 #### 6A-PS — minor — the pipes' level spawn (→ 795)
 - **Files:** `Sources/FerazelCore/World/Movers/BoxSprite.swift` (`setupPipe` `:446` wired into the level spawn; the

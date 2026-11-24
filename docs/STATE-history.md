@@ -4,6 +4,16 @@
 > only). Nothing current reads this file; the live state is `docs/STATE.md`. Each later close that settles something
 > adds a dated section at the top, newest first. The two snapshots below are verbatim (headings demoted only).
 
+## Settled at Ferazel run 66's close (2026-11-24)
+
+- Run 65's state named 6A-CL, 6A-BD and 6A-MP as not started and D64.6 (the blade's brightness on level 20's
+  "no light" cells) as waiting for the blade task's seat. All three are built and merged (Core 764 → 791); D64.6
+  is closed by D67.1 (the original reads leftover memory; the port draws the blade plain and unlit — to be built
+  in 6A-L20).
+- Run 66 was first started on 2026-11-22 and cut off by the weekly usage limit after the clouds were built,
+  reviewed and fix-rounded on branch `claude/elastic-kare-da496c`; it was resumed on 2026-11-24 in a new session,
+  which merged those commits and removed that worktree and branch.
+
 ## Settled at Ferazel run 65's close (2026-11-22)
 
 - The Fable seat's cross-check of wave 6A.3 (plants, rain, level 15, the Chief, level 18) is done: no fault in the

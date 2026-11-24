@@ -7,7 +7,7 @@ Settled history lives in docs/STATE-history.md.
 > numbers and open items and moves anything settled to the top of `docs/STATE-history.md`; it never appends a run story
 > here. Forks go in `docs/DECISIONS.md`, narrative in the handoff. Re-verify before acting.
 
-## Ferazel's Wand — 2026-11-22 (attended run 65 closed by day: the cross-check of wave 6A.3 is done, no fault found; wave 6A.4's three engine features head run 66)
+## Ferazel's Wand — 2026-11-24 (attended run 66 closed: clouds, the rotating blade and programmed maces are built; level 20 heads run 67)
 
 - **Where it stands:** Phase 5 "Enemies" is closed on the machine side — **Ben's gate pending (Q18)**. Phase 6A
   "through the Goblin Chief" is being built (the plan: "Wave 5 — Phase 6A" in the one plan file; rulings D46–D49, D51,
@@ -20,12 +20,15 @@ Settled history lives in docs/STATE-history.md.
   and its checksum are in `releases/ferazel-windows-test-5/`.
 - **Staged builds on the Desktop are old** (game code as e9183ce, run 50): they still show the stand-in Warrior and no
   level past 5. The next stage is the 6A phase end unless Ben asks for one.
-- **Next:** run 66 = wave 6A.4 "Hangnabit to the Labyrinth" begins: **6A-CL** (clouds), **6A-BD** (the rotating
-  blade), **6A-MP** (programmed maces) — Core → 791, WinKit stays 87. None was started in run 65 (the cross-check
-  used the seat's context). Then levels 20, 21, 22 and the phase end. None of it waits for Ben's verdict on Phase 5.
-- **A known problem waiting for 6A-BD:** level 20's map has the same "no light" cells as level 18, and its 28 blades
-  take their brightness from the cell they are on. The original itself reads outside its table there, so there is no
-  defined picture to copy; the blade task's seat must rule what the port draws (D64.6).
+- **Wave 6A.4 "Hangnabit to the Labyrinth" has begun:** the three engine features level 20 needs are built on
+  main (run 66) — clouds, the rotating blade with its line-crossing hurt test, and maces that travel a programmed
+  path. None is visible in play yet: level 20 is still closed.
+- **Next:** run 67 = **6A-L20** (level 20 "Hangnabit" opens; Core → 794, WinKit → 88; the full sweep and bot on
+  ten levels), then 6A-PS, 6A-L21, 6A-CP, 6A-L22, the phase end. None of it waits for Ben's verdict on Phase 5.
+- **Must be built inside 6A-L20 (D67.1):** on level 20 a blade lit by the player's shot would make the original
+  read leftover memory — there is no picture to copy. The port still refuses that draw, and a refused draw ends
+  the game, so level 20 cannot open until the blade is drawn plain and unlit there instead. Ben can choose
+  otherwise in the Coordinator mailbox (Q1).
 - **How long checks run under the Coordinator** (commands cut off at ten minutes): the suites in parts, the sweep one
   level group a command, the bot one command a shell (D59.4, D60.4); only the Windows test script may run detached
   (D59.1). The longest sweep command is now 509 s (levels 3 and 4 on the Windows path) — split that group next time.
@@ -35,29 +38,29 @@ Settled history lives in docs/STATE-history.md.
 - **Ben's gates:** Phase 1 passed; Phases 2 and 3 passed with notes; Phase 4 passed (Fireball note) and the Windows
   twin passed on Andrew's word (2026-11-07); **Phase 5 waiting (Q18)**. Then three gated Phase 6 parts (6A to the Goblin
   Chief, 6B to the Wizard and the fire, 6C the whole game), then one release `ferazel-1.0`.
-- **Current numbers** (G2 and GW2 the seat's own runs of run 65, 2026-11-22, at b42bb43; the sweep, bot, census,
-  Proof B and the smoke are run 64's at a66d567 — game source is unchanged since; G5 / GW1 / GW3 / GW4 the
-  implementer's at c09d5c1; GW6 and G9M last passed in run 50):
+- **Current numbers** (G2, GW2, G5, GW1, GW3 and GW4 the seat's own runs of run 66, 2026-11-24, at 771e1e4; the
+  sweep, bot, census, Proof B and the smoke are run 64's at a66d567 — no built level's behaviour has changed since;
+  GW6 and G9M last passed in run 50):
 
 | gate | value |
 |---|---|
-| Ferazel/Core suite (G2) | **764** = 593 rules + 171 render; 762 passed, 0 failed, 2 opt-in skips by name: `FerazelRenderTests.VisitSweepTests testVisitEveryObject`, `FerazelRenderTests.RandomPlayTests testRandomPlay`; twelve foreground parts, about 39 min, the longest 359 s (rules 109 s; A–C 296; D–E without the audit 69; the audit's first test 203 + 359 + 43 in three level groups; its second test 206 + 343 + 45; F–K 190; L 338; M–Z 151) |
+| Ferazel/Core suite (G2) | **791** = 615 rules + 176 render; 789 passed, 0 failed, 2 opt-in skips by name: `FerazelRenderTests.VisitSweepTests testVisitEveryObject`, `FerazelRenderTests.RandomPlayTests testRandomPlay`; twelve foreground parts, about 39 min, the longest 359 s (run 66: rules 119 s; A–C 280; D–E without the audit 55; the audit's first test 208 + 338 + 40 in three level groups; its second test 196 + 339 + 44, once 449; F–K 247; L 330; M–Z 161) |
 | FerazelWinKit (GW2) | **87**; 85 passed, 0 failed, 2 opt-in skips (`WinVisitSweepTests testVisitEveryObjectThroughWinGame`, `WinRandomPlayTests testRandomPlayThroughWinGame`); eight foreground parts (B 320 s, F\|T 179, Win D\|F\|G 318, Win O\|R\|S\|V 144, the four level references 172 / 152 / 121 / 123), about 26 min |
 | census (G3) | items 1,108 decoded, failures 0 |
 | visit sweep (GE, levels 1–5, 10, 11, 15, 18, both shells) | core 7,192 visits, windows 7,192 visits, rows 0 on both (1,869 s + 1,928 s in seven commands a shell) |
 | random-play bot (GE, the same 9 levels, both shells) | core and windows each: steps 194,400, deaths 29, exits 292, conversations 33, saves 2, failures 0 (91 s, 108 s) |
 | Proof B in CrossOver, muted (GWB) | **761 passed / 0 failed / 3 skipped / 0 crashed (of 764)**, about 19 min (11:20, detached) |
 | Mac SDL smoke (GW4R) | exit 0, main menu identical, `video=dummy audio=none` (11:40) |
-| GW1 / GW3 / GW4 / G5 | 0 then 2 / 0 then 1 / Build complete! / BUILD SUCCEEDED |
+| GW1 / GW3 / GW4 / G5 | 0 then 2 / 0 then 1 / Build complete! / BUILD SUCCEEDED (run 66, at 771e1e4) |
 | HectorKit (G1) | main **ef2c341**, clean; zero-skip executed **370**; Ferazel follows HectorKit main |
-| ladder from here | 764 → CL 771 … MP 791 … 814 at the 6A end; WinKit 87 → 90 |
+| ladder from here | 791 → L20 794 → PS 795 → L21 798 → CP 810 → L22 814 at the 6A end; WinKit 87 → 90 |
 
-- **Goldens (◈):** no existing value moved in run 65. New: the audit test now pins, per level, how often the held
-  item is drawn under water with kind 0 (level 2: 39, level 18: 7, every other built level 0). All values are in
-  the plan's "Goldens" paragraph.
-- **Waiting on Ben (QUESTIONS.md "Open"):** **Q18 (the Phase 5 gate)**, Q21 (may the sweep and bot run detached —
+- **Goldens (◈):** no built level's value moved in run 66. New fixture values (clouds, blade, mace trace and
+  picture), level 20's load bar `[16, 57, 114, 16]` and the audit's refusal count 14 → 13 (D67.3) are in the plan's
+  "Goldens" paragraph and the three "As executed" notes.
+- **Waiting on Ben:** the Coordinator mailbox **Q1** (what a lit blade on level 20 shows; the default D67.1 stands meanwhile). QUESTIONS.md "Open": **Q18 (the Phase 5 gate)**, Q21 (may the sweep and bot run detached —
   not blocking), Q19 (three small choices in the 6A plan), Q17, Q16 (defaults stand), Q15's follow-ups, Q13.
-- **Worktrees:** run 65's `agitated-wu-7b475b` was removed at its close. `compassionate-leavitt-7ca958` is run
+- **Worktrees:** run 66's `peaceful-hellman-2312c4` and the interrupted run's `elastic-kare-da496c` were removed at run 66's close. `compassionate-leavitt-7ca958` is run
   53's (merged; it was run 49's before). `gallant-brahmagupta-56ed81` (run 52), `eager-fermat-db9ed9` (run 51),
   `hungry-bun-395f55` (run 50; `out/` holds the latest stages), `nifty-mendel-0ad40e` (run 48),
   `ferazel-run-47-e0431c` and `ferazel-run-44-7428b3` are finished and merged — Ben or their sessions remove them.
@@ -69,6 +72,13 @@ Settled history lives in docs/STATE-history.md.
 - **Known deviation of muted launches (D44 As built run 48 (d)):** a muted run draws the random stream differently
   from an audible one; boot checks only.
 - **Open carries** [LOW unless marked]:
+  - From run 66: Core keeps a second copy of the renderer's cos/sin tables (pinned equal by a test; one table in
+    Core is the fix); `testBladeArmEndpoints` pins exact cos/sin values Wine's maths library might round
+    differently — watch Proof B at the wave end [MED until Proof B has run]; the blade's Setup slot carries its
+    face though the original sets none at Setup, and the clouds' frame-1 picture shows loaded faces where the
+    original shows a placeholder (both first-frame hazards for 6A-L20); the mace trace follows one record with
+    no p4 offset; the plan's "6C-BG3 1 type" line is stale; ENG §2.8 / §2.10 / E19 wording errors are noted in
+    the As executed notes, not corrected in the contract.
   - From run 65 (the cross-check): `ScreenFlash.swift`'s header says every writer stores 3, but Xichra's Handle
     stores 5 and 7 (6C-XI's to write); the audit's horizon-strip note lists "levels 1–5 and 11" where 15 and 18
     are also without a strip; the new held-item table's keys are not checked against the built-level list; on
