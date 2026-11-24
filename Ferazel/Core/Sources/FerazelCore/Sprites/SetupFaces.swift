@@ -257,6 +257,9 @@ public enum SetupFaces {
         // 58737–58740: the boot singles 0x424 / 0x425), the furniture 2921 (M l. 58830: cache single 0xb68+i, flag 0)
         // and the NPCs 2955, 2956, 2962 (M l. 58781: cache singles 0xb86+i, flag 0).
         for p: Int16 in [0x424, 0x425, 0xb69, 0xb8b, 0xb8c, 0xb92] { all.append(one(p)) }
+        // 6A-CL: the clouds 0xb4a…0xb4d of level 20 (`.InitBackgroundSprite` M l. 61869–61872: cache singles, flag 0 →
+        // clut 200), faced at Setup and again by their Handle.
+        for p in BackgroundSprite.clouds { all.append(one(p)) }
         all.append(one(placeholderPict))
         // BN: every face `.InitBonusSprite` loads (`BonusSprite.sheets`; the level-1/2 entries above are the same sheets).
         var table = Dictionary(uniqueKeysWithValues: all)
@@ -446,6 +449,9 @@ public enum SetupFaces {
             case 0xc08...0xc0f:                                // trees (M l. 62597–62617; 6A-TR `setupTree`)
                 BackgroundSprite.setupTree(&s, record: p)
                 face(Int16(t), 0, .handle)                     // `+0xc0` stays 0: the Handle faces it from the cache
+            case 0xb4a...0xb4d:                                // clouds (M l. 62526–62567; 6A-CL `setupCloud`)
+                BackgroundSprite.setupCloud(&s, record: p, rng: &rng)   // R(60), then R(50)
+                face(Int16(t), 0, .setupCached)                // `+0xc0 = cache + 4` (`_DAT_100a0b20` … `0b14`)
             case 0xcb1:                                        // level exit: `+0xc0 = 0` (l. 62593)
                 s.hotRect = IdleSprites.Rect(top: 0xc, left: 0xc, bottom: 0x54, right: 0x54)   // l. 62594 (W4)
             default:
