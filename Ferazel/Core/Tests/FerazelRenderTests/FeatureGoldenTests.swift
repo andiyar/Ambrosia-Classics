@@ -589,8 +589,10 @@ final class FeatureGoldenTests: XCTestCase {
     /// Level 20's fixture (`level20Clouds`), seed 1, `FerazelPrefs()`, the header's start, no input: the first `count`
     /// presented frames. `dropClouds`: the twin — every cloud draw taken out of each `.WrapDrawSprites` before the
     /// renderer draws it (the same run otherwise: Core never sees the change).
-    static func level20CloudFrames(count: Int, dropClouds: Bool) throws -> [CloudFrame] {
-        let (run, services) = try LevelFixtureServices.open(level: 20, leaveOut: level20Clouds)
+    /// `leaveOut` (6A-L20): the level's real first frames use `[]` (nothing left out: the real level).
+    static func level20CloudFrames(count: Int, dropClouds: Bool,
+                                   leaveOut: [LevelFixture.LeaveOut] = level20Clouds) throws -> [CloudFrame] {
+        let (run, services) = try LevelFixtureServices.open(level: 20, leaveOut: leaveOut)
         var now: UInt32 = 0, frames: [CloudFrame] = []
         while frames.count < count && now < 4000 {
             let out = try run.tick(now: now, input: FrontInput())
@@ -768,7 +770,8 @@ final class FeatureGoldenTests: XCTestCase {
     // MARK: - 6A-MP: the programmed-path maces
 
     /// 6A-MP's level-20 leave-out list (ENG §7.2; the card): none — the last level-20 feature, every record in. The
-    /// level is a fixture only because it is not yet in `BuiltLevels`.
+    /// level was a fixture only because it was not yet in `BuiltLevels` (it is since 6A-L20; the fixture's open is the
+    /// real level's, with the moved start).
     static let level20Maces: [LevelFixture.LeaveOut] = []
 
     /// Where the player starts (`LevelRun`'s `start:`): between level 20's first path balls — records 266 (10436, 436)
@@ -779,16 +782,15 @@ final class FeatureGoldenTests: XCTestCase {
     /// One run of level 20's fixture (`leaveOut`, seed 1, `FerazelPrefs()`, the player at `maceStart`, no input) for
     /// `iterations` `.GameLoop` iterations: after each, record 266's ball (x, y, vy, direction `+0xf8`), the player's
     /// (x, hp), the number of balls 1485 on the list; and per presented frame its ticks, screen FNV-1a 64 and the
-    /// ball draws (face 1485) as (x, y). `dropMaces`: every ball draw taken out of each `.WrapDrawSprites` before the
-    /// renderer draws it (the same run otherwise: Core never sees the change). Returns the last frame's pixels too.
+    /// ball draws (face 1485) as (x, y). Returns the last frame's pixels too. 6A-L20: record 267's ball beside 266's
+    /// (`trace267`); the twin that dropped the ball draws went with the retired picture.
     struct MaceRun {
-        var trace: [[Int]] = [], player: [[Int]] = [], balls: [Int] = []
+        var trace: [[Int]] = [], trace267: [[Int]] = [], player: [[Int]] = [], balls: [Int] = []
         var ticks: [UInt32] = [], fnv: [UInt64] = [], draws: [[[Int]]] = []
         var pixels: [UInt8] = []
     }
 
-    static func level20MaceRun(iterations: Int, leaveOut: [LevelFixture.LeaveOut] = level20Maces,
-                               dropMaces: Bool = false) throws -> MaceRun {
+    static func level20MaceRun(iterations: Int, leaveOut: [LevelFixture.LeaveOut] = level20Maces) throws -> MaceRun {
         let (run, services) = try LevelFixtureServices.open(level: 20, leaveOut: leaveOut, start: maceStart)
         var out = MaceRun(), now: UInt32 = 0
         let session = { try XCTUnwrap(run.session) }
@@ -799,10 +801,9 @@ final class FeatureGoldenTests: XCTestCase {
             var presented = false, draws: [[Int]] = []
             for g in tick.segments where g.target == .level {
                 let r = try XCTUnwrap(services.renderer, "a level draw before the renderer exists")
-                let ops = g.output.draws.map { op -> DrawOp in
-                    guard case .wrapDrawSprites(let list) = op else { return op }
-                    draws += list.filter { $0.face.pict == 1485 }.map { [$0.x, $0.y] }
-                    return dropMaces ? .wrapDrawSprites(list.filter { $0.face.pict != 1485 }) : op
+                let ops = g.output.draws
+                for op in ops {
+                    if case .wrapDrawSprites(let list) = op { draws += list.filter { $0.face.pict == 1485 }.map { [$0.x, $0.y] } }
                 }
                 try r.apply(FrameOps(draws: ops))
                 presented = presented || ops.contains { if case .copyToScreen = $0 { true } else { false } }
@@ -823,6 +824,11 @@ final class FeatureGoldenTests: XCTestCase {
             } else {
                 out.trace.append([])
             }
+            if let m = s.world.active.sprites.first(where: { $0.recordIndex == 267 && $0.handler == .background }) {
+                out.trace267.append([m.x, m.y, Int(m.vy), Int(m.pathDirection)])
+            } else {
+                out.trace267.append([])
+            }
         }
         XCTAssertEqual(out.trace.count, iterations, "\(iterations) iterations within 6000 ticks")
         return out
@@ -831,7 +837,9 @@ final class FeatureGoldenTests: XCTestCase {
     /// 6A-MP: record 266's ball on level 20's fixture (nothing left out) over one full shuttle (ENG §2.10 "First level /
     /// golden"), frame by frame: iterations 1…124 run its Handle 124 times — down from its Setup position (436) at
     /// 2600 / 256 px a frame, the far bound (794) passed and the turn on Handle 37, the slow-down and the climb, the near
-    /// bound (517) passed and the turn on Handle 99, and down again: one period. Kept for good (6A-L20 keeps it).
+    /// bound (517) passed and the turn on Handle 99, and down again: one period. Kept for good: 6A-L20 retired the
+    /// picture beside it (`testLevel20MacePathFeatureGolden`; the level's real first frame covers the level) and added
+    /// record 267 (the p4 offset) here.
     func testLevel20MacePathTrace() throws {
         // The fixture: nothing left out (a literal empty list); level 20's path balls re-derived from the level file —
         // 16, every one 1485 in mode 1.
@@ -865,38 +873,26 @@ final class FeatureGoldenTests: XCTestCase {
         for f in a.trace { for v in f { bytes += [24, 16, 8, 0].map { UInt8(truncatingIfNeeded: Int32(v) >> $0) } } }
         XCTAssertEqual(String(LevelFixtureServices.fnv1a(bytes), radix: 16), "76e08997895b6e89", "record 266's trace")
         XCTAssertEqual([a.ticks.first, a.ticks.last], [143, 389])
-    }
 
-    /// 6A-MP: the trace's last frame — the frame presented by iteration 125, drawn from the positions after the
-    /// balls' 124th Handle — on level 20's fixture (nothing left out, seed 1, `FerazelPrefs()`, the player at
-    /// `maceStart`, no input), with path balls in view and moving. Proved by two twins that agree with each other: the
-    /// same run with every ball draw removed, and the fixture with the 16 balls left out (no ball placed); both differ
-    /// from the golden, and the balls drawn there stand away from where frame 1 drew them. Deleted at 6A-L20 (the trace
-    /// and the level's real first frame cover it).
-    func testLevel20MacePathFeatureGolden() throws {
-        let frames = try Self.level20MaceRun(iterations: 125)
-        let twin = try Self.level20MaceRun(iterations: 125, dropMaces: true)
-        let none = try Self.level20MaceRun(iterations: 125, leaveOut: [.type(1485)])
-        guard frames.fnv.count == 125, twin.fnv.count == 125, none.fnv.count == 125 else {
-            return XCTFail("125 presented frames each: \(frames.fnv.count), \(twin.fnv.count), \(none.fnv.count)")
+        // 6A-L20 (run 66's carry, when the mace picture was retired): record 267 beside it — the same path (p2 440, p3
+        // 2600) with p4 440, the Setup's offset (M l. 62343–62361): the bounds come from the position before it (y 436:
+        // `+0x100` = 436·256 + 8·2600, `+0x104` = 436·256 + 440·256 − 8·2600, as record 266's), then y += p4, so the
+        // ball starts 440 px lower, past its far bound (794), and turns on its first Handle (direction −1 after it),
+        // runs on down while vy decays, climbs past the near bound (517) and turns down again on Handle 70; x never
+        // moves.
+        let r267 = try XCTUnwrap(paths.first { $0.index == 267 })
+        XCTAssertEqual([r267.x, r267.y, r267.p2, r267.p3, r267.p4], [10527, 436, 440, 2600, 440])
+        guard a.trace267.count == 124, a.trace267.allSatisfy({ $0.count == 4 }) else {
+            return XCTFail("record 267 on the list every iteration")
         }
-        XCTAssertEqual(frames.ticks, twin.ticks)
-        XCTAssertEqual(frames.draws, twin.draws, "the twin's run is the same run")
-        XCTAssertEqual(none.fnv, twin.fnv, "no ball drawn = no ball placed, in every frame")
-        XCTAssertEqual(Set(none.draws.map(\.count)), [0])
-        // In the last frame the balls drawn stand away from frame 1's (every one of the 16 is drawn in both), and some
-        // are in view: the camera's 640 × 416 port from the scroll.
-        let first = frames.draws[0], last = frames.draws[124]
-        XCTAssertEqual([first.count, last.count], [16, 16])
-        XCTAssertEqual(zip(first, last).filter { $0 == $1 }.count, 0, "every ball moved")
-        XCTAssertNotEqual(frames.fnv[124], twin.fnv[124], "a ball is on screen in the last frame")
-        let changed = zip(frames.pixels, twin.pixels).filter { $0 != $1 }.count
-        // Measured at 6A-MP (FNV-1a 64 of the 640×480 screen indices after that tick's level draws, the test colour
-        // model). With the Handle's path arm stubbed (`pathMace`, one local patch, never committed) no ball moves, the
-        // twin holds and the last frame is 42eb0840c742e1e6 (5,693 bytes changed).
-        XCTAssertEqual(changed, 5190, "the screen bytes the balls changed")
-        XCTAssertEqual(frames.ticks[124], 391)
-        XCTAssertEqual(String(twin.fnv[124], radix: 16), "6bda759a3cda8fc3", "the last frame with no ball drawn")
-        XCTAssertEqual(String(frames.fnv[124], radix: 16), "eea2913e69628851", "the level-20 mace path feature golden")
+        XCTAssertEqual(Set(a.trace267.map { $0[0] }), [10527], "mode 1 never moves x")
+        let ys7 = a.trace267.map { $0[1] }, ds7 = a.trace267.map { $0[3] }
+        let turns7 = ds7.indices.dropFirst().filter { ds7[$0] != ds7[$0 - 1] }.map { $0 + 1 }
+        XCTAssertEqual(ds7.first, -1, "turned on its first Handle")
+        XCTAssertEqual(turns7, [70], "measured: record 267's next turn")
+        XCTAssertEqual([ys7.first, ys7.min(), ys7.max(), ys7.last], [886, 424, 962, 733], "measured")
+        var bytes7: [UInt8] = []
+        for f in a.trace267 { for v in f { bytes7 += [24, 16, 8, 0].map { UInt8(truncatingIfNeeded: Int32(v) >> $0) } } }
+        XCTAssertEqual(String(LevelFixtureServices.fnv1a(bytes7), radix: 16), "77379b19446b30c6", "record 267's trace (measured)")
     }
 }

@@ -131,6 +131,51 @@ final class LevelFrameGoldenTests: XCTestCase {
         XCTAssertEqual(String(flat.fnv, radix: 16), "3267c6feda5903c7", "measured: frame 1 without the ripple")
     }
 
+    /// 6A-L20: level 20 "Hangnabit" — no chapter card; the first presented frame. Its new features in view from the
+    /// start are the 164 clouds (6A-CL; mode 0xb arg 4, in front of everything): the first frame shows them — the twin
+    /// with every cloud draw taken out (the same run: Core never sees it) differs (D51.1 / D54.2). The frame is the
+    /// cloud fixture's frame 1 (`FeatureGoldenTests.testLevel20CloudFeatureGolden`: that fixture leaves out only the
+    /// blades and the path balls, none of which is drawn here), so it carries the ruled first-load difference
+    /// (`SetupFaces.swift:21–23`, `FaceSource.setupCached`): the clouds' Setup copies the cache entry's face pointer
+    /// before `.LoadCachedSpriteFaces` (M l. 62533–62550, `.SetupLevel` M l. 2526 / 2537), so on the level's first load
+    /// the original would draw the placeholder PICT 150 there, the port the loaded cloud faces. Frame 2 — drawn after
+    /// the clouds' first Handle re-read their faces (M l. 63308) — matches the original and is pinned beside it, with
+    /// its own twin. No blade is drawn: all 28 were idled at the spawn and none is on the list in frames 1 and 2, so
+    /// the blade Setup's stand-in face (`SetupFaces`' `.handle` cell 0xbf4, where the original's `+0xc0` stays 0 —
+    /// M l. 62571–62583) never reaches a draw before the blade's first Handle faces it (M l. 63511).
+    func testLevel20FirstFrameGolden() throws {
+        let f = try Self.firstFrame(level: 20)
+        try checkShowsLevel(f, 20)
+        let h = f.run.levelFile.header
+        XCTAssertEqual([Int(h.chapter), Int(h.startX), Int(h.startY)], [0, 86, 886])
+        // Measured at 6A-L20 (seed 1): the 143rd tick (now 142), no card, the camera at (0, 640).
+        XCTAssertEqual(f.ticks, 143)
+        XCTAssertEqual([f.scroll.h, f.scroll.v], [0, 640])
+        XCTAssertEqual(String(f.fnv, radix: 16), "9f0b821fbbc60084", "the level-20 first-frame golden")
+        let s = try XCTUnwrap(f.run.session)
+        XCTAssertEqual(s.world.active.sprites.filter { $0.type == BackgroundSprite.blade }.count, 0, "no blade on the list")
+        XCTAssertEqual(s.world.idle.entries.compactMap { $0 }.filter { $0.saved.type == BackgroundSprite.blade }.count, 28)
+        // The real level's first two frames, and the twin without the cloud draws.
+        let frames = try FeatureGoldenTests.level20CloudFrames(count: 2, dropClouds: false, leaveOut: [])
+        let twin = try FeatureGoldenTests.level20CloudFrames(count: 2, dropClouds: true, leaveOut: [])
+        guard frames.count == 2, twin.count == 2 else { return }          // a failure above, never a crash
+        XCTAssertEqual(frames.map(\.ticks), [143, 145])
+        XCTAssertEqual(twin.map(\.ticks), frames.map(\.ticks))
+        XCTAssertEqual(frames[0].fnv, f.fnv, "the helper's frame 1 is this frame")
+        XCTAssertEqual(frames.map(\.clouds), twin.map(\.clouds), "the twin's run is the same run")
+        XCTAssertEqual(frames.map { $0.clouds.count }, [164, 164], "every cloud drawn")
+        XCTAssertNotEqual(frames[0].fnv, twin[0].fnv, "frame 1 shows the clouds")
+        XCTAssertNotEqual(frames[1].fnv, twin[1].fnv, "and frame 2")
+        // Measured: the screen bytes the clouds changed; the frames without them; frame 2. Every value equals the cloud
+        // fixture's (6A-CL): the blades and path balls that fixture leaves out draw nothing in these two frames.
+        let changed = (0..<2).map { k in zip(frames[k].pixels, twin[k].pixels).filter { $0 != $1 }.count }
+        XCTAssertEqual(changed, [25886, 31081])
+        XCTAssertEqual(String(twin[0].fnv, radix: 16), "8964bdab39954f49", "measured: frame 1 without the clouds")
+        XCTAssertEqual(String(twin[1].fnv, radix: 16), "4679418e47ef711b", "measured: frame 2 without the clouds")
+        XCTAssertEqual(String(frames[1].fnv, radix: 16), "37eb1f7eb12e8f76",
+                       "frame 2: the clouds' faces re-read, their parallax applied")
+    }
+
     /// 6A-L18: the Chief's activation on the real level with real pictures (BOS §9.3, D61.3) — level 18 through the
     /// level runner with the renderer-backed services (`LevelFixtureServices`: the wake rectangle is his picture's
     /// opaque bounds), seed 1, LEFT held from the level start: he is active on the first frame (the camera's pan), idle

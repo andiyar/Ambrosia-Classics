@@ -342,4 +342,58 @@ import XCTest
         }
         XCTFail("no rippled frame in 24,000 wakes")
     }
+
+    /// 6A-L20: level 20 "Hangnabit" — no chapter card. Its new feature in view from the start is the 164 clouds (6A-CL;
+    /// `LevelFrameGoldenTests.testLevel20FirstFrameGolden`): a twin game whose clouds have no face from the first level
+    /// frame on (taken away before every wake, after the Handle pass that re-faces them — so no cloud is drawn, and
+    /// nothing else reads the face: the clouds never collide) — the first presented frame where the two differ is the
+    /// first that shows the clouds through the shell.
+    func testLevel20FirstFrameReference() throws {
+        let (game, host) = try Self.game(level: 20)
+        // `-FerazelLevel 20` taken (20 ∈ `BuiltLevels.list`); refused, the game would run level 1 and every loop below
+        // would run to its cap (well past the ten-minute command limit) before failing.
+        guard game.flow.startLevel == 20 else { return XCTFail("-FerazelLevel 20 refused: level \(game.flow.startLevel)") }
+        let f = try Self.firstLevelFrame(game, host, level: 20)
+        // No chapter card on level 20 (hdr 0x273c = 0).
+        XCTAssertFalse(f.pictures.contains { (4610...4699).contains($0) }, "no chapter card: \(f.pictures.sorted())")
+        // Measured at 6A-L20: flow step 609 (wake 2,433) — as levels 11's, 15's and 18's, no card on any —, the first
+        // iteration under the fade-in: all black.
+        XCTAssertEqual(Self.lit(f.rgba), 0)
+        XCTAssertEqual([f.wakes, f.steps], [2433, 609])
+        XCTAssertEqual(String(WinGame.fnv1a64(f.rgba), radix: 16), "742a0703fa4da325", "level 20's first presented frame")
+        // The first frame with the fade done. Measured: flow step 689, the 41st iteration, 250,593 pixels lit.
+        let lit20 = try Self.firstFadedInFrame(level: 20)
+        XCTAssertEqual([lit20.steps, lit20.iterations, Self.lit(lit20.rgba)], [689, 41, 250_593])
+        XCTAssertEqual(String(WinGame.fnv1a64(lit20.rgba), radix: 16), "8e04ee6e011d489", "level 20's first faded-in frame")
+        // The twin: the same game, its clouds faceless from the first level frame on.
+        let (twin, twinHost) = try Self.game(level: 20)
+        let g = try Self.firstLevelFrame(twin, twinHost, level: 20)
+        XCTAssertEqual([g.steps, g.wakes], [f.steps, f.wakes])
+        XCTAssertEqual(g.rgba, f.rgba)
+        let ts = try XCTUnwrap(twin.flow.levelRun?.session)
+        func faceless() {
+            for c in ts.world.active.sprites where (0xb4a...0xb4d).contains(c.type) {
+                ts.world.active.update(id: c.id) { $0.face = nil }
+            }
+        }
+        XCTAssertEqual(ts.world.active.sprites.filter { (0xb4a...0xb4d).contains($0.type) }.count, 164)
+        var last = game.flowSteps, twinLast = twin.flowSteps
+        for _ in 1...24_000 {
+            faceless()
+            let presented = Self.wake(game, host, last: &last)
+            XCTAssertEqual(Self.wake(twin, twinHost, last: &twinLast), presented)
+            guard presented else { continue }
+            let a = try XCTUnwrap(game.lastPresented), b = try XCTUnwrap(twin.lastPresented)
+            guard a != b else { continue }
+            let s = try XCTUnwrap(game.flow.levelRun?.session)
+            // Measured: flow step 611, the second iteration (still fading in), the camera at (0, 640); 144,388 pixels
+            // lit, 78,783 RGBA bytes the clouds changed.
+            XCTAssertEqual([Self.lit(a), zip(a, b).filter { $0 != $1 }.count], [144_388, 78_783])
+            XCTAssertEqual([game.flowSteps, game.flow.levelRun?.iterations ?? -1], [611, 2])
+            XCTAssertEqual([s.camera.scrollH, s.camera.scrollV], [0, 640])
+            XCTAssertEqual(String(WinGame.fnv1a64(a), radix: 16), "e96292a59a14194a", "level 20's first cloud frame")
+            return
+        }
+        XCTFail("no cloud frame in 24,000 wakes")
+    }
 }
