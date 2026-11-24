@@ -6,7 +6,7 @@ import HectorResources
 /// every one of its 333 records sets up (26 types; LL §4 "Level 20"; the clouds, the blades and the path maces built by
 /// 6A-CL / 6A-BD / 6A-MP, none refused), the clouds' 328 draws in the spawn's stream (from its 2nd draw to its 421st,
 /// the Xichron crystals' 92 among them), its header as read (music 15, no chapter card, the start, every other switch 0), the picture cache's marks
-/// and load bar, `BuiltLevels.list` = [1…5, 10, 11, 15, 18, 20], the way on (level 20's exit to node 21, not built),
+/// and load bar, `BuiltLevels.list` = [1…5, 10, 11, 15, 18, 20] (+ 21 at 6A-L21), the way on (level 20's exit to node 21),
 /// the hang glider's marks and the wind. The parameter trace ("Every level task"): every built type placed here whose
 /// p1…p4 take a value no level 1–5, 10, 11, 15 or 18 record of that type has, and the types the card names, each
 /// traced through its Setup / Handle arm in the dump and pinned by one assert inside `testLevel20SetsUpEveryRecord`.
@@ -224,10 +224,10 @@ final class LevelTwentyTests: XCTestCase {
     }
 
     func testBuiltLevelsTwenty() throws {
-        XCTAssertEqual(BuiltLevels.list, [1, 2, 3, 4, 5, 10, 11, 15, 18, 20])
+        XCTAssertEqual(BuiltLevels.list, [1, 2, 3, 4, 5, 10, 11, 15, 18, 20, 21])   // 6A-L21: + 21
         XCTAssertTrue(BuiltLevels.contains(20))
-        for n in [12, 16, 19, 21, 22, 40] { XCTAssertFalse(BuiltLevels.contains(n), "level \(n)") }
-        XCTAssertEqual(BuiltLevels.notBuiltReport(21), "Level 21 is not built yet (Phase 6).")
+        for n in [12, 16, 19, 22, 40] { XCTAssertFalse(BuiltLevels.contains(n), "level \(n)") }
+        XCTAssertEqual(BuiltLevels.notBuiltReport(22), "Level 22 is not built yet (Phase 6).")
         let r = try TenEleven.resources()
         // `startLevel` 20 (the hidden `FerazelLevel` switch) is accepted: New Game there, nothing asked.
         let rig = TenElevenRig(r, start: 20)
@@ -238,14 +238,14 @@ final class LevelTwentyTests: XCTestCase {
         // The map: node 20's links [15, 21] (node 15's [10, 20, 30]: level 15's exit 61 unlocks it, `LevelFifteenTests`).
         let map = try WorldMap.load(from: r)
         XCTAssertEqual(try XCTUnwrap(map.findCurrNode(level: 20)).links, [15, 21, 0, 0, 0, 0, 0])
-        // Level 20's exit p1 1 (record 311, at x 15546) → node 21 (links[1]) → Return → the not-built report, still on
-        // the map.
+        // Level 20's exit p1 1 (record 311, at x 15546) → node 21 (links[1]) → Return → level 21 entered (before
+        // 6A-L21: "Level 21 is not built yet (Phase 6).").
         let L = try LevelFile.load(from: r, level: 20)
         XCTAssertEqual([Int(L.placements[311].type), Int(L.placements[311].p1)], [3249, 1])
         try rig.exit(311, toNode: 21)
-        XCTAssertEqual(rig.asked.last, .report(text: "Level 21 is not built yet (Phase 6)."))
-        XCTAssertNil(rig.flow.levelRun)
-        XCTAssertEqual(rig.levels.prepared, [20])
+        rig.drive { f in f.levelRun?.levelNumber == 21 && (f.levelRun?.iterations ?? 0) >= 1 }
+        XCTAssertEqual(rig.asked, [])
+        XCTAssertEqual(rig.levels.prepared, [20, 21])
         // A save made on level 20 (a save point's block, the level's own records) continues there through
         // `.ContinueGame`: level 20 runs, nothing asked.
         var g = GameGlobals.initGameGlobals(previous: nil)

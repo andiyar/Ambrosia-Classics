@@ -396,4 +396,28 @@ import XCTest
         }
         XCTFail("no cloud frame in 24,000 wakes")
     }
+
+    /// 6A-L21: level 21 "Obfuscation & Edification" — no chapter card. Its first presented frame (under the fade-in,
+    /// black) and its first faded-in frame, which shows the level's new feature, the darkness (hdr 0x2706 = 2): the
+    /// Mac golden's twin with the switch patched to 0 proves that frame differs (`LevelFrameGoldenTests
+    /// .testLevel21FirstFrameGolden`); the shell path cannot patch the header without a copy of the data set.
+    func testLevel21FirstFrameReference() throws {
+        let (game, host) = try Self.game(level: 21)
+        // `-FerazelLevel 21` taken (21 ∈ `BuiltLevels.list`); refused, the game would run level 1 and every loop below
+        // would run to its cap (well past the ten-minute command limit) before failing.
+        guard game.flow.startLevel == 21 else { return XCTFail("-FerazelLevel 21 refused: level \(game.flow.startLevel)") }
+        let f = try Self.firstLevelFrame(game, host, level: 21)
+        // No chapter card on level 21 (hdr 0x273c = 0).
+        XCTAssertFalse(f.pictures.contains { (4610...4699).contains($0) }, "no chapter card: \(f.pictures.sorted())")
+        XCTAssertEqual(try XCTUnwrap(game.flow.levelRun).levelFile.header.darknessEnable, 2)
+        // Measured at 6A-L21: flow step 609 (wake 2,433) — as levels 11's, 15's, 18's and 20's, no card on any —, the
+        // first iteration under the fade-in: all black.
+        XCTAssertEqual(Self.lit(f.rgba), 0)
+        XCTAssertEqual([f.wakes, f.steps], [2433, 609])
+        XCTAssertEqual(String(WinGame.fnv1a64(f.rgba), radix: 16), "742a0703fa4da325", "level 21's first presented frame")
+        // The first frame with the fade done. Measured: flow step 689, the 41st iteration, 251,574 pixels lit.
+        let lit21 = try Self.firstFadedInFrame(level: 21)
+        XCTAssertEqual([lit21.steps, lit21.iterations, Self.lit(lit21.rgba)], [689, 41, 251_574])
+        XCTAssertEqual(String(WinGame.fnv1a64(lit21.rgba), radix: 16), "cefc33dd37db5d83", "level 21's first faded-in frame")
+    }
 }

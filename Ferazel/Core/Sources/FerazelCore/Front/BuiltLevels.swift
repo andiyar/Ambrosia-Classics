@@ -9,14 +9,14 @@ import Foundation
 /// record set up, its rain, thunder and side push built by 6A-RN; 6A-L18: level 18 "Goblin Chief", every record set up,
 /// the Chief whole since 6A-CH1 / 6A-CH2, the ripple built by 6A-RP; 6A-L20: level 20 "Hangnabit", every record set
 /// up, its clouds, blades and path maces built by 6A-CL / 6A-BD / 6A-MP, a play-lit dynamic-light sprite on its unlit
-/// grid drawn plain (D67.1)). The map's choice of a
-/// level not in the list is refused with `notBuiltReport(_:)` (the only invented text, D35) and the map is entered
-/// again at the same node; `GameFlow.startLevel` (the hidden `FerazelLevel` switch) must name a level in it. Every
-/// reader asks `contains(_:)`.
+/// grid drawn plain (D67.1); 6A-L21: level 21 "Obfuscation & Edification", every record set up, its pipes' level
+/// spawn built by 6A-PS). The map's choice of a level not in the list is refused with `notBuiltReport(_:)` (the only
+/// invented text, D35) and the map is entered again at the same node; `GameFlow.startLevel` (the hidden `FerazelLevel`
+/// switch) must name a level in it. Every reader asks `contains(_:)`.
 public enum BuiltLevels {
     /// The built level ids, sorted, no duplicates. Keep this declaration on ONE line of exactly this shape:
     /// `tools/ferazel-built-levels.sh` prints it for the visit sweep and the bot (`BuiltLevelsTests` pins the parse).
-    public static let list: [Int] = [1, 2, 3, 4, 5, 10, 11, 15, 18, 20]
+    public static let list: [Int] = [1, 2, 3, 4, 5, 10, 11, 15, 18, 20, 21]
 
     /// Whether level `n` is built (in `list`).
     public static func contains(_ n: Int) -> Bool {

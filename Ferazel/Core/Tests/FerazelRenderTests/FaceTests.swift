@@ -673,9 +673,12 @@ final class FaceTests: XCTestCase {
         // (its 26 types: Bonus 1055, 1056, 1059, 1290, 1291, 1293, 1335, 1341, 3050, 3102, 3206, 3219; Box 1065, 3002,
         // 3249; Background 1092, 1094, 1096, 1480, 1485, 2890…2893, 3060; the Gremlin 1770) — no key face, no drop.
         // Its cache faces are its Setups' marks: the glider's four Player sets, the cannons' 0x442, the Gremlin's
-        // three, the four cloud singles, the blade's, and the two mace balls'.
+        // three, the four cloud singles, the blade's, and the two mace balls'. 6A-L21: level 21 places four chests 1308,
+        // none locked (56 p2 3201 → 0xc81, 108 p2 3202 → 0xc82, 109 p2 1300 → the crystal 0x514, 237 p2 1302 → the hurt
+        // coin 0x516) and the doors 2910 (22 p1 1 → key face 0xc81, 23 p1 2 → 0xc82) and 2911 (152 p1 0, unlocked); no
+        // crate. Its new types' cache faces are their Setups' marks (LL §4 "Level 21" item 6).
         let keys: [Int: [Int16]] = [1: [0xc81, 0xc82], 2: [0xc81, 0xc82], 3: [0xc83], 4: [0xc81], 5: [], 10: [],
-                                    11: [0xc81], 15: [], 18: [], 20: []]
+                                    11: [0xc81], 15: [], 18: [], 20: [], 21: [0xc81, 0xc82]]
         let drops: [Int: [(Int16, Int)]] = [
             1: [(0xc81, 1), (0xc82, 1), (0x51d, 9), (0x516, 9), (0xc93, 1), (0x50b, 1), (0x50d, 1)],
             2: [(0x51d, 9), (0xc82, 1), (0xc81, 1), (0x516, 9), (0x50d, 1)],
@@ -687,6 +690,7 @@ final class FaceTests: XCTestCase {
             15: [(0x50a, 1), (0x50b, 1), (0x50d, 1), (0xc86, 1)],
             18: [],
             20: [],
+            21: [(0xc81, 1), (0xc82, 1), (0x514, 6), (0x516, 9)],
         ]
         for n in BuiltLevels.list {
             let frame = n == 1 ? one : try renderer(n)
@@ -725,6 +729,16 @@ final class FaceTests: XCTestCase {
                                 [1771, 10], [1772, 4], [2890, 1], [2891, 1], [2892, 1], [2893, 1], [3060, 1], [1480, 1],
                                 [1485, 1]], "level 20's cache sheets")
                 for sh in marked { want("level 20 cache set", sh.pict, cells: sh.single ? 1 : sh.count, in: frame) }
+            }
+            if n == 21 {
+                let marked = CachedFaces.sheets(markedBy: [1840, 1742, 1860, 1869, 1490, 1491, 1492, 1493, 2827, 2831,
+                                                           2833, 2834, 2836, 2962, 2850, 2921, 1843, 1487])
+                // One sheet a marking type (the 1742 marks the bat set 0x6cc = 1740; the 1843 the single 1842 too).
+                XCTAssertEqual(marked.map { [Int($0.pict), $0.single ? 1 : $0.count] },
+                               [[1840, 12], [1740, 11], [1860, 9], [1869, 8], [1490, 1], [1491, 1], [1492, 1], [1493, 1],
+                                [2827, 1], [2831, 1], [2833, 1], [2834, 1], [2836, 1], [2962, 1], [2850, 1], [2921, 1],
+                                [1842, 1], [1843, 1], [1487, 1]], "level 21's cache sheets")
+                for sh in marked { want("level 21 cache set", sh.pict, cells: sh.single ? 1 : sh.count, in: frame) }
             }
             if n == 10 {
                 for (p, cells) in [(Geyser.baseSet, 12), (Geyser.headSet, 6), (Geyser.segmentSet, 6)] {

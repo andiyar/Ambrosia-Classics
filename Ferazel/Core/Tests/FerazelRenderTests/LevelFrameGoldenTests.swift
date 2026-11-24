@@ -176,6 +176,47 @@ final class LevelFrameGoldenTests: XCTestCase {
                        "frame 2: the clouds' faces re-read, their parallax applied")
     }
 
+    /// 6A-L21: level 21 "Obfuscation & Edification" — no chapter card; the first presented frame. New on this level is
+    /// the darkness switch hdr 0x2706 = 2 (the first built level where it is not 0): the tile light pass darkens every
+    /// unlit tile cell through ambient row D = its light byte (`.GetAmbDarkVal`, M l. 13643–13652; every byte here is
+    /// 0…14), unlit sprites likewise (`SpriteBlitter`), and `.DrawParticles` lights the negative particle kinds through
+    /// ambient row 0x2706 itself (M l. 29824 `0x2706 · 0x100`; `.InitParticleColors`, `FrameRenderer.swift` hands it to
+    /// `ParticleRenderer`). The first frame shows the darkness — the twin opened with hdr 0x2706 patched to 0 differs
+    /// (D51.1 / D54.2) — and a lit-kind particle's colour is row 2's.
+    func testLevel21FirstFrameGolden() throws {
+        let f = try Self.firstFrame(level: 21)
+        try checkShowsLevel(f, 21)
+        let h = f.run.levelFile.header
+        XCTAssertEqual([Int(h.chapter), Int(h.startX), Int(h.startY), Int(h.darknessEnable)], [0, 100, 1678, 2])
+        // Measured at 6A-L21 (seed 1): the 143rd tick (now 142), no card, the camera at (0, 1442). The value is 6A-FX's
+        // level-21 fixture frame (`LevelFixtureRenderTests`, 30 records left out): none of those records is drawn here.
+        XCTAssertEqual(f.ticks, 143)
+        XCTAssertEqual([f.scroll.h, f.scroll.v], [0, 1442])
+        XCTAssertEqual(String(f.fnv, radix: 16), "fb80e30a68e4efb7", "the level-21 first-frame golden")
+        // The twin: the same open with hdr 0x2706 patched to 0 (no ambient darkening; particles through row 0).
+        let res = try LevelFixture.resources(level: 21, leaveOut: [], header: [(0x2706, [0, 0])])
+        let services = LevelFixtureServices(resources: res)
+        let run = try LevelFixture.open(resources: res, level: 21, services: services)
+        let flat = try services.firstPresentedFrame(run)
+        XCTAssertEqual(flat.renderer.level.header.darknessEnable, 0)
+        XCTAssertEqual(flat.ticks, f.ticks)
+        XCTAssertNotEqual(flat.fnv, f.fnv, "frame 1 shows the darkness")
+        XCTAssertEqual(zip(flat.renderer.screen.pixels, f.renderer.screen.pixels).filter { $0 != $1 }.count, 189_626,
+                       "measured: the screen bytes the darkness changed")
+        XCTAssertEqual(String(flat.fnv, radix: 16), "1388825e7f7bc7d5", "measured: frame 1 without the darkness")
+        // The particles' ambient row is row 2 (hdr 0x2706); a lit kind (negative: `ambient[c]`) draws row 2's colour.
+        let tables = f.renderer.tables
+        XCTAssertEqual(f.renderer.particles.ambient, tables.ambient[2])
+        XCTAssertEqual(flat.renderer.particles.ambient, flat.renderer.tables.ambient[0])
+        let c = try XCTUnwrap((1...255).first { tables.ambient[2][$0] != UInt8($0) && tables.ambient[2][$0] != tables.ambient[0][$0] })
+        var p = f.renderer.particles
+        var ports = FramePorts(fill: 0xff)
+        ports.frame = [UInt8](repeating: 0, count: ports.frame.count)
+        p.draw([ParticleDraw(slot: 0, kind: -Int16(0x100 + c), age: 1, shape: 1, v: 50, h: 100)], scroll: (h: 0, v: 0),
+               ports: &ports)
+        XCTAssertEqual(Set(ports.frame.filter { $0 != 0 }), [tables.ambient[2][c]], "lit kind 0x\(String(0x100 + c, radix: 16)): row 2")
+    }
+
     /// 6A-L18: the Chief's activation on the real level with real pictures (BOS §9.3, D61.3) — level 18 through the
     /// level runner with the renderer-backed services (`LevelFixtureServices`: the wake rectangle is his picture's
     /// opaque bounds), seed 1, LEFT held from the level start: he is active on the first frame (the camera's pan), idle
