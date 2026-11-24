@@ -69,7 +69,10 @@ Things run 67 learned that the next seat needs:
 
 ## Cleaned up
 - This run's worktree `exciting-panini-fdb834` (under `Aki/.claude/worktrees/`): 1.3 GB, of which 1.1 GB were
-  build folders; its seven commits are on main. Removed with its branch and the `HectorKit` link beside it.
+  build folders; its seven commits are on main. Its git registration, its branch and the `HectorKit` link
+  beside it are removed. **About 560 MB of its files are still on disk** in that folder: the app's safety check
+  refused the final delete of a session's own working folder, so Ben (or the Coordinator) removes the folder
+  `Aki/.claude/worktrees/exciting-panini-fdb834` by hand. Nothing in it is unmerged.
 - The scratch folder: the suite copy, the sweep copy, every log and sweep output folder were deleted as each check
   passed; the two review files, the reviewer's patch and two small scripts were deleted at the close. The Mac app
   build's cache was written to the scratch folder and deleted there (no Xcode DerivedData folder was made).

@@ -61,7 +61,8 @@ Settled history lives in docs/STATE-history.md.
   follow-ups, Q13.
 - **Owed by day:** the muted boot check of level 20 (D42: never 21:00–09:00); Proof B and the Mac SDL smoke at the
   wave end.
-- **Worktrees:** run 67's `exciting-panini-fdb834` (under `Aki/.claude/worktrees/`) was removed at its close.
+- **Worktrees:** run 67's `exciting-panini-fdb834` (under `Aki/.claude/worktrees/`) is unregistered and its branch
+  deleted, but about 560 MB of its files remain in that folder (the app refused the last delete): remove by hand.
   `compassionate-leavitt-7ca958` is run 53's (merged; it was run 49's before). `gallant-brahmagupta-56ed81` (run 52),
   `eager-fermat-db9ed9` (run 51), `hungry-bun-395f55` (run 50; `out/` holds the latest stages), `nifty-mendel-0ad40e`
   (run 48), `ferazel-run-47-e0431c` and `ferazel-run-44-7428b3` are finished and merged — Ben or their sessions
