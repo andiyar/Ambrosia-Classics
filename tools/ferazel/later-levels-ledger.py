@@ -301,10 +301,15 @@ def _port_arm(t, cls, ps, n1):
                     'spring (W2b); its Setup marks cache set 0x47e/0x47f (M l. 62047, 62187) — not in '
                     f'CachedFaces ({anchor(LR, r"static func marks")})')
         if 0x5c8 <= t <= 0x5d1:
+            # 6A-MP: modes 1–2 (the programmed path) set up — the Setup arm `setupPath` (called from `setupMace`) and
+            # the Handle arm `pathMace`, both on the one `ProgrammedPath`. Anchored on the Swift as written: a
+            # removed arm (or call) fails --check.
             modes = sorted(set(0xb if p == 0 else p for p in p1s))
             if any(m in (1, 2) for m in modes):
-                return (REFUSED, anchor(SF, r'case 0x5c8\.\.\.0x5d1:', r'guard !\(1\.\.\.2\)\.contains\(mode\)'),
-                        f'mace modes {modes}: modes 1–2 (programmed path) refused')
+                return (BUILT_S, anchor(SF, r'case 0x5c8\.\.\.0x5d1:'),
+                        f'mace modes {modes} (W2a; 6A-MP: modes 1–2 the programmed path — Setup '
+                        f'{anchor(BG, r"if 0 < mode && mode < 3 \{ setupPath\(")}, Handle '
+                        f'{anchor(BG, r"if 0 < mode && mode < 3 \{ pathMace\(")})')
             return (BUILT_S, anchor(SF, r'case 0x5c8\.\.\.0x5d1:'), f'mace modes {modes} (W2a)')
         if 0xa8c <= t <= 0xaef or 3000 <= t < 0xbc2:
             arm = anchor(SF, r'case 0xa8c\.\.\.0xaef:') if t <= 0xaef else anchor(SF, r'case 3000\.\.<0xbc2:')
