@@ -1101,13 +1101,13 @@ final class DrawModeAuditTests: XCTestCase {
     /// because dynamic-light sprites are placed there and do read the byte — level 20: every cell −1, 28 blades 0xbf4
     /// (M l. 63526) and the radial maces' balls and chains (M l. 63171, 56001). The original's arm there forms
     /// `0xbff00 + F` for a light made in play (F ≥ 1) and reads its shading table at an address that holds no fixed
-    /// data (`.BlitEncFaceTransClip`, M l. 23277–23286); the port forms the F 0 word instead (known deviation 7). The
+    /// data (`.BlitEncFaceTransClip`, M l. 23277–23289); the port forms the F 0 word instead (known deviation 7). The
     /// failures of the proof that every word the arm forms on the level is then defined — empty when it holds:
     /// (1) as D64's (1) — the darkness switch is 0 and every other reader of the byte is gated by it (`darknessGated`);
     /// (2) the only byte outside the ambient rows is −1 (`.GetLightTile` is the cell's high byte − 1: no other value
     ///     below 0 exists; a byte past the rows would make an arm word with an out-of-range L);
     /// (3) the arm (`SpriteSlot.applyDynamicLight`) keeps its guard (`unlitArmGuard`, one line), and for L = −1 forms
-    ///     the word 0 for every F 0…0xff — every F the level can make: F = v + a light's colour with v 0…11
+    ///     0 for every F 0…0xff (every other L its word as read) — every F the level can make: F = v + a light's colour with v 0…11
     ///     (`.GetFakeLight`) and every colour of the level's Setups and run ≤ 99 (`.lightIndexInRange`), so F ≤ 110;
     /// (4) its scripted run drew no word the original's arm makes from such a byte (0xbff00 + F) and ran its steps.
     /// Where it holds, `armLightBytes` leaves the byte out: its word is row `SpriteSlot.swift:609`'s 0, drawn there.
@@ -1122,9 +1122,9 @@ final class DrawModeAuditTests: XCTestCase {
         if guards.count != 1 { out.append("(3) `\(unlitArmGuard)` appears \(guards.count) times in SpriteSlot.swift") }
         var slot = SpriteSlot(type: 0xbf4, x: 0, y: 0, face: FaceRef(pict: 0xbf4, index: 0, set: .encoded))
         slot.dynamicLight = true
-        for F in 0...0xff where slot.applyDynamicLight(lightTile: -1, fakeLight: F) != 0 {
-            out.append("(3) the arm forms \(hex(slot.mode)) for L −1, F \(F)")
-        }
+        for L in -1..<ambient { for F in 0...0xff where slot.applyDynamicLight(lightTile: L, fakeLight: F)
+            != (L == -1 || L < 1 && F < 1 ? 0 : UInt32(truncatingIfNeeded: L * 0x100 + 0xc0000 + F)) {
+            out.append("(3) the arm forms \(hex(slot.mode)) for L \(L), F \(F), not the word as read") } }
         let colours = Set(setups.compactMap { $0.light?.colour }).union(seen.lightColours.map(Int.init))
         if let top = colours.max(), 11 + top > 0xff { out.append("(3) a light colour \(top): F can pass 0xff") }
         // (4) The run.

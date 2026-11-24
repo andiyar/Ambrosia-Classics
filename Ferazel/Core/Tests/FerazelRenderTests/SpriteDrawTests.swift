@@ -454,7 +454,7 @@ final class SpriteDrawTests: XCTestCase {
     /// D67.1 (6A-L20; known deviation 7): a dynamic-light sprite — the blade 0xbf4 here — lit by a light made in play
     /// (F ≥ 1) on a "no light" cell (light byte −1, every cell of level 20) is drawn as with F 0: plain, unlit. The
     /// original forms `0xbff00 + F` there (`.WrapDrawSprites`' `+0x89` arm, M l. 10320–10331) and reads its shading
-    /// table at an address that holds no fixed data (`.BlitEncFaceTransClip`, M l. 23277–23286; rotated, no table at
+    /// table at an address that holds no fixed data (`.BlitEncFaceTransClip`, M l. 23277–23289; rotated, no table at
     /// all), so there is no picture to copy. Every defined light word is formed and drawn as before.
     func testBladeLitOnNoLightCellDrawsUnlit() throws {
         let f = try fixture()
@@ -493,6 +493,15 @@ final class SpriteDrawTests: XCTestCase {
         XCTAssertEqual(blade(0, 5, rotation: 0).mode, 0xc0005)
         XCTAssertEqual(blade(2, 5, rotation: 0).mode, 0xc0205)
         XCTAssertEqual(blade(3, 0, rotation: 0).mode, 0xc0300)
+        // Review leg 2: every L the arm can see (−1 and the 16 ambient rows) with every F 0…0xff — only L −1 with F ≥ 1
+        // changes; every other word is the original's (`L < 1 && F < 1` → 0, else 0xc0000 + L·0x100 + F).
+        var wrong: [String] = []
+        for L in -1...15 { for F in 0...0xff {
+            let want: UInt32 = L == -1 || (L < 1 && F < 1) ? 0 : UInt32(L * 0x100 + 0xc0000 + F)
+            let got = blade(L, F, rotation: 0).mode
+            if got != want { wrong.append("L \(L) F \(F): \(String(got, radix: 16))") }
+        } }
+        XCTAssertEqual(wrong.prefix(4), [], "\(wrong.count) arm words not as read")
         // The pictures, unrotated and rotated: the −1 cell lit is the −1 cell unlit, pixel for pixel; a defined lit
         // draw (the light slab (2, 5)) still differs from it, so the comparison can fail.
         for rot: Int16 in [0, 8, 90, 352] {

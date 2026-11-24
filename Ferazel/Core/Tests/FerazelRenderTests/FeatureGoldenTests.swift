@@ -627,8 +627,8 @@ final class FeatureGoldenTests: XCTestCase {
     /// - Frame 1 is a first-load frame, and there the port knowingly differs from the original: on a level's first
     ///   load the original's cloud Setup copies the placeholder PICT 150 face (the cached face is not loaded yet), so
     ///   the original would still show placeholders here, while the port draws the loaded cloud faces (the ruled port
-    ///   difference noted at `SetupFaces.swift:21`, `FaceSource.setupCached`). The frame-1 value pins that difference;
-    ///   it is the value the level-20 opening task (6A-L20) deletes (ENG §2.8 "First level / golden").
+    ///   difference noted at `SetupFaces.swift:21`, `FaceSource.setupCached`). 6A-L20 deleted the frame-1 pin here
+    ///   (ENG §2.8 "First level / golden"); frame 1 is still drawn and proved by its twin.
     /// - Frame 2 matches the original: the clouds' first Handle has re-read their faces from the loaded cache. It is
     ///   the value that is kept.
     func testLevel20CloudFeatureGolden() throws {
@@ -662,7 +662,6 @@ final class FeatureGoldenTests: XCTestCase {
         XCTAssertEqual([frames[0].clouds.count, moved], [164, 164], "all 164 drawn (none idled), all moved")
         XCTAssertEqual(changed, [25886, 31081], "the screen bytes the clouds changed")
         XCTAssertEqual(String(twin[0].fnv, radix: 16), "8964bdab39954f49", "frame 1 with no cloud drawn")
-        XCTAssertEqual(String(frames[0].fnv, radix: 16), "9f0b821fbbc60084", "the level-20 cloud feature golden")  // frame 1: the port difference; 6A-L20 deletes it
         // Frame 2: matches the original (faces re-read by the first Handle); kept.
         XCTAssertEqual(String(twin[1].fnv, radix: 16), "4679418e47ef711b", "frame 2 with no cloud drawn")
         XCTAssertEqual(String(frames[1].fnv, radix: 16), "37eb1f7eb12e8f76", "frame 2, the parallax applied")
@@ -726,7 +725,7 @@ final class FeatureGoldenTests: XCTestCase {
     /// it. Each is proved by its twin with every blade draw removed, which differs, while frame 1 does not; the twin is
     /// also the fixture with the 28 blades left out as well (the same three frames byte for byte), so the blades change
     /// nothing in these frames but their own pixels. Every blade here sits on a light byte −1 (level 20's grid is all
-    /// −1) with no light near: L < 1 and F < 1 → `+0xb8 = 0`, a plain rotated copy (D64.6: the F ≥ 1 word is refused).
+    /// −1) with no light near: L < 1 and F < 1 → `+0xb8 = 0`, a plain rotated copy (D67.1: an F ≥ 1 word there is formed as F 0's).
     func testLevel20BladeFeatureGolden() throws {
         let real = try LevelFile.load(from: try LevelFixture.base.get(), level: 20)
         let out = try LevelFixture.leftOut(real, Self.level20Blades)

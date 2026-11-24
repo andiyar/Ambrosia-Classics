@@ -4,14 +4,14 @@ import HectorResources
 
 /// 6A-L20 (docs/superpowers/plans/2026-11-04-ferazel-remainder.md `#### 6A-L20`): level 20 "Hangnabit" enterable —
 /// every one of its 333 records sets up (26 types; LL §4 "Level 20"; the clouds, the blades and the path maces built by
-/// 6A-CL / 6A-BD / 6A-MP, none refused), the clouds' 328 draws in the spawn's stream (draws 2…329: one draw comes
-/// first), its header as read (music 15, no chapter card, the start, every other switch 0), the picture cache's marks
+/// 6A-CL / 6A-BD / 6A-MP, none refused), the clouds' 328 draws in the spawn's stream (from its 2nd draw to its 421st,
+/// the Xichron crystals' 92 among them), its header as read (music 15, no chapter card, the start, every other switch 0), the picture cache's marks
 /// and load bar, `BuiltLevels.list` = [1…5, 10, 11, 15, 18, 20], the way on (level 20's exit to node 21, not built),
 /// the hang glider's marks and the wind. The parameter trace ("Every level task"): every built type placed here whose
 /// p1…p4 take a value no level 1–5, 10, 11, 15 or 18 record of that type has, and the types the card names, each
 /// traced through its Setup / Handle arm in the dump and pinned by one assert inside `testLevel20SetsUpEveryRecord`.
 /// The level's first frame is `LevelFrameGoldenTests.testLevel20FirstFrameGolden`. A lit blade on this level's "no
-/// light" grid is drawn unlit (D67.1, known deviation 7: `SpriteDrawTests.testBladeLitOnNoLightCellDrawsUnlit`).
+/// light" grid — any dynamic-light sprite — is drawn unlit (D67.1, known deviation 7: `SpriteDrawTests.testBladeLitOnNoLightCellDrawsUnlit`).
 /// Against the committed `Resources/Ferazel` (D26); a missing data file is a FAILURE, never a skip. Proof-B rules:
 /// plain Swift, no `@MainActor` class, no Foundation string search.
 final class LevelTwentyTests: XCTestCase {
@@ -315,6 +315,20 @@ final class LevelTwentyTests: XCTestCase {
             return before
         }
         XCTAssertEqual(w.active.sprite(id: pid)?.windScale, 0x100)
+        // Review leg 2 — the twin out of the wind, first (no ramp carried in). Every cell with o1 0…15 has o2 > 0 here,
+        // so the twin is the first cell in reading order whose o1 is past 15 (an overlay the branch passes over): no
+        // `+0x92`, no push.
+        var calm: (col: Int, row: Int)?
+        for row in 0..<L.overlay.height where calm == nil { for col in 0..<L.overlay.width where calm == nil {
+            let o1 = L.overlay1(col: col, row: row)
+            if o1 > 15 { calm = (col, row) }
+        } }
+        let still = try XCTUnwrap(calm)
+        let beforeCalm = put(col: still.col, row: still.row)
+        let afterCalm = try XCTUnwrap(w.active.sprite(id: pid))
+        XCTAssertFalse(afterCalm.inWind)
+        XCTAssertEqual([still.col, still.row, Int(afterCalm.x256 - beforeCalm.x256), Int(afterCalm.vy - beforeCalm.vy)],
+                       [153, 3, 0, 0], "measured: the calm cell; no push")
         let before = put(col: cell.col, row: cell.row)
         let after = try XCTUnwrap(w.active.sprite(id: pid))
         XCTAssertTrue(after.inWind)

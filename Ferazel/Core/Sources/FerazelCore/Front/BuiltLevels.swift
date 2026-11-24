@@ -8,8 +8,8 @@ import Foundation
 /// "Unemployed In Greenland" and level 11 "River of Fears", every record set up; 6A-L15: level 15 "Storm Valley", every
 /// record set up, its rain, thunder and side push built by 6A-RN; 6A-L18: level 18 "Goblin Chief", every record set up,
 /// the Chief whole since 6A-CH1 / 6A-CH2, the ripple built by 6A-RP; 6A-L20: level 20 "Hangnabit", every record set
-/// up, its clouds, blades and path maces built by 6A-CL / 6A-BD / 6A-MP, a lit blade on its unlit grid drawn plain
-/// (D67.1)). The map's choice of a
+/// up, its clouds, blades and path maces built by 6A-CL / 6A-BD / 6A-MP, a play-lit dynamic-light sprite on its unlit
+/// grid drawn plain (D67.1)). The map's choice of a
 /// level not in the list is refused with `notBuiltReport(_:)` (the only invented text, D35) and the map is entered
 /// again at the same node; `GameFlow.startLevel` (the hidden `FerazelLevel` switch) must name a level in it. Every
 /// reader asks `contains(_:)`.

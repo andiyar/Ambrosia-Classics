@@ -2452,7 +2452,7 @@ ids; its `--check` reads this table):
     Fable usage 75% and the seat's context past 210k at the close).
   - **Owed on:** **level 20's light grid is also all −1 (19,200 cells) and its 28 blades (type 3060) do take
     dynamic light** — the original really reaches the word `0xbff00 + F` there, which reads the grey-pull table far
-    before its start (`.BlitEncFaceTransClip`, M l. 23277–23286), so the port has no defined picture to copy.
+    before its start (`.BlitEncFaceTransClip`, M l. 23277–23289), so the port has no defined picture to copy.
     6A-BD must rule on it before it measures its fixture, and 6A-L20's audit proof will not hold as written.
     Level 15's audit run never puts the held item under a liquid.
 
@@ -2497,7 +2497,8 @@ ids; its `--check` reads this table):
   the interrupted seat's own logs at b2107bc, the M–Z part re-run 2026-11-24 on the same tree), GW2 87, G5,
   GW1 0 / 2, GW3 0 / 1, GW4, ledger OK. Measured: 164 clouds on level 20 only (44 / 44 / 32 / 44), all p1…p4 0;
   their Setups are the level's draws 2…329 (one draw comes first — records 0 and 1 — so 6A-L20's "328 first in the
-  stream" is wrong by one draw); the load bar `[10, 51, 102, 10]` → `[14, 55, 110, 14]`; the picture: frame 1
+  stream" is wrong by one draw; *corrected by 6A-L20's review:* 23 Xichron crystals — type 1055, 4 draws each, 92 in
+  all — fall among the clouds, so the cloud draws end at the 420th and 421st, not the 329th); the load bar `[10, 51, 102, 10]` → `[14, 55, 110, 14]`; the picture: frame 1
   `9f0b821fbbc60084` (twin `8964bdab39954f49`), frame 2 `37eb1f7eb12e8f76` (twin `4679418e47ef711b`). Card
   errors: `:430` was the spikes' case (the refusal was the Background `default: throw`); the audit has no layer
   input, so no 0x7ef4 writer row exists; ENG §2.8's "before this frame's `.FindUpperLeftCorner`" is wrong — the
@@ -2603,7 +2604,8 @@ ids; its `--check` reads this table):
   cell is drawn plain and unlit (the F 0 draw) instead of refused, a named known deviation, with its own test and
   the audit's replacement proof for level 20 (run 64's "no dynamic-light sprite can exist here" does not hold);
   Ben may overrule the choice (the Coordinator mailbox, Q1) — read it first. (2) The 328 cloud draws are the
-  level's draws 2…329, not the first. (3) The clouds' frame-1 picture and the blade Setup face are first-frame
+  level's draws 2…329, not the first. *Corrected by 6A-L20's review:* 23 Xichron crystals (type 1055, 4 draws each,
+  92 in all) fall among the clouds, so the cloud draws run from the 2nd to the 420th and 421st. (3) The clouds' frame-1 picture and the blade Setup face are first-frame
   hazards (see their As executed). (4) The mace trace gains record 267 when the picture is deleted.
 
 #### 6A-PS — minor — the pipes' level spawn (→ 795)
@@ -2779,12 +2781,13 @@ level file — each card says which.
    Never reached in normal play (it needs 700 live sprites); 6A-W1 and 6A-CH1 build it for the bosses as BOS §1.1
    says (the Warrior's crate block tests for a null result, M l. 73152–73160). A dropped spawn is
    silent, so 6A-W1 adds `SpriteWorld.refusedSpawns` and every level task asserts it 0.
-7. **A lit blade on a "no light" cell is drawn unlit** (D67.1, built at 6A-L20). Level 20's light map is "no light"
-   everywhere (every cell −1). Some sprites take their light from the light near them — the rotating blades, and the
-   radial maces' balls and chains. When a light made during play (a shot of the player's passing a blade's hub,
+7. **A sprite lit by a play-made light on a "no light" cell is drawn unlit** (D67.1, built at 6A-L20). Level 20's
+   light map is "no light" everywhere (every cell −1). Some sprites take their light from the light near them — the
+   rotating blades, the radial maces' balls and chains, the rafts and the boulders: every sprite that takes play-made
+   light, not only the blades. When a light made during play (a shot of the player's passing a blade's hub,
    a Gremlin's drop, an explosion, an opened box's item) falls on one of them there, the original works out a draw
    setting from "no light" plus that light (`0xbff00 + F`, M l. 10320–10331) that sends its shading-table read to an
-   address holding no fixed data (`.BlitEncFaceTransClip`, M l. 23277–23286; rotated, no table at all). What it
+   address holding no fixed data (`.BlitEncFaceTransClip`, M l. 23277–23289; rotated, no table at all). What it
    showed depended on whatever happened to be in memory, so there is nothing to copy. The port draws the sprite as it
    looks with no light near (the same draw as F 0): plain, unlit (`SpriteSlot.applyDynamicLight`;
    `SpriteDrawTests.testBladeLitOnNoLightCellDrawsUnlit`; the draw-mode audit's `unlitDrawProof`). Every other light

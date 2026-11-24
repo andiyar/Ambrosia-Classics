@@ -602,7 +602,7 @@ public struct SpriteSlot: Equatable, Sendable {
     /// `0xbff00 + F`, mode 0xb). The result is written back to `+0xb8` and returned; without `+0x89` the stored word.
     /// Known deviation 7 (D67.1): that L = −1 word (F 1…0xff — a light made in play on a "no light" cell, every cell of
     /// level 20) reads the shading table at an address holding no fixed data (`.BlitEncFaceTransClip`, M l.
-    /// 23277–23286), so the port forms the F 0 word instead: the sprite is drawn plain, unlit. Every other word as read.
+    /// 23277–23289), so the port forms the F 0 word instead: the sprite is drawn plain, unlit. Every other word as read.
     public mutating func applyDynamicLight(lightTile L: Int, fakeLight F: Int) -> UInt32 {
         guard dynamicLight, face != nil else { return mode }
         if L < 1 && F < 1 || L == -1 && F < 0x100 {
