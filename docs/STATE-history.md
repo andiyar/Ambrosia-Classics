@@ -4,6 +4,16 @@
 > only). Nothing current reads this file; the live state is `docs/STATE.md`. Each later close that settles something
 > adds a dated section at the top, newest first. The two snapshots below are verbatim (headings demoted only).
 
+## Settled at Ferazel run 68's close (2026-11-25)
+
+- Run 67's state named the pipes' level spawn (6A-PS) as next. Done: on main at ed50fba (Core 795 → 797, WinKit 88
+  unchanged), with the restart case built (D69.1).
+- Two old carries closed: the pipe's written-back p2 is now asserted in the live records (from run 47), and
+  `setupPipe` is wired into the level spawn (from run 46).
+- Run 67's numbers at fcea130: G2 795 (793 passed, 2 opt-in skips), GW2 88; ladder then 795 → 796 → 799 → 811 → 815.
+- Run 67's goldens note: level 20's new values are in the plan's "Goldens" paragraph; the mace-path picture and the
+  cloud fixture's frame-1 pin were retired (D68.3).
+
 ## Settled at Ferazel run 67's close (2026-11-25)
 
 - Run 66's state named level 20 as still closed and the lit blade (D67.1) as "must be built inside 6A-L20". Both

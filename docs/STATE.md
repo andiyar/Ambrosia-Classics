@@ -7,7 +7,7 @@ Settled history lives in docs/STATE-history.md.
 > numbers and open items and moves anything settled to the top of `docs/STATE-history.md`; it never appends a run story
 > here. Forks go in `docs/DECISIONS.md`, narrative in the handoff. Re-verify before acting.
 
-## Ferazel's Wand — 2026-11-25 (attended run 67 closed: level 20 "Hangnabit" is playable on main; the pipes' level spawn heads run 68)
+## Ferazel's Wand — 2026-11-25 (attended run 68 closed: the enemy pipes now spawn from the level; level 21 heads run 69)
 
 - **Where it stands:** Phase 5 "Enemies" is closed on the machine side — **Ben's gate pending (Q18)**. Phase 6A
   "through the Goblin Chief" is being built (the plan: "Wave 5 — Phase 6A" in the one plan file; rulings D46–D49, D51,
@@ -23,9 +23,11 @@ Settled history lives in docs/STATE-history.md.
   and its checksum are in `releases/ferazel-windows-test-5/`.
 - **Staged builds on the Desktop are old** (game code as e9183ce, run 50): they still show the stand-in Warrior and no
   level past 5. The next stage is the 6A phase end unless Ben asks for one.
-- **Next:** run 68 = **6A-PS** (the pipes' level spawn, Core → 796), then **6A-L21** (level 21 opens, → 799, WinKit
-  → 89, the full sweep and bot on eleven levels), then 6A-CP, 6A-L22, the phase end. None waits for Ben's Phase 5
-  verdict.
+- **The enemy pipes (run 68):** the pipes that push enemies out — first placed on level 21 — are now set up by
+  the level itself, as the original does it, including the case of a level restart (D69.1). Level 21 is not open
+  yet, so nothing a player can reach has changed.
+- **Next:** run 69 = **6A-L21** (level 21 opens, Core → 800, WinKit → 89, the full sweep and bot on eleven levels),
+  then 6A-CP, 6A-L22, the phase end. None waits for Ben's Phase 5 verdict.
 - **How long checks run under the Coordinator** (commands cut off at ten minutes): the suites in parts, the sweep one
   level group a command (levels 3 and 4 apart on the Windows path), the bot one command a shell (D59.4, D60.4); only
   the Windows test script may run detached (D59.1). The longest commands now: the draw audit for levels 1–5 with
@@ -36,33 +38,33 @@ Settled history lives in docs/STATE-history.md.
 - **Ben's gates:** Phase 1 passed; Phases 2 and 3 passed with notes; Phase 4 passed (Fireball note) and the Windows
   twin passed on Andrew's word (2026-11-07); **Phase 5 waiting (Q18)**. Then three gated Phase 6 parts (6A to the Goblin
   Chief, 6B to the Wizard and the fire, 6C the whole game), then one release `ferazel-1.0`.
-- **Current numbers** (all the seat's own runs of run 67, 2026-11-25, at fcea130, except Proof B and the smoke,
-  which are run 64's at a66d567, and GW6 / G9M, last passed in run 50):
+- **Current numbers** (the seat's own runs of run 68, 2026-11-25, at ed50fba, except: the sweep and bot, which are
+  run 67's at fcea130 (levels 1–5, 10, 11, 15, 18, 20; the pipes are on none of them); the census, run 67's; Proof B
+  and the smoke, run 64's at a66d567; GW6 / G9M, last passed in run 50):
 
 | gate | value |
 |---|---|
-| Ferazel/Core suite (G2) | **795** = 618 rules + 177 render; 793 passed, 0 failed, 2 opt-in skips by name: `FerazelRenderTests.VisitSweepTests testVisitEveryObject`, `FerazelRenderTests.RandomPlayTests testRandomPlay`; foreground parts, about 45 min (rules 128 s; A–C 305; D–E without the audit 57; F–K 236; the L classes without `LevelSweepTests` 98; `LevelSweepTests` 281; M–Z 154; the audit, both tests together: levels 1–5 411, level 18 88, level 20 207; levels 10, 11, 15 one test a command 363 + 367) |
-| FerazelWinKit (GW2) | **88**; 86 passed, 0 failed, 2 opt-in skips (`WinVisitSweepTests testVisitEveryObjectThroughWinGame`, `WinRandomPlayTests testRandomPlayThroughWinGame`); nine foreground parts (B 317 s, F\|T 178, Win D\|F\|G 322, Win O\|R\|S\|V 153, the five level references 182 / 162 / 129 / 131 / 132), about 28 min |
+| Ferazel/Core suite (G2) | **797** = 620 rules + 177 render; 795 passed, 0 failed, 2 opt-in skips by name: `FerazelRenderTests.VisitSweepTests testVisitEveryObject`, `FerazelRenderTests.RandomPlayTests testRandomPlay`; foreground parts, about 45 min (rules 130 s; A–C 306; D–E without the audit 57; F–K 242; the L classes without `LevelSweepTests` 99; `LevelSweepTests` 280; M–Z 166; the audit: levels 1–5 one test a command 203 + 207, level 18 both tests 89, level 20 both 205, levels 10, 11, 15 one test a command 360 + 363) |
+| FerazelWinKit (GW2) | **88**; 86 passed, 0 failed, 2 opt-in skips (`WinVisitSweepTests testVisitEveryObjectThroughWinGame`, `WinRandomPlayTests testRandomPlayThroughWinGame`); nine foreground parts (B 317 s, F\|T 179, Win D\|F\|G 308, Win O\|R\|S\|V 148, the five level references 173 / 152 / 122 / 123 / 125), about 27 min |
 | census (G3) | items 1,108 decoded, failures 0 |
 | visit sweep (GE, levels 1–5, 10, 11, 15, 18, 20, both shells) | core 8,524 visits, windows 8,524 visits, rows 0 on both (1,786 s in seven commands + 2,019 s in eight) |
 | random-play bot (GE, the same 10 levels, both shells) | core and windows each: steps 216,000, deaths 34, exits 323, conversations 33, saves 3, failures 0 (98 s, 119 s) |
 | Proof B in CrossOver, muted (GWB) | **761 passed / 0 failed / 3 skipped / 0 crashed (of 764)** — run 64's; not run on the 31 tests added since (owed at the wave end, by day) |
 | Mac SDL smoke (GW4R) | exit 0, main menu identical, `video=dummy audio=none` (run 64) |
-| GW1 / GW3 / GW4 / G5 | 0 then 2 / 0 then 1 / Build complete! / BUILD SUCCEEDED (run 67, at fcea130) |
+| GW1 / GW3 / GW4 / G5 | 0 then 2 / 0 then 1 / Build complete! / BUILD SUCCEEDED (run 68, at ed50fba) |
 | HectorKit (G1) | main **ef2c341**, clean; zero-skip executed **370**; Ferazel follows HectorKit main |
-| ladder from here | 795 → PS 796 → L21 799 → CP 811 → L22 815 at the 6A end; WinKit 88 → 90 (every Core number is one above the original plan: the lit-blade fix has its own test, D68.1) |
+| ladder from here | 797 → L21 800 → CP 812 → L22 816 at the 6A end; WinKit 88 → 90 (every Core number is two above the original plan: the lit-blade fix, D68.1, and the pipes' restart fix, D69.1, each have their own test) |
 
-- **Goldens (◈):** no existing value moved in run 67. Level 20's new values (first frame, Windows reference, boot
-  faces, the mace trace's record 267) are in the plan's "Goldens" paragraph; the mace-path picture and the cloud
-  fixture's frame-1 pin were retired (D68.3).
+- **Goldens (◈):** no existing value moved in run 68 and none was added (the pipes task has no picture).
 - **Waiting on Ben:** the Coordinator mailbox **Q1** (what a lit blade on level 20 shows; "plain and unlit" is built
   and stands unless he says otherwise). QUESTIONS.md "Open": **Q18 (the Phase 5 gate)**, Q21 (may the sweep and bot
   run detached — not blocking), Q19 (three small choices in the 6A plan), Q17, Q16 (defaults stand), Q15's
   follow-ups, Q13.
 - **Owed by day:** the muted boot check of level 20 (D42: never 21:00–09:00); Proof B and the Mac SDL smoke at the
   wave end.
-- **Worktrees:** run 67's `exciting-panini-fdb834` (under `Aki/.claude/worktrees/`) is unregistered and its branch
-  deleted, but about 560 MB of its files remain in that folder (the app refused the last delete): remove by hand.
+- **Worktrees:** run 68's `brave-cori-3f4ae7` (under `Aki/.claude/worktrees/`) was removed at its close. Run 67's
+  `exciting-panini-fdb834` beside it is unregistered and its branch deleted, but about 560 MB of its files remain
+  in that folder (the app refused the last delete): remove by hand.
   `compassionate-leavitt-7ca958` is run 53's (merged; it was run 49's before). `gallant-brahmagupta-56ed81` (run 52),
   `eager-fermat-db9ed9` (run 51), `hungry-bun-395f55` (run 50; `out/` holds the latest stages), `nifty-mendel-0ad40e`
   (run 48), `ferazel-run-47-e0431c` and `ferazel-run-44-7428b3` are finished and merged — Ben or their sessions
@@ -74,6 +76,14 @@ Settled history lives in docs/STATE-history.md.
 - **Known deviation of muted launches (D44 As built run 48 (d)):** a muted run draws the random stream differently
   from an audible one; boot checks only.
 - **Open carries** [LOW unless marked]:
+  - From run 68: **[MED] what a level restart does to other objects' touch areas.** The original keeps a level's
+    pictures loaded across a restart, so anything whose Setup measures itself from a cached picture gets its real
+    size on a restart and a 64 × 64 stand-in size on a first load. The port now does this for the pipes only
+    (D69.1); the other types that read a cached picture at Setup still always get the stand-in size (their idle
+    bounds) — unread against the dump, on built levels too; a short reading task, not yet in the plan. Small ones:
+    the throwaway-world set-up is copied in three places; the renderer's own Setup pass runs without the level
+    spawn (a pipe set up there gets no throwaway child; nothing draws from it); the ledger's owner column still
+    says "level 21 pipe wiring"; the plan's line 745 still carries the old pipe dump lines.
   - From run 67: the draw audit checks the lit-blade guard by its exact source text, so a harmless rewrite fails
     it with a confusing first message; level 20's "no spawn refused" assert cannot fail on its own; in the new
     light test the picture comparisons follow from the equal draw words; a dead store in the candelabra arm of
@@ -181,11 +191,10 @@ Settled history lives in docs/STATE-history.md.
     accepted; the sweep does not clear a reused `OUT`; a worker-exit comment in `tools/ferazel-worker-watchdog.sh`
     overstates when the cleanup runs; the release test covers the sweep's game wrapper only (the bot's has the same shape).
   - From run 47: the 0x7f60 right-opening bound is unreachable on level 5 (untested; the second camera bound is now tested on level 18, run 63); `try!` at
-    `GremlinFloater.swift:298` (safe: Bonus setup throws only for 0xc25 / out-of-table) is outside the census; the
-    `setupPipe` p2 write-back is pinned on the helper's return only (level 21's task asserts it in `w.records`).
+    `GremlinFloater.swift:298` (safe: Bonus setup throws only for 0xc25 / out-of-table) is outside the census.
   - From run 46: a census row marked "trap: unreachable" is not checked to point at a trap
     (`DrawModeAuditTests.swift`); the failure message says "throw" for traps; `try!` ×3 and `assert`
-    (`FrameRenderer.swift`) are not counted by the census. `setupPipe` is not wired into level spawn — level 21's task.
+    (`FrameRenderer.swift`) are not counted by the census.
   - From runs 38–41: the ceiling Crawler keeps the stand-in face 0x6b0 from Setup; both Crawler/Roach Hits read the
     shot-kill light slot before `.KillPlayerShot`'s cleanup; the `+0x160` audit row excludes `AxGoblin.swift` by file;
     the Walker Hit's shot-kill light recolour may belong to the Walker's own light; the egg's 0.9 / −0.15 constants are

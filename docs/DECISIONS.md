@@ -2909,3 +2909,23 @@ should-fix, 8 minor), all folded in; then the seat's cross-check.
 6. **6A-PS was not started:** the seat's context was at 209k after level 20's gates and 240k after the
    close; the task with its two reviews and merge gates would have ended past 270k. It heads run 68.
 
+## D69 — Ferazel's Wand: run 68's rulings (6A-PS — the pipes' level spawn; 2026-11-25)
+
+1. **A pipe's touch area on a level restart is built now, with its own test; the Core ladder moves up by one
+   again.** Review leg 1 read, and leg 2 proved, that the original keeps the pipe pictures loaded across a restart
+   and measures each pipe from its real picture then — (3,3,33,93) or (3,3,93,33) — and from the 64 × 64 stand-in,
+   (3,3,61,61), only on a first load; a child comes out 16 px further right after a restart. Built in the fix
+   round with `testLevel21PipeHotRectOnRestart` (a first-load twin inside). 6A-PS landed on 797 where the card
+   said 796; every later Core number is one higher (L21 800, CP 812, L22 and the phase end 816; Proof B 813 of
+   816). Rejected: carrying it to 6A-L21 (a level task builds no type), or leaving it as a listed deviation.
+2. **The fix round's fence was widened** to `Sources/FerazelCore/Session/FerazelSession.swift` (it hands the
+   loaded picture frames to the Setups) and to `tools/ferazel/later-levels-ledger.py` (the pipes' built arm — the
+   script hard-coded them as refused, and its `--check` could not see that).
+3. **A pipe whose child type the port does not build is refused at the level spawn**, not skipped. The draw
+   audit's refusal count for `SetupFaces.swift` goes 13 → 14, a named edit (as D67.3). The pipe's running code is
+   unchanged.
+4. **The card's "a child across the pipe's idling" does not exist in the original:** pipes are spawned at once and
+   never idled. The test proves instead that the link holds while the child lives and no second child is made.
+5. **Because the fix round changed source, every gate was run after it** (no result from before it was reused).
+6. **6A-L21 was not started:** the seat's context was at 179k when 6A-PS merged, past NEXT's 150k mark for starting
+   a level task. It heads run 69.

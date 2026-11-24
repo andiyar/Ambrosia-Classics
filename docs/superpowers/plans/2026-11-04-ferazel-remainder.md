@@ -1076,11 +1076,11 @@ ENG's "asserts the build task adds" inside its named tests and its `DrawModeAudi
 | 23 | 6A-BD rotating blade | | +13 | 784 | 87 | |
 | 24 | 6A-MP mace paths | | +7 | 791 | 87 | |
 | 25 | 6A-L20 level 20 enterable | | +5 / −1 | 795 (the card's 794 + D67.1's own test, D68.1) | 88 | |
-| 26 | 6A-PS the pipes' level spawn | | +1 | 796 | 88 | |
-| 27 | 6A-L21 level 21 enterable | | +3 | 799 | 89 | |
-| 28 | 6A-CP magic carpet | | +12 | 811 | 89 | |
-| 29 | 6A-L22 level 22 enterable | | +4 | **815** | **90** | **6A.4 end = phase end:** 812 / 0 / 3 / 0 (of 815) |
-| 30 | 6A-END phase end | | 0 | 815 | 90 | (the same, at the staged head) |
+| 26 | 6A-PS the pipes' level spawn | | +2 | 797 | 88 | |
+| 27 | 6A-L21 level 21 enterable | | +3 | 800 | 89 | |
+| 28 | 6A-CP magic carpet | | +12 | 812 | 89 | |
+| 29 | 6A-L22 level 22 enterable | | +4 | **816** | **90** | **6A.4 end = phase end:** 813 / 0 / 3 / 0 (of 816) |
+| 30 | 6A-END phase end | | 0 | 816 | 90 | (the same, at the staged head) |
 
 New tests 198, deleted 4 (the wind, rotating-cannon, rain and mace-path feature goldens), net **+194**. 29 build tasks
 + the phase end; **9 ⚑** (CF, W1, W2, S8, RP, L10L11, RN, CH1, CH2); ◈ W1 and W2 (level 5's goldens) and WD (one
@@ -2657,7 +2657,7 @@ ids; its `--check` reads this table):
     in the new light test the picture equalities follow from the equal words; the candelabra arm in
     `BonusSprite.swift` has a dead store (older than this task); two long doc lines in `LevelTwentyTests.swift`.
 
-#### 6A-PS — minor — the pipes' level spawn (→ 796)
+#### 6A-PS — minor — the pipes' level spawn (→ 797) — ✅ done (run 68)
 - **Files:** `Sources/FerazelCore/World/Movers/BoxSprite.swift` (`setupPipe` `:446` wired into the level spawn; the
   throwaway child), `Sources/FerazelCore/Sprites/SetupFaces.swift` (`:512` — the pipe arm 1490…1493),
   `Sources/FerazelCore/Front/LevelRun.swift` (the pipe singles #6–#9 marked on CF's list),
@@ -2678,10 +2678,50 @@ ids; its `--check` reads this table):
   1860 — is also placed on level 21 (the Fable cross-check's reading; the test asserts each type's placement), so
   `CachedFaces.needed(by:)`, which works from the placed types, already holds them; a child type not placed there is a
   STOP for the seat).
-- **Gate:** Gate-F (G2 796; the bot cannot reach level 21 until 6A-L21 — its quick mode there is 6A-L21's, as for
+- **Gate:** Gate-F (G2 797 — 796 on the card as written, + 1 by D69.1; the bot cannot reach level 21 until 6A-L21 — its quick mode there is 6A-L21's, as for
   6A-CH1). **Commit:** `FerazelCore: the enemy pipes spawn from the level (levels 21 on); 1 test`.
+- **As executed — 6A-PS (run 68, 2026-11-25 03:15 → 05:51, night; nothing launched):** Ferazel/Core 795 → **797**
+  (the card's one test and a second by D69.1). Commits 1e14709 (task), fd65736 (ledger anchors), aec6461 (fix round);
+  merged at ed50fba. One implementer, two Opus legs (19 planted bugs: 15 caught, 3 harmless, 1 test gap closed), a
+  fix round that changed source (so every gate was run after it).
+  - **The level data, checked first:** level 21's six pipes are records 35, 36, 135, 137 (types 1490 / 1491, upright)
+    and 136, 169 (1492 / 1493, lying). Every child type is placed there: 1700 ×5, 1705 ×5, 1730 ×3, 1860 ×5 — no STOP.
+  - **Measured on the fixture (nothing left out):** six throwaway children, each marked dead and counted — live
+    enemies 42 = 36 placed + 6, never taken back; the three Walker children (pipes 36, 135, 136) draw 3 random numbers
+    each, 9 in all, straight after their pipe's own Setup; record 35's p2 0 → 100 **in the live records** (the run-47
+    carry is closed; the other five keep 150, 60, 110, 60, 100); the load bar is 40 steps with or without the
+    children's marks (36 before the four pipe singles were listed); pipe 135 makes its 1705 child on session frame 53.
+  - **Dump over card:** (1) pipes spawn at once and are never idled (M l. 1734 / 1875–1878; only idle-table sprites
+    idle, l. 4349), so the card's "child across the pipe's idling" does not exist — the test shows the link holds
+    while the child lives and no second child is made (D69.4). (2) The throwaway child is made **before** its pipe is
+    inserted (`.MTNewSprite` runs Setup before the insert) — asserted by sprite id. (3) The insect (1860) throwaway
+    leaves its body behind: alive, drawn with cell 8 at the pipe's position, uncounted, no hit — as the original.
+    (4) The card's dump lines were two off: the child call is M l. 59349–59352, `+0xe9 = 1` 59353–59355.
+  - **The restart (D69.1, found by review leg 1, proven by leg 2):** the original clears only each cache record's
+    "needed" byte at a level start (M l. 2520, 73582–73642) and throws unneeded faces away inside the cache load
+    (M l. 73714–73731), which runs after the Setups (2526, then 2537). So on a **restart** of level 21 a pipe's hot
+    rect comes from its real, still-loaded face — (3,3,33,93) for 1490 / 1491, (3,3,93,33) for 1492 / 1493 — and only
+    on a first load from the 64 × 64 placeholder, (3,3,61,61). The port now does both (`SetupFaces.Context` is handed
+    the frames of the already-loaded pipe faces by `FerazelSession.init`, from `LevelRun`'s carried cache).
+    `testLevel21PipeHotRectOnRestart` holds the first-load twin: pipe 135's centre 10674, 1567 → 10690, 1553 and its
+    child's x 10572 → 10588 (16 px) on the restart. A first load is unchanged; no pinned value moved.
+  - **Also in the fix round:** a pipe whose child type the port does not build is refused at the level spawn instead
+    of being skipped (`BoxSprite.generates(type:)`; the audit's `SetupFaces.swift` refusal count 13 → 14, a named
+    edit, D69.3; proven with a patched record); the ledger script's built arm for 1490–1493 (refused totals 7 → 1 on
+    level 21's row group and 211 → 205 overall); leg 2's asserts (child before pipe, a literal table per pipe, the
+    orphan body); the citations.
+  - **Gates (the seat's, at ed50fba = aec6461 + a docs merge, from a `git archive` copy):** G2 **797** = 620 rules +
+    177 render, 795 passed, 0 failed, the two opt-in skips by name; GW2 **88**, 86 passed, 0 failed, the two opt-in
+    skips; G5 BUILD SUCCEEDED; GW1 0 / 2; GW3 0 / 1; GW4 Build complete!; G6 the card's Files + `FerazelSession.swift`
+    and the ledger script (D69.2); G7 / G7b / G8 / G10 empty; ledger `--check` OK. No golden, state pin, fixture
+    picture or Windows reference moved.
+  - **Carries left:** the same "real face on a restart" rule may apply to **other** types whose Setup reads a cached
+    face (their idle bounds still come from the placeholder on a restart) — unread, [MED], see STATE; the throwaway
+    world is now copied in three places; `FrameRenderer`'s own Setup pass runs without the level spawn, so a pipe set
+    up there gets no throwaway child (nothing draws from it); the ledger's owner column still says "level 21 pipe
+    wiring".
 
-#### 6A-L21 — minor — level 21 "Obfuscation & Edification" enterable (→ 799)
+#### 6A-L21 — minor — level 21 "Obfuscation & Edification" enterable (→ 800)
 - **Files:** `Sources/FerazelCore/Front/BuiltLevels.swift` (+ 21), `Tests/FerazelCoreTests/LevelTwentyOneTests.swift`
   (new), `Tests/FerazelRenderTests/{LevelFrameGoldenTests,BootFacesTests,FaceTests}.swift`,
   `Ferazel/Windows/Tests/FerazelWinKitTests/{WinLevelReferenceTests,FerazelSettingsTests}.swift`, the list-pinned tests.
@@ -2696,10 +2736,10 @@ ids; its `--check` reads this table):
 - **Tests (3):** `testLevel21SetsUpEveryRecord` (assert: with an insect 1860 idled, its body keeps its link and keeps
   running — measured over the idle frames) · `testLevel21FirstFrameGolden` · `testBuiltLevelsTwentyOne`. WinKit (+1):
   `testLevel21FirstFrameReference`.
-- **Gate:** Gate-L (G2 799, GW2 89). **Commit:** `Level 21 enterable: Obfuscation & Edification; 3 tests, 1 Windows
+- **Gate:** Gate-L (G2 800, GW2 89). **Commit:** `Level 21 enterable: Obfuscation & Edification; 3 tests, 1 Windows
   reference`.
 
-#### 6A-CP — minor — the magic carpet (→ 811)
+#### 6A-CP — minor — the magic carpet (→ 812)
 - **Files:** `Sources/FerazelCore/World/Movers/BoxSprite.swift` (`:147` the Setup `// later`; `:472` `handleBuilt`;
   `:1521`, `:1594` the wake; the tail `:605–:621` keeps its two exclusions), `Sources/FerazelCore/Sprites/SetupFaces.swift`
   (`:512`, the carpet's face arm), `Sources/FerazelCore/Front/LevelRun.swift` (set #27 0x438 marked), the player's half
@@ -2722,9 +2762,9 @@ ids; its `--check` reads this table):
   `testCarpetVerticalDampingAfterBob` · `testCarpetRideCountAndFlash` · `testCarpetBurstsAtZero` ·
   `testCarpetLevel22NeverCounts` · `testCarpetSteeringMovesCarpet` · `testCarpetExcludedFromBoxTileHits` ·
   `testLevel22CarpetFeatureGolden` (the first frame after the wake, measured; kept). Asserts: ENG §2.11's ten.
-- **Gate:** Gate-F (G2 811). **Commit:** `FerazelCore: the magic carpet; the player's built half proven; 12 tests`.
+- **Gate:** Gate-F (G2 812). **Commit:** `FerazelCore: the magic carpet; the player's built half proven; 12 tests`.
 
-#### 6A-L22 — minor — level 22 "The Labyrinth" enterable (→ 815)
+#### 6A-L22 — minor — level 22 "The Labyrinth" enterable (→ 816)
 - **Files:** `Sources/FerazelCore/Front/BuiltLevels.swift` (`[1, 2, 3, 4, 5, 10, 11, 15, 18, 20, 21, 22]`),
   `Tests/FerazelCoreTests/LevelTwentyTwoTests.swift` (new), `Tests/FerazelRenderTests/{LevelFrameGoldenTests,BootFacesTests,FaceTests}.swift`,
   `Ferazel/Windows/Tests/FerazelWinKitTests/{WinLevelReferenceTests,FerazelSettingsTests}.swift`, the list-pinned tests.
@@ -2742,10 +2782,10 @@ ids; its `--check` reads this table):
   record 283, Mcnv 220 — read in `ConvActions`, measured; assert: when what they write is what enables the dormant
   Dimbo (LL §5), level 11 opened with it sets record 283 up and it talks — Mcnv 220; if the measurement says otherwise,
   the As executed names it an open item for 6B). WinKit (+1): `testLevel22FirstFrameReference`.
-- **Gate:** Gate-L (G2 815, GW2 90). Wave 6A.4 end = the phase end (6A-END). **Commit:** `Level 22 enterable: The
+- **Gate:** Gate-L (G2 816, GW2 90). Wave 6A.4 end = the phase end (6A-END). **Commit:** `Level 22 enterable: The
   Labyrinth; BuiltLevels holds every level through the Goblin Chief; 4 tests, 1 Windows reference`.
 
-#### 6A-END — minor — the phase end: the checks, the relabel sweep, both builds staged, one gate card (→ 815)
+#### 6A-END — minor — the phase end: the checks, the relabel sweep, both builds staged, one gate card (→ 816)
 - **Files:** `Ferazel/WHAT-TO-EXPECT.md` (the 6A card, Mac part), `Ferazel/WINDOWS-WHAT-TO-EXPECT.md` (Windows part —
   one card, two files), any `Ferazel/Core/Sources` file with a stale `// later:` naming a merged 6A task or "Phase 6"
   where a 6A task now owns it (comment-only relabels to the real owner: 6B / 6C task ids), `docs/ferazel/port-gap-ledger.md`
@@ -2759,8 +2799,8 @@ ids; its `--check` reads this table):
   diff (`git diff <phase-start SHA>..HEAD`, Mac + Windows) and the card — it covers wave 6A.4; Opus implementers fix
   its findings; re-stage. **STOP for Ben:** the card goes to QUESTIONS as a new item (the 6A gate, Mac and Windows). The
   next run is the 6B planning run (P6B: the Wave 6 cards expanded the same way), which does not wait for his verdict.
-- **Gate:** G1; G2 815 / 2 named skips; GW2 90 / 2 named skips; G3; G5; GW1–GW4; GW5; GE; by day GWB **812 / 0 / 3 /
-  0 (of 815)**, GW6, G9M. **Commit:** `WHAT-TO-EXPECT: Phase 6A gate card (through the Goblin Chief), Mac and Windows`.
+- **Gate:** G1; G2 816 / 2 named skips; GW2 90 / 2 named skips; G3; G5; GW1–GW4; GW5; GE; by day GWB **813 / 0 / 3 /
+  0 (of 816)**, GW6, G9M. **Commit:** `WHAT-TO-EXPECT: Phase 6A gate card (through the Goblin Chief), Mac and Windows`.
 
 ### Execution order
 
@@ -2785,9 +2825,9 @@ than before; 6A-L10L11 (⚑, the first full GE over seven levels) runs alone in 
 | 58 | 6A-CH1, 6A-CH2 | 2 | 760 / 86 | — |
 | 59 | 6A-L18 (+ the full GE) | 0 | 764 / 87 | **6A.3 "Storm Valley and the Chief"**: GWB 761 / 0 / 3 / 0 (of 764); the cross-check in this run |
 | 60 | 6A-CL, 6A-BD, 6A-MP | 0 | 791 / 87 | — |
-| 61 | 6A-L20, 6A-PS, 6A-L21 (+ the full GE after each level) | 0 | 799 / 89 | — |
-| 62 | 6A-CP, 6A-L22 (+ the full GE) | 0 | 815 / 90 | **6A.4 "Hangnabit to the Labyrinth"** — its cross-check is the phase review |
-| 63 | 6A-END | — | 815 / 90 | the phase end: GE both shells, stages, GWB 812 / 0 / 3 / 0 (of 815), the Fable phase review, the card → Ben |
+| 61 | 6A-L20, 6A-PS, 6A-L21 (+ the full GE after each level) | 0 | 800 / 89 | — |
+| 62 | 6A-CP, 6A-L22 (+ the full GE) | 0 | 816 / 90 | **6A.4 "Hangnabit to the Labyrinth"** — its cross-check is the phase review |
+| 63 | 6A-END | — | 816 / 90 | the phase end: GE both shells, stages, GWB 813 / 0 / 3 / 0 (of 816), the Fable phase review, the card → Ben |
 
 Every dependency holds: CF before every type and level task; FR before W1; FX before S8 and every other fixture user
 (it builds the fixture); S8 before every level-10 feature (it removes the strip's refusal and shifts the slot ids they
