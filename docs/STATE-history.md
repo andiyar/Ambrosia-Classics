@@ -4,6 +4,16 @@
 > only). Nothing current reads this file; the live state is `docs/STATE.md`. Each later close that settles something
 > adds a dated section at the top, newest first. The two snapshots below are verbatim (headings demoted only).
 
+## Settled at Ferazel run 69's close (2026-11-25)
+
+- Run 68's state named level 21 (6A-L21) as next. Done: on main at 63183f8 (Core 797 → 800, WinKit 88 → 89).
+- Run 68's note "the enemy pipes are set up by the level; level 21 is not open yet" is settled: level 21 is open
+  and its six pipes run in it.
+- The run-55 carry "record 283, armed by a level-21 conversation, must appear on a revisit" is closed and was
+  misfiled: the record is level 11's, armed by level 22's conversation 221; the revisit is proven on level 11 (D70.1).
+- Run 68's note that level 21 would be the first built level with the darkness switch on was wrong (D70.2).
+- Levels 20 and 21 were launched muted by day and stayed running; the look at their pictures stays owed.
+
 ## Settled at Ferazel run 68's close (2026-11-25)
 
 - Run 67's state named the pipes' level spawn (6A-PS) as next. Done: on main at ed50fba (Core 795 → 797, WinKit 88

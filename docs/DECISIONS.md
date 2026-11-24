@@ -2929,3 +2929,23 @@ should-fix, 8 minor), all folded in; then the seat's cross-check.
 5. **Because the fix round changed source, every gate was run after it** (no result from before it was reused).
 6. **6A-L21 was not started:** the seat's context was at 179k when 6A-PS merged, past NEXT's 150k mark for starting
    a level task. It heads run 69.
+
+## D70 — Ferazel's Wand: run 69's rulings (6A-L21 — level 21 "Obfuscation & Edification" opens; 2026-11-25)
+
+1. **Record 283 belongs to level 11, not level 21.** The card's carry ("armed by a level-21 conversation") was
+   wrong: only level 22's conversation 221 (action 10) arms it. The revisit is proven on level 11, inside level 21's
+   set-up test, with a dormant twin. The level-22 task owns showing that its conversation does the arming in play.
+2. **"The first built level with the darkness switch on" was wrong** (run 68's note, repeated in NEXT and the
+   brief): levels 1 and 4 hold 5, levels 2, 3 and 10 hold 1. Level 21 brings the value 2 and the first rock outcrop
+   on a cell darker than 7. No audit proof or pin changes: every light byte of level 21 is 0…14, inside the ambient
+   rows. A statement about "first" in a brief is checked against the level data before it is written (D56.1 again).
+3. **The fix round was held to tests and comments and proven so** (empty source diff), so the level-21 sweep run on
+   the task commit stands for the merge (D68.5). One comment in `FrameGoldenTests.swift` (outside the card's Files)
+   was ruled into the fence, comment only.
+4. **The Windows reference carries no darkness twin** — accepted, as for levels 15, 18 and 20: the Windows test
+   path cannot patch a level header, and the Mac golden holds the twin.
+5. **A boot check the seat cannot look at is recorded as "started and stayed running", never as "seen".** Both
+   levels 20 and 21 were launched muted by day and stayed up; the request to view the window was declined, so the
+   look stays owed. The seat does not look for another way to take the picture.
+6. **One heavy command a message.** Five gate commands sent in one message ran at the same time (one audit part
+   took 472 s instead of 360). All passed; the rule "never two heavy things at once" means separate messages.

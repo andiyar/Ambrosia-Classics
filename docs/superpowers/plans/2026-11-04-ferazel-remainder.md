@@ -255,6 +255,11 @@ frame-1 value; without the rain sheets `75d168572f6f029c`); the Windows referenc
 init 209 / `0xdf7d3df30637a1eb`, f30 214 / `0x54da315df4a76b2c`, f120 214 / `0xd37a42bc76b38645`. The rain test
 `testLevel15RainFeatureGolden` is deleted; its frame-2 values live on inside `testLevel15FirstFrameGolden`. No
 existing value moved. **Run 66 (wave 6A.4, fixtures of level 20):** clouds frame 1 `9f0b821fbbc60084`, frame 2 `37eb1f7eb12e8f76`; the blade frame 2 `91d21e527fca201f`; the mace trace `76e08997895b6e89` and picture `eea2913e69628851`; level 20's load bar `[16, 57, 114, 16]`; the audit's `SetupFaces` refusal count 13. **Run 67 (6A-L20, level 20 opens):** level 20's first frame tick 143, camera (0, 640), `9f0b821fbbc60084` (twin without the cloud draws `8964bdab39954f49`), frame 2 `37eb1f7eb12e8f76` (twin `4679418e47ef711b`); Windows reference steps 609 / 611 / 689: `742a0703fa4da325` (black), `e96292a59a14194a` (first cloud frame), `8e04ee6e011d489` (faded in); `BootFacesTests` level 20 init 395 / `0x227efad5eb1282e2`, f30 397 / `0xc3e7eaa89a63c731`, f120 397 / `0x1d4163bbf435315d`; the mace trace's record 267 `77379b19446b30c6`. Retired: the mace-path picture `eea2913e69628851` (the card) and the cloud fixture's frame-1 pin (the level's own first-frame golden holds the same frame, D68.3). No existing value moved.
+**Level 21 (6A-L21, run 69; measured, seed 1):** first frame tick 143, camera (0, 1442), `fb80e30a68e4efb7`
+(equal to 6A-FX's level-21 fixture frame; the twin with `0x2706` patched to 0 is `1388825e7f7bc7d5`, 189,626
+screen bytes differ); `BootFacesTests` level 21 init 365 / `0x703e5ce76e97850d`, f30 380 / `0x0d3fa91fd2912748`,
+f120 385 / `0xcbe5663384dce9d7`; load bar needed 40, n 150, q 300, steps 40; Windows: first level frame step 609
+(wake 2,433), black, `742a0703fa4da325`; faded in at step 689, iteration 41, 251,574 lit, `cefc33dd37db5d83`.
 
 Run 65 moved no value and pinned one new kind (the audit's per-level count of the held item's water-kind-0 draws:
 level 2 39, level 18 7, the other built levels 0).
@@ -2721,7 +2726,7 @@ ids; its `--check` reads this table):
     up there gets no throwaway child (nothing draws from it); the ledger's owner column still says "level 21 pipe
     wiring".
 
-#### 6A-L21 — minor — level 21 "Obfuscation & Edification" enterable (→ 800)
+#### 6A-L21 — minor — level 21 "Obfuscation & Edification" enterable (→ 800) — ✅ done (run 69)
 - **Files:** `Sources/FerazelCore/Front/BuiltLevels.swift` (+ 21), `Tests/FerazelCoreTests/LevelTwentyOneTests.swift`
   (new), `Tests/FerazelRenderTests/{LevelFrameGoldenTests,BootFacesTests,FaceTests}.swift`,
   `Ferazel/Windows/Tests/FerazelWinKitTests/{WinLevelReferenceTests,FerazelSettingsTests}.swift`, the list-pinned tests.
@@ -2738,6 +2743,64 @@ ids; its `--check` reads this table):
   `testLevel21FirstFrameReference`.
 - **Gate:** Gate-L (G2 800, GW2 89). **Commit:** `Level 21 enterable: Obfuscation & Edification; 3 tests, 1 Windows
   reference`.
+
+- **As executed — 6A-L21 (run 69, 2026-11-25 05:52 → 10:50, night into day):** Ferazel/Core 797 → **800**,
+  WinKit 88 → **89**. Commits 4df734c (task), 63183f8 (fix round — tests and comments only: the non-comment diff of
+  `Ferazel/Core/Sources`, `Ferazel/App`, `Ferazel/Windows/Sources` over it is empty); merged at 63183f8. The only
+  game-source change is `BuiltLevels.list` gaining 21. One implementer, two Opus legs (spec PASS WITH FIXES; quality
+  PASS WITH FIXES — 42 planted bugs: 26 caught by this task's pins, 10 by older tests, 4 the same as correct code on
+  this level's data, 2 real test gaps closed by the reviewer's verified asserts), a fix round.
+  - **The level data, as the card says:** 325 records, 62 types, **0 refused**, `refusedSpawns` 0; music 9; start
+    (100, 1678) facing right; grid 350 × 65; colour tables 211 / 212; the darkness switch `0x2706` = 2; every light
+    byte 0…14 occurs (9,709 cells 0), all inside the ambient rows — **the draw audit needs no light proof and no
+    per-level pin for level 21 and passes unchanged** (held-item kind-0 draws 0).
+  - **Data over card and brief (D70):** (1) **record 283 is not level 21's.** Level 21's conversations (Mcnv 260,
+    261, 300) arm nothing; record 283 is level 11's dormant Dimbo (type 2956), armed by action 10 of level 22's Mcnv
+    221. The run-55 carry is closed on level 11: a revisit with the snapshot armed spawns record 283 (its restored
+    place, flag and spawn point pinned); the dormant twin spawns none. (2) **Level 21 is not the first built level
+    with the darkness switch on** (run 68's note was wrong): levels 1 and 4 hold 5, levels 2, 3 and 10 hold 1. New
+    here: the value 2, and the first shipped rock outcrop on a cell darker than 7 (record 98, light byte 10 → mode
+    0x10007, M l. 59688–59695), now pinned with a twin whose switch is patched to 0. Leg 1 read every reader of the
+    switch in the original (level setup M l. 2377, `.GetAmbDarkVal` 13645 and its four callers, the two darken gates
+    15058 / 15116, the particle row 29824): all are ported and right at 2. The one unbuilt piece is a passage's
+    override of the switch (p2 ≠ 0, M l. 49620–49627); level 21's passages 313 / 314 have p2 0.
+  - **The insects 1860:** all five idle at the spawn; frame 1 brings records 68, 69, 70 in, idle again from frame 2;
+    over frames 2–61 every idled insect keeps its `+0x1d4` link and its body keeps running. Records 312 / 319 are
+    never active at the start and their bodies sit at (x, 0) — the original does the same until the head first runs
+    (leg 1, from the spawn routine's raw stores). The pipes start as 6A-PS measured (42 live enemies, 9 random
+    numbers, 40 load-bar steps).
+  - **New pins (measured, seed 1):** in the "Goldens" paragraph. Teleporters 1061 ×14 are run through the port's
+    teleport code: pairs 138/143, 170/171, 179/180, 193/200, 235/236 and the chain 57→60, 58→57, 59→60, 60→59. The
+    rest of the parameter trace (chests, the mace 1487, platform modes 1 / 6 / 7 / 20 / 51 / 52, the rope 3022, the
+    spikes incl. the eight with p2 0, the swarm 1869, the path bats 1741 / 1742, the doors 152 and — as the locked
+    twin — 22) is in 4df734c's commit body with its dump lines. No arm unbuilt.
+  - **Re-derived list pins (the list gaining 21, nothing more):** the not-built probes 21 → 22 in six classes;
+    `GameFlowGameTests` start (21 → 21), + (22 → 1), the not-built save 22; `FerazelSettingsTests` 21 → 21, 22 → 1;
+    level 20's exit to node 21 now enters level 21. No other pinned value moved. Outside the card's Files by the
+    seat's ruling: one comment in `FrameGoldenTests.swift` (level 1's switch is 5, not 0).
+  - **Gates at 63183f8 (the seat's own, from a `git archive` copy, foreground, in parts):** G2 **800** = 622 rules +
+    178 render, 798 passed, 0 failed, the two opt-in skips (rules 131 s; A–C 315; D–E without the audit 56; F–K 239;
+    the three L classes without `LevelSweepTests` 108; `LevelSweepTests` 301; M–Z 151; the audit: levels 1–5 one test
+    a command 204 + 202, level 18 84, level 20 196, level 21 116, levels 10, 11, 15 one test a command 472 + 353 — the
+    472 ran beside other commands by the seat's slip); GW2 **89** = 87 passed, 0 failed, the two skips (B 310, F|T 168,
+    Win D|F|G 307, Win O|R|S|V 149, the six level references 175 / 154 / 124 / 127 / 126 / 99 s); G3 `Totals: items
+    1,108 decoded, failures 0`; G5 BUILD SUCCEEDED; GW1 0 then 2; GW3 0 then 1; GW4 Build complete!; G7 empty; the
+    ledger check OK. **Full GE, 11 levels, 4 workers, a level group a command:** sweep core **9,824 visits, rows 0**
+    (1,991 s: levels 1, 2 422 with the build / 3, 4 347 / 5, 15, 18 167 / 10 249 / 11 313 / 20 239 / 21 254 — level
+    21's at 4df734c, the same game source), windows **9,824, rows 0** (2,317 s: 5 113 / 1, 2 335 / 3 204 / 4 225 /
+    10 290 / 11 366 / 15, 18 178 / 20 293 / 21 313); bot core `levels 11, seeds 4, steps 237600, deaths 41, exits
+    370, conversations 33, saves 3, failures 0 in 110 s`, windows the same counts `in 132 s`. Quick mode on level 21
+    (the implementer's): `steps 7200, deaths 0, exits 19, failures 0`.
+  - **Boot checks (by day, 10:40, LAUNCH GUARD ok, muted):** a fresh build was launched with `-FerazelLevel 20` and
+    then `-FerazelLevel 21`; each stayed running (40 s and 25 s), no crash report. **Nobody saw the picture:** the
+    request to look at the game's window was declined, so the look itself (level 20: the clouds, a blade, the wind;
+    level 21: the dark level, a pipe) is still owed — to Ben's eyes or a later run.
+  - **Carried:** the Windows reference has no darkness twin (the Mac golden carries it; as levels 15, 18, 20); when
+    the passage override of the switch is built, the particle row captured once at `FrameRenderer` set-up and the
+    read-only header must follow the runtime value; the pipe throwaway child's layer is pinned nowhere; the platform
+    and path-bat expectations are recomputed from the port's own Setup slot; the example comment in
+    `tools/ferazel-built-levels.sh` lists the old levels; nothing in the audit counts that the darken branch ran
+    (the golden's twin shows it does).
 
 #### 6A-CP — minor — the magic carpet (→ 812)
 - **Files:** `Sources/FerazelCore/World/Movers/BoxSprite.swift` (`:147` the Setup `// later`; `:472` `handleBuilt`;
