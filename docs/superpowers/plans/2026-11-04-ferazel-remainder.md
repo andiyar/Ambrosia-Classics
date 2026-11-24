@@ -2779,6 +2779,17 @@ level file — each card says which.
    Never reached in normal play (it needs 700 live sprites); 6A-W1 and 6A-CH1 build it for the bosses as BOS §1.1
    says (the Warrior's crate block tests for a null result, M l. 73152–73160). A dropped spawn is
    silent, so 6A-W1 adds `SpriteWorld.refusedSpawns` and every level task asserts it 0.
+7. **A lit blade on a "no light" cell is drawn unlit** (D67.1, built at 6A-L20). Level 20's light map is "no light"
+   everywhere (every cell −1). Some sprites take their light from the light near them — the rotating blades, and the
+   radial maces' balls and chains. When a light made during play (a shot of the player's passing a blade's hub,
+   a Gremlin's drop, an explosion, an opened box's item) falls on one of them there, the original works out a draw
+   setting from "no light" plus that light (`0xbff00 + F`, M l. 10320–10331) that sends its shading-table read to an
+   address holding no fixed data (`.BlitEncFaceTransClip`, M l. 23277–23286; rotated, no table at all). What it
+   showed depended on whatever happened to be in memory, so there is nothing to copy. The port draws the sprite as it
+   looks with no light near (the same draw as F 0): plain, unlit (`SpriteSlot.applyDynamicLight`;
+   `SpriteDrawTests.testBladeLitOnNoLightCellDrawsUnlit`; the draw-mode audit's `unlitDrawProof`). Every other light
+   draw is as the original's. Ben may overrule (the Coordinator mailbox Q1: plain, a black silhouette, or what he
+   remembers).
 
 ### The 6A gate card ("through the Goblin Chief") — an outline; 6A-END checks every point against the level data
 

@@ -393,16 +393,17 @@ final class LightingTests: XCTestCase {
     }
 
     func testA14LightByteMinusOneStillRefused() throws {
-        // Ledger A14: `.GetLightTile` = high byte − 1, so a cell byte 0 gives L = −1; with F ≥ 1 the `+0x89` word
-        // `0xc0000 − 0x100 + F` = `0xbff00 + F` is mode 0xb with a negative arg (`rlwinm 8; addis 0xc`) — refused
-        // (DA proves it unreachable). L = −1 with F = 0 is mode 0 (both < 1), drawn as a plain copy.
+        // Ledger A14: `.GetLightTile` = high byte − 1, so a cell byte 0 gives L = −1; with F ≥ 1 the original's `+0x89`
+        // word `0xc0000 − 0x100 + F` = `0xbff00 + F` is mode 0xb with a negative arg (`rlwinm 8; addis 0xc`) — the
+        // blitter still refuses it. Since D67.1 (known deviation 7) Core forms the F 0 word there instead, 0: drawn as
+        // a plain copy (`SpriteDrawTests.testBladeLitOnNoLightCellDrawsUnlit`). L = −1 with F = 0 is mode 0 (both < 1).
         let f = try fixture()
         let b = try allValuesBlitter(f)
         var lit = SpriteSlot(type: 1, x: 0, y: 0, face: Self.allValues); lit.dynamicLight = true
         for F in [1, 11, 110] {
-            let word = lit.applyDynamicLight(lightTile: -1, fakeLight: F)
-            XCTAssertEqual(word, UInt32(0xbff00 + F))
-            XCTAssertEqual(lit.mode, word)
+            XCTAssertEqual(lit.applyDynamicLight(lightTile: -1, fakeLight: F), 0)
+            XCTAssertEqual(lit.mode, 0)
+            let word = UInt32(0xbff00 + F)
             XCTAssertThrowsError(try drawAllValues(b, word: word)) {
                 XCTAssertEqual($0 as? SpriteBlitter.Refusal, .mode(word))
             }

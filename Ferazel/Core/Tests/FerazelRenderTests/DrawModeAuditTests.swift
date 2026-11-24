@@ -451,9 +451,11 @@ final class DrawModeAuditTests: XCTestCase {
           pins: ["if p.p2 != 0 { s.mode = UInt32(truncatingIfNeeded: Int(p.p2) + 0x10000) }"]),
         W("Sprites/SetupFaces.swift:500", .mode, .words([0x90000]), "box.teleporter"),
         W("Sprites/SetupFaces.swift:522", .mode, .words([0x90000]), "box.chest"),
-        W("Sprites/SpriteSlot.swift:606", .mode, .words([0]), "platform.raft", "box.boulder", "background.maceBall",
+        // The dynamic-light arm: 0 for L < 1 and F < 1, and (D67.1, known deviation 7) for L −1 with F 1…0xff, where
+        // the original's 0xbff00 + F reads no fixed data; else the light word (`.levelLight`; L −1 never reaches it).
+        W("Sprites/SpriteSlot.swift:609", .mode, .words([0]), "platform.raft", "box.boulder", "background.maceBall",
           "chain.maceChain", "background.blade"),
-        W("Sprites/SpriteSlot.swift:608", .mode, .levelLight, "platform.raft", "box.boulder", "background.maceBall",
+        W("Sprites/SpriteSlot.swift:611", .mode, .levelLight, "platform.raft", "box.boulder", "background.maceBall",
           "chain.maceChain", "background.blade", pins: ["mode = UInt32(truncatingIfNeeded: L * 0x100 + 0xc0000 + F)"]),
         // (angle >> 8) + 0x5a with the angle wrapped into 0…0x167ff (`RadialMotion.updatePosition`), − 360 once.
         W("World/Movers/BackgroundSprite.swift:206", .rotation, .range(0...359), "background.maceBall", at: ["204", "205"],
@@ -496,7 +498,7 @@ final class DrawModeAuditTests: XCTestCase {
         // 6A-BD: the blade's Handle (M l. 63511–63530) — rotation `+0x1aa` = its angle (M l. 63524), wrapped one step
         // each way into 0…359 (M l. 63515–63523): every placed blade starts at p2 0 with speed 8 (p3 0;
         // `BladeTests.testBladeSetupFields` pins both on all 53), so 0…352; `+0x89 = 1` (M l. 63526: the light word,
-        // `SpriteSlot.swift:606` / `:608` above; `dynamicLightStores`); bottom clip `+0x1ba = 0x5e` on a record with p4 0
+        // `SpriteSlot.swift:609` / `:611` above; `dynamicLightStores`); bottom clip `+0x1ba = 0x5e` on a record with p4 0
         // (M l. 63528; levels 22 and 62). Placed first on level 20 (none on a built level).
         W("World/Movers/BackgroundSprite.swift:1326", .rotation, .range(0...359), "background.blade",
           at: ["1319", "1321", "1323"], pins: ["var a = c.phase &+ Int16(truncatingIfNeeded: c.classWord150)",
@@ -715,11 +717,15 @@ final class DrawModeAuditTests: XCTestCase {
         let liquidKinds: Set<Int16>
         /// The light bytes the dynamic-light arm (`SpriteSlot.applyDynamicLight`, `.levelLight`) is enumerated over:
         /// every light byte, except on a level whose `unlitProof` holds (D64), where the bytes outside the ambient rows
-        /// are left out because that proof shows the arm never runs there.
+        /// are left out because that proof shows the arm never runs there, or whose `unlitDrawProof` holds (D67.1),
+        /// where they are left out because the arm forms its F 0 word there (`SpriteSlot.swift:609`'s row).
         let armLightBytes: Set<Int>
         /// D64: nil when every light byte is in the ambient rows (levels 1–5, 10, 11, 15); else the failures of the
-        /// three-part proof that no sprite reads one (`unlitProof`) — empty when it holds.
+        /// three-part proof that no sprite reads one (`unlitProof`) — empty when it holds (level 18).
         let unlitProof: [String]?
+        /// D67.1 (6A-L20): nil unless `unlitProof` fails; then the failures of the proof that every word the arm
+        /// forms on such a level is defined (`unlitDrawProof`) — empty when it holds (level 20).
+        let unlitDrawProof: [String]?
     }
 
     /// The mode words of a mode row on `L`.
@@ -967,12 +973,15 @@ final class DrawModeAuditTests: XCTestCase {
         let ctx = SetupFaces.Context(level: L, playerX: SetupFaces.Context.levelStartPlayerX(L.header),
                                      effects: prefs.effects)
         let setups = try L.activePlacements.map { try SetupFaces.setup($0, context: ctx) }
-        // D64: the arm's bytes — all of them, unless some byte is outside the ambient rows and the proof holds.
+        // D64: the arm's bytes — all of them, unless some byte is outside the ambient rows and a proof holds: D64's
+        // (the arm never runs on such a byte) or, where that one fails, D67.1's (the arm forms only defined words).
         let ambient = r.tables.ambient.count
         let proof = try unlitProof(L, lightBytes: bytes, ambient: ambient, seen: seen)
-        let arm = proof == [] ? bytes.filter { (0..<ambient).contains($0) } : bytes
+        let drawProof = proof == nil || proof == [] ? nil
+            : try unlitDrawProof(L, lightBytes: bytes, ambient: ambient, setups: setups, seen: seen)
+        let arm = proof == [] || drawProof == [] ? bytes.filter { (0..<ambient).contains($0) } : bytes
         return Audit(level: Level(number: number, file: L, renderer: r, lightBytes: bytes, liquidKinds: liquids,
-                                  armLightBytes: arm, unlitProof: proof),
+                                  armLightBytes: arm, unlitProof: proof, unlitDrawProof: drawProof),
                      setups: setups, seen: seen)
     }
 
@@ -1034,21 +1043,7 @@ final class DrawModeAuditTests: XCTestCase {
     static func unlitProof(_ L: LevelFile, lightBytes: Set<Int>, ambient: Int, seen: Seen) throws -> [String]? {
         let outside = lightBytes.filter { !(0..<ambient).contains($0) }.sorted()
         guard !outside.isEmpty else { return nil }
-        var out: [String] = []
-        // (1) The darkness switch, and every `lightByte(` reader.
-        if L.header.darknessEnable != 0 { out.append("(1) header 0x2706 = \(L.header.darknessEnable), not 0") }
-        let core = try coreLines.get().map { ("FerazelCore/" + $0.file, $0) }
-        let render = try renderLines.get().map { ("FerazelRender/" + $0.file, $0) }
-        var readers: [String] = []
-        for (path, l) in core + render where has(l.code, "lightByte(") && !has(l.code, "func lightByte(") {
-            readers.append(path)
-            if path == "FerazelCore/Session/FerazelSession.swift" { continue }   // the arm: (2) and (3)
-            if !has(l.code, "darknessEnable == 0 ? 0 : ") { out.append("(1) \(path):\(l.line) reads it ungated") }
-        }
-        if readers.sorted() != ["FerazelCore/Session/FerazelSession.swift", "FerazelCore/World/Movers/BoxSprite.swift",
-                                "FerazelRender/Frame/LightRenderer.swift"] {
-            out.append("(1) the light byte's readers: \(readers.sorted())")
-        }
+        var out = try darknessGated(L)
         // (2) The level's record types, and its crates' drops (`.KillCrate`: record p2 > 0, `carrierSpawners`' doc),
         // against the stores' and spawners' types; the port's writers against the table.
         var types = Set(L.placements.map(\.type)).sorted().map { ($0, "type \($0)") }
@@ -1074,6 +1069,69 @@ final class DrawModeAuditTests: XCTestCase {
         for b in outside { for F in 0...110 where b >= 1 || F >= 1 {
             let w = UInt32(truncatingIfNeeded: b * 0x100 + 0xc0000 + F)
             if seen.modes.contains(w) { out.append("(3) the run drew \(hex(w)), the arm's word for light byte \(b)") }
+        } }
+        return out
+    }
+
+    /// D64 (a)(1), shared by both proofs: the header's darkness switch 0x2706 is 0, so the tile light pass
+    /// (`.GetAmbDarkVal`, M l. 13643–13652) and the sprites' ambient darken read D 0, and every reader of the light
+    /// byte but the dynamic-light arm (`FerazelSession.swift`) is gated by it.
+    static func darknessGated(_ L: LevelFile) throws -> [String] {
+        var out: [String] = []
+        if L.header.darknessEnable != 0 { out.append("(1) header 0x2706 = \(L.header.darknessEnable), not 0") }
+        let core = try coreLines.get().map { ("FerazelCore/" + $0.file, $0) }
+        let render = try renderLines.get().map { ("FerazelRender/" + $0.file, $0) }
+        var readers: [String] = []
+        for (path, l) in core + render where has(l.code, "lightByte(") && !has(l.code, "func lightByte(") {
+            readers.append(path)
+            if path == "FerazelCore/Session/FerazelSession.swift" { continue }   // the arm: (2) and (3)
+            if !has(l.code, "darknessEnable == 0 ? 0 : ") { out.append("(1) \(path):\(l.line) reads it ungated") }
+        }
+        if readers.sorted() != ["FerazelCore/Session/FerazelSession.swift", "FerazelCore/World/Movers/BoxSprite.swift",
+                                "FerazelRender/Frame/LightRenderer.swift"] {
+            out.append("(1) the light byte's readers: \(readers.sorted())")
+        }
+        return out
+    }
+
+    /// The arm's line in `SpriteSlot.applyDynamicLight` that sends L = −1 with F 1…0xff to the F 0 word (D67.1).
+    static let unlitArmGuard = "if L < 1 && F < 1 || L == -1 && F < 0x100 {"
+
+    /// D67.1 (6A-L20; D64.1's form): a level with a light byte outside the ambient rows whose `unlitProof` fails
+    /// because dynamic-light sprites are placed there and do read the byte — level 20: every cell −1, 28 blades 0xbf4
+    /// (M l. 63526) and the radial maces' balls and chains (M l. 63171, 56001). The original's arm there forms
+    /// `0xbff00 + F` for a light made in play (F ≥ 1) and reads its shading table at an address that holds no fixed
+    /// data (`.BlitEncFaceTransClip`, M l. 23277–23286); the port forms the F 0 word instead (known deviation 7). The
+    /// failures of the proof that every word the arm forms on the level is then defined — empty when it holds:
+    /// (1) as D64's (1) — the darkness switch is 0 and every other reader of the byte is gated by it (`darknessGated`);
+    /// (2) the only byte outside the ambient rows is −1 (`.GetLightTile` is the cell's high byte − 1: no other value
+    ///     below 0 exists; a byte past the rows would make an arm word with an out-of-range L);
+    /// (3) the arm (`SpriteSlot.applyDynamicLight`) keeps its guard (`unlitArmGuard`, one line), and for L = −1 forms
+    ///     the word 0 for every F 0…0xff — every F the level can make: F = v + a light's colour with v 0…11
+    ///     (`.GetFakeLight`) and every colour of the level's Setups and run ≤ 99 (`.lightIndexInRange`), so F ≤ 110;
+    /// (4) its scripted run drew no word the original's arm makes from such a byte (0xbff00 + F) and ran its steps.
+    /// Where it holds, `armLightBytes` leaves the byte out: its word is row `SpriteSlot.swift:609`'s 0, drawn there.
+    static func unlitDrawProof(_ L: LevelFile, lightBytes: Set<Int>, ambient: Int, setups: [SetupFaces.Entry],
+                               seen: Seen) throws -> [String] {
+        let outside = lightBytes.filter { !(0..<ambient).contains($0) }.sorted()
+        var out = try darknessGated(L)
+        // (2) Only −1.
+        if outside != [-1] { out.append("(2) the light bytes outside the ambient rows are \(outside), not [-1]") }
+        // (3) The arm's guard in the source, and what the arm forms.
+        let guards = try coreLines.get().filter { $0.file == "Sprites/SpriteSlot.swift" && trim($0.code) == unlitArmGuard }
+        if guards.count != 1 { out.append("(3) `\(unlitArmGuard)` appears \(guards.count) times in SpriteSlot.swift") }
+        var slot = SpriteSlot(type: 0xbf4, x: 0, y: 0, face: FaceRef(pict: 0xbf4, index: 0, set: .encoded))
+        slot.dynamicLight = true
+        for F in 0...0xff where slot.applyDynamicLight(lightTile: -1, fakeLight: F) != 0 {
+            out.append("(3) the arm forms \(hex(slot.mode)) for L −1, F \(F)")
+        }
+        let colours = Set(setups.compactMap { $0.light?.colour }).union(seen.lightColours.map(Int.init))
+        if let top = colours.max(), 11 + top > 0xff { out.append("(3) a light colour \(top): F can pass 0xff") }
+        // (4) The run.
+        if seen.steps < runSteps { out.append("(4) the run took \(seen.steps) steps") }
+        for b in outside { for F in 1...0xff {
+            let w = UInt32(truncatingIfNeeded: b * 0x100 + 0xc0000 + F)
+            if seen.modes.contains(w) { out.append("(4) the run drew \(hex(w)), the original's word for light byte \(b)") }
         } }
         return out
     }
@@ -1587,12 +1645,12 @@ final class DrawModeAuditTests: XCTestCase {
           "every written word draws (test 1): no writer of modes 2, 7, 0xd, 0xe, ≥ 0xf (6A-S8: mode 8 drawn); a 0xb arg's table read in "
           + "range; tint subs ≤ 24 (placements' p2 included); modes 5 / 0xa / 0xb never on a rotated or scaled "
           + "sprite, 0xa never mirrored; light index ≥ 0x6f000 needs F ≥ 126 (DK: F max 110); A14 (light byte −1 → "
-          + "0xbff00 + F) needs a dynamic-light sprite over a cell with light byte −1: none on a built level (level 18 is all "
-          + "−1 and holds no carrier, D64; level 20's blades are carriers on an all −1 grid — 6A-BD found what the original "
-          + "reads there is not fixed data, so the word stays refused by name, D64.6, for 6A-L20's seat)"),
+          + "0xbff00 + F) is never formed: level 18 is all −1 and holds no carrier (D64); on level 20, all −1 with "
+          + "carriers (the blades, the radial maces' balls and chains), the original's word reads no fixed data, so the "
+          + "arm forms the F 0 word instead (D67.1, known deviation 7: `unlitDrawProof`); the word itself stays refused"),
         R("Frame/SpriteBlitter.swift", "Refusal.darkness", 1, .dataAbsent, [.lightBytesInRange],
-          "mode 0xc's L is a light byte (0…15 on every built level the arm runs on, `applyDynamicLight`; D64) or a "
-          + "Radial depth band 0…12"),
+          "mode 0xc's L is a light byte (0…15 on every built level the arm runs on, `applyDynamicLight`; D64; the −1 "
+          + "of levels 18 and 20 never reaches mode 0xc, D67.1) or a Radial depth band 0…12"),
         R("Frame/SpriteBlitter.swift", "Refusal.translucency", 3, .byConstruction,
           [.parallaxAttached, .pxBackSlotsLoaded, .headerFlame, .facesNarrow, .noCopyAfterCopy],
           "the parallax is attached on every sprite pass; every PxBack cell's slot is loaded and no level has the "
@@ -2029,17 +2087,29 @@ final class DrawModeAuditTests: XCTestCase {
             // D64: a level with a byte outside them (level 18: every cell −1) is held instead to `unlitProof` — the
             // darkness switch 0, no dynamic-light carrier or spawner, no `+0x89` sprite or arm word in its run — and
             // its arm words are enumerated without those bytes only because the proof holds (`armLightBytes`).
+            // D67.1: where D64's proof fails because dynamic-light sprites are placed on such a level (level 20), it is
+            // held to `unlitDrawProof` instead — the darkness switch 0, the byte −1 only, the arm's F 0 word for it, no
+            // original's word for it in the run. Which proof a level stands on is pinned (`unlitProofs`).
+            let unlitProofs: [Int: String] = [18: "D64", 20: "D67.1"]
             for a in audits {
+                let n = a.level.number
                 let ambient = a.level.renderer.tables.ambient.count
                 guard let proof = a.level.unlitProof else {
                     for b in a.level.lightBytes {
-                        XCTAssertTrue((0..<ambient).contains(b), "\(c): level \(a.level.number) light byte \(b)")
+                        XCTAssertTrue((0..<ambient).contains(b), "\(c): level \(n) light byte \(b)")
                     }
+                    XCTAssertNil(unlitProofs[n], "\(c): level \(n) has no light byte outside the ambient rows")
                     continue
                 }
-                XCTAssertEqual(proof, [], "\(c): level \(a.level.number) has light bytes outside the ambient rows")
+                if proof == [] {
+                    XCTAssertEqual(unlitProofs[n], "D64", "\(c): level \(n) stands on D64's proof")
+                } else {
+                    XCTAssertEqual(unlitProofs[n], "D67.1", "\(c): level \(n) fails D64's proof: \(proof.prefix(3))")
+                    XCTAssertEqual(a.level.unlitDrawProof, [],
+                                   "\(c): level \(n) has light bytes outside the ambient rows, and D67.1's proof fails")
+                }
                 XCTAssertEqual(a.level.armLightBytes, a.level.lightBytes.filter { (0..<ambient).contains($0) },
-                               "\(c): level \(a.level.number) arm bytes")
+                               "\(c): level \(n) arm bytes")
             }
         case .lightIndexInRange:
             // `lightBlit`: light[D·0x6e00 + (p + colour − 0xf5)·0x100 + d] with D 0…15 needs p + colour − 0xf5 in

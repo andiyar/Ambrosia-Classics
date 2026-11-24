@@ -122,7 +122,7 @@ final class SpriteDrawTests: XCTestCase {
                     x0: 400, y0: 100 + 0x180 - 2, rows: 0..<2, cols: 0..<8, flip: false, fill: fill)
 
         // Refused by name: diffuse (mode 5) with no game-stream seed (drawn with one since the draw-modes fix,
-        // `DiffuseSquashTests`), translucency (0xb, e.g. a `+0x89` word with L = −1). (The hurt flash and the water split
+        // `DiffuseSquashTests`), translucency (0xb, e.g. the original's `+0x89` word with L = −1). (The hurt flash and the water split
         // are drawn since E2 — DrawEffectTests.)
         var ports = FramePorts(fill: fill)
         XCTAssertThrowsError(try b.wrapDrawSprites([SpriteDraw(face: Self.ref, x: 0, y: 0, mode: 0x50003, clip: open)],
@@ -130,7 +130,7 @@ final class SpriteDrawTests: XCTestCase {
             XCTAssertEqual($0 as? SpriteBlitter.Refusal, .diffuseSeed)
         }
         var lit = SpriteSlot(type: 1, x: 0, y: 0, face: Self.ref); lit.dynamicLight = true
-        XCTAssertEqual(lit.applyDynamicLight(lightTile: -1, fakeLight: 2), 0xbff02)
+        XCTAssertEqual(lit.applyDynamicLight(lightTile: -1, fakeLight: 2), 0)   // D67.1: Core forms F 0's word
         XCTAssertThrowsError(try b.wrapDrawSprites([SpriteDraw(face: Self.ref, x: 0, y: 0, mode: 0xbff02, clip: open)],
                                                    h: 0, v: 0, ports: &ports)) {
             XCTAssertEqual($0 as? SpriteBlitter.Refusal, .mode(0xbff02))
@@ -449,5 +449,74 @@ final class SpriteDrawTests: XCTestCase {
         // (`.BuildTintTable`'s `_DAT_100a0168` / `_DAT_100a0164`): Core's copy is the renderer's, entry for entry.
         XCTAssertEqual(BackgroundSprite.bladeCos, SpriteBlitter.cosTable)
         XCTAssertEqual(BackgroundSprite.bladeSin, SpriteBlitter.sinTable)
+    }
+
+    /// D67.1 (6A-L20; known deviation 7): a dynamic-light sprite — the blade 0xbf4 here — lit by a light made in play
+    /// (F ≥ 1) on a "no light" cell (light byte −1, every cell of level 20) is drawn as with F 0: plain, unlit. The
+    /// original forms `0xbff00 + F` there (`.WrapDrawSprites`' `+0x89` arm, M l. 10320–10331) and reads its shading
+    /// table at an address that holds no fixed data (`.BlitEncFaceTransClip`, M l. 23277–23286; rotated, no table at
+    /// all), so there is no picture to copy. Every defined light word is formed and drawn as before.
+    func testBladeLitOnNoLightCellDrawsUnlit() throws {
+        let f = try fixture()
+        let n = 120, c = 60
+        let px = (0..<n).flatMap { r in (0..<n).map { k -> UInt8 in
+            let dr = r - c, dk = k - c
+            return dr * dr + dk * dk <= 50 * 50 ? UInt8(0x20 + (r + k) % 0x40) : 0
+        } }
+        let disc = try FaceEncoder.encode(pixels: px, width: n, height: n,
+                                          rect: EncodedFace.Rect(top: 0, left: 0, bottom: Int16(n), right: Int16(n)),
+                                          sourceId: 9003)
+        let args = try FaceSheet.Arguments(pict: 9003, count: 1, cellWidth: n, cellHeight: n, columns: 1)
+        var sheets = try faces().sheets
+        sheets[9003] = FaceSheet(arguments: args, faces: [disc], shortCells: [:], clutId: 202)
+        let b = SpriteBlitter(level: f.level, tables: f.tables, faces: SpriteBlitter.Faces(sheets: sheets))
+        let fill: UInt8 = 0x77
+        /// The blade as its Handle leaves it (`BackgroundSprite`: face, rotation, `+0x89`), then the arm's (L, F).
+        func blade(_ L: Int, _ F: Int, rotation: Int16) -> SpriteSlot {
+            var s = SpriteSlot(type: 0xbf4, x: 200, y: 100, face: FaceRef(pict: 9003, index: 0, set: .encoded))
+            s.rotation = rotation
+            s.lightOverlay = false
+            s.dynamicLight = true
+            _ = s.applyDynamicLight(lightTile: L, fakeLight: F)
+            return s
+        }
+        func draw(_ s: SpriteSlot) throws -> FramePorts {
+            var ports = FramePorts(fill: fill)
+            try b.wrapDrawSprites([try XCTUnwrap(s.draw)], h: 0, v: 0, ports: &ports)
+            return ports
+        }
+        // The words: F 0 on the −1 cell is the plain word 0; F ≥ 1 there (the undefined 0xbff00 + F) is now the same
+        // word. Defined words are untouched: a lit cell (L ≥ 0) and F past 0xff (the carry leaves mode 0xb: L 0's row).
+        for F in [0, 1, 2, 55, 109, 110, 0xff] { XCTAssertEqual(blade(-1, F, rotation: 0).mode, 0, "L −1, F \(F)") }
+        XCTAssertEqual(blade(-1, 0x100, rotation: 0).mode, 0xc0000)
+        XCTAssertEqual(blade(-1, -3, rotation: 0).mode, 0)
+        XCTAssertEqual(blade(0, 5, rotation: 0).mode, 0xc0005)
+        XCTAssertEqual(blade(2, 5, rotation: 0).mode, 0xc0205)
+        XCTAssertEqual(blade(3, 0, rotation: 0).mode, 0xc0300)
+        // The pictures, unrotated and rotated: the −1 cell lit is the −1 cell unlit, pixel for pixel; a defined lit
+        // draw (the light slab (2, 5)) still differs from it, so the comparison can fail.
+        for rot: Int16 in [0, 8, 90, 352] {
+            let unlit = try draw(blade(-1, 0, rotation: rot))
+            var drawn = 0
+            for k in unlit.frame.indices where unlit.frame[k] != fill { drawn += 1 }
+            XCTAssertGreaterThan(drawn, 0, "rot \(rot): the blade draws")
+            for F in [1, 55, 110] {
+                let lit = try draw(blade(-1, F, rotation: rot))
+                XCTAssertTrue(lit.frame == unlit.frame, "rot \(rot) F \(F): frame")
+                XCTAssertTrue(lit.mask == unlit.mask, "rot \(rot) F \(F): mask")
+            }
+            let defined = try draw(blade(2, 5, rotation: rot))
+            XCTAssertFalse(defined.frame == unlit.frame, "rot \(rot): a defined lit draw differs from the unlit one")
+            XCTAssertTrue(defined.mask == unlit.mask, "rot \(rot): the same shape")
+        }
+        // The undefined word itself is still refused by the blitter (the refusal stays; only Core no longer forms it).
+        for rot: Int16 in [0, 90] {
+            var ports = FramePorts(fill: fill)
+            XCTAssertThrowsError(try b.wrapDrawSprites(
+                [SpriteDraw(face: FaceRef(pict: 9003, index: 0, set: .encoded), x: 200, y: 100, mode: 0xbff37,
+                            clip: SpriteSlot(type: 0xbf4, x: 0, y: 0).clip, rotation: rot)], h: 0, v: 0, ports: &ports)) {
+                XCTAssertEqual($0 as? SpriteBlitter.Refusal, .mode(0xbff37), "rot \(rot)")
+            }
+        }
     }
 }
