@@ -260,6 +260,12 @@ existing value moved. **Run 66 (wave 6A.4, fixtures of level 20):** clouds frame
 screen bytes differ); `BootFacesTests` level 21 init 365 / `0x703e5ce76e97850d`, f30 380 / `0x0d3fa91fd2912748`,
 f120 385 / `0xcbe5663384dce9d7`; load bar needed 40, n 150, q 300, steps 40; Windows: first level frame step 609
 (wake 2,433), black, `742a0703fa4da325`; faded in at step 689, iteration 41, 251,574 lit, `cefc33dd37db5d83`.
+**The magic carpet (6A-CP, run 70; measured, seed 1, on the level-22 fixture with the start moved above placement
+486):** the wake falls in iteration 3; the golden is **iteration 5**, tick 1620 — the first frame that shows the
+unrolled face, at (7849, 2016) — `ec4f4abda0acfd79` (D71.1). Twins: the carpet's draws removed `5d458f4b8b6c8a4b`
+(860 screen bytes differ — the carpet's own share); the carpet left out of the level `7d2041c3431ad85e` (2,357 bytes,
+which include the player falling further). `CachedFacesTests` level 22's load bar [35, 170, 340, 35] →
+[36, 176, 352, 36] (set #27, six faces, now marked — the card's named move).
 
 Run 65 moved no value and pinned one new kind (the audit's per-level count of the held item's water-kind-0 draws:
 level 2 39, level 18 7, the other built levels 0).
@@ -2802,7 +2808,7 @@ ids; its `--check` reads this table):
     `tools/ferazel-built-levels.sh` lists the old levels; nothing in the audit counts that the darken branch ran
     (the golden's twin shows it does).
 
-#### 6A-CP — minor — the magic carpet (→ 812)
+#### 6A-CP — minor — the magic carpet (→ 812) — ✅ done (run 70)
 - **Files:** `Sources/FerazelCore/World/Movers/BoxSprite.swift` (`:147` the Setup `// later`; `:472` `handleBuilt`;
   `:1521`, `:1594` the wake; the tail `:605–:621` keeps its two exclusions), `Sources/FerazelCore/Sprites/SetupFaces.swift`
   (`:512`, the carpet's face arm), `Sources/FerazelCore/Front/LevelRun.swift` (set #27 0x438 marked), the player's half
@@ -2826,6 +2832,44 @@ ids; its `--check` reads this table):
   `testCarpetLevel22NeverCounts` · `testCarpetSteeringMovesCarpet` · `testCarpetExcludedFromBoxTileHits` ·
   `testLevel22CarpetFeatureGolden` (the first frame after the wake, measured; kept). Asserts: ENG §2.11's ten.
 - **Gate:** Gate-F (G2 812). **Commit:** `FerazelCore: the magic carpet; the player's built half proven; 12 tests`.
+- **As executed — 6A-CP (run 70, 2026-11-25 20:59 → 2026-11-26 about 00:40, night; nothing launched):** Ferazel/Core
+  800 → **812** (the card's 12 tests). Commits 40f0ef0 (task), 6529c38 (ledger), 0049688 and 651314e (fix round);
+  merged at 651314e. One implementer, two Opus legs (45 planted bugs: 31 caught, 3 equivalent, 11 test gaps — all 11
+  closed by leg 2's verified patch, which also catches 5 further mutants), a fix round held to tests, comments and the
+  ledger's hand-written text (proven: the source diff over the round is two comment lines of `PlayerTiles.swift`,
+  504 lines before and after).
+  - **The level data, checked first:** one carpet in the whole game — level 22, placement 486, type 1080, p1–p4 all
+    0, at (7849, 2017); 1081 is placed nowhere. No built level holds one, so Gate-F with no sweep or bot.
+  - **Built:** the carpet's Setup arm, its Handle (the 14-frame rise, the sink, the vx decay, vy · 0.8 once the bob
+    ends, the ride count, the flash, the burst), the wake in the Box hit, cache set #27 marked. Every cited dump line
+    was exact; both legs re-read the spans store by store and found no source difference (the burst runs after the
+    vx / vy stores instead of before — equivalent: those stores draw no random numbers). The 0.8 constant was read
+    from the binary (100a1ae8); the rolled carpet's 1-pixel-wide rect is real (1006b970).
+  - **The player's half:** unchanged in code; it matches the disassembly (the tile arm's signed `vx < 0x100` test
+    included) and is now held by asserts in the 12 tests (leg 1 found it unpinned; the patch pins it).
+  - **The golden is one frame later than the card's wording (D71.1):** the wake happens after its iteration's draw
+    and each frame draws before the Handles run (M l. 9207, 9250, 9453), so the frame straight after the wake still
+    shows the rolled carpet (asserted). Iteration 5 is the first frame showing the woken carpet. Values in "Goldens".
+  - **The audit:** four new mode-word rows (Setup 59102, the gate 60331, the flash end 60342, the flash steps
+    60346 / 60349 — the card named three), 35 rows and 6 `at:` lists re-anchored, values unchanged. **The
+    `SetupFaces.swift` refusal count stays 14** (D71.2): the carpet was refused by the Box switch's shared default
+    arm, which 0x5c3, 0x5c4, 0xb71 and 0xbfe still reach.
+  - **The ledger:** the script got a built arm for 0x438 / 0x439 (D69.2); 1080 refused → built; refused records on
+    level 22 1 → 0, on levels 10–22 1 → 0, on all later levels 205 → 204; the 6A-BX1c owner row is gone.
+  - **Gates (the seat's, at 651314e, from a `git archive` copy):** G2 **812** = 633 rules + 179 render, 810 passed,
+    0 failed, the two opt-in skips by name; GW2 **89**, 87 passed, 0 failed, the two opt-in skips; G3 1,108 / 0; G5
+    BUILD SUCCEEDED; GW1 0 / 2; GW3 0 / 1; GW4 Build complete!; G6 the card's Files + the ledger and its script; G7 /
+    G7b / G8 / G10 empty; ledger `--check` OK. No golden, state pin, fixture picture or Windows reference moved.
+    Times: rules 136 s; A–C **424** (slow: other projects building); D–E 55; F–K 258; the small L classes 104;
+    `LevelSweepTests` 298; M–Z 164; the audit 191 + 202, 369 + 377, 87, 203, 115; GW2 333 / 174 / 304 / 141 and the
+    six references 169 / 153 / 121 / 121 / 133 / 107.
+  - **Carries left:** the carpet's face is stored at Setup where the original sets it on the first Handle and skips
+    a sprite with face 0 (M l. 10262) — a house rule older than this task; not visible on level 22 (the carpet is
+    off screen at the real start), but the golden's frame-1 assert pins it — look again in 6A-L22; ENG §2.11's
+    "Today" paragraph and the ledger's §9 line (about l. 1412) still call the carpet unbuilt; a missing space at
+    `LevelRun.swift` about l. 1406; `0x439` is a bare literal beside `rolledCarpet`; the ledger script's built arm
+    does not check the face is in the Setup-face table; nothing ever clears a ridden carpet's "ridden" flag (as the
+    original).
 
 #### 6A-L22 — minor — level 22 "The Labyrinth" enterable (→ 816)
 - **Files:** `Sources/FerazelCore/Front/BuiltLevels.swift` (`[1, 2, 3, 4, 5, 10, 11, 15, 18, 20, 21, 22]`),
@@ -2943,8 +2987,8 @@ level file — each card says which.
    showed depended on whatever happened to be in memory, so there is nothing to copy. The port draws the sprite as it
    looks with no light near (the same draw as F 0): plain, unlit (`SpriteSlot.applyDynamicLight`;
    `SpriteDrawTests.testBladeLitOnNoLightCellDrawsUnlit`; the draw-mode audit's `unlitDrawProof`). Every other light
-   draw is as the original's. Ben may overrule (the Coordinator mailbox Q1: plain, a black silhouette, or what he
-   remembers).
+   draw is as the original's. **Ben confirmed it** (the Coordinator mailbox A1, 2026-11-25: "A: plain, unlit";
+   D71.5).
 
 ### The 6A gate card ("through the Goblin Chief") — an outline; 6A-END checks every point against the level data
 

@@ -2949,3 +2949,26 @@ should-fix, 8 minor), all folded in; then the seat's cross-check.
    look stays owed. The seat does not look for another way to take the picture.
 6. **One heavy command a message.** Five gate commands sent in one message ran at the same time (one audit part
    took 472 s instead of 360). All passed; the rule "never two heavy things at once" means separate messages.
+
+## D71 — Ferazel's Wand: run 70's rulings (6A-CP — the magic carpet; 2026-11-26)
+
+1. **The carpet's picture test pins the first frame that SHOWS the woken carpet, not the frame straight after the
+   wake.** The original draws each frame's sprites before their Handles run, and the wake happens after its
+   iteration's draw; so the frame after the wake still shows the rolled carpet (the test asserts that), and the
+   next one (iteration 5 on the fixture) is pinned. The card's wording "the first frame after the wake" was one
+   frame off. Both review legs confirmed the frame order against the dump.
+2. **The refusal count for `SetupFaces.swift` stays 14.** NEXT expected building the carpet to remove a refusal
+   site. It does not: the carpet was refused by the Box switch's shared default arm, which four other unbuilt Box
+   types still reach. No D67.3 edit was owed.
+3. **A comment in a file the card fences as "not changed" may be corrected when the task makes it false**
+   (`PlayerTiles.swift`'s "later: the carpet"), by the fix round, comment-only, line count kept, proven by the
+   source diff. Code tokens in such a file stay untouched; a wrong one is a STOP.
+4. **The fix round changed tests, comments and the ledger's hand-written text only** (D68.5): the source diff over
+   it is two comment lines. So the Windows-kit build made before the round stood; every test part was still run at
+   the final commit.
+5. **Ben's answer to mailbox Q1 (2026-11-25, 11:48), word for word: "A: plain, unlit".** On level 20, anything lit
+   by a light made during play is drawn plain and unlit, as built (D67.1, D68.2). Known deviation 7 stands as
+   ruled by Ben; the question is closed and no task follows.
+6. **Budget a ten-minute command for a slow Mac.** With two other projects' chains building, one test part ran 424 s
+   against 315 s the run before; two parts chained in one command came to 588 s of the 600 allowed. Chain parts
+   only when their usual times sum under about six minutes.

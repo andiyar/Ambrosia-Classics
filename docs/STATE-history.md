@@ -4,6 +4,13 @@
 > only). Nothing current reads this file; the live state is `docs/STATE.md`. Each later close that settles something
 > adds a dated section at the top, newest first. The two snapshots below are verbatim (headings demoted only).
 
+## Settled at Ferazel run 70's close (2026-11-26)
+
+- Run 69's state named the magic carpet (6A-CP) as next. Done: on main at 651314e (Core 800 → 812, WinKit 89).
+- "Waiting on Ben: the Coordinator mailbox Q1 (what a lit blade on level 20 shows)" is settled: Ben answered
+  "A: plain, unlit" on 2026-11-25 — what is built (D67.1, D68.2; recorded as D71.5). No task followed.
+- Run 69's worktree `focused-moser-e73dfb` was removed at its close.
+
 ## Settled at Ferazel run 69's close (2026-11-25)
 
 - Run 68's state named level 21 (6A-L21) as next. Done: on main at 63183f8 (Core 797 → 800, WinKit 88 → 89).
