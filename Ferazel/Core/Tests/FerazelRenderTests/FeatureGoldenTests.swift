@@ -894,4 +894,115 @@ final class FeatureGoldenTests: XCTestCase {
         for f in a.trace267 { for v in f { bytes7 += [24, 16, 8, 0].map { UInt8(truncatingIfNeeded: Int32(v) >> $0) } } }
         XCTAssertEqual(String(LevelFixtureServices.fnv1a(bytes7), radix: 16), "77379b19446b30c6", "record 267's trace (measured)")
     }
+
+    // MARK: - 6A-CP: the magic carpet
+
+    /// The carpet fixture's literals — the same as `CarpetTests`' (`FerazelCoreTests`, a target this one cannot see): the
+    /// shipped carpet's record (level 22's placement 486), the player's start right above it (a named test stand-in,
+    /// `LevelRun`'s `start:`), the iteration in which he wakes it (measured there and here), and the leave-out list
+    /// (none: the carpet is the level's last feature).
+    static let carpetRecord = 486
+    static let carpetStart = (x: 7852, y: 1931)
+    static let carpetWakeIteration = 3
+    static let level22Carpet: [LevelFixture.LeaveOut] = []
+
+    /// One presented frame of level 22's carpet fixture: its tick count, the `.GameLoop` iteration it ends, the screen's
+    /// indices and their FNV-1a 64, the carpet's type after that iteration, and the carpet draws (face 0x438) its
+    /// `.WrapDrawSprites` held, as (x, y, cell, mode).
+    struct CarpetFrame {
+        let ticks: UInt32
+        let iteration: Int
+        let pixels: [UInt8]
+        let fnv: UInt64
+        let type: Int16?
+        let carpets: [[Int]]
+    }
+
+    /// Level 22's fixture with `leaveOut` (nothing, or the carpet's record), seed 1, `FerazelPrefs()`, the player at
+    /// `carpetStart` (a named test stand-in: right above placement 486), no input: the first `count` presented
+    /// frames. `dropCarpet`: every carpet draw taken out of each `.WrapDrawSprites` before the renderer draws it (the
+    /// same run otherwise: Core never sees the change).
+    static func level22CarpetFrames(count: Int, leaveOut: [LevelFixture.LeaveOut],
+                                    dropCarpet: Bool) throws -> [CarpetFrame] {
+        let (run, services) = try LevelFixtureServices.open(level: 22, leaveOut: leaveOut, start: carpetStart)
+        var now: UInt32 = 0, frames: [CarpetFrame] = []
+        while frames.count < count && now < 6000 {
+            let out = try run.tick(now: now, input: FrontInput())
+            now += 1
+            var presented = false, carpets: [[Int]] = []
+            for g in out.segments where g.target == .level {
+                let r = try XCTUnwrap(services.renderer, "a level draw before the renderer exists")
+                let draws = g.output.draws.map { op -> DrawOp in
+                    guard case .wrapDrawSprites(let list) = op else { return op }
+                    carpets += list.filter { $0.face.pict == BoxSprite.rolledCarpet }
+                        .map { [$0.x, $0.y, $0.face.index, Int($0.mode)] }
+                    return dropCarpet ? .wrapDrawSprites(list.filter { $0.face.pict != BoxSprite.rolledCarpet }) : op
+                }
+                try r.apply(FrameOps(draws: draws))
+                presented = presented || draws.contains { if case .copyToScreen = $0 { true } else { false } }
+            }
+            if presented, let r = services.renderer {
+                let w = run.session?.world
+                let c = w?.active.sprites.first { Int($0.recordIndex) == Self.carpetRecord && $0.handler == .box }
+                frames.append(CarpetFrame(ticks: now, iteration: run.iterations, pixels: r.screen.pixels,
+                                          fnv: LevelFixtureServices.fnv1a(r.screen.pixels), type: c?.type,
+                                          carpets: carpets))
+            }
+        }
+        XCTAssertEqual(frames.count, count, "\(count) presented frames within 6000 ticks")
+        return frames
+    }
+
+    /// 6A-CP: level 22's fixture (nothing left out — the carpet is the level's last feature; seed 1, `FerazelPrefs()`,
+    /// the player at `carpetStart`, no input). The player drops onto the rolled carpet and wakes it in iteration
+    /// `carpetWakeIteration` — in `.MTCollideSpecialSprite`, after that iteration's `.PaintFrameWrap`. Each
+    /// `.PaintFrameWrap` draws the sprites (`.WrapDrawSprites`) before it runs their Handles, so the next frame still
+    /// draws the face the wake left (the rolled cell 0, pixel for pixel), and the first frame after the wake that shows
+    /// it is the one after: the carpet's first Handle as 0x439 (`+0x46` 2 → 3) faced it with cell 1 of the set 0x438.
+    /// That frame is the golden. Proved by two twins (D51.1, D53.1, D54.2): the same run with every carpet draw removed,
+    /// and the fixture with the carpet's record left out (no carpet, no wake) — both differ in that frame; every frame
+    /// before it draws the rolled cell 0.
+    func testLevel22CarpetFeatureGolden() throws {
+        let real = try LevelFile.load(from: try LevelFixture.base.get(), level: 22)
+        XCTAssertEqual(try LevelFixture.leftOut(real, Self.level22Carpet).count, 0)
+        XCTAssertEqual(real.activePlacements.filter { BoxSprite.carpets.contains($0.type) }.map(\.index),
+                       [Self.carpetRecord])
+        let n = Self.carpetWakeIteration + 2
+        let frames = try Self.level22CarpetFrames(count: n, leaveOut: [], dropCarpet: false)
+        let twin = try Self.level22CarpetFrames(count: n, leaveOut: [], dropCarpet: true)
+        let none = try Self.level22CarpetFrames(count: n, leaveOut: [.record(Self.carpetRecord)],
+                                                dropCarpet: false)
+        guard frames.count == n, twin.count == n, none.count == n else { return }   // a failure above, never a crash
+        XCTAssertEqual(frames.map(\.iteration), Array(1...n), "one presented frame an iteration")
+        XCTAssertEqual(twin.map(\.ticks), frames.map(\.ticks))
+        XCTAssertEqual(none.map(\.ticks), frames.map(\.ticks))
+        XCTAssertEqual(frames.map(\.carpets), twin.map(\.carpets), "the twin's run is the same run")
+        XCTAssertEqual(Set(none.map(\.carpets)), [[]], "no carpet placed, none drawn")
+        // Rolled (type 0x438) until the wake's iteration ends, cell 0 drawn until then and in the next frame; the golden
+        // frame draws the 0x439's cell 1, mode 0x10000 (the shipped p1 0).
+        XCTAssertEqual(frames.map(\.type), Array(repeating: Int16(0x438), count: n - 3) + [0x439, 0x439, 0x439])
+        for f in frames.dropLast() { XCTAssertEqual(f.carpets.map { $0[2] }, [0], "iteration \(f.iteration): rolled") }
+        let golden = try XCTUnwrap(frames.last)
+        XCTAssertEqual(golden.carpets.map { [$0[2], $0[3]] }, [[1, 0x10000]], "the unrolled cell 1")
+        XCTAssertEqual(golden.carpets.map { [$0[0], $0[1]] }, Self.carpetGoldenAt, "measured: where it is drawn")
+        let changedByDraw = zip(golden.pixels, try XCTUnwrap(twin.last).pixels).filter { $0 != $1 }.count
+        let changedByCarpet = zip(golden.pixels, try XCTUnwrap(none.last).pixels).filter { $0 != $1 }.count
+        XCTAssertNotEqual(golden.fnv, twin.last?.fnv, "the carpet is on screen in the golden frame")
+        XCTAssertNotEqual(golden.fnv, none.last?.fnv, "and the frame without the carpet differs")
+        // Measured at 6A-CP (FNV-1a 64 of the 640×480 screen indices after that tick's level draws, the test colour
+        // model).
+        XCTAssertEqual([changedByDraw, changedByCarpet], Self.carpetGoldenChanged, "the screen bytes the carpet changed")
+        XCTAssertEqual(golden.ticks, Self.carpetGoldenTicks)
+        XCTAssertEqual(String(twin.last?.fnv ?? 0, radix: 16), "5d458f4b8b6c8a4b", "the golden frame with no carpet drawn")
+        XCTAssertEqual(String(none.last?.fnv ?? 0, radix: 16), "7d2041c3431ad85e", "the golden frame with no carpet placed")
+        XCTAssertEqual(String(golden.fnv, radix: 16), "ec4f4abda0acfd79", "the level-22 carpet feature golden")
+    }
+
+    /// The golden frame's measured values (6A-CP): the carpet drawn at (7849, 2016) — risen 1 px by its first − 0x1e
+    /// (y256 moves by vy twice a frame: the tail's `+0x1c += vy` and the gravity pass); the screen bytes its draw
+    /// changes (against the twin with no carpet drawn) and the carpet changes (against the fixture without it); the
+    /// tick count (level 22's first presented frame — after chapter card 5 — is iteration 1).
+    static let carpetGoldenAt: [[Int]] = [[7849, 2016]]
+    static let carpetGoldenChanged = [860, 2357]
+    static let carpetGoldenTicks: UInt32 = 1620
 }

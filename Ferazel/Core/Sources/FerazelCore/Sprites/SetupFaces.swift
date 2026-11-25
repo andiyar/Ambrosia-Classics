@@ -275,6 +275,9 @@ public enum SetupFaces {
         // 6A-PS: the enemy pipes 0x5d2…0x5d5 (`.InitBoxSprite` M l. 58771: cache singles, flag 0 → clut 200), faced at
         // Setup from the cache and again by their Handle.
         for p in BoxSprite.pipes { all.append(one(p)) }
+        // 6A-CP: the carpet's cache set 0x438 (`.InitBoxSprite` M l. 58816: 6 × 0x71×0x18, one a row, flag 0 → clut
+        // 200), faced by its Handle.
+        all.append(set(BoxSprite.rolledCarpet, 6, 0x71, 0x18, 1))
         all.append(one(placeholderPict))
         // BN: every face `.InitBonusSprite` loads (`BonusSprite.sheets`; the level-1/2 entries above are the same sheets).
         var table = Dictionary(uniqueKeysWithValues: all)
@@ -507,6 +510,9 @@ public enum SetupFaces {
                 // spawn's.
                 record = BoxSprite.setupPipe(&s, record: p, level: c.level, rng: &rng,
                                              faceRect: c.loadedPipeFrames[p.type] ?? placeholderFrame)
+            } else if BoxSprite.carpets.contains(p.type) {
+                // 6A-CP: the carpet arm (M l. 59078–59103; `BoxSprite.setupCarpet`) — 0x439 draws `FastRand(4)`.
+                BoxSprite.setupCarpet(&s, record: p, level: c.level, rng: &rng)
             } else {
                 BoxSprite.setup(&s, record: p, level: c.level)
             }
@@ -539,6 +545,8 @@ public enum SetupFaces {
                 break
             case 0x5d2...0x5d5:                                // enemy pipes (M l. 59336–59338; 6A-PS): cache single + 4
                 face(Int16(t), 0, .setupCached)
+            case 0x438, 0x439:                                 // the carpet (6A-CP): `+0xc0` 0 — the Handle faces cell
+                face(BoxSprite.rolledCarpet, Int(s.phase >> 1), .handle)   // `+0x46 >> 1` of the cache set 0x438
             case 0x51c:                                        // chest (l. 59031)
                 if inWater() { s.mode = 0x90000 }
                 face(0x51c, 0, .setup)

@@ -11,10 +11,10 @@ import Foundation
 /// (`createBalloon`, `destructBalloon`). BT: the gate 0xb7c (`gateArm`, with the 2941's move and clip), the switch
 /// blocks 0x4e2…0x4ff (`switchBlockArm`) and the spouts 0x5aa…0x5ad (`spoutArm`; ES: their boulders). GY: the geysers
 /// 0x5a0…0x5a9 (`Geyser`: the Setup arm, the eruption arm, the column and its head). PI: the enemy pipes 0x5d2…0x5d5
-/// (`setupPipe`, `pipeArm`; their children through `generate`). Not built (named where they stand):
-/// the carpet 0x438 / 0x439, the spiked balls 0x5c3 / 0x5c4, the table
+/// (`setupPipe`, `pipeArm`; their children through `generate`). 6A-CP: the magic carpet 0x438 / 0x439 (`setupCarpet`,
+/// `carpetArm`, `.HitBoxSprite`'s wake). Not built (named where they stand): the spiked balls 0x5c3 / 0x5c4, the table
 /// 0xb71 and the snowball 0xbfe (Phase 6) — those types still return at once from the Handle (`handleBuilt`) and stand
-/// still; `.HitBoxSprite`'s carpet arm (Phase 6). SW: the tree trunk 0x2c8 / 0x2c9 (`newTrunk`, the Setup and Handle
+/// still. SW: the tree trunk 0x2c8 / 0x2c9 (`newTrunk`, the Setup and Handle
 /// arms); `.HitBoxSprite` is also a Statue's hit (`StatueSprite`), and takes a Statue as a pair partner.
 public enum BoxSprite {
     /// The trampoline (PICT 1470, the 4-face set `_DAT_100a0a2c`).
@@ -162,8 +162,9 @@ public enum BoxSprite {
     /// 0x20), one-way, no tile callback, gravity 0, push mass and sag 0 — made only by the column, `Geyser.newHead`). The
     /// geyser arm 0x5a0…0x5a8 draws `FastRand` and makes the triple's children: `Geyser.setup` runs this head and tail,
     /// then the arm (its `+0x189` and the children's `+0x188`, M l. 59127, 59174, 59181). The other arms (several make
-    /// sprites or draw `FastRand` at Setup) leave the head's fields — the pipes 0x5d2…0x5d5 take `setupPipe` (PI);
-    /// // later: Phase 6 (carpet 0x438/0x439, spiked balls 0x5c3/0x5c4, the table 0xb71, the snowball 0xbfe).
+    /// sprites or draw `FastRand` at Setup) leave the head's fields — the pipes 0x5d2…0x5d5 take `setupPipe` (PI), the
+    /// carpet 0x438 / 0x439 `setupCarpet` (6A-CP); // later: Phase 6 (spiked balls 0x5c3/0x5c4, the table 0xb71, the
+    /// snowball 0xbfe).
     public static func setup(_ s: inout SpriteSlot, record p: Placement, level: LevelFile) {
         let t = s.type
         s.oldPosition = SpriteSlot.Point(x: s.x, y: s.y)                       // the spawn copy `+8` / `+6`
@@ -497,18 +498,54 @@ public enum BoxSprite {
         return rec
     }
 
+    /// The magic carpet (6A-CP; ENG §2.11): 1080 (0x438) rolled, waking into 1081 (0x439) — the unrolled flying platform,
+    /// reached only by the wake (placed on no level). Its cache set 0x438 (`_DAT_100a0a10`, 6 × 0x71×0x18, one a row,
+    /// flag 0; `.InitBoxSprite` M l. 58816): cell `+0x46 >> 1`.
+    public static let rolledCarpet: Int16 = 0x438
+    public static let carpets: ClosedRange<Int16> = 0x438...0x439
+    /// 0.8 (f64 `0x100a1ae8`, read with `const.py`): the carpet's vy factor once its bob ends (M l. 60369–60374).
+    static let carpetDamping = Double(bitPattern: 0x3fe9_9999_9999_999a)
+
+    /// `.SetupBoxSprite`'s carpet arm (M l. 59078–59103; 6A-CP): the head and tail (`setup`), then (the cache mark
+    /// `_DAT_100a0a10 + 1 = 1` is `CachedFaces.markedRecords`') 0x438: `+0x46 = 0`, `+0x1f8 = 0`, SetRect(0x34, 4, 0x35,
+    /// 0xc); 0x439: `+0x1f8` set, `+0x46 = FastRand(4) + 2`, SetRect(0x12, 4, 0x5b, 0x12); both: one-way `+0x185 = 1`,
+    /// gravity 0, `+0x138 = 0`, `+0xa6 = 0`, `+0x14c` = the record's p2·30 (0 → −1: never counts down), `+0x150` = p1,
+    /// `+0xb8 = +0x150 + 0x10000`. `+0xc0` stays 0 (the Handle faces it; `SetupFaces`' `.handle`) and `+0x15c` is never
+    /// set (0 from `.MTNewSprite`'s clear, M l. 30703).
+    public static func setupCarpet(_ s: inout SpriteSlot, record p: Placement, level: LevelFile, rng: inout FastRand) {
+        setup(&s, record: p, level: level)
+        if s.type == rolledCarpet {
+            s.phase = 0
+            s.hasTileHit = false
+            s.hotRect = rect(0x34, 4, 0x35, 0xc)
+        } else {
+            s.hasTileHit = true
+            s.phase = rng.next(4) &+ 2
+            s.hotRect = rect(0x12, 4, 0x5b, 0x12)
+        }
+        s.oneWay = true
+        s.gravity = 0
+        s.pushMass = 0
+        s.counterA6 = 0
+        let count = Int32(p.p2) &* 0x1e
+        s.classTimer = count == 0 ? -1 : count
+        s.classWord150 = Int32(p.p1)
+        s.mode = UInt32(bitPattern: s.classWord150 &+ 0x10000)
+    }
+
     /// Whether the type's `.HandleBoxSprite` runs (the arm and the common tail). The types whose arm is not built yet
-    /// return at once and stand still: the carpet 0x438 / 0x439, the spiked
+    /// return at once and stand still: the spiked
     /// balls 0x5c3 / 0x5c4, the table 0xb71 and the snowball 0xbfe (// later: Phase 6). Every other Box runs: the built
     /// arms (W3 trampoline and bridges, S1 save point, C1 NPCs, BX1 boulders and rocks, stalactite, mine cart, crates,
     /// the 2907 timer's countdown, the 2941's death; BX2 the chest and the doors; BT the gate 0xb7c with the 2941's
     /// move and clip, the switch blocks 0x4e2…0x4ff, the spouts 0x5aa…0x5ad; SW the tree trunk 0x2c8 / 0x2c9's
-    /// lifetime; GY the geysers 0x5a0 / 0x5a5; PI the enemy pipes 0x5d2…0x5d5) and the types with no arm (GY: the geyser head 0x5a9 among them)
+    /// lifetime; GY the geysers 0x5a0 / 0x5a5; PI the enemy pipes 0x5d2…0x5d5; 6A-CP the carpet 0x438 / 0x439) and the
+    /// types with no arm (GY: the geyser head 0x5a9 among them)
     /// (teleporters, signs, decorations, outcrops, mushrooms, furniture, the wheel, the crate range 0xc15…0xc1b), which
     /// go through the block chain's faces (M l. 61088–61151) to the tail.
     public static func handleBuilt(_ t: Int16) -> Bool {
         switch t {
-        case 0x438, 0x439, 0x5c3, 0x5c4, 0xb71, 0xbfe:
+        case 0x5c3, 0x5c4, 0xb71, 0xbfe:
             return false
         default:
             return true
@@ -539,7 +576,8 @@ public enum BoxSprite {
     ///   `doorArm`); the geysers 0x5a0 / 0x5a5 (`LAB_1006df20`, M l. 60379–60483; GY, `Geyser.erupt`: the eruption,
     ///   the triple's re-targeting, `.HandleGeyserColumn`); the enemy pipes 0x5d2…0x5d5 (M l. 60624–60768; PI,
     ///   `pipeArm`: `+0x15c == 0` returns without the tail); the trees' branches 0xc08 / 0xc09 (M l. 60941–60947,
-    ///   61067–61075; 6A-TR): no hit, face, tile callback or gravity, one-way for 0xc08 only;
+    ///   61067–61075; 6A-TR): no hit, face, tile callback or gravity, one-way for 0xc08 only; the carpet 0x438 / 0x439
+    ///   (M l. 60289–60375; 6A-CP, `carpetArm`);
     /// - every other type reaches the block chain (M l. 61088–61151): the switch blocks (`switchBlockArm`), then the face
     ///   from the class caches — decorations 0xaf5…0xb21 (`0x1009b500 + type·0x10` = the cache entry), outcrops
     ///   0xb22…0xb35, mushrooms 0xb36…0xb49, furniture 0xb68…0xb70 (each `cache[type − first] + 4`); the NPCs 0xb87…0xb99
@@ -605,6 +643,8 @@ public enum BoxSprite {
             Geyser.erupt(w, id: id, lights: &lights, effects: effects)
         case pipes:
             guard pipeArm(w, id: id, lights: &lights, effects: effects, faceBounds: faceBounds) else { return }
+        case carpets:
+            carpetArm(w, id: id)
         case chest:
             chestArm(w, id: id, lights: &lights, effects: effects)
         case doors:
@@ -648,6 +688,74 @@ public enum BoxSprite {
     /// run-time spawns, plan hazard "Record index 0x200").
     static func liveRecord(_ w: SpriteWorld, _ i: Int16) -> Placement? {
         w.records.indices.contains(Int(i)) ? w.records[Int(i)] : nil
+    }
+
+    /// The carpet's arm of `.HandleBoxSprite` (M l. 60289–60375; 6A-CP, ENG §2.11 item 3), in order: `+0x46 > 0` → + 1,
+    /// > 11 → 2 (the flying ripple loops cells 1…5); `+0xc0` = the cache set 0x438's cell `+0x46 >> 1`. While `+0x15c >
+    /// 0`: − 1, then < 16 → vy + 0x1e, else vy − 0x1e (14 frames up, then down), vx 0, no tile hit. `+0x15c == 0`: one-way
+    /// and the tile hit back (so the rolled carpet, whose Setup cleared it, gets it on its first Handle). 0x439: the rect
+    /// re-set (0x12, 4, 0x5b, 0x12). Ridden (`+0x186`) or riding (`+0x154`) and `+0x14c ≥ 0` (−1, the shipped carpet's,
+    /// never): `+0x154 = 1`, `+0x14c − 1` (floor 0); with `+0xa6 < 1` and the paint counter `*_DAT_1009fd2c` & 3 = 0
+    /// (`SpriteWorld.paintCounter`): `+0xa6` = 10 when `+0x14c` < 91 else 30, `+0x158 = 6`, `+0xb8 = 0x10009`, and at
+    /// `+0x14c` 0 `+0xe9 = 1` and `.ExplodeFaceIntoParticles(+0xc0, (+0xa, +0xc), 1, 2, 4, 100, 100)`; other frames
+    /// `+0xa6 − 1` and the flash steps (`+0x158 < 1` → `+0x150 + 0x10000`; else < 4 → 0x10008, else 0x10009, then
+    /// `+0x158 − 1`). vx: |vx| ≤ 0x80 → 0, else 0x80 toward 0. `+0x15c < 1` → vy = fctiwz(vy · 0.8). Then the tail (its
+    /// two carpet exclusions: no `.FootPressure`, the gravity pass forced). The burst's walk comes after the arm's other
+    /// stores here; it reads only the face and the position, which they do not touch.
+    static func carpetArm(_ w: SpriteWorld, id: Int) {
+        let gate = w.paintCounter & 3 == 0
+        var burst: SpriteSlot?
+        w.active.update(id: id) { s in
+            if 0 < s.phase { s.phase += 1 }
+            if 11 < s.phase { s.phase = 2 }
+            s.face = FaceRef(pict: rolledCarpet, index: Int(s.phase >> 1), set: .encoded)
+            if 0 < s.classWord15c {
+                s.classWord15c -= 1
+                s.vy &+= s.classWord15c < 0x10 ? 0x1e : -0x1e
+                s.vx = 0
+                s.hasTileHit = false
+            }
+            if s.classWord15c == 0 {
+                s.oneWay = true
+                s.hasTileHit = true
+            }
+            if s.type == 0x439 { s.hotRect = rect(0x12, 4, 0x5b, 0x12) }
+            if (s.ridingLatch || s.classWord154 != 0) && -1 < s.classTimer {
+                s.classWord154 = 1
+                s.classTimer -= 1
+                if s.classTimer < 0 { s.classTimer = 0 }
+                if s.counterA6 < 1 && gate {
+                    s.counterA6 = s.classTimer < 0x5b ? 10 : 0x1e
+                    s.classWord158 = 6
+                    s.mode = 0x10009
+                    if s.classTimer == 0 {
+                        s.dead = true
+                        burst = s
+                    }
+                } else {
+                    s.counterA6 &-= 1
+                    if s.classWord158 < 1 {
+                        s.mode = UInt32(bitPattern: s.classWord150 &+ 0x10000)
+                    } else {
+                        s.mode = s.classWord158 < 4 ? 0x10008 : 0x10009
+                        s.classWord158 -= 1
+                    }
+                }
+            }
+            let mag = s.vx < 1 ? 0 &- s.vx : s.vx
+            if mag < 0x81 {
+                s.vx = 0
+            } else if s.vx < 1 {
+                s.vx &+= 0x80
+            } else {
+                s.vx &-= 0x80
+            }
+            if s.classWord15c < 1 { s.vy = Int32((Double(s.vy) * carpetDamping).rounded(.towardZero)) }
+        }
+        if let b = burst {
+            ExplodeFace.explode(w, face: b.face.flatMap(w.particleFaces.sprite), v: Int16(truncatingIfNeeded: b.y),
+                                h: Int16(truncatingIfNeeded: b.x), xStep: 1, yStep: 2, shape: 4, gravity: 100, style: 100)
+        }
     }
 
     /// The common tail `LAB_1006f948` (M l. 61152–61177): `.ApplyFriction(+0x114)`; type ≠ 0x438 / 0x439 with `+0xcd`
@@ -1573,7 +1681,8 @@ public enum BoxSprite {
     ///   both airborne → the higher (`+0xa` smaller) one moves first; both grounded → by speed: (|self vx| − |other vx|)
     ///   + (|self vy| − |other vy|) < 0 (i16) → `PB(self, other)` first, else `PB(other, self)` first; then both
     ///   `+0x182 = 1`;
-    /// - the player (`PTR_PTR_100a052c`) against the carpet 0x438 — // later: Phase 6 (it wakes into 0x439).
+    /// - the player (`PTR_PTR_100a052c`) against the carpet 0x438 (the type read on entry; M l. 61470–61476; 6A-CP): the
+    ///   wake — `+0x46 = 2`, type 0x439, the tile hit set, `+0x15c = 0x1e`, `+0x185 = 0`.
     public static func hit(_ w: SpriteWorld, id: Int, other oID: Int, lights: inout LightTable, effects: Int16 = 1,
                            faceWidth: (FaceRef) -> Int = { PlayerShot.cellRect($0).right },
                            faceBounds: (FaceRef) -> IdleSprites.Rect = PlayerShot.cellRect) {
@@ -1644,8 +1753,15 @@ public enum BoxSprite {
             }
             w.active.update(id: oID) { $0.boxPairLatch = true }
             w.active.update(id: id) { $0.boxPairLatch = true }
+        } else if runs(o, .player) && t == rolledCarpet {
+            // `+0x4c == PTR_PTR_100a052c` with self 0x438 (M l. 61470–61476; 6A-CP): the wake.
+            w.active.update(id: id) { s in
+                s.phase = 2
+                s.type = 0x439
+                s.hasTileHit = true
+                s.classWord15c = 0x1e
+                s.oneWay = false
+            }
         }
-        // `+0x4c == PTR_PTR_100a052c` with self 0x438: `+0x46 = 2`, type 0x439, `+0x1f8` on, `+0x15c = 30`, `+0x185 = 0`
-        // (M l. 61470–61476) // later: Phase 6 (the carpet's Handle does not run).
     }
 }

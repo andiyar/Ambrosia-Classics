@@ -223,9 +223,14 @@ final class CachedFacesTests: XCTestCase {
         // Measured: needed records, n, q, steps. At CF's point (6A-CF) [33, 168, 336, 33] (24 sets, 9 singles); at
         // 6A-BX1b [34, 169, 338, 34] (+ 2956's single, one face: 24 sets, 10 singles); at 6A-BD [35, 170, 340, 35] (+ the
         // blade single: 24 sets, 11 singles); unchanged at 6A-MP (the 29 path balls are 1485, whose single the radial
-        // balls of the level already mark). Every later task that adds a mark on level 22 or makes one of its records
-        // set up re-derives these (CP).
-        XCTAssertEqual(bar(m.records, m.L), [35, 170, 340, 35])
+        // balls of the level already mark); at 6A-CP [36, 176, 352, 36] (+ the carpet's set #27, 0x438, six faces: 25
+        // sets, 11 singles). Every later task that adds a mark on level 22 or makes one of its records set up
+        // re-derives these.
+        // 6A-CP: the carpet 1080 (record 486) sets up and marks set #27 (0-based 26; `_DAT_100a0a10 + 1 = 1`, M l. 59079).
+        XCTAssertEqual(m.setUp.filter { $0.type == 1080 }.count, 1)
+        XCTAssertTrue(m.records.contains(.set(26)))
+        XCTAssertEqual(CachedFaces.record(.set(26)).pict, 0x438)
+        XCTAssertEqual(bar(m.records, m.L), [36, 176, 352, 36])
     }
 
     func testShot46bReadsRecord0844() throws {

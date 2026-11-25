@@ -1356,8 +1356,9 @@ public struct CachedFaces: Equatable, Sendable {
     /// 6A-BD: the blade 0xbf4 → its single (`_DAT_100a0b0c`: `rec+1 = 1`, M l. 62572; #136, flag 0).
     /// 6A-PS: every enemy pipe 0x5d2…0x5d5 → its own single (`rec+1 = 1` at `type·0x10 − 0x5d1f`, M l. 59336; #6–#9, flag
     /// 0). Its throwaway child's Setup marks that class's records too; every child type is placed where pipes are (21).
+    /// 6A-CP: the carpet 0x438 / 0x439 → the set 0x438 (`_DAT_100a0a10 + 1 = 1`, M l. 59079; #27, flag 0).
     /// Every other built type marks nothing. // later: Phase 6 — the marks of the types not built yet, with their
-    /// Setups (the other scenery, the carpet set 0x438, fire 1208's 0x4b8 + 0x4b9, the other bosses' own
+    /// Setups (the other scenery, fire 1208's 0x4b8 + 0x4b9, the other bosses' own
     /// records and 0x46a's / 0x77b's: the Wizard `0848` only, the Demon all three 0x46a records, Xichra `0848` +
     /// `0840` + 0x77b — LL §1 finding 8).
     static func markedRecords(type t: Int16, p1: Int16 = 0) -> [RecordKey] {
@@ -1401,7 +1402,8 @@ public struct CachedFaces: Equatable, Sendable {
         case 0xb4a...0xb4d: return [single(t)]
         case 0xbf4: return [single(0xbf4)]
         case 0x5d2...0x5d5: return [single(t)]
-        case 0x5b8, 0xa96, 0xa99, 0xa9a, 0xbba, 0xb54, 0xb55, 0xb1a, 0xb20, 0xb21, 0xb87, 0xb88, 0xb8a, 0xb25,
+        case 0x438, 0x439: return [set(0x438)]
+        case 0x5b8,0xa96, 0xa99, 0xa9a, 0xbba, 0xb54, 0xb55, 0xb1a, 0xb20, 0xb21, 0xb87, 0xb88, 0xb8a, 0xb25,
              0xb36, 0xb37, 0xb3a, 0xb43, 0xb6a, 0xb6c, 0xb6d, 0xb6e, 0xb6f, 0xb70,
              0xafc, 0xafd, 0xb04, 0xb05, 0xb10, 0xb1b, 0xb34, 0xb35, 0xb44,
              0xb06, 0xb0a, 0xb0d, 0xb18, 0xb19,
