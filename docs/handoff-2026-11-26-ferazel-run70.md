@@ -1,7 +1,7 @@
 # Handoff — Ferazel's Wand, run 70 (2026-11-26)
 
 **Seat:** Fable 5.2, started by the Coordinator; foreground only.
-**Times:** started 2026-11-25 20:59, closed 2026-11-26 00:20 (Sydney) — night; nothing launched.
+**Times:** started 2026-11-25 20:59, closed 2026-11-26 00:15 (Sydney) — night; nothing launched.
 **Context:** 118k at the start, 159k when the reviews were in, about 210k at the close. Weekly limit at the close:
 55% Fable, 72% all models (46% and 60% at the start).
 

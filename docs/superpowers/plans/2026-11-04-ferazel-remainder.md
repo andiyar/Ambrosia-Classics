@@ -2832,7 +2832,7 @@ ids; its `--check` reads this table):
   `testCarpetLevel22NeverCounts` · `testCarpetSteeringMovesCarpet` · `testCarpetExcludedFromBoxTileHits` ·
   `testLevel22CarpetFeatureGolden` (the first frame after the wake, measured; kept). Asserts: ENG §2.11's ten.
 - **Gate:** Gate-F (G2 812). **Commit:** `FerazelCore: the magic carpet; the player's built half proven; 12 tests`.
-- **As executed — 6A-CP (run 70, 2026-11-25 20:59 → 2026-11-26 about 00:40, night; nothing launched):** Ferazel/Core
+- **As executed — 6A-CP (run 70, 2026-11-25 20:59 → 2026-11-26 00:15, night; nothing launched):** Ferazel/Core
   800 → **812** (the card's 12 tests). Commits 40f0ef0 (task), 6529c38 (ledger), 0049688 and 651314e (fix round);
   merged at 651314e. One implementer, two Opus legs (45 planted bugs: 31 caught, 3 equivalent, 11 test gaps — all 11
   closed by leg 2's verified patch, which also catches 5 further mutants), a fix round held to tests, comments and the
