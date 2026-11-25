@@ -1360,7 +1360,7 @@ Refused records, levels 10–22: **0**; all later levels: **204**.
 | **6A-BG1c** plants | 2700, 2701, 2702, 2705, 2711 — 5 | — | arm built (`case 0xa8c...0xaef:`); faces into the Setup-face table; flag-1 singles #161–#172 marked | 5 types, table + marks |
 | **6A-BX1a** Box scenery | decorations 2808, 2816, 2817, 2827, 2831, 2833, 2834, 2836, 2837, 2846, 2847; outcrops 2850, 2852, 2857, 2861; mushrooms 2872, 2873, 2875, 2876 — 19 | — | arms built; faces into the table; singles marked (outcrops flag 1); **not table rows only** — the level-21 graves 2833 / 2834 / 2836 are placed with p1 ≠ 0 (260, 261, 1) and have non-empty hot rects, so they reach the hot-rect flip (`.FlipHRect(+0x34, face width)`, M l. 59670–59673; finding 6), built by this task (run 54); 2833 / 2834 (p1 > 100) also open Mcnv 260 / 261 (talk arm built, `HitPlayerSprite.swift:332`; 2836, p1 1, opens none) | 19 types, mostly mechanical + the flip (could merge with 6A-BG1c: 24 types of one shape) |
 | **6A-BX1b** Box faces + talkers | teleporters 1060 / 1061, the furniture 2921, NPCs 2955, 2956, 2962 — 6 | — | teleporters: `BoxSprite.setup` arm built; the `SetupFaces` face arm (boot singles 0x424 / 0x425, M l. 58737–58740) built by this task (`case 0x424...0x426:`); 2921 / NPCs: table + marks (singles #118, #60, #61, #67), built by this task; the NPCs open Mcnv 206, 220, 221, 300 (the NPC arm, `HitPlayerSprite.npc`; 220's record, level 11 rec 283, has flag 99 — dormant until Mcnv 221 arms it) | 6 types |
-| **6A-BX1c** the magic carpet | 1080 (0x438, waking into 0x439) — 1 | — | no Setup face arm; the Box Handle arm (`BoxSprite.swift:463`), the player's carpet arms (`PlayerTiles.swift:164`, `BoxSprite.swift:1521`, `:1594`); cache set 0x438 (#27, not registered) | 1 type, a whole mover |
+| **6A-BX1c** the magic carpet | 1080 (0x438, waking into 0x439) — 1 | — | built by 6A-CP (run 70): the Setup face arm (`SetupFaces` `case 0x438, 0x439:`), `setupCarpet`, the Handle arm `carpetArm` and the wake (`BoxSprite.swift`); the player's carpet arms held by `CarpetTests`; cache set 0x438 (#27) registered (§6's type row 1080 carries the anchors) | 1 type, a whole mover |
 | ~~6A-BN1~~ | — 0 | — | nothing (finding 2) | drop |
 
 ### (b) Types, switches and resources of 10–22 that no Wave 5 card owns — proposals
@@ -1395,7 +1395,7 @@ task adds a feature only where the plan puts one inside it.
 | 18 | the Chief arena (6A-CH's level-18 rows) | alone, with or after 6A-CH |
 | 20 | none, once 6A-WD covers its wind and BG1a / BG1b are in | alone, or with 21 if the pipe wiring moves out of the level-21 task |
 | 21 | the enemy pipes' level spawn (`setupPipe` wiring + the throwaway child, M l. 59347–59353) — the plan puts it here | alone as planned |
-| 22 | none (blade → BG1b, teleporter / NPC → BX1b, carpet → BX1c) | alone, or with 21 under the same condition |
+| 22 | none (blade → BG1b, teleporter / NPC → BX1b, carpet → BX1c, built by 6A-CP in run 70) | alone, or with 21 under the same condition |
 
 So, as the plan stands: **one pair (10 + 11)** and five single levels. If the pipe spawn wiring becomes its own small task
 (or joins 6A-BX1b), 21 adds nothing and **20 + 21** or **21 + 22** can pair as well (not both).
