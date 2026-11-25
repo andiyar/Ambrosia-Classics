@@ -417,7 +417,14 @@ def _port_arm(t, cls, ps, n1):
                         'the boot single (M l. 58737–58740)')
             return (REFUSED, face_refusal(), f'teleporter: arm {anchor(SF, r"case 0x424\.\.\.0x426:")} built; face {h(t)} '
                                              'not in the Setup-face table')
-        if t in (0x438, 0x439, 0x5c3, 0x5c4, 0xb71, 0xbfe):
+        if t in (0x438, 0x439):
+            # 6A-CP built the carpet (D69.2: the script models built types by hand): anchored on the Swift face arm as
+            # written, its Setup arm, Handle arm and the wake, so a removed piece fails --check.
+            return (BUILT_S, anchor(SF, r'case 0x438, 0x439:'),
+                    f'magic carpet (6A-CP): `setupCarpet` ({anchor(BOX, r"public static func setupCarpet")}), the Handle '
+                    f'arm `carpetArm` ({anchor(BOX, r"static func carpetArm")}), the wake '
+                    f'({anchor(BOX, r"else if runs[(]o, [.]player[)] && t == rolledCarpet")})')
+        if t in (0x5c3, 0x5c4, 0xb71, 0xbfe):
             return (REFUSED, dflt, f'no Setup face arm; Handle not built ({later_box})')
         return (REFUSED, dflt, 'no Setup face arm')
     if cls == 'Platform':
