@@ -989,9 +989,16 @@ final class FeatureGoldenTests: XCTestCase {
         let changedByCarpet = zip(golden.pixels, try XCTUnwrap(none.last).pixels).filter { $0 != $1 }.count
         XCTAssertNotEqual(golden.fnv, twin.last?.fnv, "the carpet is on screen in the golden frame")
         XCTAssertNotEqual(golden.fnv, none.last?.fnv, "and the frame without the carpet differs")
+        // The frame before draws the rolled cell 0 one pixel lower: its draw changes another count of bytes than the
+        // unrolled cell 1's — the two cells are different pictures, not the same face moved.
+        let rolledByDraw = zip(frames[n - 2].pixels, twin[n - 2].pixels).filter { $0 != $1 }.count
+        XCTAssertGreaterThan(rolledByDraw, 0, "the rolled carpet is on screen the frame before")
+        XCTAssertNotEqual(rolledByDraw, changedByDraw, "cell 1 is not cell 0's picture")
         // Measured at 6A-CP (FNV-1a 64 of the 640×480 screen indices after that tick's level draws, the test colour
-        // model).
-        XCTAssertEqual([changedByDraw, changedByCarpet], Self.carpetGoldenChanged, "the screen bytes the carpet changed")
+        // model). The first count (against the twin with the carpet's draws removed) is the carpet's own share of the
+        // screen; the second (against the fixture without the carpet) also holds the player falling further in that run.
+        XCTAssertEqual([changedByDraw, changedByCarpet], Self.carpetGoldenChanged,
+                       "bytes the carpet's draw changed; bytes differing from the run without a carpet")
         XCTAssertEqual(golden.ticks, Self.carpetGoldenTicks)
         XCTAssertEqual(String(twin.last?.fnv ?? 0, radix: 16), "5d458f4b8b6c8a4b", "the golden frame with no carpet drawn")
         XCTAssertEqual(String(none.last?.fnv ?? 0, radix: 16), "7d2041c3431ad85e", "the golden frame with no carpet placed")
@@ -1000,7 +1007,9 @@ final class FeatureGoldenTests: XCTestCase {
 
     /// The golden frame's measured values (6A-CP): the carpet drawn at (7849, 2016) — risen 1 px by its first − 0x1e
     /// (y256 moves by vy twice a frame: the tail's `+0x1c += vy` and the gravity pass); the screen bytes its draw
-    /// changes (against the twin with no carpet drawn) and the carpet changes (against the fixture without it); the
+    /// changes (against the twin with no carpet drawn — the carpet's own share) and the bytes that differ from the
+    /// fixture without it (that count also holds the player falling further in the carpetless run, not the carpet
+    /// alone); the
     /// tick count (level 22's first presented frame — after chapter card 5 — is iteration 1).
     static let carpetGoldenAt: [[Int]] = [[7849, 2016]]
     static let carpetGoldenChanged = [860, 2357]

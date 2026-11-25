@@ -351,7 +351,8 @@ final class CarpetTests: XCTestCase {
     /// `+0x15c < 1` → vy = fctiwz(vy · 0.8) (f64 `100a1ae8` = 0.8, M l. 60369–60374) every frame once the bob ends; vx
     /// decays: |vx| ≤ 0x80 → 0, else 0x80 toward 0 (M l. 60357–60368). A made-up carpet woken on an empty grid.
     func testCarpetVerticalDampingAfterBob() throws {
-        XCTAssertEqual(Double(bitPattern: 0x3fe9_9999_9999_999a), 0.8)
+        // The port's factor is the binary's f64 at `100a1ae8` (`0x3fe999999999999a`), i.e. the double nearest 0.8.
+        XCTAssertEqual(BoxSprite.carpetDamping.bitPattern, 0x3fe9_9999_9999_999a)
         let w = try world()
         let (c, _) = try wokenCarpet(w)
         for _ in 1...30 { handle(w, c) }
@@ -378,17 +379,18 @@ final class CarpetTests: XCTestCase {
         // While `+0x15c > 0` there is no damping: a freshly woken carpet's first Handle is exactly − 0x1e.
         let w2 = try world()
         let (c2, _) = try wokenCarpet(w2)
-        w2.active.update(id: c2) { $0.vy = -100 }
+        w2.active.update(id: c2) { $0.vy = -100; $0.vx = 0x200 }
         handle(w2, c2)
         XCTAssertEqual(w2.active.record(id: c2)?.vy, -130)
         s = try XCTUnwrap(w2.active.record(id: c2))
-        XCTAssertEqual(s.vx, 0)
+        XCTAssertEqual(s.vx, 0, "vx 0 while `+0x15c > 0` (M l. 60306), not the decay's 0x180")
         // `.FootPressure` is skipped for 0x438 / 0x439 (M l. 61154–61157): grounded last frame (`+0xcd`), vx 0x200 →
-        // y256 moves by vy only (a crate would sink by |vx|).
+        // y256 moves by vy only (a crate would sink by |vx|). `+0xcd` is set through `+0xce`: the Handle's head
+        // (`.StandardSpriteHandles`) copies `+0xce` into `+0xcd` before the tail reads it.
         let w3 = try world()
         let (c3, _) = try wokenCarpet(w3)
         for _ in 1...30 { handle(w3, c3) }
-        w3.active.update(id: c3) { $0.vx = 0x200; $0.vy = 0; $0.onSprite = 1 }
+        w3.active.update(id: c3) { $0.vx = 0x200; $0.vy = 0; $0.groundKind = 1 }
         let y0 = try XCTUnwrap(w3.active.record(id: c3)).y256
         handle(w3, c3)
         XCTAssertEqual(w3.active.record(id: c3)?.y256, y0, "no `.FootPressure` sink")
@@ -442,6 +444,17 @@ final class CarpetTests: XCTestCase {
         // (count 84 < 91) → 10; 0 on 46, −1 on 47, Handle 48.
         XCTAssertEqual(Array(gates.prefix(3)), [4, 36, 48], "the flash gates (the paint counter & 3 == 0)")
         XCTAssertTrue(s.dead, "the count ran out within 140 Handles")
+        // The cooldown's threshold (M l. 60324): a gate frame whose decremented count is 91 sets `+0xa6` 30, one at 90
+        // sets 10. Made-up carpets with the count stored right before a gate.
+        for (before, cooldown) in [(Int32(92), Int16(30)), (Int32(91), Int16(10))] {
+            let g = try world()
+            let (gc, _) = try wokenCarpet(g, p1: 3, p2: 4)
+            g.active.update(id: gc) { $0.ridingLatch = true; $0.classTimer = before }
+            g.paintCounter = 0
+            handle(g, gc)
+            let t = try XCTUnwrap(g.active.record(id: gc))
+            XCTAssertEqual([t.classTimer, Int32(t.counterA6)], [before - 1, Int32(cooldown)], "count \(before - 1)")
+        }
     }
 
     /// At `+0x14c` = 0 on a gate frame: `+0xe9 = 1` and `.ExplodeFaceIntoParticles(+0xc0, (+0xa, +0xc), 1, 2, 4, 100,
@@ -451,11 +464,15 @@ final class CarpetTests: XCTestCase {
             let t = op << 24 | UInt32(n)
             return [UInt8(t >> 24), UInt8(t >> 16 & 0xff), UInt8(t >> 8 & 0xff), UInt8(t & 0xff)]
         }
-        // One row of four literal pixels: xStep 1 → four particles, style 100 (four draws each).
-        let face = ParticleFace(frame: [0, 0, 1, 4], bounds: [0, 0, 1, 4],
-                                tokens: tok(1, 8) + tok(2, 4) + [10, 11, 12, 13] + tok(0, 0))
+        // Two rows of four literal pixels: xStep 1 → four particles a used row, yStep 2 → the second row skipped, style
+        // 100 (four draws each).
+        let face = ParticleFace(frame: [0, 0, 2, 4], bounds: [0, 0, 2, 4],
+                                tokens: tok(1, 8) + tok(2, 4) + [10, 11, 12, 13]
+                                    + tok(1, 8) + tok(2, 4) + [20, 21, 22, 23] + tok(0, 0))
+        // The face walked is `+0xc0` as this Handle set it: `+0x46` 2 at the wake, + 1 a Handle, > 11 → 2 (M l.
+        // 60290–60297) — 9 on Handle 37, the cell 9 >> 1 = 4 of the set 0x438. Only that cell has pixels here.
         let w = try world()
-        w.particleFaces = ParticleFaces(sprite: { $0.pict == 0x438 ? face : nil })
+        w.particleFaces = ParticleFaces(sprite: { $0.pict == 0x438 && $0.index == 4 ? face : nil })
         let (c, _) = try wokenCarpet(w, p2: 1)
         XCTAssertEqual(w.active.record(id: c)?.classTimer, 30)
         w.active.update(id: c) { $0.ridingLatch = true }
@@ -483,7 +500,15 @@ final class CarpetTests: XCTestCase {
                 XCTAssertEqual(r.count, 4)
                 XCTAssertEqual(Set(r.map(\.shape)), [4])
                 XCTAssertEqual(Set(r.map { Int($0.x >> 8) }), Set((0..<4).map { b.x + $0 }))
-                XCTAssertEqual(Set(r.map { Int($0.y >> 8) }), [b.y + 1])
+                XCTAssertEqual(Set(r.map { Int($0.y >> 8) }), [b.y + 1], "the first row only (yStep 2)")
+                XCTAssertEqual(r.map(\.kind), [10, 11, 12, 13].map { Int16(-($0 + 0x100)) }, "the first row's pixels")
+                // Gravity 100 (the burst's sixth argument) + each particle's R(30), its fourth draw.
+                var g = rng, gravities: [Int16] = []
+                for _ in 0..<4 {
+                    _ = g.next(0x14); _ = g.next(0x2ee); _ = g.next(100)
+                    gravities.append(100 + Int16(g.next(0x1e)))
+                }
+                XCTAssertEqual(r.map(\.gravity), gravities, "gravity 100 + R(30)")
                 break
             }
             XCTAssertEqual(w.particles.counters.count, n0, "Handle \(k): no burst before 0")
@@ -549,6 +574,37 @@ final class CarpetTests: XCTestCase {
         w.player.ridden = nil
         Player.riding(w, id: pl)
         XCTAssertFalse(w.player.carpet)
+        // A rolled 0x438 ridden sets the flag too (`!= 0x438 && != 0x439` → 0, M l. 44538–44540).
+        w.player.ridden = try carpet(w, type: 1080, x: 300)
+        Player.riding(w, id: pl)
+        XCTAssertTrue(w.player.carpet, "a ridden 0x438")
+        w.player.ridden = nil
+        Player.riding(w, id: pl)
+
+        // The player's tile arm (raw `100550e8..10055174`): an FG hit while on a carpet → the player's `+0xdc` = the
+        // ridden carpet; the carpet's `+0xa` = the player's `+0xa` + his rect bottom − the carpet's rect top (i16), its
+        // `+0x1c` = that << 8; its vx 0 when the player's vx < 0x100, a SIGNED compare (`eqv`/`subfc`/`addze`).
+        for (pvx, stops) in [(Int32(0xff), true), (Int32(0x100), false), (Int32(-0x200), true)] {
+            let g = try world(floorRow: 12)
+            let (gc, gp) = try wokenCarpet(g)
+            g.active.update(id: gc) { $0.vx = 0x300 }
+            // The player 3 px into the floor (surface y 400; his rect's bottom y + 0x55), falling.
+            g.active.update(id: gp) { p in
+                p.x = 100; p.x256 = 100 << 8
+                p.y = 400 - 0x55 + 3; p.y256 = Int32(400 - 0x55 + 3) << 8
+                p.vx = pvx; p.vy = 0x200
+                p.ridden = nil
+            }
+            g.player.carpet = true
+            g.player.ridden = gc
+            TileSolver(world: g).separateFromTiles(gp, pass: PlayerTiles.hit(keys: []))
+            let p = try XCTUnwrap(g.active.record(id: gp)), k = try XCTUnwrap(g.active.record(id: gc))
+            XCTAssertEqual(g.player.carpetLock, 2, "player vx \(pvx): the hit")
+            XCTAssertEqual(p.ridden, gc, "player vx \(pvx)")
+            XCTAssertEqual(k.y, p.y + 0x55 - k.hotRect.top, "player vx \(pvx): the carpet under his feet")
+            XCTAssertEqual(k.y256, Int32(k.y) << 8, "player vx \(pvx)")
+            XCTAssertEqual(k.vx, stops ? 0 : 0x300, "player vx \(pvx)")
+        }
 
         // The keys block, carpet and player centres equal (no gap close).
         func steer(_ keys: InputActions, vx: Int32, vy: Int32, lock: Int16 = 0) -> [Int32] {
@@ -639,7 +695,8 @@ final class CarpetTests: XCTestCase {
     /// floor fast gets factor 0 and no bounce — no thud (no `FastRand(10000)`, no cue 436), no `.KillBox` — where a
     /// boulder 0x42e on the same floor at the same speed thuds. Through the carpet's own Handle (its tail's tile pass).
     func testCarpetExcludedFromBoxTileHits() throws {
-        func drop(_ type: Int16) throws -> (cues: [PlayerCue], rngMoved: Bool, vy: Int32, dead: Bool) {
+        func drop(_ type: Int16, vy: Int32 = 0x500) throws
+            -> (cues: [PlayerCue], rngMoved: Bool, vy: Int32, dead: Bool) {
             let w = try world(floorRow: 12)
             let id: Int
             if type == 0x42e {
@@ -655,7 +712,7 @@ final class CarpetTests: XCTestCase {
             // floor's surface (y 400).
             let bottom = try XCTUnwrap(w.active.record(id: id)).hotRect.bottom
             w.active.update(id: id) {
-                $0.vy = 0x500; $0.vx = 0; $0.onSprite = 0
+                $0.vy = vy; $0.vx = 0; $0.onSprite = 0
                 $0.x = 100; $0.x256 = 100 << 8; $0.y = 400 - bottom - 4; $0.y256 = Int32(400 - bottom - 4) << 8
             }
             w.player.cues = []
@@ -672,5 +729,11 @@ final class CarpetTests: XCTestCase {
         XCTAssertFalse(carpet.rngMoved, "no FastRand(10000)")
         XCTAssertFalse(carpet.dead)
         XCTAssertEqual(carpet.vy, 0, "factor 0: landed, no bounce")
+        // Faster (0x800, 0x666 after the damping): a boulder's factor 0x3c would bounce it up by about 0x180, past the
+        // |vy| < 0x100 clamp — the carpet, outside the first range (M l. 61551, `< 0x438`), still lands dead.
+        let fast = try drop(0x439, vy: 0x800)
+        XCTAssertEqual(fast.cues, [])
+        XCTAssertFalse(fast.rngMoved)
+        XCTAssertEqual(fast.vy, 0, "factor 0 at any speed")
     }
 }
