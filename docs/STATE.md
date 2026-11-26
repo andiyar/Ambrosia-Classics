@@ -7,76 +7,63 @@ Settled history lives in docs/STATE-history.md.
 > numbers and open items and moves anything settled to the top of `docs/STATE-history.md`; it never appends a run story
 > here. Forks go in `docs/DECISIONS.md`, narrative in the handoff. Re-verify before acting.
 
-## Ferazel's Wand — 2026-11-26 (attended run 70 closed: the magic carpet is built; level 22 heads run 71)
+## Ferazel's Wand — 2026-11-26 (attended run 71 closed: level 22 is open; the phase end, run 72, is the last run before the pause)
 
-- **Ben's ruling 2026-11-26: finish Phase 6A, then archive.** The original author is selling an official remaster,
-  so Ferazel pauses (not cancelled) after the 6A phase end: run 71 = level 22, run 72 = the phase end plus an
-  in-game level chooser, complete Mac and Windows builds (no public upload), then `STATUS: PAUSED`. No 6B planning
-  run. The full text is the block at the top of `docs/NEXT.md`.
+- **Ben's ruling 2026-11-26 (D72.1): finish Phase 6A, then archive.** The original author is selling an official
+  remaster, so Ferazel pauses (not cancelled) after the 6A phase end. Run 72 = the phase end plus an in-game level
+  chooser, complete Mac and Windows builds (no public upload), then `STATUS: PAUSED`. No 6B planning run. The full
+  text is the block at the top of `docs/NEXT.md` and D72.1.
+- **Where it stands:** every build task of Phase 6A "through the Goblin Chief" is done and merged. Only the phase
+  end (6A-END) is left. Phase 5 "Enemies" is closed on the machine side — **Ben's gate pending (Q18)**.
+- **Levels playable on main: 1–5, 10, 11, 15, 18, 20, 21, 22.** Level 22 "The Labyrinth" opened in run 71: the
+  biggest level yet (510 objects), dark, with 190 small flying enemies, spinning blades, swinging maces, eight
+  teleporters, Dimbo to talk to, and the game's only magic carpet. Talking to Dimbo there makes him appear back on
+  level 11. **Nobody has seen levels 20, 21 or 22 yet:** each was launched muted and stayed running, but the seat
+  is not allowed to look at the window (D70.5). The staged builds do not hold them.
+- **The lit blade (D67.1)** on level 20 is drawn plain and unlit — known deviation 7, confirmed by Ben (D71.5).
 - **The five public Windows test builds were taken down from GitHub (2026-11-26, Ben's word):** releases
   `ferazel-windows-test-1` … `-5` are deleted there (their tags remain); every zip and checksum is still in
-  `releases/ferazel-windows-test-N/` in the main checkout. Andrew already has build 5.
-- **Where it stands:** Phase 5 "Enemies" is closed on the machine side — **Ben's gate pending (Q18)**. Phase 6A
-  "through the Goblin Chief" is being built (the plan: "Wave 5 — Phase 6A" in the one plan file; rulings D46–D49, D51,
-  D53–D57, D59–D62, D64, D65, D67–D71). Waves 6A.1, 6A.2 and 6A.3 are built and closed; wave 6A.4 has levels 20 and
-  21 open and the magic carpet built, with level 22 left.
-- **The magic carpet is built (run 70) but not yet reachable in play:** the game's only carpet is on level 22,
-  which opens in run 71. Touch the rolled carpet and it unrolls, rises, sinks and settles, and the player steers
-  it; the shipped one flies for ever (carpets with a ride count, which flash and burst, exist only in tests).
-- **Levels playable on main: 1–5, 10, 11, 15, 18, 20, 21.** Level 21 "Obfuscation & Edification" opened in run 69:
-  a dark level with six pipes that push enemies out, insects, fourteen teleporters, graves that talk, blinking and
-  crumbling platforms. Level 20 "Hangnabit" opened in run 67. **Nobody has seen either yet:** both were launched
-  muted on 2026-11-25 and stayed running, but the seat was not allowed to look at the window. The staged builds do
-  not hold them.
-- **The lit blade (D67.1) is built:** on level 20, where the map has no lighting, anything lit by a light made
-  during play (blades, maces, chains) is drawn plain and unlit instead of ending the game. A listed known
-  deviation (number 7). **Ben confirmed it** (mailbox A1, 2026-11-25: "A: plain, unlit"; D71.5).
-- **Windows test build 5 is with Andrew** (Ben asked, 2026-11-18): GitHub pre-release `ferazel-windows-test-5`, staged
-  from 02717f8 (levels past 5 closed). His report is the Windows half of Q18; Ben's Mac verdict is still open. The zip
-  and its checksum are in `releases/ferazel-windows-test-5/`.
-- **Staged builds on the Desktop are old** (game code as e9183ce, run 50): they still show the stand-in Warrior and no
-  level past 5. The next stage is the 6A phase end unless Ben asks for one.
-- **Next:** run 71 = **6A-L22** "The Labyrinth" (Core → 816, WinKit → 90; the full sweep and bot on twelve
-  levels), then the phase end (6A-END). Neither waits for Ben's Phase 5 verdict.
-- **How long checks run under the Coordinator** (commands cut off at ten minutes): the suites in parts, the sweep one
-  level group a command (levels 3 and 4 apart on the Windows path), the bot one command a shell (D59.4, D60.4); only
-  the Windows test script may run detached (D59.1). One heavy command a message (D70.6). The longest commands now:
-  the sweep's first Mac-path group with its build 422 s, level 11 on the Windows path 366 s, the draw audit for
-  levels 10, 11, 15 about 375 s a test. With other projects building, a part can run a third slower (run 70: one
-  took 424 s against 315) — chain parts in one command only when their usual times sum under six minutes (D71.6). Q21 asks Ben whether the sweep and bot may run detached — a convenience only.
+  `releases/ferazel-windows-test-N/` in the main checkout. Andrew already has build 5; his report is the Windows
+  half of Q18.
+- **Staged builds on the Desktop are old** (game code as e9183ce, run 50): the stand-in Warrior, no level past 5.
+  Run 72 stages new ones.
+- **Next:** run 72 = **6A-END** with the level chooser, both builds and the archive (the chip: `docs/NEXT.md`).
+  **The weekly usage limit was at 89% (all models) when run 71 closed and resets 2026-12-01 02:00 Sydney time** —
+  run 72 probably has to wait for the reset.
+- **How long checks run under the Coordinator** (commands cut off at ten minutes): the suites in parts, the sweep
+  one level group a command (levels 3 and 4 apart on the Windows path; level 22 in two halves by offset, D72.4),
+  the bot one command a shell (D59.4, D60.4); only the Windows test script may run detached (D59.1). One heavy
+  command a message (D70.6); chain parts only when their usual times sum under six minutes (D71.6).
 - **The plan:** `docs/superpowers/plans/2026-11-04-ferazel-remainder.md` (self-contained); the design:
   `docs/superpowers/specs/2026-11-04-ferazel-remainder-design.md`.
 - **Ben's gates:** Phase 1 passed; Phases 2 and 3 passed with notes; Phase 4 passed (Fireball note) and the Windows
-  twin passed on Andrew's word (2026-11-07); **Phase 5 waiting (Q18)**. Then three gated Phase 6 parts (6A to the Goblin
-  Chief, 6B to the Wizard and the fire, 6C the whole game), then one release `ferazel-1.0`.
-- **Current numbers** (the seat's own runs of run 70, 2026-11-26, at 651314e, except: the sweep and bot, run 69's
-  at 63183f8; Proof B and the smoke, run 64's at a66d567; GW6 / G9M, last passed in run 50):
+  twin passed on Andrew's word (2026-11-07); **Phase 5 waiting (Q18)**; the 6A gate card is written by run 72.
+- **Current numbers** (the seat's own runs of run 71, 2026-11-26, at c52eb4b, except: Proof B and the smoke,
+  run 64's at a66d567; GW6 / G9M, last passed in run 50):
 | gate | value |
 |---|---|
-| Ferazel/Core suite (G2) | **812** = 633 rules + 179 render; 810 passed, 0 failed, 2 opt-in skips by name: `FerazelRenderTests.VisitSweepTests testVisitEveryObject`, `FerazelRenderTests.RandomPlayTests testRandomPlay`; foreground parts, about 55 min (rules 136 s; A–C 424, 315 on a quiet Mac; D–E without the audit 55; F–K 258; the L classes without `LevelSweepTests` 104; `LevelSweepTests` 298; M–Z 164; the audit: levels 1–5 one test a command 191 + 202, level 18 87, level 20 203, level 21 115, levels 10, 11, 15 one test a command 369 + 377) |
-| FerazelWinKit (GW2) | **89**; 87 passed, 0 failed, 2 opt-in skips (`WinVisitSweepTests testVisitEveryObjectThroughWinGame`, `WinRandomPlayTests testRandomPlayThroughWinGame`); ten foreground parts (B 333 s, F\|T 174, Win D\|F\|G 304, Win O\|R\|S\|V 141, the six level references 169 / 153 / 121 / 121 / 133 / 107), about 30 min |
+| Ferazel/Core suite (G2) | **816** = 636 rules + 180 render; 814 passed, 0 failed, 2 opt-in skips by name: `FerazelRenderTests.VisitSweepTests testVisitEveryObject`, `FerazelRenderTests.RandomPlayTests testRandomPlay`; foreground parts, about 55 min (rules 145 s; A–C 327; D–E without the audit 56; F–K 253; the three small L classes 117; `LevelSweepTests` 363; M–Z 150; the audit: levels 1–5 one test a command 199 + 204, level 18 84, level 20 200, level 21 117, level 22 133, levels 10, 11, 15 one test a command 346 + 353) |
+| FerazelWinKit (GW2) | **90**; 88 passed, 0 failed, 2 opt-in skips (`WinVisitSweepTests testVisitEveryObjectThroughWinGame`, `WinRandomPlayTests testRandomPlayThroughWinGame`); eleven foreground parts (B 311 s, F\|T 177, Win D\|F\|G 312, Win O\|R\|S\|V 146, the seven level references 176 / 158 / 126 / 126 / 127 / 102 / 122), about 32 min |
 | census (G3) | items 1,108 decoded, failures 0 |
-| visit sweep (GE, levels 1–5, 10, 11, 15, 18, 20, 21, both shells; run 69's — not owed by the carpet) | core 9,824 visits, windows 9,824 visits, rows 0 on both (1,991 s in seven commands + 2,317 s in nine) |
-| random-play bot (GE, the same 11 levels, both shells) | core and windows each: steps 237,600, deaths 41, exits 370, conversations 33, saves 3, failures 0 (110 s, 132 s) |
-| Proof B in CrossOver, muted (GWB) | **761 passed / 0 failed / 3 skipped / 0 crashed (of 764)** — run 64's; not run on the 46 tests added since (owed at the wave end, by day) |
+| visit sweep (GE, levels 1–5, 10, 11, 15, 18, 20, 21, 22, both shells) | core 11,864 visits, windows 11,864 visits, rows 0 on both (2,438 s in nine commands + 2,638 s in eleven) |
+| random-play bot (GE, the same 12 levels, both shells) | core: steps 259,200, deaths 44, exits 387, conversations 33, saves 3, failures 0 (118 s); windows: steps 259,200, deaths 43, exits 385, conversations 33, saves 3, failures 0 (139 s) |
+| Proof B in CrossOver, muted (GWB) | **761 passed / 0 failed / 3 skipped / 0 crashed (of 764)** — run 64's; not run on the 52 tests added since (owed at the phase end, by day; expect 813 / 0 / 3 / 0 of 816) |
 | Mac SDL smoke (GW4R) | exit 0, main menu identical, `video=dummy audio=none` (run 64) |
-| GW1 / GW3 / GW4 / G5 | 0 then 2 / 0 then 1 / Build complete! / BUILD SUCCEEDED (run 70, at 651314e) |
+| GW1 / GW3 / GW4 / G5 | 0 then 2 / 0 then 1 / Build complete! / BUILD SUCCEEDED (run 71, at c52eb4b) |
 | HectorKit (G1) | main **ef2c341**, clean; zero-skip executed **370**; Ferazel follows HectorKit main |
-| ladder from here | 812 → L22 816 at the 6A end; WinKit 89 → 90 (every Core number is two above the original plan: D68.1, D69.1) |
-- **Goldens (◈):** no existing value moved in run 70 beyond the card's named one (level 22's load-bar count in
-  `CachedFacesTests`, 35 → 36 records); the carpet's new picture values are in the plan's "Goldens" paragraph.
-- **Waiting on Ben:** QUESTIONS.md "Open": **Q18 (the Phase 5 gate)**, Q21 (may the sweep and bot
-  run detached — not blocking), Q19 (three small choices in the 6A plan), Q17, Q16 (defaults stand), Q15's
-  follow-ups, Q13.
-- **Owed:** somebody's eyes on levels 20 and 21 (they start and stay running; the picture is unseen — D70.5);
-  Proof B and the Mac SDL smoke at the wave end, by day.
-- **Worktrees:** run 70's `focused-jennings-d776d7` was removed at its close. Run 67's
+| ladder from here | 816 / 90 at the 6A end; the level chooser (D72.1) adds its own tests on top |
+- **Goldens (◈):** no existing value moved in run 71; level 22's new values and the per-level light counts are in
+  the plan's "Goldens" paragraph and D72.2.
+- **Waiting on Ben:** QUESTIONS.md "Open": **Q18 (the Phase 5 gate)**, Q21, Q19 (both closed as "paused" by run 72,
+  D72.1 (c)), Q17, Q16 (defaults stand), Q15's follow-ups, Q13.
+- **Owed:** somebody's eyes on levels 20, 21 and 22 (D70.5); Proof B and the Mac SDL smoke at the phase end, by day.
+- **Worktrees:** run 71's `inspiring-chatterjee-0957b6` was removed at its close. Run 67's
   `exciting-panini-fdb834` (under `Aki/.claude/worktrees/`) is unregistered and its branch deleted, but about 560 MB of its files remain
   in that folder (the app refused the last delete): remove by hand.
   `compassionate-leavitt-7ca958` is run 53's (merged; it was run 49's before). `gallant-brahmagupta-56ed81` (run 52),
   `eager-fermat-db9ed9` (run 51), `hungry-bun-395f55` (run 50; `out/` holds the latest stages), `nifty-mendel-0ad40e`
-  (run 48), `ferazel-run-47-e0431c` and `ferazel-run-44-7428b3` are finished and merged — Ben or their sessions
-  remove them. The others belong to other sessions.
+  (run 48), `ferazel-run-47-e0431c` and `ferazel-run-44-7428b3` are finished and merged — run 72's archive step
+  removes the Ferazel ones with their DerivedData folders (D72.1). The others belong to other sessions.
 - **The sweep and the bot are guarded (2026-11-10):** both scripts kill any worker past `MAX_WORKER_MB` (4096) and
   brake below `MIN_RUNNING_FREE_PCT` (15) free memory, with a failure row. Stop a run with a plain
   `kill <script pid>` — never `kill -9` / `pkill -9`. A `memory` row is a leak to fix, never a limit to raise. A
@@ -84,6 +71,12 @@ Settled history lives in docs/STATE-history.md.
 - **Known deviation of muted launches (D44 As built run 48 (d)):** a muted run draws the random stream differently
   from an audible one; boot checks only.
 - **Open carries** [LOW unless marked]:
+  - From run 71: a full light table (200) shows an alert in the original and nothing in the port (D72.3 — a line
+    for the 6A card's known deviations); the bot's two paths differ by one death and two exits on twelve levels
+    where they were equal on eleven (0 failures on both; unexplained — the phase review may read it); a rope
+    segment-rounding tie is pinned nowhere (older); the blades' bottom clip is in no level picture (state only);
+    why the carpet is never idled was measured, not read from the dump. **Closed by run 71:** run 70's "look again
+    when level 22 opens" (the carpet's stored picture is never drawn early) and run 66's blade Setup-face carry.
   - From run 70: the carpet's picture is stored at Setup where the original sets it on the first Handle (an older
     house rule; the original draws nothing for one frame) — not visible on level 22 from its real start, but the
     carpet's picture test pins it: look again when level 22 opens; the engine contract §2.11's "Today" paragraph

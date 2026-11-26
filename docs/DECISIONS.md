@@ -2972,3 +2972,38 @@ should-fix, 8 minor), all folded in; then the seat's cross-check.
 6. **Budget a ten-minute command for a slow Mac.** With two other projects' chains building, one test part ran 424 s
    against 315 s the run before; two parts chained in one command came to 588 s of the 600 allowed. Chain parts
    only when their usual times sum under about six minutes.
+
+## D72 — Ferazel's Wand: Ben's ruling to finish Phase 6A and archive, and run 71's rulings (6A-L22; 2026-11-26)
+
+1. **Ben's ruling, 2026-11-26 — finish Phase 6A, then archive (it overrides the plan where they differ).** The
+   original author is selling an official remaster (https://mixedmetaphor.itch.io/ferazels-wand), so Ferazel stops at
+   the 6A phase end. The project is paused, not cancelled: Ben resumes if the remaster disappoints.
+   (a) Run 71 is unchanged: 6A-L22 alone (done).
+   (b) Run 72 = 6A-END, with three changes. **A level chooser, before staging** — Ben: "we may want a way to skip
+   between the levels as the progression won't exist." Today only the hidden `FerazelLevel` launch switch does this.
+   Add a way inside the game, on both Mac and Windows, to start any built level (1–5, 10, 11, 15, 18, 20, 21, 22)
+   without a command line — a named, listed departure from the original, built through `GameFlow.startLevel`, as
+   its own small task (one implementer, two review legs); how to use it goes on both what-to-expect cards.
+   **Complete builds for both platforms**, staged for Ben and for Andrew, with **no GitHub release and no public
+   upload**: the Windows zip and its checksum go to `releases/` in the main checkout only; Ben sends it himself.
+   **No 6B planning run and no next session:** after the cross-check and the tidy, archive — `STATUS: PAUSED` as the
+   first line of `docs/NEXT.md` with a short "how to resume" (the next step is the 6B planning run, P6B); STATE's
+   Ferazel block says paused and why; the Ferazel worktrees and their DerivedData folders are removed; the handoff
+   is the archive note. Everything else (the plan, the RE bank, the ledger, the dumps) stays as it is.
+   (c) Open questions that only matter to 6B or later (Q19, Q21, …) are closed as "paused", not asked.
+2. **The draw audit's "light slots fit" check counts lights the way the game makes them.** It runs the real spawn
+   order with one running light table (so the original's rule — a Xichron gets a light only while fewer than 150
+   are in use, M l. 52452 — applies), asserts the run attaches exactly that many at each level start, pins each
+   level's count (1: 68, 2: 91, 3: 113, 4: 128, 5: 7, 10: 153, 11: 150, 15: 61, 18: 9, 20: 97, 21: 136, 22: 168)
+   and keeps the limit of 200. The old check summed each record's Setup on its own and over-counted (225 on level
+   22, 191 on 11, 173 on 10). The edit to `DrawModeAuditTests.swift` was outside the card's Files and was made by
+   the fix round on this ruling (as D54.1, D67.3). No game source changed.
+3. **A full light table is a line for the known deviations, not a task.** When all 200 slots are in use the
+   original shows an alert with the number 200 and the sprite gets no light; the port gives no light and shows
+   nothing. On built levels it is reachable only on level 22, by breaking every crate and killing Walkers while
+   picking nothing up. 6A-END puts it on the gate card; with the project pausing no task follows.
+4. **A level too big for one sweep command is swept in halves by offset** (`FERAZEL_VISIT_OFFSETS=on,left`, then
+   `right,above`); the halves' visits add up to the level's whole count and each must end with rows 0. Level 22
+   (2,040 visits) is the first.
+5. **The blade and carpet "stand-in at Setup" carries are closed for built levels** (runs 66 and 70): on level 22
+   neither can be drawn before its first Handle runs (measured by the implementer, confirmed by leg 1).

@@ -266,6 +266,7 @@ unrolled face, at (7849, 2016) — `ec4f4abda0acfd79` (D71.1). Twins: the carpet
 (860 screen bytes differ — the carpet's own share); the carpet left out of the level `7d2041c3431ad85e` (2,357 bytes,
 which include the player falling further). `CachedFacesTests` level 22's load bar [35, 170, 340, 35] →
 [36, 176, 352, 36] (set #27, six faces, now marked — the card's named move).
+Run 71 (6A-L22, new values, none moved): level 22 first frame `e65f86ef8146c109` (tick 1612, camera (0, 3562)), darkness twin `b067fb281c88666e`; Windows reference `18267450c968dc32` (step 959); BootFaces 607 / 609 / 609; the per-level spawn light counts of D72.2.
 
 Run 65 moved no value and pinned one new kind (the audit's per-level count of the held item's water-kind-0 draws:
 level 2 39, level 18 7, the other built levels 0).
@@ -2871,7 +2872,7 @@ ids; its `--check` reads this table):
     does not check the face is in the Setup-face table; nothing ever clears a ridden carpet's "ridden" flag (as the
     original).
 
-#### 6A-L22 — minor — level 22 "The Labyrinth" enterable (→ 816)
+#### 6A-L22 — minor — level 22 "The Labyrinth" enterable (→ 816) — ✅ done (run 71)
 - **Files:** `Sources/FerazelCore/Front/BuiltLevels.swift` (`[1, 2, 3, 4, 5, 10, 11, 15, 18, 20, 21, 22]`),
   `Tests/FerazelCoreTests/LevelTwentyTwoTests.swift` (new), `Tests/FerazelRenderTests/{LevelFrameGoldenTests,BootFacesTests,FaceTests}.swift`,
   `Ferazel/Windows/Tests/FerazelWinKitTests/{WinLevelReferenceTests,FerazelSettingsTests}.swift`, the list-pinned tests.
@@ -2891,6 +2892,74 @@ ids; its `--check` reads this table):
   the As executed names it an open item for 6B). WinKit (+1): `testLevel22FirstFrameReference`.
 - **Gate:** Gate-L (G2 816, GW2 90). Wave 6A.4 end = the phase end (6A-END). **Commit:** `Level 22 enterable: The
   Labyrinth; BuiltLevels holds every level through the Goblin Chief; 4 tests, 1 Windows reference`.
+
+- **As executed — 6A-L22 (run 71, 2026-11-26 15:01 → 20:35, by day):** Ferazel/Core 812 → **816**, WinKit 89 →
+  **90**. Commits ee62ece (task), b2997f3 (fix round — tests and comments only: the diff of `Ferazel/Core/Sources`,
+  `Ferazel/App`, `Ferazel/Windows/Sources` over it is empty), c52eb4b (the ledger's line anchors); merged at db0e580
+  (a merge of main's docs commit). The only game-source change is `BuiltLevels.list` gaining 22. One implementer,
+  two Opus legs (spec PASS WITH FIXES; quality PASS WITH FIXES — 50 planted bugs: 40 caught by this task's pins, 8 by
+  older tests, 2 the same as correct code on this level's data, 2 real test gaps closed by the reviewer's verified
+  asserts), a fix round.
+  - **The level data against the card:** 510 records, 49 types, **0 refused** (the card's "52 refused" was old),
+    `refusedSpawns` 0; music 8; chapter card 5; the darkness switch `0x2706` = 2; teleporters 1060 ×8; Dimbo 2956;
+    Mcnv 221 actions 5 / 9 / 10. Two corrections: the 1485 maces use modes 10, 12, 13 and 14 — mode 11 is only on
+    the two 1480s (the card's "modes 10–14"); action 9 carries a value 1 that nothing reads (leg 1, from the dump).
+    The card names the Walker 1750, whose values here are not new (p 0/0/0/0, now asserted); the 1700 was traced in
+    its place because its p3 6 is the new value. No unbuilt arm is reachable on level 22 (leg 1, type by type).
+  - **The light-slot check (D72.2).** `DrawModeAuditTests.testEveryRefusalIsUnreachable` failed on level 22 ("light
+    slots fit": 225 is not under 200). The game is right: the original gives a Xichron a light only while fewer than
+    150 lights are in use (M l. 52452; `BonusSprite.swift` ≈ :146, ported exactly), so level 22 starts with 168
+    lights (190 Xichrons placed) and still holds 168 after 600 idle frames. The audit had summed each record's Setup
+    on its own. The fix round made it count through the real spawn order with one running light table, assert the
+    run attaches exactly that many at each level start, pin each level's count and keep the limit of 200. Pins —
+    level 1: 68, 2: 91, 3: 113, 4: 128, 5: 7, 10: 153, 11: 150, 15: 61, 18: 9, 20: 97, 21: 136, 22: 168. The cap
+    itself was pinned by no test before (a cap raised by one passed everything); it is now.
+  - **The four first-time looks:** (1) **the carpet** (placement 486) cannot be on screen on the first frames: it
+    is active from the spawn, its Handle runs from frame 1, and on frame 1 it is 7,849 px right of the view and
+    1,545 px above it — run 70's carry is closed (the stored-at-Setup picture is never drawn before the first
+    Handle). (2) **Conversation 221**, played in the level through the real conversation code, arms level 11's
+    record 283; level 11 then opens as a revisit, record 283 spawns and talks (Mcnv 220) — D70.1 shown in play. The
+    action-9 assert (the talker's spawn byte 0) cannot fail on its own in the level flow (the dead-sprite cleanup
+    clears the byte anyway; `ConversationTests` pin the write) — commented. (3) **The blades:** none is drawn with
+    the Setup stand-in face (two come in after frame 1's draw, far off screen, and their Handle runs before the next
+    draw) — run 66's carry is closed for built levels; all 13 are far off-view at the start, so no level-22 picture
+    shows the p4-0 bottom clip (held in state: the golden's asserts, `BladeTests`, a synthetic draw in
+    `SpriteDrawTests`). (4) **The audit:** no light proof needed (light bytes 0–12, inside the ambient rows);
+    held-item kind-0 draws 0; the refusal census unchanged (`SetupFaces.swift` 14).
+  - **New pins (measured, seed 1):** first frame tick 1612, camera (0, 3562), `e65f86ef8146c109`; its darkness twin
+    `b067fb281c88666e` (9,806 screen bytes differ); Windows reference step 879 black, step 959 `18267450c968dc32`;
+    BootFaces 607 / 609 / 609 rows; the load bar [36, 176, 352, 36]; lights and light table 168. Exits: the forward
+    exit to the not-built report for the next node, and exit 13 (a back exit, p1 −1) driven on a second rig — the
+    map stays on node 22 and Return enters level 22 again (no older test drove a back exit).
+  - **Re-derived list pins:** only the tests pinned to the built-level list moved (in ee62ece's body, old → new). No
+    other pinned value moved.
+  - **Gates at c52eb4b (the seat's own, from a `git archive` copy, foreground, in parts; main's later docs merge
+    changes no code):** G2 **816** = 636 rules + 180 render, 814 passed, 0 failed, the two opt-in skips (rules
+    145 s; A–C 327; D–E without the audit 56; F–K 253; the three small L classes 117; `LevelSweepTests` 363; M–Z 150;
+    the audit: levels 1–5 one test a command 199 + 204, level 18 84, level 20 200, level 21 117, level 22 133 for
+    both tests, levels 10, 11, 15 one test a command 346 + 353); GW2 **90** = 88 passed, 0 failed, the two skips
+    (B 311, F|T 177, Win D|F|G 312, Win O|R|S|V 146, the seven level references 176 / 158 / 126 / 126 / 127 / 102 /
+    122 s); G3 `Totals: items 1,108 decoded, failures 0`; G5 BUILD SUCCEEDED; GW1 0 then 2; GW3 0 then 1; GW4 Build
+    complete!; G7 empty; the ledger check OK. **Full GE, 12 levels, 4 workers, a level group a command:** sweep core
+    **11,864 visits, rows 0** (2,438 s: levels 1, 2 443 with the build / 3, 4 347 / 5, 15, 18 166 / 10 248 / 11 313 /
+    20 236 / 21 253 / 22 in two halves by offset, 216 + 216), windows **11,864, rows 0** (2,638 s: 5 117 / 1, 2
+    334 / 3 223 / 4 232 / 10 300 / 15, 18 181 / 11 369 / 20 280 / 21 301 / 22 in two halves 251 + 250); bot core
+    `levels 12, seeds 4, steps 259200, deaths 44, exits 387, conversations 33, saves 3, failures 0 in 118 s`,
+    windows `steps 259200, deaths 43, exits 385, conversations 33, saves 3, failures 0 in 139 s`. Quick mode on
+    level 22 (the implementer's): `steps 7200, deaths 0, exits 11, conversations 0, failures 0`.
+    **Level 22 is swept in two halves** (`FERAZEL_VISIT_OFFSETS=on,left` then `right,above`): 2,040 visits in one
+    command would run close to the ten-minute cut.
+  - **Boot check (by day, 20:23, LAUNCH GUARD ok, muted):** a fresh build launched with `-FerazelLevel 22` stayed
+    running 30 s and quit cleanly; no crash report from the game. Nobody saw the picture (D70.5): eyes on levels
+    20, 21 and 22 stay with Ben.
+  - **Carried:** when the 200-slot light table is full the original shows an alert with the number 200 and the
+    sprite gets no light; the port gives no light silently (D72.3 — reachable on level 22 only by breaking every
+    crate and killing Walkers without picking anything up; a line for the 6A card's known deviations). The bot's
+    two paths differ by one death and two exits on twelve levels (43 / 44, 385 / 387) where they were equal on
+    eleven — unexplained, 0 failures on both [LOW; 6A-END's cross-check may read it]. A rope segment-rounding tie
+    is pinned nowhere (older; no level-22 rope hits it). The particles' darkness row is caught by the golden's
+    particle assert only. Only tests can show the blades' bottom clip. Leg 1 did not confirm from the dump why
+    the carpet is never idled (measured and pinned).
 
 #### 6A-END — minor — the phase end: the checks, the relabel sweep, both builds staged, one gate card (→ 816)
 - **Files:** `Ferazel/WHAT-TO-EXPECT.md` (the 6A card, Mac part), `Ferazel/WINDOWS-WHAT-TO-EXPECT.md` (Windows part —

@@ -4,6 +4,16 @@
 > only). Nothing current reads this file; the live state is `docs/STATE.md`. Each later close that settles something
 > adds a dated section at the top, newest first. The two snapshots below are verbatim (headings demoted only).
 
+## Settled at Ferazel run 71's close (2026-11-26)
+
+- Run 70's state named level 22 (6A-L22) as next. Done: on main at db0e580 (Core 812 → 816, WinKit 89 → 90); every
+  build task of Phase 6A is merged.
+- Run 70's numbers (812 / 89; the sweep and bot on eleven levels: 9,824 visits a path, bot steps 237,600) are
+  replaced by run 71's on twelve levels.
+- Run 70's carry "the carpet's picture is stored at Setup — look again when level 22 opens" and run 66's "the blade's
+  Setup slot carries a face — check again on level 22" are closed: neither can be drawn before its first Handle.
+- Run 70's worktree `focused-jennings-d776d7` was removed at its close.
+
 ## Settled at Ferazel run 70's close (2026-11-26)
 
 - Run 69's state named the magic carpet (6A-CP) as next. Done: on main at 651314e (Core 800 → 812, WinKit 89).
