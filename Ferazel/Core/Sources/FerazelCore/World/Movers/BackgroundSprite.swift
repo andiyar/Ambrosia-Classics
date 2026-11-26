@@ -11,7 +11,7 @@ import Foundation
 /// levels 1–5. 6A-TR: the trees 0xc08…0xc0f (`setupTree`, the Handle arm `tree`, `.SetupTree` = `plantBranches`) —
 /// first placed on level 10. 6A-CL: the clouds 0xb4a…0xb4d (`setupCloud`, `cloud`), placed on level 20 only. 6A-BD:
 /// the rotating blade 0xbf4 (`setupBlade`, `blade`, `bladeArm`; its player arm in `HitPlayerSprite`), first on level 20.
-/// // later: fire 0x4b8 / 0x4bb…0x4bd, 0x73f / 0x740 — none placed on levels 1–5, 10, 11.
+/// // later: fire 0x4b8 (6B-FI) / 0x4bb…0x4bd (6B-AS); 0x73f / 0x740 kept, unplaced — none on a built level.
 public enum BackgroundSprite {
     /// The radial bars (0x5c8…0x5cc) and balls (0x5cd…0x5d1).
     public static let maces: ClosedRange<Int16> = 0x5c8...0x5d1
@@ -114,8 +114,8 @@ public enum BackgroundSprite {
     // MARK: - Handle
 
     /// The types whose `.HandleBackgroundSprite` arm is not built: their Handle is not run (as before W2a), so
-    /// nothing of it — `.StandardSpriteHandles` included — changes them. // later: fire, 0x73f / 0x740 (none on levels
-    /// 1–5, 10, 11, so `SetupFaces` refuses them; the spikes: LV3; the dart traps: ES; the trees: 6A-TR; the clouds:
+    /// nothing of it — `.StandardSpriteHandles` included — changes them. // later: fire (6B), 0x73f / 0x740 (none on
+    /// a built level, so `SetupFaces` refuses them; the spikes: LV3; the dart traps: ES; the trees: 6A-TR; the clouds:
     /// 6A-CL; the blade: 6A-BD).
     static func isUnbuiltArm(_ t: Int16) -> Bool {
         t == 0x4b8 || (0x4bb...0x4bd).contains(t) || (0x73f...0x740).contains(t)

@@ -1409,7 +1409,8 @@ So, as the plan stands: **one pair (10 + 11)** and five single levels. If the pi
   class / level task re-reads its Setup's `+1 = 1` stores.
 - The wind direction indices' meaning per `.LookupModedImpulse` case (M l. 37020–37412) — counted, not decoded.
 - Handle-side `// later:` gaps of types whose Setup is built are noted only where the port marks them (passage p2 ≠ 0,
-  cannon p1 ≠ 0, carpet, spiked ball, snowball, table); no Handle arm was audited line by line.
+  cannon p1 ≠ 0, spiked ball, snowball, table; the carpet, listed here when this was written, is built — 6A-CP, run
+  70); no Handle arm was audited line by line.
 - Parameter values new on levels 10–70 were matched against every parameter-conditioned refusal and `// later:` of the
   port (finding 6); arms with no such marker were not traced value by value.
 

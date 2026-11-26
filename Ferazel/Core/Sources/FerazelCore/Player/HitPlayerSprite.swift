@@ -11,7 +11,7 @@ import HectorResources
 /// keyed on the `SpriteHandler` cases — live: every enemy class of levels 1–5 maps its `forClass` row; ES: step 7's
 /// enemy-shot rows with `.ShieldBlock` (`EnemyShot.shieldBlock`); GY: the geyser head 0x5a9's landing hurt (step 7 of
 /// `box`) and the geyser segment 0x5a0's part of the Effect test (`effect`). // later: Phase 6 — the types first placed
-/// on levels 5+.
+/// on level 25 on (those of levels 5–22: LV5 and the 6A tasks, built).
 public enum HitPlayerSprite {
     /// The test form: the light calls (`.KillBonus`'s `.RemoveLight`) go to a scratch table, Effects is the default
     /// prefs'.

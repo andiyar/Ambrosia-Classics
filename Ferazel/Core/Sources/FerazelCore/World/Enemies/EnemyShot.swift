@@ -7,8 +7,8 @@ import Foundation
 /// `.HitEnemyShotTileSprite @ 1005d034` (M l. 52094–52258, `hitTile`); `.ShieldBlock @ 10055434` (M l. 48359–48444,
 /// `shieldBlock`). No placement uses the class: every shot is `MTNewSprite(type, x, y, layer, −1,
 /// .SetupEnemyShotSprite)` from a spawner (`spawn`). The type numbers reuse the spawner type space — the class is the
-/// Handle (`SpriteHandler.enemyShot`), never the type. Every type of §1.2 is built, the boss types' arms (0x46a…0x46c,
-/// 0x71f, 0x753, 0x771 / 0x772 with `+0x16c`, 0x77b) as read: their spawners are Phase 6's.
+/// Handle (`SpriteHandler.enemyShot`), never the type. Every type of §1.2 is built, the boss types' arms as read; their
+/// spawners: 0x71f 6A-W1, 0x753 DL, 0x77b 6A-CH1 (built); 0x46a…0x46c, 0x771 / 0x772 with `+0x16c`: Phase 6's.
 ///
 /// Fields (`SpriteSlot`): `+0x14c` lifetime `classTimer`; `+0x150` the bounce budget `bounceCount` (`classWord150`);
 /// `+0x154` the once-a-frame bounce gate `classWord154`; `+0x15c` 0x753's fuse / 0x77b's spin reversal
@@ -45,7 +45,7 @@ public enum EnemyShot {
     /// 0x46a as 6 × 48×48 (`_DAT_100a0848`, the fireball) and twice as 6 × 64×64 (`_DAT_100a0844` / `0840`, the dead
     /// types 0x46b / 0x46c, enemy-shots-and-damage-2 §4.1), and 0x77b 16 × 112×112, 4 a row (`_DAT_100a083c`, the
     /// Chief's boulder). Only the boss Setups mark them needed (M l. 74412–74416, 75070, 75629, 76343–76347: Demon,
-    /// Chief, Wizard, Xichra) — none placed on levels 1–5, 10, 11. The Chief's mark of 0x77b is built (6A-CH1,
+    /// Chief, Wizard, Xichra) — only the Chief on a built level (18). The Chief's mark of 0x77b is built (6A-CH1,
     /// `CachedFaces.markedRecords` 0x776…0x77f, level 18); no 0x46a record is marked yet. // later: Phase 6 — the
     /// Demon's, Wizard's and Xichra's marks, with their Setups.
     public static let cachedSheets: [SetupFaces.Sheet] = [

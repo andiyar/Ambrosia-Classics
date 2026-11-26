@@ -5,6 +5,14 @@
 > 78e81c3, light PICT 806 + rope faces 48a0620, every boot face b535527). Read-only analysis: no game code changed, the
 > game was never launched. Evidence tables live in `docs/ferazel/gap-ledger/`; re-run recipes are in §5.
 
+## After Phase 6A (2026-11-26)
+
+Phase 6A ("through the Goblin Chief") is complete: levels 1–5, 10, 11, 15, 18, 20, 21 and 22 are built, both bosses
+(the Warrior on 5, the Goblin Chief on 18) included; levels 25 and later still give the not-built report. The project
+is paused at this point by Ben's ruling (D72.1): the original author is selling an official remaster. The one departure
+added at the pause is the level chooser — L on the main menu steps New Game's start level through the built levels
+(known deviation 9). What still stands in for Phase 6B / 6C is the plan's table "Stand-ins kept at the 6A end".
+
 ## After Phase 5 (2026-11-10)
 
 The ledger below is the inventory of 2026-10-30 (levels 1–4, before the enemies). Since then the enemies of levels 1–4

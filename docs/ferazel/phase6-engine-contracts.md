@@ -839,13 +839,13 @@ M l. 61152–61174); `.HitBoxSprite` wake 61470–61476; the player's half: `.Ha
 47249–47308), the player's tile arm (raw `100550e8..10055174`); `.HitBoxTileSprite`'s ranges stop below 0x438 (M l.
 61551, 61592, 61668).
 
-**Today.** The carpet's own half is not built: `BoxSprite.handleBuilt` returns false for 0x438 / 0x439
-(`BoxSprite.swift:472–474`; the doc comment is :463–465, and :147 the Setup's `// later`), so the Handle returns at
-once; `:1521, :1594` (no wake). The Box tail is built with the carpet's two exclusions (`BoxSprite.swift:605–621`). **The player's half is built and has never met a carpet:** `Player.riding`
-(`Player.swift:368–385`: the carpet flag from the ridden type, the camera latch, vx 0), `HandleKeys.swift:44` /
-`:502–539` (`carpetSteering` — the keys drive the carpet), `Shots/CastSpell.swift:48`, `HitPlayerSprite.swift:1054–1055`,
-`PlayerTiles.swift:158–172` (the carpet wall arm). The task proves that half against the dump and builds the carpet's
-Setup, wake and Handle.
+**Today (after Phase 6A, 2026-11-26).** Built by 6A-CP (run 70): the Setup (`BoxSprite.setupCarpet`), the wake (the
+player against 0x438 in `BoxSprite`'s `.HitBoxSprite` port) and the Handle arm (`BoxSprite.carpetArm`; `handleBuilt`
+is true for 0x438 / 0x439), on the Box tail with the carpet's two exclusions; the cache set 0x438 is marked
+(`CachedFaces.markedRecords`). The player's half, built before, now meets a carpet: `Player.riding`, `carpetSteering`
+in `HandleKeys`, the carpet wall arm in `PlayerTiles`. Tests: `CarpetTests` (setup, wake, rise and sink, steering,
+the p2 > 0 count, flash and burst on synthetic records, level 22 never counting); level 22 is in `BuiltLevels`.
+Before 6A-CP this paragraph read: the carpet's own half not built, the Handle returning at once, no wake.
 
 **Contract.**
 1. Setup (M l. 59078–59103): cache flag `_DAT_100a0a10`; 0x438: `+0x46 = 0`, no tile hit, rect (0x34, 4, 0x35,
