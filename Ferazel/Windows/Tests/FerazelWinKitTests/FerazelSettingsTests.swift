@@ -15,10 +15,10 @@ final class FerazelSettingsTests: XCTestCase {
 
     func testParseTableAndMute() {
         // FerazelLevel: an integer in BuiltLevels.list, else 1 (6, the first id past 5; 10 and 11 built at 6A-L10L11; 12
-        // not; 15 built at 6A-L15; 18 at 6A-L18; 20 at 6A-L20; 21 at 6A-L21; 22 not).
+        // not; 15 built at 6A-L15; 18 at 6A-L18; 20 at 6A-L20; 21 at 6A-L21; 22 at 6A-L22; 25 not).
         let levels: [(String?, Int)] = [(nil, 1), ("2", 2), ("4", 4), ("5", 5), ("6", 1), ("9", 1), ("10", 10), ("11", 11),
-                                        ("12", 1), ("15", 15), ("18", 18), ("20", 20), ("21", 21), ("22", 1), ("0", 1),
-                                        ("2abc", 1), (" 3", 3), ("-2", 1)]
+                                        ("12", 1), ("15", 15), ("18", 18), ("20", 20), ("21", 21), ("22", 22), ("25", 1),
+                                        ("0", 1), ("2abc", 1), (" 3", 3), ("-2", 1)]
         for (v, want) in levels {
             XCTAssertEqual(parse(v.map { [FerazelSettings.levelKey: $0] } ?? [:]).startLevel, want, "FerazelLevel \(v ?? "absent")")
         }

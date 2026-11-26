@@ -224,10 +224,10 @@ final class LevelTwentyTests: XCTestCase {
     }
 
     func testBuiltLevelsTwenty() throws {
-        XCTAssertEqual(BuiltLevels.list, [1, 2, 3, 4, 5, 10, 11, 15, 18, 20, 21])   // 6A-L21: + 21
+        XCTAssertEqual(BuiltLevels.list, [1, 2, 3, 4, 5, 10, 11, 15, 18, 20, 21, 22])   // 6A-L21: + 21; 6A-L22: + 22
         XCTAssertTrue(BuiltLevels.contains(20))
-        for n in [12, 16, 19, 22, 40] { XCTAssertFalse(BuiltLevels.contains(n), "level \(n)") }
-        XCTAssertEqual(BuiltLevels.notBuiltReport(22), "Level 22 is not built yet (Phase 6).")
+        for n in [12, 16, 19, 25, 40] { XCTAssertFalse(BuiltLevels.contains(n), "level \(n)") }
+        XCTAssertEqual(BuiltLevels.notBuiltReport(25), "Level 25 is not built yet (Phase 6).")
         let r = try TenEleven.resources()
         // `startLevel` 20 (the hidden `FerazelLevel` switch) is accepted: New Game there, nothing asked.
         let rig = TenElevenRig(r, start: 20)

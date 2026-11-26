@@ -221,6 +221,60 @@ final class LevelFrameGoldenTests: XCTestCase {
         XCTAssertEqual(Set(ports.frame.filter { $0 != 0 }), [tables.ambient[2][c]], "lit kind 0x\(String(0x100 + c, radix: 16)): row 2")
     }
 
+    /// 6A-L22: level 22 "The Labyrinth" — the first presented frame comes after chapter card 5 (PICT 4650, clut 285;
+    /// the card's own golden is `ScreenTests.testChapterCard5FrameGolden`). Level 22 holds the darkness switch at 2
+    /// (hdr 0x2706, as level 21) over its own light grid, every byte 0…12: the first frame shows the darkness — the twin
+    /// opened with hdr 0x2706 patched to 0 differs (D51.1 / D54.2) — and the particles light through ambient row 2. Two
+    /// first-frame hazards are measured here, not drawn: the carpet (record 486) carries its Setup face where the
+    /// original's `+0xc0` is 0 until its first Handle (M l. 59078–59103, 60289ff; a face-0 sprite is skipped, M l.
+    /// 10262), and the blade's Setup slot carries the stand-in 0xbf4 cell (M l. 62571–62583). The carpet is never
+    /// idled (it is on the list from the spawn, so its Handle faces it from the first iteration on, after that
+    /// iteration's draw) and stands far outside this frame's view. All 13 blades idle at the spawn, so none is drawn in
+    /// this frame; the `.HandleIdleSprites` after this draw (the player's spawn-copy rect in its window — the level-21
+    /// insects' first-frame effect) brings two in, far outside the view, and their Handles run in the same iteration
+    /// (the p4-0 clip 0x5e and the rotation set), so the stand-in face never reaches a draw.
+    func testLevel22FirstFrameGolden() throws {
+        let f = try Self.firstFrame(level: 22)
+        try checkShowsLevel(f, 22)
+        let h = f.run.levelFile.header
+        XCTAssertEqual([Int(h.chapter), Int(h.startX), Int(h.startY), Int(h.darknessEnable)], [5, 166, 3798, 2],
+                       "chapter card 5, the start, the switch 2")
+        // Measured at 6A-L22 (seed 1): the 1,612th tick (now 1611) — ticks 1…1,611 are the chapter card, as level 10's
+        // card 2 — with the camera at (0, 3562).
+        XCTAssertEqual(f.ticks, 1612, "measured: the first presented frame's tick")
+        XCTAssertEqual([f.scroll.h, f.scroll.v], [0, 3562], "measured: the camera")
+        XCTAssertEqual(String(f.fnv, radix: 16), "e65f86ef8146c109", "the level-22 first-frame golden")
+        // The hazards (the session is read after the frame's whole iteration): the carpet on the list from the spawn,
+        // 7,849 px right of the view's left edge and 1,545 px above its top; the two blades the idle pass brought in after
+        // the draw, far outside the view, already through their Handle.
+        let s = try XCTUnwrap(f.run.session)
+        let carpet = try XCTUnwrap(s.world.active.sprites.first { $0.recordIndex == 486 }, "the carpet on the list")
+        XCTAssertEqual([carpet.x - f.scroll.h, carpet.y - f.scroll.v], [7849, -1545], "measured: the carpet's place in the view")
+        XCTAssertEqual(s.world.idle.entries.compactMap { $0 }.filter { $0.saved.recordIndex == 486 }.count, 0,
+                       "the carpet is no idle entry")
+        let blades = s.world.idle.entries.compactMap { $0 }.filter { $0.saved.type == BackgroundSprite.blade }
+        XCTAssertEqual(blades.count, 13, "13 blade entries")
+        let inBlades = blades.compactMap { e in e.activeID.flatMap { s.world.active.record(id: $0) } }
+        XCTAssertEqual(inBlades.map { [Int($0.recordIndex), $0.x - f.scroll.h, $0.y - f.scroll.v] },
+                       [[447, 1619, -2900], [448, 2039, -2709]], "measured: the blades the first idle pass brought in")
+        for b in inBlades {
+            XCTAssertEqual([Int(b.clip.bottom), Int(b.rotation)], [0x5e, Int(b.phase)], "blade \(b.recordIndex): its Handle ran")
+        }
+        // The twin: the same open with hdr 0x2706 patched to 0 (no ambient darkening; particles through row 0).
+        let res = try LevelFixture.resources(level: 22, leaveOut: [], header: [(0x2706, [0, 0])])
+        let services = LevelFixtureServices(resources: res)
+        let run = try LevelFixture.open(resources: res, level: 22, services: services)
+        let flat = try services.firstPresentedFrame(run)
+        XCTAssertEqual(flat.renderer.level.header.darknessEnable, 0, "the twin's switch")
+        XCTAssertEqual(flat.ticks, f.ticks, "the twin's first frame on the same tick")
+        XCTAssertNotEqual(flat.fnv, f.fnv, "frame 1 shows the darkness")
+        XCTAssertEqual(zip(flat.renderer.screen.pixels, f.renderer.screen.pixels).filter { $0 != $1 }.count, 9_806,
+                       "measured: the screen bytes the darkness changed")
+        XCTAssertEqual(String(flat.fnv, radix: 16), "b067fb281c88666e", "measured: frame 1 without the darkness")
+        XCTAssertEqual(f.renderer.particles.ambient, f.renderer.tables.ambient[2], "particles through row 2")
+        XCTAssertEqual(flat.renderer.particles.ambient, flat.renderer.tables.ambient[0], "the twin's through row 0")
+    }
+
     /// 6A-L18: the Chief's activation on the real level with real pictures (BOS §9.3, D61.3) — level 18 through the
     /// level runner with the renderer-backed services (`LevelFixtureServices`: the wake rectangle is his picture's
     /// opaque bounds), seed 1, LEFT held from the level start: he is active on the first frame (the camera's pan), idle

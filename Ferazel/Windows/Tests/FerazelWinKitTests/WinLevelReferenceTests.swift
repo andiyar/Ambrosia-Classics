@@ -421,4 +421,29 @@ import XCTest
                        "level 21's first faded-in frame: flow step, iteration, pixels lit")
         XCTAssertEqual(String(WinGame.fnv1a64(lit21.rgba), radix: 16), "cefc33dd37db5d83", "level 21's first faded-in frame")
     }
+
+    /// 6A-L22: level 22 "The Labyrinth" — `-FerazelLevel 22` shows chapter card 5 (PICT 4650, `.ChapterScreen` M l.
+    /// 5038–5089) before the level. Its first presented level frame (under the fade-in, black) and its first faded-in
+    /// frame, which shows the darkness at the switch's value 2 (hdr 0x2706): the Mac golden's twin with the switch
+    /// patched to 0 proves that frame differs (`LevelFrameGoldenTests.testLevel22FirstFrameGolden`); the shell path
+    /// cannot patch the header without a copy of the data set (D70.4).
+    func testLevel22FirstFrameReference() throws {
+        let (game, host) = try Self.game(level: 22)
+        // `-FerazelLevel 22` taken (22 ∈ `BuiltLevels.list`); refused, the game would run level 1 and every loop below
+        // would run to its cap (well past the ten-minute command limit) before failing.
+        guard game.flow.startLevel == 22 else { return XCTFail("-FerazelLevel 22 refused: level \(game.flow.startLevel)") }
+        let f = try Self.firstLevelFrame(game, host, level: 22)
+        XCTAssertTrue(f.pictures.contains(4650), "chapter card 5 shown: \(f.pictures.sorted())")
+        XCTAssertEqual(try XCTUnwrap(game.flow.levelRun).levelFile.header.darknessEnable, 2, "the switch 2")
+        // Measured at 6A-L22: flow step 879 (wake 3,513) — after the card, as level 10's —, the first iteration under the
+        // fade-in: all black.
+        XCTAssertEqual(Self.lit(f.rgba), 0, "level 22's first presented frame: all black")
+        XCTAssertEqual([f.wakes, f.steps], [3513, 879], "level 22's first presented frame: wake, flow step")
+        XCTAssertEqual(String(WinGame.fnv1a64(f.rgba), radix: 16), "742a0703fa4da325", "level 22's first presented frame")
+        // The first frame with the fade done. Measured: flow step 959, the 41st iteration, 255,746 pixels lit.
+        let lit22 = try Self.firstFadedInFrame(level: 22)
+        XCTAssertEqual([lit22.steps, lit22.iterations, Self.lit(lit22.rgba)], [959, 41, 255_746],
+                       "level 22's first faded-in frame: flow step, iteration, pixels lit")
+        XCTAssertEqual(String(WinGame.fnv1a64(lit22.rgba), radix: 16), "18267450c968dc32", "level 22's first faded-in frame")
+    }
 }

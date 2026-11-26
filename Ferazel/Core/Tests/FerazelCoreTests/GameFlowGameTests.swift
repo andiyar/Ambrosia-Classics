@@ -247,11 +247,11 @@ final class GameFlowGameTests: XCTestCase {
         // The hidden `FerazelLevel` switch starts at its level (∈ BuiltLevels) instead, Option or not; a level outside
         // BuiltLevels (6, 12 and 0) starts level 1 (LV4: level 4 is built; LV5: level 5 is built, 6 is the first outside;
         // 6A-L10L11: 10 and 11 are built, 12 is not; 6A-L15: 15 is built; 6A-L18: 18 is built; 6A-L20: 20 is built;
-        // 6A-L21: 21 is built, 22 is not).
-        XCTAssertEqual(BuiltLevels.list, [1, 2, 3, 4, 5, 10, 11, 15, 18, 20, 21])
+        // 6A-L21: 21 is built; 6A-L22: 22 is built, 25 is not).
+        XCTAssertEqual(BuiltLevels.list, [1, 2, 3, 4, 5, 10, 11, 15, 18, 20, 21, 22])
         for (start, option, expected) in [(2, true, 2), (4, false, 4), (5, false, 5), (6, false, 1), (10, false, 10),
                                           (11, false, 11), (12, false, 1), (15, false, 15), (18, false, 18),
-                                          (20, false, 20), (21, false, 21), (22, false, 1),
+                                          (20, false, 20), (21, false, 21), (22, false, 22), (25, false, 1),
                                           (0, false, 1)] {
             let rig3 = Rig(r, startLevel: start)
             rig3.toMenu()
@@ -750,10 +750,10 @@ final class GameFlowGameTests: XCTestCase {
         all.preview = 1
         all.demo = 1
         let seven = try checkpoint(r, level: 5)                            // an original full-game save (LV5: built)
-        let twentyTwo = try checkpoint(r, level: 22)                       // not built (6A-L21 built 21)
+        let twentyFive = try checkpoint(r, level: 25)                      // not built (6A-L22 built 22)
         rig.files.blocks = [url("preview"): preview, url("demo"): demo, url("eighty"): eighty, url("both"): both,
                             url("previewDemo"): previewDemo, url("all"): all, url("seven"): seven,
-                            url("twentyTwo"): twentyTwo]
+                            url("twentyFive"): twentyFive]
         let previewText = "Sorry, this saved game was saved with a preview version of Ferazel and can not be used with this version."
         let demoText = "Sorry, this saved game was saved with a demo version of Ferazel and can not be used with this version."
         for (name, expected) in [("preview", [previewText]), ("demo", [demoText]), ("eighty", [demoText]),
@@ -795,13 +795,13 @@ final class GameFlowGameTests: XCTestCase {
         flow.dialogDone(.ok)
         rig.drive { $0.state == .mainMenu }
         XCTAssertNil(flow.levelRun)
-        // A save naming a level outside `BuiltLevels` (22 — 6A-L18 built 18, 6A-L20 20 and 6A-L21 21, the save's level
-        // until each): the not-built report, the menu again, nothing prepared.
+        // A save naming a level outside `BuiltLevels` (25 — 6A-L18 built 18, 6A-L20 20, 6A-L21 21 and 6A-L22 22, the
+        // save's level until each): the not-built report, the menu again, nothing prepared.
         rig.press(0x0f)                                                    // R
         rig.drive { _ in self.askedFile(rig.last) }
-        flow.fileDone(.chosen(SavedGameRef(url: url("twentyTwo"), displayName: "twentyTwo")))
-        let ask22 = rig.drive { _ in self.asked(rig.last) }
-        XCTAssertEqual(dialogs(ask22), [.report(text: "Level 22 is not built yet (Phase 6).")])
+        flow.fileDone(.chosen(SavedGameRef(url: url("twentyFive"), displayName: "twentyFive")))
+        let ask25 = rig.drive { _ in self.asked(rig.last) }
+        XCTAssertEqual(dialogs(ask25), [.report(text: "Level 25 is not built yet (Phase 6).")])
         flow.dialogDone(.ok)
         rig.drive { $0.state == .mainMenu }
         XCTAssertNil(flow.levelRun)

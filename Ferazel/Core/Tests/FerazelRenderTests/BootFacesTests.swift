@@ -351,7 +351,8 @@ final class BootFacesTests: XCTestCase {
         // 18]): its three rows are new pins, measured; every other row untouched. 6A-L20 added level 20 (`BuiltLevels`
         // [1…5, 10, 11, 15, 18, 20]): its three rows are new pins, measured; every other row untouched. 6A-L21 added
         // level 21 (`BuiltLevels` [1…5, 10, 11, 15, 18, 20, 21]): its three rows are new pins, measured; every other row
-        // untouched.
+        // untouched. 6A-L22 added level 22 (`BuiltLevels` [1…5, 10, 11, 15, 18, 20, 21, 22]): its three rows are new
+        // pins, measured; every other row untouched.
         let pinned: [String: (rows: Int, fnv: UInt64)] = [
             "L1 init": (190, 0x157d6742ce800e1f), "L1 f30": (240, 0x8190d7eb68896260), "L1 f120": (240, 0xcda33ae9706a4618),
             "L2 init": (229, 0x8fb8d314f8d35783), "L2 f30": (278, 0x7e9c0511f07e745d), "L2 f120": (278, 0x35c9c2eb3280e4b0),
@@ -370,6 +371,8 @@ final class BootFacesTests: XCTestCase {
             "L20 f120": (397, 0x1d4163bbf435315d),
             "L21 init": (365, 0x703e5ce76e97850d), "L21 f30": (380, 0x0d3fa91fd2912748),
             "L21 f120": (385, 0xcbe5663384dce9d7),
+            "L22 init": (607, 0x905b4c7d91d749ff), "L22 f30": (609, 0xcedfc7f1955e2c07),
+            "L22 f120": (609, 0x01c89aef6b1b2790),
         ]
         func rect(_ x: IdleSprites.Rect) -> String { "(\(x.top),\(x.left),\(x.bottom),\(x.right))" }
         func emitter(_ f: ParticleFace?) -> String {
