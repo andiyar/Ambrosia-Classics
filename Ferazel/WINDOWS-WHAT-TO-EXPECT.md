@@ -1,6 +1,114 @@
-# Ferazel's Wand for Windows — what to expect (Phase 5 gate build: the enemies, levels 1–5 through the first boss door)
+# Ferazel's Wand for Windows — what to expect (Phase 6A gate build — through the Goblin Chief; levels 1–5, 10, 11, 15, 18, 20, 21, 22)
 
-## Test build 5 (18 November 2026): the Warrior is now a real boss
+**Status: machine gates green; Ben's and Andrew's gate pending.**
+
+Ferazel's Wand 1.0.3 for Windows: Ambrosia's Ferazel's Wand (2000), rebuilt to run on Windows 10 and 11 (64-bit) from
+the original game's own data. Unofficial, non-commercial preservation. It is the same game as the Mac Phase 6A build —
+both boss fights so far (the Manditraki Warrior on level 5, the Goblin Chief on level 18) and seven new levels (10,
+11, 15, 18, 20, 21, 22) — in lockstep with it: the Mac card (`Ferazel/WHAT-TO-EXPECT.md`, its 9 steps, its stand-ins
+and its known differences) holds here too.
+
+**The project pauses here.** Ferazel's original author is selling an official remaster
+(https://mixedmetaphor.itch.io/ferazels-wand), so this is the last build for now (Ben's ruling, 26 November 2026).
+Of the game's 24 levels, 12 can be played:
+
+1, 2, 3, 4, 5, 10, 11, 15, 18, 20, 21, 22
+
+Levels 25 and later say "Level 25 is not built yet (Phase 6)." (with their own number) and leave you on the map. If
+the work ever resumes, the next phase would open levels 25 to 52.
+
+The question for you: **do the levels through the Goblin Chief play on Windows as they do on the Mac — the pictures
+by eye, the sound by ear?**
+
+**What nobody has seen or heard yet:**
+- **Levels 20, 21 and 22** have only been checked by machine: each was started and stayed running, and the sweep
+  visited every object on them. Nobody has looked at them on either system.
+- **This is the first time the real Windows program opens a level after 5.** Until now the Windows checks opened
+  those levels only inside the test build. Listen for the new music tracks, and for the rain loop on level 15.
+
+## Starting it
+Unzip and start it exactly as in the Phase W card below (Extract All, then "Ferazel's Wand.exe"; SmartScreen: More
+info, then Run anyway). Saved games from the Phase 5 build still open.
+
+**The level chooser (new; the L key).** On the main menu, press **L**. A message box says:
+
+"New Game will start at level 2, Central Caverns. Press L again for the next level."
+
+Close the box (Enter, or click OK) and press L again to step on. The order is 1, 2, 3, 4, 5, 10, 11, 15, 18, 20, 21,
+22, then back to 1 (the names are in the Mac card's table). Then start New Game as usual: it opens the level you
+chose. The choice lasts until you quit; a fresh launch starts at level 1 again. Continue (a saved game) ignores it. A
+game controller cannot press L, so use the keyboard for this. It is an addition of ours (the original has no such
+key): in normal play you still go from level to level on the map, finishing a level takes you to the map, and a
+level that is not built says so and leaves you on the map.
+
+**The hidden test switch still works.** To make New Game start on a chosen level, open a command prompt in the game's
+folder and run (here for level 18):
+
+`"Ferazel's Wand.exe" -FerazelLevel 18`
+
+New Game then goes straight to that level, for that one launch. Any number that is not one of the 12 built levels
+means level 1.
+
+**Keys:** as in the Phase W card below (Shift / Alt / Ctrl act as the Mac's Shift / Option / ⌘). The one new key is
+**L** on the main menu.
+
+## The gate card: what to check (a Windows 10/11 PC, or CrossOver)
+Play **the same 9 steps as the Mac card** (`Ferazel/WHAT-TO-EXPECT.md`, "The gate card: what to check"): the Warrior
+fight on level 5; level 10's mountain strip, wind, turning cannons and trees; level 11's river and Nimbo; level 15's
+rain, thunder and push; the Goblin Chief on level 18; level 20's clouds, blades, maces, wind and hang glider; level
+21's speaking graves, pipes and teleporters; level 22's teleporters, Dimbo, magic carpet, blades and maces; and the
+things only your eye and ear can judge. Please look at levels 20, 21 and 22 first.
+
+**Note anything that differs from the Mac** — a picture, a sound, a timing, a dialog.
+
+## Machine checks run for this card
+Run on the final code, 26–27 November 2026.
+
+| check | result |
+|---|---|
+| The game's test suite | 823 tests: 821 passed, 0 failed, 2 skipped on purpose (the sweep and the bot below, which run on their own) |
+| The Windows package's test suite | 91 tests: 89 passed, 0 failed, 2 skipped on purpose (the same two) |
+| The data census | 1,108 items decoded, 0 failures |
+| Builds | the Mac app and both Windows builds: pass |
+| **Visit sweep** (every object on every level, taken to and drawn), 12 levels | Windows game path: 11,864 visits, 0 problems. Mac game path: 11,864 visits, 0 problems |
+| **Random-play bot** (random keys on every level), 12 levels, 4 runs each, 259,200 steps a path | Windows game path: 43 deaths, 385 level exits, 33 conversations, 3 saves, 0 failures. Mac game path: 44 deaths, 387 level exits, 33 conversations, 3 saves, 0 failures |
+| The game's suite run under CrossOver | <<SEAT: Windows test run inside CrossOver — expected 820 passed / 0 failed / 3 skipped of 823>> |
+| Start-up check of the staged Mac app (muted) | <<SEAT: Mac start-up check of the staged app, muted>> |
+| Start-up check of the staged Windows zip in CrossOver | <<SEAT: start-up check of the staged Windows zip in CrossOver>> |
+
+The two game paths' bot counts differ slightly (one death, two exits); this is not explained yet, and neither path
+had a failure.
+
+<<SEAT: where the staged builds are, and the commit they were built from>>
+
+## Known stand-ins on Windows (Phase 6A)
+- **The table's row "Every Mac stand-in of Phase 4" now reads:** every Mac stand-in of Phase 6A — the Wizard, the
+  Fire Guardians and the last boss and their levels, levels 25 and later, and the ending and credits sequence after
+  the last boss — none of them built while the project is paused. Every other row of the Phase W card's stand-ins
+  table below still holds.
+
+## Known differences
+The Mac card's numbered list (1 to 9) holds here too. The new ones in this build: the thunder's darkening is done on
+the picture (5); a new object is skipped safely when all 700 object slots are in use (6); some lit blades and maces on
+level 20 are drawn unlit (7); no alert when the light table is full (8); and the level chooser (9). The Phase W card's
+"Small differences found while building" below still hold.
+
+## What to tell me
+Your answer goes in `docs/QUESTIONS.md` under the Phase 6A gate item (the Windows part): yes or no to "do the levels
+through the Goblin Chief play on Windows as they do on the Mac?", then anything that felt, sounded or looked
+different, by the Mac card's step number if you can. Please start with:
+- **levels 20, 21 and 22** (the Mac card's steps 6–8), which nobody has seen yet;
+- **the two boss fights' feel** (steps 1 and 5);
+- **the eye-and-ear list** (step 9), and the new music and level 15's rain loop.
+
+---
+
+## The Phase 5 card (gate build: the enemies, levels 1–5 through the first boss door) — kept as written
+
+Kept as it was written for the Phase 5 gate, with its test build 5 note. Where it says the Warrior stands still or
+level 10 and later are closed, the Phase 6A card above replaces it.
+
+### Test build 5 (18 November 2026): the Warrior is now a real boss
 This build is the Phase 5 build below plus the first boss fight. Where the card below says the Warrior stands still,
 never dies and the gate stays shut, **that is no longer true in this build**:
 - **When he dies** the screen shakes and flashes, the gate opens and the music changes.
@@ -26,7 +134,7 @@ ear?**
 
 **Boot results (muted):** done by day on 2026-11-11 (run 50), on a build staged from efeb66f — game code identical to this build. The Mac app booted muted and quit cleanly with no crash report; the Windows zip booted in a clean CrossOver bottle with the main menu, the new game and level 1's text identical to the references; the game's suite under CrossOver: 617 passed, 0 failed, 3 skipped, 0 crashed, of 620; the Mac development build's headless main menu matched its reference
 
-## Starting it
+### Starting it
 Unzip and start it exactly as in the Phase W card below (Extract All, then "Ferazel's Wand.exe"; SmartScreen: More
 info, then Run anyway). Saved games from the Phase W build still open.
 
@@ -37,7 +145,7 @@ folder and run (here for level 5):
 
 New Game then goes straight to that level, for that one launch. Any number other than 1 to 5 means level 1.
 
-## The gate card: what to check (a Windows 10/11 PC, or CrossOver)
+### The gate card: what to check (a Windows 10/11 PC, or CrossOver)
 Play **the same 12 steps as the Mac card** (`Ferazel/WHAT-TO-EXPECT.md`, "The gate card: what to check"): the goblins,
 crawlers and roaches, bats, frogs and blobs; getting hurt and hurting them; the Statue spell on an enemy; the shields
 (nothing to test yet: no shield can be reached in this build); level 4's boulder spouts; the underwater tint; level 5
@@ -50,7 +158,7 @@ build 5 replaces this: see the top of this card). Before the arena locks, walkin
 (0 of 1 enemies on the stage-complete panel), and a save point can be reached before the lock. Level 10 and later
 can't be reached in normal play (only an original saved game from a later level would show "not built yet").
 
-## Machine checks run for this card
+### Machine checks run for this card
 - **Visit sweep** (every object on every level, taken to and drawn) on levels 1–5, through the Windows game path:
   3,488 visits, 0 problems (15 of 15 teleports arrived; 37 of 37 level exits reached the map), 10 November 2026; through
   the Mac game path: 3,488 visits, 0 problems (15 of 15 teleports arrived; 37 of 37 level exits reached the map), 10
@@ -64,12 +172,12 @@ can't be reached in normal play (only an original saved game from a later level 
   82 tests, 0 failed (the same 2 skipped by design); the data census 1,108 items decoded, 0 failures; the Mac app and
   the Windows game both build. The game's suite under CrossOver (a launch check, run by day on 2026-11-11): 617 passed, 0 failed, 3 skipped, 0 crashed, of 620
 
-## Known stand-ins on Windows (Phase 5)
+### Known stand-ins on Windows (Phase 5)
 - **The table's row "Every Mac stand-in of Phase 4" now reads:** every Mac stand-in of Phase 5 — the Warrior, level 10
   and later, the enemies first placed after level 5, the other bosses and the later levels' drawing features —
   replaced in Phase 6, in lockstep with the Mac. Every other row of the Phase W card's stand-ins table below still holds.
 
-## What to tell me
+### What to tell me
 Your answer goes in `docs/QUESTIONS.md` under the Phase 5 gate item (the Windows part): yes or no to "do levels 1 to 5
 play on Windows as they do on the Mac?", then anything that felt, sounded or looked different, by the Mac card's step
 number if you can.

@@ -1,4 +1,193 @@
-# Ferazel's Wand — what to expect (Phase 5 gate build: the enemies, levels 1–5 through the first boss door)
+# Ferazel's Wand — what to expect (Phase 6A gate build — through the Goblin Chief; levels 1–5, 10, 11, 15, 18, 20, 21, 22)
+
+**Status: machine gates green; Ben's gate pending.**
+
+**Windows:** the same build for Windows 10/11 has its own card, `Ferazel/WINDOWS-WHAT-TO-EXPECT.md`.
+
+**The project pauses here.** Ferazel's original author is selling an official remaster
+(https://mixedmetaphor.itch.io/ferazels-wand), so this is the last build for now (your ruling, 26 November 2026).
+Of the game's 24 levels, 12 can be played:
+
+1, 2, 3, 4, 5, 10, 11, 15, 18, 20, 21, 22
+
+Levels 25 and later say "Level 25 is not built yet (Phase 6)." (with their own number) and leave you on the map. If
+the work ever resumes, the next phase would open levels 25 to 52.
+
+This build of our Ferazel's Wand 1.0.3 replica adds **both boss fights so far** — the Manditraki Warrior on level 5
+and the Goblin Chief on level 18 — and **seven new levels**: 10, 11, 15, 18, 20, 21 and 22. With them come the new
+things those levels use: the mountain strip behind level 10, wind, cannons that turn by themselves, trees with branches
+you can stand on, the flowing river backdrop, Storm Valley's rain and thunder, the clouds of Hangnabit, spinning blades, maces on
+paths, enemy pipes, speaking graves and the magic carpet. It also adds a **level chooser** of our own (below). Every
+picture, sound and dialog still comes from the original game files, unchanged.
+
+The question for you: **do the levels through the Goblin Chief play like the original?** Play it side by side with
+your Let's Play (https://www.youtube.com/watch?v=ESuyxMUEzDw) and the longplays.
+
+**Nobody has seen levels 20, 21 and 22 yet.** They have only been checked by machine: each was started and stayed
+running, and the sweep visited every object on them. Your eyes are the first on them, so please look at those three
+first and tell me anything that looks wrong there.
+
+## What this build is, and what it is not
+- **It is** levels 1–5, 10, 11, 15, 18, 20, 21 and 22; the Warrior fight, the gate beyond it and the rest of level 5;
+  the Goblin Chief fight; every object placed on those levels; and the level chooser.
+- **It is not** the Wizard (level 25), the Fire Guardians or the last boss, nor any level from 25 on, nor the ending
+  and the credits sequence after the last boss. None of these is built.
+
+## Opening it
+- Double-click `Ferazel's Wand.app` on your Desktop. Start a New Game, or Resume a saved game from the Phase 5 build.
+- **The level chooser (new; the L key).** On the main menu, press **L**. A message box says:
+
+  "New Game will start at level 2, Central Caverns. Press L again for the next level."
+
+  Close the box (Return, or click OK) and press L again to step on. The order is:
+
+  | press | level | name |
+  |---:|---:|---|
+  | 1 | 2 | Central Caverns |
+  | 2 | 3 | Western Reaches |
+  | 3 | 4 | Eastern Reaches |
+  | 4 | 5 | Manditraki Warrior |
+  | 5 | 10 | Unemployed in Greenland |
+  | 6 | 11 | River of Fears |
+  | 7 | 15 | Storm Valley |
+  | 8 | 18 | Goblin Chief |
+  | 9 | 20 | Hangnabit |
+  | 10 | 21 | Obfuscation & Edification |
+  | 11 | 22 | The Labyrinth |
+  | 12 | 1 | A Scent of Peril (back to the start) |
+
+  The names come from the game's own list. Then start New Game as usual (the button, N, or the menu): it opens the
+  level you chose. The choice lasts until you quit; a fresh launch starts at level 1 again. Continue (a saved game)
+  ignores it. A game controller cannot press L, so use the keyboard for this.
+- **Why the chooser is there.** It is an addition of ours: the original has no such key (known difference 9). In
+  normal play you still go from level to level on the map: finishing a level takes you to the map, and choosing a
+  level that is not built shows the "not built yet" message and leaves you on the map. Since the map's road stops
+  after the built levels, the chooser lets you jump straight to any of them.
+- **The hidden test switch still works.** To make New Game start on a chosen level, quit the game, open Terminal and
+  paste (here for level 18):
+
+  `cd ~/Desktop && open -n "Ferazel's Wand.app" --args -FerazelLevel 18`
+
+  The game still opens on the title and menu; New Game then goes straight to that level, for that one launch.
+  `defaults write com.ambrosiaclassics.ferazel FerazelLevel 18` makes it stick, and
+  `defaults delete com.ambrosiaclassics.ferazel FerazelLevel` goes back. Any number that is not one of the 12 built
+  levels means level 1. Pressing L after this steps on from that level.
+- Everything else about opening it, the keys and the hidden picture settings is as in the Phase 4 card below; the
+  one new key is L on the main menu.
+
+## The gate card: what to check
+
+Each line says what the build does, read from the original's code and checked against the level data. **MED** =
+fairly sure. Unmarked lines are read straight from the code.
+
+1. **Level 5, the Warrior.** Three crates drop into his arena from high above at the start, and they come to rest
+   on the ledges above his path; they do not fall on him by themselves. He walks, runs, swings at you and throws a
+   shot. Your shots and spells do not hurt him: he swallows shots with a sound, as in the original. Crates do: push one off a ledge as he walks beneath. **Ten crates landing
+   on him kill him**, and a new crate drops about half a second after each one breaks. A crate that lands on you
+   hurts you too. When he dies he plays his death frames and burns away; thunder sounds, the screen shakes and
+   flashes, the gate opens and the boss music plays (with music on). Beyond the gate the rest of level 5 is open,
+   with the Wooden Shield, so shield blocking can be tried at last.
+2. **Level 10, "Unemployed in Greenland".** It opens with chapter card 2. A mountain strip moves behind the tiles at
+   half the camera's speed. In places wind pushes you, your shots and crates. Some cannons turn by themselves,
+   pausing at each step with a click. Trees have branches you can stand on. New enemies: goblins worth 800 points
+   and swarms of bats. Level 10 has two exits: one leads on to level 11, the other to the map spot for level 15.
+3. **Level 11, "River of Fears".** The lower part of the backdrop flows sideways and wobbles like a river. Tiles
+   under water are drawn tinted. A water current pushes you. Nimbo talks to you when you meet him.
+4. **Level 15, "Storm Valley".** The sky is replaced by sheets of rain, and rain streaks fall from the top of the
+   screen. Every few seconds lightning flashes, thunder plays and the screen briefly darkens. A steady wind pushes you
+   to the left. New enemies: Gremlins and Dillos. Springs, plants, trees, and cannons that turn only when you shoot
+   them.
+5. **Level 18, "Goblin Chief".** The river backdrop flows here too. The Chief waits until the arena locks behind you.
+   Then he jumps between three lanes; each landing shakes the screen and stuns you if you are on the ground. After
+   landing he throws one or two boulders. He cries out now and then. **20 Fireball hits kill him.** Then his death
+   frames, the burn, thunder, the shake and flash, the gate opens and the boss music plays.
+6. **Level 20, "Hangnabit".** Clouds are drawn see-through in front of everything. They never move on their own:
+   when the view moves they slide past faster than the scenery, and you can't touch them. Spinning blades hurt you
+   only when the arm itself crosses you. Maces shuttle up and down on fixed paths. There is wind over much of the
+   level, some of it strong. The hang glider is here.
+7. **Level 21, "Obfuscation & Edification".** A dim level, lit in patches. Some graves speak to you when you touch
+   them. Enemy pipes let out their creatures one at a time: a pipe makes a new one only once the last is gone.
+   Teleporters, and insects.
+8. **Level 22, "The Labyrinth".** It opens with chapter card 5. A maze of teleporters. Dimbo has a conversation for
+   you; after it, going back to level 11 finds a Dimbo there who talks too. The magic carpet: touch it and it
+   unrolls and rises, then you steer it. Here it never wears out. Spinning blades, cut off at the bottom as the
+   original draws them on this level, and maces, some on paths and some swinging on chains.
+9. **Things only your eye and ear can judge (MED).** All read from the code but not provable on screen:
+   - the mountain strip's look; the river's speed; how thick the rain is; how strong the thunder's darkening is; how
+     see-through the clouds are;
+   - the feel of the two boss fights: the Warrior's pace, the Chief's jumps and throws;
+   - the new sounds: the rain loop, the thunder, the Chief's cries, the boss music;
+   - the colours of the seven new levels (10, 11, 15, 18, 20, 21, 22).
+
+## Machine checks run for this card
+Run on the final code, 26–27 November 2026.
+
+| check | result |
+|---|---|
+| The game's test suite | 823 tests: 821 passed, 0 failed, 2 skipped on purpose (the sweep and the bot below, which run on their own) |
+| The Windows package's test suite | 91 tests: 89 passed, 0 failed, 2 skipped on purpose (the same two) |
+| The data census | 1,108 items decoded, 0 failures |
+| Builds | the Mac app and both Windows builds: pass |
+| **Visit sweep** (takes Ferazel to every object on every level and draws it), 12 levels | Mac game path: 11,864 visits, 0 problems. Windows game path: 11,864 visits, 0 problems |
+| **Random-play bot** (plays every level with random keys), 12 levels, 4 runs each, 259,200 steps a path | Mac game path: 44 deaths, 387 level exits, 33 conversations, 3 saves, 0 failures. Windows game path: 43 deaths, 385 level exits, 33 conversations, 3 saves, 0 failures |
+| The game's suite run under CrossOver | <<SEAT: Windows test run inside CrossOver — expected 820 passed / 0 failed / 3 skipped of 823>> |
+| Start-up check of the staged Mac app (muted) | <<SEAT: Mac start-up check of the staged app, muted>> |
+| Start-up check of the staged Windows zip in CrossOver | <<SEAT: start-up check of the staged Windows zip in CrossOver>> |
+
+The two game paths' bot counts differ slightly (one death, two exits); this is not explained yet, and neither path
+had a failure.
+
+<<SEAT: where the staged builds are, and the commit they were built from>>
+
+## Known stand-ins
+- **The Wizard, the Fire Guardians and the last boss** are not built, and neither are their levels.
+- **Levels 25 and later** can't be entered: "Level n is not built yet (Phase 6)." (the only text in the game we
+  wrote ourselves), then back to the map.
+- **The ending and the credits sequence** after the last boss are not built.
+- The drawing features and objects that only levels 25 and later use are not built; no level you can enter uses
+  them.
+- Everything in the Phase 4 card's "Known stand-ins and differences" below still holds where the Phase 5 card and
+  this one have not replaced it.
+
+## Known differences (forced by the platform or ruled)
+1. **Many sounds at once.** When all 16 sound channels are busy and a new sound pushes an old one out, the replica can
+   be wrong for one tick about whether that old sound is still playing. Nothing is drawn wrong and nothing quits. Tell
+   me if you ever hear a difference. **MED**
+2. **Tint colours.** The colours of the tinted enemies and the frozen statues come through the replica's own colour
+   search. **LOW**
+3. **The underwater tint** is applied to the picture the game draws, not to the monitor's colour setting as the
+   original did; it should look the same. A pause of about a thousandth of a second the original made when the tint
+   changes is not copied (nothing is drawn in it). **MED**
+4. **Speed.** Every timer runs at the original's top speed of 30 game steps a second (your ruling, 2026-10-25).
+5. **The thunder's darkening** on level 15 is done by darkening the picture, not the monitor, like the underwater
+   tint (3). **MED**
+6. **When all 700 object slots are in use**, a new object is skipped safely. The original would write into memory it
+   did not own. This is never reached in normal play.
+7. **Lit blades on level 20.** A blade, mace, raft or boulder there that should be lit by a light made during play
+   (a shot passing, an explosion) is drawn plain and unlit. The original read its shading from a place in memory
+   holding no fixed data, so there is nothing to copy. You confirmed this choice.
+8. **The full light table.** When 200 lights are in use, the original shows an alert with the number 200 and the
+   object gets no light. This build gives no light and shows no alert. It can only happen on level 22, and only by
+   breaking every crate and killing the walking enemies without picking anything up.
+9. **The level chooser** (the L key on the main menu) is ours; the original has no such key. See "Opening it".
+
+## What to tell me
+A pass looks like: levels 1 to 5, 10, 11, 15, 18, 20, 21 and 22 play like the original, both boss fights can be
+won as in the original, and the chooser takes you to each level.
+
+Your answer goes in `docs/QUESTIONS.md`, under the Phase 6A gate item: a plain yes or no to "do the levels through
+the Goblin Chief play like the original?", then anything that felt or looked wrong, by card number if you can.
+Please start with:
+- **levels 20, 21 and 22** (card steps 6–8), which nobody has seen yet;
+- **the two boss fights' feel** (card steps 1 and 5);
+- **the eye-and-ear list** (card step 9).
+
+---
+
+## The Phase 5 card (gate build: the enemies, levels 1–5 through the first boss door) — kept as written
+
+Kept as it was written for the Phase 5 gate. Where it says the Warrior stands still, never dies and the gate stays
+shut, no shield can be reached, or level 10 and later are not built, the Phase 6A card above replaces it.
 
 **Status: machine gates green; Ben's gate pending.**
 
@@ -14,7 +203,7 @@ and dialog still comes from the original game files, unchanged.
 The question for you: **do levels 1 to 5 play like the original with the enemies alive, up to the Warrior's arena?**
 Play it side by side with your Let's Play (https://www.youtube.com/watch?v=ESuyxMUEzDw) and the longplays.
 
-## What this build is, and what it is not
+### What this build is, and what it is not
 - **It is** every enemy placed on levels 1–4 (goblins, crawlers, roaches, bats, frogs, blobs), their shots, getting hurt
   and hurting them, the Statue spell on enemies, level 4's boulder spouts, the underwater tint, and level 5 up to the
   Warrior's arena. Shield blocking is built and machine-tested too, but no shield can be reached yet (card step 8).
@@ -23,7 +212,7 @@ Play it side by side with your Let's Play (https://www.youtube.com/watch?v=ESuyx
   is level 5's far exit, beyond the Warrior's shut gate. Only an original saved game from a later level would show the
   "not built yet (Phase 6)" message.
 
-## Opening it
+### Opening it
 - Double-click `Ferazel's Wand.app` on your Desktop. Start a New Game, or Resume a saved game from the Phase 4 build:
   it still opens.
 - **To make New Game start on any level from 1 to 5** (the hidden test switch), quit the game, open Terminal and
@@ -36,7 +225,7 @@ Play it side by side with your Let's Play (https://www.youtube.com/watch?v=ESuyx
   `defaults delete com.ambrosiaclassics.ferazel FerazelLevel` goes back. Any number other than 1 to 5 means level 1.
 - Everything else about opening it, the keys and the hidden picture settings is as in the Phase 4 card below.
 
-## The gate card: what to check
+### The gate card: what to check
 
 Each line says what the build does, read from the original's code. **MED** = fairly sure. Unmarked lines are read
 straight from the code.
@@ -85,7 +274,7 @@ straight from the code.
     - the look of level 5's moving sky;
     - how much the goblins' voices vary in pitch.
 
-## Machine checks run for this card
+### Machine checks run for this card
 - **Visit sweep** (a script that takes Ferazel to every object on every level and draws it) on levels 1–5, through the
   Mac game path: 3,488 visits, 0 problems (15 of 15 teleports arrived; 37 of 37 level exits reached the map), 10 November 2026
 - The same sweep through the Windows game path: 3,488 visits, 0 problems (15 of 15 teleports arrived; 37 of 37 level
@@ -101,7 +290,7 @@ straight from the code.
   design); the data census 1,108 items decoded, 0 failures; the Mac app and the Windows game both build. The game's suite under CrossOver (a launch check, run by day on 2026-11-11): 617 passed, 0 failed, 3 skipped, 0 crashed, of 620
 - **Launch checks** (muted): done by day on 2026-11-11 (run 50), on a build staged from efeb66f — game code identical to this build. The Mac app booted muted and quit cleanly with no crash report; the Windows zip booted in a clean CrossOver bottle with the main menu, the new game and level 1's text identical to the references; the game's suite under CrossOver: 617 passed, 0 failed, 3 skipped, 0 crashed, of 620; the Mac development build's headless main menu matched its reference
 
-## Known stand-ins (until Phase 6)
+### Known stand-ins (until Phase 6)
 - **The Warrior** stands in its first picture, hurts on contact, never fights, never dies, and the gate stays shut
   while it lives (card step 11).
 - **Level 10 and later** can't be entered yet: "Level n is not built yet (Phase 6)." (the only text in the game we
@@ -114,7 +303,7 @@ straight from the code.
 - Everything in the Phase 4 card's "Known stand-ins and differences" below still holds, except the lines this build
   replaces: the enemies, the boulder spouts, the underwater tint, the Magical Shield's crouch and level 5.
 
-## Known differences (forced by the platform or ruled)
+### Known differences (forced by the platform or ruled)
 1. **Many sounds at once.** When all 16 sound channels are busy and a new sound pushes an old one out, the replica can
    be wrong for one tick about whether that old sound is still playing. Nothing is drawn wrong and nothing quits. Tell
    me if you ever hear a difference. **MED**
@@ -125,7 +314,7 @@ straight from the code.
    changes is not copied (nothing is drawn in it). **MED**
 4. **Speed.** Every timer runs at the original's top speed of 30 game steps a second (your ruling, 2026-10-25).
 
-## What to tell me
+### What to tell me
 A pass looks like: on levels 1 to 4 the enemies move, attack, hurt you and die as in the original, and level 5 opens,
 pans and locks you in front of the Warrior as in the Let's Play — the Warrior fight itself aside.
 
