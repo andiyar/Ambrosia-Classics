@@ -2990,7 +2990,7 @@ ids; its `--check` reads this table):
   relaunch starts at level 1 (or at the switch's level) again.
 - **Why this shape:** it lives in `GameFlow`'s menu pass, which both shells already drive through the shared
   driver, and it uses a message box both shells already draw — no new screen, no new text drawing, no second copy
-  of the level list. It is a **named departure from the original** (known deviation 8 on the gate card).
+  of the level list. It is a **named departure from the original** (known deviation 9 on the gate card; 8 is the full light table, D72.3).
 - **Nothing changes for a player who never presses L:** every existing picture, state pin, Windows reference,
   fixture picture and both smoke checks' main-menu pictures stay as they are — a moved value is a STOP. Continue,
   the saved games, the map and `-FerazelLevel` are untouched. L does nothing anywhere but the main menu's key block
