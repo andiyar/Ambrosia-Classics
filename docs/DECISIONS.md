@@ -3007,3 +3007,21 @@ should-fix, 8 minor), all folded in; then the seat's cross-check.
    (2,040 visits) is the first.
 5. **The blade and carpet "stand-in at Setup" carries are closed for built levels** (runs 66 and 70): on level 22
    neither can be drawn before its first Handle runs (measured by the implementer, confirmed by leg 1).
+
+## D73 — Ferazel's Wand: run 72 part 1's rulings (the level chooser; 2026-11-27)
+
+1. **The chooser's shape (D72.1 (a)).** On the main menu the L key steps New Game's start level through
+   `BuiltLevels.list` (wrapping) and names the level in the game's own message box; New Game then starts there, as
+   `-FerazelLevel N` does. Chosen because both shells already drive the menu pass and already draw that box: no new
+   screen, no new text drawing, no second copy of the list. Nothing is stored; Continue ignores it; a gamepad cannot
+   use it. It has its own cooldown so the X joke's timing is untouched.
+2. **It is known deviation 9** on the 6A card; 8 is the full light table (D72.3).
+3. **The run-68 reading is not built** (what a level restart does to the touch areas of types that measure
+   themselves from a cached picture). With the project pausing it stays a named open item for the archive note.
+4. **Ben's word on the usage limit (2026-11-26 21:00):** the chip told the seat to wait for the weekly reset at 89%;
+   Ben: "i wouldn't have triggered the session if i didn't want to proceed". A session Ben starts runs; the limit
+   check is information for him, not a stop.
+5. **The run was split by the night rule and the seat's context.** Part 1 (night): the chooser, its reviews, the
+   relabel sweep, every headless gate, the card's text. Part 2 (by day): Proof B and the smoke, the Fable phase
+   review, the stages and their boot checks, the card's results, QUESTIONS, the archive. Staging waited for part 2
+   so the builds are staged once, after the review, with the launch results on the card inside them.

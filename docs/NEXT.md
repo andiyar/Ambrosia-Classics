@@ -1,6 +1,6 @@
 STATUS: CONTINUE
 
-# NEXT — Ferazel's Wand, run 72: the 6A phase end (6A-END), the level chooser, both builds, then the archive
+# NEXT — Ferazel's Wand, run 72 part 2: Proof B, the phase review, both builds, the gate, then the archive
 
 > **Ben's ruling, 2026-11-26 — finish Phase 6A, then archive (this overrides the plan where they differ; D72.1).**
 > The original author is selling an official remaster (https://mixedmetaphor.itch.io/ferazels-wand), so Ferazel
@@ -19,109 +19,74 @@ STATUS: CONTINUE
 >    STATE's Ferazel block says paused and why; the Ferazel worktrees and their DerivedData folders are removed;
 >    the handoff is the archive note. Everything else (the plan, the RE bank, the ledger, the dumps) stays as it is.
 > 3. Open questions that only matter to 6B or later (Q19, Q21, …) are closed as "paused", not asked.
+> 4. **Ben, 2026-11-26 (D73.4):** a session he starts runs whatever the weekly limit says. Read the limit
+>    (`get_usage`) and say the figure, but do not stop for it.
 
 You are the seat for **Ferazel's Wand** in Ambrosia Classics, repo `/Users/andiyar/Developer/Ambrosia-Classics`
 (`$REPO`). Method: `~/Developer/Toolkits/fable-kit/orchestrator.md`. In your first message say which model you are
 and, in one sentence, what you will do first; then start. **If a Coordinator or another session started you, its
 overrides win over this file.**
 
-**Authority:** `docs/superpowers/plans/2026-11-04-ferazel-remainder.md` — the one plan, as changed by the ruling
-above. This run's card: `#### 6A-END` in "Wave 5 — Phase 6A", with "The 6A gate card" outline, "0. The verification
-model" (the gate table and its command block: GWB, GW4R, GW5, GW6, G9M, LAUNCH GUARD) and "Verification-model
-additions for 6A". The model for gate times and commands is "As executed — 6A-L22" (run 71). Nothing else is a plan.
+**Work in the worktree `$REPO/.claude/worktrees/gracious-volhard-286877`** (branch `claude/gracious-volhard-286877`).
+It is run 72's: main is at b7be967 (the chooser, pushed); the branch is ahead of main by the 6A card (4b06fc9) and
+part 1's docs. Its `.build` folders are warm. If the app gives you a different worktree, do the work in that one
+all the same (`git -C`), and remove both at the archive.
+
+**Authority:** `docs/superpowers/plans/2026-11-04-ferazel-remainder.md` — `#### 6A-END`, `#### LC` and its "As
+executed — LC" (part 1's gates, commands and times), "0. The verification model", as changed by the ruling above.
 
 ## Read first
-1. `CLAUDE.md` (repo root).
-2. `docs/STATE.md` — the Ferazel block: the live state. This chip holds no state.
-3. `docs/QUESTIONS.md` "Open" — act first on any new text under an `Answer:` (Q18 is Ben's Phase 5 gate: notes
-   become tasks at the head of the order; a fail stops the build).
-4. `docs/DECISIONS.md` **D72** (run 71 and the ruling), D71, D70 (D70.5: never ask to look at the game's window),
-   D69.5, D68.5, D59.1, D54, D51, and `docs/handoff-2026-11-26-ferazel-run71.md`.
+1. `CLAUDE.md` (repo root); `docs/STATE.md` — the Ferazel block (its top bullets are part 1's close).
+2. `docs/handoff-2026-11-27-ferazel-run72-part1.md`; `docs/DECISIONS.md` **D73**, D72, D70.5 (never ask to look at
+   the game's window), D69.5, D59.1.
+3. `docs/QUESTIONS.md` "Open" — act first on any new text under an `Answer:`.
+
+## What part 1 finished (do not redo unless source changes)
+The level chooser (L on the main menu), its two reviews and fix round; the relabel sweep; the 6A card's text in
+both files with four `<<SEAT: …>>` placeholders; and every headless gate at b7be967: G2 823 (821 / 0 / 2), GW2 91
+(89 / 0 / 2), G3, G5, GW1, GW3, GW4, the full sweep (11,864 visits, rows 0, both paths) and the bot (259,200
+steps, failures 0, both paths). **These hold while no source file changes** (D69.5): a docs or card commit voids
+nothing; a source fix voids the gates it touches.
 
 ## Before anything else
-- **The weekly usage limit** (`get_usage`). Run 71 closed at **89% all models**, 71% Fable; the week resets on
-  **2026-12-01 at 02:00 Sydney time**. Run 71 (one level task with its sweep and bot) cost 9 points. This run is
-  bigger: a small build task with two reviews, the full sweep and bot again, Proof B, two stages and a Fable review
-  of the whole phase — expect 20 to 30 points. **If the limit cannot hold it, do nothing:** say in one line that
-  the run waits for the reset, leave this file as it is, and end. Do not start part of it and stall.
-- **Your own context.** Read the meter before every dispatch. Cap 300k. Run 71 went from 116k at the start to
-  199k when its gates were done. If the cap comes before the archive, close the step in flight, rebuild this file
-  for the remainder (the ruling block carried whole) and start one more attended session; otherwise no next session.
-- **How long one command may run.** `echo "$CLAUDE_CODE_DISABLE_BACKGROUND_TASKS"`: `1` means background work is
-  off and a foreground command is cut off at ten minutes. Every suite runs in parts; the sweep one level group a
-  command (**level 22 in two halves**: `FERAZEL_VISIT_OFFSETS=on,left`, then `right,above`, D72.4); the bot one
-  command a shell. Only `tools/windows/proof-b-ferazel.sh` may run detached (D59.1).
-- **One heavy command a message** (D70.6); chain parts only when their usual times sum under six minutes (D71.6).
-- **The time of day** (`date`). Proof B, the Mac SDL smoke, the CrossOver smoke of the staged zip and the muted
-  boot of the staged Mac app are **by day only (09:00–21:00), muted, LAUNCH GUARD first**. Start this run in the
-  morning if you can choose. A launch is recorded as "started and stayed running"; never ask to look at the window.
-
-## Reconcile first
-- `git -C "$REPO" worktree list`, `git -C "$REPO" log --oneline -8 main`: main at or past run 71's close (db0e580
-  plus its docs commits). Other sessions (Deimos, Castles) also merge to local main: merge main into your branch
-  before each `--ff-only`, and check the next free D-number at the close (D73 unless another project took it).
-- G1 HectorKit per the plan's gate table (main ef2c341, clean, at run 71). A worktree needs the untracked link
-  `../HectorKit → ~/Developer/HectorKit` beside it, or `HECTORKIT_PATH=$HOME/Developer/HectorKit`.
-- The suites' parts, their filters and run 71's times are in STATE's numbers table and "As executed — 6A-L22".
-  After one `swift build --build-tests`, each part is `swift test --skip-build --filter …`. Each log ends with a
-  second, empty bundle's "Executed 0 tests" — count the `Test Case … passed` lines. A wrong filter runs zero tests
-  and still exits 0. This Mac has no `timeout` command. A small script that runs one part and prints only
-  `passed / failed / skipped / exit / time` keeps each gate to one line of your context.
-- G3, G5, GW1, GW3, GW4: the plan's §0 command block, from a `git archive` copy with a `HectorKit` link beside it
-  and `-derivedDataPath` / `WIN_BUILD_ROOT` in the scratch folder.
-- `rm -rf` on a path built from a shell variable is refused by the app unless written `"${S:?}/name"`; in zsh a
-  glob that matches nothing aborts the whole command.
+- **The time of day** (`date`). Steps 1, 4 and 5 below launch something: **09:00–21:00 only, muted, LAUNCH GUARD
+  first.** If you are started at night: do step 2 (the review) and any fix round it needs, then **stop with one
+  line saying the launches and the archive wait for 09:00** — do not stage, do not archive with boot checks owed.
+  Ben or the parent session wakes you by day.
+- **Your own context**: read the meter before every dispatch; cap 300k.
+- `echo "$CLAUDE_CODE_DISABLE_BACKGROUND_TASKS"`: `1` = a foreground command is cut at ten minutes; suites in
+  parts, the sweep a level group a command, the bot a shell a command; only Proof B may run detached (D59.1).
+  One heavy command a message.
 
 ## This run, in order
-
-1. **By day, first: what is owed from the wave.** Proof B (`tools/windows/proof-b-ferazel.sh`, muted, detached
-   allowed): expect **813 passed / 0 failed / 3 skipped / 0 crashed (of 816)** at main. It has not run on the 52
-   tests added since run 64 — watch `testBladeArmEndpoints` (exact cos/sin values under Wine). The Mac SDL smoke
-   (`tools/windows/smoke-ferazel-win.sh --mac-only`). A failure is a fix task before anything else.
-2. **Rule on the one unplanned reading** (STATE's run-68 carry, [MED]): what a level restart does to the touch
-   areas of the other types that measure themselves from a cached picture. With the project pausing, the default is
-   to leave it as a named open item in the archive note, not to build it. Say which you chose and why.
-3. **The level chooser (task LC — new, from the ruling; write its card under 6A-END in the plan before briefing).**
-   - What it is: a way inside the game, on Mac and on Windows, to start any built level without a command line.
-     The list comes from `BuiltLevels.list` (never a second copy); the start goes through `GameFlow.startLevel`,
-     as the `FerazelLevel` switch does. Read how that switch reaches `GameFlow` on both shells before choosing
-     the shape. The seat picks the smallest shape that both shells share (for example a key on the main menu that
-     opens a plain list) and records it as a ruling; it is a **named, listed departure from the original** on the
-     gate card, and nothing of the original's screens or keys may change for a player who never uses it.
-   - One `fk-implementer`, then two Opus review legs (spec, then quality with a mutation table, told what leg 1
-     found), a fix round, the seat's own gates. Tests on both sides (Core / shared and WinKit); the ladder rises
-     from 816 / 90 by the task's count, and Proof B's expected total rises with the Core count.
-   - **Pinned values:** nothing existing may move — every level's pictures and state pins, the Windows references,
-     the fixture pictures, the chapter cards, the main menu's reference pictures in both smoke checks. A moved
-     value is a STOP.
-   - It changes source, so **every gate run before it is void** (D69.5): run steps 4–6 after it is merged.
-4. **The relabel sweep** (the card's point 2): no `// later:` in `Ferazel/Core/Sources` names a merged task; a
-   comment-only commit, proven so. The engine contract §2.11 and the ledger's §9 line still call the carpet
-   unbuilt (run 70's carry) — correct both.
-5. **The gates at the final commit:** G1; G2 and GW2 in parts; G3; G5; GW1–GW4; then the full sweep and bot on
-   twelve levels, both paths (GE) — every one green; **a non-zero exit stops the phase end** (each row becomes a
-   fix task, nothing is staged). Summary lines go on the card and in LOOP-LOG.
-6. **Stage both builds** (`tools/stage-ferazel.sh`, `tools/windows/stage-ferazel-win.sh`; GW5), then by day: the
-   muted boot of the staged Mac app (G9M), the CrossOver smoke of the staged zip (GW6), Proof B at the staged head
-   if the chooser moved Core. The Mac app goes to `out/Ferazel/` and the Desktop as before; **the Windows zip and
-   its `.sha256` are copied to `releases/<a new folder>/` in the MAIN checkout** — no GitHub release, no upload,
-   no tag pushed. Say on the card where both are.
-7. **One gate card, two files** (`Ferazel/WHAT-TO-EXPECT.md`, `Ferazel/WINDOWS-WHAT-TO-EXPECT.md`), from the
-   plan's outline, every point checked against the level data: what is new through the Goblin Chief, **how to use
-   the level chooser**, the known deviations (number 7 the lit blade; add the full light table, D72.3; add the
-   chooser as a departure), what nobody has seen yet (levels 20, 21, 22 — Ben's eyes), and the stand-ins.
-8. **The Fable cross-check** (your one review): the whole 6A diff (`git diff <phase-start SHA>..HEAD`, Mac and
-   Windows — the phase-start SHA is in the plan's 6A opening or STATE-history) and the card. It also reads run
-   71's small carry: the bot's two paths differ by one death and two exits on twelve levels. Opus implementers
-   fix its findings; a fix that changes source re-runs the gates it voids and re-stages.
-9. **The card goes to QUESTIONS** as a new item (the 6A gate, Mac and Windows) — it does not block the archive.
+1. **By day: Proof B** (`tools/windows/proof-b-ferazel.sh`, muted, detached allowed): expect **820 passed / 0
+   failed / 3 skipped / 0 crashed (of 823)**. It has not run on the 59 tests added since run 64 — watch
+   `testBladeArmEndpoints` (exact cos/sin under Wine) and `LevelChooserTests`' no-L digest (it hashes Swift's
+   printed output; if Wine disagrees, the fix is a structural comparison, a tests-only round). Then **the Mac SDL
+   smoke** (`tools/windows/smoke-ferazel-win.sh --mac-only`). A failure is a fix task before anything else.
+2. **The Fable cross-check** (your one review; any hour): the whole 6A diff, Mac and Windows —
+   `git diff e9183ce..HEAD` (e9183ce is the game code the last stages were built from, the Phase 5 end; confirm
+   in `docs/STATE-history.md`) — and the card in both files. It is large: read it by area (`--stat` first, then
+   the source folders one at a time; tests by name and count, not line by line). It also reads the small carry:
+   the bot's two paths differ by one death and two exits on twelve levels (44 / 43, 387 / 385; equal on eleven).
+   Opus implementers fix its findings; a fix that changes source re-runs the gates it voids.
+3. **Fill the card's four placeholders** in both files (results of step 1 and, after step 4, of step 5; where the
+   builds are; the commit). The staging scripts refuse while one remains, so fill the two start-up lines with what
+   the checks will be and correct them if a check surprises you — or stage, check, then amend and re-stage; choose
+   the cheaper and say which.
+4. **Stage both builds** from the final commit (`tools/stage-ferazel.sh`, `tools/windows/stage-ferazel-win.sh`;
+   GW5). The Mac app goes to `out/Ferazel/` and the Desktop; **the Windows zip and its `.sha256` are copied to
+   `releases/<a new folder>/` in the MAIN checkout** — no GitHub release, no upload, no tag pushed.
+5. **By day: G9M** (the staged Mac app boots muted) and **GW6** (the CrossOver smoke of the staged zip).
+6. **The card goes to QUESTIONS** as a new item (the 6A gate, Mac and Windows) — it does not block the archive.
    Close Q19 and Q21 as "paused" (D72.1 (c)); leave Q18 open.
-10. **Archive.** Rebuild this file as `STATUS: PAUSED` with a short "how to resume" (the next step is the 6B
-    planning run, P6B: the Wave 6 cards expanded as 6A's were; what is staged and where; what is owed — Ben's Q18
-    and 6A gates, eyes on levels 20–22, the open carries in STATE). STATE's Ferazel block: paused, why, where
-    everything is. Remove every Ferazel worktree and its DerivedData folder (STATE lists them; `git worktree list`;
-    leave other projects' worktrees alone; if the app refuses a delete, say which and where). The handoff is the
-    archive note. A memory note that Ferazel is paused and why. Push main. **Start no next session.**
+7. **Archive.** Rebuild this file as `STATUS: PAUSED` with a short "how to resume" (the next step would be the 6B
+   planning run, P6B; what is staged and where; what is owed — Ben's Q18 and 6A gates, eyes on levels 20–22, the
+   open carries in STATE, D73.3's unread item). STATE's Ferazel block: paused, why, where everything is; settled
+   bits to the top of `docs/STATE-history.md`. Remove every Ferazel worktree and its DerivedData folder (STATE
+   lists them; `git worktree list`; leave other projects' worktrees alone; if the app refuses a delete, say which
+   and where). The handoff is the archive note. A memory note that Ferazel is paused and why. One LOOP-LOG line.
+   Merge to main `--ff-only`, push. **Start no next session.**
 
 ## Binding rules
 - Launch a build only **muted**, few and short, **never 21:00–09:00** — LAUNCH GUARD first. Headless work any hour.
@@ -140,12 +105,6 @@ additions for 6A". The model for gate times and commands is "As executed — 6A-
 - Never wait silently. Dump beats bank beats plan. Explicit-path commits, no `git stash`,
   `git branch --show-current` before each commit.
 
-## Close (in this order)
-1. Merge to local main `--ff-only` by SHA after each verified step.
-2. "As executed" under the 6A-END card and the chooser's card; rulings in `docs/DECISIONS.md` under the next free
-   number.
-3. `docs/STATE.md`: the Ferazel block replaced with the paused state only; settled bits to the top of
-   `docs/STATE-history.md`. One line in `docs/LOOP-LOG.md`. The handoff (the archive note) with the real start and
-   end times from `date`.
-4. This file rebuilt as `STATUS: PAUSED` (step 10 above).
-5. Push main. No next session — unless the context cap forced a split (then one more attended session, as above).
+## Close
+"As executed" under the 6A-END card; any rulings as D74 (check it is free); then step 7. If the context cap or
+the night rule stops you before the archive, rebuild this file for what is left and say so in one line.

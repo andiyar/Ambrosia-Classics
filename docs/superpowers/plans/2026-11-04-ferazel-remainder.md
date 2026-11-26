@@ -3006,6 +3006,37 @@ ids; its `--check` reads this table):
   key script reaches the chooser and New Game opens the chosen level.
 - **Gate:** G2 and GW2 in parts at the new totals; G3; G5; GW1–GW4; the ledger `--check`. Proof B's expected
   total rises with the Core count. **Commit:** `Level chooser: L on the main menu steps New Game's start level (D72.1)`.
+- **As executed — LC (run 72 part 1, 2026-11-26 20:59 → 2026-11-27 01:30, night; nothing launched):** Ferazel/Core
+  816 → **823**, WinKit 90 → **91**. Commits 1fad6ef (task), 745672c (fix round — tests and comments only, proven by
+  a comment-stripped diff of the shipped folders), b7be967 (the 6A relabel sweep — comments and docs only), 4b06fc9
+  (the 6A card, both files, four `<<SEAT:` placeholders left for the launch results). On main at b7be967, pushed.
+  One implementer, two Opus legs (spec PASS WITH FIXES; quality PASS WITH FIXES — 29 planted bugs: 25 caught, 4
+  survived: Continue reading the start level and a second L reader in the mouse block, both closed by new tests; L
+  also setting the level number (New Game overwrites it) and L while the app is inactive (now tested)), a fix round.
+  - **As built:** L (0x25) is polled in the main menu's key block after the X joke, with **its own** 30-pass
+    cooldown (sharing the joke's would hold back a following X; the joke wins a pass both are pressed in). The
+    message is "New Game will start at level N, <name>. Press L again for the next level." — the name from STR# 1000,
+    the list the map loads. A start level outside the list counts as level 1. Nothing is stored. Continue ignores
+    it. The Mac's ⌘-key rule and the Windows key map are unchanged (L already maps to 0x25 on both). A gamepad
+    cannot press L. It is **known deviation 9** (8 is the full light table, D72.3).
+  - **Nothing moved:** no existing pin, picture or reference changed; a digest of a scripted menu session's output
+    with no L press, measured on 2087b9d before the change, still matches (`LevelChooserTests`). That digest hashes
+    Swift's printed form of each tick's output — the first test of its kind to go through Proof B (pure ASCII, no
+    floats or addresses; reviewers put the Wine risk at 5–25%) [watch Proof B].
+  - **Gates at b7be967 (the seat's own, foreground, in parts, from the clean worktree; G5 and the cross-builds from
+    a `git archive` copy):** G2 **823** = 643 rules + 180 render, 821 passed, 0 failed, the two opt-in skips; GW2
+    **91** = 89 passed, 0 failed, the two skips; G3 `Totals: items 1,108 decoded, failures 0`; G5 BUILD SUCCEEDED;
+    GW1 0 then 2; GW3 0 then 1; GW4 Build complete!; G7 empty; the ledger check OK. **Full GE, 12 levels:** sweep
+    core **11,864 visits, rows 0** (2,422 s in nine commands), windows **11,864, rows 0** (2,781 s in eleven); bot
+    core `steps 259200, deaths 44, exits 387, conversations 33, saves 3, failures 0 in 116 s`, windows `steps
+    259200, deaths 43, exits 385, conversations 33, saves 3, failures 0 in 146 s` (the same one-death, two-exit
+    difference as run 71).
+  - **Not done in part 1 (night, and the seat's context):** Proof B (expect 820 / 0 / 3 / 0 of 823), the Mac SDL
+    smoke, both stages, G9M, GW6, the Fable phase review, the card's four placeholders, QUESTIONS, the archive.
+  - **Left from the relabel sweep:** four rope-bridge comments still say "later: Phase 6" for a thing the plan keeps
+    unbuilt (SpriteSlot, RectBounce, PlayerShotHits, HitPlayerSprite); `LevelFlow` lists the Chief's landing as a
+    flash store where `ScreenFlash` says it only shakes (unresolved wording). The WinGame comment's "40 ticks" was
+    right (160 wakes, four a tick) and now says both.
 
 ### Execution order
 

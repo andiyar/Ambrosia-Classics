@@ -7,7 +7,28 @@ Settled history lives in docs/STATE-history.md.
 > numbers and open items and moves anything settled to the top of `docs/STATE-history.md`; it never appends a run story
 > here. Forks go in `docs/DECISIONS.md`, narrative in the handoff. Re-verify before acting.
 
-## Ferazel's Wand — 2026-11-26 (attended run 71 closed: level 22 is open; the phase end, run 72, is the last run before the pause)
+## Ferazel's Wand — 2026-11-27 (run 72 part 1 closed: the level chooser is in and every headless check is green; part 2, by day, reviews, stages and archives)
+
+- **Run 72 part 1 (2026-11-26 night → 2026-11-27 01:30):** the **level chooser** is on main (b7be967, pushed):
+  on the main menu **L** steps New Game's start level through the built levels and names it in the game's own
+  message box; Mac and Windows; known deviation 9 (D73). The 6A relabel sweep is done. The 6A card's text is
+  written in both files (4b06fc9, on the run's branch) with four placeholders for the launch results. Every
+  headless check passed at b7be967:
+
+  | check | result |
+  |---|---|
+  | Ferazel/Core suite | **823** = 643 rules + 180 render; 821 passed, 0 failed, the 2 opt-in skips |
+  | FerazelWinKit | **91**; 89 passed, 0 failed, the 2 opt-in skips |
+  | census / Mac app build / Windows cross-builds / Mac SDL build | 1,108 and 0 failures / pass / pass / pass |
+  | visit sweep, 12 levels | 11,864 visits and rows 0 on each path |
+  | random-play bot, 12 levels | 259,200 steps and 0 failures on each path (deaths 44 / 43, exits 387 / 385) |
+
+  **The older numbers table below is run 71's (816 / 90) and is superseded by this one.**
+- **Left for part 2 (the chip: `docs/NEXT.md`), by day:** Proof B (expect 820 / 0 / 3 / 0 of 823) and the Mac SDL
+  smoke; the Fable phase review; both stages and their muted boot checks; the card's four placeholders; the 6A
+  gate into QUESTIONS; the archive (`STATUS: PAUSED`). **Nothing is staged yet; the Desktop builds are still run 50's.**
+- **Ben, 2026-11-26:** a session he starts runs whatever the weekly limit says (D73.4). The limit stood at 92% (all
+  models) at this close.
 
 - **Ben's ruling 2026-11-26 (D72.1): finish Phase 6A, then archive.** The original author is selling an official
   remaster, so Ferazel pauses (not cancelled) after the 6A phase end. Run 72 = the phase end plus an in-game level
