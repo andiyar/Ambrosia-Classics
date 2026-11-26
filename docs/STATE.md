@@ -13,6 +13,9 @@ Settled history lives in docs/STATE-history.md.
   so Ferazel pauses (not cancelled) after the 6A phase end: run 71 = level 22, run 72 = the phase end plus an
   in-game level chooser, complete Mac and Windows builds (no public upload), then `STATUS: PAUSED`. No 6B planning
   run. The full text is the block at the top of `docs/NEXT.md`.
+- **The five public Windows test builds were taken down from GitHub (2026-11-26, Ben's word):** releases
+  `ferazel-windows-test-1` … `-5` are deleted there (their tags remain); every zip and checksum is still in
+  `releases/ferazel-windows-test-N/` in the main checkout. Andrew already has build 5.
 - **Where it stands:** Phase 5 "Enemies" is closed on the machine side — **Ben's gate pending (Q18)**. Phase 6A
   "through the Goblin Chief" is being built (the plan: "Wave 5 — Phase 6A" in the one plan file; rulings D46–D49, D51,
   D53–D57, D59–D62, D64, D65, D67–D71). Waves 6A.1, 6A.2 and 6A.3 are built and closed; wave 6A.4 has levels 20 and
