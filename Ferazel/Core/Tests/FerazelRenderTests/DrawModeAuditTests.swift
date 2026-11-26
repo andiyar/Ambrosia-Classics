@@ -801,8 +801,14 @@ final class DrawModeAuditTests: XCTestCase {
 
     struct Audit {
         let level: Level
-        /// The Setup of every active placement, run once (`SetupFaces.setup`).
+        /// The Setup of every active placement, run once (`SetupFaces.setup`), each alone: no running light count, so
+        /// every Xichron carries its light here (the light colours' superset; never a light count).
         let setups: [SetupFaces.Entry]
+        /// The Setup lights the level spawn makes (`lightSlotsFit`): every Setup in `.SetupLevelSprites` order with one
+        /// running `LightTable`, so a Xichron gets its light only while fewer than 150 are in use (M l. 52452).
+        let spawnLights: Int
+        /// `Services.attachedLights` after the run: the Setup light count of each level start it made.
+        let attachedLights: [Int]
         let seen: Seen
     }
 
@@ -858,6 +864,8 @@ final class DrawModeAuditTests: XCTestCase {
         private(set) var first: FrameRenderer?
         private(set) var prepares = 0
         var deathSteps: Set<Int> = []
+        /// The light count of every `attach(lights:…)` (one per level start): the Setup lights the run hands the renderer.
+        private(set) var attachedLights: [Int] = []
         init(_ resources: FerazelResources) { self.resources = resources }
         func prepare(level: Int) throws -> LevelFaces {
             let r = try FrameRenderer(resources: resources, level: level, search: DrawModeAuditTests.search,
@@ -870,6 +878,7 @@ final class DrawModeAuditTests: XCTestCase {
         }
         func attach(lights: [SetupFaces.Light], tintTableDraws: [Int16]) throws {
             guard let r = renderer else { throw FrameRenderer.Refusal.tintTableNotBuilt }
+            attachedLights.append(lights.count)
             try r.addLights(lights)
             try r.buildTintTable(tintTableDraws)
         }
@@ -981,6 +990,11 @@ final class DrawModeAuditTests: XCTestCase {
         let ctx = SetupFaces.Context(level: L, playerX: SetupFaces.Context.levelStartPlayerX(L.header),
                                      effects: prefs.effects)
         let setups = try L.activePlacements.map { try SetupFaces.setup($0, context: ctx) }
+        // The spawn's Setup lights (6A-L22, D72.1):`.SetupLevelSprites` order, one table, `*_DAT_100a0124` = the lights so far.
+        var table = LightTable(), rng = FastRand(seed: 1), spawnLights = 0
+        for p in SetupFaces.spawnOrder(L.placements) {
+            if try SetupFaces.setup(p, context: ctx, lights: &table, rng: &rng).light != nil { spawnLights += 1 }
+        }
         // D64: the arm's bytes — all of them, unless some byte is outside the ambient rows and a proof holds: D64's
         // (the arm never runs on such a byte) or, where that one fails, D67.1's (the arm forms only defined words).
         let ambient = r.tables.ambient.count
@@ -990,7 +1004,7 @@ final class DrawModeAuditTests: XCTestCase {
         let arm = proof == [] || drawProof == [] ? bytes.filter { (0..<ambient).contains($0) } : bytes
         return Audit(level: Level(number: number, file: L, renderer: r, lightBytes: bytes, liquidKinds: liquids,
                                   armLightBytes: arm, unlitProof: proof, unlitDrawProof: drawProof),
-                     setups: setups, seen: seen)
+                     setups: setups, spawnLights: spawnLights, attachedLights: services.attachedLights, seen: seen)
     }
 
     // MARK: - D64 (a): a level whose light bytes leave the ambient rows
@@ -1729,7 +1743,8 @@ final class DrawModeAuditTests: XCTestCase {
         R("Frame/FrameRenderer.swift", "WorldDataError.missing", 1, .loadsClean, [.levelsLoad],
           "every built level's Mlvl is in the data"),
         R("Frame/FrameRenderer.swift", "Refusal.lightSlotsFull", 1, .dataAbsent, [.lightSlotsFit],
-          "the Setup lights of every built level fit the 200 slots (the run's own adds included)"),
+          "the Setup lights of every built level's spawn (a Xichron's only below 150 in use) fit the 200 slots; lights "
+          + "made in play never reach this refusal (Core's `LightTable.add` returns −1 when full)"),
         R("Frame/FrameRenderer.swift", "Refusal.tintTableDraws", 1, .byConstruction, [.tintDraws510],
           "the session always takes `.BuildTintTable`'s 510 draws"),
         R("Frame/FrameRenderer.swift", "Refusal.deathEffectStep", 1, .byConstruction, [.deathSteps],
@@ -2147,8 +2162,17 @@ final class DrawModeAuditTests: XCTestCase {
                                                     search: Self.search), "\(c): \(site)")
             }
         case .lightSlotsFit:
+            // 6A-L22, D72.1: the lights`FrameRenderer.addLights` takes are the spawn's Setup lights, counted through the spawn
+            // order with one running table (the Xichron's own cap, `lightCount < 0x96`, M l. 52452) — each Setup alone
+            // over-counted levels 10, 11 and 22 (173 / 191 / 225). The count must be what every level start of the run
+            // attached, the measured value (pinned per level), and under the 200 slots.
+            let pinned: [Int: Int] = [1: 68, 2: 91, 3: 113, 4: 128, 5: 7, 10: 153, 11: 150, 15: 61, 18: 9, 20: 97,
+                                      21: 136, 22: 168]
             for a in audits {
-                XCTAssertLessThan(a.setups.compactMap(\.light).count, LightTable.slotCount, "\(c): \(a.level.number)")
+                XCTAssertFalse(a.attachedLights.isEmpty, "\(c): level \(a.level.number) attached no lights")
+                XCTAssertEqual(Set(a.attachedLights), [a.spawnLights], "\(c): level \(a.level.number) the run's lights")
+                XCTAssertEqual(a.spawnLights, pinned[a.level.number], "\(c): level \(a.level.number) measured")
+                XCTAssertLessThan(a.spawnLights, LightTable.slotCount, "\(c): \(a.level.number)")
             }
         case .tintDraws510:
             for a in audits { XCTAssertEqual(a.seen.tintDraws, [0xff * 2], "\(c): level \(a.level.number)") }

@@ -77,6 +77,12 @@ final class LevelTwentyTwoTests: XCTestCase {
         let s = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: 22)
         let needed = CachedFaces.needed(by: s)
         XCTAssertEqual(Set(needed.records), marks, "the opened session needs the Setups' marks")
+        // The spawn's Setup lights (`s.lights`, what `LevelRun` attaches to the renderer): a Xichron 0x41f / 0x420 gets
+        // its light only while fewer than 150 lights are in use (`.SetupBonusSprite` M l. 52452, `BonusSprite`
+        // `lightCount < 0x96`; level 22 is the first built level whose 190 Xichrons pass it with lights still to come),
+        // so 168 — each Setup alone would make 225 (measured; 6A-L22's audit ruling, D72.1).
+        XCTAssertEqual(L.activePlacements.filter { $0.type == 0x41f || $0.type == 0x420 }.count, 190, "Xichrons placed")
+        XCTAssertEqual([s.lights.count, Int(s.lightTable.count)], [168, 168], "the spawn's Setup lights (the 150 cap)")
         // The card's assert: the opened level's needs equal `CachedFacesTests.testLevel22LoadBarMarks`' count and total
         // as last re-derived (6A-CP: [36, 176, 352, 36]) — the bar on a fresh cache.
         var cache = CachedFaces()
@@ -229,13 +235,16 @@ final class LevelTwentyTwoTests: XCTestCase {
             XCTAssertEqual(w.records[i].p2, 150, "Dillo \(i): p2 written back")
         }
         // The Walker 1700 (0x6a4) record 265 p3 6 (no 1700 of levels 1–4, 10, 11, 21 has p3 6): the tier arm (M l. 57059–57068) —
-        // `+0x158` 6, HP 0x2ee, `+0xb8` 0x10015; the other three p3 0: the defaults 8 / 500 / 0.
+        // `+0x158` 6, HP 0x2ee, `+0xb8` 0x10015; the other three p3 0: the defaults 8 / 500 / 0. Traced in place of the
+        // card's Walker 1750: level 22's two 1750s hold p1…p4 0, a value levels 10 / 11 already place — nothing new.
         for i in indices(1700) {
             let k = try setup(i).slot
             XCTAssertEqual([Int(k.classWord158), Int(k.hp), Int(k.mode)], rec(i).p3 == 6 ? [6, 0x2ee, 0x10015] : [8, 500, 0],
                            "Walker \(i) (p3 \(rec(i).p3))")
         }
         XCTAssertEqual(indices(1700).map { Int(rec($0).p3) }, [0, 0, 0, 6], "the 1700s' p3")
+        XCTAssertEqual(indices(1750).map { [rec($0).p1, rec($0).p2, rec($0).p3, rec($0).p4] }, [[0, 0, 0, 0], [0, 0, 0, 0]],
+                       "the two 1750s: nothing new")
         // The spikes 1840 / 1841 / 1842 (0x730…0x732; p3 40…70, 1841 p4 60, 1842 p2 60 / 80, p3 24…60, p4 20 / 40 — new
         // against levels 3, 11, 21): `+0x150` = p2 (0 → 32000, never retracting), `+0x154` = p3, `+0xa6` = p4, out
         // (`+0x46` 0) when p4 < `+0x150`, else in (0xb); 0x732 `+0x158` = y (M l. 61982–62015, 62279–62309, 62459–62490).
@@ -278,7 +287,7 @@ final class LevelTwentyTwoTests: XCTestCase {
             let p2 = Int(p.p2), p3 = Int(p.p3)
             XCTAssertEqual([Int(k.subtype), Int(k.classWord150), Int(k.classWord154), Int(horizontal ? k.vx : k.vy),
                             Int(horizontal ? k.vy : k.vx), Int(horizontal ? k.x256 : k.y256), Int(k.sag)],
-                           [Int(p.p1), v + 8 * p3, v + 256 * p2 - 8 * p3, p3, 0, v, horizontal ? Int(before.sag) : 0],
+                           [Int(p.p1), v + 8 * p3, v + 256 * p2 - 8 * p3, p3, 0, v, horizontal ? 0x50 : 0],
                            "platform \(i)")
             _ = w.active.remove(id: k.id)
         }
@@ -305,10 +314,11 @@ final class LevelTwentyTwoTests: XCTestCase {
                 XCTAssertEqual(made.filter { (0x50a...0x50d).contains($0.type) }.count, 0, "crate \(i): no drop")
             } else {
                 XCTAssertEqual(p.p1, 0, "crate \(i)")
-                let drops = made.filter { $0.type == p.p2 - 1290 + 0x50a }
+                let drops = made.filter { $0.type == p.p2 }                  // 1290…1293 = 0x50a…0x50d
                 XCTAssertEqual(drops.count, Int(p.p3), "crate \(i): p3 drops of \(p.p2)")
                 for d in drops { XCTAssertEqual(d.pickupDelay, 0xc, "crate \(i): through `.SetupBonusSprite`") }
                 if p.p3 == 1 { XCTAssertEqual(drops.map(\.vx), [0], "crate \(i): one drop, no vx") }
+                if p.p3 > 1 { XCTAssertTrue(drops.contains { $0.vx != 0 }, "crate \(i): each drop its own vx") }
                 XCTAssertFalse(cues.contains(435), "crate \(i): no bang")
             }
             for d in made { _ = w.active.remove(id: d.id) }
@@ -359,6 +369,13 @@ final class LevelTwentyTwoTests: XCTestCase {
         XCTAssertEqual(rig.asked.last, .report(text: "Level 25 is not built yet (Phase 6)."), "the not-built report")
         XCTAssertNil(rig.flow.levelRun, "still on the map")
         XCTAssertEqual(rig.levels.prepared, [22], "no level prepared after 22")
+        // Exit 13 (p1 −1, no new link): the map stays on node 22 (`exit1` −1, no walk); Return enters level 22 again.
+        let back = TenElevenRig(r, start: 22)
+        back.newGame(level: 22)
+        try back.exit(13, toNode: 22)
+        back.drive { f in f.levelRun?.levelNumber == 22 && (f.levelRun?.iterations ?? 0) >= 1 }
+        XCTAssertEqual(back.asked, [], "exit 13: nothing asked")
+        XCTAssertEqual(back.levels.prepared, [22, 22], "exit 13 → node 22 → level 22 again")
         // A save made on level 22 (a save point's block, the level's own records) continues there through
         // `.ContinueGame`: level 22 runs, nothing asked.
         var g = GameGlobals.initGameGlobals(previous: nil)
@@ -475,6 +492,8 @@ final class LevelTwentyTwoTests: XCTestCase {
         XCTAssertEqual(conv.shown, [5, 6, 7, 8, 9], "flag 5 set: #20 → #5…#9")
         let s22 = try XCTUnwrap(l22.session)
         XCTAssertEqual(s22.world.globals.worldFlags[6], 1, "action 5: world flag 6")
+        // (`.UpdateSprites` also clears it when it unlinks the dead talker, so this cannot tell action 9's own write;
+        // `ConversationTests` / `LaterConversationTests` pin that write.)
         XCTAssertEqual(Int(s22.world.records[405].flag), 0, "action 9: the talker's spawn byte 0")
         XCTAssertFalse(s22.world.active.sprites.contains { $0.recordIndex == 405 && !$0.dead }, "action 9: the talker killed")
         XCTAssertEqual(Int(l22.save.snapshots[11][283].flag), 1, "action 10: level 11's record 283 armed")
