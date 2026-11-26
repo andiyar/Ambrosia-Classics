@@ -48,6 +48,28 @@ both files with four `<<SEAT: …>>` placeholders; and every headless gate at b7
 steps, failures 0, both paths). **These hold while no source file changes** (D69.5): a docs or card commit voids
 nothing; a source fix voids the gates it touches.
 
+## What part 2 did at night (2026-11-27, 01:04 → about 03:00; nothing launched) — step 2 is DONE
+- **The Fable phase review is done** (the same seat resumes by day with its context; if a fresh seat reads this,
+  do not repeat it). Read by area: menus and flow, the session, level loading and the face cache, both bosses, the
+  movers, wind, rain, the player, drawing and the sound tool; one spot-check against the dump (the Chief's
+  boulder-distance test, M l. 75249–75262) matched. Findings and what became of them:
+  1. **The bot's two paths differed on level 22, seed 1 — explained and fixed (tests only, a6d448c).** The Core
+     suite's stand-in shell (`SweepShell`) never passed the playing-sounds list, so eleven wall spikes each drew a
+     random number the Windows path did not. Both real shells pass the list: no player sees a difference. After the
+     fix both paths give 43 deaths / 385 exits, run for run.
+  2. Four stale level lists in comments — fixed (comments only, d157967; ledger check OK).
+  3. Both cards' bot line and its "not explained" note corrected (1abe4f5).
+  4. **Not verified, for the archive note [LOW]:** when a looping sound (the rain) runs out, the sound tool
+     re-inserts it in the same mix pass (`SoundTool.mixBlock`); if another sound of equal priority and volume sits
+     before it in the list, that one may be mixed twice in that one block. Not checked against the binary's
+     `.STLoopCallBack`.
+- **Gates re-run after a6d448c (it changed the harness the sweep and the bot share):** the bot, Core path, 12
+  levels: `steps 259200, deaths 43, exits 385, conversations 33, saves 3, failures 0`; the sweep, Core path, in
+  eight commands: **11,864 visits, rows 0**; the three harness test classes pass (the two opt-in skips intact; the
+  render target still lists 180). The other 177 render tests were not re-run: nothing they use changed. The
+  Windows-path results stand (no Windows file changed).
+- **Still to do, by day, in order:** steps 1, 3, 4, 5, 6, 7 below.
+
 ## Before anything else
 - **The time of day** (`date`). Steps 1, 4 and 5 below launch something: **09:00–21:00 only, muted, LAUNCH GUARD
   first.** If you are started at night: do step 2 (the review) and any fix round it needs, then **stop with one
