@@ -160,6 +160,8 @@ public final class GameFlow {
     public internal(set) var statusBarRedraw511e = false
     /// The menu loop's `sVar5`: the X joke's cooldown in passes.
     public private(set) var jokeCooldown = 0
+    /// LC: the level chooser's (L's) own cooldown in passes, counted like the joke's.
+    public private(set) var levelChooserCooldown = 0
     /// `*PTR_DAT_100a0b64`: the modifier the Options dialog last captured (a global, carried across openings — and into
     /// a level's ⌘P, P1).
     var lastModifier: Int16 = 0
@@ -776,6 +778,7 @@ public final class GameFlow {
         }
         items.append { f, now, _, _ in
             if f.jokeCooldown > 0 { f.jokeCooldown -= 1 }
+            if f.levelChooserCooldown > 0 { f.levelChooserCooldown -= 1 }   // LC: L's own, counted the same way
             f.lastPassEnd = now                                     // `.CheckEvent`, `MusicAIFFTickle`
         }
         return items
@@ -813,7 +816,8 @@ public final class GameFlow {
                             duration: MainMenu.keyboardTrackTicks), now, &out)
     }
 
-    /// The letter keys (M l. 7388–7431), in the loop's order; the keyboard New Game has no `GammaFadeIn(6)`.
+    /// The letter keys (M l. 7388–7431), in the loop's order; the keyboard New Game has no `GammaFadeIn(6)`. LC's L
+    /// (the level chooser, not in the original) is polled last, after X.
     private func keyBlock(_ now: UInt32, _ input: FrontInput, _ out: inout FrontOutput) {
         let k = input.keys
         let n: Int
@@ -826,6 +830,12 @@ public final class GameFlow {
             if k.isPressed(MainMenu.jokeKey), jokeCooldown == 0 {
                 jokeCooldown = MainMenu.jokeCooldown
                 report(MainMenu.comingSoon, &out)
+            } else if k.isPressed(MainMenu.levelChooserKey), levelChooserCooldown == 0 {
+                // LC (D72.1 (a), known deviation 8): not in the original. The next built level for New Game.
+                levelChooserCooldown = MainMenu.levelChooserCooldown
+                startLevel = MainMenu.levelChoice(after: startLevel)
+                let names = try? StringList.load(from: resources, id: 1000)
+                report(MainMenu.levelChoiceReport(startLevel, name: names?.string(startLevel)), &out)
             }
             return
         }

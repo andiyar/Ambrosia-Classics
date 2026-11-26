@@ -56,6 +56,27 @@ public enum MainMenu {
     /// pstr `0x100a3023` (149 bytes, Mac Roman), `ReportDialog`'d by X.
     public static let comingSoon = "Coming soon: Ferazel's Destiny; Ferazel's Quest; Ferazel Fighter; Ferazel All-Stars; "
         + "Go-Kart Ferazel; Ferazel Soccer 2000; Summer Olympics Ferazel..."
+
+    // MARK: LC — the level chooser (D72.1 (a); a named departure from the original, known deviation 8)
+
+    /// L: steps `GameFlow.startLevel` to the next built level, polled after X in the key block.
+    public static let levelChooserKey = 0x25
+    /// L's own cooldown in loop passes — the X joke's length, its own counter so the joke's timing never changes.
+    public static let levelChooserCooldown = jokeCooldown
+
+    /// The entry of `BuiltLevels.list` after `current`, wrapping from the last to the first; a `current` outside the
+    /// list counts as level 1 (New Game would start there).
+    public static func levelChoice(after current: Int) -> Int {
+        let list = BuiltLevels.list
+        let from = BuiltLevels.contains(current) ? current : 1
+        return list.first { $0 > from } ?? list[0]
+    }
+
+    /// The report for a step to level `n`, with its STR# 1000 name when there is one (plain Mac Roman, no symbols).
+    public static func levelChoiceReport(_ n: Int, name: String?) -> String {
+        let named = name.map { $0.isEmpty ? "" : ", " + $0 } ?? ""
+        return "New Game will start at level \(n)\(named). Press L again for the next level."
+    }
 }
 
 /// `.TrackClickOnCommandButton(n, 1)`'s mouse loop (`while (Button()) { … }`, M l. 1466–1488) one tick at a time:

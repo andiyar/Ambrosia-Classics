@@ -218,6 +218,25 @@ import XCTest
         XCTAssertEqual(try Self.fnv(game), hex(BakedTextTests.bakedFirstTextPresentFNV), "the first frame with text")
     }
 
+    // MARK: 18b · LC: the level chooser through a key script (D72.1 (a))
+
+    func testLevelChooserViaScriptOpensTheChosenLevel() throws {
+        // L three times, 40 ticks apart (past its 30-pass cooldown), then N: SDL's L is Carbon 0x25 (HectorSDL), the
+        // key script's `l` too; each L's report goes to the shell's dialogs; New Game opens level 4.
+        let dialogs = WinStubDialogs()
+        let (game, host) = try Self.game(script: "1440 press l\n1600 press l\n1760 press l\n1920 down n\n",
+                                         dialogs: dialogs)
+        Self.run(game, host) { $0.flow.state == .mainMenu }
+        XCTAssertEqual(game.flow.startLevel, 1)
+        Self.run(game, host) { $0.flow.levelRun != nil && $0.lastOutput.present }
+        XCTAssertEqual(WinKeyNames.table["l"]?.code, UInt16(MainMenu.levelChooserKey))
+        let names = try StringList.load(from: game.flow.resources, id: 1000)
+        XCTAssertEqual(dialogs.shown,
+                       [2, 3, 4].map { .report(text: MainMenu.levelChoiceReport($0, name: names.string($0))) })
+        XCTAssertEqual(game.flow.startLevel, 4)
+        XCTAssertEqual(game.flow.levelRun?.levelNumber, 4)
+    }
+
     // MARK: 19 · `--frames` determinism: both clocks pinned (Ruling 20)
 
     func testFramesRunsAreDeterministicAndSeedIsPinned() throws {
