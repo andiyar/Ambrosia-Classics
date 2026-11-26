@@ -2,6 +2,25 @@ STATUS: CONTINUE
 
 # NEXT — Ferazel's Wand, run 71: level 22 "The Labyrinth" (6A-L22)
 
+> **Ben's ruling, 2026-11-26 — finish Phase 6A, then archive (this overrides the plan where they differ).**
+> The original author is selling an official remaster (https://mixedmetaphor.itch.io/ferazels-wand), so Ferazel
+> stops at the 6A phase end. The project is paused, not cancelled: Ben resumes if the remaster disappoints.
+> 1. **This run (71) is unchanged:** 6A-L22 alone. At its close, record this ruling as the next free D-number,
+>    carry this whole block to the top of the next chip, and start run 72 as usual.
+> 2. **Run 72 = 6A-END, with three changes.**
+>    (a) **A level chooser, before staging.** Ben: "we may want a way to skip between the levels as the progression
+>    won't exist." Today only the hidden `FerazelLevel` launch switch does this. Add a way inside the game, on both
+>    Mac and Windows, to start any built level (1–5, 10, 11, 15, 18, 20, 21, 22) without a command line — a named,
+>    listed departure from the original, built through `GameFlow.startLevel`, as its own small task (one
+>    implementer, two review legs). Say how to use it on both what-to-expect cards.
+>    (b) **Complete builds for both platforms**, staged for Ben and for Andrew. **No GitHub release and no public
+>    upload:** the Windows zip and its checksum go to `releases/` in the main checkout only; Ben sends it himself.
+>    (c) **No 6B planning run and no next session.** After the cross-check and the tidy, archive: `STATUS: PAUSED`
+>    as the first line of this file with a short "how to resume" (the next step is the 6B planning run, P6B);
+>    STATE's Ferazel block says paused and why; the Ferazel worktrees and their DerivedData folders are removed;
+>    the handoff is the archive note. Everything else (the plan, the RE bank, the ledger, the dumps) stays as it is.
+> 3. Open questions that only matter to 6B or later (Q19, Q21, …) are closed as "paused", not asked.
+
 You are the seat for **Ferazel's Wand** in Ambrosia Classics, repo `/Users/andiyar/Developer/Ambrosia-Classics`
 (`$REPO`). Method: `~/Developer/Toolkits/fable-kit/orchestrator.md`. In your first message say which model you are
 and, in one sentence, what you will do first; then start. **If a Coordinator session started you, its overrides win

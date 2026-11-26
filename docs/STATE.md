@@ -9,6 +9,10 @@ Settled history lives in docs/STATE-history.md.
 
 ## Ferazel's Wand — 2026-11-26 (attended run 70 closed: the magic carpet is built; level 22 heads run 71)
 
+- **Ben's ruling 2026-11-26: finish Phase 6A, then archive.** The original author is selling an official remaster,
+  so Ferazel pauses (not cancelled) after the 6A phase end: run 71 = level 22, run 72 = the phase end plus an
+  in-game level chooser, complete Mac and Windows builds (no public upload), then `STATUS: PAUSED`. No 6B planning
+  run. The full text is the block at the top of `docs/NEXT.md`.
 - **Where it stands:** Phase 5 "Enemies" is closed on the machine side — **Ben's gate pending (Q18)**. Phase 6A
   "through the Goblin Chief" is being built (the plan: "Wave 5 — Phase 6A" in the one plan file; rulings D46–D49, D51,
   D53–D57, D59–D62, D64, D65, D67–D71). Waves 6A.1, 6A.2 and 6A.3 are built and closed; wave 6A.4 has levels 20 and
