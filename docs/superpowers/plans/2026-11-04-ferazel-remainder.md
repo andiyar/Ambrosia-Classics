@@ -2978,6 +2978,35 @@ ids; its `--check` reads this table):
 - **Gate:** G1; G2 816 / 2 named skips; GW2 90 / 2 named skips; G3; G5; GW1–GW4; GW5; GE; by day GWB **813 / 0 / 3 /
   0 (of 816)**, GW6, G9M. **Commit:** `WHAT-TO-EXPECT: Phase 6A gate card (through the Goblin Chief), Mac and Windows`.
 
+#### LC — minor — the level chooser (new, Ben's ruling D72.1 (a); run 72, before the stages) (→ 816 + its tests)
+- **Why:** the project pauses at the 6A end, so the level-to-level progression past level 5 will never exist. Ben:
+  "we may want a way to skip between the levels". Today only the hidden `-FerazelLevel N` launch switch does it.
+- **The shape (the seat's ruling, run 72):** on the main menu the **L** key (Mac virtual key 0x25; polled like the X
+  joke key, with the same pass cooldown so a held key does not race) moves `GameFlow.startLevel` to the next entry
+  of `BuiltLevels.list` after the current one, wrapping from the last back to the first, and says so in the game's
+  own message box (`report`, as the X joke and the not-built report do): the level's number and, when the world
+  file's level names are readable without new decoding, its name, plus "Press L again for the next level." The next
+  New Game (button, N key or menu) then starts there, exactly as `-FerazelLevel N` does. Nothing is stored: a
+  relaunch starts at level 1 (or at the switch's level) again.
+- **Why this shape:** it lives in `GameFlow`'s menu pass, which both shells already drive through the shared
+  driver, and it uses a message box both shells already draw — no new screen, no new text drawing, no second copy
+  of the level list. It is a **named departure from the original** (known deviation 8 on the gate card).
+- **Nothing changes for a player who never presses L:** every existing picture, state pin, Windows reference,
+  fixture picture and both smoke checks' main-menu pictures stay as they are — a moved value is a STOP. Continue,
+  the saved games, the map and `-FerazelLevel` are untouched. L does nothing anywhere but the main menu's key block
+  (not in a level, on the map, in a dialog, during a fade).
+- **Files:** `Ferazel/Core/Sources/FerazelCore/Front/MainMenu.swift` (the key, the text), `GameFlow.swift` (the key
+  block), `Ferazel/Shared/FerazelMenuRules.swift` only if the Mac's ⌘-key rule needs the letter; the Windows key
+  map (`WinInput.swift`) only if L is not already mapped; tests in `Ferazel/Core/Tests` and
+  `Ferazel/Windows/Tests`. No file under `Resources/` or `ghidra/`.
+- **Tests (the implementer sets the exact count; about 4 Core + 1 WinKit):** L steps through the whole list in
+  order and wraps; the message names the level; New Game after k presses opens that level (through the real flow,
+  not by setting the property); with no L press a scripted menu session's output is identical to today's; L held
+  steps once per cooldown; L outside the menu does nothing; on the Windows side the same key through `WinGame`'s
+  key script reaches the chooser and New Game opens the chosen level.
+- **Gate:** G2 and GW2 in parts at the new totals; G3; G5; GW1–GW4; the ledger `--check`. Proof B's expected
+  total rises with the Core count. **Commit:** `Level chooser: L on the main menu steps New Game's start level (D72.1)`.
+
 ### Execution order
 
 Runs of 2 tasks, 3 when at most one is ⚑ (§0 "Context"); the seat may split a run at the 240k mark (the task in flight
