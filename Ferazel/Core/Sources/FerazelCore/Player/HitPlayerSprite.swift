@@ -328,7 +328,7 @@ extension HitPlayerSprite {
     ///   (record p1 kept), snd 439, `+0x46 = 1`;
     /// - the timer 0xb5b with `+0xa6 == 0`: `+0xa6 = 100`, `.STPlay3DSoundPitched(442, 1, 0x100, player centre, 44000)`
     ///   (no draw), `iRam100a5110 = p1·30 − 1` — the session's countdown, handed over in `PlayerState.countdownStore`
-    ///   (no 2907 on levels 1–5, 10, 11; first on level 40).
+    ///   (no 2907 on any built level; first on level 40).
     /// Nothing returns: the sign / grave test and `.PlatformBounce` follow (a closed door is solid until its rect is
     /// zeroed).
     static func lockAndKey(_ w: SpriteWorld, player pID: Int, other oID: Int, vx: Int32) {

@@ -412,7 +412,7 @@ public final class FerazelSession {
             for _ in 0..<6 {
                 // `.inert`: the digit Handle `.anon_10060c78` (SSH + SSC of a faceless sprite) // later: `.UpdateDigits`
                 // (gives the digits faces once the countdown shows; the 2907 timer's store is built, BX2 — none on
-                // levels 1–5, 10, 11; first on level 40).
+                // any built level; first on level 40).
                 w.newSprite(type: digitType, x: s.x, y: s.y, layer: 0x7fff, handler: .inert) { d in
                     d.lightOverlay = false
                     d.layer = 0x7fff
