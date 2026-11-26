@@ -169,7 +169,7 @@ public final class GameFlow {
     // MARK: F1b — the game's state
 
     /// The hidden `FerazelLevel` switch (D35, kept): New Game starts at this level instead of the literal 1 (raw
-    /// `1000b2b8..1000b2cc`). The App passes it (A1a); a level not in `BuiltLevels.list` starts level 1.
+    /// `1000b2b8..1000b2cc`). The App passes it (A1a) and the main menu's L moves it (LC); not built → level 1.
     public var startLevel = 1
     /// The stage screens' sound lengths (snd id → ticks; `StageSounds`) — the App fills them from its `SoundBank` (A1a).
     public var soundLengths: [Int16: Int] = [:]
@@ -831,7 +831,7 @@ public final class GameFlow {
                 jokeCooldown = MainMenu.jokeCooldown
                 report(MainMenu.comingSoon, &out)
             } else if k.isPressed(MainMenu.levelChooserKey), levelChooserCooldown == 0 {
-                // LC (D72.1 (a), known deviation 8): not in the original. The next built level for New Game.
+                // LC (D72.1 (a), known deviation 9): not in the original. The next built level for New Game.
                 levelChooserCooldown = MainMenu.levelChooserCooldown
                 startLevel = MainMenu.levelChoice(after: startLevel)
                 let names = try? StringList.load(from: resources, id: 1000)

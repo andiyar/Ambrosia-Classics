@@ -221,7 +221,7 @@ import XCTest
     // MARK: 18b · LC: the level chooser through a key script (D72.1 (a))
 
     func testLevelChooserViaScriptOpensTheChosenLevel() throws {
-        // L three times, 40 ticks apart (past its 30-pass cooldown), then N: SDL's L is Carbon 0x25 (HectorSDL), the
+        // L three times, 160 wakes apart (40 ticks, past its 30-pass cooldown), then N: SDL's L is Carbon 0x25, the
         // key script's `l` too; each L's report goes to the shell's dialogs; New Game opens level 4.
         let dialogs = WinStubDialogs()
         let (game, host) = try Self.game(script: "1440 press l\n1600 press l\n1760 press l\n1920 down n\n",

@@ -3,17 +3,19 @@ import XCTest
 
 /// LC (docs/superpowers/plans/2026-11-04-ferazel-remainder.md, D72.1 (a)): the level chooser — on the main menu the L
 /// key (Mac virtual key 0x25) steps `GameFlow.startLevel` through `BuiltLevels.list`, wrapping, and says so in the
-/// game's own report box; the next New Game starts there. A named departure from the original (known deviation 8).
+/// game's own report box; the next New Game starts there. A named departure from the original (known deviation 9).
 /// Driven tick by tick from the boot against the committed `Resources/Ferazel` (D26). A missing data file is a FAILURE,
 /// never a skip. Plain Swift only (Proof B).
 final class LevelChooserTests: XCTestCase {
 
     private func resources() throws -> FerazelResources { try FerazelData.open(try FerazelData.dataDirectory()) }
 
+    /// No prefs; `save`, when set, is every saved game's block.
     private final class NoFiles: FrontFiles {
+        var save: SaveBlock?
         func loadPrefs() -> Data? { nil }
         func storePrefs(_ record: Data) throws {}
-        func readSavedGame(_ ref: SavedGameRef) throws -> SaveBlock { SaveBlock() }
+        func readSavedGame(_ ref: SavedGameRef) throws -> SaveBlock { save ?? SaveBlock() }
         func writeSavedGame(_ block: SaveBlock, to ref: SavedGameRef) throws(SaveWriteError) {}
     }
 
@@ -26,12 +28,13 @@ final class LevelChooserTests: XCTestCase {
 
     private final class Rig {
         let flow: GameFlow
+        let files = NoFiles()
         let levels = Levels()
         var t: UInt32 = 1000
         var last = FrontOutput()
 
         init(_ r: FerazelResources) {
-            flow = GameFlow(resources: r, prefs: FerazelPrefs(), seed: 1, files: NoFiles(), levels: levels)
+            flow = GameFlow(resources: r, prefs: FerazelPrefs(), seed: 1, files: files, levels: levels)
         }
 
         /// One tick; the loads are answered at once.
@@ -60,6 +63,24 @@ final class LevelChooserTests: XCTestCase {
 
     private static func reports(_ o: FrontOutput) -> [String] {
         o.requests.compactMap { if case .dialog(.report(let text)) = $0 { return text }; return nil }
+    }
+
+    private static func askedFile(_ o: FrontOutput) -> Bool {
+        o.requests.contains { if case .getFile = $0 { return true }; return false }
+    }
+
+    /// A checkpoint save at level 1's save point (record 24, its face p1 2), as `.SavePointSave` writes it.
+    private static func checkpoint(_ r: FerazelResources) throws -> SaveBlock {
+        let L = try LevelFile.load(from: r, level: 1)
+        var records = L.placements
+        let p = records[24]
+        records[24] = Placement(index: 24, flag: p.flag, byte1: p.byte1, type: p.type, p1: 2, p2: p.p2, p3: p.p3,
+                                p4: p.p4, y: p.y, x: p.x)
+        var g = GameGlobals.initGameGlobals(previous: nil)
+        var save = SaveBlock()
+        save.savePointSave(level: 1, x: 2371, y: 872, stamp: try WorldFile.load(from: r).stamp, date: 0, globals: &g,
+                           records: records)
+        return save
     }
 
     /// FNV-1a 64 over bytes.
@@ -213,7 +234,8 @@ final class LevelChooserTests: XCTestCase {
         XCTAssertEqual(Self.reports(rig.tick(Self.keys([MainMenu.levelChooserKey]))).count, 1)
         XCTAssertEqual(rig.flow.startLevel, MainMenu.levelChoice(after: before))
         rig.flow.dialogDone(.ok)
-        // X and L in one pass: the joke (first in the loop's order); L waits for a pass without it.
+        // X and L in one pass: the joke (first in the loop's order); L steps on the next pass where the joke does not
+        // fire (X may still be held, cooling down).
         for _ in 0..<(MainMenu.jokeCooldown + 1) { rig.tick() }
         let held = rig.flow.startLevel
         XCTAssertEqual(Self.reports(rig.tick(Self.keys([MainMenu.jokeKey, MainMenu.levelChooserKey]))),
@@ -262,5 +284,65 @@ final class LevelChooserTests: XCTestCase {
         XCTAssertEqual(rig.levels.prepared, [2])
         XCTAssertEqual(reports, [MainMenu.levelChoiceReport(2, name: try StringList.load(from: rig.flow.resources,
                                                                                           id: 1000).string(2))])
+    }
+
+    /// L is read only in the key block: held with the pointer on the canvas over no button (the mouse block's own path,
+    /// which hides the menu bar) it steps once per cooldown, one level a step, as with no pointer — a second reader in
+    /// the mouse block would step twice. In passes where the app is inactive (neither block runs) it does nothing.
+    func testLIsReadOnlyInTheKeyBlock() throws {
+        let rig = Rig(try resources())
+        rig.toMenu()
+        let off = (h: 100, v: 300)
+        XCTAssertNil(MainMenu.button(h: off.h, v: off.v))
+        XCTAssertGreaterThanOrEqual(off.v, MainMenu.menuBarRevealV)
+        let l = KeyState(pressed: [MainMenu.levelChooserKey])
+        // Inactive, L held across two cooldowns with the pointer there: nothing.
+        for _ in 0..<(2 * MainMenu.levelChooserCooldown + 10) {
+            XCTAssertEqual(Self.reports(rig.tick(FrontInput(keys: l, mouse: off, active: false))), [])
+        }
+        XCTAssertEqual(rig.flow.startLevel, 1)
+        XCTAssertEqual(rig.flow.levelChooserCooldown, 0)
+        // Active, the pointer over no button: a step at passes 0, 30 and 60, one report and one level each.
+        var stepTicks: [Int] = []
+        var chosen: [Int] = []
+        for tick in 0..<70 {
+            let reports = Self.reports(rig.tick(FrontInput(keys: l, mouse: off)))
+            XCTAssertLessThanOrEqual(reports.count, 1, "tick \(tick)")
+            if !reports.isEmpty {
+                stepTicks.append(tick)
+                chosen.append(rig.flow.startLevel)
+                rig.flow.dialogDone(.ok)
+            }
+        }
+        XCTAssertEqual(stepTicks, [0, 31, 62])                       // as with no pointer (the report holds its pass)
+        XCTAssertEqual(chosen, Array(BuiltLevels.list[1...3]))
+    }
+
+    /// Continue ignores the chooser: with L moved to level 4, Continue from a level-1 checkpoint save through the real
+    /// flow (R, the file dialog, the save) opens the save's own level 1; the chosen level stays for New Game.
+    func testContinueOpensTheSavesLevelNotTheChosenOne() throws {
+        let r = try resources()
+        let rig = Rig(r)
+        rig.files.save = try Self.checkpoint(r)
+        rig.toMenu()
+        for _ in 0..<3 {
+            XCTAssertEqual(Self.reports(rig.tick(Self.keys([MainMenu.levelChooserKey]))).count, 1)
+            rig.flow.dialogDone(.ok)
+            for _ in 0..<MainMenu.levelChooserCooldown { rig.tick() }
+        }
+        XCTAssertEqual(rig.flow.startLevel, 4)
+        rig.tick(Self.keys([0x0f]))                                   // R
+        if !Self.askedFile(rig.last) { rig.drive { _ in Self.askedFile(rig.last) } }
+        rig.flow.fileDone(.chosen(SavedGameRef(url: URL(fileURLWithPath: "/nonexistent/one"), displayName: "one")))
+        rig.drive { _ in !rig.levels.prepared.isEmpty }
+        XCTAssertEqual(rig.levels.prepared, [1], "the save's level, not the chosen 4")
+        guard rig.levels.prepared == [1] else { return }
+        rig.drive { f in
+            guard let run = f.levelRun, run.levelNumber == 1 else { return false }
+            return run.iterations >= 1
+        }
+        XCTAssertEqual(rig.flow.state, .continueGame)
+        XCTAssertEqual(rig.flow.levelNumber, 1)
+        XCTAssertEqual(rig.flow.startLevel, 4)
     }
 }

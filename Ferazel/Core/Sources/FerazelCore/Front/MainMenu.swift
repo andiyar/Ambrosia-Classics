@@ -57,7 +57,7 @@ public enum MainMenu {
     public static let comingSoon = "Coming soon: Ferazel's Destiny; Ferazel's Quest; Ferazel Fighter; Ferazel All-Stars; "
         + "Go-Kart Ferazel; Ferazel Soccer 2000; Summer Olympics Ferazel..."
 
-    // MARK: LC — the level chooser (D72.1 (a); a named departure from the original, known deviation 8)
+    // MARK: LC — the level chooser (D72.1 (a); a named departure from the original, known deviation 9)
 
     /// L: steps `GameFlow.startLevel` to the next built level, polled after X in the key block.
     public static let levelChooserKey = 0x25
@@ -72,7 +72,7 @@ public enum MainMenu {
         return list.first { $0 > from } ?? list[0]
     }
 
-    /// The report for a step to level `n`, with its STR# 1000 name when there is one (plain Mac Roman, no symbols).
+    /// The report for a step to level `n`, with its STR# 1000 name when there is one (as stored: 21's has an "&").
     public static func levelChoiceReport(_ n: Int, name: String?) -> String {
         let named = name.map { $0.isEmpty ? "" : ", " + $0 } ?? ""
         return "New Game will start at level \(n)\(named). Press L again for the next level."
