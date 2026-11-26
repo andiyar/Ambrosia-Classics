@@ -101,6 +101,9 @@ struct SweepText: TextRasterizer {
 
 /// The shared driver's game half, mirrored for the Core suite (`FerazelDriver.boot`, `tick`, `draw`, `serviceLoad`,
 /// its `LevelServices`), plus the shell's answers to the requests. Kept in step with Ferazel/Shared/FerazelDriver.swift.
+/// Its audio is the headless driver's (Ruling 20): a Sound Tool fed each tick's sounds as `FerazelAudio.apply` feeds
+/// them and drained as `FerazelSilentMixer.tick` drains it, so the `FrontInput.playing` set each tick hands the game
+/// (the idle-only sound calls and their `FastRand(10000)`, VS) is the one both shells hand it.
 final class SweepShell: SweepGame {
     let flow: GameFlow
     private let resources: FerazelResources
@@ -121,19 +124,35 @@ final class SweepShell: SweepGame {
     private var saves = 0
     /// The Caps Lock lock state the ticks poll (the random-play bot's pause latch; the sweep never sets it).
     var capsLock = false
+    /// The headless audio (`FerazelAudio` + `FerazelSilentMixer`): the Sound Tool once the sound load ran, the `snd `
+    /// ids it loaded, the ticks counted since boot and the output frames drained.
+    private var soundTool: SoundTool?
+    private var loadedSounds: Set<Int16> = []
+    private var mixerTicks = 0
+    private var framesDrained = 0
+    private var scratch: [Float] = []
 
     /// The Sounds file's play lengths (`FerazelDriver.loadSounds`, every sound: the boot's F1 subset is a superset
     /// question only for the stage screens), decoded once per process.
     static func soundLengths(_ resources: FerazelResources) throws -> [Int16: Int] {
         if let cached = lengthsCache { return cached }
         var lengths: [Int16: Int] = [:]
-        for s in try SoundBank(sounds: resources.sounds).sounds {
+        for s in try soundBank(resources).sounds {
             lengths[s.id] = StageSounds.ticks(sampleCount: s.pcm.frames, sampleRate: s.pcm.sampleRate)
         }
         lengthsCache = lengths
         return lengths
     }
     nonisolated(unsafe) private static var lengthsCache: [Int16: Int]?
+
+    /// The Sounds file decoded once per process (each shell's Sound Tool is made from it at the sound load).
+    static func soundBank(_ resources: FerazelResources) throws -> SoundBank {
+        if let cached = bankCache { return cached }
+        let bank = try SoundBank(sounds: resources.sounds)
+        bankCache = bank
+        return bank
+    }
+    nonisolated(unsafe) private static var bankCache: SoundBank?
 
     private let soundLengths: [Int16: Int]
 
@@ -174,13 +193,16 @@ final class SweepShell: SweepGame {
     // MARK: The tick (`FerazelDriver.tick` + the shell's request answers + `serviceLoad`)
 
     func tick(keys: [Int]) throws -> FrontOutput {
-        let out = flow.tick(now: now, input: FrontInput(keys: KeyState(pressed: keys), capsLock: capsLock))
+        let out = flow.tick(now: now, input: FrontInput(keys: KeyState(pressed: keys), capsLock: capsLock,
+                                                        playing: soundTool?.playingSounds() ?? []))
         if let run = flow.levelRun, run !== configuredRun {
             configuredRun = run
             run.conversationText = conversationText
             if conversationRun !== run { conversationRenderer = nil }
         }
         try draw(flow.segments)
+        applySounds(out)
+        drainSounds()
         if let p = out.prefs {
             levelRenderer?.prefs = p
             conversationRenderer?.prefs = p
@@ -203,6 +225,42 @@ final class SweepShell: SweepGame {
         serviceLoad()
         now &+= 1
         return out
+    }
+
+    /// `FerazelAudio.apply`: the tick's stops and plays in the binary's call order (`soundStopAt`); a sound not loaded
+    /// plays nothing; an `onlyIfIdle` cue only while its `snd` is not playing.
+    private func applySounds(_ out: FrontOutput) {
+        guard let tool = soundTool else { return }
+        let sounds = out.sounds, stops = out.soundStops, stopAt = out.soundStopAt
+        var k = 0
+        for i in 0...sounds.count {
+            while k < stops.count, (k < stopAt.count ? stopAt[k] : sounds.count) <= i {
+                tool.stop(snd: stops[k])
+                k += 1
+            }
+            guard i < sounds.count else { break }
+            let cue = sounds[i]
+            guard loadedSounds.contains(cue.snd) else { continue }
+            if cue.onlyIfIdle && tool.isPlaying(snd: cue.snd) { continue }
+            tool.play(snd: cue.snd, priority: UInt16(clamping: cue.priority), left: UInt16(clamping: cue.left),
+                      right: UInt16(clamping: cue.right), rate: Int32(bitPattern: cue.rate), loops: cue.loops)
+        }
+        while k < stops.count {
+            tool.stop(snd: stops[k])
+            k += 1
+        }
+    }
+
+    /// `FerazelSilentMixer.tick`: one game tick's output frames (the running total 22,050 × ticks / 60 since boot)
+    /// rendered from the Sound Tool and discarded.
+    private func drainSounds() {
+        mixerTicks += 1
+        let total = Int(soundTool?.outputRate ?? 22_050) * mixerTicks / 60
+        let frames = total - framesDrained
+        framesDrained = total
+        guard let tool = soundTool, frames > 0 else { return }
+        if scratch.count < 2 * frames { scratch = [Float](repeating: 0, count: 2 * frames) }
+        scratch.withUnsafeMutableBufferPointer { tool.render(into: $0, frames: frames) }
     }
 
     private func draw(_ segments: [FlowSegment]) throws {
@@ -243,13 +301,23 @@ final class SweepShell: SweepGame {
         }
     }
 
-    /// The boot's loads: the sound lengths (no audio), the map faces.
+    /// The boot's loads: the sounds (`FerazelDriver.loadSounds`: every `snd `, or with F1 at boot only the four
+    /// `.InitAppGlobals` loads; the lengths stay every sound's), the map faces.
     private func serviceLoad() {
         guard case .loading(let phase) = flow.state, !loadedPhases.contains(phase) else { return }
         loadedPhases.insert(phase)
         switch phase {
         case .sounds:
             flow.soundLengths = soundLengths
+            do {
+                let bank = try Self.soundBank(resources)
+                let only: Set<Int16>? = flow.soundLoading ? nil
+                    : [PauseRun.sound, 4801, MainMenu.enterSound, MainMenu.exitSound]
+                soundTool = SoundTool(bank: bank)
+                loadedSounds = Set(bank.sounds.map(\.id).filter { only?.contains($0) ?? true })
+            } catch {
+                problems.append("sounds: \(error)")
+            }
         case .faces:
             var n = 0
             for (set, count) in [(FrontFaceSet.mapMarker, 1), (.mapNode, 8), (.mapBoss, 8), (.mapAmbient, 8)] {
