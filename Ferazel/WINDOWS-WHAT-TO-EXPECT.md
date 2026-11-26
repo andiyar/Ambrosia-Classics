@@ -71,13 +71,14 @@ Run on the final code, 26–27 November 2026.
 | The data census | 1,108 items decoded, 0 failures |
 | Builds | the Mac app and both Windows builds: pass |
 | **Visit sweep** (every object on every level, taken to and drawn), 12 levels | Windows game path: 11,864 visits, 0 problems. Mac game path: 11,864 visits, 0 problems |
-| **Random-play bot** (random keys on every level), 12 levels, 4 runs each, 259,200 steps a path | Windows game path: 43 deaths, 385 level exits, 33 conversations, 3 saves, 0 failures. Mac game path: 44 deaths, 387 level exits, 33 conversations, 3 saves, 0 failures |
+| **Random-play bot** (random keys on every level), 12 levels, 4 runs each, 259,200 steps a path | Windows game path: 43 deaths, 385 level exits, 33 conversations, 3 saves, 0 failures. Mac game path: 43 deaths, 385 level exits, 33 conversations, 3 saves, 0 failures |
 | The game's suite run under CrossOver | <<SEAT: Windows test run inside CrossOver — expected 820 passed / 0 failed / 3 skipped of 823>> |
 | Start-up check of the staged Mac app (muted) | <<SEAT: Mac start-up check of the staged app, muted>> |
 | Start-up check of the staged Windows zip in CrossOver | <<SEAT: start-up check of the staged Windows zip in CrossOver>> |
 
-The two game paths' bot counts differ slightly (one death, two exits); this is not explained yet, and neither path
-had a failure.
+The two game paths' bot counts are the same, run for run. (Until 27 November they differed by one death and two
+exits on level 22: the Mac-side test stand-in was not telling the game which sounds were playing. That was a fault
+in the test, not in the game, and it is fixed.)
 
 <<SEAT: where the staged builds are, and the commit they were built from>>
 
