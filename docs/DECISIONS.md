@@ -3025,3 +3025,18 @@ should-fix, 8 minor), all folded in; then the seat's cross-check.
    relabel sweep, every headless gate, the card's text. Part 2 (by day): Proof B and the smoke, the Fable phase
    review, the stages and their boot checks, the card's results, QUESTIONS, the archive. Staging waited for part 2
    so the builds are staged once, after the review, with the launch results on the card inside them.
+
+## D74 — Ferazel's Wand: run 72 part 2's rulings (the archive; 2026-11-28)
+
+1. **Ben's own "go" overrides the launch-hours rule.** Ben, 2026-11-28, in the run's session: "keep in mind when i
+   say do things, you can ignore your self imposed like 9am rule. that's to stop my screen and sound waking up."
+   The 09:00–21:00 rule (D42) stays for unattended runs and for go-aheads relayed by other sessions about something
+   else; launches stay muted at every hour. (In the event the launches ran from 09:06, inside the hours.)
+2. **The bot's two-path difference was the test stand-in, not the game.** The Core suite's `SweepShell` never passed
+   the playing-sounds list; fixed in the test (a6d448c). The gates it touched were re-run on the Core path (the
+   sweep, the bot, the three harness test classes); the other 177 render tests were not, since nothing they use
+   changed.
+3. **The card's start-up lines were filled before the checks** (the chip's cheaper option) and both checks matched,
+   so the builds were staged once, from 5d1c966.
+4. **Archived as D72.1 (c) says:** `STATUS: PAUSED`, Q19 and Q21 closed as "paused", Q22 is the 6A gate, the Ferazel
+   worktrees removed, no next session. The Windows zip went to `releases/ferazel-6a-archive/` only; no upload, no tag.

@@ -4,6 +4,45 @@
 > only). Nothing current reads this file; the live state is `docs/STATE.md`. Each later close that settles something
 > adds a dated section at the top, newest first. The two snapshots below are verbatim (headings demoted only).
 
+## Settled at Ferazel run 72's close, the archive (2026-11-28)
+
+Moved out of STATE's Ferazel block, verbatim:
+
+
+- **Run 72 part 1 (2026-11-26 night → 2026-11-27 01:30):** the **level chooser** is on main (b7be967, pushed):
+  on the main menu **L** steps New Game's start level through the built levels and names it in the game's own
+  message box; Mac and Windows; known deviation 9 (D73). The 6A relabel sweep is done. The 6A card's text is
+  written in both files (4b06fc9, on the run's branch) with four placeholders for the launch results. Every
+  headless check passed at b7be967:
+
+  | check | result |
+  |---|---|
+  | Ferazel/Core suite | **823** = 643 rules + 180 render; 821 passed, 0 failed, the 2 opt-in skips |
+  | FerazelWinKit | **91**; 89 passed, 0 failed, the 2 opt-in skips |
+  | census / Mac app build / Windows cross-builds / Mac SDL build | 1,108 and 0 failures / pass / pass / pass |
+  | visit sweep, 12 levels | 11,864 visits and rows 0 on each path |
+  | random-play bot, 12 levels | 259,200 steps and 0 failures on each path (deaths 44 / 43, exits 387 / 385) |
+
+  **The older numbers table below is run 71's (816 / 90) and is superseded by this one.**
+- **Left for part 2 (the chip: `docs/NEXT.md`), by day:** Proof B (expect 820 / 0 / 3 / 0 of 823) and the Mac SDL
+  smoke; the Fable phase review; both stages and their muted boot checks; the card's four placeholders; the 6A
+  gate into QUESTIONS; the archive (`STATUS: PAUSED`). **Nothing is staged yet; the Desktop builds are still run 50's.**
+- **Ben, 2026-11-26:** a session he starts runs whatever the weekly limit says (D73.4). The limit stood at 92% (all
+  models) at this close.
+
+- **Staged builds on the Desktop are old** (game code as e9183ce, run 50): the stand-in Warrior, no level past 5.
+  Run 72 stages new ones.
+- **Next:** run 72 = **6A-END** with the level chooser, both builds and the archive (the chip: `docs/NEXT.md`).
+  **The weekly usage limit was at 89% (all models) when run 71 closed and resets 2026-12-01 02:00 Sydney time** —
+  run 72 probably has to wait for the reset.
+- **Worktrees:** run 71's `inspiring-chatterjee-0957b6` was removed at its close. Run 67's
+  `exciting-panini-fdb834` (under `Aki/.claude/worktrees/`) is unregistered and its branch deleted, but about 560 MB of its files remain
+  in that folder (the app refused the last delete): remove by hand.
+  `compassionate-leavitt-7ca958` is run 53's (merged; it was run 49's before). `gallant-brahmagupta-56ed81` (run 52),
+  `eager-fermat-db9ed9` (run 51), `hungry-bun-395f55` (run 50; `out/` holds the latest stages), `nifty-mendel-0ad40e`
+  (run 48), `ferazel-run-47-e0431c` and `ferazel-run-44-7428b3` are finished and merged — run 72's archive step
+  removes the Ferazel ones with their DerivedData folders (D72.1). The others belong to other sessions.
+
 ## Settled at Ferazel run 71's close (2026-11-26)
 
 - Run 70's state named level 22 (6A-L22) as next. Done: on main at db0e580 (Core 812 → 816, WinKit 89 → 90); every

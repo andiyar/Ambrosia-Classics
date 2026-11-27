@@ -32,33 +32,23 @@ brother's Windows machine.
 
 ## Open
 
-### Q21 — 2026-11-21 — May the every-object sweep and the random-play bot also run detached?
-Context: opening a level ends with two long checks: a sweep that walks Ferazel up to every object on every built
-level, and a bot that plays at random. As one command each takes 20 minutes or more per shell, and sessions under
-the Coordinator are cut off at ten. Your Q20 answer covers the Windows test script only. Both checks are headless
-(no window, no sound, any hour) and already guarded against running out of memory.
-Options: (a) yes — those two scripts may also run detached (`nohup`, the session polls the log); (b) no — the
-session runs them one level at a time in the foreground, each under ten minutes.
-Recommendation: a — one whole run is the form the scripts were built and guarded for; (b) works but is about twenty
-separate commands a level task, and a single big level may not fit in ten minutes.
-Blocks: nothing. Until you answer, runs take (b); if one level's sweep cannot finish in ten minutes, that run stops
-and says so.
-Update 2026-11-21 (run 61): taking (b) worked — the sweep ran in ten commands (levels grouped so each stayed under ten minutes, the longest 492 s) and the bot fits in one command a shell (80 s, 95 s). All clean on eight levels. So this is now a convenience question only; by level 22 a single big level may still come close to the limit.
-Answer:
-
-### Q19 — 2026-11-11 — Phase 6A plan (to the Goblin Chief): three small choices, for your later read
-Context: the plan for levels 10–22 is written and reviewed (run 50): the Warrior's real fight, then the horizon strip,
-wind, cannons, trees, the river ripple, rain and thunder, the Goblin Chief, clouds, blades, maces and the magic carpet,
-with each level opened once everything on it is built. Thirteen sessions of one to three tasks each. The build
-starts without waiting for you; these are the choices you may want to change.
-Options: (1) After every newly opened level the machine re-checks every object on every built level and replays the
-random-play bot — about an hour each time by level 22. Default: keep it (your rule of 2026-11-08). Alternative: check
-only the new level each time and all levels at the end of each group of levels. (2) Windows pictures are compared on
-the real levels only; the special test levels used to prove a feature early are Mac-side. Default: keep. (3) If a boss
-tries to spawn something when the game's 700 object slots are all full, the original misbehaves in an undefined way;
-the port quietly skips the spawn instead. It cannot happen in normal play. Default: keep.
-Recommendation: the defaults; say "narrow the sweep" if the hour per level bothers you.
-Blocks: nothing.
+### Q22 — 2026-11-28 — Phase 6A gate (the last build before the pause): do the levels through the Goblin Chief play like Ferazel's, on Mac and Windows?
+Context: Ferazel is paused after this build (your ruling of 26 November). Twelve levels play: 1–5, 10, 11, 15, 18,
+20, 21 and 22, with both boss fights so far (the Warrior on 5, the Goblin Chief on 18). Both builds are on your
+Desktop: `Ferazel's Wand.app` (Mac) and `Ferazel's Wand (Windows).zip` (a copy with its checksum is in
+`releases/ferazel-6a-archive/` for you to send to Andrew; nothing was uploaded). The checklist is
+`Ferazel's Wand — WHAT-TO-EXPECT.md` on the Desktop (repo: `Ferazel/WHAT-TO-EXPECT.md`, Windows part
+`Ferazel/WINDOWS-WHAT-TO-EXPECT.md`). To jump to a level: on the main menu press **L** until the box names the
+level, then start New Game. **Nobody has seen levels 20, 21 and 22 yet** — they were only checked by machine, so
+please look at those three first. Machine checks: 823 game tests pass (820 of them also under CrossOver, 3 skipped
+on purpose); every object on every level visited on both the Mac and Windows game paths (11,864 visits each, 0
+problems); 259,200 random steps on each path, 0 failures; both staged builds start muted and behave.
+Pass looks like: the twelve levels play like the original by eye and ear, both bosses can be beaten, and the L key
+gets you to any of them.
+Options: (a) pass; (b) pass with notes (write them — each becomes a task if the project resumes); (c) fail (say
+what is wrong).
+Recommendation: a or b — only a person can judge the look of the new levels and the feel of the two fights.
+Blocks: nothing. The project is paused either way; your notes wait in this file for a resume.
 Answer:
 
 ### Q18 — 2026-11-10 — Phase 5 gate: with the enemies alive, do levels 1–5 play like Ferazel's, up to the Warrior's arena?
@@ -223,6 +213,35 @@ Answer:
 ## Answered
 
 _(moved here by the run that acted on the answer, with what it did)_
+
+### Q21 — 2026-11-21 — May the every-object sweep and the random-play bot also run detached?
+Context: opening a level ends with two long checks: a sweep that walks Ferazel up to every object on every built
+level, and a bot that plays at random. As one command each takes 20 minutes or more per shell, and sessions under
+the Coordinator are cut off at ten. Your Q20 answer covers the Windows test script only. Both checks are headless
+(no window, no sound, any hour) and already guarded against running out of memory.
+Options: (a) yes — those two scripts may also run detached (`nohup`, the session polls the log); (b) no — the
+session runs them one level at a time in the foreground, each under ten minutes.
+Recommendation: a — one whole run is the form the scripts were built and guarded for; (b) works but is about twenty
+separate commands a level task, and a single big level may not fit in ten minutes.
+Blocks: nothing. Until you answer, runs take (b); if one level's sweep cannot finish in ten minutes, that run stops
+and says so.
+Update 2026-11-21 (run 61): taking (b) worked — the sweep ran in ten commands (levels grouped so each stayed under ten minutes, the longest 492 s) and the bot fits in one command a shell (80 s, 95 s). All clean on eight levels. So this is now a convenience question only; by level 22 a single big level may still come close to the limit.
+Answer: closed as "paused", not asked — Ferazel is archived after Phase 6A (D72.1 (c), run 72, 2026-11-28). The default stood for the whole phase.
+
+### Q19 — 2026-11-11 — Phase 6A plan (to the Goblin Chief): three small choices, for your later read
+Context: the plan for levels 10–22 is written and reviewed (run 50): the Warrior's real fight, then the horizon strip,
+wind, cannons, trees, the river ripple, rain and thunder, the Goblin Chief, clouds, blades, maces and the magic carpet,
+with each level opened once everything on it is built. Thirteen sessions of one to three tasks each. The build
+starts without waiting for you; these are the choices you may want to change.
+Options: (1) After every newly opened level the machine re-checks every object on every built level and replays the
+random-play bot — about an hour each time by level 22. Default: keep it (your rule of 2026-11-08). Alternative: check
+only the new level each time and all levels at the end of each group of levels. (2) Windows pictures are compared on
+the real levels only; the special test levels used to prove a feature early are Mac-side. Default: keep. (3) If a boss
+tries to spawn something when the game's 700 object slots are all full, the original misbehaves in an undefined way;
+the port quietly skips the spawn instead. It cannot happen in normal play. Default: keep.
+Recommendation: the defaults; say "narrow the sweep" if the hour per level bothers you.
+Blocks: nothing.
+Answer: closed as "paused", not asked — Ferazel is archived after Phase 6A (D72.1 (c), run 72, 2026-11-28). The default stood for the whole phase.
 
 ### Q20 — 2026-11-21 — The Windows test run takes 13 minutes; sessions under the Coordinator are cut off at ten
 Context: at the end of each group of tasks the machine runs the whole test suite once more inside CrossOver, muted

@@ -2962,6 +2962,18 @@ ids; its `--check` reads this table):
     the carpet is never idled (measured and pinned).
 
 #### 6A-END — minor — the phase end: the checks, the relabel sweep, both builds staged, one gate card (→ 816)
+- **As executed — 6A-END (run 72 part 2; 2026-11-27 01:04 → 02:45 night, 2026-11-28 09:06 → 10:00 by day):** the
+  Fable review of the whole 6A diff (e9183ce..HEAD) by area — findings: the bot's level-22 two-path difference was
+  the Core suite's stand-in shell not passing the playing-sounds list (tests only, a6d448c; both paths now 43
+  deaths / 385 exits), four stale comment level lists (d157967), one unverified note on the looping sound's
+  re-insert (carried in NEXT). Re-run after a6d448c: bot core `steps 259200, deaths 43, exits 385, failures 0`;
+  sweep core 11,864 visits, rows 0 (eight commands, 265–490 s each; 11 and 15 together took 490 s — split them);
+  the harness test classes pass. By day: `proof-b: 820 passed / 0 failed / 3 skipped / 0 crashed (of 823)` (about
+  22 minutes detached); GW4R `main menu: identical`; card placeholders filled (5d1c966); both stages from 5d1c966
+  (64 s, 63 s); GW6 `main menu / new game / level 1 text: identical`; G9M started muted, ran 8 s, quit, no crash
+  report (the quit AppleScript returned -128 while the app exited). Zip + sha256 to `releases/ferazel-6a-archive/`.
+  Q22 written; Q19, Q21 closed as paused; D74; `STATUS: PAUSED`. A full `--filter FerazelRenderTests` does not fit
+  in ten minutes in one command, and the draw-mode audit must never be in a grouped filter.
 - **Files:** `Ferazel/WHAT-TO-EXPECT.md` (the 6A card, Mac part), `Ferazel/WINDOWS-WHAT-TO-EXPECT.md` (Windows part —
   one card, two files), any `Ferazel/Core/Sources` file with a stale `// later:` naming a merged 6A task or "Phase 6"
   where a 6A task now owns it (comment-only relabels to the real owner: 6B / 6C task ids), `docs/ferazel/port-gap-ledger.md`

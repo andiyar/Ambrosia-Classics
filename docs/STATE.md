@@ -7,28 +7,33 @@ Settled history lives in docs/STATE-history.md.
 > numbers and open items and moves anything settled to the top of `docs/STATE-history.md`; it never appends a run story
 > here. Forks go in `docs/DECISIONS.md`, narrative in the handoff. Re-verify before acting.
 
-## Ferazel's Wand — 2026-11-27 (run 72 part 1 closed: the level chooser is in and every headless check is green; part 2, by day, reviews, stages and archives)
+## Ferazel's Wand — 2026-11-28 (PAUSED: archived after Phase 6A "through the Goblin Chief"; both builds staged; Ben's gates Q22 and Q18 open)
 
-- **Run 72 part 1 (2026-11-26 night → 2026-11-27 01:30):** the **level chooser** is on main (b7be967, pushed):
-  on the main menu **L** steps New Game's start level through the built levels and names it in the game's own
-  message box; Mac and Windows; known deviation 9 (D73). The 6A relabel sweep is done. The 6A card's text is
-  written in both files (4b06fc9, on the run's branch) with four placeholders for the launch results. Every
-  headless check passed at b7be967:
+- **Paused, not cancelled (D72.1, 2026-11-26).** The original author is selling an official remaster
+  (https://mixedmetaphor.itch.io/ferazels-wand). Ben resumes if it disappoints. `docs/NEXT.md` is `STATUS: PAUSED`
+  with how to resume (the next step would be the 6B planning run). No session and no loop is to be started.
+- **Run 72 closed it (part 2: 2026-11-27 night, 2026-11-28 morning).** The Fable phase review is done; the bot's
+  two-path difference on level 22 was a fault in the test stand-in, fixed (tests only); the launch checks pass.
 
   | check | result |
   |---|---|
-  | Ferazel/Core suite | **823** = 643 rules + 180 render; 821 passed, 0 failed, the 2 opt-in skips |
+  | Ferazel/Core suite | **823**; 821 passed, 0 failed, the 2 opt-in skips |
   | FerazelWinKit | **91**; 89 passed, 0 failed, the 2 opt-in skips |
-  | census / Mac app build / Windows cross-builds / Mac SDL build | 1,108 and 0 failures / pass / pass / pass |
+  | the game's suite under CrossOver (Proof B) | 820 passed / 0 failed / 3 skipped / 0 crashed (of 823) |
+  | census / Mac app build / Windows cross-builds / Mac SDL smoke | 1,108 and 0 failures / pass / pass / identical |
   | visit sweep, 12 levels | 11,864 visits and rows 0 on each path |
-  | random-play bot, 12 levels | 259,200 steps and 0 failures on each path (deaths 44 / 43, exits 387 / 385) |
+  | random-play bot, 12 levels | 259,200 steps, 43 deaths, 385 exits, 0 failures — the same on both paths |
+  | staged Windows zip in CrossOver / staged Mac app, both muted | three screens identical / started and quit, no crash report |
 
-  **The older numbers table below is run 71's (816 / 90) and is superseded by this one.**
-- **Left for part 2 (the chip: `docs/NEXT.md`), by day:** Proof B (expect 820 / 0 / 3 / 0 of 823) and the Mac SDL
-  smoke; the Fable phase review; both stages and their muted boot checks; the card's four placeholders; the 6A
-  gate into QUESTIONS; the archive (`STATUS: PAUSED`). **Nothing is staged yet; the Desktop builds are still run 50's.**
-- **Ben, 2026-11-26:** a session he starts runs whatever the weekly limit says (D73.4). The limit stood at 92% (all
-  models) at this close.
+  **The older numbers table further down is run 71's (816 / 90) and is superseded by this one.**
+- **Staged from 5d1c966 (2026-11-28):** the Mac app on the Desktop and in the main checkout's `out/Ferazel/`; the
+  Windows zip on the Desktop and, with its checksum, in `releases/ferazel-6a-archive/` (main checkout). No upload.
+- **Owed, all Ben's:** Q22 (the 6A gate, Mac and Windows; nobody has seen levels 20, 21, 22) and Q18 (Phase 5).
+- **Open carries:** listed in `docs/NEXT.md` ("Open carries") and `docs/handoff-2026-11-28-ferazel-archive.md`.
+- **Worktrees:** every Ferazel worktree was removed at the archive. About 560 MB of run 67's
+  `exciting-panini-fdb834` remain under `Aki/.claude/worktrees/` (the app refused that delete): remove by hand.
+- **Launch rule (D74.1):** muted only; unattended runs keep 09:00–21:00; Ben's own "go" in the session overrides
+  the hours.
 
 - **Ben's ruling 2026-11-26 (D72.1): finish Phase 6A, then archive.** The original author is selling an official
   remaster, so Ferazel pauses (not cancelled) after the 6A phase end. Run 72 = the phase end plus an in-game level
@@ -40,17 +45,12 @@ Settled history lives in docs/STATE-history.md.
   biggest level yet (510 objects), dark, with 190 small flying enemies, spinning blades, swinging maces, eight
   teleporters, Dimbo to talk to, and the game's only magic carpet. Talking to Dimbo there makes him appear back on
   level 11. **Nobody has seen levels 20, 21 or 22 yet:** each was launched muted and stayed running, but the seat
-  is not allowed to look at the window (D70.5). The staged builds do not hold them.
+  is not allowed to look at the window (D70.5). The builds staged on 2026-11-28 hold them.
 - **The lit blade (D67.1)** on level 20 is drawn plain and unlit — known deviation 7, confirmed by Ben (D71.5).
 - **The five public Windows test builds were taken down from GitHub (2026-11-26, Ben's word):** releases
   `ferazel-windows-test-1` … `-5` are deleted there (their tags remain); every zip and checksum is still in
   `releases/ferazel-windows-test-N/` in the main checkout. Andrew already has build 5; his report is the Windows
   half of Q18.
-- **Staged builds on the Desktop are old** (game code as e9183ce, run 50): the stand-in Warrior, no level past 5.
-  Run 72 stages new ones.
-- **Next:** run 72 = **6A-END** with the level chooser, both builds and the archive (the chip: `docs/NEXT.md`).
-  **The weekly usage limit was at 89% (all models) when run 71 closed and resets 2026-12-01 02:00 Sydney time** —
-  run 72 probably has to wait for the reset.
 - **How long checks run under the Coordinator** (commands cut off at ten minutes): the suites in parts, the sweep
   one level group a command (levels 3 and 4 apart on the Windows path; level 22 in two halves by offset, D72.4),
   the bot one command a shell (D59.4, D60.4); only the Windows test script may run detached (D59.1). One heavy
@@ -78,13 +78,6 @@ Settled history lives in docs/STATE-history.md.
 - **Waiting on Ben:** QUESTIONS.md "Open": **Q18 (the Phase 5 gate)**, Q21, Q19 (both closed as "paused" by run 72,
   D72.1 (c)), Q17, Q16 (defaults stand), Q15's follow-ups, Q13.
 - **Owed:** somebody's eyes on levels 20, 21 and 22 (D70.5); Proof B and the Mac SDL smoke at the phase end, by day.
-- **Worktrees:** run 71's `inspiring-chatterjee-0957b6` was removed at its close. Run 67's
-  `exciting-panini-fdb834` (under `Aki/.claude/worktrees/`) is unregistered and its branch deleted, but about 560 MB of its files remain
-  in that folder (the app refused the last delete): remove by hand.
-  `compassionate-leavitt-7ca958` is run 53's (merged; it was run 49's before). `gallant-brahmagupta-56ed81` (run 52),
-  `eager-fermat-db9ed9` (run 51), `hungry-bun-395f55` (run 50; `out/` holds the latest stages), `nifty-mendel-0ad40e`
-  (run 48), `ferazel-run-47-e0431c` and `ferazel-run-44-7428b3` are finished and merged — run 72's archive step
-  removes the Ferazel ones with their DerivedData folders (D72.1). The others belong to other sessions.
 - **The sweep and the bot are guarded (2026-11-10):** both scripts kill any worker past `MAX_WORKER_MB` (4096) and
   brake below `MIN_RUNNING_FREE_PCT` (15) free memory, with a failure row. Stop a run with a plain
   `kill <script pid>` — never `kill -9` / `pkill -9`. A `memory` row is a leak to fix, never a limit to raise. A
