@@ -72,15 +72,15 @@ Run on the final code, 26–27 November 2026.
 | Builds | the Mac app and both Windows builds: pass |
 | **Visit sweep** (every object on every level, taken to and drawn), 12 levels | Windows game path: 11,864 visits, 0 problems. Mac game path: 11,864 visits, 0 problems |
 | **Random-play bot** (random keys on every level), 12 levels, 4 runs each, 259,200 steps a path | Windows game path: 43 deaths, 385 level exits, 33 conversations, 3 saves, 0 failures. Mac game path: 43 deaths, 385 level exits, 33 conversations, 3 saves, 0 failures |
-| The game's suite run under CrossOver | <<SEAT: Windows test run inside CrossOver — expected 820 passed / 0 failed / 3 skipped of 823>> |
-| Start-up check of the staged Mac app (muted) | <<SEAT: Mac start-up check of the staged app, muted>> |
-| Start-up check of the staged Windows zip in CrossOver | <<SEAT: start-up check of the staged Windows zip in CrossOver>> |
+| The game's suite run under CrossOver | 823 tests: 820 passed, 0 failed, 3 skipped on purpose, 0 crashed (28 November, muted) |
+| Start-up check of the staged Mac app (muted) | the staged app started muted, stayed running and quit cleanly (28 November) |
+| Start-up check of the staged Windows zip in CrossOver | the staged zip started muted in a clean CrossOver bottle; main menu, New Game and level 1's text all identical to the reference pictures (28 November) |
 
 The two game paths' bot counts are the same, run for run. (Until 27 November they differed by one death and two
 exits on level 22: the Mac-side test stand-in was not telling the game which sounds were playing. That was a fault
 in the test, not in the game, and it is fixed.)
 
-<<SEAT: where the staged builds are, and the commit they were built from>>
+**Where the builds are.** Mac: `Ferazel's Wand.app` on your Desktop (and `out/Ferazel/` in the repo). Windows: `Ferazel's Wand (Windows).zip` on your Desktop, with a copy and its checksum in `releases/ferazel-6a-archive/` in the main checkout for you to send to Andrew. Nothing was uploaded anywhere. The commit each build was made from, and when, is the "Build …, staged …" line stamped on the copy of this card next to the build.
 
 ## Known stand-ins on Windows (Phase 6A)
 - **The table's row "Every Mac stand-in of Phase 4" now reads:** every Mac stand-in of Phase 6A — the Wizard, the
